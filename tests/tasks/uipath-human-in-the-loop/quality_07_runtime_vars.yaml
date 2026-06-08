@@ -5,15 +5,10 @@ description: >
   $vars.<NodeId>.status. Tests G1 and G2.
 tags: [uipath-human-in-the-loop, integration, runtime-variables]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 23
   max_turns: 50
-
-sandbox:
-  driver: tempdir
-  python: {}
+  turn_timeout: 600
 
 initial_prompt: |
   Create a flow called "ReviewAndRoute" with:
@@ -25,6 +20,7 @@ initial_prompt: |
   runtime variable ($vars.<nodeId>.output) and ALSO check the completion
   status via the status runtime variable ($vars.<nodeId>.status). Wire the
   completed handle to the script node. Validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: file_contains
@@ -40,7 +36,15 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate ReviewAndRoute/ReviewAndRoute/ReviewAndRoute.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: file_matches_regex

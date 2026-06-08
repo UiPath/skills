@@ -10,7 +10,7 @@ Catalog of frequently found issues in UiPath Flow projects, with detection metho
 
 **Impact:** Flow validation fails. The flow cannot be executed.
 
-**Detection:** `uip flow validate` will catch this. Also check manually:
+**Detection:** `uip maestro flow validate` will catch this. Also check manually:
 ```bash
 # In the .flow file, look for edges without targetPort
 grep -c '"targetPort"' *.flow
@@ -27,11 +27,11 @@ grep -c '"targetPort"' *.flow
 
 **Detection:** Compare definitions entries against registry output:
 ```bash
-uip flow registry get <node-type> --output json
+uip maestro flow registry get <node-type> --output json
 ```
 If the definition in the .flow file doesn't match the registry output, it was likely hand-written.
 
-**Fix:** Replace hand-written definitions with the exact output from `uip flow registry get`. Never modify registry definitions manually.
+**Fix:** Replace hand-written definitions with the exact output from `uip maestro flow registry get`. Never modify registry definitions manually.
 
 ### Orphan Nodes
 
@@ -51,7 +51,7 @@ If the definition in the .flow file doesn't match the registry output, it was li
 
 **Impact:** Validation fails. Runtime behavior is undefined — the engine may route to the wrong node.
 
-**Detection:** `uip flow validate` catches this. Also check with:
+**Detection:** `uip maestro flow validate` catches this. Also check with:
 ```bash
 # Extract all node IDs and check for duplicates
 python3 -c "import json; f=json.load(open('*.flow')); ids=[n['id'] for n in f['nodes']]; print([x for x in ids if ids.count(x)>1])"
@@ -72,7 +72,7 @@ python3 -c "import json; f=json.load(open('*.flow')); ids=[n['id'] for n in f['n
 grep "core.logic.mock" *.flow
 ```
 
-**Fix:** Replace each mock with the real resource node. Use `uip flow registry get <resource-type>` to get the correct definition, then update the node type, inputs, and definitions.
+**Fix:** Replace each mock with the real resource node. Use `uip maestro flow registry get <resource-type>` to get the correct definition, then update the node type, inputs, and definitions.
 
 ### Missing Output Mapping on End Nodes
 
@@ -151,7 +151,7 @@ grep "console.log" *.flow
 
 **Detection:** Extract resource keys from node types (e.g., `uipath.core.rpa-workflow.invoice-processor`). Verify each resource is published and accessible.
 
-**Fix:** Update resource references to point to current published resources. Re-run `uip flow registry list` to find available resources.
+**Fix:** Update resource references to point to current published resources. Re-run `uip maestro flow registry list` to find available resources.
 
 ### Hardcoded Queue Names
 

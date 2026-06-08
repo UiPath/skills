@@ -46,14 +46,14 @@ Run the Maestro BPMN smoke eval:
 
 ```bash
 cd tests
-make tags TAGS="uipath-maestro-bpmn smoke" EXPERIMENT=experiments/default.yaml
+make tags TAGS="uipath-maestro-bpmn smoke" EXPERIMENT=experiments/smoke.yaml
 ```
 
 Run the Maestro BPMN e2e eval slice:
 
 ```bash
 cd tests
-make tags TAGS="uipath-maestro-bpmn e2e" EXPERIMENT=experiments/e2e.yaml
+make tags TAGS="uipath-maestro-bpmn e2e" EXPERIMENT=experiments/default.yaml
 ```
 
 Run all tests for this skill:

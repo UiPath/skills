@@ -115,7 +115,7 @@ For multi-trigger cases, add the additional triggers first via the appropriate t
 
 ## Step 9 — Add tasks (Phase 2 shape, gather-then-write)
 
-**Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey>` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1.
+**Phase A — gather.** For each non-connector task in `tasks.md §4.6`, run `uip maestro case tasks describe --type <type> --id <entityKey> --output json` and collect the input schema in reasoning. Connector tasks (`connector-activity`, `connector-trigger`) skip the gather — `case spec` defers to Phase 3 Step 9.7. Unresolved tasks skip too — they become placeholders per Step 9.1.
 
 **Phase B — batched write.** One Read of `caseplan.json`. Then one Edit per task in §4.6 order, appending the task node to its stage's `data.tasks` lane per the matching plugin's `impl-json.md`. **Capture each `TaskId`** — cross-task references and conditions in Phase 3 need it. Skip the re-Read between sibling Edits. One validate at section end.
 
@@ -197,7 +197,7 @@ Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — c
 **Phase A — gather.** For each connector task (`connector-activity`, `connector-trigger`) in `tasks.md`:
 
 1. Run `get-connection` (each task runs its own — never reuse).
-2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>'` per the plugin's `impl-json.md`.
+2. Run `uip maestro case spec --type <activity|trigger> --activity-type-id <id> --connection-id <id> --input-details '<json>' --output json` per the plugin's `impl-json.md`.
 3. Substitute `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids; mint `var` / `id` / `elementId` on `caseShape.inputs` / `outputs` per the plugin's uniqueness rule.
 
 Hold all gathered shapes (per-task `caseShape` + root-level Connection + FolderKey bindings) in reasoning. Skip connector tasks that are placeholders (unresolved `typeId` / `connectionId`).
@@ -238,6 +238,10 @@ Skip the re-Read between sibling Edits. One validate at section end. Per-scope c
 - Stage exit → [`plugins/conditions/stage-exit-conditions/impl-json.md`](plugins/conditions/stage-exit-conditions/impl-json.md)
 - Task entry → [`plugins/conditions/task-entry-conditions/impl-json.md`](plugins/conditions/task-entry-conditions/impl-json.md)
 - Case exit → [`plugins/conditions/case-exit-conditions/impl-json.md`](plugins/conditions/case-exit-conditions/impl-json.md)
+
+> **Connector-bound rules need a CLI gather.** A `wait-for-connector` rule in any scope is NOT a pure JSON write — it requires a `uip maestro case spec --type trigger` call (like Step 9.7 connector tasks) to mint its `uipath` block, plus root bindings + IS-cache + deferred `bindings_v2` sync. Gather per `(scope, target)`, then write. See [connector-trigger-common.md § Target: connector-bound condition rule](connector-trigger-common.md#target-connector-bound-condition-rule). Full `validate` flags a missing `rule.uipath`/`context` (`connector activity missing`), not its internals.
+
+> **Step 10 ends with a `bindings_v2` sync.** After all connector rules across the 4 scopes are written, run the third batched `bindings_v2.json` regeneration + IS-cache population — see [bindings-v2-sync.md § When to Run](bindings-v2-sync.md#when-to-run) (point 3). Without this third sync, rule-introduced Connection/Folder bindings + IS-cache entries don't land until the post-Phase-3 catch-all and `resource refresh` misses them.
 
 ## Step 11 — SLA and escalation (per-target Edit batch)
 

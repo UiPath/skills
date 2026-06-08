@@ -1,0 +1,51 @@
+experiment_id: skill-tests-smoke
+description: "Linux PR-gate smoke tests — docker isolation, fast turn budget"
+
+defaults:
+  run_limits:
+    # Coded RPA tasks (hooks setup + test case + project.json edits +
+    # `uip rpa` calls) routinely need ~25-30 turns end-to-end.
+    max_turns: 40
+    # A single turn can chain several cold-runner `uip rpa` calls (each
+    # 30-90s); per-turn budget tracks the slowest external call.
+    task_timeout: 900
+    turn_timeout: 900
+
+  sandbox:
+    driver: docker
+    docker:
+      image: skills-image:latest
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - BEDROCK_MODEL
+        - TASK_PARALLELISM
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - TRACES_SMOKE_PROCESS_KEY
+      extra_mounts:
+        - ~/.uipath:/.uipath:rw
+
+  agent:
+    type: claude-code
+    permission_mode: acceptEdits
+    model: claude-sonnet-4-6
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+    plugins:
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+    ignore_patterns: []
+
+  # Sandbox cleanup between tasks (preserved artifacts stay slim; concurrent
+  # sandboxes don't leak Node module resolution).
+  post_run:
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: default

@@ -33,7 +33,7 @@ Once resolved, `<skill-name>` is fixed for the rest of the run.
 ### 1b. Read context (parallel Explore agents or parallel tool calls)
 
 1. `skills/<skill-name>/SKILL.md` plus everything under `skills/<skill-name>/references/` and `skills/<skill-name>/assets/`.
-2. `tests/README.md` — authoritative source for the **Tag Taxonomy**, **Weight scale**, and **experiment defaults** (`default.yaml` for smoke, `integration.yaml`, `e2e.yaml`). Do not duplicate that material here; reference it.
+2. `tests/README.md` — authoritative source for the **Tag Taxonomy**, **Weight scale**, and **experiment defaults** (`smoke.yaml` for PR-gate, `default.yaml` for nightly e2e and ad-hoc, `smoke-windows.yaml` for Windows RPA). Do not duplicate that material here; reference it.
 3. `.claude/commands/lint-task.md` — the quality rubric (six axes, four severities). Generated tasks must not trip a Medium-or-above issue on any axis.
 4. `tests/reports/<skill-name>.md` if it exists — use it to detect that the scenario in the description is already a known gap with prior recommendations.
 5. Every existing `*.yaml` task under `tests/tasks/` — collect all `task_id` values (collision check), study conventions for the target skill (or a peer skill if the target has none yet), and confirm the described scenario is not already covered.
@@ -54,7 +54,7 @@ Per the tier table in `tests/README.md`:
 
 ### 2b. Tags
 
-Required, in this order: `<skill-name>` first, then `<tier>`, then `mode:<X>`. Optional dimensions (`shape:*`, `node:*`, `resource`, `connector`, `feature:*`) follow per `tests/README.md#tag-taxonomy`.
+Required, in this order: `<skill-name>` first, then `<tier>`, then `mode:<X>`. Optional dimensions (`shape:*`, `node:*`, `resource`, `connector`, `windows`, `feature:*`) follow per `tests/README.md#tag-taxonomy`.
 
 - **`<skill-name>`** — always the first tag. Must match the `skills/<name>/` folder exactly (e.g. `uipath-maestro-flow`, `uipath-agents`). Never abbreviate or drop the `uipath-` prefix.
 - **`<tier>`** — `smoke`, `integration`, or `e2e`.
@@ -65,7 +65,7 @@ Required, in this order: `<skill-name>` first, then `<tier>`, then `mode:<X>`. O
 
 **Use only the closed-vocabulary values listed in `tests/README.md`.** If no value fits an optional dimension, omit it and surface it in the Phase 4 summary so the taxonomy can be extended deliberately. Never invent tag values inline.
 
-Final tag order: `[<skill-name>, <tier>, mode:X, shape:X, node:..., resource, connector, feature:...]`.
+Final tag order: `[<skill-name>, <tier>, mode:X, shape:X, node:..., resource, connector, windows, feature:...]`.
 
 Example:
 

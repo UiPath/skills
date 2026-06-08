@@ -8,19 +8,11 @@ description: >
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 131
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Build a UiPath Case Management solution named "ApiWorkflowSingleCase"
@@ -55,10 +47,10 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | name | input | string | tomasz | Input name passed to the NameToAgeFixed2 API workflow | trigger:Manual | lookup.lookupAge |
-  | age | implementation | number | - | Predicted age returned by the API workflow | lookup.lookupAge | - |
+  | name | In | string | | | tomasz | Input name passed to the NameToAgeFixed2 API workflow. |
+  | age | Variable | number | | | | Predicted age returned by the API workflow; populated by Lookup. |
 
   ## Section 2: Stages & Tasks
 
@@ -77,10 +69,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `lookup.lookupAge` | Lookup age via NameToAgeFixed2 API workflow | api-workflow | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `lookup.lookupAge` | Lookup age via NameToAgeFixed2 API workflow | api-workflow | Yes | No | system | — |
 
   ##### Task 1.1: Lookup age via NameToAgeFixed2 API workflow (`lookup.lookupAge`)
 
@@ -133,3 +125,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

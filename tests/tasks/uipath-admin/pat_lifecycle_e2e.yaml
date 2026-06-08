@@ -1,0 +1,49 @@
+task_id: skill-admin-pat-lifecycle-e2e
+description: >
+  End-to-end test: agent creates a PAT with scopes and expiration,
+  then lists tokens to verify it exists. Cleanup revokes the PAT.
+tags: [uipath-admin, e2e, lifecycle:generate]
+
+run_limits:
+  expected_turns: 9
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Create a personal access token described as "e2e-test-pat" with
+  read access to Folders, expiring 90 days from now. Then list my tokens
+  to confirm it was created.
+
+  If a token with this description already exists, revoke it first,
+  then create the new one.
+
+  Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created PAT with --description"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+pat\s+create\s+.*--description'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "PAT 'e2e-test-pat' exists in token list"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_pat_created.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_pat.py''))"'
+    timeout: 30

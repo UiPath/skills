@@ -1,0 +1,255 @@
+task_id: skill-datafabric-integration-complex-fields
+description: >
+  Integration test: agent builds a two-entity Customer/Order schema with a
+  CHOICE_SET_SINGLE status field (on a discovered choice set) and a
+  RELATIONSHIP from Order back to Customer, inserts records, filters by both
+  fields, and resolves a Customer by Email before writing the related Order.
+  Distinct from e2e_expense_tracker (which covers CHOICE_SET_MULTIPLE +
+  `in`-operator aggregation): this test exercises the resolve-by-unique-key
+  pattern (Email → Id) before a relational write, and uses a plainer
+  customer-style prompt so the two tasks together give breadth coverage
+  across prompt styles. Choice sets are authored only in the web UI — if
+  none exists in the tenant, the test records the gap and still completes
+  the relationship workflow.
+tags: [uipath-data-fabric, integration, complex-fields]
+
+run_limits:
+  expected_turns: 19
+  max_turns: 60
+  turn_timeout: 600
+
+initial_prompt: |
+  Build a small Customer/Order schema in UiPath Data Fabric. Customer has a
+  Name and an Email (unique). Order belongs to a Customer, has an amount, and
+  (if available in the tenant) a status picked from a choice set. Seed a few
+  Customers and a few Orders, then answer two questions:
+    - How many Orders belong to "alice@integration.test"?
+    - If status is in use, how many Orders are in the chosen status?
+
+  Use --output json on every uip df command.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login.
+
+  2. List all choice sets in the tenant:
+       uip df choice-sets list --output json
+     Capture the list. Choice sets are authored in the Data Fabric web UI —
+     the CLI is read-only. If the list is empty, set
+     `choice_set_available = false` in your final report and proceed without
+     the choice-set field in step 5. If the list is non-empty, pick the
+     FIRST choice set returned and capture its ID + Name. Save that ID as
+     `chosen_choice_set_id`.
+
+  3. If a choice set was found in step 2, inspect its values:
+       uip df choice-sets list-values <chosen_choice_set_id> --output json
+     Capture the first value's NumberId and DisplayName. Save the NumberId as
+     `chosen_choice_number_id`.
+
+  4. Create the PARENT entity "IntegrationCustomer<RUN_ID>" where <RUN_ID> is
+     a unique 6-character suffix using ONLY `[a-zA-Z0-9_]` (to satisfy entity
+     name validation: must start with a letter, contain only letters / digits
+     / underscores, 3–100 chars). Use Python `secrets.token_hex(3)` or similar
+     to generate. Fields:
+       - Name  (STRING, isRequired: true)
+       - Email (STRING, isUnique: true)
+     Save the entity ID as `parent_entity_id` in report.json.
+
+  5. Create the CHILD entity "IntegrationOrder<SAME_RUN_ID>" with fields:
+       - amount     (DECIMAL, decimalPrecision 2, isRequired: true)
+       - customerId (RELATIONSHIP — `referenceEntityId` equals the parent's
+                     entity UUID (`parent_entity_id` from step 4); `referenceFieldId`
+                     equals the parent's `Id` field UUID — discover with
+                     `uip df entities get <parent_entity_id>` and read the
+                     `Fields[]` entry whose `Name == "Id"`; isRequired: true)
+     If `choice_set_available` is true, ALSO add:
+       - status     (CHOICE_SET_SINGLE — choiceSetId = chosen_choice_set_id,
+                     isRequired: true)
+     Save the entity ID as `child_entity_id` in report.json.
+
+  6. Insert two parent records (Customer):
+       a. { "Name": "Alice Co",  "Email": "alice@integration.test" }
+       b. { "Name": "Bravo LLC", "Email": "bravo@integration.test" }
+     Save the two returned UUIDs as `parent_id_a` and `parent_id_b` in
+     report.json.
+
+  7. Resolve a parent UUID by Email (proves the "resolve before insert"
+     pattern for relationships): query the parent entity with a filterGroup
+     filtering on Email == "alice@integration.test" and capture
+     Records[0].Id. Confirm it matches `parent_id_a`.
+
+  8. Insert three child records (Order). The customerId value MUST be the
+     parent's UUID — never the Email, never the Name. If
+     `choice_set_available` is true, include `status` set to the resolved
+     NumberId integer from step 3.
+       a. { "amount": 100, "customerId": parent_id_a [, "status": chosen_choice_number_id] }
+       b. { "amount": 250, "customerId": parent_id_a [, "status": chosen_choice_number_id] }
+       c. { "amount":  50, "customerId": parent_id_b [, "status": chosen_choice_number_id] }
+     Save the three returned UUIDs as `child_id_1`, `child_id_2`, `child_id_3`.
+
+  9. Filter child records on the RELATIONSHIP field:
+       Query Order where customerId == parent_id_a.
+       Confirm exactly 2 records returned.
+
+  10. Read one of the child records back with records get and confirm:
+        - `customerId` is the parent's UUID (string)
+        - if choice set used, `status` is an integer (NumberId), not a string
+
+  11. If `choice_set_available` is true, filter child records on the
+      CHOICE_SET field:
+        Query Order where status == chosen_choice_number_id (pass the
+        NumberId as a string in the filter value).
+        Confirm all 3 records returned.
+
+  12. Save report.json with all captured IDs and observations:
+        {
+          "choice_set_available": <true|false>,
+          "chosen_choice_set_id": "<id-or-null>",
+          "chosen_choice_number_id": <int-or-null>,
+          "parent_entity_id": "<id>",
+          "child_entity_id": "<id>",
+          "parent_id_a": "<id>",
+          "parent_id_b": "<id>",
+          "child_id_1": "<id>",
+          "child_id_2": "<id>",
+          "child_id_3": "<id>",
+          "filter_by_relationship_count": <int>,
+          "filter_by_choice_count": <int-or-null>,
+          "stored_relationship_is_uuid": <bool>,
+          "stored_choice_is_integer": <bool-or-null>
+        }
+
+  Do NOT delete any entity or record manually — cleanup runs post-test.
+  Do NOT attempt to create / update / delete a choice set via the CLI.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed choice sets with choice-sets list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the parent entity"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*IntegrationCustomer'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the child entity with a RELATIONSHIP field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*IntegrationOrder)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted parent records"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"(Name|Email)\"'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted child records writing customerId as a UUID (not an email or name)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"customerId\"\s*:\s*\"[0-9a-fA-F-]{8,}'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT write an email / non-UUID into a relationship field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+(insert|update).*\"customerId\"\s*:\s*\"[^\"]*@'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved a parent UUID via a filterGroup query on Email"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"Email\")'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent filtered child records by the RELATIONSHIP field"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*filterGroup)(?=.*\"fieldName\"\s*:\s*\"customerId\")'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified record shape with records get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+get\s+'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT attempt to create / update / delete a choice set via the CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+(create|update|delete)'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captured parent + child entity IDs"
+    path: "report.json"
+    assertions:
+      - expression: "parent_entity_id"
+        operator: regex
+        expected: "^[0-9a-fA-F-]{8,}"
+      - expression: "child_entity_id"
+        operator: regex
+        expected: "^[0-9a-fA-F-]{8,}"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Relationship filter returned exactly 2 records for parent_id_a"
+    path: "report.json"
+    assertions:
+      - expression: "filter_by_relationship_count"
+        operator: equals
+        expected: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Stored relationship value is a UUID (not a label / email)"
+    path: "report.json"
+    assertions:
+      - expression: "stored_relationship_is_uuid"
+        operator: equals
+        expected: true
+    weight: 2.5
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+    timeout: 60

@@ -15,19 +15,8 @@ description: >
   and edit shape — the agent must produce the right command sequence,
   preserve baseline assemblies, and emit XAML that matches the legacy
   schema.
-tags: [uipath-rpa, legacy, e2e, mode:edit-validate]
+tags: [uipath-rpa, windows, legacy, e2e, mode:edit-validate]
 max_iterations: 2
-
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 50
-  turn_timeout: 900
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   A legacy UiPath RPA project exists at `./InvoiceReader/`. It currently
@@ -52,8 +41,8 @@ initial_prompt: |
     "description": "Legacy invoice reader for refactor smoke test",
     "main": "Main.xaml",
     "dependencies": {
-      "UiPath.System.Activities": "[23.4.4]",
-      "UiPath.Excel.Activities": "[2.21.4]"
+      "UiPath.System.Activities": "[24.10.8]",
+      "UiPath.Excel.Activities": "[2.24.4]"
     },
     "webServices": [],
     "entitiesStores": [],
@@ -167,6 +156,7 @@ success_criteria:
     description: "Agent did NOT use the modern `uip rpa` CLI on this Legacy project"
     tool_name: "Bash"
     command_pattern: 'uip\s+rpa\s+(?!-legacy)(validate|build|run|init|analyzer-rules|activities|packages)'
+    min_count: 0
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -190,22 +180,39 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Edit shape: Retry Scope correctly wraps the Excel read
-  - type: run_command
+  # Edit shape: Retry Scope correctly wraps the Excel read.
+  # Accept any prefix (ui:, uca:, excel:, uea:, ueab:, none) on <RetryScope>
+  # and any of the canonical Excel read activity classes — Interop
+  # (ExcelApplicationScope / ExcelReadRange), Portable
+  # (UiPath.Excel.Activities.ReadRange), or Modern StudioX
+  # (ExcelApplicationCard / ReadRangeX) — also with any prefix.
+  - type: file_check
     description: "Main.xaml has a Retry Scope that nests the Excel read inside its body"
-    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); sys.exit(0 if re.search(r'<RetryScope\\b[^>]*>[\\s\\S]*?(?:ExcelApplicationScope|ExcelReadRange|<ui:ExcelReadRange|<ui:ExcelApplicationScope)[\\s\\S]*?</RetryScope>', s) else 1)\""
-    timeout: 5
-    expected_exit_code: 0
+    path: "InvoiceReader/Main.xaml"
+    patterns:
+      - pattern: '<(?:\w+:)?RetryScope\b[\s\S]*?<(?:\w+:)?(?:ExcelApplicationScope|ExcelReadRange|ReadRange|ReadRangeX|ExcelApplicationCard)\b[\s\S]*?</(?:\w+:)?RetryScope>'
+        must_match: true
     weight: 2.5
     pass_threshold: 1.0
 
-  # Retry Scope is configured: 3 retries, 5-second interval (TimeSpan
-  # value "00:00:05" or numeric 5).
-  - type: run_command
+  # Retry Scope is configured: 3 retries, 5-second interval. Studio emits
+  # NumberOfRetries / RetryInterval either as XML attributes (e.g.
+  # NumberOfRetries="3") OR as property elements with a wrapped
+  # InArgument + VisualBasicValue (required when the value is a VB
+  # expression rather than a literal). Both forms are functionally
+  # equivalent and produce the same UiRobot retry behavior — accept both.
+  - type: file_check
     description: "Retry Scope is configured with NumberOfRetries=3 and a 5-second RetryInterval"
-    command: "python -c \"import re,sys; s=open('InvoiceReader/Main.xaml',encoding='utf-8').read(); ok = re.search(r'NumberOfRetries=\\\"[\\[\\(]?\\s*3\\s*[\\]\\)]?\\\"', s) and re.search(r'RetryInterval=\\\"[\\[\\(]?\\s*(?:00:00:05|TimeSpan\\.FromSeconds\\(5\\)|New TimeSpan\\(0,\\s*0,\\s*5\\))[\\]\\)]?\\\"', s); sys.exit(0 if ok else 1)\""
-    timeout: 5
-    expected_exit_code: 0
+    path: "InvoiceReader/Main.xaml"
+    patterns:
+      # NumberOfRetries = 3 in either attribute form or property-element form.
+      - pattern: '(?:NumberOfRetries\s*=\s*"\s*[\[\(]?\s*3\s*[\]\)]?\s*")|(?:<(?:\w+:)?RetryScope\.NumberOfRetries>[\s\S]*?(?:ExpressionText|Value)\s*=\s*"\s*3\s*"[\s\S]*?</(?:\w+:)?RetryScope\.NumberOfRetries>)'
+        must_match: true
+      # RetryInterval = 5 seconds, expressed as the TimeSpan literal
+      # 00:00:05, the VB expression TimeSpan.FromSeconds(5), or
+      # New TimeSpan(0, 0, 5) — in either attribute form or property-element form.
+      - pattern: '(?:RetryInterval\s*=\s*"\s*[\[\(]?\s*(?:00:00:05|TimeSpan\.FromSeconds\(\s*5\s*\)|New\s+TimeSpan\(\s*0\s*,\s*0\s*,\s*5\s*\))\s*[\]\)]?\s*")|(?:<(?:\w+:)?RetryScope\.RetryInterval>[\s\S]*?(?:00:00:05|TimeSpan\.FromSeconds\(\s*5\s*\)|New\s+TimeSpan\(\s*0\s*,\s*0\s*,\s*5\s*\))[\s\S]*?</(?:\w+:)?RetryScope\.RetryInterval>)'
+        must_match: true
     weight: 2.0
     pass_threshold: 1.0
 
@@ -239,3 +246,6 @@ success_criteria:
       - '"Legacy"'
     weight: 1.0
     pass_threshold: 1.0
+
+run_limits:
+  max_turns: 50

@@ -12,18 +12,10 @@ description: >
   Command-construction only — no live tenant available.
 tags: [uipath-admin, e2e, authz, role-lifecycle, scope:organization]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 13
   max_turns: 40
   turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   I need a read-only role that applies to my whole organization — not

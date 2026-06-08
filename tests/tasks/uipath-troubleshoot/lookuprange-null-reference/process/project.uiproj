@@ -1,0 +1,6 @@
+{
+  "Name": "OrderLookup",
+  "ProjectType": "Process",
+  "Description": "Reproduces a classic Lookup Range failure caused by the activity being placed outside any Excel Application Scope (no workbook context), faulting with NullReferenceException.",
+  "MainFile": "Main.xaml"
+}

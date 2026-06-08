@@ -18,7 +18,7 @@ Manage Orchestrator resources -- assets, queues, queue items, buckets, files, tr
 | `--folder-key <key>` | Folder-scoped commands | Target folder by GUID key. |
 | `--limit <n>` | List commands | Number of items to return (default 50). |
 | `--offset <n>` | List commands | Number of items to skip for pagination. |
-| `--order-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
+| `--sort-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
 
 ---
 
@@ -57,7 +57,7 @@ Libraries are tenant-scoped -- no folder context needed.
 
 | Command | Description |
 |---------|-------------|
-| `uip resource libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--order-by "<field> <asc\|desc>"`. No native search — filter client-side via global `--output-filter "<JMESPath>"`. Returns `Key`, `Title`, `Version`, `Authors`. |
+| `uip resource libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--sort-by "<field> <asc\|desc>"`. No native search — filter client-side via global `--output-filter "<JMESPath>"`. Returns `Key`, `Title`, `Version`, `Authors`. |
 | `uip resource libraries get <key>` | Get library details. Key format is `PackageId:Version` (e.g., `MyLib:1.0.0`). Returns the full API DTO. |
 | `uip resource libraries versions <package-id>` | List all versions of a library by package ID (the `Title` from `list` output). |
 | `uip resource libraries upload --file <path>` | Upload a `.nupkg` library package to the tenant feed. |
@@ -112,5 +112,5 @@ When `HasMore` is `true`, increment `--offset` by `--limit` and fetch again. Con
 ## Related
 
 - **Orchestrator** (`uip or`) — folders, jobs, processes, packages, users, machines → [`uipath-orchestrator`](../orchestrator/orchestrator.md)
-- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](../solution/solution.md)
+- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](/uipath:uipath-solution)
 - **Folder/user setup** — required before folder-scoped resources can be used → [`uipath-orchestrator/setup-environment`](../orchestrator/setup-environment.md)

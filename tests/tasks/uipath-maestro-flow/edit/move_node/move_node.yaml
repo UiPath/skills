@@ -4,20 +4,14 @@ description: >
   formatSummary, then a single end node. Exercises reordering nodes and merging branches.
 tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node, node:decision]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 11
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
-      path: "../templates/initial_flow"
+      path: ../templates/initial_flow
 
 initial_prompt: |
   Rearrange the flow so the decision happens right after the HTTP call. Both the true and false branches should merge back into formatSummary, which then goes to a single end node. formatSummary should pick the message ('nice day' or 'bring a jacket') based on which branch the decision took.
@@ -42,3 +36,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

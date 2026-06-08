@@ -1,0 +1,36 @@
+experiment_id: skill-tests-smoke-windows
+description: "Windows RPA PR-gate smoke tests — tempdir (Helm/Studio only on Windows)"
+
+defaults:
+  run_limits:
+    # Coded RPA tasks (hooks setup + test case + project.json edits +
+    # `uip rpa` calls) routinely need ~25-30 turns end-to-end.
+    max_turns: 40
+    # A single turn can chain several cold-runner `uip rpa` calls (each
+    # 30-90s); per-turn budget tracks the slowest external call.
+    task_timeout: 900
+    turn_timeout: 900
+
+  sandbox:
+    driver: tempdir
+
+  agent:
+    type: claude-code
+    permission_mode: acceptEdits
+    model: claude-sonnet-4-6
+    allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+    system_prompt: |
+      You are a coding agent. Do not access files in sibling runs/* directories. Everywhere else is permitted.
+    plugins:
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+    ignore_patterns: []
+
+  # Sandbox cleanup between tasks (preserved artifacts stay slim; concurrent
+  # sandboxes don't leak Node module resolution).
+  post_run:
+    - command: "rm -rf node_modules .npm-prefix"
+      timeout: 30
+
+variants:
+  - variant_id: default

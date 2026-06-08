@@ -5,15 +5,10 @@ description: >
   in the next script node. Tests C5, C6, F2.
 tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 21
   max_turns: 50
-
-sandbox:
-  driver: tempdir
-  python: {}
+  turn_timeout: 600
 
 initial_prompt: |
   Create a flow called "PurchaseOrderApproval" with the following structure:
@@ -22,11 +17,11 @@ initial_prompt: |
   - A script node that reads the human's decision after the HITL step
     (id: "processResult", label: "Process Result")
 
-  Wire the completed handle from the HITL node to processResult. In the
-  processResult script node body, show how to read the human's decision using
-  $vars.<hitl-node-id>.output.
+  Wire the output of the human approval step to processResult. In the
+  processResult script body, log the reviewer's decision.
 
   Validate after adding and wiring.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: file_contains
@@ -41,7 +36,7 @@ success_criteria:
     description: "completed handle is wired in the flow file"
     path: "PurchaseOrderApproval/PurchaseOrderApproval/PurchaseOrderApproval.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 2.0
     pass_threshold: 1.0
 
@@ -50,6 +45,14 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate PurchaseOrderApproval/PurchaseOrderApproval/PurchaseOrderApproval.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 

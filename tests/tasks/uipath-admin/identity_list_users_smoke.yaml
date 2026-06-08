@@ -4,6 +4,9 @@ description: >
   Tests correct CLI namespace and --output json convention.
 tags: [uipath-admin, smoke, list]
 
+run_limits:
+  expected_turns: 4
+
 initial_prompt: |
   List all users in my UiPath organization.
 

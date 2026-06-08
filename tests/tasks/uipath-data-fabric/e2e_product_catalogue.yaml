@@ -8,38 +8,43 @@ description: >
   loop for a realistic e-commerce use case.
 tags: [uipath-data-fabric, e2e, product-catalogue]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 35
   max_turns: 50
   turn_timeout: 600
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
-  We're building a product catalogue for an e-commerce store using UiPath
-  Data Fabric. Load the uipath-data-fabric skill before starting.
+  Build an e-commerce product catalogue in UiPath Data Fabric.
+  Load the uipath-data-fabric skill before starting.
 
-  The entity must have these fields: ProductName (STRING), Category (STRING),
-  Price (DECIMAL), InStock (BOOLEAN), SKU (STRING), Poster (FILE). Create the
-  entity with all six fields before importing. Seed it with 15 products
-  (5 per category: Electronics / Clothing / Home) by generating and importing
-  a CSV named `products.csv` (CSV does not include the Poster column). Then:
+  Create entity `ProductCatalogue_<EPOCH>` (Unix epoch seconds suffix —
+  e.g. `ProductCatalogue_1716163200`) with fields:
+    - ProductName  STRING
+    - Category     STRING   (values: Electronics | Clothing | Home)
+    - Price        DECIMAL
+    - InStock      BOOLEAN
+    - SKU          STRING
+    - Poster       FILE
 
-  - Query all Electronics products and confirm you get exactly 5.
-  - Apply a 10% price increase to the 2 most expensive products across all
-    categories (update them individually).
-  - Mark the 3 cheapest products as out of stock (InStock = false).
-  - Upload a small placeholder image file (product_hero.jpg — create it
-    locally with any content) to the Poster field of the single most
-    expensive product.
-  - Confirm the final state: total products, how many are in stock, how
-    many are Electronics.
+  Generate `products.csv` with 15 products, 5 per category (omit the
+  Poster column — file fields are not importable via CSV). Import via
+  `uip df records import --file products.csv`.
 
-  Do NOT delete the entity.
+  Then:
+    - Query Electronics — confirm exactly 5 results.
+    - Apply +10% to the two most expensive products (across all
+      categories), updating each individually.
+    - Mark the three cheapest products `InStock=false`.
+    - Create `product_hero.jpg` locally and upload it to the `Poster`
+      field of the single most expensive product.
+    - Report final state: total products, in-stock count, Electronics
+      count.
+
+  Before finishing, write `report.json` to the working directory:
+    {"entity_id": "<created-entity-id>"}
+
+  The harness deletes the entity using `report.json`. Do not delete it
+  yourself.
 
 success_criteria:
   - type: command_executed
@@ -123,6 +128,12 @@ success_criteria:
   - type: file_exists
     description: "product_hero.jpg placeholder image was created"
     path: "product_hero.jpg"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written so cleanup can delete the entity"
+    path: "report.json"
     weight: 1.0
     pass_threshold: 1.0
 

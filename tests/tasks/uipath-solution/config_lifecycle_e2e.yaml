@@ -1,0 +1,46 @@
+task_id: skill-solution-config-e2e
+description: >
+  E2E (local config mutation): agent uses the skill's `solution deploy config`
+  surface to fetch a config file and edit a property — change is verified in
+  the resulting local JSON file. No tenant mutation.
+tags: [uipath-solution, e2e, mode:build, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 10
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+run_limits:
+  expected_turns: 19
+
+initial_prompt: |
+  Use the `uipath-solution` skill.
+
+  I'm trying to tweak the deploy config for our `e2e-stub` solution
+  before rolling it out. The solution is already published on the
+  tenant — if for some reason it isn't, you can re-publish it from
+  `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`
+  (safe to re-run).
+
+  Pull down the deploy config, pick the first resource in it, and
+  change its `description` to `e2e-test-edit`. Write the resulting
+  edited config to `config_final.json` and jot the name of the
+  resource you picked into `resource_name.txt` so I know which one
+  you touched. No tenant changes needed — this is a local edit.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Local: config_final.json shows resource description changed"
+    command: "python3 $TASK_DIR/check_config_lifecycle.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

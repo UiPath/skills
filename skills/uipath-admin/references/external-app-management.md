@@ -1,58 +1,124 @@
 # External App Management
 
-Workflows for managing OAuth2 external clients and their secrets via `uip admin external-apps`. For full command syntax and flags, see [identity-commands.md](identity-commands.md#external-apps--uip-admin-external-apps).
+Workflows for managing OAuth2 external clients via `uip admin external-apps`. For full command syntax and flags, see [identity-commands.md](identity-commands.md#external-apps--uip-admin-external-apps).
 
-External apps provide Client ID + Secret credentials for API integrations, CI/CD pipelines, and external systems to authenticate with the UiPath platform.
+External apps provide Client ID + Secret credentials for API integrations, CI/CD pipelines, and external systems.
 
 > **External apps are NOT robot credentials.** See [SKILL.md — Robot Accounts vs External Apps](../SKILL.md#robot-accounts-vs-external-apps).
 
-## Common Scopes
+## Scope Types
 
-| Scope | Description |
-|-------|-------------|
-| `OR.Folders` | Access to Orchestrator folders |
-| `OR.Assets` | Access to Orchestrator assets |
-| `OR.Queues` | Access to queues and queue items |
-| `OR.Jobs` | Access to start and monitor jobs |
-| `OR.Machines` | Access to machine management |
-| `OR.Robots` | Access to robot management |
-| `OR.Execution` | Access to execution resources |
-| `OR.Monitoring` | Access to monitoring data |
+`--app-scope` grants permissions to the app itself (client_credentials flow). `--user-scope` delegates user permissions through the app (authorization_code flow). Discover available scopes: `uip admin scopes list --output json`
 
-## Workflow: Create an External App
+## Workflow: Create a Confidential App (Server-Side)
 
 1. Check for duplicates: `uip admin external-apps list --output json`
-2. Create with scopes: `uip admin external-apps create "<APP_NAME>" --scope "OR.Folders,OR.Assets,OR.Jobs" --output json`
+2. Create with app scopes:
+   ```bash
+   uip admin external-apps create "<APP_NAME>" \
+     --app-scope "OR.Folders,OR.Assets,OR.Jobs" \
+     --output json
+   ```
 3. **Save the response immediately.** It contains `id` (Client ID) and `secret` (Client Secret — shown only once).
-4. Warn user: *"Save the Client ID and Secret now. The secret cannot be retrieved again."*
 
-## Workflow: Generate a New Secret
+## Workflow: Create a Public App (SPA/Mobile)
 
-Use when original secret is lost or needs rotation:
+Non-confidential apps have no client secret. Require `--redirect-uri` and only support `--user-scope`. Do NOT use `--app-scope` with `--non-confidential` — the CLI will reject it. If user wants app-only scopes, create a confidential app (default) instead.
 
+```bash
+uip admin external-apps create "<APP_NAME>" \
+  --non-confidential \
+  --user-scope "OR.Folders.Read,OR.Jobs.Read" \
+  --redirect-uri "https://myapp.example.com/callback" \
+  --output json
+```
+
+## Workflow: Create App with Both Scope Types
+
+```bash
+uip admin external-apps create "<APP_NAME>" \
+  --app-scope "OR.Folders,OR.Jobs" \
+  --user-scope "OR.Folders.Read" \
+  --redirect-uri "https://myapp.example.com/callback" \
+  --output json
+```
+
+Apps with `--user-scope` require `--redirect-uri` for OAuth2 authorization code flow.
+
+> **Scope types are tied to grant types.** `client_credentials` grant (non-interactive, e.g., `uip login --client-id`) can only access app scopes. `authorization_code` grant (interactive browser flow) can only access user scopes. An app with both scope types registered works — but each grant type can only use its matching scopes. Requesting user scopes via client_credentials will fail with "not allowed to access User scopes".
+
+## Workflow: Generate/Delete Secrets
+
+Generate (value shown only once):
 ```bash
 uip admin external-apps generate-secret <CLIENT_ID> --description "Rotated secret" --expiration "2027-06-01" --output json
 ```
 
-New secret is generated without invalidating existing secrets. Value shown only once.
-
-## Workflow: Delete a Secret
-
-1. Find secret IDs: `uip admin external-apps get <CLIENT_ID> --output json`
-2. Delete (only secret ID needed — no client ID): `uip admin external-apps delete-secret <SECRET_ID> --output json`
+Delete (only secret ID needed — confirm with user first):
+```bash
+uip admin external-apps delete-secret <SECRET_ID> --output json
+```
 
 ## Workflow: Update an External App
 
 At least one field required. Scopes are **replaced, not merged** — provide complete list.
 
 ```bash
-uip admin external-apps update <CLIENT_ID> --name "<NEW_NAME>" --scope "OR.Folders,OR.Jobs" --output json
+uip admin external-apps update <CLIENT_ID> \
+  --name "<NEW_NAME>" \
+  --app-scope "OR.Folders,OR.Jobs" \
+  --output json
 ```
 
 ## Workflow: Delete an External App
 
-1. Confirm with user — this revokes all secrets and access.
-2. Delete: `uip admin external-apps delete <CLIENT_ID> --output json`
+Confirm with user first — this revokes all secrets and access.
+
+```bash
+uip admin external-apps delete <CLIENT_ID> --output json
+```
+
+## Federated Credentials
+
+Enable workload identity federation with external identity providers (GitHub Actions, Azure AD) — authenticate without client secrets.
+
+### Create a Federated Credential
+
+```bash
+uip admin external-apps federated-credentials create <CLIENT_ID> \
+  --name "GitHub Actions" \
+  --issuer "https://token.actions.githubusercontent.com" \
+  --audience "<AUDIENCE>" \
+  --subject "repo:myorg/myrepo:ref:refs/heads/main" \
+  --output json
+```
+
+### List Federated Credentials
+
+```bash
+uip admin external-apps federated-credentials list <CLIENT_ID> --output json
+```
+
+### Update a Federated Credential
+
+All fields are required on update (full replace):
+
+```bash
+uip admin external-apps federated-credentials update <CLIENT_ID> <CREDENTIAL_ID> \
+  --name "Updated Name" \
+  --issuer "https://token.actions.githubusercontent.com" \
+  --audience "<AUDIENCE>" \
+  --subject "repo:myorg/myrepo:ref:refs/heads/release" \
+  --output json
+```
+
+### Delete a Federated Credential
+
+Confirm with user before deleting.
+
+```bash
+uip admin external-apps federated-credentials delete <CLIENT_ID> <CREDENTIAL_ID> --output json
+```
 
 ## Using Credentials for Authentication
 
@@ -62,17 +128,15 @@ After creating an external app, use Client ID and Secret for non-interactive log
 uip login --client-id "<CLIENT_ID>" --client-secret "<CLIENT_SECRET>" --tenant "<TENANT_NAME>" --output json
 ```
 
-Used by:
-- CI/CD pipelines
-- External API integrations
-- Service-to-service calls
-- Automated scripts on headless machines
+Used by: CI/CD pipelines, external API integrations, service-to-service calls, automated scripts.
 
 ## Error Handling
 
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `already exists` | App name taken | Choose a unique name |
-| `No fields to update` | No update flags provided | Provide `--name`, `--scope`, or `--redirect-uri` |
+| `No fields to update` | No update flags provided | Provide `--name`, `--app-scope`, `--user-scope`, or `--redirect-uri` |
 | `not found` | Invalid client ID | Run `external-apps list` to find correct ID |
-| `scope not found` | Invalid scope name | Use exact scope names (e.g., `OR.Folders`, not `Folders`) |
+| `scope not found` | Invalid scope name | Run `uip admin scopes list` to find valid scopes |
+| Non-confidential + `--app-scope` | Public apps can't use app scopes | Use `--user-scope` only |
+| User scopes without redirect URI | OAuth2 auth code flow needs redirect | Add `--redirect-uri` |

@@ -1,0 +1,46 @@
+task_id: skill-agent-coded-tracing-redaction
+description: >
+  Coded-agent tracing with redaction. Verifies the agent applies
+  `@traced(name=..., input_processor=..., output_processor=...)` to
+  a function that handles sensitive data so both the input and the
+  output are redacted before they reach the trace store.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:trace]
+
+run_limits:
+  expected_turns: 31
+  task_timeout: 1800
+  turn_timeout: 1200
+  max_turns: 40
+
+initial_prompt: |
+  Build a Simple Function UiPath coded agent named
+  `credential-validator` that validates a username + password and
+  returns an auth token. Input: `username` (string), `password`
+  (string). Output: `token` (string), `username` (string). Treat
+  any non-empty password as valid and return
+  `{"token": f"tok-{username}", "username": username}`.
+
+  Add tracing to `main` with redaction so the trace store never
+  captures the raw password or raw token — other fields are fine
+  to record. Make sure each span is identifiable in trace search.
+
+  Take the agent through scaffold → init. Do NOT run, publish,
+  upload, or deploy. Do NOT pause between planning and
+  implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "@traced wired with name + input_processor + output_processor"
+    command: "python3 $TASK_DIR/check_tracing_redaction.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

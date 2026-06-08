@@ -10,7 +10,7 @@
 uip maestro flow registry get core.logic.delay --output json
 ```
 
-Confirm: input port `input`, output port `output`, required inputs `timerType` and `timerPreset`.
+Confirm: input port `input`, output port `output`, required inputs `timerType` and `timerPreset`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
 
 ## JSON Structure
 
@@ -20,7 +20,7 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
 {
   "id": "wait15min",
   "type": "core.logic.delay",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Wait 15 Minutes" },
   "inputs": {
     "timerType": "timeDuration",
@@ -35,7 +35,7 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
 {
   "id": "waitCustom",
   "type": "core.logic.delay",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Wait 1 Day 5 Hours" },
   "inputs": {
     "timerType": "timeDuration",
@@ -51,7 +51,7 @@ Confirm: input port `input`, output port `output`, required inputs `timerType` a
 {
   "id": "waitUntil",
   "type": "core.logic.delay",
-  "typeVersion": "1.0",
+  "typeVersion": "<DEFINITION_VERSION>",
   "display": { "label": "Wait Until April 15" },
   "inputs": {
     "timerType": "timeDate",

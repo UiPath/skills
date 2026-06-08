@@ -1,0 +1,28 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "<REPLACE_WITH_CONNECTION_NAME>",
+    "kind": "connection",
+    "type": "<REPLACE_WITH_CONNECTOR_KEY>",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "<REPLACE_WITH_CONNECTOR_DISPLAY_NAME>",
+      "name": "<REPLACE_WITH_CONNECTION_NAME>",
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "<REPLACE_WITH_CONNECTOR_VERSION>",
+      "connectorKey": "<REPLACE_WITH_CONNECTOR_KEY>",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "<REPLACE_WITH_CONNECTION_UUID>",
+    "files": []
+  }
+}

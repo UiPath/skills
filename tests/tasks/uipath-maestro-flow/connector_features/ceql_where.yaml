@@ -9,20 +9,12 @@ description: >
   for routing, and pass `uip maestro flow validate`.
 tags: [uipath-maestro-flow, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 34
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node: {}
 initial_prompt: |
   Use the `uipath-maestro-flow` skill. Do NOT run `uip flow node configure`
   or any command that requires a live connection — this sandbox has no

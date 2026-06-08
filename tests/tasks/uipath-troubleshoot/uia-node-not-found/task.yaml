@@ -1,0 +1,158 @@
+task_id: skill-troubleshoot-uia-node-not-found
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why did my job 899a0c10-d81b-44ea-9d29-cecc00fd8976 from folder Shared has failed?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md).
+
+      The user's request was:
+        "why did my job 899a0c10-d81b-44ea-9d29-cecc00fd8976 from folder Shared has failed?"
+
+      The originating fault is NodeNotFoundException on the NClick
+      "Click 'Creating a Doodle'" inside the NApplicationCard "Edge
+      Google" in the TO workflow file. Healing Agent did not produce
+      recovery data; the root cause is an AUTHORING DEFECT — the
+      Application Card attaches to https://www.google.com/ but the
+      Click targets an element that only exists on doodles.google,
+      with no navigation step in between.
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook + actual CLI work
+        The agent must match a UI-automation selector-failure playbook
+        (selector-failure-healing-disabled.md OR selector-failure-manual.md
+        OR no-recovery-data.md) in state.json's `matched_playbooks`.
+
+        Independently, the agent's tool-call history must show real
+        Orchestrator interrogation via the uip CLI — at minimum
+        `uip or jobs get <key>` on the faulted job. If the agent
+        reached a conclusion without invoking uip on the faulted job,
+        the playbook dimension is failed regardless of which playbook
+        was named.
+
+      DIMENSION B -- Same root cause as RESOLUTION.md
+        The reference root cause names ALL of:
+          (a) The NApplicationCard "Edge Google" (or its scope) is the
+              defect locus, NOT the NClick selector — the selector
+              itself is fine for its intended page.
+          (b) The card attaches to https://www.google.com/ (Google
+              homepage) instead of doodles.google.
+          (c) The mechanism is that the workflow has zero navigation
+              activities (no NGoToUrl / OpenBrowser / NavigateBrowser)
+              and the card's AttachMode=ByInstance + permissive
+              title='Google' selector latch onto whatever Edge tab is
+              already open. Naming any of these equivalent framings
+              counts.
+          (d) The fix is either inserting a Go To URL / Navigate
+              Browser activity to doodles.google before the click, OR
+              repointing TargetApp.Url to https://doodles.google/ plus
+              tightening the title selector, OR re-indicating the
+              click on the page the card actually attaches to.
+
+        Healing Agent's IssueDetected / HealingEnabled=false /
+        AutopilotForRobots.Enabled=false are DOWNSTREAM signals —
+        naming them as the primary root cause is wrong.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Matched a UI-automation selector-failure playbook AND
+             named all of (a)+(b)+(c)+(d).
+        0.8  Matched playbook and named (a)+(b) plus one of (c)/(d).
+        0.5  Identified wrong page / wrong scope but missed the
+             Application Card framing, OR matched right playbook but
+             conclusion stopped at "selector failed" without scope
+             diagnosis.
+        0.2  Recognized NodeNotFoundException surface but blamed the
+             selector strictness / aaname padding / dynamic parentid
+             as the root cause (those are latent secondary defects,
+             not the originating fault).
+        0.0  Misdiagnosed (e.g., blamed HA infrastructure, asset,
+             permissions, connection) or got blocked.
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      may vary between runs — look at the meaning of what the agent
+      recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook match and root-cause naming>"}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data. You do, however, know where the
+    project source lives on your machine: the workflow files (.xaml files,
+    project.json) are in the current working directory of this session,
+    i.e. `.` (the cwd the agent is running in).
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "If the agent asks for the project source path (workflow folder, XAML location, where the project lives), reply with `.` (the current working directory) — that is where the workflow files are."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report and the project path above."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

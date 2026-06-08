@@ -57,19 +57,33 @@
         },
         {
             "id": 6,
-            "prompt": "Build my case from ./sdd.md",
-            "expected_output": "Skill triggers, emits caseplan.json with top-level shape (id: case-<10>, version: 20.0.0, metadata, top-level bindings/variables, layout: {})",
+            "prompt": "Generate the case from ./sdd.md using v20 schema",
+            "expected_output": "Skill triggers, detects v20 trigger phrase in activating message per Rule 18, writes Schema: v20 header into tasks.md, emits caseplan.json with v20 top-level shape (id: case-<10>, version: 20.0.0, metadata, top-level bindings/variables, layout: {}), runs Phase 4 validate authoritatively (CLI now accepts the v20 shape)",
             "expectations": [
                 "The case-management skill was triggered",
                 "caseplan.json top-level keys are: id, version, name, metadata, bindings, variables, nodes, edges, layout",
                 "caseplan.json.version === '20.0.0'",
                 "caseplan.json.id matches /^case-[A-Za-z0-9]{10}$/",
                 "No 'root' wrapper key in caseplan.json",
-                "metadata.caseExitRules is used once case-exit conditions are written",
-                "metadata.slaRules is used for root-target SLA",
-                "Top-level bindings and variables (not nested under any wrapper)",
-                "Stage and Trigger nodes have NO position, style, measured, width, height, zIndex (Rule 18)",
-                "Top-level layout: {} present and empty"
+                "metadata.caseExitRules is used (NOT root.caseExitConditions) once case-exit conditions are written",
+                "metadata.slaRules is used for root-target SLA (NOT root.data.slaRules)",
+                "Top-level bindings and variables (NOT root.data.uipath.bindings or root.data.uipath.variables)",
+                "Stage and Trigger nodes have NO position, style, measured, width, height, zIndex (Rule 19)",
+                "Top-level layout: {} present and empty",
+                "Phase 4 validate runs authoritatively — same 3-retry cap and hard stop as v19",
+                "Phase 5/6 prompts include the v20 downstream-may-reject warning lines"
+            ]
+        },
+        {
+            "id": 7,
+            "prompt": "Build my case from ./sdd.md",
+            "expected_output": "Skill triggers, no v20 phrase in activating message, defaults to v19 emit per Rule 18",
+            "expectations": [
+                "The case-management skill was triggered",
+                "Schema header in tasks.md reads exactly 'Schema: v19'",
+                "caseplan.json has root wrapper with root.version === 'v19'",
+                "Phase 4 retry-cap hard stop active (full v19 behavior)",
+                "No v20 warning lines printed at Phase 5/6"
             ]
         }
     ]

@@ -10,9 +10,8 @@ description: >
   command invocation with correct flags.
 tags: [uipath-admin, smoke, authz, role]
 
-sandbox:
-  driver: tempdir
-  python: {}
+run_limits:
+  expected_turns: 4
 
 initial_prompt: |
   I have a role with id 1782e940-8926-4d2d-aca7-465ba9eff474.

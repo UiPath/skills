@@ -20,6 +20,8 @@ A request is **single-skill** when:
 
 > **Important:** Single-app UI automation (one project, one live app, one workflow) is **not** a multi-skill pattern — it's a single-skill `uipath-rpa` task. `uipath-rpa` owns UI automation authoring end-to-end, including live-app exploration and probing.
 
+> **Important — inline nodes are not components.** A Flow whose only "components" are **inline nodes** (HITL QuickForm, script, connector activity, inline agent) is a **single-skill** `uipath-maestro-flow` task, **not** a multi-skill plan. The flow author journey scaffolds the solution and authors every inline node itself — it reads the HITL plugin reference inline; it does not hand off to `uipath-human-in-the-loop` as a separate task. Counting inline pieces as separate skills ("solution + flow + human-in-the-loop") is a mis-classification. A flow only becomes **multi-skill** (Pattern 2/3) when it orchestrates **separate buildable projects** — distinct `.uipx` projects such as a standalone RPA process, a coded agent, or a coded app, each of which needs its own specialist.
+
 ## Pattern 1 — RPA build + deploy to Orchestrator
 
 **When it applies:** user wants to build an RPA workflow and deploy it to Orchestrator (most common production flow).
@@ -34,7 +36,7 @@ A request is **single-skill** when:
 
 ## Pattern 2 — Flow with local resources
 
-**When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). The flow runs locally / publishes to Studio Web per the plan's `Solution scope`.
+**When it applies:** Flow and the components it orchestrates are peer sibling projects under one `.uipx` solution at the current working directory. **Components here means separate buildable projects** (a standalone RPA `.xaml`/`.cs` process, a coded agent, a coded app) — each scaffolded as a distinct project routed to its own specialist. Inline flow nodes are **not** components (see the blockquote above); `uipath-maestro-flow` authors them itself in steps 1/4. Each component is scaffolded as part of this plan (or replaced by a placeholder contract when not built here). The flow runs locally / publishes to Studio Web per the plan's `Solution scope`.
 
 ```
 1. uipath-maestro-flow   → create solution, init flow project
@@ -64,7 +66,7 @@ A request is **single-skill** when:
 **When it applies:** the flow exists; user wants it deployed to Orchestrator (not Studio Web).
 
 ```
-1. uipath-maestro-flow → validate, `uip flow pack`
+1. uipath-maestro-flow → validate, `uip maestro flow pack`
 2. uipath-maestro-flow → testing (mandatory)
 3. uipath-solution     → publish and deploy to Orchestrator via `uip solution`
 ```
@@ -83,6 +85,26 @@ A request is **single-skill** when:
 5. uipath-agents   → testing for the agent (mandatory)
 6. uipath-agents   → deploy
 ```
+
+## Pattern 8 — Build an AgentHub MCP server
+
+**When it applies:** the request is to register an AgentHub MCP server that wraps a coded agent or uses Orchestrator-asset-backed auth that does not exist yet. Pure `uipath-mcp-servers` work — `uipath` / `command` / `platform` servers, `remote`/`swagger` with auth assets already in place, or any `is-activity` tool authoring against existing IS connections — is single-skill; go straight to `uipath-mcp-servers`.
+
+Wrapping a not-yet-built coded agent (server type `coded`):
+
+```
+1. uipath-agents      → develop and publish the coded agent (deploys end-to-end as an Orchestrator process)
+2. uipath-mcp-servers → register the coded MCP server against the published process key
+```
+
+Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution that don't exist yet:
+
+```
+1. uipath-platform    → create the Orchestrator asset(s) holding the auth values
+2. uipath-mcp-servers → register the server with asset-substituted headers
+```
+
+Missing IS connections are **not** a `uipath-platform` prereq — IS connections are created interactively in the Integration Service UI via OAuth, not by the CLI.
 
 ## Pattern routing for PDD-driven lane
 

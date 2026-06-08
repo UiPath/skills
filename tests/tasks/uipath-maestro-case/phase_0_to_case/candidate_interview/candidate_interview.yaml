@@ -1,0 +1,149 @@
+task_id: skill-case-phase-0-candidate-interview
+description: >
+  Phase 0 ONLY — interview → sdd.md for a candidate-interview process at a
+  software company. Tests whether Phase 0 forms a logically coherent Solution
+  Design Document: 7 primary stages in order (Application Received → Recruiter
+  Screen → Technical Screen → Onsite Loop → Debrief → Offer → Hired), 3 exception
+  lanes (Rejected, Withdrawn, On Hold), the conditional Onsite-Loop gate
+  (engineering L4+), and Debrief scorecard gating. No sdd.md is supplied and NO
+  build is performed — the test stops at the approved sdd.md and an LLM judge
+  rates its logical coherence.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:phase-0
+  - feature:stages
+  - feature:case-exit
+  - feature:conditions
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 2700
+  max_turns: 150
+  turn_timeout: 1500
+
+initial_prompt: |
+  We are building a case management solution for the candidate-interview
+  process at Helix, a 1,200-person software company hiring ~80 candidates
+  per quarter across engineering, product, and design. A typical case
+  (this one: senior backend engineer, L5) takes 4–6 weeks from application
+  to offer. The process spans seven primary stages — Application Received,
+  Recruiter Screen, Technical Screen, Onsite Loop, Debrief, Offer, and
+  Hired — plus three exception paths (Rejected, Withdrawn, On Hold).
+
+  Personas are Recruiter, Hiring Manager, Technical Interviewer,
+  Compensation Analyst, and Candidate. Conditional rules: the Onsite Loop
+  is required only for engineering roles at L4 and above (Technical Screen
+  absorbs the loop for non-engineering or junior roles); Debrief cannot
+  start until every onsite interview has submitted a scorecard. External
+  systems include Greenhouse (ATS), LinkedIn Recruiter, CoderPad, DocuSign
+  (offer letters), and Workday (HRIS handoff at the Hired stage).
+
+  Help me map out the end-to-end process across ~30 tasks, data fields,
+  and business rules. Name the solution and case project "CandidateInterview".
+  Use v20 schema.
+
+  No sdd.md exists yet. **Run ONLY Phase 0** of the uipath-maestro-case skill:
+  the interview → generate `sdd.md` → approve it. Treat every approval / hard
+  stop as pre-approved (Phase 0 sdd.md: APPROVED; skip the HTML preview). Do
+  NOT ask clarifying questions — make reasonable calls.
+
+  **STOP once `sdd.md` is approved. Do NOT proceed to Phase 1 (tasks.md),
+  Phase 2–3 (caseplan.json / build), or beyond.** Produce the Phase 0 sdd.md
+  only — no solution, no caseplan.
+
+  **Final step — rate the SDD.** After approving `sdd.md`, review it end to end
+  and judge whether the case design is logically coherent for THIS domain: are
+  the stages and their order sensible; the tasks and task-types appropriate; the
+  exception lanes each triggered and terminated/returned correctly; the gating
+  and decision rules sound (including the engineering-L4+ Onsite-Loop gate and
+  the Debrief scorecard gate); the data captured wherever a downstream task needs
+  it; with no dead-end branches or inverted sequences? Output, as your final
+  message:
+  (1) a concise structured recap — every stage in order with its tasks + types,
+  each exception lane with its entry trigger + disposition, the conditional
+  rules, the personas, and the key variables;
+  (2) a coherence rating out of 10; and
+  (3) any logical gaps you found.
+
+  Before starting, load the uipath-maestro-case skill and follow its Phase 0 steps.
+
+success_criteria:
+  - type: file_exists
+    description: "Phase 0 generated sdd.md (not pre-supplied)"
+    path: "sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "sdd.md models the engineering-role / L4+ Onsite-Loop gating rule"
+    command: "grep -Eiq '(onsite|loop).{0,80}(engineering|l[45]|level)' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "sdd.md declares all 3 exception lanes"
+    command: "grep -Eiq 'rejected' sdd.md && grep -Eiq 'withdrawn' sdd.md && grep -Eiq 'on hold' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "sdd.md is mechanically sound: variable mappings + lineage, per-gate rule legality, task types, entry/completion/exit conditions"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "SDD is domain-coherent and will deliver downstream for the candidate-interview process"
+    files:
+      - sdd.md
+    max_file_chars: 150000
+    include_agent_output: false
+    prompt: |
+      You are reviewing a Phase-0 Solution Design Document (the attached sdd.md)
+      for a CANDIDATE-INTERVIEW (hiring) case. A separate mechanical check already
+      verifies variable mappings, lineage, per-gate rule legality, task types, and
+      that entry/completion/exit conditions exist — so focus on DOMAIN COHERENCE
+      and whether this design will actually deliver a working case downstream.
+
+      Judge:
+      - Stage order is sensible for hiring (Application Received → Recruiter
+        Screen → Technical Screen → Onsite Loop → Debrief → Offer → Hired).
+      - Task types fit the work (ATS sync, recruiter/HM screens, coding exercise,
+        interview scorecards, debrief decision, comp/offer, offer letter via
+        DocuSign, Workday HRIS handoff at Hired).
+      - The 3 exception lanes (Rejected, Withdrawn, On Hold) are entered by a
+        sensible trigger and correctly terminal (Rejected / Withdrawn) or
+        resumable (On Hold).
+      - Each exception lane's Interrupting flag fits its purpose: a lane that
+        pauses active work and resumes (On Hold) should be Interrupting; a lane
+        reached only when a stage completes (Rejected on a decline) need not;
+        any return-to-origin lane must be Interrupting.
+      - The conditional rules are genuinely modeled as guarded rules/tasks, not
+        just mentioned: the Onsite Loop gated to engineering L4+ (Technical Screen
+        absorbs it otherwise), and Debrief blocked until all onsite scorecards
+        are in.
+      - No semantic gaps that break downstream: an offer-letter / email recipient
+        bound to a name instead of an address; a decision outcome that routes
+        nowhere; an inverted sequence (offer before debrief, Workday handoff
+        before Hired); or data a task needs that no upstream task produces.
+
+      Score 1.0 if the design is coherent and would build into a working case with
+      no major flaws; 0.5 if mostly coherent with minor gaps; 0.0 if there are
+      major logical/domain errors.
+    weight: 3.0
+    pass_threshold: 1.0

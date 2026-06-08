@@ -5,18 +5,9 @@ description: >
   connection metadata or running cloud-side commands.
 tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, connector, feature:connections]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
+  expected_turns: 19
   max_turns: 80
-  turn_timeout: 900
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 

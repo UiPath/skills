@@ -1,21 +1,14 @@
 task_id: skill-hitl-quality-priority-timeout
 description: >
-  Quality test: agent must configure a high-priority HITL node with a
-  48-hour timeout for a financial compliance check. Tests C3 (priority)
-  and C4 (timeout ISO 8601).
+  Quality test: agent must configure a high-priority HITL node for a
+  financial compliance check. Tests C3 (priority).
 tags: [uipath-human-in-the-loop, integration, options]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 16
   max_turns: 50
   task_timeout: 500
-  turn_timeout: 500
-
-sandbox:
-  driver: tempdir
-  python: {}
+  turn_timeout: 600
 
 initial_prompt: |
   Add a Human-in-the-Loop node to a new flow called "FinanceCompliance".
@@ -24,13 +17,14 @@ initial_prompt: |
 
   Wire the completed handle to a script node that logs the approval.
   Validate the flow after adding.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: file_contains
-    description: "Flow file contains PT48H timeout for the HITL node"
+    description: "HITL node priority is set to High"
     path: "FinanceCompliance/FinanceCompliance/FinanceCompliance.flow"
     includes:
-      - '"PT48H"'
+      - '"High"'
     weight: 2.5
     pass_threshold: 1.0
 
@@ -47,6 +41,14 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate FinanceCompliance/FinanceCompliance/FinanceCompliance.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 

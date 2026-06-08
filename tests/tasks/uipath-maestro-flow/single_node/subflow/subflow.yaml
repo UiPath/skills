@@ -7,17 +7,9 @@ description: >
   the parent flow and subflow.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, node:subflow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 24
   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Create a UiPath Flow project named "SubflowDemo" that takes a string input
@@ -43,7 +35,14 @@ success_criteria:
   - type: run_command
     description: "Flow has correct subflow structure and debug reverses 'hello' to 'olleh'"
     command: "python3 $TASK_DIR/check_subflow_flow.py"
-    timeout: 120
+    # Must exceed flow_check.run_debug's 240s subprocess timeout so a slow/hung
+    # `flow debug` surfaces the real CLI error (exit 1 + traceback) instead of an
+    # opaque sandbox kill (exit -1, empty output). Guarded by test_check_subflow_flow.py.
+    timeout: 300
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

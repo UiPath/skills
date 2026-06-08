@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "rules": [
+    { "match": "or folders list",                                                  "file": "or_folders_list.json" },
+    { "match": "agenthub mcp list",                                                "file": "agenthub_mcp_list.json" },
+    { "match": "agenthub mcp-tools list --mcp test-mcp-skill",                     "file": "agenthub_mcp_tools_list.json" },
+    { "match": "agenthub mcp-tools candidates --category automation",              "file": "candidates_automation.json" },
+    { "match": "agenthub mcp-tools template resource",                             "file": "template_resource.json" },
+    { "match": "agenthub mcp-tools create-resource",                               "file": "create_resource_dryrun.json" }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\":\"Failure\",\"Message\":\"command not mocked in this scenario\"}\n",
+    "exit_code": 1
+  }
+}

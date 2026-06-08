@@ -1,0 +1,48 @@
+task_id: skill-platform-webhook-signed-e2e
+description: >
+  E2E: agent creates a webhook with a secret + event subscription, then uses
+  `webhook ping` to confirm UiPath can deliver to the registered URL. Check
+  verifies the webhook is configured correctly on tenant. UiPath's own HMAC
+  signing implementation is not in scope of this skill test.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+run_limits:
+  expected_turns: 13
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I want to set up a signed webhook so we get notified when jobs finish.
+  Use the unique prefix in `seed.json` for the name.
+
+  Name it `e2e-webhook-signed-` followed by that prefix. Point it at
+  `https://httpbin.org/post` (it's a stable public endpoint that always
+  responds 200). Pick any non-empty signing secret you want and jot it
+  down in `secret.txt` so I have a record. Subscribe it to the
+  `Job.Completed` event and leave it enabled.
+
+  Once it's set up, fire a test ping at it to confirm UiPath can
+  actually reach the URL. Save the full ping response to `ping.json`
+  so I can look at it later.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: webhook configured correctly + ping delivered"
+    command: "python3 $TASK_DIR/check_webhook_signed.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

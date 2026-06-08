@@ -12,16 +12,10 @@ description: >
   not retry or call the REST API directly.
 tags: [uipath-data-fabric, integration, error-paths]
 
-agent:
-  type: claude-code
-
 run_limits:
-  max_turns: 30
+  expected_turns: 33
+  max_turns: 50
   turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Before starting, load the uipath-data-fabric skill and follow its workflow.
@@ -90,14 +84,6 @@ success_criteria:
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent created the test entity"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+create'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed

@@ -15,7 +15,7 @@ uip maestro flow registry search "uipath.core.api-workflow" --output json
 
 ```bash
 uip maestro flow registry list --local --output json
-uip maestro flow registry get "<nodeType>" --local --output json
+uip maestro flow registry get "<node-type>" --local --output json
 ```
 
 ## Registry Validation

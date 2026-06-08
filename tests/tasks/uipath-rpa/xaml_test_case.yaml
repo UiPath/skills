@@ -1,0 +1,119 @@
+task_id: skill-rpa-xaml-test-case
+description: >
+  Skill-guided evaluation: agent uses the uipath-rpa skill to add an XAML
+  test case to a Tests project, with the canonical Given-When-Then sub-
+  Sequence structure, a Verify activity in the Then branch, and a
+  fileInfoCollection entry in project.json (NOT entryPoints). Mirrors
+  coded_test_case.yaml for the XAML mode that the skill historically
+  under-served. See PILOT-5327.
+tags: [uipath-rpa, windows, integration, mode:build, feature:test-case]
+
+run_limits:
+  expected_turns: 36
+
+initial_prompt: |
+  I need a UiPath XAML test project called "LoginTests" with a first XAML
+  test case that asserts a trivial expression.
+
+  The working directory starts empty. Scaffold the project with
+  `uip rpa init --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
+  Studio Desktop is NOT available — skip any CLI commands that require
+  a running Studio Desktop instance.
+
+  Requirements:
+  - Create one XAML test case at `LoginTests/TestLoginSuccess.xaml` that
+    asserts a trivial Boolean expression (e.g. `1 = 1`) via a Verify
+    activity from `UiPath.Testing.Activities`. This task exercises the
+    test case SHAPE, not real browser automation.
+  - Register the test case in `project.json` so it shows up in the test
+    runner.
+  - The generated test must validate cleanly:
+    `uip rpa validate --file-path LoginTests/TestLoginSuccess.xaml --project-dir LoginTests --output json`.
+
+  Write a `report.json` IMMEDIATELY after scaffolding the project (with
+  placeholder values) and update it as you complete each piece. Do not
+  leave it as the last step. Final shape:
+    {
+      "test_case_file": "TestLoginSuccess.xaml",
+      "verify_activity": "<class name of the Verify activity used, e.g. VerifyExpression>",
+      "validate_passed": true
+    }
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Use `--output json` on any uip commands you run.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked uip rpa init for the Tests project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+init.*TestAutomationProjectTemplate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "XAML test case file was created"
+    path: "LoginTests/TestLoginSuccess.xaml"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Test case uses the canonical Given-When-Then sub-sequence structure"
+    path: "LoginTests/TestLoginSuccess.xaml"
+    includes:
+      - '"... Given"'
+      - '"... When"'
+      - '"... Then"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Test case has a Verify activity from UiPath.Testing.Activities"
+    path: "LoginTests/TestLoginSuccess.xaml"
+    includes:
+      - "UiPath.Testing.Activities"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "project.json registers the test case in fileInfoCollection"
+    path: "LoginTests/project.json"
+    includes:
+      - "TestLoginSuccess"
+      - "testCaseType"
+      - "testCaseId"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "project.json does NOT register the test case as an entryPoint"
+    path: "LoginTests/project.json"
+    excludes:
+      - '"filePath": "TestLoginSuccess.xaml"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip rpa validate on the test case"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rpa\s+validate.*TestLoginSuccess\.xaml'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json claims validate passed"
+    path: "report.json"
+    assertions:
+      - expression: "validate_passed"
+        operator: equals
+        expected: true
+    weight: 1.0
+    pass_threshold: 1.0

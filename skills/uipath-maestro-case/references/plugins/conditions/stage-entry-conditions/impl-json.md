@@ -34,7 +34,8 @@ Rules use DNF — outer array is OR, inner array is AND.
 3. Locate the target stage in `schema.nodes` by ID
 4. Initialize `stageNode.data.entryConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
 5. Read `rule-type` and `is-interrupting` from tasks.md; pick the recipe below
-6. Append the condition object to `stageNode.data.entryConditions[]`
+6. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
+7. Append the condition object to `stageNode.data.entryConditions[]`
 
 ## Rule Types
 
@@ -66,21 +67,11 @@ Swap `rule` to `selected-stage-completed` when completion semantics are required
 
 Fires when an upstream stage exits via a `wait-for-user` exit condition and the user picks this stage as the next one. The stage must opt in by declaring this rule — only stages with `user-selected-stage` are presented in the picker.
 
-### wait-for-connector — interrupting on external event
+### wait-for-connector — bind a connector event
 
-```json
-"rules": [[
-  {
-    "id": "Rule_xxxxxx",
-    "rule": "wait-for-connector",
-    "conditionExpression": "=js:event.fraudScore > 0.8"
-  }
-]]
-```
+Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule) (canonical rule JSON + procedure there) — a bare rule (no `uipath`) is rejected by Studio Web. **Stage-scoped: `elementId = <stageId>-<ruleId>`.** `conditionExpression` is optional — an extra `=js:` gate on **case state** (`vars.X`), NOT the event payload (no `event` namespace); set `isInterrupting: true` on the condition for exception/fraud/escalation flows. If `type-id` / `connection-id` / `connector-key` is `<UNRESOLVED>`, emit the **stub `uipath` placeholder** (2 `"placeholder"` context fields: `connectorKey` + `operation` — see [connector-trigger-common.md § Placeholder fallback](../../../connector-trigger-common.md#placeholder-fallback)).
 
-Set `isInterrupting: true` for exception/fraud/escalation flows.
-
-`conditionExpression` uses bare `=js:<expr>` (no outer parens). For combined boolean expressions, wrap each sub-clause in parens before joining: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
+**Rule output binding.** If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../../variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) **as the last step — after rule write, before root bindings**. `elementId` stays `<stageId>-<ruleId>` on every output entry. Skip when the rule has no `uipath.outputs[]` (stub placeholder).
 
 ## Rule-Type Catalog
 
@@ -90,10 +81,10 @@ Set `isInterrupting: true` for exception/fraud/escalation flows.
 | `selected-stage-completed` | `selectedStageId` |
 | `selected-stage-exited` | `selectedStageId` |
 | `user-selected-stage` | — |
-| `wait-for-connector` | — |
+| `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
 
 `conditionExpression` is optional on every rule — add it to any rule to further gate when it fires.
 
 ## Post-Write Verification
 
-Confirm target stage's `data.entryConditions[]` contains the new object with `id`, `isInterrupting` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field.
+Confirm target stage's `data.entryConditions[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Entry Rule {N}` default), `isInterrupting` matching the T-entry, and `rules` carrying the expected `rule` value plus any required side field. For `wait-for-connector`: verify `rule.uipath.serviceType` is `"Intsvc.WaitForEvent"`, `rule.uipath.context[]` is populated (placeholders substituted), inputs/outputs `elementId` is `<stageId>-<ruleId>`, and the ConnectionId + FolderKey root bindings exist. Full `validate` flags a missing `rule.uipath`/`context` (`connector activity missing`) but not its internals (a wrong `serviceType` passes) — confirm the connector resolves in Studio Web.

@@ -12,6 +12,8 @@ Studio Desktop is only required for two interactive UI tools:
 
 For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
 
+> **Coded UI automation caveat.** One non-interactive task also needs Studio Desktop: regenerating `ObjectRepository.cs` — the `Descriptors.*` class consumed by coded `uiAutomation.*` workflows. `uip rpa build` alone does NOT produce it; Studio Desktop reconciles the coded workflow against the Object Repository to generate it. A headless flow can author and validate coded UIA, but populating `Descriptors.*` requires a Studio Desktop pass. See [ui-automation-guide.md](ui-automation-guide.md) § Finding Descriptors.
+
 > **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it's still working. Bump the per-call timeout to ≥ 180s for the first invocation.
 
 ## Step 0.1: Establish Project Root
@@ -57,13 +59,15 @@ uip rpa init \
   --name "MyAutomation" \
   --location "/path/to/parent/directory" \
   --template-id "BlankTemplate" \
-  --expression-language "VisualBasic" \
-  --target-framework "Windows" \
+  --expression-language <VisualBasic|CSharp> \
+  --target-framework <Windows|Portable> \
   --description "Automates invoice processing" \
   --output json
 ```
 
-**Expression language:** Prefer `VisualBasic` for Windows target framework projects. Use `CSharp` only when the user explicitly asks for C# expressions inside XAML activities.
+**Decide `--target-framework` and `--expression-language` before running — never omit them.** Both are immutable after creation; omitting `--target-framework` silently produces a **Windows** project. The placeholder shows the two new-project options (`Windows`, `Portable`). Windows - Legacy is a last resort (explicit ask or hard .NET 4.6.1 need) and is created/authored in **Legacy mode**, not via this command. Choose from runtime / host-OS signals per SKILL.md Common Rule 2a.
+
+**Expression language:** Default `VisualBasic`. Use `CSharp` only when the user explicitly asks for C# expressions inside XAML activities.
 
 **`--studio-dir`:** Optional. Headless Studio does not need it. Pass it only when you have explicitly forced Studio Desktop (`UIPATH_RPA_TOOL_USE_STUDIO=1`, or invoking `diff`/`focus-activity`) and Studio's auto-detection from the registry fails.
 
@@ -78,8 +82,8 @@ Run the **same** `init` command as for an XAML project (above) — there is no s
 | `--name` | Any string | (required) | Project folder name |
 | `--location` | Directory path | (current dir) | Parent directory where project folder is created |
 | `--template-id` | `BlankTemplate`, `LibraryProcessTemplate`, `TestAutomationProjectTemplate` | `BlankTemplate` | Project template |
-| `--expression-language` | `VisualBasic`, `CSharp` | (template default) | Expression syntax for XAML workflows |
-| `--target-framework` | `Legacy`, `Windows`, `Portable` | (template default) | .NET target framework |
+| `--expression-language` | `VisualBasic`, `CSharp` | none — set explicitly | Expression syntax for XAML workflows. Immutable after creation |
+| `--target-framework` | `Windows`, `Portable` (Cross-platform), `Legacy` (Windows - Legacy) | none — set explicitly (omitting → Windows) | .NET target framework. Immutable after creation. `Legacy` is a last resort for new projects (explicit ask or hard .NET 4.6.1 need only). Decide per Rule 2a |
 | `--description` | Any string | (none) | Project description in project.json |
 
 **Note:** `uip rpa init` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
@@ -151,8 +155,12 @@ uip rpa init \
   --location "/path/to/parent/directory" \
   --template-package-id "<PACKAGE_ID>" \
   --template-package-version "<VERSION>" \
+  --target-framework <Windows|Portable> \
+  --expression-language <VisualBasic|CSharp> \
   --output json
 ```
+
+Pass `--target-framework` and `--expression-language` here too (Rule 2a) — a template package does not exempt you from the explicit-framework decision.
 
 | Parameter | Type | Default | Notes |
 |-----------|------|---------|-------|
@@ -164,6 +172,8 @@ uip rpa init \
 1. Open the project in Studio: `uip rpa project open --project-dir "/path/to/MyAutomation"`
 2. **Read the scaffolded files** — the command generates starter files. Read them before making changes so you build on valid defaults
 3. Proceed with the skill workflow using the new project root
+
+> **Batch the post-`init` prerequisites.** Step 2 here, the analyzer-rules list (SKILL.md Rule 3), `packages install` for known-needed packages, and the first `activities find` all depend only on the project existing — emit them as parallel tool calls in one message, not one per turn. They share the warmed Studio host. See SKILL.md § Call Batching.
 
 ## Edge case: requiring Studio Desktop
 

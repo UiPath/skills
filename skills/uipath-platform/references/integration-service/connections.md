@@ -24,40 +24,99 @@ Connections are authenticated sessions for a specific connector. They store cred
 
 ---
 
+## Command Syntax
+
+`<connector-key>` is a **positional argument**, not a flag:
+
+```bash
+# Correct — always pass --all-folders for discovery (see Folder Scoping below)
+uip is connections list "uipath-salesforce-slack" --all-folders --output json
+
+# WRONG — there is no --connector-key flag
+uip is connections list --connector-key "uipath-salesforce-slack"
+```
+
+**Always pass a connector key.** Running `uip is connections list` with no arg returns a noisy, paginated list across every connector in the tenant and is not a useful survey step.
+
+**Wrong key?** If the call errors with "connector not found" or returns empty unexpectedly, look up the correct key:
+
+```bash
+uip is connectors list --filter "<vendor>" --output json
+```
+
+Connector keys are prefixed by source — `uipath-<vendor>-<service>` for catalog connectors, `custom-entity-*` for tenant-built. See [connectors.md — Connector Disambiguation](connectors.md#connector-disambiguation) for the full classification ladder.
+
+---
+
 ## Selecting a Connection
 
-**Always present connections to the user** — do not auto-select silently, even if there is only one default enabled connection. Recommend the default but let the user confirm.
+### Connector-Specific Overrides
+
+**Before applying the auto-select rule below, check this table.** If the connector key (and node-type pattern, where listed) matches an entry, read the linked file and follow its rules. Override supersedes the auto-select rule.
+
+| Connector key | Applies when | Override action | Detail |
+|---|---|---|---|
+| `uipath-microsoft-teams` | `send-bot-*` activity node types | Ask user; warn that bot scope is required | [uipath-microsoft-teams.md → Connection Selection Override](connector-overrides/uipath-microsoft-teams.md#connection-selection-override) |
+| `uipath-salesforce-slack` | Webhook trigger node types (allow-list — excludes `button-clicked`) | Ask user; filter `--byoa` from the start | [uipath-salesforce-slack.md → Connection Selection Override](connector-overrides/uipath-salesforce-slack.md#connection-selection-override) |
+
+To add a new override, see [connector-overrides/README.md](connector-overrides/README.md).
+
+---
+
+**Auto-select rule (no prompt) — when all three hold:**
+
+- `IsDefault: Yes`
+- `State: Enabled`
+- `Folder` is the user's personal workspace
+
+Bind silently and skip the presentation steps below.
+
+Detect the user's personal workspace once per session — list all folders and filter for the personal type:
+
+```bash
+uip or folders list --all --output json
+# → Data: [{ Name, Key, Path, Description, Type, ParentKey }]
+# Filter entries where Type == "Personal"
+```
+
+Match `connection.FolderKey` against the personal workspace's `Key`. If the call returns multiple personal workspaces (admin tenant) or no match, fall through to the presentation flow.
+
+**Otherwise — present connections to the user.** Recommend the default but let the user confirm.
 
 ### Folder Scoping (`--all-folders`)
 
-`uip is connections list` returns connections from the **active folder only** by default. A "no connections found" result there does NOT mean tenant-wide absence — the connection may exist in another folder you can see.
+**Always pass `--all-folders` when discovering connections.** Without it, the CLI returns the active folder only — producing false "no connections found" results when the connection exists in another folder you can see. After the user picks a connection, capture its `FolderKey` from the response for downstream binding; do not pass `--folder-key` during discovery.
 
-- Default: active folder only.
-- `--all-folders`: span every folder you have access to. Works with or without a `<connector-key>` positional.
+- `--all-folders`: spans every folder you have access to. Works with or without a `<connector-key>` positional.
 - **Mutually exclusive with `--folder` / `--folder-key`** — passing both fails with `Result: Failure`, `Message: "Conflicting folder flags..."`, exit code 1.
 
 ### For Native Connectors
 
-1. List connections for the connector in the active folder:
+1. List connections for the connector across all folders:
 
    ```bash
-   uip is connections list "<connector-key>" --output json
+   uip is connections list "<connector-key>" --all-folders --output json
    ```
 
 2. Present all enabled connections to the user using **Name, Owner, and Folder** (never UUIDs), **recommending** the default (`IsDefault: Yes`, `State: Enabled`):
    - "I found these connections: 1) **Salesforce Prod** by user@example.com (default, enabled, Shared folder) ← recommended 2) **Salesforce Dev** by admin@example.com (enabled, Shared folder). Which should I use?"
 3. If only one enabled connection exists, still confirm: "I found connection **<Name>** by <Owner> in **<Folder>** folder (default, enabled). Should I use this one?"
-4. If not enabled → prompt user to re-authenticate via `is connections edit <id>`
-5. **No connections in step 1 — widen the search before concluding none exist:**
-   1. Retry across all folders:
-      ```bash
-      uip is connections list "<connector-key>" --all-folders --output json
-      ```
-   2. If still empty, retry with `--refresh` to bypass the CLI cache:
+4. **Verify health — ping after every selection** (auto-select and user-confirmed alike):
+
+   ```bash
+   uip is connections ping "<connection-id>" --output json
+   ```
+
+   If ping fails or reports not Enabled, follow step 5.
+
+5. If not enabled (from list `State` or ping result) → prompt user to re-authenticate via `is connections edit <id>`, then re-ping.
+
+6. **No connections in step 1 — bypass the cache before concluding none exist:**
+   1. Retry with `--refresh`:
       ```bash
       uip is connections list "<connector-key>" --all-folders --refresh --output json
       ```
-   3. If still empty, prompt user to create one via `uip is connections create "<connector-key>"`.
+   2. If still empty, prompt user to create one via `uip is connections create "<connector-key>"`.
 
 ### For BYOA Connections (Webhook Triggers)
 
@@ -68,7 +127,7 @@ BYOA (Bring Your Own Account) connections use an OAuth app the customer register
 1. Get any enabled connection — needed only as `--connection-id` for the next call:
 
    ```bash
-   uip is connections list "<connector-key>" --output json
+   uip is connections list "<connector-key>" --all-folders --output json
    ```
 
 2. Query trigger objects and read the `byoaConnection` flag for the matching event:
@@ -78,19 +137,13 @@ BYOA (Bring Your Own Account) connections use an OAuth app the customer register
      --connection-id "<id>" --output json
    ```
 
-3. **If `byoaConnection: true`** — the connection from step 1 is not usable. Filter to BYOA only:
-
-   ```bash
-   uip is connections list "<connector-key>" --byoa --output json
-   ```
-
-   If empty, widen across folders:
+3. **If `byoaConnection: true`** — the connection from step 1 is not usable. Filter to BYOA across all folders:
 
    ```bash
    uip is connections list "<connector-key>" --byoa --all-folders --output json
    ```
 
-   If still empty, retry with `--refresh` to bypass the CLI cache:
+   If empty, retry with `--refresh` to bypass the CLI cache:
 
    ```bash
    uip is connections list "<connector-key>" --byoa --all-folders --refresh --output json
@@ -112,6 +165,34 @@ For webhook URL retrieval after the trigger is configured, see [triggers.md — 
 4. If no match → present all existing HTTP connections and ask the user to choose, or offer to create a new one
 
 > **Note:** Name-based matching is best-effort. If connection names don't follow vendor naming conventions, present all HTTP connections to the user.
+
+---
+
+## Folder Scoping
+
+`uip is connections list <connector-key>` defaults to filtering by the **current** folder context — results from other folders (including the user's personal workspace) are silently excluded. Empty response on the filtered side looks like:
+
+```json
+{"Message":"No connections found for connector '<connector-key>'."}
+```
+
+even though a connection exists in another folder.
+
+**Cross-folder pattern** — pass `--folder` explicitly:
+
+```bash
+uip is connections list "<connector-key>" --folder "<folder-name-or-key>" --output json
+```
+
+**Enumerate every folder** — iterate folders and list per folder:
+
+```bash
+uip or folders list --output json
+# → for each folder, call:
+uip is connections list "<connector-key>" --folder "<folder-name-or-key>" --output json
+```
+
+> If the user reports "connection exists in my personal workspace but CLI can't see it", suspect default folder filtering — re-list with `--folder` set to that workspace before creating a new connection.
 
 ---
 

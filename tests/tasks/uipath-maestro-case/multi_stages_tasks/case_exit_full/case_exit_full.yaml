@@ -1,0 +1,235 @@
+task_id: skill-case-multi-case-exit-full
+description: >
+  Build a Case Management definition that exercises three case-exit
+  rule-types in a single linear flow. Three regular stages with mixed
+  isRequired (Intake true, Audit false, Archive true). Root carries three
+  case-exit conditions covering three rule-types and both marks-case-complete
+  shapes: required-stages-completed (true) + selected-stage-exited on Audit
+  (false) + selected-stage-completed on Archive (false).
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:case-exit, feature:conditions, feature:stages]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "CaseExitFull" containing
+  a project also named "CaseExitFull" from the sdd.md below. Use v20 schema.
+  Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — CaseExitFull
+
+  **Case Definition Blueprint** · Generic — Case-Exit Rule Matrix Coverage
+
+  A three-stage linear flow exercising three case-exit rule-types (required-stages-completed, selected-stage-exited, selected-stage-completed) across both marks-case-complete shapes.
+
+  Prepared date: 2026-05-19
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | CaseExitFull |
+  | Case Description | Three-stage linear flow with three case-exit conditions covering three rule-types and both marks-case-complete shapes. |
+  | Case Identifier | Prefix: CEF, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed ("All required stages done") | - | Default completion path; fires when every isRequired:true stage has completed. | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | selected-stage-exited ("Audit aborted") | selected-stage: Audit | Non-completing exit when Audit exits without completing. | No |
+  | selected-stage-completed ("Archive observed") | selected-stage: Archive | Non-completing observability hook fired when Archive completes (does NOT close the case). | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description |
+  |---|---|---|---|---|
+  | - | - | - | - | No case-level variables declared. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Intake (`intake`)
+  **Type:** Stage
+  **Description:** Initial stage; must complete for case completion.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `intake.placeholder` | Intake Placeholder | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 1.1: Intake Placeholder (`intake.placeholder`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer so the stage carries a required task for required-tasks-completed to satisfy.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+  | Required | Yes (default) |
+
+  ### Stage 2: Audit (`audit`)
+  **Type:** Stage
+  **Description:** Optional follow-up; entered after Intake completes.
+  **Required for Case Completion:** No
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | selected-tasks-completed ("Audit handed off") | selected-tasks: Audit Handoff | exit-only | Archive | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `audit.placeholder` | Audit Placeholder | wait-for-timer | Yes | No | system | — |
+  | 2 | `audit.handoff` | Audit Handoff | wait-for-timer | No | No | system | — |
+
+  ##### Task 2.1: Audit Placeholder (`audit.placeholder`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer so the stage carries a required task for required-tasks-completed to satisfy.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+  | Required | Yes (default) |
+
+  ##### Task 2.2: Audit Handoff (`audit.handoff`)
+
+  **Type:** wait-for-timer
+  **Description:** Optional second placeholder timer; on completion it fires the stage's selected-tasks-completed exit hand-off to Archive (non-completing).
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+  | Required | No |
+
+  ### Stage 3: Archive (`archive`)
+  **Type:** Stage
+  **Description:** Terminal stage of the linear flow.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `archive.placeholder` | Archive Placeholder | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 3.1: Archive Placeholder (`archive.placeholder`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer so the stage carries a required task for required-tasks-completed to satisfy.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+  | Required | Yes (default) |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate CaseExitFull/CaseExitFull/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "3 stages with mixed isRequired, each carrying ≥1 task (placeholder); Audit has selected-stage-completed entry, ≥2 tasks, and a selected-tasks-completed stage-exit routing to Archive (marksStageComplete false); case has 3 case-exits (metadata.caseExitRules) covering three rule-types (required-stages-completed true; selected-stage-exited Audit / selected-stage-completed Archive false)"
+    command: "python3 $TASK_DIR/check_case_exit_full.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

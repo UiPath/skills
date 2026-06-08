@@ -1,0 +1,123 @@
+task_id: skill-agents-coded-is-jira-create-issue
+description: >
+  End-to-end exercise of the coded Integration Service capability with
+  progressive disclosure. Agent must drive the full discovery flow
+  (connectors filter → connections list → resources describe with parent
+  `-f` fields → ActivityMetadata literal → invoke_activity) against a
+  live Jira connection, then run the coded agent locally and create a
+  real Jira issue. The check script verifies tenant state (issue exists
+  with expected summary) and project shape (bindings + literal +
+  two-field resourceOverwrites: connectionId + folderKey, no elementInstanceId).
+
+  Tenant prerequisite: a `uipath-atlassian-jira` connection in folder
+  `Shared/uipath-agents` named `jira-coded-eval`. The Jira project
+  reachable by that connection must accept new issues of type `Task`,
+  and `JIRA_EPIC_KEY` must name an epic in that project to file under
+  (the check asserts the created issue's parent is that epic).
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, feature:integration-service, uipath-atlassian-jira, connector]
+skip: true
+# Tenant-gated e2e. Requires a `uipath-atlassian-jira` connection named
+# `jira-coded-eval` in folder `Shared/uipath-agents` on the run tenant, plus an
+# epic to file under (JIRA_EPIC_KEY, default PRODEV-685). The nightly runs e2e
+# (the PR gate is --tags smoke only), so this would fail there until the tenant
+# is provisioned. Flip to `skip: false` once set up per coded/is-e2e-setup.md.
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 80
+  turn_timeout: 1200
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/is_jira_create_issue/seed_jira.py"
+    timeout: 30
+
+initial_prompt: |
+  I need a UiPath coded Python agent — call it `jira-filer` — that files
+  a Jira issue through Integration Service when it runs. Build it, run it
+  locally, and confirm the issue actually got created in Jira.
+
+  Use the `uipath-agents` skill to figure out how.
+
+  Use the Jira connection `jira-coded-eval` in the `Shared/uipath-agents`
+  folder. Everything specific about the issue — the summary text, which
+  project and issue type, and the epic it should sit under — is in
+  `seed.json`; read it from there, use the summary exactly as given, and
+  make sure the new issue ends up under that epic.
+
+  The agent should take a `summary` and a `description` and return the
+  new issue key (like "ENG-123") and an `ok` flag. Run it locally with
+  `--output-file out.json` so the result is captured.
+
+  Don't publish or deploy, don't stop to ask — just get it working in one
+  pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent loaded the uipath-agents skill"
+    tool_name: "Skill"
+    command_pattern: "uipath-agents"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Loaded platform IS discovery reference into context (agent-workflow.md — mandatory preload, not just the coded capability doc)"
+    tool_name: "Read"
+    command_pattern: 'uipath-platform/references/integration-service/agent-workflow\.md'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Loaded platform reference-resolution.md into context — the capability doc mandates reading it before authoring a Jira create (parent/reference fields are the #1 curated-activity rejection)"
+    tool_name: "Read"
+    command_pattern: 'uipath-platform/references/integration-service/reference-resolution\.md'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran a folder-aware `uip is connections list` for the Jira connector (--all-folders, what the IS docs teach, or --folder-key)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+list[\s\S]{0,200}?uipath-atlassian-jira[\s\S]{0,200}?(?:--all-folders|--folder-key)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Progressive disclosure: described curated_create_issue with parent `-f fields.project.key=` (Jira GenerateSchema) BEFORE authoring the literal — surfaces project/issuetype-specific custom fields"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+describe[\s\S]+?(?:-f|--field)\s+fields\.project\.key='
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the coded agent locally"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: commands_efficiency
+    description: "Effort / drift budget: a bloated command count signals the agent flailed (wrong flags, retries, operation guessing). Score = expected / max(actual, expected)."
+    expected_commands: 30
+    weight: 1.0
+    pass_threshold: 0.3
+
+  - type: run_command
+    description: "Project shape: ActivityMetadata literal, lazy SDK init, bindings connection entry, 2-field resourceOverwrites (connectionId + folderKey, no elementInstanceId)"
+    command: "python3 $TASK_DIR/check_is_jira_create_issue.py shape"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Jira tenant state: a new issue with the seed summary exists in the expected project"
+    command: "python3 $TASK_DIR/check_is_jira_create_issue.py tenant"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

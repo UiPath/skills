@@ -1,0 +1,108 @@
+task_id: skill-agent-coded-in-flow-published
+description: >
+  End-to-end test for Flow Integration Pattern 2 — a Published coded
+  agent referenced from a Maestro Flow project. Verifies the agent is deployed to the personal workspace,
+  the registry is refreshed to surface the new published resource,
+  and a separate flow project references it as a
+  `uipath.core.agent.<resourceKey>` node with `section: "Published"`.
+  **Cross-cutting:** exercises both `uipath-agents` (coded scaffold +
+  deploy) and `uipath-maestro-flow` (flow validate + agent-node
+  wiring); skill ownership tagged to `uipath-agents` since this is a
+  coded-agent capability gap. **Cloud auth required** — the test runner
+  must have UiPath auth pre-configured and the deploy will create a
+  real published resource in the tenant's personal workspace.
+tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, shape:single-node, resource, feature:framework-langgraph]
+max_iterations: 1
+
+initial_prompt: |
+  Build a LangGraph UiPath coded agent named `tone-classifier` that
+  reads a short message and uses an LLM to label it as `friendly`,
+  `neutral`, or `frustrated`. Pin the LLM to a low-cost gateway
+  model (e.g. `gpt-4o-mini-2024-07-18`) with `temperature=0` for
+  deterministic runs. Scaffold the agent in a `tone-classifier/`
+  folder at the working-directory root, then publish it into the
+  personal workspace so it's available as a regular UiPath resource.
+
+  Then, in a separate Maestro Flow project called `triage-flow`,
+  use that published `tone-classifier` agent as one of the steps.
+  The flow takes a `message` from the caller, hands it to the
+  classifier, and surfaces the resulting `label`.
+
+  The flow project must be its OWN project, NOT a sibling of the
+  coded agent under the same solution — the agent is consumed as
+  a published resource, not an in-solution component.
+
+  The test harness has UiPath auth pre-configured. Take everything
+  end-to-end: build the agent, publish it, set up the flow, wire
+  the agent in as a node, and make sure the flow validates. Do
+  NOT pause between planning and implementation. Complete in a
+  single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the coded agent"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent generated entry-points.json from the code"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deployed to the personal workspace (deploy or publish, --my-workspace)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--my-workspace'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the flow registry so the new published resource surfaces"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(pull|search)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created and validated the flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Coded agent project has the LangGraph marker"
+    path: "tone-classifier/langgraph.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow file references the agent as a `uipath.core.agent.<key>` node with section=\"Published\" (Pattern 2, NOT in-solution)"
+    command: "python3 $TASK_DIR/check_coded_in_flow_published.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+run_limits:
+  max_turns: 80
+  expected_turns: 63
+  turn_timeout: 1500
+  task_timeout: 1800

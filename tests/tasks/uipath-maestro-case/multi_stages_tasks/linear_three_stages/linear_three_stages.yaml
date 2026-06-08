@@ -1,0 +1,259 @@
+task_id: skill-case-multi-linear-three-stages
+description: >
+  Build a Case Management definition with three regular stages chained
+  linearly behind a manual trigger. Adds an explicit case-entered
+  stage-entry condition on Intake, TWO parallel built-in wait-for-timer
+  tasks in Review that share the SAME current-stage-entered task-entry
+  condition (so both activate concurrently when Review is entered) and
+  occupy distinct lanes in data.tasks, one of which carries skipCondition
+  + shouldRunOnlyOnce flags, and three root-level case variables
+  exercising all three categories: a Variable (skipReview) referenced
+  by skipCondition, an In argument (caseRef) bridged through the trigger
+  output mapping, and an Out argument (finalDecision) returned to the
+  caller. Exercises: stage creation, edge inference (TriggerEdge +
+  Stage→Stage Edge), case-entered rule type, wait-for-timer task type,
+  task-entry conditions, parallel-task pattern (multiple tasks in one
+  stage with the same entry condition + distinct laneIndex), BaseTask
+  flags (skipCondition + shouldRunOnlyOnce), and the full Variable /
+  In / Out argument trio. Validates and asserts on the structural shape
+  of caseplan.json.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:stages, feature:edges, feature:conditions, feature:task-entry, feature:wait-for-timer, feature:parallel-tasks, feature:variables, feature:arguments]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "LinearThreeStages" containing
+  a project also named "LinearThreeStages" from the sdd.md below. Use v20
+  schema. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — LinearThreeStages
+
+  **Case Definition Blueprint** · Generic — Three-Stage Linear Pipeline
+
+  Three regular stages chained linearly behind a manual trigger; exercises stage-entry conditions, two parallel wait-for-timer tasks on a shared task-entry condition, BaseTask flags (skipCondition, shouldRunOnlyOnce, isRequired), and the full Variable / In / Out argument trio at root scope.
+
+  Prepared date: 2026-05-19
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | LinearThreeStages |
+  | Case Description | Three regular stages chained linearly behind a manual trigger; exercises stage-entry conditions, parallel wait-for-timer tasks, and the full Variable / In / Out argument trio. |
+  | Case Identifier | Prefix: LTS, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | request.caseRef -> caseRef |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | No case-exit hand-off declared. | - | - | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  |---|---|---|---|---|---|---|
+  | skipReview | Variable | boolean | false | Internal case-level flag controlling whether the Review timer runs. | - | review.holdFor1Hour (skipCondition) |
+  | caseRef | In | string | - | External reference passed into the case when the manual trigger fires. Listed in the trigger Initial Variable Mapping. | trigger:Manual | - |
+  | finalDecision | Out | string | - | Final decision string returned to the caller when the case completes. | - | caller |
+  | dueDate | Variable | date | - | Internal case-level deadline. | - | - |
+  | caseMetadata | Variable | jsonSchema | - | Internal bag of structured case metadata fields. Body schema: {"type": "object"}. | - | - |
+  | attachments | Variable | jsonSchema | - | Internal list of uploaded attachment references. Body schema: {"type": "array", "items": {}}. | - | - |
+  | caseSchema | Variable | jsonSchema | - | Internal typed schema describing the case payload. Body schema: {"type": "object", "properties": {"caseId": {"type": "string"}}}. | - | - |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Intake (`intake`)
+  **Type:** Stage
+  **Description:** Receives the case after the manual trigger.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+
+  Display-name for the entry condition: "On case entered" — fires the moment the case is entered.
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `intake.placeholderTimer` | Intake Placeholder | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 1.1: Intake Placeholder (`intake.placeholderTimer`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer so Intake carries a task.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 5s |
+  | Repeat | No |
+  | Required | Yes (default) |
+
+  ### Stage 2: Review (`review`)
+  **Type:** Stage
+  **Description:** Follows Intake; runs two parallel wait-for-timer tasks sharing the same current-stage-entered task-entry condition. Each task occupies its own laneIndex in data.tasks per the FE layout convention.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `review.holdFor1Hour` | Hold For 1 Hour | wait-for-timer | Yes | Yes | system | — |
+  | 2 | `review.notifyReviewer` | Notify Reviewer | wait-for-timer | No | No | system | — |
+
+  ##### Task 2.1: Hold For 1 Hour (`review.holdFor1Hour`)
+
+  **Type:** wait-for-timer
+  **Description:** In-stage timer that briefly holds the case before completing. Skipped when `skipReview` is truthy.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 10s |
+  | Repeat | No |
+  | Should Run Only Once | true |
+  | Skip Condition | =vars.skipReview |
+  | Required | Yes (default) |
+
+  ##### Task 2.2: Notify Reviewer (`review.notifyReviewer`)
+
+  **Type:** wait-for-timer
+  **Description:** In-stage timer that runs in parallel with Hold For 1 Hour; both share the same current-stage-entered task-entry condition. The only test exercising task-level `isRequired: false`.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 5s |
+  | Should Run Only Once | false (default) |
+  | Required | No |
+
+  ### Stage 3: Decision (`decision`)
+  **Type:** Stage
+  **Description:** Follows Review and ends the linear flow.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-completed | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `decision.placeholderTimer` | Decision Placeholder | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 3.1: Decision Placeholder (`decision.placeholderTimer`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer so Decision carries a task.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 5s |
+  | Repeat | No |
+  | Required | Yes (default) |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "3 stages + 3 edges (single-outbound Stage→Stage edges with no branching → labels blank per skill) + case-entered on Intake; TWO wait-for-timer tasks on Review — Hold For 1 Hour (isRequired:true default + skipCondition + shouldRunOnlyOnce) and Notify Reviewer (isRequired:false) — both carrying current-stage-entered task-entry in DISTINCT laneIndex lanes; root carries 7 variables exercising a spread of Variable types/shapes (boolean skipReview, string caseRef In + finalDecision Out, date dueDate, jsonSchema caseMetadata with body.type=object, jsonSchema attachments with body.type=array, jsonSchema caseSchema with body.type=object) including the trigger output mapping for caseRef In argument"
+    command: "python3 $TASK_DIR/check_linear_three_stages.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

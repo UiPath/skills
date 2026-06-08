@@ -8,16 +8,10 @@ description: >
   C5 (completed handle), F1 (validate after add). Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 19
   max_turns: 40
   turn_timeout: 1200
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Create a new UiPath Flow project called "InvoiceApproval" that processes
@@ -28,12 +22,13 @@ initial_prompt: |
   The manager should be able to Approve or Reject.
 
   After adding the HITL node and wiring it, validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
     description: "Agent created a solution"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+new'
+    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -58,7 +53,7 @@ success_criteria:
     description: "Completed handle is wired in the flow file"
     path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 1.5
     pass_threshold: 1.0
 

@@ -14,37 +14,26 @@ tags: [uipath-troubleshoot, e2e, faulted-jobs, faithful-replay, integration-serv
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
 # specific to this scenario. `type` is required by the TaskDefinition schema
 # even though it could be inherited.
+
 agent:
-  type: claude-code
-  # Need Skill/Agent/AskUserQuestion/TodoWrite beyond the default's set;
-  # the troubleshooting skill orchestrates sub-agents.
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 47
   task_timeout: 2400
   max_turns: 60
   turn_timeout: 1800
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
-    # 1. Shared dispatcher (mocks/uip + mocks/uip.cmd).
     - type: template_dir
       path: ../_shared/mock_template
-    # 2. Full project source — frozen snapshot of the failing process.
     - type: template_dir
       path: process
-    # 3. Per-scenario fixtures (manifest + .local/investigations/raw responses).
     - type: template_dir
       path: fixtures
-  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock
-  # dispatcher instead of the real CLI installed on the host.
-  mock_path_dirs: ["mocks"]
-
-# Ground truth from RESOLUTION.md.
-# Hidden from the agent. Used by the llm_judge criteria below to score
-# whether the agent reached the same outcome as the real session.
+  mock_path_dirs:
+    - mocks
 reference:
   file: RESOLUTION.md
 

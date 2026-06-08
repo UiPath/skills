@@ -217,6 +217,13 @@ Adds top-level `description` field (NOT inside `metadata`):
 
 > **`intsvcActivityConfig` always emitted** — set `metadata.intsvcActivityConfig: "v2"` on every caseplan.
 
+## caseIdentifier — constant vs external
+
+Set `caseIdentifierType` from the T01 `identifier-type` (default `constant`); same field in v19 (`root.*`) and v20 (`metadata.*`).
+
+- **`constant`** — write the literal prefix from sdd.md (`"caseIdentifier": "LOAN"`).
+- **`external`** — copy the T01 `case-identifier` expression **verbatim** into `caseIdentifier` (e.g. `"=vars.poNumber"` or `` "=js:`${metadata.InstanceId}-${vars.region}`" ``). Do NOT transform or `=js:`-wrap it — unlike task-input sinks ([bindings-and-expressions.md](../../bindings-and-expressions.md)), this value is written as authored. Valid forms + variable eligibility: [planning.md § External identifier value](planning.md).
+
 ## Formatting
 
 - Indent: 4 spaces.
@@ -245,5 +252,5 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
 
 If any check fails, halt and report — do not proceed to downstream plugins.
 
-**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command").
+**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). Pre-build validate is informational only, regardless of schema.
 

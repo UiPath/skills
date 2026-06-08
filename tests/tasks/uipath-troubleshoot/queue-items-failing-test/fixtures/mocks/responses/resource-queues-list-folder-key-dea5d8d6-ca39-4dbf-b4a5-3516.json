@@ -1,0 +1,5 @@
+{
+  "Result": "Failure",
+  "Message": "Error listing queues",
+  "Instructions": "HTTP 400: Invalid OData query options."
+}

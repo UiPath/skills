@@ -5,20 +5,14 @@ description: >
   format-summary step. Exercises inserting a node into an existing edge.
 tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 13
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
-      path: "../templates/initial_flow"
+      path: ../templates/initial_flow
 
 initial_prompt: |
   Add a script node called "convertToCelsius" between getWeather and formatSummary that converts the temp from F to C. Return both values. Also update formatSummary to include the Celsius value in its summary string.
@@ -45,3 +39,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

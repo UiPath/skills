@@ -120,8 +120,10 @@ uip rpa studio start --project-dir "<PROJECT_DIR>" --output json
 Create a new UiPath project from a template.
 
 ```bash
-uip rpa init --name "<NAME>" --location "<PARENT_DIR>" --output json
+uip rpa init --name "<NAME>" --location "<PARENT_DIR>" --target-framework <Windows|Portable> --expression-language <VisualBasic|CSharp> --output json
 ```
+
+> **Always pass `--target-framework` and `--expression-language`.** Both are fixed at creation and immutable afterward; omitting `--target-framework` silently produces a **Windows** project. The example shows the two new-project options (`Windows`, `Portable`). Windows - Legacy is a last resort (explicit ask or hard .NET 4.6.1 need) and is created/authored in **Legacy mode**, not via this command. Decide each per SKILL.md Common Rule 2a before running `init`.
 
 > **Flag names are non-standard.** Most `uip rpa` commands take `--project-dir` to identify the project. `init` instead uses `--name` (project name) + `--location` (parent directory). Do NOT use `--project-name` or `--project-dir` here — both fail with `error: required option '--name <string>' not specified`.
 
@@ -134,8 +136,8 @@ uip rpa init --name "<NAME>" --location "<PARENT_DIR>" --output json
 | `--template-package-version` | No | (latest) | Version of the template package |
 | `--allow-prerelease-packages` | No | false | Allow prerelease activity package versions |
 | `--description` | No | -- | Project description |
-| `--expression-language` | No | -- | `VisualBasic` or `CSharp` |
-| `--target-framework` | No | -- | `Legacy`, `Windows`, or `Portable` |
+| `--expression-language` | No (decide explicitly — Rule 2a) | none | `VisualBasic` or `CSharp`. Immutable after creation |
+| `--target-framework` | No (decide explicitly — Rule 2a) | none → **Windows** | `Windows` or `Portable` (Cross-platform) for new projects. The flag accepts `Legacy`, but Windows - Legacy projects are created/authored in **Legacy mode**, not via this command (last resort — explicit ask or hard .NET 4.6.1 need). Immutable after creation; omitting it yields a Windows project |
 
 For template selection logic (when to use `--template-package-id` vs `--template-id`), see [environment-setup.md § Template selection](environment-setup.md#template-selection).
 
@@ -186,6 +188,7 @@ uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
 | `--input-arguments` | No | JSON string of input arguments |
 | `--log-level` | No | Logging verbosity level |
 | `--skip-build` | No | Skip the pre-run build step (use only when you have just built) |
+| `--profiling` | No | Collect per-activity timings and runtime screenshots for the run — verifies UI automation correctness and workflow performance. Boolean flag (no value needed). Also accepted on `debug start`, `debug test-activity`, `debug start-from-here`; silently ignored on stepping/breakpoint verbs. Response carries `Profiling.OutputDirectory` when collection succeeds. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance). |
 
 For debugging — breakpoints, stepping, exception-handling lifecycle — use the `debug` group (see [debugging.md](debugging.md)). For UI automation workflows in particular, prefer `debug start` over `run` so the app is preserved for selector repair on error.
 
@@ -199,6 +202,7 @@ Both `run` and `debug start` return the same envelope: `{Result: "Success"|"Fail
 - `Output` — the workflow's own serialized output arguments JSON (`""` for non-`Start*` commands and on debug-command responses). **`Output` carries the workflow's data, not a verdict.**
 - `HasErrors` — `true` iff execution did not complete successfully (compile failure, validation failure, unhandled exception, cancellation, or timeout); `false` otherwise.
 - `ErrorMessage` — formatted error chain when `HasErrors: true`; `null` otherwise.
+- `Profiling` — present only when `--profiling` was passed on a start verb **and** profiling collection succeeded. Single field `OutputDirectory` is the absolute path to `%LOCALAPPDATA%\UiPath\ProfiledRuns\HHmmss_yyyy-MM-dd_<entryPoint>_<projectName>\` containing the `*.uistat` files and runtime screenshots for that run — used to verify UI automation correctness and workflow performance. `null` / omitted otherwise (profiling not requested, run did not reach the executor, or the active Studio profile does not support profiling).
 
 Workflow log output (`Log Message` activity, system traces) does NOT appear in `runResult`. Logs are streamed in real time during execution on a separate channel; the result envelope only carries the verdict and the workflow's output data.
 

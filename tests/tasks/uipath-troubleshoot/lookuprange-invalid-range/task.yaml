@@ -1,0 +1,139 @@
+task_id: skill-troubleshoot-lookup-invalid-range
+description: >
+  UiPath troubleshooting agent must diagnose a classic Lookup Range failure
+  caused by the Range property set to a literal empty string "" instead of
+  left blank. The Excel Application Scope opens the workbook, then the Lookup
+  Range faults with "The range '' is not valid" because "" is an invalid
+  range value (a whole-sheet search requires the Range field to be blank, not
+  ""). Success = agent matches the lookup-range-invalid-range playbook AND
+  identifies the empty-string Range (found in Main.xaml) as the cause.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 60
+turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My CatalogLookup process started faulting on every run after a recent
+  edit to the workflow. The folder is "RPA Production". It looks up part
+  numbers in a catalog spreadsheet and used to work fine.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the lookup-range-invalid-range playbook AND identified the empty-string Range as the cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My CatalogLookup process started faulting on every run after a
+         recent edit to the workflow. Folder 'RPA Production'. It looks up
+         part numbers in a catalog spreadsheet and used to work fine."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/excel-activities/playbooks/lookup-range-invalid-range.md
+        because the runtime error
+          "The range '' is not valid"
+        from a classic Lookup Range, raised after the workbook opened, is
+        the signature of an invalid Range value (here, a literal empty
+        string).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - In Main.xaml the Lookup Range has Range set to the literal
+            expression "" (Range="&quot;&quot;"), i.e. an empty string.
+          - For Lookup Range, a whole-sheet search requires the Range field
+            to be left COMPLETELY BLANK. A literal "" is an invalid range
+            value, so the activity fails to parse it and raises "The range
+            '' is not valid" - after the Excel Application Scope opened the
+            workbook successfully.
+          - The fault is the Range configuration, not the file open, the
+            sheet, or the data.
+        The reference fix:
+          - Clear the Range field entirely (leave it blank) for a whole-sheet
+            search; do not pass "". Alternatively set a valid A1 reference
+            (e.g. A1:D5000) if the lookup should be bounded.
+
+      DIMENSION C -- Discoverable in the workflow
+        The agent has the workflow source; the Range="&quot;&quot;"
+        misconfiguration is visible in Main.xaml and the job log shows the
+        scope opening before the range error. Reward finding it there. Do
+        not require reading the binary .xlsx.
+
+      SCORING RUBRIC:
+        1.0  Agent matched lookup-range-invalid-range AND identified the
+             Range set to a literal empty string "" (instead of left blank)
+             as the cause, AND recommended clearing the Range field (blank =
+             whole sheet) or setting a valid A1 reference.
+        0.8  Correct playbook and "invalid Range value" cause, but the fix
+             is vague (e.g. "fix the range" without the blank-vs-"" point or
+             a valid A1 alternative).
+        0.5  Recognized an invalid/parse range error but attributed it to a
+             sibling cause (unescaped wildcards in the Value, a type
+             mismatch, a malformed A1 reference) without identifying the
+             empty-string Range, OR matched a sibling Lookup Range playbook
+             (active-filters, null-reference).
+        0.2  Surfaced "The range '' is not valid" to the user without
+             diagnosis.
+        0.0  Wrong cause (e.g. concluded Excel is not installed, the file is
+             locked, the sheet is missing, or the part number is genuinely
+             absent), or matched no playbook.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You know only
+    that it started faulting after a recent edit to the workflow and that it
+    looks up part numbers in a catalog spreadsheet. You have just the
+    information in your initial report.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks what the recent edit changed, say you are not sure - someone else edited it and you do not know the details."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the workflow source and the job evidence already gathered."
+    - "Never invent factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

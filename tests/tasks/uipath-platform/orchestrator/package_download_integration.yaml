@@ -1,0 +1,35 @@
+task_id: skill-platform-package-download-integration
+description: >
+  Integration: agent uses the skill to download the seeded package locally.
+  Verifies the downloaded file is a valid .nupkg (zip with PK magic bytes).
+tags: [uipath-platform, integration, mode:operate, lifecycle:discover]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I want a local copy of the package that one of my processes is using —
+  I need to inspect what's inside it. The process ID is in `seed.json`;
+  figure out which package and version it's bound to, then download
+  that package to a file called `pkg.nupkg` in the current directory.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Downloaded pkg.nupkg starts with PK magic bytes"
+    command: "python3 $TASK_DIR/check_package_download.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

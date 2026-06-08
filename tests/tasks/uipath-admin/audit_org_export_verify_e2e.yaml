@@ -38,17 +38,6 @@ description: >
   'audit'`.
 tags: [uipath-admin, e2e, mode:operate, audit, export, scope-org, real-artifact]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 40
-  turn_timeout: 600
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Export ORGANIZATION-level audit events (memberships, license changes,
   tenant lifecycle) for the single UTC day **2 days ago** to
@@ -128,3 +117,8 @@ success_criteria:
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 7
+  max_turns: 40
+  turn_timeout: 600

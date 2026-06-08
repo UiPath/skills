@@ -8,15 +8,9 @@ description: >
   folder ID and verifies the error. Covers S-SC-01 through S-SC-05.
 tags: [uipath-data-fabric, integration, entity-scope]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 24
   turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Before starting, load the uipath-data-fabric skill and follow its workflow.

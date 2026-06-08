@@ -9,25 +9,17 @@ description: >
   to the autonomous agent node's `escalation` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 66
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
-  Create a UiPath solution "FraudFlowSol" containing a flow project
-  "FraudFlow". The flow should use an inline low-code agent that
-  triages transactions and escalates uncertain cases to an EXISTING
-  EXTERNAL ActionCenter app named "FraudEscalationQueue" already
+  Create a UiPath Flow project "FraudFlow" that uses an inline low-code agent
+  to triage transactions and escalate uncertain cases to an EXISTING
+  EXTERNAL ActionCenter app named "FraudEscalation" already
   deployed to the Orchestrator "Shared" folder (not inside this
   solution). Wire the escalation as a resource on the inline agent.
+  The solution should be named "FraudFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -63,9 +55,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added a flow node"
+    description: "Agent refreshed the inline agent with --inline-in-flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+node\s+add'
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -90,12 +82,6 @@ success_criteria:
     description: "Flow file was created"
     path: "FraudFlowSol/FraudFlow/FraudFlow.flow"
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Flow project descriptor was created"
-    path: "FraudFlowSol/FraudFlow/project.uiproj"
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command

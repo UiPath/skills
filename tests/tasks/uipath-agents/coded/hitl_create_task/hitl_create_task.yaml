@@ -1,0 +1,60 @@
+task_id: skill-agent-coded-hitl-create-task
+description: >
+  Coded-agent HITL via `interrupt(CreateEscalation(...))`. Verifies
+  the agent imports `interrupt` from `langgraph.types` and
+  `CreateEscalation` from `uipath.platform.common`, compiles the
+  graph with a `MemorySaver` checkpointer, and emits the `app`
+  binding for the Action Center app the escalation targets.
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:hitl-coded]
+
+run_limits:
+  expected_turns: 29
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a Python UiPath coded agent (LangGraph)
+  named `expense-approver`. It handles expense-reimbursement
+  requests: requests at or below `$1000` are auto-approved, but
+  anything above that limit is an exception that must be escalated
+  to a manager for sign-off before it can be approved.
+
+  When an amount breaches the limit, escalate the request to a
+  reviewer through an Action Center app named `ExpenseReview` in
+  folder `Finance`, passing the full request payload. The agent
+  must pause while the escalation is outstanding and resume once the
+  reviewer's decision comes back.
+
+  Input: `amount` (number), `description` (string), `submitter`
+  (string).
+  Output: `approved` (bool), `reviewer_decision` (string|null).
+
+  Sync `bindings.json` so the Action Center resource is declared.
+
+  Take the agent through scaffold → init. Do NOT run, publish,
+  upload, or deploy. Do NOT call `uip login`. Do NOT pause between
+  planning and implementation. Complete end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "interrupt(CreateEscalation) shape, MemorySaver checkpointer, app binding"
+    command: "python3 $TASK_DIR/check_hitl_create_task.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

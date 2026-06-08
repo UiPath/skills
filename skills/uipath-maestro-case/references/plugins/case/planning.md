@@ -19,10 +19,19 @@ Always. This plugin is invoked for the very first T-entry (`T01`) in every `task
 
 ## identifier-type Guidance
 
-- `constant` — **Default.** Use when sdd.md does not mention external identifier sources. The case identifier is fixed across instances (typically matches `name`).
-- `external` — Use when sdd.md says something like "the case is identified by the incoming PO number" or "the case uses the external ticket ID." Runtime will pull the identifier from case data.
+- `constant` — **Default.** Use when sdd.md does not mention external identifier sources. The identifier is a fixed 2-4 char prefix; runtime emits `<prefix>-<generated>`.
+- `external` — Use when sdd.md says the identifier comes from upstream data ("identified by the incoming PO number", "uses the external ticket ID"). `case-identifier` becomes a `=`-prefixed expression; runtime evaluates it and the result IS the case external id.
 
 When ambiguous, use **AskUserQuestion** with both options + "Something else".
+
+### External identifier value
+
+`case-identifier` is carried verbatim from sdd.md — one of two forms (no other engine):
+
+- **Bare var** — `=vars.<varId>`, where `<varId>` is a single variable declared in the §4.2.1 block. It MUST be an **In** argument or a **Variable** — not an **Out** argument (produced at case end).
+- **`=js:` expression** — for string ops / concatenation, e.g. `` =js:`${metadata.InstanceId}-${vars.region}` ``. May read `vars.<id>` and `metadata.InstanceId` / `metadata.FolderKey` / `metadata.ProcessKey` — never `metadata.ExternalId` (the field being set).
+
+A referenced variable must have its own §4.2.1 T-entry (the completeness cross-check requires it).
 
 ## Registry Resolution
 
@@ -44,6 +53,8 @@ The case plugin writes a pure skeleton at T01 — no trigger node. The primary t
 - order: first
 - verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "20.0.0", nodes == [], edges == []
 ```
+
+> **External variant.** Replace the two identifier lines with `identifier-type: external` + `case-identifier: "=vars.<varId>"` (or a `=js:` expression). See § External identifier value.
 
 ## Project Structure Prerequisites
 

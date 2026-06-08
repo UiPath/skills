@@ -36,11 +36,11 @@ def main(input: Input) -> Output:
 **Common mistakes:**
 ```python
 # BAD
-from uipath import UiPath          # Wrong module path
+from uipath import UiPath          # ImportError — top-level uipath does not export UiPath
 from uipath.platform import CreateAction, WaitAction  # Renamed classes
 
 # GOOD
-from uipath import UiPath          # Correct (if package supports it)
+from uipath.platform import UiPath  # Correct
 from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 ```
 

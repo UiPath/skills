@@ -4,20 +4,14 @@ description: >
   Exercises modifying node output mappings.
 tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 11
   turn_timeout: 1200
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
-      path: "../templates/initial_flow"
+      path: ../templates/initial_flow
 
 initial_prompt: |
   Add a "location" field with value "Bellevue, WA" to the summary output of both end nodes.
@@ -42,3 +36,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

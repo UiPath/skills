@@ -121,8 +121,17 @@ def resolve_entity_ids(args) -> list[str]:
         print(f"SKIP: could not parse {report_path}: {e}")
         return ids
 
-    # Collect all entity IDs from the report
-    for key in ("entity_id", "tenant_entity_id", "folder_entity_id"):
+    # Collect all entity IDs from the report.
+    # Order matters when relationships exist: child entities must be deleted
+    # before their parents to avoid FK constraint errors. List child-side keys
+    # (e.g. child_entity_id) before parent-side keys (e.g. parent_entity_id).
+    for key in (
+        "entity_id",
+        "tenant_entity_id",
+        "folder_entity_id",
+        "child_entity_id",
+        "parent_entity_id",
+    ):
         val = report.get(key)
         if val and val not in ids:
             ids.append(val)

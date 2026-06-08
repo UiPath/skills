@@ -6,4 +6,4 @@
 |---------------|
 | `Workbook="[Excel]"`, `Name="NewSheet"`, `ReferenceNewSheetAs="[outNewSheet]"` — variable type `ue:ISheetRef` |
 
-Use `uip rpa activities get-default-xaml --use-studio` for full XAML.
+Use `uip rpa activities get-default-xaml` for full XAML.

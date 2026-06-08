@@ -1,0 +1,93 @@
+task_id: skill-flow-bindings-multi-connector-independence
+description: >
+  Two distinct connector nodes (different connector keys) in the same flow,
+  each configured with its own connection, must produce independent Connection
+  bindings — no cross-aliasing between nodes, even when both manifests share
+  common binding `name`/`propertyAttribute` values like `ConnectionId` and
+  `FolderKey`. This is the cross-connector aliasing case that
+  flow-workbench#1726 had to harden against because stale empty-keyed rows
+  collided on `(resourceKey, propertyAttribute)`. With PR #2197 in place
+  there should be no empty rows at all and no aliasing should be possible
+  in the first place. See https://github.com/UiPath/cli/pull/2197 and
+  https://github.com/UiPath/flow-workbench/pull/1726.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, bindings, regression]
+
+run_limits:
+  expected_turns: 71
+  task_timeout: 3600
+  max_turns: 80
+  turn_timeout: 1200
+
+initial_prompt: |
+  Load the uipath-maestro-flow skill and follow its workflow exactly.
+
+  Build a flow named "BindingsMulti" with TWO IS connector nodes backed
+  by DIFFERENT connector keys, saved as
+  `BindingsMulti/flow_files/BindingsMulti.flow` with
+  `BindingsMulti/project.uiproj`.
+
+  Configure each node with its own distinct connection. Record the
+  connection ids and connector keys at the sandbox root:
+
+      echo '{"a":"<conn-id-1>","ka":"<connector-key-1>","b":"<conn-id-2>","kb":"<connector-key-2>"}' > conn_ids.json
+
+success_criteria:
+  - type: command_executed
+    description: "Agent added two connector nodes"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+add"
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent configured two nodes"
+    tool_name: "Bash"
+    command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+configure"
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "conn_ids.json declares two distinct connection ids backed by different connector keys"
+    command: "python3 -c \"import json; d=json.load(open('conn_ids.json')); assert d['a']!=d['b'], 'connection ids must differ'; assert d['ka']!=d['kb'], 'connector keys must differ'\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Flow file exists and is valid JSON"
+    command: "python3 $TASK_DIR/check_bindings.py structure '**/BindingsMulti*.flow'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both connection ids appear in Connection bindings, each on its own ConnectionId row"
+    command: "python3 $TASK_DIR/check_bindings.py both_ids_present_from_json '**/BindingsMulti*.flow' conn_ids.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No empty-keyed Connection bindings (cross-node aliasing surface)"
+    command: "python3 $TASK_DIR/check_bindings.py no_empty_stubs '**/BindingsMulti*.flow'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No (name, propertyAttribute, resourceKey) triplet duplicates"
+    command: "python3 $TASK_DIR/check_bindings.py no_triplet_dups '**/BindingsMulti*.flow'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

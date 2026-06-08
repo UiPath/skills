@@ -54,6 +54,10 @@ Required xmlns for `InvokeWorkflowFile`:
 xmlns:ui="http://schemas.uipath.com/workflow/activities"
 ```
 
+### Default Values for Test-Case Arguments
+
+A test case authored with an `<x:Property Name="in_X" Type="InArgument(x:String)" />` argument should generally bake in a default so `uip rpa run --file-path <TestCase>.xaml` is runnable without `--input-arguments`. Use the canonical root-attribute syntax — see [xaml/xaml-basics-and-rules.md § Setting Default Values for Arguments](xaml/xaml-basics-and-rules.md#setting-default-values-for-arguments). The wrong forms (bare attribute, `<x:Property.Value>`, `<InArgument>` child of `<x:Property>`) all produce confusing `member not supported` errors — the doc explicitly lists them so you don't waste time trying.
+
 ### XAML Structure — Standalone Test Case (with Placeholder)
 
 For test cases designed to work with execution templates, use `ui:Placeholder` in the When container:
@@ -86,7 +90,7 @@ If the workflow has arguments, pass them in the `InvokeWorkflowFile.Arguments` d
 
 ### project.json Registration
 
-Register XAML test cases in `fileInfoCollection`. Add `entryPoints` only for **Process** projects — **Tests and Library projects do NOT use `entryPoints`**:
+Register every XAML test case in `designOptions.fileInfoCollection` — this is **Common Rule 10** in SKILL.md and applies to both XAML and coded test cases. Test cases live **only** in `fileInfoCollection`, never in `entryPoints` — `entryPoints` is for executable workflow files in Process projects (e.g. `Main.xaml`), and test cases are not workflow entry points regardless of project type.
 
 ```json
 {
@@ -100,22 +104,19 @@ Register XAML test cases in `fileInfoCollection`. Add `entryPoints` only for **P
         "fileName": "TestCase.xaml"
       }
     ]
-  },
-  "entryPoints": [
-    {
-      "filePath": "TestCase.xaml",
-      "uniqueId": "<SAME_GUID_AS_testCaseId>",
-      "input": [],
-      "output": []
-    }
-  ]
+  }
 }
 ```
 
-> **Note:** The `entryPoints` block above applies to Process projects only. For Tests and Library projects, only `fileInfoCollection` is needed.
+**Required keys per entry:**
+
+- `editingStatus` — `"InProgress"` on creation; `"Publishable"` only on explicit user request (see lifecycle note below).
+- `testCaseId` — fresh GUID, lowercase 8-4-4-4-12 hex (e.g. `2d81aebd-fbc1-4a66-8418-be77a34a3a21`). Generate via `[guid]::NewGuid()` in PowerShell or `uuidgen` on Unix.
+- `testCaseType` — `"TestCase"`.
+- `executionTemplateInvokeIsolated` — `false` unless the test runs under an execution template that requires isolation.
+- `fileName` — relative path of the `.xaml` or `.cs` test case file from the project root.
 
 > **`editingStatus` lifecycle:** Set to `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
-```
 
 ### What NOT to Do
 
@@ -159,7 +160,7 @@ Three commands attach different data source types to a test case. All three regi
 #### `test-data add-variation` — File-based (JSON)
 
 ```bash
-uip rpa test-data add-variation --test-case-path "<TEST_CASE_FILE>" --data-variation-path "<DATA_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa test-data add-variation --test-case-path "<TEST_CASE_FILE>" --data-variation-path "<DATA_FILE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -171,7 +172,7 @@ Parses fields from the JSON file and creates one argument per field with matchin
 
 **Example:**
 ```bash
-uip rpa test-data add-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.json" --project-dir "C:\MyProject" --output json --use-studio
+uip rpa test-data add-variation --test-case-path "TestProcessInvoice.cs" --data-variation-path ".variations/InvoiceData.json" --project-dir "C:\MyProject" --output json
 ```
 
 #### `test-data add-queue` — Orchestrator Test Data Queue
@@ -179,7 +180,7 @@ uip rpa test-data add-variation --test-case-path "TestProcessInvoice.cs" --data-
 > **Prerequisite:** Use the **uipath-platform** skill to discover queue details (name, ID, folder) before calling this command.
 
 ```bash
-uip rpa test-data add-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<QUEUE_NAME>" --folder-path "<FOLDER>" --queue-id <ID> --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa test-data add-queue --test-case-path "<TEST_CASE_FILE>" --queue-name "<QUEUE_NAME>" --folder-path "<FOLDER>" --queue-id <ID> --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -193,7 +194,7 @@ Creates an `IDictionary<string, object>` argument named after the queue (camelCa
 
 **Example:**
 ```bash
-uip rpa test-data add-queue --test-case-path "TestLoanApproval.cs" --queue-name "loan_applications" --folder-path "Shared" --queue-id 123 --project-dir "C:\MyProject" --output json --use-studio
+uip rpa test-data add-queue --test-case-path "TestLoanApproval.cs" --queue-name "loan_applications" --folder-path "Shared" --queue-id 123 --project-dir "C:\MyProject" --output json
 ```
 
 > **Critical:** Do NOT rename the auto-generated test data queue argument. If you change its name, data retrieval silently fails.
@@ -205,7 +206,7 @@ uip rpa test-data add-queue --test-case-path "TestLoanApproval.cs" --queue-name 
 > 2. **Install the target entity into the project** if not already installed — `uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. `test-data add-entity` requires the entity's generated type to exist in the project. See [cli-reference.md § Data Fabric Entities](cli-reference.md#commands----data-fabric-entities).
 
 ```bash
-uip rpa test-data add-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa test-data add-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 | Parameter | Required | Description |
@@ -218,7 +219,7 @@ Creates an argument of the entity type named after the entity (camelCase). Requi
 
 **Example:**
 ```bash
-uip rpa test-data add-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json --use-studio
+uip rpa test-data add-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json
 ```
 
 ### Data-Driven Testing Best Practices
@@ -263,7 +264,7 @@ Authoritative reference: `{projectRoot}/.local/docs/packages/UiPath.Testing.Acti
 
 Verifies a UI element's attribute (text, enabled state, visibility, etc.) against an expected value.
 
-> **Requires UI automation targets.** This activity inspects live UI elements at runtime. The agent must configure targets using `uia-configure-target` (see [ui-automation-guide.md](ui-automation-guide.md)) before using this activity. The test case must run against a live application instance.
+> **Requires UI automation targets.** This activity inspects live UI elements at runtime. [ui-automation-guide.md](ui-automation-guide.md) MUST be read IN FULL first. The agent must configure targets using `uia-configure-target` before using this activity. The test case must run against a live application instance.
 
 **Properties:**
 - `Target` — the UI element to inspect (configured via `uia-configure-target`)

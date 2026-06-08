@@ -18,15 +18,9 @@ description: >
   policy behind, delete it manually before the next run.
 tags: [uipath-governance, e2e, aops-policy, mode:build]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 18
   max_turns: 40
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Walk the full lifecycle of an AOps governance policy on the current

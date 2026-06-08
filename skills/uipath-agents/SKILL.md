@@ -1,7 +1,8 @@
 ---
 name: uipath-agents
-description: "Always invoke for `agent.json` files or Python projects with `uipath-*` deps. UiPath agent lifecycle — coded (Python: LangGraph/LlamaIndex/OpenAI Agents) and low-code (agent.json from Agent Builder). Setup, auth, build, run, evaluate, deploy, sync, bindings. For C# or XAML workflows→uipath-rpa."
-allowed-tools: Bash, Read, Write, Glob, Grep, AskUserQuestion
+description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), and deploy. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). Excludes coded functions / Functions SDK (separate skill)."
+when_to_use: "Must use when user mentions or implies any Agent lifecycle phase - e.g., auth, design, scaffold, Studio Web sync, flow integration, editing, pack/deploy/version bump, eval, tracing, guardrails, memory spaces, bindings, attachments. Example requests: 'create/build a UiPath agent', 'build a low-code / Agent Builder agent', 'add agent memory spaces', 'build a coded / Python agent (LangGraph / LlamaIndex / OpenAI Agents)', 'scaffold an agent project', 'run / evaluate / deploy my agent'."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
 ---
 
@@ -12,6 +13,7 @@ user-invocable: true
 - Treat "build/create/scaffold/implement a UiPath agent" as the full One-Prompt Flow by default. Do not stop after file creation or local run unless the user explicitly says to stop there.
 - A normal completion point is after smoke eval and the mandatory Delivery fork question. A final build summary before that is premature unless run/eval is blocked or the user opted out.
 - **Probe the `solution` verb once per session before the first scaffold or deploy.** Run `uip solution init --help --output json`. Result `Success` → use `solution init` and `solution deploy run --parent-folder-path` / `--parent-folder-key` (post-rename, default). `unknown command` / non-zero exit → CLI predates the rename; substitute `uip solution new <Name>` and `--folder-path` / `--folder-key` (same arguments otherwise) wherever this skill calls those.
+- **Coded agents only — bindings are always derived from UiPath Python SDK calls and must never be hand-authored.** To derive them, always run the sync workflow in [coded/lifecycle/bindings-reference.md](references/coded/lifecycle/bindings-reference.md) — scan code, regenerate `bindings.json`. Without this, resources cannot be overridden per execution environment and will always default to the hardcoded values in the SDK calls. Derive bindings whenever you add, remove, or modify any UiPath SDK resource call — for instance `assets`, `queues`, `processes`, `buckets`, `indexes`, `connections`, `apps`, `MCP servers`, or `InvokeProcess|CreateTask|CreateEscalation(...)`.
 
 ## Project Type Detection
 
@@ -39,25 +41,38 @@ Determine the agent mode before proceeding:
 | Create/build/deploy coded agent | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/lifecycle/*`, `coded/frameworks/*` |
 | Select coded framework | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Framework Selection | |
 | Add coded capabilities (HITL, RAG, tracing) | Coded | [coded/quickstart.md](references/coded/quickstart.md) | `coded/capabilities/*` |
+| Call an Integration Service connector (Slack, Jira, Web Search) from a coded agent | Coded | [coded/capabilities/integration-service.md](references/coded/capabilities/integration-service.md) **+ then immediately read** [`uipath-platform/references/integration-service/agent-workflow.md`](../uipath-platform/references/integration-service/agent-workflow.md) — discovery lives there, not in `uipath-agents` | `coded/capabilities/sdk-services.md` § Connections |
 | Run coded evaluations | Coded | [coded/quickstart.md](references/coded/quickstart.md) § Evaluate | `coded/lifecycle/evaluate.md` |
 | Create or scaffold a new low-code agent project | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Quick Start | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
 | Edit `agent.json` (prompts, model, schemas, contentTokens, entry-points.json) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/agent-definition.md` |
 | Add a low-code tool (Orchestrator process — RPA / agent / API / agentic — or Integration Service) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/process/*`, `lowcode/capabilities/integration-service/*` |
+| Add an MCP (Model Context Protocol) server tool to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/mcp/mcp.md` |
 | Accept files as agent input / call the Analyze Files built-in tool | Low-code | [lowcode/capabilities/built-in-tools/built-in-tools.md](references/lowcode/capabilities/built-in-tools/built-in-tools.md) | `lowcode/capabilities/built-in-tools/analyze-attachments.md`, `lowcode/agent-definition.md` § File Attachments |
 | Work with file attachments (input, output, or created mid-run) | Coded | [coded/capabilities/file-attachments.md](references/coded/capabilities/file-attachments.md) | |
+| Build a conversational (chat-style) coded agent | Coded | [coded/capabilities/conversational-agents.md](references/coded/capabilities/conversational-agents.md) | |
 | Add a low-code context (Context Grounding RAG / attachments / DataFabric entity set) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/context/*` |
+| Add a low-code memory space or seed memory items | Low-code | [lowcode/capabilities/memory/memory.md](references/lowcode/capabilities/memory/memory.md) | use `uip agent memory`, then refresh/validate |
 | Add an Action Center escalation (HITL) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/escalation/escalation.md` |
 | Add guardrails (PII, harmful content, custom rules) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/guardrails/guardrails.md` |
+| Add guardrails to a coded agent | Coded | [coded/capabilities/guardrails/guardrails.md](references/coded/capabilities/guardrails/guardrails.md) | fetch official docs via WebFetch, ask middleware vs decorator, read agent code, write Python |
 | Add escalation guardrail (escalate action / Action Center app) | Low-code | [lowcode/capabilities/guardrails/guardrails.md](references/lowcode/capabilities/guardrails/guardrails.md) § escalate — Hand Off to Action Center | Run `uip solution resource list --kind App` to confirm app exists |
 | Recommend guardrails for a low-code agent based on its context | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) | fetch catalog + list, analyze agent context, apply + validate |
 | Recommend guardrails for a specific scope or tool | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) § Scoped or Tool-Specific Filtering | filter candidates by scope or tool name after catalog analysis |
 | Validate whether existing guardrails are correctly configured | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) § Validate Mode | check correctness, actionability, and relevance per guardrail |
+| Recommend guardrails for a coded agent based on its context | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) | fetch catalog + list + SDK docs, analyze agent code, apply + verify |
+| Recommend guardrails for a specific scope or tool (coded) | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) § Scope and Tool Filtering | filter candidates by `@tool` function or scope after catalog analysis |
+| Validate whether existing coded guardrails are correctly configured | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) § Validate Mode | check correctness, actionability, and relevance per guardrail |
 | Embed a low-code agent inline in a flow, or wire a multi-agent solution | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/inline-in-flow/inline-in-flow.md`, `lowcode/capabilities/process/solution-agent.md` |
 | Run low-code evaluations | Low-code | [lowcode/evaluations/evaluate.md](references/lowcode/evaluations/evaluate.md) | `lowcode/evaluations/evaluators.md`, `lowcode/evaluations/evaluation-sets.md`, `lowcode/evaluations/running-evaluations.md` |
+| Run offline evals for a published Orchestrator package | Low-code | [lowcode/evaluations/orchestrator-eval-run.md](references/lowcode/evaluations/orchestrator-eval-run.md) | Use `uip or eval run-offline-evals` (requires package published to Orchestrator) |
 | Validate, pack, publish, upload, or deploy a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/solution-resources.md` |
 | Embed coded agent in a flow (solution-level) | Coded | [coded/embedding-in-flows.md](references/coded/embedding-in-flows.md) | |
 | Use coded agent in a flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) | |
 | Use coded agent as tool for another agent in flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) § Pattern 3 | |
+| Summarize / research / synthesize over PDF or TXT (DeepRAG, coded) | Coded | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [coded/capabilities/deeprag/planning.md](references/coded/capabilities/deeprag/planning.md) |
+| Summarize / research / synthesize over PDF or TXT (DeepRAG, low-code) | Low-code | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [lowcode/capabilities/built-in-tools/deeprag/planning.md](references/lowcode/capabilities/built-in-tools/deeprag/planning.md) |
+| Process CSV rows with LLM per row (BatchTransform, coded) | Coded | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [coded/capabilities/batch-transform/planning.md](references/coded/capabilities/batch-transform/planning.md) |
+| Process CSV rows with LLM per row (BatchTransform, low-code) | Low-code | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [lowcode/capabilities/built-in-tools/batch-transform/planning.md](references/lowcode/capabilities/built-in-tools/batch-transform/planning.md) |
 
 ## Resources
 

@@ -14,7 +14,7 @@ Confirm:
 - Output ports: `output`, `error`
 - `model.type` — `bpmn:ServiceTask`
 - `model.serviceType` — `ECS.DeepRag`
-- `inputDefinition.properties` — `attachment` (declared `string`; runtime wants the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }` — Studio Web's file-picker form serializes the whole object into that slot, the engine deserializes it back), `prompt` (string), `returnCitations` (boolean)
+- `inputDefinition.properties` — `attachment` (declared `string`; runtime wants the **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive, `ID` is uppercase, not `Id` — Studio Web's file-picker form serializes the whole object into that slot, the engine deserializes it back), `prompt` (string), `returnCitations` (boolean)
 - `outputDefinition.output.type` — `"object"`; `outputDefinition.output.source` — `"=response"` (the BPMN engine wraps the result under that key — same convention as every other ServiceTask)
 - `outputDefinition.output.schema` — top-level fields `id` (string) and `content` (object|null) with PascalCase nested fields:
   - `content.Text` — string
@@ -25,7 +25,7 @@ If the command errors with **"Node type not found: uipath.pattern.deep-rag"**, t
 
 ## Adding / Editing
 
-Pattern nodes are OOTB BPMN service tasks — author them by editing the `.flow` JSON directly (Edit/Write). This is the canonical authoring path per [Author capability, rule 2](../../../CAPABILITY.md): the `uip maestro flow node add` / `edge add` carve-out is reserved for connectors, connector-triggers, and managed HTTP, where the CLI populates product-managed state. For OOTB structural edits — adding the Summarize node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Summarize.
+Pattern nodes are OOTB BPMN service tasks — they are **user-owned** per [Author capability — Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node), so author them by editing the `.flow` JSON directly (Edit/Write). The `uip maestro flow node add` / `edge add` CLI is reserved for CLI-owned nodes (connectors, connector-triggers, managed HTTP), where the CLI populates product-managed state. For OOTB structural edits — adding the Summarize node, wiring its edges, adding the `attachment` flow input — use Edit/Write against the `.flow` file. See [editing-operations.md](../../editing-operations.md) for the JSON authoring mechanics; the snippets below cover what is **specific** to Summarize.
 
 ## Wiring `attachment` — file variable bound to the trigger
 
@@ -53,7 +53,7 @@ Then on the Summarize node:
 }
 ```
 
-Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment documentFile=./path/to/doc.pdf` for the `documentFile` variable above). The CLI uploads the file and binds it as a `{ FullName, Id, Metadata, MimeType }` Attachment object. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#attachment-preflight). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.Id`/`.FullName`.
+Populate that variable at runtime with `uip maestro flow debug --attachment <variableId>=<localPath>` (example: `--attachment documentFile=./path/to/doc.pdf` for the `documentFile` variable above). The CLI uploads the file and binds it as a `{ ID, FullName, MimeType, Metadata }` Attachment object — keys are case-sensitive; `ID` is uppercase, not `Id`. The flag is repeatable; the `<variableId>` (left of `=`) must match a `variables.globals[]` entry's `id` — see [cli-commands.md — Pre-flight](../../../../shared/cli-commands.md#pre-flight---attachment-binding). Do not declare the variable as `type: "object"`, do not reference it as `=js:$vars.<variableId>` directly without the trigger output path, and do not pass a bare GUID/URL/path/`.ID`/`.FullName`.
 
 ## JSON Structure
 
@@ -111,15 +111,15 @@ Populate that variable at runtime with `uip maestro flow debug --attachment <var
 
 Notes:
 
-- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [Author capability, rule 16](../../../CAPABILITY.md), node instances normally have no `model` block.
-- **`typeVersion` must match `definitions[<deep-rag>].version` exactly** — the registry currently emits `"1.0"` (one dot). Do not guess `"1.0.0"`.
+- **No instance-level `model` block.** BPMN type and `serviceType: "ECS.DeepRag"` live only in the corresponding `definitions[]` entry — copy that verbatim from `uip maestro flow registry get uipath.pattern.deep-rag --output json`. Per [Author capability, rule 15](../../../CAPABILITY.md), node instances normally have no `model` block.
+- **`typeVersion` must match `definitions[<deep-rag>].version` exactly** — set it to the `version` field from the `registry get uipath.pattern.deep-rag` response; do not guess. Use the registry's exact form (single-dot `x.y`, e.g. `"1.0"`, not `"1.0.0"`).
 - `outputs.output.source` is the literal **`=response`** (the convention every BPMN ServiceTask follows). Do not rewrite to `=deepRagResult` or similar.
 - `outputs.output.type` is **`"object"`**, with the nested PascalCase schema above.
 - Setting `returnCitations: true` populates `content.Citations`; setting `false` omits the array entirely (the downstream consumer should tolerate either).
 
 ## End-node output mapping
 
-If the flow surfaces the synthesized text or citations as flow `out` variables, the End node must map them. Per [Author capability, rule 12](../../../CAPABILITY.md), value-field expressions need the `=js:` prefix. Note the **PascalCase** field names:
+If the flow surfaces the synthesized text or citations as flow `out` variables, the End node must map them. Per [Author capability, rule 11](../../../CAPABILITY.md), value-field expressions need the `=js:` prefix. Note the **PascalCase** field names:
 
 ```json
 {
@@ -137,7 +137,7 @@ Without `=js:`, the runtime stores the literal string (e.g. `"$vars.summarizeCon
 
 ## Add via CLI (opt-in, not preferred)
 
-The `uip maestro flow node add` / `edge add` CLI is **not** the canonical authoring path for OOTB pattern nodes (see rule 2 above). Reach for it only when scripting in a context where Edit/Write isn't available. The shape:
+The `uip maestro flow node add` / `edge add` CLI is **not** the canonical authoring path for OOTB pattern nodes (see [Node ownership](../../../CAPABILITY.md#node-ownership--who-authors-the-node) — pattern nodes are user-owned). Reach for it only when scripting in a context where Edit/Write isn't available. The shape:
 
 ```bash
 uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
@@ -150,7 +150,7 @@ uip maestro flow node add <FlowName>.flow uipath.pattern.deep-rag \
   --output json
 ```
 
-`attachment` must resolve to a **full Flow Attachment object** (`{ FullName, Id, Metadata, MimeType }`). Reference it through the trigger's output (`$vars.<triggerId>.output.<fileVarId>`) — that's how the canvas wires file-typed flow `in` variables. Do **not** pass a bare GUID, URL, byte stream, or path; even though the OOTB `inputDefinition` declares `type: "string"`, the engine wants the object. Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
+`attachment` must resolve to a **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive; `ID` is uppercase, not `Id`. Reference it through the trigger's output (`$vars.<triggerId>.output.<fileVarId>`) — that's how the canvas wires file-typed flow `in` variables. Do **not** pass a bare GUID, URL, byte stream, or path; even though the OOTB `inputDefinition` declares `type: "string"`, the engine wants the object. Set `returnCitations: false` (or omit) when downstream consumers do not need page-level provenance.
 
 ## Accessing Output
 
@@ -194,5 +194,5 @@ The validator checks that required inputs (`attachment`, `prompt`) are present a
 - **Do not stuff `prompt` with entire document text.** The attachment is already ingested — the prompt should describe **the task**, not the input.
 - **Do not assume `content.Citations` is always present.** When `returnCitations: false`, the field is omitted; downstream code must guard.
 - **Do not use lowercase field names** (`content.text`, `content.citations`, `.ordinal`, `.page`). The runtime emits PascalCase: `content.Text`, `content.Citations`, `Ordinal`, `PageNumber`, `Source`, `Reference`.
-- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ FullName, Id, Metadata, MimeType }`. The canonical wiring is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, referenced as `=js:$vars.<triggerId>.output.<fileVarId>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
+- **Do not pass `attachment` as a bare string id, GUID, URL, or path.** The OOTB schema and Studio Web's file-picker UI suggest a string, but the runtime needs the **full Flow Attachment object** `{ ID, FullName, MimeType, Metadata }` — keys are case-sensitive; `ID` is uppercase, not `Id`. The canonical wiring is a flow `in` variable of `type: "file"` bound to the trigger via `triggerNodeId`, referenced as `=js:$vars.<triggerId>.output.<fileVarId>` (see Key Inputs in `planning.md`). Bare-id mistakes pass `flow validate` cleanly and fault at runtime.
 - **Do not write `outputs.output.source: "=deepRagResult"`.** The canonical value is `"=response"` (the convention every BPMN ServiceTask follows).

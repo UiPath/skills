@@ -1,10 +1,14 @@
 # Project Setup Guide
 
-Complete workflow for creating a new IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically.
+Complete workflow for creating a **new** IXP project, labelling all documents, and getting initial metrics. Run all steps end-to-end automatically.
+
+> **Wrong page if the project already exists.** Use `uip ixp documents upload <project-name> <file>` — see [CLI Reference § Uploading documents](cli-reference.md#uploading-documents-to-an-existing-project).
 
 ## Step 1 — Create the Project
 
 If the user provides a name, use it. If not, generate a temporary name (e.g., `ixp_project_NNNN` with a random number) — the project will be renamed in Step 3 after the taxonomy reveals the document type.
+
+`<folder-path>` is filtered to supported document files — see [CLI Reference § Supported document files](cli-reference.md#supported-document-files).
 
 **Option A — Auto-suggest taxonomy (default):**
 
@@ -66,11 +70,10 @@ Apply the configuration:
 uip ixp projects configure-model <project-name> \
   --model gemini_2_5_flash \
   --preprocessing <none|table_mini|table> \
-  --attribution model \
   --output json
 ```
 
-**Default recommendation:** `--model gemini_2_5_flash --preprocessing table_mini --attribution model` — works well for most invoice/document types.
+**Default recommendation:** `--model gemini_2_5_flash --preprocessing table_mini` — works well for most invoice/document types.
 
 ## Step 3 — Name the Project
 

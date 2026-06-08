@@ -1,0 +1,68 @@
+task_id: skill-flow-batch-transform
+description: >
+  Create a UiPath Flow that runs a Batch Transform pattern node over a CSV
+  attachment to append two LLM-generated columns (Category, Summary) per row.
+  Exercises Batch Transform node discovery, the `outputColumns` array shape,
+  and wiring of the `attachment` input from a flow-level input variable.
+  A `flow debug` step is intentionally omitted — Batch Transform requires a
+  pre-uploaded Orchestrator attachment and the ECS.BatchTransform service
+  backend, neither of which the test sandbox can provision deterministically.
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, node:batch-transform, context-grounding]
+
+run_limits:
+  expected_turns: 32
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath Flow project named "BatchTransformDemo" that uses a Batch
+  Transform pattern node to enrich rows of a CSV. The flow takes one `in`
+  variable of `type: "file"` named `csvFile`, bound to the trigger via
+  `triggerNodeId: "<triggerId>"`. The variable's runtime payload is a full
+  Flow Attachment object (`{ FullName, Id, Metadata, MimeType }`). The Batch
+  Transform node must:
+
+    - have its `attachment` input wired to the trigger output, NOT the bare
+      variable: `=js:$vars.<triggerId>.output.csvFile`. Do not use
+      `=js:$vars.csvFile`, `.Id`, `.FullName`, or any other subfield — the
+      runtime engine wants the WHOLE Attachment object resolved through the
+      trigger output binding.
+    - use this prompt: `Classify each row by category and write a one-line summary.`
+    - declare two output columns:
+        - `Category`     — One of: Utility, Software, Travel, Other
+        - `Summary`      — Plain-English one-line summary of the row
+    - leave `enableWebSearchGrounding` at its default
+
+  The node's instance JSON must NOT contain a `model` block (BPMN type /
+  serviceType belongs only in `definitions[]`), and `typeVersion` must be
+  exactly `"1.0"` matching `definitions[<bt>].version`. The instance
+  `outputs.output` must use `source: "=response"` (NOT `=batchTransformResult`).
+
+  Wire the Batch Transform's `output` port through to an End node and surface
+  the result file handle as a flow output variable named `result` mapped via
+  `outputs.result.source: "=js:$vars.<bt-node-id>.output"`.
+
+  Do NOT run flow debug — just validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its
+  workflow steps exactly — in particular, the batch-transform plugin's
+  `outputColumns` shape (array of `{ name, description }`).
+
+success_criteria:
+  # ── Flow file validity ─────────────────────────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate BatchTransformDemo/BatchTransformDemo/BatchTransformDemo.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Structural checks (node type, inputs, outputColumns shape) ─────────
+  - type: run_command
+    description: "Flow has a Batch Transform node with required inputs and the {name,description} outputColumns shape"
+    command: "python3 $TASK_DIR/check_batch_transform_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

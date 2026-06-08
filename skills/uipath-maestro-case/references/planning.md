@@ -60,6 +60,62 @@ If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) 
 
 > **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
 
+### Step 2.1 — Detect schema version (Rule 18)
+
+Resolution order (first match wins):
+
+#### 2.1.a — Tenant override (alpha environment)
+
+Read the `Data.BaseUrl` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
+
+```
+> Schema: v20 (alpha tenant override — BaseUrl=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 validate authoritative; CLI upload / debug may reject downstream.
+```
+
+Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
+
+If `Data.BaseUrl` is absent (login failed, field missing, different value), proceed to Step 2.1.b. Do NOT halt — login state is independent of schema selection.
+
+#### 2.1.b — User-prompt phrase
+
+Scan **only the user message that activated the skill** (the prompt that matched the skill description). Match case-insensitive substrings:
+
+| Phrase (any one matches) |
+|---|
+| `v20 schema` |
+| `schema v20` |
+| `use v20` |
+| `emit v20` |
+| `generate v20` |
+| `unified schema` |
+| `schema 20.0.0` |
+
+- **Match** → schema is `v20`. Print plain-text confirmation BEFORE Step 3 begins:
+  ```
+  > Schema: v20 (skill-emit-only mode — Phase 4 validate authoritative; CLI upload / debug may reject downstream)
+  ```
+- **No match** → schema is `v19` (default). No confirmation line.
+
+**Never** scan sdd.md content, file paths, registry-resolved.json, Phase 0 transcripts, or any subsequent user message. Detection happens once, at Phase 1 entry. If the user wants to switch schema mid-build, they must re-run the skill from Phase 1 (Rule 6). The tenant override (2.1.a) is also fixed at Phase 1 entry — switching tenants mid-build does not change `tasks.md`'s `Schema:` header.
+
+### Step 2.2 — Persist schema choice in tasks.md header
+
+When `tasks.md` is written at Step 4, the **first non-comment line** is the schema header:
+
+```markdown
+Schema: v19
+```
+
+or
+
+```markdown
+Schema: v20
+```
+
+Place this line above all `T<n>` headings. Re-entry protocol (Phase 3 Step 9.6, Phase 4) re-reads tasks.md per Rule 7 and recovers the schema choice from this header. caseplan.json self-identifies via its top-level `version` literal as a secondary check.
+
+If the schema header in tasks.md conflicts with an already-written caseplan.json's `version` field at re-entry, **halt with explicit error** — never silently re-flip.
+
 ## Step 3 — Resolve resources
 
 Before resource resolution, seed TodoWrite with the items below to track Phase 1 progress through registry lookups and §4 T-entry emit. Mark each `in_progress` on entry, `completed` on exit. One item per emit class — never per T-entry.
@@ -115,9 +171,15 @@ For every task, trigger, and condition in the sdd.md:
 | On task entry | `plugins/conditions/task-entry-conditions/` |
 | On case exit | `plugins/conditions/case-exit-conditions/` |
 
+> **Connector-bound condition rules.** Any of the 4 condition scopes above can carry a rule whose WHEN is `wait-for-connector` — binding an Integration Service connector event to gate the condition. These rules require the same connector-resolution pipeline as a task-class `wait-for-connector` (TypeCache + `case spec --type trigger` + reference-resolution). Plan-step planners MUST collect connector fields (`type-id`, `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter`, optional `outputs`) in the condition's T-entry alongside the standard `display-name` / `rule-type` / `condition-expression` fields. Shared recipe: [`connector-trigger-common.md § Target: connector-bound condition rule`](connector-trigger-common.md#target-connector-bound-condition-rule); per-scope tasks.md format in each condition plugin's `planning.md`.
+
 ### 3.4 Unresolved resources
 
-When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**. Instead:
+When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**.
+
+> **Missing connection — offer to create first.** A missing/empty IS connection is not immediately "unresolved". The connector pipeline offers to create one via `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-common.md § Resolve the connection](connector-trigger-common.md#2-resolve-the-connection)). Only after the user **declines** or creation fails does the connection become `<UNRESOLVED>` and fall through to the steps below.
+
+Otherwise:
 
 1. Mark the line in `tasks.md` with `<UNRESOLVED: <reason>>` in the `taskTypeId` / `typeId` / `connectionId` slot.
 2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](placeholder-tasks.md).
@@ -194,6 +256,8 @@ The task **title IS the action description** — do not add a redundant `what` o
 Title format: `Create case file "<name>"`
 
 Consult [`plugins/case/planning.md`](plugins/case/planning.md) for required fields (name, file path, case-identifier, identifier-type, case-app-enabled, description). Source all fields from sdd.md.
+
+When `identifier-type: external`, `case-identifier` carries the sdd.md expression verbatim (`=vars.<varId>` or `=js:…`); any `=vars.<varId>` it references must be a variable declared in §4.2.1 (an **In** argument or **Variable**). See [`plugins/case/planning.md` § External identifier value](plugins/case/planning.md).
 
 ### 4.2.1 Declare global variables and arguments
 

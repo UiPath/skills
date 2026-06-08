@@ -9,25 +9,17 @@ description: >
   node is wired to the autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 87
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
-  Create a UiPath solution "WeatherFlowSol" containing a flow project
-  "WeatherFlow" with an inline low-code agent. The agent accepts a
-  required `location` (string) and returns a number `temperature`. It
-  must compute the temperature using an API workflow named "WeatherAPI"
-  that is already deployed in the tenant — not by reasoning about the
-  answer itself.
+  Create a UiPath Flow project "WeatherFlow" with an inline low-code agent
+  that accepts a required `location` (string) and returns a number
+  `temperature`. It must compute the temperature using an API workflow
+  named "WeatherAPI" that is already deployed in the tenant — not by
+  reasoning about the answer itself. The solution should be named
+  "WeatherFlowSol".
 
   Use the real folder and process name from the tenant — do not
   hard-code or guess these values. Name the agent's tool resource
@@ -103,6 +95,14 @@ success_criteria:
       - expression: "length(Projects)"
         operator: "gte"
         expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 

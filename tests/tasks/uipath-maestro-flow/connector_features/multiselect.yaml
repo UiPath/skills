@@ -4,20 +4,12 @@ description: >
   multiselect field on the Act! 365 connector.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-act-act365, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 37
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node: {}
 initial_prompt: |
   Create a new Flow project called "MultiselectTest" with a manual trigger.
   You need a flow that creates a new contact in Act! 365 and assigns the contact

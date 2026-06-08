@@ -5,11 +5,8 @@ description: >
   a three-node approval flow.
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
+  expected_turns: 24
   max_turns: 105
   turn_timeout: 600
 
@@ -17,11 +14,11 @@ initial_prompt: |
   Build a UiPath Flow named "PurchaseApproval" with this structure:
     Manual Trigger -> HITL (manager approves purchase) -> Script (log approval) -> End
 
-  Use the inline quickform HITL node (uipath.human-in-the-loop).
+  The reviewer's form should be inline — rendered by Action Center.
   The HITL node shows the reviewer: purchase amount and vendor name.
   Outcomes: Approve and Reject.
 
-  Wire the HITL node's completed handle to the Script node.
+  Wire the output of the HITL step to the Script node.
   The Script node logs: "Approval recorded."
 
   Validate the flow after building.
@@ -34,20 +31,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Flow uses completed as the HITL output handle"
+    description: "Flow wires the HITL completed output port"
     path: "PurchaseApproval/PurchaseApproval/PurchaseApproval.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 3.0
     pass_threshold: 1.0
 
-  # Note: a prior "does not reference cancelled/timeout handles" excludes-only
-  # check was removed. The HITL node's `definitions` entry is copied verbatim
-  # from the registry (Critical Rule #7) and declares *all* handles (completed,
-  # cancelled, timeout) — so a substring search against the flow JSON cannot
-  # distinguish "handle declared in the manifest" from "handle wired on an
-  # edge". The positive "completed" check above is the meaningful signal;
-  # the validate step below catches genuinely malformed edges.
+  # Bare 'completed', not '"completed"': the port handle serializes by node
+  # version — v1.0 wires `"sourcePort": "completed"`, v1.1 `"outcome-completed"`.
+  # Version pick is non-deterministic (#1088 removed hardcoded versions), and the
+  # unquoted substring matches both. The validate step below catches malformed edges.
 
   - type: run_command
     description: "uip maestro flow validate passes"

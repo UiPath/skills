@@ -7,13 +7,9 @@ description: >
   smoke "review imported BPMN" matrix.
 tags: [uipath-maestro-bpmn, smoke, "lifecycle:inspect", "mode:inspect"]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
+  expected_turns: 9
   max_turns: 25
-  turn_timeout: 900
 
 sandbox:
   template_sources:

@@ -2,7 +2,7 @@
 
 Companion to [`sdd-template.md`](sdd-template.md). Each section shows the SDD authoring snippets for a common pattern an author will encounter. Use as a reference when writing a new `sdd.md`.
 
-Nine v1-supported patterns. Two intentionally-dropped patterns documented at the end with workarounds.
+Thirteen v1-supported patterns. Two intentionally-dropped patterns documented at the end with workarounds.
 
 ## Quick lookup
 
@@ -11,12 +11,16 @@ Nine v1-supported patterns. Two intentionally-dropped patterns documented at the
 | 1 | Pure case state with default | `Variable` | Case Variables table | — |
 | 2 | Trigger-sourced Variable (event payload → case var) | `Variable` | Case Variables + Triggers tables | — |
 | 2b | Multi-trigger Variable (same slot from N triggers) | `Variable` | Case Variables + Triggers tables | — |
+| 2c | Trigger-sourced file Variable (event payload carries an attachment) | `Variable` (file) | Case Variables + Triggers tables | — |
 | 3 | Caller-supplied / Default-initialized input | `In` | Case Variables table | — |
 | 4 | Returned output to caller | `Out` | Case Variables + producer task's Outputs | `->` |
 | 5 | Task extracts response field → case var | (any) | Task's Outputs table | `->` |
 | 6 | Task writes literal/computed value to existing var | (any) | Task's Outputs table | `=` |
 | 7 | Sub-field consumer (read `=vars.X.subfield`) | `Variable` (jsonSchema) | Any expression field | — |
 | 8 | Out-arg with Default fallback (no producer fires) | `Out` | Case Variables table | — |
+| 9 | File In-argument (caller pre-uploads JobAttachment) | `In` (file) | Case Variables + Triggers tables | — |
+| 10 | Download connector attachment → case file Variable | `Variable` (file) | Case Variables + Task Outputs | `->` |
+| 11 | Send file attachment via multipart connector input | (any) | Task Inputs | — |
 
 ---
 
@@ -30,7 +34,7 @@ Nine v1-supported patterns. Two intentionally-dropped patterns documented at the
 | Name        | Category | Type   | sourceTriggers | sourceFields | Default | Description                              |
 |-------------|----------|--------|----------------|--------------|---------|------------------------------------------|
 | caseStatus  | Variable | string |                |              | "Open"  | Current stage marker of the case          |
-| reviewCount | Variable | number |                |              | 0       | Number of review iterations completed     |
+| reviewCount | Variable | integer |                |              | 0       | Number of review iterations completed     |
 ```
 
 **Runtime behavior:** at case start, `vars.caseStatus = "Open"` and `vars.reviewCount = 0`. Downstream tasks, conditions, and SLA expressions can read them via `=vars.caseStatus` and `=vars.reviewCount`. To update them mid-case, see Use Case 6.
@@ -101,6 +105,41 @@ In Case Variables — one row with CSV + keyed format:
 
 ---
 
+## Use Case 2c — Trigger-sourced file Variable (event payload carries an attachment)
+
+**Scenario:** An event trigger fires from a webhook whose payload includes a file attachment (e.g., insurance claim portal posts `{ ... attachmentRef: { ID, FullName, MimeType, Metadata } }`). The case wants the attachment as a first-class `file` Variable available to downstream stages.
+
+**SDD authoring:**
+
+In Case Triggers:
+```markdown
+| T# | Trigger Type        | Source              | Configuration                          |
+|----|---------------------|---------------------|----------------------------------------|
+| T02 | Intsvc.EventTrigger | Salesforce ServiceCloud | Claim webhook received (POST /claims) |
+```
+
+In Case Variables — one row, `Type: file`, `sourceTriggers` populated:
+
+```markdown
+| Name        | Category | Type | sourceTriggers | sourceFields                | Default | Description                                    |
+|-------------|----------|------|----------------|-----------------------------|---------|------------------------------------------------|
+| damagePhoto | Variable | file | T02            | response.attachment         |         | Damage photo uploaded by claimant at intake    |
+```
+
+**Runtime behavior:**
+
+- T02 fires. The connector spec (or webhook adapter) emits `response.attachment` as a JobAttachment record `{ID, FullName, MimeType, Metadata}` — the engine resolves the spec path and writes the record to `vars.damagePhoto`.
+- Downstream tasks can wire `=vars.damagePhoto` (whole record — multipart file inputs, attachment sub-binding) or `=vars.damagePhoto.FullName` (sub-field — log line, email subject substitution).
+- Caller-pre-upload obligation (Use Case 9) does NOT apply — the trigger-side connector emits the JobAttachment record automatically as part of payload extraction.
+
+**Authoring rules:**
+
+- `sourceFields` is the runtime path to the JobAttachment record within the trigger payload, NOT to a specific sub-field (`response.attachment.ID` would unwrap the record and lose the picker binding). Always bind to the whole record.
+- The connector / webhook adapter must actually emit a `type: "file"` field at that path. If the webhook delivers a URL or base64 blob instead, this pattern does NOT apply — use Use Case 5 with a `Download attachment` task at the start of Stage 1 (per Use Case 10).
+- `Default` MUST stay empty (file Variables reject defaults per FE `InputOutputArgumentsDialog.tsx:148`).
+
+---
+
 ## Use Case 3 — Caller-supplied input (In argument)
 
 **Scenario:** Manual trigger; an API caller (or Studio Web "Run Case" dialog) supplies values at case start.
@@ -119,7 +158,7 @@ In Case Variables:
 | Name             | Category | Type   | sourceTriggers | sourceFields | Default | Description                       |
 |------------------|----------|--------|----------------|--------------|---------|-----------------------------------|
 | applicantId      | In       | string |                |              |         | Loan applicant ID (required)      |
-| requestedAmount  | In       | number |                |              | 0       | Loan amount requested             |
+| requestedAmount  | In       | double |                |              | 0       | Loan amount requested             |
 ```
 
 **Runtime behavior:** caller submits `{applicantId: "ALC-123", requestedAmount: 50000}` via API. Engine routes these to `vars.applicantId` and `vars.requestedAmount` at case start. Downstream tasks read them via `=vars.applicantId` etc.
@@ -202,7 +241,7 @@ In Case Variables (must be pre-declared):
 | Name        | Category | Type   | sourceTriggers | sourceFields | Default | Description                            |
 |-------------|----------|--------|----------------|--------------|---------|----------------------------------------|
 | caseStatus  | Variable | string |                |              | "Open"  | Stage progression marker               |
-| reviewCount | Variable | number |                |              | 0       | Count of review iterations             |
+| reviewCount | Variable | integer |                |              | 0       | Count of review iterations             |
 | enteredAt   | Variable | string |                |              |         | ISO timestamp when last stage entered  |
 ```
 
@@ -289,6 +328,120 @@ Optional producer (if a task DOES produce the value):
 **When to use:**
 - Always declare a `Default` on Out-args that aren't guaranteed to be produced by every case path.
 - Skip `Default` only when the producer is on the case's mandatory path (e.g., a required-stage task on the only completion path).
+
+---
+
+## Use Case 9 — File In-argument (caller pre-uploads JobAttachment)
+
+**Scenario:** Case starts manually; the API caller pre-uploads a file to Orchestrator JobAttachments and passes the resulting record as an In-argument. First task in Stage 1 can immediately reference `=vars.evidenceDoc`.
+
+**SDD authoring:**
+
+In Case Triggers:
+```markdown
+| T# | Trigger Type | Source | Configuration |
+|----|--------------|--------|---------------|
+| T02 | Manual       | API    | N/A           |
+```
+
+In Case Variables:
+```markdown
+| Name        | Category | Type | sourceTriggers | sourceFields | Default | Description                                              |
+|-------------|----------|------|----------------|--------------|---------|----------------------------------------------------------|
+| evidenceDoc | In       | file |                |              |         | JobAttachment record supplied by caller at case start    |
+```
+
+**Runtime caller obligation** (programmatic starts only — Studio Web "Start case" picker handles this automatically):
+
+1. `POST /odata/Attachments` with `{"Name": "claim.pdf"}` → returns `{id, blobFileAccess: {uri, verb}}`.
+2. `PUT <uri>` with the file bytes → blob upload.
+3. `POST .../StartJobs` with:
+   - `startInfo.InputArguments.evidenceDoc = {ID, FullName, MimeType, Metadata}` (the JobAttachment record)
+   - `startInfo.Attachments = [{attachmentId: <id>}]` (associates the attachment with the new job)
+
+**Runtime behavior:** as soon as the case starts, `vars.evidenceDoc` resolves to the JobAttachment record. Downstream tasks can wire `=vars.evidenceDoc` (whole record) or `=vars.evidenceDoc.FullName` (sub-field).
+
+**Notes:**
+- `Default` MUST stay empty — the FE rejects any other value for file Variables (`InputOutputArgumentsDialog.tsx:148`).
+- For event/timer triggers (no caller), use Use Case 10 instead — a Stage 1 task produces the file from an external source.
+
+---
+
+## Use Case 10 — Download connector attachment → case file Variable
+
+**Scenario:** First stage downloads a file from an external system (Outlook attachment, Drive file, S3 object, …) and parks it in a case file Variable for downstream stages.
+
+**SDD authoring:**
+
+In Case Variables:
+```markdown
+| Name        | Category | Type   | sourceTriggers | sourceFields | Default | Description                                                |
+|-------------|----------|--------|----------------|--------------|---------|------------------------------------------------------------|
+| emailId     | In       | string |                |              |         | Outlook message id to download from (supplied by caller)   |
+| evidenceDoc | Variable | file   |                |              |         | Downloaded attachment, available to all downstream stages  |
+```
+
+In Stage 1 task (Outlook 365 → Download Email Attachment, activity type `6c474b91-affe-3869-9a49-f55e464b6b77`):
+
+```markdown
+**Inputs:**
+
+| Field                | Binding              |
+|----------------------|----------------------|
+| queryParameters.id   | `=vars.emailId`      |
+
+**Outputs:**
+
+| Field    | Binding / Value   |
+|----------|-------------------|
+| response | -> evidenceDoc    |
+```
+
+**Runtime behavior:**
+- Activity runs, fetches the email attachment bytes, uploads to JobAttachments, writes `{ID, FullName, MimeType, Metadata}` to `vars.evidenceDoc`.
+- The activity output is `type: "file"` with `target: "=orchestrator.JobAttachments"` — emitted directly by `case spec`, no skill post-processing needed.
+- Downstream stages reference `=vars.evidenceDoc` or sub-fields like `=vars.evidenceDoc.FullName`.
+
+**Notes:**
+- The `response` output name is the connector spec's curated file response (knowledge file §4.1). The `->` operator on the right side names it `evidenceDoc`, which becomes the case-Variable id.
+- This pattern generalizes to any connector activity whose spec returns `type: "file"` / `"octet-stream"` (CLI normalizes both to `"file"`).
+
+---
+
+## Use Case 11 — Send file attachment via multipart connector input
+
+**Scenario:** A case file Variable holds an attachment (populated by an earlier trigger or download task — Use Case 10 / 9); a later stage sends it out via a connector activity that accepts a multipart file input (Outlook Send Email, Drive Upload, Slack File Upload, …).
+
+**SDD authoring:**
+
+In Case Variables (file already populated by an earlier task):
+```markdown
+| Name        | Category | Type | sourceTriggers | sourceFields | Default | Description                                |
+|-------------|----------|------|----------------|--------------|---------|--------------------------------------------|
+| evidenceDoc | Variable | file |                |              |         | File to attach (set by Stage 1)            |
+```
+
+In the sending task (Outlook 365 → Send Email, activity type `c7ce0a96-2091-3d94-b16f-706ebb1eb351`):
+
+```markdown
+**Inputs:**
+
+| Field                              | Binding                |
+|------------------------------------|------------------------|
+| body.message.toRecipients          | `"reviewer@vip.com"`   |
+| body.message.subject               | `"Evidence for review"` |
+| body.message.body.contentType      | `"Text"`               |
+| body.message.body.content          | `"See attached."`      |
+| file                               | `=vars.evidenceDoc`    |
+```
+
+**Runtime behavior:**
+- The `file` input is the multipart sink — `case spec` emits it with `target: "file"` (literal string, NOT an expression). Skill preserves verbatim.
+- `=vars.evidenceDoc` resolves to the JobAttachment record; the runtime adapter fetches bytes from JobAttachments and streams them into the multipart `file` part of the outbound HTTP request.
+
+**Anti-patterns:**
+- ❌ `=vars.evidenceDoc.ID` — sub-field references are rejected by file inputs. The picker is `selectionOnly` (`IntsvcActivityPropertiesUtils.tsx:272-279`); only whole-record binding is valid.
+- ❌ Hardcoded file path or URL in `value` — file variables don't hold paths; the multipart adapter expects a JobAttachment record reference.
 
 ---
 

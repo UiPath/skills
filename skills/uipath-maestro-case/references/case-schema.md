@@ -95,6 +95,16 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
 | `version` | string | Schema version — `"20.0.0"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
+| `type` | `"case-management:root"` | Literal — do not change |
+| `caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
+| `caseIdentifierType` | `"constant"` \| `"external"` | Selects how `caseIdentifier` is read. Default `constant`. |
+| `caseAppEnabled` | boolean | Whether the Case App UI is enabled |
+| `version` | string | Schema version — `"v19"` for current schema. Emitted by the `case` plugin at T01. |
+| `publishVersion` | number? | Publish version — `2` for current schema |
+| `data.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
+| `data.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
+| `data.uipath` | object? | Variable and binding declarations |
+| `caseExitConditions` | CaseExitCondition[]? | Conditions that mark the case as complete |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Identifier used at runtime |
 | `metadata.caseIdentifierType` | `"constant"` \| `"external"` | How the identifier is resolved |
@@ -104,6 +114,13 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | `metadata.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
 | `metadata.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
 | `metadata.caseExitRules` | CaseExitCondition[]? | Conditions that mark the case as complete |
+
+### Case identifier (constant vs external)
+
+`caseIdentifierType` picks how `caseIdentifier` resolves at runtime:
+
+- **`constant`** (default) — `caseIdentifier` is a literal 2-4 char prefix (`"LOAN"`). Runtime emits the case external id as `<prefix>-<generated>`.
+- **`external`** — `caseIdentifier` is a `=`-prefixed expression (bare `=vars.<id>` or `=js:<expr>`). Runtime evaluates it; the result becomes the case external id verbatim (no prefix). Same `=vars.<id>` / `=js:` convention as [bindings-and-expressions.md](bindings-and-expressions.md) — no other engine. v20: field lives under `metadata` (see field-mapping table). Authoring forms + variable eligibility: [`plugins/case/planning.md` § External identifier value](plugins/case/planning.md).
 
 ### CaseExitCondition
 
@@ -318,7 +335,7 @@ Rules = Rule[][]
 
 | `rule` | Additional fields | Description |
 |--------|-------------------|-------------|
-| `wait-for-connector` | `id?`, `conditionExpression?`, `uipath?` | Wait for an external connector event |
+| `wait-for-connector` | `id?`, `uipath` (connector config — **required**; absent → `connector activity missing`. Unresolved → **stub** placeholder, not bare — see § Placeholder fallback), `conditionExpression?` | Wait for an external connector event — see § Connector-bound rule below |
 | `case-entered` | `id?`, `conditionExpression?` | Fires when the case is first entered |
 | `selected-stage-completed` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has completed |
 | `selected-stage-exited` | `id?`, `selectedStageId?`, `conditionExpression?` | A specific stage has been exited |
@@ -336,8 +353,29 @@ Not every rule type is valid at every level — see each condition plugin's `imp
 { "rule": "case-entered", "id": "<id>" }
 { "rule": "selected-stage-completed", "id": "<id>", "selectedStageId": "<stageId>" }
 { "rule": "selected-tasks-completed", "id": "<id>", "selectedTasksIds": ["<taskId1>", "<taskId2>"] }
-{ "rule": "adhoc", "id": "<id>", "conditionExpression": "in.Score > 700" }
+{ "rule": "adhoc", "id": "<id>", "conditionExpression": "=js:vars.score > 700" }
 ```
+
+### Connector-bound `wait-for-connector` rule
+
+A `wait-for-connector` rule binds an IS connector trigger under **`uipath`** — the same block the in-stage `wait-for-connector` task carries under `data`. A bare rule (no `uipath`) is rejected by Studio Web (the FE validator requires the connector activity to resolve). It is authored from a `case spec --type trigger` scaffold; the CLI does not bind it (`buildRule` emits the bare form). `conditionExpression` is an optional `=js:` gate on **case state** (`vars.X` / `metadata`) — NOT the event payload (no `event` namespace). Inputs/outputs `elementId` = `<stageId>-<ruleId>` (stage-entry / stage-exit / task-entry — all stage-scoped) or `root-<ruleId>` (case-exit). Full recipe: [connector-trigger-common.md § Target: connector-bound condition rule](connector-trigger-common.md#target-connector-bound-condition-rule).
+
+```json
+{
+  "rule": "wait-for-connector",
+  "id": "<ruleId>",
+  "uipath": {
+    "serviceType": "Intsvc.WaitForEvent",
+    "context": [ { "name": "connectorKey", "value": "<key>", "type": "string" }, { "name": "connection", "value": "=bindings.<id>", "type": "string" }, { "name": "resourceKey", "value": "<connection-id>", "type": "string" }, { "name": "folderKey", "value": "=bindings.<id>", "type": "string" }, { "name": "method", "value": "<httpMethod>", "type": "string" }, { "name": "path", "value": "<path>", "type": "string" }, { "name": "objectName", "value": "<object>", "type": "string" }, { "name": "operation", "value": "<eventOperation>", "type": "string" }, { "name": "metadata", "type": "json", "body": { } } ],
+    "inputs": [ ],
+    "outputs": [ ],
+    "bindings": []
+  },
+  "conditionExpression": "=js:<optional case-state gate, e.g. vars.X — NOT the event payload>"
+}
+```
+
+> Full `validate` requires `rule.uipath` + `context` (absent → `connector activity missing`); the check is satisfied by `context` entries named `connectorKey` + `operation`, and does not inspect internals (a wrong `serviceType` passes). Confirm the connector resolves via Studio Web. The exact `context` field set is CLI-emitted and varies by connector — splice it verbatim from `case spec`; the 9 fields above are illustrative of an HTTP-event connector, not a fixed schema.
 
 ---
 
@@ -350,7 +388,7 @@ All SLA data on a target (root or stage) lives in a single `slaRules[]` array. T
   {
     "expression": "=js:vars.priority === 'Urgent'",
     "count": 30,
-    "unit": "m",
+    "unit": "min",
     "escalationRule": [
       {
         "id": "esc_aB3kL9",
@@ -416,7 +454,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
 | `skipCondition` | string? | Expression — skip the task when truthy |
-| `entryConditions` | TaskEntryCondition[]? | See §3. **Connector tasks (`execute-connector-activity`, `wait-for-connector`) receive a default `current-stage-entered` entry condition on creation. Non-connector tasks do NOT.** |
+| `entryConditions` | TaskEntryCondition[]? | See §3. Written by the task-entry-conditions plugin from the SDD's authored Entry Condition rows — applied uniformly across task types (no auto-injection by task type). |
 | `shouldRunOnlyOnce` | boolean? | Run the task at most once per case, even if the stage is re-entered |
 | `shouldRunOnReEntry` | boolean? | *(deprecated — use `shouldRunOnlyOnce`)* Re-run when stage is re-entered |
 | `isRequired` | boolean? | Whether the task must complete for the stage to complete |

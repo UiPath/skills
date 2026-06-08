@@ -1,0 +1,46 @@
+task_id: skill-platform-role-lifecycle-e2e
+description: >
+  E2E: agent leaves the tenant with a Tenant-scoped role that has exactly
+  one specific permission attached. The agent must have exercised both
+  add-and-remove paths during the run (verified by the agent writing the
+  before/after observation to a file).
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 10
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+run_limits:
+  expected_turns: 24
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I need a new tenant-level role set up. Name it `e2e-role-` followed by
+  the unique prefix from `seed.json`.
+
+  The role should end up with exactly one permission attached. Pick the
+  first permission from the list of grantable permissions on the tenant
+  and write its name to `permission.txt` so I know which one you chose.
+
+  I also want to confirm the add/remove flow works — add a second
+  permission at some point and then remove it again, so by the end only
+  the one in `permission.txt` is still granted.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: role exists with the granted permission listed in permission.txt"
+    command: "python3 $TASK_DIR/check_role_lifecycle.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

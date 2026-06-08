@@ -42,16 +42,45 @@ After installing, verify with `node -v` and then run the quick start command abo
 
 ## Skill Catalog
 
-The repository contains skills for building and managing UiPath automation projects — coded workflows in C#, RPA workflows in XAML, Flow projects in JSON, desktop/browser UI automation, and platform operations.
+The repository ships skills covering authoring, platform operations, and diagnostics for UiPath automations.
+
+### Authoring
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-rpa** | Full assistant for UiPath automations — coded workflows (C#) and low-code RPA workflows (XAML). Create, edit, build, run, and debug automation projects |
-| **uipath-maestro-flow** | Create, validate, and debug UiPath Flow projects using the `.flow` JSON format and `uip` CLI |
-| **uipath-platform** | Authentication, Orchestrator management, resources, Integration Service, traces, licensing, and CLI tools |
-| **uipath-solution** | PDD → SDD authoring AND `uip solution` lifecycle (init, pack, publish, deploy, activate) for `.uipx` multi-project solutions |
-| **uipath-agents** | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
-| **uipath-coded-apps** | Build, sync, package, publish, and deploy UiPath Coded Web Applications — push/pull to Studio Web, pack into .nupkg, publish to Orchestrator, deploy to production |
+| **uipath-rpa** | RPA workflows (`.xaml` and `.cs` coded) — create, edit, build, run, debug, test; UI automation, Object Repository, Integration Service activities. |
+| **uipath-maestro-flow** | Maestro Flow (`.flow`) — author, connect nodes, validate, run, publish; triggers, schedules, evals, incidents. |
+| **uipath-agents** | UiPath agents end-to-end — coded (Python: LangGraph, LlamaIndex, OpenAI Agents) and low-code (`agent.json`); scaffold, run, evaluate, deploy. |
+| **uipath-maestro-bpmn** | Maestro BPMN process orchestration (`.bpmn`) — author XML, validate, package, operate, diagnose. |
+| **uipath-maestro-case** | Case Management (`caseplan.json`) authoring from SDD with phased build and validation. |
+| **uipath-coded-apps** | Coded Web Apps and Coded Action Apps — scaffold, build, debug, pack, publish, deploy via `uip codedapp`. |
+| **uipath-api-workflow** | API Workflow JSON DSL — author, run, package, publish; HTTP and Integration Service connector activities. |
+| **uipath-human-in-the-loop** | Human task authoring and operations — design approval gates, escalations, and validation forms in Flow, Maestro, or coded agents; list, assign, complete, and reassign the resulting Action Center tasks. |
+| **uipath-ixp** | Document Understanding (IXP) — project setup, labeling, prediction review, prompt improvement, model publishing. |
+
+### Solution & Planning
+
+| Skill | Description |
+|-------|-------------|
+| **uipath-design** | PDD → SDD authoring — turn a Process Design Document into an implementation-ready Solution Design Document. |
+| **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
+| **uipath-planner** | Multi-skill task planner — reads SDDs or non-PDD requests and derives an executable task list across the other skills. |
+| **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
+
+### Platform & Operations
+
+| Skill | Description |
+|-------|-------------|
+| **uipath-platform** | Platform ops via `uip` CLI — auth, Orchestrator (folders, assets, queues, buckets, jobs, triggers), Integration Service, Data Fabric (entities and records), LLM Gateway, traces, licensing. |
+| **uipath-admin** | UiPath Admin — Identity Server, Authorization (custom roles, role assignments, PDP), OMS (org, tenants, services, regions), IP restriction, audit; governance policies (AOps product policies and Access ToolUsePolicy). |
+| **uipath-test** | Test Manager — manage projects, cases, sets, executions; generate persona-tailored test reports. |
+
+### Diagnostics & Feedback
+
+| Skill | Description |
+|-------|-------------|
+| **uipath-troubleshoot** | Root-cause investigation across any UiPath product — errors, failures, regressions, stuck jobs, traces, incidents. |
+| **uipath-feedback** | Submit bug reports and improvement suggestions via `uip feedback send`. |
 
 ## Agents
 
@@ -121,6 +150,10 @@ See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide, including:
 4. Submit a pull request
 
 For questions, ideas, or feedback, please [open an issue](https://github.com/UiPath/uipath-claude-plugins/issues).
+
+### Running coder-eval on demand
+
+[**Run Coder Eval**](https://github.com/UiPath/skills/actions/workflows/run-coder-eval.yml) — GH-hosted workflow that runs `coder-eval` against the skills task tree (`tests/tasks/...`). Use for ad-hoc single-task verification or a folder-scoped sweep on the same infra as the nightly cron. Trigger from the Actions tab → "Run workflow" → fill in `task_globs`. Definition: [`.github/workflows/run-coder-eval.yml`](.github/workflows/run-coder-eval.yml).
 
 ## Resources
 

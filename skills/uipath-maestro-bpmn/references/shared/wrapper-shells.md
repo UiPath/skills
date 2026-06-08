@@ -17,9 +17,9 @@ Anchors of every shell:
 - `uipath:activity` or `uipath:event` carries the wrapper kind through
   `<uipath:type value="..." version="v1" />`.
 - Do not use legacy shorthand such as `<uipath:activity type="...">` in new XML.
-- Keep wrapper identity and resource context in `uipath:activity` or
-  `uipath:event`. Put variable payload inputs and outputs in a sibling
-  `uipath:mapping version="v1"` element.
+- Keep wrapper identity, resource context, and contract payload inputs/outputs
+  in `uipath:activity` or `uipath:event`. Use `uipath:mapping version="v1"`
+  for `BPMN.Variables` tasks and script-task mappings.
 - Every expression that references a root variable uses
   `=vars.<variableId>`, not bare names.
 - Every visible flow node and sequence flow needs matching `bpmndi:BPMNShape`
@@ -46,6 +46,9 @@ Namespace baseline for greenfield files:
 ## Orchestrator.StartJob (RPA)
 
 `bpmn:serviceTask` with `Orchestrator.StartJob`.
+Use a complete process identity context instead of a display-name-only shell.
+For process job wrappers, resolve process and folder identity from discovery
+commands before execution; keep examples placeholder-safe.
 
 ```xml
 <bpmn:serviceTask id="Task_StartRpaJob" name="Start RPA Job">
@@ -53,22 +56,31 @@ Namespace baseline for greenfield files:
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.StartJob" version="v1" />
       <uipath:context>
-        <uipath:input name="processName" type="string" value="Synthetic Process" />
+        <uipath:input name="ReleaseKey" type="string" value="PROCESS_KEY_GUID" />
+        <uipath:input name="FolderKey" type="string" value="FOLDER_KEY_GUID" />
+        <uipath:input name="FolderPath" type="string" value="Shared/Synthetic" />
+        <uipath:input name="Name" type="string" value="Synthetic Process" />
       </uipath:context>
+      <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_JobResult" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="inArgs" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="JobId" type="string" var="Var_JobId" source="id" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_RpaJob</bpmn:incoming>
   <bpmn:outgoing>Flow_RpaJob_Out</bpmn:outgoing>
 </bpmn:serviceTask>
 ```
 
-## Orchestrator.StartAgentJob (UiPath agent)
+## Orchestrator.StartAgentJob (folder-deployed agent — coded Python or low-code)
 
-`bpmn:serviceTask` with `Orchestrator.StartAgentJob`.
+`bpmn:serviceTask` with `Orchestrator.StartAgentJob`. Use this wrapper only
+for a dependency that discovery confirms as `processType: "Agent"`. Coded
+Python dependencies may surface as another process type; do not infer the
+wrapper from the source project label alone.
+
+When drafting the wrapper from a resolved Agent process, use the same identity
+context shape that process wrappers use. Local validation proves XML/package
+shape only; do not claim executable behavior until the target resource,
+bindings, schemas, and authorized debug/run have been verified.
 
 ```xml
 <bpmn:serviceTask id="Task_StartAgentJob" name="Start Agent Job">
@@ -76,21 +88,78 @@ Namespace baseline for greenfield files:
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
       <uipath:context>
-        <uipath:input name="agentName" type="string" value="Synthetic Agent" />
+        <uipath:input name="ReleaseKey" type="string" value="AGENT_PROCESS_KEY_GUID" />
+        <uipath:input name="FolderKey" type="string" value="FOLDER_KEY_GUID" />
+        <uipath:input name="FolderPath" type="string" value="Shared/SyntheticAgentSolution" />
+        <uipath:input name="Name" type="string" value="Synthetic Agent" />
       </uipath:context>
-    </uipath:activity>
-    <uipath:mapping version="v1">
       <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-    </uipath:mapping>
+      <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_AgentJobResult" />
+    </uipath:activity>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_AgentJob</bpmn:incoming>
   <bpmn:outgoing>Flow_AgentJob_Out</bpmn:outgoing>
 </bpmn:serviceTask>
 ```
 
-## A2A.AgentExecution
+For `uip solution resource refresh`, `bindings_v2.json` must use a versioned
+package resource wrapper. A process dependency usually has separate resource
+entries for the process name and folder path; do not use an unwrapped resource
+array or unversioned placeholder as the source of dependency resources:
 
-`bpmn:serviceTask` with `A2A.AgentExecution`.
+```json
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "id": "Binding_AgentName",
+      "kind": "process",
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "name",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "name"
+      }
+    },
+    {
+      "id": "Binding_AgentFolderPath",
+      "kind": "process",
+      "resource": "process",
+      "resourceSubType": "Agent",
+      "propertyAttribute": "folderPath",
+      "name": "Synthetic Agent",
+      "resourceKey": "synthetic-agent",
+      "metadata": {
+        "BindingsVersion": "v1",
+        "DisplayLabel": "Synthetic Agent",
+        "SolutionsSupport": "Required",
+        "SubType": "Agent",
+        "PropertyAttribute": "folderPath"
+      }
+    }
+  ]
+}
+```
+
+An empty `resources` array is valid for package-shape verification when the
+BPMN has no generated resource dependencies. It does not represent imported
+dependencies for a process, queue, connector, or agent.
+
+`Var_RequestId` must already exist as a `uipath:inputOutput` variable readable at the task — see [variables-bindings-expressions.md](variables-bindings-expressions.md#entry-point-inputs-used-downstream) for the start-scoped input pattern.
+
+For the local validation fixture covering BPMN structure, bindings, and
+start-scoped entry input, see
+[../../fixtures/validation/agent-invocation/](../../fixtures/validation/agent-invocation/).
+
+## A2A.AgentExecution (external A2A agent addressed by URL)
+
+`bpmn:serviceTask` with `A2A.AgentExecution`. Use this shell only for external A2A agents addressed by URL/skillId/authToken — not for agents deployed to an Orchestrator folder. Studio Web renders this as an external A2A node and disables the Action dropdown; if you want a folder-deployed coded or low-code agent, use `Orchestrator.StartAgentJob` above.
 
 ```xml
 <bpmn:serviceTask id="Task_A2AAgent" name="A2A Agent">
@@ -98,10 +167,9 @@ Namespace baseline for greenfield files:
     <uipath:activity version="v1">
       <uipath:type value="A2A.AgentExecution" version="v1" />
       <uipath:context />
+      <uipath:input name="body" type="json" target="body"><![CDATA[{"input":"Summarize the synthetic request."}]]></uipath:input>
+      <uipath:output name="a2aResponse" type="A2A.AgentExecution" var="Var_A2AResponse" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="Prompt" type="string" value="Summarize the synthetic request." />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_A2A</bpmn:incoming>
   <bpmn:outgoing>Flow_A2A_Out</bpmn:outgoing>
@@ -111,6 +179,9 @@ Namespace baseline for greenfield files:
 ## Orchestrator.ExecuteApiWorkflowAsync
 
 `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
+Use the same process identity context pattern as other Orchestrator process
+wrappers. Keep context field names aligned with the wrapper shell and use
+resolved process/folder identifiers before execution.
 
 ```xml
 <bpmn:serviceTask id="Task_ExecuteApiWorkflow" name="Execute API Workflow">
@@ -118,15 +189,14 @@ Namespace baseline for greenfield files:
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
       <uipath:context>
-        <uipath:input name="name" type="string" value="Synthetic API Workflow" />
+        <uipath:input name="ReleaseKey" type="string" value="API_WORKFLOW_PROCESS_KEY_GUID" />
+        <uipath:input name="FolderKey" type="string" value="FOLDER_KEY_GUID" />
+        <uipath:input name="FolderPath" type="string" value="Shared/Synthetic" />
+        <uipath:input name="Name" type="string" value="Synthetic API Workflow" />
       </uipath:context>
-    </uipath:activity>
-    <uipath:mapping version="v1">
       <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="InvocationId" type="string" var="Var_ApiWorkflowInvocationId" source="id" />
-      <uipath:output name="Status" type="string" var="Var_ApiWorkflowStatus" source="status" />
-      <uipath:output name="Result" type="json" var="Var_ApiWorkflowResult" source="result" />
-    </uipath:mapping>
+      <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_ApiWorkflowResult" />
+    </uipath:activity>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_ApiWorkflow</bpmn:incoming>
   <bpmn:outgoing>Flow_ApiWorkflow_Out</bpmn:outgoing>
@@ -145,12 +215,9 @@ Namespace baseline for greenfield files:
       <uipath:context>
         <uipath:input name="name" type="string" value="Synthetic Rule" />
       </uipath:context>
+      <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="Execute business rule [Preview]" type="Orchestrator.BusinessRules" var="Var_RuleResult" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="facts" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="Outcome" type="string" var="Var_RuleOutcome" source="outcome" />
-      <uipath:output name="Diagnostics" type="json" var="Var_RuleDiagnostics" source="diagnostics" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_BusinessRule</bpmn:incoming>
   <bpmn:outgoing>Flow_BusinessRule_Out</bpmn:outgoing>
@@ -169,11 +236,9 @@ Namespace baseline for greenfield files:
       <uipath:context>
         <uipath:input name="queueName" type="string" value="SyntheticQueue" />
       </uipath:context>
+      <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_WorkItem" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="itemData" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="QueueItemId" type="string" var="Var_WorkItemId" source="id" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_CreateQueue</bpmn:incoming>
   <bpmn:outgoing>Flow_CreateQueue_Out</bpmn:outgoing>
@@ -190,11 +255,12 @@ process waits for completion.
   <bpmn:extensionElements>
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.CreateAndWaitForQueueItem" version="v1" />
-      <uipath:context />
+      <uipath:context>
+        <uipath:input name="queueName" type="string" value="SyntheticQueue" />
+      </uipath:context>
+      <uipath:input name="ItemData" type="json" target="body"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="response" type="Orchestrator.CreateQueueItem" var="Var_WorkItem" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="reference" type="string" value="=vars.Var_WorkItemId" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_WaitQueue</bpmn:incoming>
   <bpmn:outgoing>Flow_WaitQueue_Out</bpmn:outgoing>
@@ -370,11 +436,9 @@ CLI or operator.
     <uipath:activity version="v1">
       <uipath:type value="Actions.HITL" version="v1" />
       <uipath:context />
+      <uipath:input name="HitlTaskArguments" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
+      <uipath:output name="Process response" type="Actions.HITL" var="Var_ActionResult" />
     </uipath:activity>
-    <uipath:mapping version="v1">
-      <uipath:input name="TaskData" type="json" target="bodyField"><![CDATA[{"requestId":"=vars.Var_RequestId"}]]></uipath:input>
-      <uipath:output name="Outcome" type="string" var="Var_Outcome" source="outcome" />
-    </uipath:mapping>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_Review</bpmn:incoming>
   <bpmn:outgoing>Flow_Review_Out</bpmn:outgoing>
@@ -396,10 +460,8 @@ connection binding, dynamic schemas, and operation metadata.
         <uipath:input name="connectorKey" type="string" value="placeholder-connector" />
         <uipath:input name="activity" type="string" value="placeholder-operation" />
       </uipath:context>
-    </uipath:activity>
-    <uipath:mapping version="v1">
       <uipath:input name="Body" type="json" target="bodyField"><![CDATA[{"value":"=vars.Var_RequestId"}]]></uipath:input>
-    </uipath:mapping>
+    </uipath:activity>
   </bpmn:extensionElements>
   <bpmn:incoming>Flow_To_ConnectorActivity</bpmn:incoming>
   <bpmn:outgoing>Flow_ConnectorActivity_Out</bpmn:outgoing>
@@ -471,8 +533,7 @@ Rules:
 
 - `<bpmn:script>` bodies on `bpmn:scriptTask` require either
   `<uipath:scriptVersion>` or a `<uipath:mapping>` containing
-  `<uipath:type value="BPMN.ScriptTask" version="v1" />` or
-  `<uipath:type value="BPMN.Variables" version="v1" />`. Without one of those
+  `<uipath:type value="BPMN.ScriptTask" version="v1" />`. Without one of those
   extensions, `uip maestro bpmn validate` rejects the body.
 - `uipath:migrationVersion` is preserve-only. Numeric values such as `5`,
   `11`, and `11.5` carry import migration history; do not delete them.

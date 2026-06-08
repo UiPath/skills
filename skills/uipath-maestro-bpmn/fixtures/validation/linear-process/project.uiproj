@@ -1,7 +1,7 @@
 {
   "projectVersion": "1.0.0",
-  "projectType": "ProcessOrchestration",
-  "name": "LinearProcess",
+  "ProjectType": "ProcessOrchestration",
+  "Name": "LinearProcess",
   "description": "Synthetic Maestro BPMN validation fixture.",
   "main": "linear-process.bpmn"
 }

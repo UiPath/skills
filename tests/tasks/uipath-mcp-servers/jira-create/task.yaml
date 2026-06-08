@@ -1,0 +1,55 @@
+task_id: skill-mcp-servers-jira-create
+description: |
+  Wrap Jira `curated_create_issue` Create as an MCP tool on the `test-mcp-skill` AgentHub server. Bake project=MOCKPROJ and issue type=10 into staticValues with designTimeLookups populated; LLM provides summary (required) and description. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:build']
+agent:
+  type: claude-code
+  allowed_tools: [Bash, Read, Write]
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+  - {type: template_dir, path: ../_shared/mock_template}
+  - {type: template_dir, path: fixtures}
+  mock_path_dirs: [mocks]
+initial_prompt: |
+  Load the uipath-mcp-servers skill and follow its documented workflow for this tool end to end. For an IS-activity tool, read references/is-activity-workflow.md and use the exact `uip agenthub mcp-tools create-is-activity` flags it specifies (`--mcp`, `--target-identifier`, `--description`, `--metadata`, `--input-schema`, `--output-schema`); for a resource tool, read the resource guidance and run `mcp-tools candidates`/`template` as it directs. Use the exact CLI commands and flags the skill documents — do not invent flag names.
+
+  Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
+  sandbox; manifest-driven canned responses).
+
+  TASK: Add a Jira Create Issue tool to my `test-mcp-skill` MCP server.
+  Bake project=MOCKPROJ and issue type id=10 into the tool — the LLM should
+  provide the summary (required) and optional description. The Jira
+  connection lives in my personal workspace folder. Use --dry-run on the
+  final create call.
+
+  Refs available:
+    - connector key: uipath-atlassian-jira
+    - MCP server slug: test-mcp-skill, in Shared folder (key: folder-mock-shared)
+    - Jira connection id: conn-mock-jira-01 (in folder folder-mock-workspace)
+
+  Save to the sandbox cwd:
+    - metadata.json — the ActivityMetadata object (pretty JSON, not stringified)
+    - input-schema.json — JSON Schema for LLM inputs
+    - output-schema.json — JSON Schema for responseFields ({} acceptable)
+    - create-command.sh — the exact `uip agenthub mcp-tools create-is-activity ... --dry-run` invocation
+    - trajectory.md — every uip call you ran, one line each
+    - summary.txt — one or two lines on what you produced
+success_criteria:
+- {type: file_exists, path: metadata.json, description: '`metadata.json` was produced'}
+- {type: file_exists, path: input-schema.json, description: '`input-schema.json` was produced'}
+- {type: file_exists, path: output-schema.json, description: '`output-schema.json` was produced'}
+- {type: file_exists, path: create-command.sh, description: '`create-command.sh` was produced'}
+- type: file_contains
+  description: metadata.connector.key set to uipath-atlassian-jira
+  path: metadata.json
+  includes: [uipath-atlassian-jira, curated_create_issue]
+- type: file_contains
+  description: metadata bakes the static project value (offline mock does not assert designTimeLookups
+    label resolution)
+  path: metadata.json
+  includes: [MOCKPROJ]
+- {type: command_executed, description: Agent ran the cascade describe with -f field values, tool_name: Bash,
+  command_pattern: uip\s+is\s+resources\s+describe.*-f\s+fields\.project\.key, min_count: 1}
+run_limits: {max_turns: 40}

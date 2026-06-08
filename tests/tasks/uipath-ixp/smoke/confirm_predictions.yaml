@@ -1,19 +1,16 @@
 task_id: skill-ixp-confirm-predictions-smoke
 description: >
-  Skill-guided evaluation: agent reviews IXP model predictions against an
-  inline document excerpt and records its verdict via `uip ixp labellings
-  confirm`. Exercises all three branches of Critical Rule #8:
-  cleanly-correct fields are confirmed via `--fields`; OCR-mangled fields
-  (right region, wrong text) are corrected via `--corrections`; and
-  wrong-field predictions (model picked the wrong value entirely) are
-  left unannotated. Also tests Rule #11 (agent reviews predictions,
-  never extracts values manually).
+  Smoke: agent reviews predictions and picks the right verdict per
+  field — correct → `confirm --fields`; OCR-mangled → `confirm
+  --corrections` (Rule 8); wrong-field prediction → left
+  unannotated (Rule 11 — agent reviews, doesn't extract).
 
-  Platform note: the smoke test runs without an authenticated tenant, so
-  `uip ixp` commands that hit the service will fail with an auth error.
-  That is acceptable — what matters is that the agent invokes the correct
-  command shape with the correct flags.
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, lifecycle:execute]
+
+run_limits:
+  expected_turns: 6
 
 initial_prompt: |
   Review the IXP model's predictions for document `doc-abc-123` on

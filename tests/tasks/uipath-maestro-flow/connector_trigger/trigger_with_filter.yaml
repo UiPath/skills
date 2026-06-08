@@ -4,6 +4,9 @@ description: >
   Without this, UI drops the filter silently on first open.
 tags: [uipath-maestro-flow, smoke, lifecycle:discover, connector-trigger, uipath-microsoft-outlook365, filter, ipe]
 
+run_limits:
+  expected_turns: 7
+
 initial_prompt: |
   You are authoring a UiPath Flow that is triggered by an Outlook email with subject containing "good day" and sent from
   abc@xyz.com.

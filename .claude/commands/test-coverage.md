@@ -51,7 +51,8 @@ Components are the specific, testable units the skill teaches. What counts as a 
 | Flow orchestration (`uipath-maestro-flow`) | Node types: `core.action.script`, `core.logic.decision`, `uipath.connector.*`, etc. Find these in SKILL.md Plugin Index tables and `references/plugins/*/planning.md` files. |
 | RPA workflows (`uipath-rpa`) | Workflow modes (Coded C#, XAML), activity types, project types. Found in section headings like "Coded Workflows Quick Reference", "XAML Workflows Quick Reference". |
 | Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
-| Solution lifecycle (`uipath-solution`) | `uip solution` lifecycle (init, pack, publish, deploy, activate) and PDD → SDD authoring. Found in the Operate half and Design half of the SKILL.md. |
+| Solution lifecycle (`uipath-solution`) | `uip solution` lifecycle (init, pack, publish, deploy, activate). Found in the CLI Surface Probe, Critical Rules, and Workflow sections of the SKILL.md. |
+| Solution design (`uipath-design`) | PDD → SDD authoring. Phased workflow (PDD analysis, architecture review, SDD generation), product/scope selection, SDD templates. Found in the Critical Rules, Workflow, and Reference Navigation sections. |
 | Agent development (`uipath-agents`) | Lifecycle stages (Auth, Setup, Build, Bindings, Run, Deploy), framework types (LangGraph, LlamaIndex, etc.). Found in "Lifecycle Stages" section. |
 | Coded apps (`uipath-coded-apps`) | Pipeline stages (Push, Pull, Pack, Publish, Deploy), app configuration concepts. Found in lifecycle and "Ship It" sections. |
 
@@ -108,7 +109,7 @@ task_id         — unique test identifier (e.g., "skill-flow-calculator")
 description     — what the test validates
 tags            — array carrying values from the Tag Taxonomy dimensions
                   documented in tests/README.md. Form:
-                  [skill, tier, mode:X, shape:X, node:..., resource, connector, feature:...]
+                  [skill, tier, mode:X, shape:X, node:..., resource, connector, windows, feature:...]
                     skill      — uipath-<name>                                (required, flat)
                     tier       — smoke | integration | e2e                    (required, flat)
                     mode       — mode:{build|operate|troubleshoot}                (required)
@@ -116,6 +117,7 @@ tags            — array carrying values from the Tag Taxonomy dimensions
                     node       — node:{decision|switch|subflow|terminate|loop|transform|hitl} (0..n)
                     resource   — flat boolean marker (present iff task uses a resource node) (0..1)
                     connector  — flat boolean marker (present iff task uses any connector)   (0..1)
+                    windows    — flat boolean marker (present iff task requires a Windows host) (0..1)
                     feature    — feature:{http|trigger|registry|transform|approval-gate|
                                  write-back|escalation|…}                     (0..n)
                   Record every dimension; Phase 4f keys off all of them, not just tier.
@@ -212,7 +214,7 @@ Weights reflect what tests actually catch:
 | Workflow-heavy, multi-path (e.g. `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`) | — | Comp 45% / Steps 25% / Rules 15% / Path 15% |
 | Workflow-heavy, single-path (e.g. `uipath-maestro-case`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
 | Command-catalog skills (e.g. `uipath-platform`, `uipath-servo`, `uipath-test`, `uipath-feedback`, `uipath-data-fabric`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
-| Planning skills (e.g. `uipath-planner`, `uipath-solution`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
+| Planning skills (e.g. `uipath-planner`, `uipath-design`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
 | Agent-orchestration skills (e.g. `uipath-troubleshoot`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
 
 Formula: `overall = sum(applicable_weight_i * dimension_pct_i) / sum(applicable_weight_i)`
@@ -235,7 +237,7 @@ For each skill that has at least one test, compute which values from the Tag Tax
 - **Mode** — tick each of `mode:build`, `mode:operate`, `mode:diagnose` if any test carries that tag. All three are expected eventually for most skills; missing modes surface as gaps.
 - **Shape** — tick each of `shape:single-node`, `shape:multi-node` (applies to flow-building skills only).
 - **Node** — list values present under `node:*` for skills where that axis applies.
-- **Resource / Connector** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`) for skills where they apply.
+- **Resource / Connector / Windows** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`, `windows`) for skills where they apply.
 - **Feature** — list `feature:*` tags present vs a reasonable "expected" set for this skill (derived from SKILL.md — e.g. `uipath-human-in-the-loop` should exercise `feature:approval-gate`, `feature:write-back`, `feature:escalation`; `uipath-maestro-flow` should exercise `feature:registry`, `feature:transform`, `feature:http`, …). If the skill's vocabulary is open, list what's present without the ✗ column.
 
 This is structured data for the per-skill report (see template below). It is NOT folded into the weighted overall score — adding it on top of Components/Steps would double-count (a missing edit-scenario test already shows up as a workflow-step gap).
@@ -335,7 +337,7 @@ Anti-patterns are inventoried in the Anti-Patterns section below but are **not**
 | # | Step | Covered | Test(s) | Notes |
 |---|------|---------|---------|-------|
 | 0 | Resolve uip binary | Indirect | all (implicit) | All tests require it but none assert it |
-| 4 | Plan the flow | No | — | No test checks for .arch.plan.md or .impl.plan.md |
+| 4 | Plan the flow | No | — | No test checks for .uipath.flow.arch.plan.md or .uipath.flow.impl.plan.md |
 
 ### Critical Rules (X/Y covered)
 

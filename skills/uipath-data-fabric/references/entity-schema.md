@@ -2,6 +2,8 @@
 
 ## Creating an Entity
 
+> **Preview-then-confirm gate (SKILL.md Rule 14).** Before invoking `entities create` — or any `entities update` that adds, updates, or removes fields — render the full proposed schema (entity name, displayName, description, every field with normalized type and all extras) as a table or formatted JSON block and wait for explicit user approval. Don't run the CLI until the user confirms.
+
 ```bash
 uip df entities create "MyEntity" \
   --body '{
@@ -44,7 +46,41 @@ Pass the exact `EntityFieldDataType` string in the `"type"` field — the CLI is
 | `CHOICE_SET_SINGLE` | INT | Single-select from a choice set — also requires `choiceSetId` |
 | `CHOICE_SET_MULTIPLE` | NVARCHAR | Multi-select from a choice set — also requires `choiceSetId` |
 | `AUTO_NUMBER` | DECIMAL | Auto-incrementing number |
-| `RELATIONSHIP` | UNIQUEIDENTIFIER | FK link to another entity — requires `referenceEntityName` + `referenceFieldName` |
+| `RELATIONSHIP` | UNIQUEIDENTIFIER | FK link to another entity — requires `referenceEntityId` (target entity UUID) + `referenceFieldId` (target field UUID) |
+
+### Normalizing user-facing type names
+
+User prompts use natural-language casing and synonyms; the CLI accepts only the exact UPPERCASE enum value above. Two patterns:
+
+**1. Case-fold — trivial 1:1.** When the user's word matches an enum value modulo case, just uppercase it before invoking. Do this silently:
+
+| User says | Send to CLI |
+|---|---|
+| `boolean` / `Boolean` | `BOOLEAN` |
+| `string` / `String` | `STRING` |
+| `integer` / `Integer` | `INTEGER` |
+| `decimal` / `Decimal` | `DECIMAL` |
+| `date` / `Date` | `DATE` |
+| `datetime` / `DateTime` | `DATETIME` |
+| `uuid` / `Uuid` / `Guid` | `UUID` |
+| `file` / `File` | `FILE` |
+| `relationship` / `Relationship` | `RELATIONSHIP` |
+
+**2. Disambiguate — synonyms that map to multiple enum values.** When the user's phrasing covers more than one type, **ask before picking**. Never default silently:
+
+| User phrasing | Candidates | What to ask |
+|---|---|---|
+| `text`, `short text`, `long text`, `paragraph` | `STRING` or `MULTILINE_TEXT` | "Expected length? `STRING` is capped at 4000 chars; `MULTILINE_TEXT` allows up to 10000." |
+| `number`, `numeric` | `INTEGER`, `BIG_INTEGER`, `DECIMAL`, `FLOAT`, `DOUBLE` | "Whole or fractional? If fractional, how many decimal places? If whole, are values ever > 2³¹?" |
+| `money`, `price`, `amount` | `DECIMAL` (almost always) | Default to `DECIMAL` with `decimalPrecision: 2` and confirm. |
+| `timestamp`, `datetime` | `DATETIME` or `DATETIME_WITH_TZ` | "Does timezone matter? `DATETIME` is wall-clock; `DATETIME_WITH_TZ` carries offset." |
+| `choice`, `enum`, `picklist`, `dropdown` | `CHOICE_SET_SINGLE` or `CHOICE_SET_MULTIPLE` | "One value per record, or multiple?" |
+| `tags`, `labels`, `multi-pick` | `CHOICE_SET_MULTIPLE` | Default; confirm. |
+| `link to <entity>`, `belongs to`, `foreign key` | `RELATIONSHIP` | Use pick-or-create flow for the target entity (see [Relationship Fields](#relationship-fields)). |
+| `attachment`, `upload`, `document` | `FILE` | Default; confirm. |
+| `auto number`, `counter`, `serial` | `AUTO_NUMBER` | Default; confirm. |
+
+If the CLI rejects a `--body` with *"Cannot read properties of undefined (reading 'sqlTypeName')"*, the `type` value didn't match a known enum — almost always a casing issue. Re-emit with the exact UPPERCASE value from the table above.
 
 ## Field Definition Object
 
@@ -54,6 +90,7 @@ Both entity names and field names must:
 - Start with a letter (`[a-zA-Z]`)
 - Contain only letters, digits, and underscores (`[a-zA-Z0-9_]`)
 - Be 3–100 characters long
+- **Not** be a SQL, C#, or VB reserved keyword — full list, error string (`"cannot be a reserved word in C# or VB"` / `RESERVED_LANGUAGE_KEYWORDS`), and rename examples are in **SKILL.md Rule 4**.
 
 **Reserved field names** (will error if used): `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`
 
@@ -122,31 +159,118 @@ uip df entities update <entity-id> \
 ### Choice Set Fields
 
 ```json
-{ "fieldName": "Status", "type": "CHOICE_SET_SINGLE", "choiceSetId": "<choice-set-id>" }
+{ "fieldName": "Status", "type": "CHOICE_SET_SINGLE",   "choiceSetId": "<choice-set-id>" }
+{ "fieldName": "Tags",   "type": "CHOICE_SET_MULTIPLE", "choiceSetId": "<choice-set-id>" }
 ```
 
-`CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` both require `choiceSetId`.
+`choiceSetId` is the UUID from `uip df choice-sets list`. If a needed choice set doesn't exist, ask the user — then author it with `choice-sets create` + `choice-set-values create` (do not fall back to `STRING`). Record value is the integer `NumberId` (single) or integer array (multi), from `choice-sets list-values`. Filter semantics — including the `CHOICE_SET_MULTIPLE` `=` vs `contains` distinction — are in [records-query.md](records-query.md#filtering-on-choice-set-fields). Full workflow in [`choice-sets.md`](choice-sets.md).
 
 ### Relationship Fields
 
 ```json
-{
-  "fieldName": "CustomerId",
-  "type": "RELATIONSHIP",
-  "referenceEntityName": "<target-entity-name>",
-  "referenceFieldName": "<field-name-in-target-entity>"
-}
+{ "fieldName": "customerId", "type": "RELATIONSHIP", "referenceEntityId": "<target-entity-uuid>", "referenceFieldId": "<target-field-uuid>" }
 ```
 
-`RELATIONSHIP` requires `referenceEntityName` (the technical name of the target entity) and `referenceFieldName` (the field in the target entity to link on). Use `entities get <id>` to verify exact entity and field names.
+- `referenceEntityId` — UUID of the target entity. Get it from `entities list --native-only` (the `Id` column). Target must exist and be native (no federated targets).
+- `referenceFieldId` — UUID of the join field on the target entity. Get it from `entities get <target-entity-id>` (`Fields[].Id`). Configures join-on-read; the stored value is still the target record's `Id`.
+- The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
+- Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
+- Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required.
+- Cue phrases that signal a `RELATIONSHIP` (never substitute `STRING`/`UUID` — **SKILL.md Rule 12**): *"each order has a Customer"*, *"each report has a Supplier"*, *"each issue belongs to a Project"*.
+- If the user didn't name a target entity OR the named one doesn't exist, follow the **pick-or-create flow in SKILL.md Rule 13** — list candidates via `entities list --native-only`, ask, create only with approval.
+
+```bash
+# 1. Discover target entity + field UUIDs
+uip df entities list --native-only --output json   # → find Customer entity's Id
+uip df entities get <customer-entity-id> --output json   # → find Id field's Id under Fields[]
+
+# 2. Resolve email → record Id, then insert
+uip df records query <customer-entity-id> \
+  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Email","operator":"=","value":"alice@example.com"}]},"selectedFields":["Id"]}' \
+  --output json
+uip df records insert <child-entity-id> --body '{"customerId":"<resolved-uuid>","amount":250}' --output json
+```
+
+### FILE Fields
+
+```json
+{ "fieldName": "EvidenceFile", "type": "FILE", "referenceEntityId": "<EntityAttachment-uuid>", "referenceFieldId": "<EntityAttachment-Name-field-uuid>" }
+```
+
+- Point `referenceEntityId` at the tenant's internal `EntityAttachment` entity and `referenceFieldId` at its `Name` field. This is the only target shape the platform accepts — any other binding produces a field that renders broken in the UiPath Data Fabric UI with no in-place fix.
+- The `EntityAttachment` UUIDs are tenant-specific. Discover them once and reuse across every FILE field in the tenant:
+  ```bash
+  # EntityAttachment entity Id
+  uip df entities list --output json | python3 -c "import json,sys;print([e['Id'] for e in json.load(sys.stdin)['Data'] if e['Name']=='EntityAttachment'][0])"
+  # Its Name-field Id (use this as referenceFieldId)
+  uip df entities get <EntityAttachment-id> --output json | python3 -c "import json,sys;print([f['Id'] for f in json.load(sys.stdin)['Data']['Fields'] if f['Name']=='Name'][0])"
+  ```
+  Alternative: inspect any existing entity that already has a FILE field — `entities get` echoes the target as `ReferenceEntity.Id` + `ReferenceField.Id`.
+- CLI `files upload` against the field is currently unusable — upload via the UiPath Data Fabric UI instead. Status and workaround: [`file-attachments.md`](file-attachments.md).
+
+### Combined Example — mixing scalar, choice-set, and relationship fields
+
+Complex types accept the same standard field options as scalars — `isRequired`, `isUnique`, `displayName`, `description`, `defaultValue`, `isRbacEnabled`, `isEncrypted`, and the type-specific constraints (`lengthLimit`, `maxValue`/`minValue`, `decimalPrecision`). The only extras unique to complex types are `choiceSetId` (for `CHOICE_SET_*`) and `referenceEntityId` + `referenceFieldId` (for `RELATIONSHIP` and `FILE`).
+
+```bash
+# Prereqs: target entity exists; choice set exists (look up ID)
+uip df entities create "Expense" --body '{
+  "displayName": "Expense",
+  "description": "Reimbursable expenses with category, tags, and submitter",
+  "fields": [
+    {"fieldName":"invoiceNumber", "type":"STRING",  "isRequired": true, "isUnique": true, "lengthLimit": 50,
+     "displayName":"Invoice Number"},
+    {"fieldName":"amount",        "type":"DECIMAL", "isRequired": true, "decimalPrecision": 2, "minValue": 0,
+     "displayName":"Amount (USD)"},
+    {"fieldName":"notes",         "type":"MULTILINE_TEXT", "lengthLimit": 2000},
+    {"fieldName":"category",      "type":"CHOICE_SET_SINGLE",   "choiceSetId":"<choice-set-id>",
+     "isRequired": true, "displayName":"Category"},
+    {"fieldName":"tags",          "type":"CHOICE_SET_MULTIPLE", "choiceSetId":"<choice-set-id>"},
+    {"fieldName":"customerId",    "type":"RELATIONSHIP", "referenceEntityId":"<customer-entity-uuid>", "referenceFieldId":"<customer-id-field-uuid>",
+     "isRequired": true, "displayName":"Customer"}
+  ]
+}' --output json
+```
+
+## Deleting an Entity
+
+```bash
+uip df entities delete <entity-id> --confirm --reason "<why>" --output json
+```
+
+Irreversible — deletes the entity and every record in it. **Before invoking, discover and surface every dependent to the user:**
+
+1. **Inbound relationship references** — run `entities list --output json` and pull every entry whose `Fields[].ReferenceEntity.Id == <entity-id>`. Those entities have FK columns pointing here; after delete, their relationship values become orphaned UUIDs. Ask the user explicitly for each one: *"Entity X has a `<field>` field pointing at this one — delete X, leave it (with dangling FKs), or stop?"*
+2. **Choice sets used by this entity's fields** — from `entities get <entity-id>`, pull every `Fields[].ChoiceSetId`. Choice sets are shared resources; they're NOT deleted automatically. Ask the user explicitly for each one: *"Choice set Y is used by this entity's `<field>`. Delete it too (it may be in use by other entities), leave it, or stop?"*
+
+Apply only the choices the user confirms — never cascade silently. If the user is uncertain about any dependent, default to "leave it" rather than deleting.
+
+## Deleting a Field
+
+```bash
+uip df entities update <entity-id> \
+  --body '{"removeFields":[{"fieldName":"<exact-field-name>"}]}' \
+  --confirm --reason "<why>" \
+  --output json
+```
+
+Irreversible — drops the column and every record's value in it. Note the body shape: `removeFields` takes `{"fieldName": "..."}`, **NOT** `{"id": "..."}` (that's `updateFields`). Mixing those forms returns *"Each field in removeFields must include a non-empty 'fieldName' string"*.
+
+Before invoking, surface the impact to the user:
+
+- **RELATIONSHIP / FILE fields** — confirm no flow / coded app reads the value. The FK column disappears entirely.
+- **CHOICE_SET_* fields** — the choice set itself is shared and isn't affected; only this entity's link to it is removed.
+- **System fields** (`Id`, `CreatedBy`, …) can't be removed regardless.
+
+Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reason } }`.
 
 ## Not Supported
 
 | Operation | Action |
 |-----------|--------|
-| Delete an entity | No command exists — tell the user it is not supported |
-| Remove / delete a field | CLI explicitly rejects `removeFields` with an error — do not attempt |
 | Change a field's data type | Not supported — type is fixed at creation and cannot be changed via `updateFields` |
+| Field name matching a SQL / language keyword | API returns `RESERVED_LANGUAGE_KEYWORDS` — rename before retrying (see Name Validation above) |
+| Upload a file to a `FILE` field via `uip df files upload` | CLI insists on `referenceEntityId`/`referenceFieldId` at field create, then uploads fail with *"Relationship violation"* against arbitrary targets. No public attachment-storage entity is documented. Treat FILE upload as unusable via CLI until the target-entity contract is clarified — surface the gap to the user; don't attempt. |
 
 ---
 
@@ -225,7 +349,7 @@ uip df entities get <entity-id> --output json
 |-------|-------------|
 | `ID` | Entity UUID — required for all `uip df` record and entity commands |
 | `Name` | CamelCase system name (e.g. `BankDetails`) |
-| `DisplayName` | Human-readable label shown in Studio Web |
+| `DisplayName` | Human-readable label shown in the UiPath Data Fabric UI |
 | `Source` | `Native` (read/write) or `Federated (ConnectorName)` (read-only) |
 
 **Key fields in `entities get <id>` response:**
@@ -233,9 +357,13 @@ uip df entities get <entity-id> --output json
 | Field | Description |
 |-------|-------------|
 | `Fields[].FieldName` | Exact field name for use in record bodies and CSV headers |
-| `Fields[].Type` | Data type (e.g. `STRING`, `INTEGER`) |
+| `Fields[].Type` | Data type (e.g. `STRING`, `INTEGER`, `CHOICE_SET_SINGLE`, `RELATIONSHIP`) |
 | `Fields[].ID` | Field UUID — required for `updateFields` in `entities update` |
 | `Fields[].IsRequired` | Whether the field must have a value on insert |
+
+`entities get` echoes the complex-field bindings under each field: `Fields[].ChoiceSetId` for `CHOICE_SET_*`, and `Fields[].ReferenceEntity.Id` + `Fields[].ReferenceField.Id` for `RELATIONSHIP` / `FILE`. `Fields[].IsForeignKey` is `true` on relationship/file fields. Use these to recover the binding without asking the user.
+
+Before writing records, identify complex fields by `Type` and resolve lookups: `CHOICE_SET_*` → `choice-sets list-values <choice-set-id>` for `NumberId`s; `RELATIONSHIP` → `records query` on `ReferenceEntity.Id` for target record UUIDs.
 
 **Example — discover an entity before writing records:**
 ```bash

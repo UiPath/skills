@@ -1,0 +1,48 @@
+task_id: skill-platform-folders-hierarchy-e2e
+description: >
+  E2E: agent uses the skill to leave the tenant with a 3-level folder
+  hierarchy under parent_folder_path, with a specific ParentID chain after
+  a folder move. Check queries tenant directly.
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 10
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I need to set up a small folder structure on our tenant. `seed.json`
+  has a unique prefix (use it in all names so things don't collide) and
+  a `parent_folder_path` — that's the folder under which I want the
+  hierarchy created.
+
+  Create a top-level folder called `e2e-fh-<prefix>-top` under
+  `parent_folder_path`, then put two children inside it:
+  `e2e-fh-<prefix>-A` and `e2e-fh-<prefix>-B`.
+
+  Important — I want you to actually exercise the move. First create B
+  underneath A (so it's a grandchild of top), then move B up so it sits
+  next to A as a direct child of top. Final state: top contains A and B
+  as siblings.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: 3-level hierarchy with B re-parented to top"
+    command: "python3 $TASK_DIR/check_folders_hierarchy.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

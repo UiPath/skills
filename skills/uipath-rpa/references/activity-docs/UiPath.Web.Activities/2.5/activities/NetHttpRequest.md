@@ -215,6 +215,7 @@ The activity uses conditional property groups where certain properties only appe
 
 - Cookies can persist across activity calls within the same workflow execution.
 - Only one of `TextContent`, `BinaryContent`, or `File` is meaningfully populated per response.
+- Studio re-expands this activity to its full default property set on open, injecting default `FormDataParts` / `RetryStatusCodes` expressions that reference `UiPath.Web.Activities.Http.Models` types. Add that namespace to the workflow's `TextExpression.NamespacesForImplementation` or Studio reports `BC30002: Type 'FormDataPart' is not defined` (even when `RequestBodyType=None`), despite a clean `uip rpa validate` / `build`.
 
 ## Use with other activities
 

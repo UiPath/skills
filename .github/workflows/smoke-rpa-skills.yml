@@ -26,28 +26,53 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect changed RPA skills and map to test tasks
+      - name: Detect changed Windows-tagged skills and map to test tasks
         id: detect
         run: |
           BASE_REF="${{ github.base_ref }}"
           if [ -z "$BASE_REF" ]; then BASE_REF="main"; fi
           CHANGED=$(git diff --name-only origin/$BASE_REF...HEAD)
 
-          # Infra change → run all RPA smoke tasks (modern + legacy)
-          if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-rpa-skills\.yml$'; then
-            echo "task_globs=tasks/uipath-rpa/**/*.yaml" >> "$GITHUB_OUTPUT"
-            echo "Running all RPA smoke tests (test infrastructure changed)"
+          # Discover the set of Windows-tagged task files (tag = `windows` in the
+          # `tags:` line). Source of truth for "what runs on this Windows
+          # workflow" — adding/removing a `windows` tag is the opt-in/out.
+          WINDOWS_TASKS=$(grep -rEl '^tags:.*\bwindows\b' tests/tasks/ 2>/dev/null | sort -u)
+          if [ -z "$WINDOWS_TASKS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No tasks tagged 'windows' found — skipping"
             exit 0
           fi
 
-          GLOBS=""
-          if echo "$CHANGED" | grep -qE '^(skills/uipath-rpa/|tests/tasks/uipath-rpa/)'; then
-            [ -d "tests/tasks/uipath-rpa" ] && GLOBS="tasks/uipath-rpa/**/*.yaml"
+          # Skills that own at least one windows-tagged task. Used to map
+          # `skills/<X>/` changes to the right test set.
+          WINDOWS_SKILLS=$(echo "$WINDOWS_TASKS" | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p' | sort -u)
+
+          # Globs are relative to the `tests/` working dir of the smoke job.
+          ALL_GLOBS=$(echo "$WINDOWS_TASKS" | sed 's|^tests/||' | tr '\n' ' ' | xargs)
+
+          # Infra change → run every windows-tagged task.
+          if echo "$CHANGED" | grep -qE '^tests/(experiments|_shared)/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-rpa-skills\.yml$'; then
+            echo "task_globs=$ALL_GLOBS" >> "$GITHUB_OUTPUT"
+            echo "Running all Windows smoke tasks (test infrastructure changed)"
+            exit 0
           fi
+
+          # Skill-scoped change → run only that skill's windows-tagged tasks.
+          GLOBS=""
+          for skill in $WINDOWS_SKILLS; do
+            if echo "$CHANGED" | grep -qE "^(skills/${skill}/|tests/tasks/${skill}/)"; then
+              for t in $WINDOWS_TASKS; do
+                case "$t" in
+                  "tests/tasks/${skill}/"*) GLOBS="$GLOBS ${t#tests/}";;
+                esac
+              done
+            fi
+          done
+          GLOBS=$(echo "$GLOBS" | xargs)
 
           if [ -z "$GLOBS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "No RPA skill changes detected — skipping"
+            echo "No Windows-tagged skill changes detected — skipping"
           else
             echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
             echo "Will test: $GLOBS"
@@ -270,7 +295,7 @@ jobs:
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
               if coder-eval run "$task" \
-                  -e experiments/default_smoke_rpa.yaml --tags smoke -j 1 -v; then
+                  -e experiments/smoke-windows.yaml --tags smoke -j 1 -v; then
                 break
               fi
               # Only retry on Bedrock content-filter ERRORs (not on real

@@ -5,13 +5,9 @@ description: >
   fixture" matrix and complements the validate-side fixture smoke.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:package"]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
+  expected_turns: 20
   max_turns: 30
-  turn_timeout: 900
 
 sandbox:
   template_sources:
@@ -32,6 +28,7 @@ initial_prompt: |
   - `fixtures/validation/contract-variants/`
   - `fixtures/validation/registry-coverage-matrix/`
   - `fixtures/validation/wrapper-family-contract/`
+  - `fixtures/validation/agent-invocation/`
 
   Requirements:
   - Use the installed `uip` CLI to pack each fixture project. Send packed

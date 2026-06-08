@@ -30,7 +30,7 @@ Source control, CI/CD, and deployment governance checks. Applies to ALL project 
 | Check | Severity | How to Verify |
 |---|---|---|
 | Automated build pipeline exists | Warning | Check for CI config files |
-| Pipeline runs validation (`uip rpa validate` / `uip flow validate` / `uip agent validate`) on every commit | Warning | Inspect pipeline steps |
+| Pipeline runs validation (`uip rpa validate` / `uip maestro flow validate` / `uip agent validate`) on every commit | Warning | Inspect pipeline steps |
 | Pipeline runs Workflow Analyzer with project's analyzer rule set, fails on Error-level violations | Warning | Inspect pipeline; check for analyzer step |
 | Pipeline runs unit / smoke tests | Warning | Inspect pipeline test step |
 | Pipeline publishes packages to a feed (not manual Studio publish) | Critical | Check pipeline; verify production publishes go through pipeline only |

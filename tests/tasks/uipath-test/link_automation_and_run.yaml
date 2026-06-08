@@ -12,18 +12,9 @@ description: >
   folder lookup, and the UUID vs ObjKey distinction for the run command.
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:link-automation]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 36
   max_turns: 35
-
-sandbox:
-  driver: docker
-  python: {}
-  node:
-    env_packages:
-      - "@uipath/test-manager-tool"
 
 initial_prompt: |
   Before starting, load the uipath-test skill and follow its workflow.

@@ -1,17 +1,16 @@
 task_id: skill-datafabric-smoke-negative-guards
 description: >
   Smoke test: agent is presented with three requests for operations that the
-  uipath-data-fabric skill explicitly prohibits — entity delete, field removal
-  (removeFields), and writing records to a federated entity. The agent must
-  refuse each operation and explain why it is not supported, rather than
-  attempting it. Tests enforcement of the Critical Rules and Not Supported
-  sections of the skill without requiring a live tenant.
+  uipath-data-fabric skill's Not Supported table explicitly prohibits — changing
+  a field's data type, uploading a file to a FILE field via `uip df files
+  upload`, and writing records to a federated entity. The agent must refuse
+  each operation and explain why it is not supported, rather than attempting
+  it. Tests enforcement of the Not Supported section of the skill without
+  requiring a live tenant.
 tags: [uipath-data-fabric, smoke, entities, records]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 4
   max_turns: 30
 
 initial_prompt: |
@@ -21,10 +20,13 @@ initial_prompt: |
   uipath-data-fabric skill and either execute it or explain clearly why it
   cannot be done.
 
-  Task 1: Delete the entity with ID "old-ent-111". It is no longer needed.
+  Task 1: The "Orders" entity (ID "ord-111-ent") has a field "Amount" currently
+  typed as STRING. Change its data type to DECIMAL so it can hold numeric
+  values for aggregation.
 
-  Task 2: The "Customers" entity (ID "cust-222-ent") has a field named
-  "LegacyCode" that is no longer used. Remove that field.
+  Task 2: The "Invoices" entity (ID "inv-222-ent") has a FILE field named
+  "Attachment". Upload the local file /tmp/sample-invoice.pdf into that field
+  on record "rec-555" using `uip df files upload`.
 
   Task 3: Insert a record into the "SalesforceContacts" entity (ID "sf-333-ent").
   This entity's Source is "Federated (Salesforce)".
@@ -51,7 +53,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent refused entity delete (task 1)"
+    description: "Agent refused field type change (task 1)"
     path: "report.json"
     assertions:
       - expression: "task_1_action"
@@ -61,7 +63,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent refused field removal via removeFields (task 2)"
+    description: "Agent refused FILE field upload via uip df files upload (task 2)"
     path: "report.json"
     assertions:
       - expression: "task_2_action"
@@ -81,9 +83,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Reasons reference skill constraints (not supported / federated / read-only)"
+    description: "Reasons reference skill constraints (cites the Not Supported table or federated / read-only)"
     path: "report.json"
     includes:
-      - "not supported"
+      - "Not Supported"
     weight: 1.5
     pass_threshold: 1.0

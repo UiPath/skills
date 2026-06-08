@@ -1,0 +1,47 @@
+task_id: skill-platform-trigger-time-e2e
+description: >
+  E2E: agent uses the `uipath-platform` skill to leave the tenant in a desired
+  state — a time (cron) trigger exists on the seeded process, currently
+  enabled, with a specific cron expression. The check script queries the
+  tenant directly to verify state; the agent's choice of commands is irrelevant.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I want a scheduled trigger on one of my processes that fires every
+  day at 4:30 AM. The process ID and its folder are in `seed.json`
+  along with a unique prefix (the trigger has to live in the same
+  folder as the process).
+
+  Name the trigger `e2e-trigger-time-` followed by that prefix and
+  leave it enabled when you're done.
+
+  While you're at it, I'd like to confirm the disable/enable toggle
+  works too — flip it off and back on at some point during the run, so
+  the final state lands on enabled.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: trigger with expected name/cron/enabled exists in folder"
+    command: "python3 $TASK_DIR/check_trigger_time.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  turn_timeout: 600

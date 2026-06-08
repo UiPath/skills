@@ -25,9 +25,9 @@ Manage UiPath Test Manager resources (projects, test cases, test sets, execution
 UiPath Test Manager is a web application that manages the testing lifecycle of projects, enabling requirements traceability, test planning, and reporting. Its key business objects are:
 
 - **Requirements** - Defines what needs to be tested.
-- **Test cases** - Defines the scenarios to be tested. A testcase can have **teststeps**..
-- **Test sets** - Groups of test cases for execution..
-- **Test executions** - When a test set is run, a test execution is created..
+- **Test cases** - Defines the scenarios to be tested. A testcase can have **teststeps**. A testcase can be executed or run directly.
+- **Test sets** - Groups of test cases for execution.
+- **Test executions** - When a test set or a test case is run, a test execution is created.
 - **Test case logs** - Logs of a **test case** in an execution. A **testcase** can be navigated from **testcaselogs**.
 - **Test step logs** — Step-level logs within a **test case log**.
 - **Test case log assertions** - Assertion steps of a test case log in an execution.
@@ -48,6 +48,7 @@ Common `uip tm` commands organized by resource type.
 | `uip tm project delete --project-key <PROJECT_KEY>` | Delete a Test Manager project. |
 | `uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | Set the default Orchestrator folder for a project. |
 | `uip tm project clear-default-folder --project-key <PROJECT_KEY>` | Clear the default Orchestrator folder from a project. |
+| `uip tm project owners list --project-key <PROJECT_KEY> [<PROJECT_KEY> ...]` | List the owners of one or more Test Manager projects. |
 
 > Get folder keys with `uip or folders list -n <name> --all --output json` — returns all folders visible to the current user.
 
@@ -64,7 +65,7 @@ Common `uip tm` commands organized by resource type.
 | `uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | List test entry points available in an Orchestrator folder (optional: `--package-name <PACKAGE_NAME>` to filter). |
 | `uip tm testcases list-testsets --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | List test sets that contain a given test case. |
 | `uip tm testcases list-steps --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test steps for a test case. **Uses `--test-case-id <UUID>`, not `--test-case-key`.** |
-| `uip tm testcases list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test case log result history for a specific test case. Optional `--only-failed`, `--filter`, `--top`, `--skip`. |
+| `uip tm testcases list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test case log result history for a specific test case. Optional `--only-failed`, `--filter`, `--limit`, `--offset`. |
 | `uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | Start a new execution for one or more test cases. **Uses `--test-case-id <UUID>` (space-separated for multiple).** Optional `--async`, `--name`, `--folder-key`, `--robot-user-key`, `--machine-key`. |
 | `uip tm testcases add --test-set-key <TEST_SET_KEY> --test-case-keys <KEY1,KEY2,...>` | Add test cases to a test set (comma-separated keys). |
 | `uip tm testcases remove --test-set-key <TEST_SET_KEY> --test-case-keys <KEY1,KEY2,...>` | Remove test cases from a test set (comma-separated keys). |
@@ -91,12 +92,12 @@ Common `uip tm` commands organized by resource type.
 
 | Command | Purpose |
 |---|---|
-| `uip tm executions list --project-key <PROJECT_KEY>` | List top n executions for a project. Optional `--test-set-id <UUID>` to scope to a test set, `--filter <text>`, `--top`, `--skip`. **Use this for the common case** (one test set or a single project query). |
-| `uip tm executions list-filtered --project-key <PROJECT_KEY>` | Rich-filter variant: `--test-set-id`, `--updated-by`, `--search`, `--labels`, `--test-execution-ids`, `--order-by`, `--top`, `--skip`. **Use only when you need label filtering, multi-execution-id lookup, custom ordering, or `--updated-by` filtering** — features `list` does not expose. |
+| `uip tm executions list --project-key <PROJECT_KEY>` | List top n executions for a project. Optional `--test-set-id <UUID>` to scope to a test set, `--filter <text>`, `--limit`, `--offset`. **Use this for the common case** (one test set or a single project query). |
+| `uip tm executions list-filtered --project-key <PROJECT_KEY>` | Rich-filter variant: `--test-set-id`, `--updated-by`, `--search`, `--labels`, `--test-execution-ids`, `--sort-by`, `--limit`, `--offset`. **Use only when you need label filtering, multi-execution-id lookup, custom ordering, or `--updated-by` filtering** — features `list` does not expose. |
 | `uip tm executions get-stats --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY>` | Get aggregated statistics for a single test execution. |
 | `uip tm executions run --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --execution-type <TYPE>` | Re-run an existing test execution. Optional `--test-case-log-ids <UUID...>` to re-run only specific test case logs (space-separated), `--async`. |
 | `uip tm executions retry --execution-id <EXECUTION_ID>` | Retry only the failed test cases of a finished execution. Optional `--project-key`, `--test-set-key`, `--execution-type`. |
-| `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY>` | List test case logs of an execution. Optional `--only-failed`, `--filter`, `--top`, `--skip`. **Note the nested subcommand path — this is not a top-level `executions` verb.** |
+| `uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY>` | List test case logs of an execution. Optional `--only-failed`, `--filter`, `--limit`, `--offset`. **Note the nested subcommand path — this is not a top-level `executions` verb.** |
 
 > **`run` lives under three groups, all distinct:**
 > - `uip tm testcases run` — start a new execution for one or more **test cases** (`--test-case-id` UUIDs, space-separated).
@@ -146,6 +147,53 @@ Common `uip tm` commands organized by resource type.
 | Command | Purpose |
 |---|---|
 | `uip tm user get` | Get profile data for the currently authenticated user. |
+
+### Custom Field Commands
+
+Custom fields are project-scoped field definitions you attach to **Requirement**, **TestCase**, or **TestSet** objects. The top-level customfield commands manage these definitions. The nested `label` and `value` subgroups operate on the **per-object rows** that fill in those fields. The `--object-type` flag is case-sensitive and accepts only `Requirement`, `TestCase`, or `TestSet`. The `--data-type` flag accepts only `Text` or `Label` (also PascalCase).
+
+| Command | Purpose |
+|---|---|
+| `uip tm customfield list --project-key <PROJECT_KEY>` | List custom field definitions. Optional `--object-types <type...>`, `--data-types <type...>` (filter; both variadic, PascalCase), `--name <NAME>` (exact match), `--filter <text>` (substring), `--sort-by <expr>`, `--limit <N>`, `--offset <N>`. |
+| `uip tm customfield get --project-key <PROJECT_KEY> --field-id <UUID>` | Get a custom field definition by UUID, OR identify by `--name <NAME> --object-type <TYPE>`. |
+| `uip tm customfield create --project-key <PROJECT_KEY> --name <NAME> --data-type <Text\|Label> (--object-type <Requirement\|TestCase\|TestSet> \| --scope-list <type...>)` | Create a new custom field definition. Pass `--object-type` for a single-scope field, OR `--scope-list <Requirement TestCase TestSet>` (variadic, mutually exclusive) for multi-scope. Optional `--description <text>`, `--value-hints <text>`, `--default-value <text>`. |
+| `uip tm customfield update --project-key <PROJECT_KEY> --field-id <UUID>` | Update a custom field definition. Identify by `--field-id` OR by `--name + --object-type`. Optional `--rename-to <name>`, `--description`, `--default-value`, `--value-hints`. Unspecified fields keep current values. |
+| `uip tm customfield delete --project-key <PROJECT_KEY> --field-ids <UUID...>` | Delete one or more custom field definitions by UUID (variadic), OR singleton by `--name + --object-type`. |
+
+#### Custom Field — Label-type rows
+
+All `customfield label` verbs require `--object-type <Requirement\|TestCase\|TestSet>`.
+
+| Command | Purpose |
+|---|---|
+| `uip tm customfield label list --project-key <PROJECT_KEY> --object-type <TYPE>` | List label rows. Optional `--object-id <UUID>` to scope to a single object, `--filter <text>`, `--sort-by`, `--limit`, `--offset`. |
+| `uip tm customfield label get --project-key <PROJECT_KEY> --object-type <TYPE> --label-id <UUID>` | Get a single label row by UUID. |
+| `uip tm customfield label create --project-key <PROJECT_KEY> --object-type <TYPE> --object-id <UUID> --values '{"Field":["v1","v2"]}'` | Upsert a label row on one object. `--values` is a JSON object mapping field names to string arrays. |
+| `uip tm customfield label add --project-key <PROJECT_KEY> --object-type <TYPE> --custom-field-name <NAME> --object-ids <UUID...> --values <value...>` | Append values to a label field across multiple objects. Optional `--replace-existing-values` for authoritative-set semantics. |
+| `uip tm customfield label remove --project-key <PROJECT_KEY> --object-type <TYPE> --custom-field-name <NAME> --object-ids <UUID...> (--values <value...> \| --remove-all-values)` | Remove values from a label field across multiple objects. |
+
+#### Custom Field — Text-type rows
+
+All `customfield value` verbs require `--object-type <Requirement\|TestCase\|TestSet>`. `create` additionally requires `--data-type <Text\|Label>` (must match the field's definition).
+
+| Command | Purpose |
+|---|---|
+| `uip tm customfield value list --project-key <PROJECT_KEY> --object-type <TYPE>` | List value rows. Results are empty unless `--object-id <UUID>` is provided. Optional `--filter <text>`, `--sort-by`, `--limit`, `--offset`. |
+| `uip tm customfield value get --project-key <PROJECT_KEY> --object-type <TYPE> --value-id <UUID>` | Get a value row by UUID, OR by `--name + --object-id`. |
+| `uip tm customfield value create --project-key <PROJECT_KEY> --object-type <TYPE> --name <FIELD_NAME> --object-id <UUID> --data-type <Text\|Label>` | Create a value row. Optional `--value <text>` for the initial content. The `--data-type` must match the existing field definition. |
+| `uip tm customfield value update --project-key <PROJECT_KEY> --object-type <TYPE> --value-id <UUID> --value <text>` | Update a value row by UUID, OR by `--name + --object-id`. Use `--clear` to set the value to empty. |
+| `uip tm customfield value delete --project-key <PROJECT_KEY> --object-type <TYPE> --value-id <UUID>` | Delete a value row by UUID, OR by `--name + --object-id`. |
+
+### Object Label Commands
+
+Object labels are tag-style metadata applied to Requirement, TestCase, TestSet, TestExecution, TestCaseLog. Use `--object-type` for the parent kind and `--object-ids` for the target objects.
+
+| Command | Purpose |
+|---|---|
+| `uip tm objectlabel list --project-key <PROJECT_KEY> --object-type <Requirement\|TestCase\|TestSet\|TestExecution\|TestCaseLog>` | List distinct label names for one `--object-type` (paginated). Optional `--object-ids <UUID...>`, `--label-types <UserLabel\|SystemLabel\|InternalLabel ...>`, `--filter <text>`, `--sort-by`, `--limit`, `--offset`. |
+| `uip tm objectlabel get --project-key <PROJECT_KEY> --label-id <UUID>` | Get a single label-assignment row by UUID. |
+| `uip tm objectlabel add --project-key <PROJECT_KEY> --object-type <TYPE> --object-ids <UUID...> --labels <name...>` | Attach labels to objects (variadic; one-to-one, one-to-many, many-to-many). Optional `--remove-other-labels` for authoritative-set semantics. |
+| `uip tm objectlabel remove --project-key <PROJECT_KEY> --object-type <TYPE> --object-ids <UUID...> (--labels <name...> \| --remove-all-labels)` | Detach labels from objects. `--labels` and `--remove-all-labels` are mutually exclusive. |
 
 ## Critical Rules
 
@@ -210,7 +258,7 @@ If the probe in Rule #2 shows singular subjects, the CLI predates the closed-ver
   uip tm testsets list-testcases --project-key <PROJECT_KEY> --test-set-key <TEST_SET_KEY> --output json
 
   # List recent executions for a test set
-  uip tm executions list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> --top 100 --output json
+  uip tm executions list --project-key <PROJECT_KEY> --test-set-id <TEST_SET_ID> --limit 100 --output json
 
   # List test case logs for an execution (nested subcommand under `executions`)
   uip tm executions testcaselogs list --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json

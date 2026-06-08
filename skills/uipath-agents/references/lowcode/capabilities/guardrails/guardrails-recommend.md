@@ -84,7 +84,19 @@ For **each entry** in the catalog (`guardrails[]` array from the cached JSON):
 
 Do **not** apply predetermined knowledge about which guardrail maps to which schema field. Let the catalog entry's authored fields drive every recommendation decision.
 
-### Step 3 — Scoped or Tool-Specific Filtering (only when user requests)
+### Step 3 — De-duplicate Overlapping Validators
+
+Several catalog validators address the same threat. Recommending more than one of them at the same scope and stage is redundant — it doubles latency and cost on every call for marginal benefit (the canonical case is `prompt_injection` and `user_prompt_attacks`: both have `security_category: "adversarial_input"` and both run at Llm · PRE).
+
+After Step 2 produces the candidate list, group candidates by **(`security_category`, scope, stage)**. For any group with more than one candidate:
+
+1. **Drop deprecated or unavailable entries first.** If the catalog marks an entry deprecated (via its `status`, or a deprecation note in `notes` / `when_not_to_use`), remove it from the group. Never recommend a validator the catalog signals is being retired when an active alternative covers the same category.
+2. **Keep the single best fit** for the agent's context — the one whose `when_to_use` / `use_cases` most closely match. Recommend only that one.
+3. **Mention the alternative(s)** you dropped and why (e.g. "also recommending only User Prompt Attacks, not Prompt Injection — both cover adversarial input at Llm PRE and the catalog marks Prompt Injection deprecated").
+
+Do **not** hardcode validator names or a fixed "prefer X over Y" rule in your reasoning — derive the grouping from each entry's `security_category`, scope, and stage, and derive deprecation from the catalog's own fields. This keeps the behavior correct as the catalog evolves.
+
+### Step 4 — Scoped or Tool-Specific Filtering (only when user requests)
 
 If the user asks for recommendations for a **specific scope** (e.g., "only for Llm"):
 - After Step 2, keep only candidates where the scope name appears in `AllowedScopes` (from the guardrails list output).
@@ -95,7 +107,34 @@ If the user asks for recommendations for a **specific tool** (e.g., "for the Sen
 - Set `selector.matchNames: ["<name>"]` where `<name>` is the `name` field from the tool's `resource.json` — **not** the folder name under `resources/`.
 - Note: custom guardrails (type `"Custom"` in catalog) also only support Tool scope.
 
-### Step 4 — Generate Config Blocks
+#### Block as early as possible — default scope selection
+
+When a validator supports **more than one scope** (e.g. `pii_detection` allows Agent / Llm / Tool per its `AllowedScopes`), pick the scope that stops a violation at the **outermost boundary the validator allows**, so a bad run is halted with the least wasted work:
+
+| Guardrail intent | Prefer | Why |
+|---|---|---|
+| **Input protection** (block bad/sensitive input: PII, jailbreak, injection) | broadest **PRE** scope allowed → **Agent** > Llm > Tool | Agent · PRE fires once, before the agent reaches the LLM or any tool. Catching PII or an attack at Agent · PRE blocks the whole run immediately instead of after the model has already been called. |
+| **Output protection** (block bad output the caller sees: harmful content, IP) | **Agent · POST** when allowed | Agent · POST inspects the agent's final answer — the thing the user actually receives. |
+| **Tool I/O protection** (a specific tool's input/output) | **Tool** scope on that tool | Only narrow to Tool when the concern is genuinely that one tool, or the user scoped it there. |
+
+Concretely: **PII detection meant to stop the agent handling personal data goes at `selector.scopes: ["Agent"]`, not `["Llm"]`** — both are listed in `AllowedScopes` for `pii_detection`, but Agent · PRE blocks the run earlier (before the LLM call) and covers the whole agent, not just one model invocation. Only drop to a narrower scope when the validator does not support the broader one (`prompt_injection` and `user_prompt_attacks` are Llm-only, so Llm · PRE is the earliest available for them) or when the user explicitly asks for a narrower scope.
+
+Always confirm the chosen scope is in the validator's `AllowedScopes` from the guardrails list — never assume a scope the catalog/SDK does not permit.
+
+### Step 5 — Choose the Action
+
+The action (`{"$actionType": "block"}` vs `{"$actionType": "log"}` vs `escalate` / `filter`) is **not** a free choice — default to the `action_type` in the catalog entry's representative `examples[].config`. For security-critical guardrails (`adversarial_input` — prompt injection / user prompt attacks; `content_safety` — harmful content / IP) the catalog examples use **block**, because a logged-but-allowed violation provides no actual protection.
+
+Rules:
+
+1. **Default to the catalog example's `action_type`.** If it is `block`, generate `{"$actionType": "block", "reason": "..."}`. Do not substitute `log` for a security-critical guardrail on your own initiative.
+2. **Never silently downgrade block → log.** A guardrail set to log-only when the user expected blocking is the dangerous failure mode — the agent looks protected but isn't. If you use `{"$actionType": "log"}` for any guardrail whose catalog default is `block`, you **must** state it explicitly in the report and give the reason.
+3. **Legitimate reasons to use `log` instead of `block`** (state which applies):
+   - The user explicitly asked for observe-only / audit / "log first, block later" rollout.
+   - A high false-positive risk where blocking would break normal operation (e.g. PII `Person` entity flagging ordinary words) — log so the user can tune thresholds before enforcing.
+4. **When ambiguous, ask once.** If the user gave no action preference and the guardrail is security-critical, you may apply the `block` default and report it, or ask "block on violation, or log-only to start?" — but do not quietly pick `log`.
+
+### Step 6 — Generate Config Blocks
 
 For each recommended guardrail, use the catalog `examples[].config` as the template. Map it to `agent.json` format using `guardrails.md` for the exact JSON shape (discriminators, UUID, PascalCase scopes, `$`-prefixed fields).
 
@@ -103,9 +142,11 @@ For each recommended guardrail, use the catalog `examples[].config` as the templ
 
 For parameters, use the `Parameters` array from the matching guardrails list entry to confirm correctness — see the [Correctness Check](#correctness-check) table in Validate Mode for the exact rules. Apply the same checks when generating config to avoid writing invalid parameters from the start.
 
+Use the action chosen in Step 5.
+
 Generate a fresh UUID for each guardrail `id`.
 
-### Step 5 — Apply and Validate
+### Step 7 — Apply and Validate
 
 Write the new guardrail blocks to `agent.json`'s `guardrails[]` array. Then run:
 
@@ -116,7 +157,7 @@ uip agent validate "<AgentName>" --output json
 Report to the user:
 - What was added (by name)
 - Why it was recommended (cite the catalog's `when_to_use` or a specific `use_cases` item that matched the agent's context)
-- What scope and action were chosen and why (cite `AllowedScopes` from the guardrails list or `when_not_to_use` from the catalog if relevant)
+- What scope and action were chosen and why. If you dropped an overlapping validator in Step 3, name it and the reason. If you used `{"$actionType": "log"}` for a guardrail whose catalog default is `block` (Step 5), call it out explicitly with the reason.
 - What parameters were set and their meaning
 
 ---
@@ -165,7 +206,7 @@ Report per guardrail:
 - **Actionability issue** — describe the problem (e.g., "'Agent' is in selector.scopes but AllowedScopes for this validator is ['Llm', 'Tool'] — 'Agent' is not allowed; change scope to 'Llm' or 'Tool'") and the fix
 - **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead
 
-If the user asks to fix identified issues: apply corrections to `agent.json`, run `uip agent validate` to confirm the fix passes checks, then `uip agent migrate` to persist the regenerated `.agent-builder/`.
+If the user asks to fix identified issues: apply corrections to `agent.json`, run `uip agent refresh` to regenerate `entry-points.json` and `bindings_v2.json`, then `uip agent validate` to confirm the fix passes checks.
 
 ---
 
@@ -175,9 +216,12 @@ If the user asks to fix identified issues: apply corrections to `agent.json`, ru
 2. **If `GuardrailCatalogUnavailable`** → surface the message and stop. Do not fall back to guessing or hardcoded recommendations.
 3. **Only recommend `Available` validators**. Mention `Unauthorised` ones to the user so they can contact their administrator.
 4. **Every recommendation must cite** the catalog entry's `when_to_use` or a specific `use_cases` item that matched the agent's context. Do not recommend a guardrail without explaining why it applies.
-5. **For Tool scope**: verify the tool exists in `resources/` before writing `matchNames`. If the agent has no tool resources, do not add a Tool-scoped guardrail.
-6. **Correctness validation uses `uip agent guardrails list` output** — `Parameters[].Type`, `Options`, `KeySource`, `Min`, `Max`, `Step` are the authoritative source for all parameter rules. Do not hardcode validator-specific knowledge.
-7. **The cache file is `.guardrails-catalog-cache.json`** in the working directory. Add it to `.gitignore` if one exists.
-8. **Do not create separate guardrails per scope** — combine multiple scopes into a single guardrail's `scopes` array.
-9. **All map-enum keys must exactly match the corresponding enum-list values** — no extra or missing keys. This is the most common correctness error.
-10. **Read [guardrails.md](guardrails.md) before writing any JSON** — discriminator fields, PascalCase constraints, and parameter shapes are specified there and cannot be safely inferred.
+5. **Never recommend two validators with the same `security_category` at the same scope and stage** (e.g. `prompt_injection` + `user_prompt_attacks` at Llm PRE). De-duplicate per Step 3: drop catalog-deprecated entries, keep the best fit, mention the alternative. Derive the grouping and deprecation from the catalog's own fields — do not hardcode validator names.
+6. **Default the action to the catalog example's `action_type`; never silently downgrade `block` → `log`.** Security-critical guardrails (`adversarial_input`, `content_safety`) default to `{"$actionType": "block"}`. If you use `{"$actionType": "log"}` for a guardrail whose catalog default is `block`, state it and the reason in the report (Step 5).
+7. **Block as early as possible — pick the outermost scope the validator allows.** For input protection (PII, jailbreak, injection) prefer `selector.scopes: ["Agent"]` over `["Llm"]` over `["Tool"]`, so the run halts before the LLM call. PII meant to stop the agent handling personal data goes at **Agent**, not Llm. Only narrow when the validator is scope-restricted (e.g. `prompt_injection` / `user_prompt_attacks` are Llm-only) or the user asks for a narrower scope. See Step 4.
+8. **For Tool scope**: verify the tool exists in `resources/` before writing `matchNames`. If the agent has no tool resources, do not add a Tool-scoped guardrail.
+9. **Correctness validation uses `uip agent guardrails list` output** — `Parameters[].Type`, `Options`, `KeySource`, `Min`, `Max`, `Step` are the authoritative source for all parameter rules. Do not hardcode validator-specific knowledge.
+10. **The cache file is `.guardrails-catalog-cache.json`** in the working directory. Add it to `.gitignore` if one exists.
+11. **Do not create separate guardrails per scope** — combine multiple scopes into a single guardrail's `scopes` array.
+12. **All map-enum keys must exactly match the corresponding enum-list values** — no extra or missing keys. This is the most common correctness error.
+13. **Read [guardrails.md](guardrails.md) before writing any JSON** — discriminator fields, PascalCase constraints, and parameter shapes are specified there and cannot be safely inferred.

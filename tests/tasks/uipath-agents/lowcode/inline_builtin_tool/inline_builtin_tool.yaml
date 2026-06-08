@@ -10,24 +10,16 @@ description: >
   wired to the autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 45
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
-  Create a UiPath solution "DocsFlowSol" containing a flow project
-  "DocsFlow". The flow should use an inline low-code agent that helps
-  users understand uploaded documents. Enable the built-in "Analyze
-  Files" tool on the inline agent so it can analyze PDF and image
-  attachments, and wire that tool in the flow.
+  Create a UiPath Flow project "DocsFlow" that uses an inline low-code agent
+  to help users understand uploaded documents. Enable the built-in
+  "Analyze Files" tool on the inline agent so it can analyze PDF and
+  image attachments, and wire that tool in the flow. The solution
+  should be named "DocsFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -63,9 +55,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added a flow node"
+    description: "Agent refreshed the inline agent with --inline-in-flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+node\s+add'
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -90,12 +82,6 @@ success_criteria:
     description: "Flow file was created"
     path: "DocsFlowSol/DocsFlow/DocsFlow.flow"
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Flow project descriptor was created"
-    path: "DocsFlowSol/DocsFlow/project.uiproj"
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command

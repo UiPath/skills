@@ -7,15 +7,9 @@ description: >
   with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
 tags: [uipath-data-fabric, integration, records, import]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 9
   turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Before starting, load the uipath-data-fabric skill and follow its workflow.

@@ -7,10 +7,8 @@ description: >
   requirements without cloud-side effects.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:validate", connector, "feature:connections"]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 10
   max_turns: 20
 
 sandbox:
@@ -145,7 +143,7 @@ success_criteria:
     description: "Wrapper family contract fixture covers Maestro BPMN wrapper and enrichment families"
     path: "fixtures/validation/wrapper-family-contract/wrapper-family-contract.bpmn"
     includes:
-      - "A2A.AgentExecution"
+      - "Orchestrator.StartAgentJob"
       - "Orchestrator.ExecuteApiWorkflowAsync"
       - "Orchestrator.BusinessRules"
       - "Orchestrator.CreateAndWaitForQueueItem"
@@ -154,6 +152,24 @@ success_criteria:
       - "<bpmn:businessRuleTask"
       - "<bpmn:callActivity"
       - "<bpmn:receiveTask"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent invocation BPMN fixture is available"
+    path: "fixtures/validation/agent-invocation/agent-invocation.bpmn"
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Agent invocation fixture uses the StartAgentJob binding-pair shape"
+    path: "fixtures/validation/agent-invocation/agent-invocation.bpmn"
+    includes:
+      - "Orchestrator.StartAgentJob"
+      - "=bindings.Binding_AgentName"
+      - "=bindings.Binding_AgentFolderPath"
+      - 'propertyAttribute="name"'
+      - 'propertyAttribute="folderPath"'
     weight: 1.0
     pass_threshold: 1.0
 

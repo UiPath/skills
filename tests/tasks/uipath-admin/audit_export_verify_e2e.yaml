@@ -29,17 +29,6 @@ description: >
   'audit'`.
 tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  max_turns: 40
-  turn_timeout: 600
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
   Export tenant audit events for the 3-day window from 5 days ago
   through 2 days ago (UTC, whole days) to ./audit-window.zip in the
@@ -117,3 +106,8 @@ success_criteria:
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 10
+  max_turns: 40
+  turn_timeout: 600

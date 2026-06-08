@@ -5,29 +5,21 @@ description: >
   EXTERNAL RPA process deployed to Orchestrator (not inside this
   solution). Verifies the tool resource.json under the inline agent's
   UUID subdirectory uses `type: "process"`, `location: "external"`,
-  real `folderPath`, and that a `uipath.agent.resource.tool.rpa` flow
-  node is wired to the autonomous agent node's `tool` handle.
+  real `folderPath`, and that a `uipath.agent.resource.tool.process.<uuid>`
+  flow node is wired to the autonomous agent node's `tool` handle.
 tags: [uipath-agents, e2e, low-code, inline-flow]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 65
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-
 initial_prompt: |
-  Create a UiPath solution "FibonacciFlowSol" containing a flow project
-  "FibonacciFlow" with an inline low-code agent. The agent accepts a
-  required `index` (number) and returns a number `value`. It must
-  compute the value using an process named "FibonacciRPA" that is
-  already deployed in the tenant — not by reasoning about the answer
-  itself.
+  Create a UiPath Flow project "FibonacciFlow" with an inline low-code agent
+  that accepts a required `index` (number) and returns a number
+  `value`. It must compute the value using a process named
+  "FibonacciRPA" that is already deployed in the tenant — not by
+  reasoning about the answer itself. The solution should be named
+  "FibonacciFlowSol".
 
   Use the real folder and process name from the tenant — do not
   hard-code or guess these values. Name the agent's tool resource
@@ -103,6 +95,14 @@ success_criteria:
       - expression: "length(Projects)"
         operator: "gte"
         expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 

@@ -7,17 +7,15 @@ description: >
 tags: [uipath-troubleshoot, e2e, faithful-replay, faulted-jobs, integration-service, orchestrator, rpa]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 43
   task_timeout: 2400
   max_turns: 60
   turn_timeout: 1800
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
     - type: template_dir
       path: ../_shared/mock_template
@@ -25,8 +23,8 @@ sandbox:
       path: process
     - type: template_dir
       path: fixtures
-  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
-  mock_path_dirs: ["mocks"]
+  mock_path_dirs:
+    - mocks
 
 reference:
   file: RESOLUTION.md

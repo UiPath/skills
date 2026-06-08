@@ -1,0 +1,47 @@
+task_id: skill-agent-guardrail-coded-user-prompt-attacks-decorator
+description: >
+  Decorator-style user prompt attacks guardrail for a coded agent. A simple LangGraph
+  customer support agent is seeded with no guardrails. The agent already has a
+  create_llm() factory function. Use the skill to add a user prompt attacks detection
+  guardrail using the decorator style at LLM scope. Verifies that the @guardrail
+  with UserPromptAttacksValidator is placed above the LLM factory.
+tags: [uipath-agents, e2e, coded, mode:build, guardrail]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+  # Disallow the subagent-dispatch tool. It is NOT gated by allowed_tools, and in
+  # the failing run the agent (which had already reasoned its way to the correct
+  # `uipath_langchain.guardrails` import) dispatched a research subagent that came
+  # back recommending `uipath.platform.guardrails` — the no-op import path that
+  # bypasses the LangChain adapter. The subagent has no skill context, so it can't
+  # see the import-source rule; trusting it silently regressed the answer. Force
+  # inline research where the loaded skill's import rule still applies.
+  disallowed_tools: ["Task"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py. It handles customer support questions.
+  The LLM is created in a create_llm() factory function. I want to add a user prompt
+  attacks detection guardrail using the decorator style at LLM scope — adversarial
+  inputs should be blocked before they reach the LLM.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Complete the entire task
+  end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "User prompt attacks decorator guardrail correctly added to graph.py"
+    command: "python3 $TASK_DIR/check_user_prompt_attacks_decorator.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 11
+  turn_timeout: 1200

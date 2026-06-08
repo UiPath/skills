@@ -1,0 +1,38 @@
+task_id: skill-platform-queue-items-lifecycle-e2e
+description: >
+  E2E: agent uses the skill to leave the tenant with a queue containing
+  N items in the seeded folder. Check queries tenant.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I need a fresh queue spun up with some work in it. The folder path and
+  a unique prefix are in `seed.json`.
+
+  Create a queue in that folder called `e2e-queue-` followed by the
+  prefix, then push exactly 5 items into it. Leave all 5 in the New
+  state — don't process or consume any of them. The item payloads can
+  be anything reasonable (e.g. a small JSON object with an Id field).
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: queue exists with 5 items in New state"
+    command: "python3 $TASK_DIR/check_queue_items.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

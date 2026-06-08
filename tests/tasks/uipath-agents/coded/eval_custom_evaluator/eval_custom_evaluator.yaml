@@ -1,0 +1,59 @@
+task_id: skill-agent-coded-eval-custom-evaluator
+description: >
+  Custom evaluator lifecycle. Verifies the skill guides the agent to scaffold
+  a custom evaluator with `uip codedagent add evaluator`, implement it, and
+  register it with `uip codedagent register evaluator` to generate the JSON
+  spec. The evaluator must be wired into an eval set and run successfully.
+tags: [uipath-agents, smoke, coded, lifecycle:validate, feature:eval]
+
+run_limits:
+  expected_turns: 49
+  turn_timeout: 1200
+  max_turns: 60
+
+initial_prompt: |
+  Build a UiPath coded agent named `greeter` using `uip codedagent new`.
+  The agent takes a name and returns "Hello, <name>!". No LLM — purely
+  deterministic Python.
+
+  Once the agent runs locally, scaffold a custom evaluator using
+  `uip codedagent add evaluator` that checks the agent execution time is
+  under 500ms. Register it with `uip codedagent register evaluator`, wire
+  it into an eval set with at least 2 test cases, and run it with
+  `uip codedagent eval main <eval-set> --no-report --output-file eval-results.json`.
+
+  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Complete
+  the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the custom evaluator with uip codedagent add evaluator"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+add\s+evaluator'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent registered the evaluator with uip codedagent register evaluator"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+register\s+evaluator'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the eval suite with --no-report"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--no-report'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Custom evaluator file, JSON spec, eval set, and results shape"
+    command: "python3 $TASK_DIR/check_eval_custom_evaluator.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

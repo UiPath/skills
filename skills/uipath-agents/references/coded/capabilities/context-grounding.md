@@ -79,10 +79,9 @@ class GraphState(MessagesState):
     query: str
     answer: str | None = None
 
-retriever = ContextGroundingRetriever(index_name="company_docs")
-
 async def retrieve_context(state: GraphState) -> Command:
     """Retrieve relevant documents from context grounding."""
+    retriever = ContextGroundingRetriever(index_name="company_docs", folder_path="Shared")
     documents = await retriever.ainvoke(state["query"])
     context = "\n".join([doc.page_content for doc in documents])
     return Command(update={
@@ -151,7 +150,7 @@ async def search_company_docs(query: str) -> str:
     Returns:
         Relevant documents matching the query
     """
-    retriever = ContextGroundingRetriever(index_name="company_docs")
+    retriever = ContextGroundingRetriever(index_name="company_docs", folder_path="Shared")
     documents = await retriever.ainvoke(query)
     return "\n".join([doc.page_content for doc in documents])
 
@@ -186,7 +185,7 @@ tools = [search_company_docs]
 
 ```python
 async def qa_system(question: str) -> dict:
-    retriever = ContextGroundingRetriever(index_name="faq_docs")
+    retriever = ContextGroundingRetriever(index_name="faq_docs", folder_path="Shared")
     docs = await retriever.ainvoke(question)
 
     if not docs:

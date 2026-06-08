@@ -10,6 +10,7 @@ What this looks like:
 - Job stuck in Pending state
 - Job information shows "No host is available on the machine template assigned for this job"
 - Output shows "The job hasn't finished yet"
+- The machine template assigned to the job currently has zero connected runtimes (`robotVersions` empty / no signed-in Assistant)
 
 What can cause it:
 - Host machine's UiPath Assistant is not signed in to Orchestrator
@@ -20,6 +21,8 @@ What can cause it:
 What to look for:
 - Machine template assigned to the job and which hosts are registered to it
 - Connection status of hosts on that machine template (connected vs disconnected)
+
+**Discriminator vs [job-pending-stale-dispatch.md](./job-pending-stale-dispatch.md):** before concluding no-host, check `uip or machines list --all-fields` for the assigned template. If it currently has a connected runtime (`robotVersions` populated) AND credentials/mode are valid AND `JobHistory` contains only the original Pending entry, the host is actually present — the `PendingReasons.Errors` codes are a stale snapshot from the original dispatch attempt. Switch to that playbook; the remediation is to stop and re-trigger, not to provision a host. Two traps that look like no-host but are not: the PendingReasons phrase "…none connected to **this folder**" is the dispatch-time verdict, NOT current proof the template is unassigned (no `uip` command can verify folder→template assignment, so do not confirm that as a cause); and `Used.Unattended == Allowed` is NOT exhaustion when the consumed slot is the connected template's own idle runtime.
 
 ## Investigation
 

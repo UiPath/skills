@@ -8,7 +8,7 @@ How to take a built `.nupkg` from `uip rpa pack` and get it onto Orchestrator or
 |---|---|---|
 | Run the project as an Orchestrator process / link as a Test Manager automation | **Pack → Orchestrator package upload** | This file § Pack → Upload |
 | Edit / visualize in Studio Web | **Solution upload** | [uipath-solution](../../uipath-solution/SKILL.md) (solution upload) |
-| Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | [uipath-solution](../../uipath-solution/references/operate/pack-and-deploy.md) |
+| Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | [uipath-solution](../../uipath-solution/references/pack-and-deploy.md) |
 
 This file documents the first row only — the legacy Orchestrator package feed flow that `uip tm testcases link-automation` requires.
 

@@ -118,6 +118,25 @@ Some properties are only required when another property has a specific value:
 
 See `ui-automation.md` NKeyboardShortcuts section for the full hotkey encoding reference.
 
+## NTypeInto `Text` with literal `[k(...)]` special-key tokens
+
+When `Text` contains literal `[k(...)]`, `[d(...)]`, or `[u(...)]` special-key tokens, use the long-form element — never the attribute form. The attribute form runs correctly but the value does not render in Studio, so the workflow looks empty even though it works.
+
+**Wrong:** `Text="[&quot;13700132[k(enter)]&quot;]"` → runs, but `Text` shows blank in Studio.
+
+**Correct:**
+```xml
+<uix:NTypeInto ...>
+  <uix:NTypeInto.Text>
+    <InArgument x:TypeArguments="x:String">["13700132[k(enter)]"]</InArgument>
+  </uix:NTypeInto.Text>
+</uix:NTypeInto>
+```
+
+Alternatives:
+- Build the bracket characters with `ChrW(91)` / `ChrW(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; ChrW(91) &amp; &quot;k(enter)&quot; &amp; ChrW(93)]"`.
+- Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` (or a second `NTypeInto`) for `[k(enter)]`.
+
 ## ActivityAction/ActivityFunc Initialization
 
 Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `ActivityAction` to wrap their child content. The XAML pattern is:
@@ -325,15 +344,23 @@ Or omit `Default` entirely if the variable is assigned before its first read.
 
 The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLanguage` enum, which has **only two valid values**: `VBNet` and `CSharp`.
 
-**Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` — it is not a valid `NetLanguage` value. `"CSharp"` is the same in both.
+**Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` or `"VB"` — neither is a valid `NetLanguage` value. `"CSharp"` is the same in both.
 
-**What happens:** Using `Language="VisualBasic"` passes Studio validation but fails at runtime:
+**What happens:** `Language="VisualBasic"` (or `"VB"`) passes Studio validation but fails at runtime:
 ```
 Failed to create a 'Language' from the text 'VisualBasic'.
 System.FormatException: VisualBasic is not a valid value for NetLanguage.
 ```
 
-**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` (not `"VisualBasic"`) or `"CSharp"`. See `InvokeCode.md` in `../activity-docs/UiPath.System.Activities/` for full details.
+**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` or `"CSharp"`.
+
+## `Chr()` / `Asc()` Break at Runtime in Modern Projects — Use `ChrW()` / `AscW()`
+
+`Chr(n)` / `Asc(c)` go through ANSI code page 1252, which .NET 6+ does not register. For `n ≥ 128` they throw `System.NotSupportedException: No data is available for encoding 1252` at runtime — after passing both `validate` and `build`. Use `ChrW(n)` / `AscW(c)` (Unicode, no code page) instead, or the BCL `Convert.ToChar(n)` / `CInt(c)`.
+
+`Chr`/`ChrW`/`Asc`/`AscW` live in `Microsoft.VisualBasic`, which is not auto-imported — `BC30451: 'ChrW' is not declared` means you must add `Microsoft.VisualBasic` to both `NamespacesForImplementation` and `ReferencesForImplementation`. The `Convert.*` BCL forms avoid this.
+
+`ContinueOnError=True` silently swallows the runtime exception (workflow looks successful, output is wrong/empty) — set it to `False` while debugging.
 
 ## HTTP Request Activity Complexity
 
@@ -348,6 +375,10 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 - **ContinueOnError defaults to TRUE** — unusual compared to other activities. HTTP failures don't stop execution by default.
 - **Retry policies**: Complex interaction between `RetryPolicyType`, `RetryCount`, `PreferRetryAfterValue`, and `MaxRetryAfterDelay`
 - **Default timeout**: 10,000ms (10 seconds)
+
+**Studio re-expansion injects default expressions that need imports (CLI-clean, Studio-red).** `validate`/`build` accept a minimally-authored `NetHttpRequest`. When the file is later opened in Studio / Studio Web, Studio re-serializes the activity with its full default property set — including default expressions for `FormDataParts` (`New List(Of FormDataPart) From {New FileFormDataPart(), New BinaryFormDataPart(), New TextFormDataPart()}`) and `RetryStatusCodes`. `FormDataParts` names types from `UiPath.Web.Activities.Http.Models`, so Studio reports `BC30002: Type 'FormDataPart' is not defined` though the CLI was clean — even when `RequestBodyType="None"`. **Fix:** add `UiPath.Web.Activities.Http.Models` to `TextExpression.NamespacesForImplementation`. A type referenced by simple name in a VB expression must be **imported** there; an `xmlns:` prefix on the root element only resolves element/attribute type names, not expression compilation.
+
+**Two related Studio Web round-trip behaviors to author for.** On save, Studio Web (a) rewrites child-element argument bindings to attribute form — e.g. `<Throw.Exception><InArgument x:TypeArguments="s:Exception">[…]</InArgument></Throw.Exception>` becomes `Exception="[…]"` — and (b) prunes unused root `xmlns` declarations. Prefer attribute-form bindings where they work; it keeps round-trip diffs minimal and matches the shape Studio Web will produce anyway.
 
 ## Connection Service Pattern (Office 365, GSuite, IS Connectors)
 
@@ -440,6 +471,10 @@ Activity tag names rarely match Studio display names. Guessing the tag from the 
 | Delete File | `ui:DeleteFile` | `ui:DeleteFileX` |
 | Wait | `ui:Wait` | `Delay` (MWF primitive — no prefix) |
 
+### `InvokeProcess` vs `StartProcess`
+
+To launch a local executable (`.exe`/`.cmd`/`.bat`), use `ui:StartProcess` (property `FileName` + `Arguments`). `ui:InvokeProcess` runs an Orchestrator process/package (property `ProcessName`) and has **no `FileName`** — reaching for one means you picked the wrong activity. Don't work around it with `Shell()`, `Process.Start`, or `InvokeCode`; for PowerShell use `InvokePowerShell<T>`.
+
 ### Tag Verification Gate
 
 Before writing any `<prefix:Tag>` not already in the file:
@@ -504,6 +539,30 @@ Use `uip rpa activities get-default-xaml` to get correct xmlns declarations — 
 - **LookupDataTable column resolution**: When multiple column identifiers are set (shouldn't happen due to OverloadGroups), only the first non-null is used: `LookupColumnIndex ?? LookupColumnName ?? LookupDataColumn`
 - **FilterDataTable**: Column must exist AND be type-compatible with the filter operator. Filtering a DateTime column with "Contains" fails at CacheMetadata validation.
 - **BuildDataTable**: Uses a security-related allowed types list. DataTables with certain .NET types may fail to serialize/deserialize.
+- **BuildDataTable — `TableInfo` is designer-only.** The required `TableInfo` property is a serialized string with no documented format; activity docs say "configure through the designer instead". **Cannot be authored in agent-written XAML.** Skip the activity. Build the DataTable inline with `Assign` + `InvokeMethod` instead. Requires the standard `sd` namespace alias (matches the rest of the activity-docs corpus — see `ForEachRow.md` and `AddDataRow.md`) and `xmlns:s`.
+
+  **VB XAML** (`expressionLanguage: VisualBasic` — bracket shorthand `[expr]`, `New T()`, `GetType(T)`):
+  ```xml
+  <!-- Modern (Windows/Portable):
+       xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+       xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib" -->
+  <!-- Legacy (.NET Framework 4.6.1):
+       xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+       xmlns:s="clr-namespace:System;assembly=mscorlib" -->
+  <Variable x:TypeArguments="sd:DataTable" Name="dt" Default="[New System.Data.DataTable()]" />
+  ...
+  <InvokeMethod TargetObject="[dt.Columns]" MethodName="Add">
+    <InArgument x:TypeArguments="x:String">Name</InArgument>
+    <InArgument x:TypeArguments="s:Type">[GetType(System.String)]</InArgument>
+  </InvokeMethod>
+  <InvokeMethod TargetObject="[dt.Columns]" MethodName="Add">
+    <InArgument x:TypeArguments="x:String">Amount</InArgument>
+    <InArgument x:TypeArguments="s:Type">[GetType(System.Decimal)]</InArgument>
+  </InvokeMethod>
+  ```
+  **C# XAML** (`expressionLanguage: CSharp`): replace bracket-shorthand expressions with `<CSharpValue x:TypeArguments="T">...</CSharpValue>` / `<CSharpReference x:TypeArguments="T">...</CSharpReference>` wrappers inside the `<InArgument>`/`<Default>` elements. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the full binding form per property.
+
+  Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
 - **GetRowItem**: Must specify at least one of `Column`, `ColumnIndex`, or `ColumnName` — all three empty causes validation error.
 
 ## Testing Activity Gotchas
@@ -657,6 +716,7 @@ The error occurs because the XAML language schema does not register `DateTime`, 
 | `x:Guid` | `s:Guid` | — |
 | `x:Uri` | `s:Uri` | — |
 | `x:Exception` | `s:Exception` | `<Catch x:TypeArguments="s:Exception">`, `Throw` argument types |
+| `x:Type` | `s:Type` | `<InArgument x:TypeArguments="x:Type">` silently resolves to `System.Activities.XamlIntegration.TypeExtension`, NOT `System.Type`. Passing `[GetType(System.String)]` fails with `BC30311: Value of type 'Type' cannot be converted to 'TypeExtension'`. Required by `InvokeMethod` calls into APIs that take `System.Type` (e.g. `DataColumnCollection.Add(name, type)`). |
 
 For types outside of `System`, add the matching CLR namespace alias. Examples:
 ```xml
@@ -696,6 +756,87 @@ Correct — requires `xmlns:s="clr-namespace:System;assembly=System.Private.Core
 The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Variable`, `InArgument`, `OutArgument`, `CSharpValue`, `CSharpReference`, `ActivityAction`, `DelegateInArgument`, etc.
 
 ---
+
+## Array Types in `Variable` Declarations
+
+The XAML parser rejects CLR array syntax in `<Variable x:TypeArguments="...">`. `<Variable x:TypeArguments="x:String[]">` fails to load with `Cannot create unknown type ... Variable(String[])`. The error message does not hint at the fix.
+
+**Use `scg:List(<T>)` instead of `<T>[]`** for variable declarations. Required `xmlns:scg` declaration depends on `targetFramework`:
+
+- **Modern (Windows/Portable):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"`
+- **Legacy (.NET Framework 4.6.1):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"`
+
+Wrong:
+```xml
+<Variable x:TypeArguments="x:String[]" Name="paths" />
+```
+
+Correct — **VB XAML** (`expressionLanguage: VisualBasic`, bracket shorthand for the default expression):
+```xml
+<Variable x:TypeArguments="scg:List(x:String)" Name="paths" Default="[New List(Of String)()]" />
+```
+
+Correct — **C# XAML** (`expressionLanguage: CSharp`): drop the `Default` attribute and use `<Variable.Default>` with `<CSharpValue>` instead; see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+
+**`InArgument` with array `x:TypeArguments` — context-dependent.** The canonical XAML for `AddDataRow.ArrayRow` (see [`../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md`](../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md)) uses `<InArgument x:TypeArguments="x:Object[]">[New Object() { ... }]</InArgument>` and Studio accepts it. Some agent-authored variants of the same form have been reported to fail at parse time — root cause unverified. **If `InArgument x:TypeArguments="x:Object[]"` fails in your project, fall back to calling the underlying params overload via `InvokeMethod`** (only safe when the target method has a `ParamArray Object()` / `params object[]` overload — `DataRowCollection.Add` does):
+
+```xml
+<InvokeMethod TargetObject="[dt.Rows]" MethodName="Add">
+  <InArgument x:TypeArguments="x:String">Alice</InArgument>
+  <InArgument x:TypeArguments="x:Int32">42</InArgument>
+</InvokeMethod>
+```
+
+This pattern is NOT a general substitute for fixed-arity array parameters — only for `ParamArray`/`params` overloads where the runtime builds the array from N positional arguments. For non-params arrays (e.g. `Method(int[] arr)`), `InvokeMethod` with N separate `<InArgument>` children does not work; the array must be constructed in a preceding `Assign`.
+
+---
+
+## Array Types in `Variable` Declarations
+
+The XAML parser rejects CLR array syntax in `<Variable x:TypeArguments="...">`. `<Variable x:TypeArguments="x:String[]">` fails to load with `Cannot create unknown type ... Variable(String[])`. The error message does not hint at the fix.
+
+**Use `scg:List(<T>)` instead of `<T>[]`** for variable declarations. Required `xmlns:scg` declaration depends on `targetFramework`:
+
+- **Modern (Windows/Portable):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"`
+- **Legacy (.NET Framework 4.6.1):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"`
+
+Wrong:
+```xml
+<Variable x:TypeArguments="x:String[]" Name="paths" />
+```
+
+Correct — **VB XAML** (`expressionLanguage: VisualBasic`, bracket shorthand for the default expression):
+```xml
+<Variable x:TypeArguments="scg:List(x:String)" Name="paths" Default="[New List(Of String)()]" />
+```
+
+Correct — **C# XAML** (`expressionLanguage: CSharp`): drop the `Default` attribute and use `<Variable.Default>` with `<CSharpValue>` instead; see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
+
+**`InArgument` with array `x:TypeArguments` — context-dependent.** The canonical XAML for `AddDataRow.ArrayRow` (see [`../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md`](../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md)) uses `<InArgument x:TypeArguments="x:Object[]">[New Object() { ... }]</InArgument>` and Studio accepts it. Some agent-authored variants of the same form have been reported to fail at parse time — root cause unverified. **If `InArgument x:TypeArguments="x:Object[]"` fails in your project, fall back to calling the underlying params overload via `InvokeMethod`** (only safe when the target method has a `ParamArray Object()` / `params object[]` overload — `DataRowCollection.Add` does):
+
+```xml
+<InvokeMethod TargetObject="[dt.Rows]" MethodName="Add">
+  <InArgument x:TypeArguments="x:String">Alice</InArgument>
+  <InArgument x:TypeArguments="x:Int32">42</InArgument>
+</InvokeMethod>
+```
+
+This pattern is NOT a general substitute for fixed-arity array parameters — only for `ParamArray`/`params` overloads where the runtime builds the array from N positional arguments. For non-params arrays (e.g. `Method(int[] arr)`), `InvokeMethod` with N separate `<InArgument>` children does not work; the array must be constructed in a preceding `Assign`.
+
+---
+
+## Generic Type Arguments Cannot Wrap Array Types
+
+`<Variable x:TypeArguments="scg:List(x:Object[])">` fails with *"Cannot create unknown type … List(Object[])"*. The XAML type system refuses to construct `List<Object[]>` — an array element type nested inside a generic. Same for `<InArgument x:TypeArguments="scg:IEnumerable(x:Object[])">` on `ForEach.Values`. This blocks the natural shape for projecting LINQ rows into `AddDataRow.ArrayRow` (which is `InArgument<Object[]>`).
+
+**Fix — box each row as `Object` so the collection's element type is non-array:**
+
+- Variable: `<Variable x:TypeArguments="scg:List(x:Object)" Name="rows" />`
+- Producing LINQ: `… .Select(Function(g) DirectCast(New Object(){g.Key, mean}, Object)).ToList()`
+- `ForEach`: `<ForEach x:TypeArguments="x:Object">` over `scg:IEnumerable(x:Object)`
+- Consumer cast: `<ui:AddDataRow ArrayRow="[CType(row, Object())]" …>`
+
+The boxed array reaches `ArrayRow` (whose property type is `Object[]`) correctly because `CType(row, Object())` unboxes it.
 
 ## Variable Scope and "Not Declared" Errors
 

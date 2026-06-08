@@ -70,6 +70,20 @@ write the placeholder-safe local-only shape from
 [shared/local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md)
 before packing.
 
+### Validator coverage across CLI surfaces
+
+`uip maestro bpmn pack` and `uip solution pack` share the same BPMN validation
+rules. A BPMN that passes one will hit the same diagnostics under the other on
+the packager-level rules (binding-backed `Orchestrator.StartAgentJob` context
+inputs, contract placement, declared variables, expression scoping, and the
+rest). Do not assume one CLI surface is "less strict" than the other.
+
+The Studio Web Health Analyzer runs a separate canvas-side rule set and can
+surface issues that neither CLI command catches (or vice versa). Treat Health
+Analyzer as a third signal, not a duplicate. When a real run surfaces a
+diagnostic that the CLI did not flag, report it as a packager-validator gap so
+the rule reaches every caller.
+
 When generated package files exist, verify that:
 
 - `bindings_v2.json` matches root bindings and enriched resource metadata.

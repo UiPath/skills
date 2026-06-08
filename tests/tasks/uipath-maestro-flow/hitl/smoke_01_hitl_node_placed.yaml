@@ -5,25 +5,20 @@ description: >
   into the .flow file as JSON and the flow validates.
 tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:hitl]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-
 run_limits:
+  expected_turns: 21
   max_turns: 80
-  turn_timeout: 900
-
 initial_prompt: |
   Build a UiPath Flow named "InvoiceApproval" that:
   1. Starts with a manual trigger
   2. Pauses for a finance manager to review and approve an invoice (human-in-the-loop)
   3. Ends after the review is complete
 
-  The HITL node must use the inline quickform style (uipath.human-in-the-loop),
-  not an external app. The node must show the reviewer: invoice ID and amount.
+  The reviewer's form should be rendered inline — no separate deployed app.
+  The node must show the reviewer: invoice ID and amount.
   The reviewer clicks Approve or Reject.
 
-  Wire the completed handle to an End node.
+  Wire the flow to continue to an End node after the review is complete.
 
   Validate the flow after building it.
 

@@ -8,19 +8,11 @@ description: >
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 96
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Build a UiPath Case Management solution named "ParentCaseSingle" containing
@@ -55,9 +47,9 @@ initial_prompt: |
   | required-stages-completed | - | Case marked complete | Yes |
 
   ### 1.5 Case Variables
-  | Variable | Category | Type | Default | Description | Produced By | Consumed By |
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
   |---|---|---|---|---|---|---|
-  | childCaseSpawned | implementation | boolean | false | ChildOnboardingCase spawn flag | delegate.spawnChildOnboardingCase | - |
+  | childCaseSpawned | Variable | boolean | | | false | ChildOnboardingCase spawn flag; populated by Delegate. |
 
   ## Section 2: Stages & Tasks
 
@@ -76,10 +68,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `delegate.spawnChildOnboardingCase` | Spawn ChildOnboardingCase | case-management | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `delegate.spawnChildOnboardingCase` | Spawn ChildOnboardingCase | case-management | Yes | No | system | — |
 
   ##### Task 1.1: Spawn ChildOnboardingCase (`delegate.spawnChildOnboardingCase`)
 
@@ -124,3 +116,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

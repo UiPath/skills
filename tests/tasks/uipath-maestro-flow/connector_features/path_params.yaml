@@ -6,20 +6,12 @@ description: >
   verify the path-parameter wiring.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 52
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node: {}
 initial_prompt: |
   Create a new Flow project called "PathParamsTest" with a manual trigger.
   Build a flow that retrieves a single Jira issue using the Jira "Get Issue"

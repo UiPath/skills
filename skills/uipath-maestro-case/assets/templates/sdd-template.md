@@ -38,6 +38,8 @@ build the case in the Case Designer without guessing.
    - `required-tasks-completed` — all required tasks in stage completed
    - `wait-for-connector` — an Integration Service event received
    - `adhoc` — ad-hoc / manual trigger
+   - `runs-sequentially` — runs sequentially
+   - `user-selected-stage` - target of an upstream `wait-for-user` exit
 
 4. **Exit conditions:** Every exit condition MUST specify:
    - **Exit Type:** `exit-only` | `return-to-origin` | `wait-for-user`
@@ -47,9 +49,9 @@ build the case in the Case Designer without guessing.
    **WHEN ↔ Marks Complete pairing (hard constraint — schema-enforced; applies identically to STAGE exit and CASE exit):**
 
    *Stage exit:*
-   - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` (typical) or `required-stages-completed`. **NEVER** `selected-tasks-completed(...)`.
-   - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `selected-stage-completed(...)`, `wait-for-connector`, etc.
-   - Same stage may carry one completion exit (`Yes` + `required-tasks-completed`) plus zero or more routing exits (`No` + `selected-tasks-completed`).
+   - `Marks Stage Complete: Yes` → WHEN MUST be `required-tasks-completed` (typical) or `wait-for-connector` (stage completes when the bound connector event arrives). **NEVER** `required-stages-completed` or `selected-tasks-completed(...)`.
+   - `Marks Stage Complete: No` (routing / divergent exits) → WHEN may be `selected-tasks-completed("TaskA")`, `wait-for-connector`, etc.
+   - Same stage may carry one completion exit (`Yes` + `required-tasks-completed` / `wait-for-connector`) plus zero or more routing exits (`No` + `selected-tasks-completed` / `wait-for-connector`).
 
    *Case exit (preferred pattern: one row, `Yes` + `required-stages-completed`):*
    - `Marks Case Complete: Yes` → WHEN MUST be `required-stages-completed` or `wait-for-connector`. **NEVER** `selected-stage-completed(...)` / `selected-stage-exited(...)`.
@@ -60,8 +62,27 @@ build the case in the Case Designer without guessing.
 6. **Entry/exit conditions use WHEN + IF format:**
    - **WHEN** = the rule type (event that triggers evaluation, e.g., `selected-stage-completed("Intake")`)
    - **IF** = the optional `conditionExpression` (JavaScript expression evaluated against case variables, e.g., `applicationStatus == "Approved"`)
+   - **Display Name** (optional) = human-readable label for the condition row. Leave blank (`—`) to let the skill default it: entry/task-entry conditions → `Entry Rule {N}`; stage-exit/case-exit conditions → `Complete Rule {N}` when Marks Complete is `Yes`, `Exit Rule {N}` when `No`. `N` is the 1-based index within the same label kind in the stage / task / case container. Set a value only to override the default.
+   - **`wait-for-connector` WHEN** binds an Integration Service connector event. Name it inline in the WHEN cell (e.g. `wait-for-connector (Outlook "Email Received", Inbox)`) AND add a **Connector Rule Detail** block under the condition table. Applies to stage-entry, stage-exit, case-exit, and task-entry conditions. The IF cell is then an optional `=js:` gate on **case state** (`=js:vars.X`); the event payload is NOT directly accessible (no `event` namespace). **In-rule event-payload gating is NOT supported at runtime** — same-rule extract-then-gate (`response.X -> caseVar` on outputs + `=js:vars.caseVar` in IF) does not work; the case-backend evaluates the gate before the extract runs. To condition on the event payload, extract `response.field -> caseVar` on the connector rule and place the case-state gate on the DOWNSTREAM stage-entry / task-entry condition (where the extract has already populated the case var).
 
-7. **Task types — closed enum of 9 values. Choose based on WHAT THE TASK DOES, not its surface label.** Any other value (e.g., `external-agent`, `connector-activity`, `wait-for-event`) is invalid and breaks downstream JSON generation. Consider all 9 for every task:
+   **Connector Rule Detail block** — reproduce under any condition table whose WHEN is `wait-for-connector`:
+   ```markdown
+   **Connector Rule Detail:**
+   - Connector: {e.g., Microsoft Outlook 365}
+   - Connection: {instance name, or "Tenant default"}
+   - Event: {e.g., Email Received}
+   - Filter: {filter in business terms, or "—"}
+   - Event Parameters: {name=value pairs, e.g., parentFolderId="Inbox"; or "—"}
+
+   **Connector Rule Outputs:** *(optional — omit when the rule is gate-only; target case variable MUST exist in the Case Variables table)*
+
+   | Field | Binding / Value |
+   |-------|------------------|
+   | {schema field name, e.g., response.subject} | -> {case variable that receives this value} |
+   | — | {case variable} = {literal, =js:expression, or =js:vars.X.Y for dotted access} |
+   ```
+
+7. **Task types — this skill generates 9 of the CLI's 10 task types. Choose based on WHAT THE TASK DOES, not its surface label.** The 10th CLI type, `external-agent`, has no generation plugin here — model it as `api-workflow` / `execute-connector-activity` instead (see below). Values like `connector-activity` or `wait-for-event` are not CLI task types at all. Emitting anything outside these 9 breaks downstream JSON generation. Consider all 9 for every task:
    - `action` — a human must review, approve, or make a judgment call. The task PAUSES for a person.
    - `agent` — AI reasoning: classification, criteria application, document analysis, risk assessment, triage. Use for any semi-structured reasoning.
    - `process` — deterministic multi-step BPMN: routing, orchestration, batch processing, report generation. No judgment (human or AI).
@@ -136,10 +157,10 @@ The generated SDD must start with:
 |----------|-------|
 | Case Name | {PascalCase name} |
 | Case Description | {2-3 sentence description of what the case manages} |
-| Case Identifier | Prefix: {2-4 char UPPER prefix}, Type: {constant \| external} |
+| Case Identifier | Type: {constant \| external}. Constant → Prefix: {2-4 char UPPER prefix}. External → Source: {=vars.<In/InOut variable> \| =js:`expression`} |
 | Priority | Choiceset: {comma-separated values} — Default: {value} |
 | Case-Level SLA | {count} {unit: h/d/w/m} |
-| SLA Type | {Static \| Variable} |
+| SLA Type | {time-based \| condition-based} |
 
 ### Case-Level SLA Escalation Rules
 
@@ -150,7 +171,7 @@ The generated SDD must start with:
 
 ### Variable SLA Rules
 
-> Include this table only if SLA Type is Variable. Each row defines an expression-based SLA override.
+> Include this table only if SLA Type is `condition-based`. Each row defines an expression-keyed SLA override; the time-based default lives in the Case Metadata `Case-Level SLA` cell above. FE persists `slaRules[]` with non-empty `conditionExpression` per row (PO.Frontend `CaseManagementSlaProperties.tsx`).
 
 | Expression | SLA | Unit |
 |------------|-----|------|
@@ -162,9 +183,11 @@ The generated SDD must start with:
 
 | T# | Trigger Type | Source | Configuration |
 |----|-------------|--------|---------------|
-| T02 | {None \| Intsvc.EventTrigger \| Intsvc.TimerTrigger \| Manual} | {source system, connector, or "Manual"} | {see Configuration rules below} |
+| T02 | {Manual \| Intsvc.EventTrigger \| Intsvc.TimerTrigger} | {source system, connector, or "Manual"} | {see Configuration rules below} |
 
 > Number triggers sequentially starting at T02 (T01 is reserved for the case file). The T-number is referenced by Case Variables rows whose value comes from this trigger's payload.
+>
+> `Manual` is author shorthand — a manual trigger has **no** `serviceType` in the generated JSON (the CLI serviceType enum is `None` / `Intsvc.EventTrigger` / `Intsvc.TimerTrigger`; never write `serviceType: "Manual"`).
 
 **Configuration column — write user-specified intent only:**
 
@@ -184,9 +207,11 @@ DO NOT include in Configuration:
 
 > **WHEN ↔ Marks Case Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-stages-completed` (preferred) or `wait-for-connector`; `No` row MAY use `selected-stage-completed(...)` / `selected-stage-exited(...)` / `wait-for-connector`. Mixing `Yes` with a `selected-*` rule is invalid.
 
-| WHEN | IF | THEN | Marks Case Complete |
-|------|-----|------|---------------------|
-| {`required-stages-completed` for Yes; `selected-stage-completed("StageName")` or other rule for No} | {conditionExpression, or "—" if none} | Case exited | {Yes \| No} |
+| WHEN | IF | THEN | Marks Case Complete | Display Name |
+|------|-----|------|---------------------|--------------|
+| {`required-stages-completed` for Yes; `selected-stage-completed("StageName")` or other rule for No} | {conditionExpression, or "—" if none} | Case exited | {Yes \| No} | {optional label, or "—" → defaults to `Complete Rule {N}` (Marks Complete = Yes) / `Exit Rule {N}` (No)} |
+
+> If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6) — it binds the IS connector event the rule waits for.
 
 ### Case Variables
 
@@ -196,11 +221,11 @@ DO NOT include in Configuration:
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
-| {camelCase name} | {In \| Out \| Variable} | {string \| number \| boolean \| date \| object \| array \| jsonSchema} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
+| {camelCase name} | {In \| Out \| Variable} | {string \| integer \| float \| double \| boolean \| datetime \| date \| jsonSchema \| file} | {T-number(s) — single `T<N>` or comma-separated CSV when multiple triggers feed the same Variable; empty for pure state / Out-args / In-args} | {single payload path when one trigger; keyed `T<N>: <path>; T<M>: <path>` format when multiple triggers} | {default value or empty} | {what this variable represents} |
 
 **Category semantics (author-facing summary; canonical definition in [`global-vars/impl-json.md` § Pattern shapes by category](../../references/plugins/variables/global-vars/impl-json.md)):**
 
-- **`In`** — formal case argument supplied at case start by an external caller (manual trigger via API) OR initialized from `Default` (event / timer triggers, which have no caller). Works with any trigger type. For event-trigger-payload-extraction (where the value comes from the event's payload), use `Variable` with `sourceTriggers` + `sourceFields` (Use Case 2) instead — that's a different operation.
+- **`In`** — formal case argument supplied at case start by an external caller (manual trigger via API) OR initialized from `Default` (event / timer triggers, which have no caller). Works with any trigger type. For event-trigger-payload-extraction (where the value comes from the event's payload), use `Variable` with `sourceTriggers` + `sourceFields` (Use Case 2) instead — that's a different operation. **File-type In-args:** the runtime caller must pre-create the JobAttachment (`POST /odata/Attachments`, then `PUT` the bytes to the returned blob URI) and pass the resulting `{ID, FullName, MimeType, Metadata}` record as the In-arg value plus the attachment ID in `StartProcessDto.Attachments[]`. The Maestro Studio Web "Start case" dialog handles this automatically when the user picks a file; programmatic callers must do it themselves.
 - **`Out`** — formal case argument returned to the caller at case end. Value comes from a task's Outputs row that targets this Name (the producer) OR from a `Default` value if no task fires. `sourceTriggers` MUST be empty (direction mismatch — values flow case→caller, not trigger→case).
 - **`Variable`** — case-internal state. May be populated by one trigger's payload (single T-number in `sourceTriggers` + single path in `sourceFields`), by multiple triggers' payloads sharing the same slot (CSV in `sourceTriggers` + keyed `T<N>: <path>` format in `sourceFields`), by a task output (use `->` operator in that task's Outputs table — same Name on both sides drives the wiring), or initialized via `Default` only.
 
@@ -228,7 +253,7 @@ If neither holds, the io-binding validator surfaces the misalignment.
 | caseStarter | Variable | string | T02, T03 | T02: response.user; T03: response.initiator | | Shared slot — whichever trigger fires populates it |
 | applicantName | In | string | | | | Formal In-arg supplied by API caller (manual trigger) |
 | finalDecision | Out | string | | | "Pending" | Out-arg; producer is "Approve Decision" task; "Pending" returned if no task fires |
-| reviewCount | Variable | number | | | 0 | Counter incremented by tasks via `=` operator |
+| reviewCount | Variable | integer | | | 0 | Counter incremented by tasks via `=` operator |
 
 ---
 
@@ -238,10 +263,10 @@ If neither holds, the io-binding validator surfaces the misalignment.
 
 **I/O bindings — how the Inputs / Outputs tables drive task wiring:**
 
-- **Inputs `Binding` column** = the value that feeds this task input at runtime. Accepts a case-variable reference (`=vars.X`), a sub-field reference (`=vars.X.Y`), a metadata reference (`=metadata.X`), a computed expression (`=js:(...)`), or a literal value (`"50"`, `0`, `true`).
+- **Inputs `Binding` column** = the value that feeds this task input at runtime. Accepts a case-variable reference (`=vars.X` — top-level only, no dotted access), a JS expression for dotted/metadata/computed forms (`=js:vars.X.Y`, `=js:metadata.X`, `=js:(...)`), or a literal value (`"50"`, `0`, `true`). The skill translates SDD `=metadata.X` to `=js:metadata.X` at impl time; for dotted case-var access, write `=js:vars.X.Y` directly per [bindings-and-expressions.md § Two evaluator paths](../../references/bindings-and-expressions.md#two-evaluator-paths).
 - **Outputs `Binding / Value` column** uses one of two operators:
   - **`-> caseVar`** (extract): the value at the runtime path in the `Field` column is extracted into the named case variable. `Field` is the **full runtime path relative to the task's root scope** — write `response.status` for a connector payload field, `Action` for an action task's top-level output, `Error.code` for a nested error sub-field, etc. The skill emits `source: "=<Field>"` verbatim; no envelope inference.
-  - **`caseVar = <expression>`** (set / compute / copy): the case variable is assigned the result of the expression at task completion. The `Field` column is `—` for `=` rows. Expression can be a literal (`"InReview"`, `5`), a computed value (`=js:(vars.count + 1)`), or a copy from another variable (`=vars.X.Y`).
+  - **`caseVar = <expression>`** (set / compute / copy): the case variable is assigned the result of the expression at task completion. The `Field` column is `—` for `=` rows. Expression can be a literal (`"InReview"`, `5`), a computed value (`=js:(vars.count + 1)`), a top-level case-var copy (`=vars.X`), or a sub-field copy via JS eval (`=js:vars.X.Y`).
 
 **Authoring rules:**
 
@@ -277,17 +302,28 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 #### Stage Entry Conditions
 
-| WHEN | IF | Interrupting |
-|------|-----|-------------|
-| {rule type with target, e.g., selected-stage-completed("Previous Stage Name")} | {conditionExpression, or "—" if none} | {Yes \| No} |
+> **Valid WHEN rule types for stage entry (strict subset of Key Rule 3):** `case-entered` (first stage of the case — no target), `selected-stage-completed("StageName")`, `selected-stage-exited("StageName")`, `user-selected-stage` (target of an upstream `wait-for-user` exit — no target; stage opts into the picker by declaring this rule), `wait-for-connector` (event-driven entry / interrupt — typically pairs with `Interrupting: Yes`). Other rule types from Key Rule 3 are NOT valid here.
+>
+> **Interrupting column:** `Yes` lets the condition fire while another stage is active and interrupt it — used for exception / fraud / escalation flows on `ExceptionStage`. `No` for normal sequential entry on regular stages.
+>
+> Each row is a separate entry condition. List multiple rows when a stage can be entered through more than one path (e.g., normal completion of an upstream stage AND an interrupting connector event).
+
+| WHEN | IF | Interrupting | Display Name |
+|------|-----|-------------|--------------|
+| {one of: `case-entered` \| `selected-stage-completed("StageName")` \| `selected-stage-exited("StageName")` \| `user-selected-stage` \| `wait-for-connector`} | {conditionExpression, or "—" if none} | {Yes \| No} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
+
+> If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
 #### Stage Exit Conditions
 
 > **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
+> Completion (`Yes`) and routing (`No`) rows share this one table. **Stage-to-stage routing is expressed by the destination stages' Entry Conditions** (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`) — one stage can fan out to N stages, each declaring it as their entry trigger. `return-to-origin` returns to the origin stage automatically.
 
-| WHEN | IF | Exit Type | Marks Stage Complete |
-|------|-----|-----------|---------------------|
-| {`required-tasks-completed` for Yes; `selected-tasks-completed("TaskName")` or other rule for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} |
+| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+|------|-----|-----------|---------------------|--------------|
+| {`required-tasks-completed` or `wait-for-connector` for Yes; `selected-tasks-completed("TaskName")` or `wait-for-connector` for No} | {conditionExpression, or "—" if none} | {exit-only \| return-to-origin \| wait-for-user} | {Yes \| No} | {optional label, or "—" → defaults to `Complete Rule {N}` (Marks Complete = Yes) / `Exit Rule {N}` (No)} |
+
+> If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
 #### Stage SLA
 
@@ -314,17 +350,23 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Entry Condition:**
 
-| WHEN | IF |
-|------|-----|
-| {rule type with target, or "current-stage-entered" for first task} | {conditionExpression, or "—" if none} |
+> **Valid WHEN rule types for task entry (strict subset of Key Rule 3):** `current-stage-entered` (default — fires when the containing stage is entered; typical for first task or any task with no sibling gate), `selected-tasks-completed("TaskA", "TaskB")` (fires when specific sibling tasks in the same stage complete), `wait-for-connector` (waits for a connector event), `adhoc` (user-triggered from the case app — task does not auto-start), `runs-sequentially` (sequential ordering within the stage; parallel members of the group share a lane, solo members get their own lane). Other rule types from Key Rule 3 are NOT valid here.
+>
+> Each row is a separate entry condition. List multiple rows when a task can be entered through more than one path. Author a `current-stage-entered` row for any ungated task — including connector tasks (`execute-connector-activity`, `wait-for-connector`) — that should start when its stage is entered.
+
+| WHEN | IF | Display Name |
+|------|-----|--------------|
+| {one of: `current-stage-entered` \| `selected-tasks-completed("TaskA", "TaskB")` \| `wait-for-connector` \| `adhoc` \| `runs-sequentially`} | {conditionExpression, or "—" if none} | {optional label, or "—" → defaults to `Entry Rule {N}`} |
+
+> If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
 ---
 
 ###### Action Task Detail (type: `action`)
 
-> Use this block for every task of type `action`. Choose Action App or JSON Schema based on task complexity and registry availability.
+> Use this block for every task of type `action`. The action plugin authors action tasks ONLY from a deployed Action App registered in `action-apps-index.json`; inline JSON-Schema HITL forms are not authored by the skill (an unresolved app falls back to a Rule-8 placeholder).
 
-**HITL Implementation:** {Action App: {app name} \| JSON Schema}
+**HITL Implementation:** Action App: {app name from `action-apps-index.json` — must be deployed}
 
 **Input Schema:**
 
@@ -337,7 +379,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 | Field | Binding / Value |
 |-------|------------------|
 | {schema field name} | -> {case variable that receives this value} |
-| — | {case variable} = {literal, =js:expression, or =vars.X.Y} |
+| — | {case variable} = {literal, =js:expression, or =js:vars.X.Y for dotted access} |
 
 > The `Field` column is the schema field name from the action's response (or `—` for `=` rows). The `Binding / Value` column uses `-> caseVar` for extraction or `caseVar = expression` for set / compute / copy. Target case variable MUST exist in Case Variables table.
 
@@ -376,7 +418,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 | Field | Binding / Value |
 |-------|------------------|
 | {schema field name} | -> {case variable that receives this value} |
-| — | {case variable} = {literal, =js:expression, or =vars.X.Y} |
+| — | {case variable} = {literal, =js:expression, or =js:vars.X.Y for dotted access} |
 
 > Target case variable MUST exist in Case Variables table. See Section 2 I/O bindings explainer for `->` vs `=` operator semantics.
 
@@ -427,7 +469,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 | Field | Binding / Value |
 |-------|------------------|
 | {output argument name} | -> {case variable that receives this value} |
-| — | {case variable} = {literal, =js:expression, or =vars.X.Y} |
+| — | {case variable} = {literal, =js:expression, or =js:vars.X.Y for dotted access} |
 
 > Target case variable MUST exist in Case Variables table. See Section 2 I/O bindings explainer for `->` vs `=` operator semantics.
 

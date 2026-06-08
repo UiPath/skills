@@ -1,0 +1,43 @@
+task_id: skill-platform-assets-crud-e2e
+description: >
+  E2E: agent uses the skill to leave the tenant with 3 typed assets in the
+  seeded folder, with specific values reflecting an earlier update on one.
+  Check queries tenant.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I need three assets set up inside one of my folders. The folder path
+  and a unique prefix are in `seed.json` — use the prefix in the asset
+  names so they don't clash with anything else.
+
+  - `e2e-asset-<prefix>-text` — a Text asset
+  - `e2e-asset-<prefix>-int` — an Integer asset, value `42`
+  - `e2e-asset-<prefix>-bool` — a Bool asset, value `true`
+
+  For the text asset, I also want to confirm updates work. Create it
+  with `hello-world` first, then update it to `updated-hello` — that's
+  the value I want it to end up at.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: 3 assets exist with the final expected values"
+    command: "python3 $TASK_DIR/check_assets_crud.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

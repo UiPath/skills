@@ -1,0 +1,136 @@
+name: Refresh uip CLI catalog
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # daily at 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for existing open refresh PR
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list \
+            --state open \
+            --json number,url,headRefName \
+            --jq '[.[] | select(.headRefName | startswith("auto/refresh-uip-catalog"))] | .[0] // empty')
+
+          if [ -n "$EXISTING" ]; then
+            URL=$(echo "$EXISTING" | jq -r '.url')
+            NUMBER=$(echo "$EXISTING" | jq -r '.number')
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Existing refresh PR still open: #$NUMBER — $URL"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.exists != 'true'
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-python@v5
+        if: steps.check.outputs.exists != 'true'
+        with:
+          python-version: '3.13'
+
+      # Install from GitHub Packages under the `alpha` dist-tag so the
+      # catalog tracks `cli/main`. Every merge to `cli/main` runs
+      # cli/.github/workflows/ci.yml, which publishes a `-alpha.<date>.<run>`
+      # prerelease to https://npm.pkg.github.com/ under dist-tag `alpha`.
+      # Public npm only carries the cut-release `latest` line which lags
+      # `main` by ~2 weeks, so refreshing against `@latest` would mean the
+      # gate is always auditing skills against a CLI surface that's two
+      # weeks behind what developers actually run. Same pattern as
+      # smoke-skills.yml.
+      - name: Install uip CLI (GitHub Packages @alpha)
+        if: steps.check.outputs.exists != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          npm config set @uipath:registry https://npm.pkg.github.com/
+          npm config set //npm.pkg.github.com/:_authToken "$NODE_AUTH_TOKEN"
+          npm install -g @uipath/cli@alpha
+          uip --version
+
+      - name: Rebuild catalog
+        if: steps.check.outputs.exists != 'true'
+        run: |
+          # Install tools from GitHub Packages @alpha — the scope the install
+          # step already configured. Do NOT reset to public npm: the tool
+          # plugins must version-match the alpha CLI to register their full
+          # command tree. Stable (public-npm) tools install but fail to load
+          # reliably against the alpha CLI (e.g. the `rpa` group never appears;
+          # diagnostics confirmed the alpha `rpa-tool` does). Catalog tracks
+          # cli/main, so its tools must come from the same @alpha feed.
+          # Guards: fail the build (no PR opened) if tool installs all fail or
+          # the verb count collapses vs the committed snapshot.
+          # --min-verbs 1000 is a deliberate hard tripwire — it caught the
+          # orchestrator-tool drop (#1203 follow-up). The build must clear it;
+          # a stuck refresh is louder than a silently shrunk catalog.
+          python3 scripts/build-uip-catalog.py --install-tools \
+            --min-verbs 1000 --max-drop-frac 0.2
+
+      - name: Check for catalog diff
+        if: steps.check.outputs.exists != 'true'
+        id: diff
+        run: |
+          if git diff --quiet -- assets/uip-catalog-snapshot.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Catalog already current."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- assets/uip-catalog-snapshot.json
+          fi
+
+      - name: Open PR with updated catalog
+        if: steps.check.outputs.exists != 'true' && steps.diff.outputs.changed == 'true'
+        # Use a PAT (not GITHUB_TOKEN) so the opened PR triggers
+        # `pull_request:` workflows — required-check workflows authored by
+        # GITHUB_TOKEN do not fire, which would let `--auto` merge before
+        # the verb gate / smoke tests ran. Same PAT already used by
+        # activation-gate.yml.
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          RAW_VERSION=$(jq -r .cli_version assets/uip-catalog-snapshot.json | tr -d '\r\n')
+          # Sanitize before interpolating into title/body/branch — defense
+          # in depth against unexpected characters in `uip --version` output.
+          CLI_VERSION="${RAW_VERSION//[^a-zA-Z0-9._-]/_}"
+          VERB_COUNT=$(jq '.verbs | length' assets/uip-catalog-snapshot.json)
+          BRANCH="auto/refresh-uip-catalog-${CLI_VERSION}-$(date -u +%Y%m%d)"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+          git add assets/uip-catalog-snapshot.json
+          git commit -m "chore: refresh uip CLI catalog ($CLI_VERSION, $VERB_COUNT verbs)"
+          git push -u origin "$BRANCH"
+
+          # Ensure the `automated` label exists before referencing it on the
+          # PR. The label is the join key the auto-merger uses to identify
+          # refresh PRs (see automerge-catalog-refresh.yml). Creating it
+          # idempotently here keeps the workflow self-contained — no
+          # one-time repo setup step required after a fresh fork.
+          gh label create automated \
+            --color cccccc \
+            --description "Bot-generated automated PR" \
+            --force
+
+          gh pr create \
+            --title "chore: refresh uip CLI catalog ($CLI_VERSION)" \
+            --body "Automated refresh against \`@uipath/cli@$CLI_VERSION\`. The catalog has $VERB_COUNT reachable verbs after installing all available plugins.
+
+          Merges automatically once all checks pass (handled by \`automerge-catalog-refresh.yml\`). If a check fails, the failure is real drift (a CLI release removed/renamed a verb still referenced in skill docs or task YAMLs); investigate the gate annotations and either sweep the docs or, if the verb is intentionally retired, add it to \`.claude/rules/cli-renames.md\`. \`/lint-task\` and the CLI Verb Gate will surface the affected references." \
+            --label "automated"

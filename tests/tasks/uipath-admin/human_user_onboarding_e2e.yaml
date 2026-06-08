@@ -5,22 +5,16 @@ description: >
   Validates the agent follows the onboarding workflow from the skill.
 tags: [uipath-admin, e2e, onboarding]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 10
   max_turns: 40
   turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Onboard john.doe@example.com (John Doe) and add them to the
   "Automation Developer" group once provisioned.
+
+  If this user already exists, remove them first, then re-invite.
 
   Do NOT prompt the user for confirmation — this is an automated test.
 

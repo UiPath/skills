@@ -23,8 +23,8 @@ uip gov aops-policy list --output json
 | `--search <TERM>` | no | Search by name |
 | `--limit <N>` | no | Page size (default: 20) |
 | `--offset <N>` | no | Page index, 0-based (default: 0) |
-| `--order-by <FIELD>` | no | Sort field (e.g. `priority`, `name`) |
-| `--order-direction <asc\|desc>` | no | Sort direction |
+| `--sort-by <FIELD>` | no | Sort field (e.g. `priority`, `name`) |
+| `--sort-order <asc\|desc>` | no | Sort direction |
 
 **Output:** `Data` is an array of `PolicyDto`. Each entry has `identifier`, `name`, `productName`, `priority`, and `availability`. `productName` is a flat string (the product identifier) — not a nested `product.{name,label}` object. An empty array means no policies matched.
 
@@ -144,7 +144,7 @@ The positional argument accepts either the product `name` (e.g. `StudioX`) or it
 
 ## uip gov aops-policy license-type list
 
-List license types available to the organization. Required for tenant deployment, where assignments are keyed by `(product, licenseType)`.
+List license types available to the organization. Required for tenant deployment, where assignments are keyed by `(product, license type)`.
 
 ```bash
 uip gov aops-policy license-type list --output json
@@ -162,7 +162,7 @@ Available license types:
 
 > **Two different identifiers — do not confuse them:**
 > - For `deployment tenant configure` entries, the JSON `licenseTypeIdentifier` field takes the license type's **`identifier` (GUID)** from `license-type list`.
-> - For `deployed-policy get` / `deployed-policy list`, the positional `<licenseType>` argument takes the license type's **`name`** (e.g. `Attended`).
+> - For `deployed-policy get` / `deployed-policy list`, the positional `<license-type>` argument takes the license type's **`name`** (e.g. `Attended`).
 
 ---
 
@@ -347,7 +347,7 @@ Add `--license-type <LICENSE_TYPE_NAME>` to remove only one license-type entry f
 
 ## uip gov aops-policy deployed-policy get
 
-Return the single effective deployed policy for a `(licenseType, product, tenant)` tuple — the one policy that actually applies after the user → group → tenant inheritance chain has been walked and any 'No Policy' pins have been honored. Uses the caller's `uip login` token by default.
+Return the single effective deployed policy for a `(license type, product, tenant)` tuple — the one policy that actually applies after the user → group → tenant inheritance chain has been walked and any 'No Policy' pins have been honored. Uses the caller's `uip login` token by default.
 
 ```bash
 uip gov aops-policy deployed-policy get \
@@ -385,7 +385,7 @@ Modes 2 and 3 require an S2S token (read from the `UIP_S2S_TOKEN` environment va
 
 ## uip gov aops-policy deployed-policy list
 
-List every policy that applies to a `(licenseType, product, tenant)` for the calling user, in priority order. Unlike `get`, which returns only the single effective (top-priority) policy, `list` shows every applicable entry — useful for understanding why a particular policy wins. **User token only — does NOT accept `--s2s-token`.** Returns an empty array when nothing applies.
+List every policy that applies to a `(license type, product, tenant)` for the calling user, in priority order. Unlike `get`, which returns only the single effective (top-priority) policy, `list` shows every applicable entry — useful for understanding why a particular policy wins. **User token only — does NOT accept `--s2s-token`.** Returns an empty array when nothing applies.
 
 ```bash
 uip gov aops-policy deployed-policy list \

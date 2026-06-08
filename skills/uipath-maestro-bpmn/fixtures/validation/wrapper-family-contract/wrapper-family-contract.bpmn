@@ -11,7 +11,8 @@
         <uipath:output id="Var_FinalStatus" name="finalStatus" type="string" />
       </uipath:variables>
       <uipath:bindings version="v1">
-        <uipath:binding id="Binding_AgentDefinition" name="Synthetic Agent" type="agent" elementId="Task_RunAgent" resource="SyntheticAgent" resourceSubType="agent" resourceKey="synthetic-agent" />
+        <uipath:binding id="Binding_AgentName" name="Synthetic Agent" type="process" elementId="Task_RunAgent" resource="process" resourceSubType="Agent" resourceKey="synthetic-agent" propertyAttribute="name" />
+        <uipath:binding id="Binding_AgentFolderPath" name="Synthetic Agent" type="process" elementId="Task_RunAgent" resource="process" resourceSubType="Agent" resourceKey="synthetic-agent" propertyAttribute="folderPath" />
         <uipath:binding id="Binding_ApiWorkflow" name="Synthetic API Workflow" type="process" elementId="Task_RunApiWorkflow" resource="SyntheticApiWorkflow" resourceSubType="apiWorkflow" resourceKey="synthetic-api-workflow" />
         <uipath:binding id="Binding_BusinessRule" name="Synthetic Business Rule" type="process" elementId="Task_RunBusinessRule" resource="SyntheticBusinessRule" resourceSubType="businessRules" resourceKey="synthetic-business-rule" />
         <uipath:binding id="Binding_Queue" name="Synthetic Queue" type="queue" elementId="Task_QueueAndWait" resource="SyntheticQueue" resourceSubType="queue" resourceKey="synthetic-queue" />
@@ -29,12 +30,13 @@
     <bpmn:serviceTask id="Task_RunAgent" name="Run Agent">
       <bpmn:extensionElements>
         <uipath:activity version="v1">
-          <uipath:type value="A2A.AgentExecution" version="v1" />
+          <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
           <uipath:context>
-            <uipath:input name="agent" type="resource" value="=bindings.Binding_AgentDefinition" />
+            <uipath:input name="name" type="string" value="=bindings.Binding_AgentName" />
+            <uipath:input name="folderPath" type="string" value="=bindings.Binding_AgentFolderPath" />
           </uipath:context>
-          <uipath:input name="body" type="json" target="bodyField"><![CDATA[{"request":"=vars.Var_Request"}]]></uipath:input>
-          <uipath:output name="response" type="json" var="Var_AgentResult" source="response" />
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"request":"=vars.Var_Request"}]]></uipath:input>
+          <uipath:output name="Process response" type="Orchestrator.RunJob" var="Var_AgentResult" />
         </uipath:activity>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_Start_To_Agent</bpmn:incoming>

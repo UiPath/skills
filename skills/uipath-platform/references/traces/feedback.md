@@ -63,7 +63,7 @@ uip traces feedback list \
 | `--agent-id` / `--agent-version` | Filter by agent |
 | `--positive` / `--negative` | Filter by sentiment |
 | `--limit` | Default 20, max 100 |
-| `--skip` | Pagination offset, default 0 |
+| `--offset` | Pagination offset, default 0 |
 | `--folder-key` | Optional |
 
 ## list detailed

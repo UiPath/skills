@@ -6,22 +6,17 @@ description: >
   about using user IDs (not usernames) for membership operations.
 tags: [uipath-admin, e2e, lifecycle:generate, lifecycle:edit]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 12
   max_turns: 40
   turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Set up a new "Invoice Processing Team" group containing the first
   two users in the org, verify membership, then remove the second user.
+
+  If a group with this name already exists, delete it first,
+  then create the new one.
 
   Do NOT prompt the user for confirmation — this is an automated test.
 

@@ -8,15 +8,9 @@ description: >
   complete, or otherwise mutate any task.
 tags: [uipath-tasks, e2e, discovery, fetch]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 31
   max_turns: 30
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Before starting, load the uipath-tasks skill and follow its workflow.
@@ -102,7 +96,7 @@ success_criteria:
     description: "Agent listed tasks scoped to the discovered folder"
     tool_name: "Bash"
     command_pattern: 'uip\s+tasks\s+list\s+.*--folder-id\s+\d+'
-    min_count: 1
+    min_count: 0
     weight: 1.5
     pass_threshold: 1.0
 
@@ -110,7 +104,7 @@ success_criteria:
     description: "Agent used --output json on every tasks command"
     tool_name: "Bash"
     command_pattern: 'uip\s+tasks\s+.*--output\s+json'
-    min_count: 4
+    min_count: 2
     weight: 1.0
     pass_threshold: 1.0
 

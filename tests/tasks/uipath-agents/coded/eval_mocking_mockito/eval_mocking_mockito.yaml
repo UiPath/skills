@@ -1,0 +1,71 @@
+task_id: skill-agent-coded-eval-mocking-mockito
+description: >
+  Coded-agent eval lifecycle with the **two documented mocking
+  patterns** (declarative `mockingStrategy: mockito` AND in-code
+  `@mockable`) plus a structured-output evaluator. The agent reads
+  an Orchestrator asset (mocked declaratively per test case) AND
+  looks up a remote label via a helper (mocked in-code via
+  `@mockable` so eval-time substitutes example outputs). Output is
+  structured JSON, eval'd with `JsonSimilarityEvaluator`. The full
+  pipeline runs offline. Project files are pre-seeded via `pre_run`
+  (fixtures in `_fixtures/`) so the eval grades mocking + evaluator
+  wiring, not file transcription.
+tags: [uipath-agents, e2e, coded, mode:build, feature:eval, feature:eval-mocking, feature:framework-simple]
+max_iterations: 1
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_mocking_mockito/_fixtures/asset-retriever ."
+    timeout: 10
+
+initial_prompt: |
+  I have an existing coded agent project at `asset-retriever/`
+  (`main.py`, `pyproject.toml`, `uipath.json`). It reads an
+  Orchestrator asset from the Shared folder, masks its value, and
+  fetches a human-readable label from a remote registry over HTTP.
+
+  Add a smoke evaluation suite with 2–3 cases covering different
+  asset values and run it locally. The evals must pass without
+  `uip login`, without the `api_key` asset existing, and without the
+  remote registry being reachable. Save the eval output to
+  `eval-results.json` in the project root.
+
+  For scoring, use a **structured-output evaluator** — we care
+  about the shape of `{"masked_key": ..., "label": ...}`. Those
+  should be as similar as possible to what we expect.
+
+  I also want to be able (in the future) to have an llm deciding
+  what mocking values should be substituted at runtime.
+  
+  Do NOT publish, upload, or deploy. Complete it in a single pass.
+
+success_criteria:
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init to generate entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the eval suite with --no-report (offline)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--no-report'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Both mocking patterns wired + JsonSimilarity evaluator + offline eval results"
+    command: "python3 $TASK_DIR/check_eval_mocking_mockito.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 45
+  max_turns: 55
+  turn_timeout: 1800
+  task_timeout: 1800

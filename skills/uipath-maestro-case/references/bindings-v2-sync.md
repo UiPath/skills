@@ -8,12 +8,13 @@ Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.
 
 **Batched, not per-task.** `bindings_v2.json` is only consumed by `uip solution resource refresh` (which runs once before upload/debug). No intermediate step reads it. Regenerating after every task wastes Read→convert→Write cycles on a growing file.
 
-Run at these two points only:
+Run at these three points only:
 
 1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
-2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache
+2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
+3. **End of Phase 3 Step 10** (after all connector condition RULES written across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for rules. Required because connector rules are written in Step 10 (conditions), not Step 9.7 (tasks); without this third sync point, rule-introduced Connection/Folder bindings + IS-cache entries wouldn't land until the post-Phase-3 catch-all, and `resource refresh` would miss them.
 
-Individual task plugins write bindings to `caseplan.json` per-task as normal. The batch regeneration reads the full top-level `bindings[]` once and converts everything in one pass.
+Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (path per § Schema-dependent source path above). The batch regeneration reads the full bindings array once from the schema-appropriate path and converts everything in one pass.
 
 ---
 
@@ -64,7 +65,7 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 ## § Populate IS connection cache
 
-`uip solution resource refresh` reads a local IS cache that connector plugins must populate after `get-connection`.
+`uip solution resource refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 8), and connector **condition rules** in any of the 4 scopes (Step 10).
 
 **Path:** `~/.uipath/cache/integrationservice/<connectorKey>/connections.json`
 
@@ -125,8 +126,8 @@ All three required for `uip solution upload` and `uip maestro case debug` to wor
 
 ---
 
-## Cleanup on task removal
+## Cleanup on task or rule removal
 
-When any task is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § node deletion cascade):
+When any task or connector condition rule is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § Delete a node / § Delete a connector condition rule):
 
 1. After pruning root bindings, regenerate `bindings_v2.json` from the updated array.

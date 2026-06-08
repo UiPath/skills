@@ -4,6 +4,19 @@ Authoritative reference for the post-planning execution flow. Read before execut
 
 > **Relationship to other docs.** This document defines phase boundaries and hard-stop contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
+## v20 mode (Rule 18)
+
+When `Schema: v20` is set in `tasks.md`, the following phase modifications apply. v19 mode is unchanged.
+
+| Phase | v19 behavior | v20 behavior |
+|---|---|---|
+| 2 — Prototyping | Informational validate, no halt on errors | Identical (already informational) |
+| 4 — Validate | Authoritative validate, 3-retry cap, hard stop on 3rd failure | **Identical** — CLI now accepts the v20 top-level shape. Authoritative validate, retry-and-fix, same 3-retry cap and hard stop on 3rd failure. |
+| 5 — Debug | `Run debug session` runs `uip maestro case debug` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip maestro case debug may reject. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject v20 schema — failure may be schema-related not case-bug-related` in build-issues.md. |
+| 6 — Publish | `Publish to Studio Web` runs `uip solution upload` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip solution upload may reject top-level shape until CLI catches up. Failure non-fatal — caseplan.json still valid v20.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
+
+Skill stays emit-honest in v20 mode: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope (Rule 18).
+
 ## Why phased
 
 After `tasks.md` is approved, skill does **not** build full case in one pass. It builds **placeholder** first (Phase 2 Prototyping) — enough structure for user to review case graph visually in Studio Web — then hard-stops for approval before wiring detail (Phase 3 Implementation). Validate (Phase 4), Debug (Phase 5), and Publish (Phase 6) each follow as separate gated phases. Debug runs before Publish so the user only publishes a build they've verified end-to-end.
@@ -35,7 +48,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Task class | Resolved resources | Phase 2 shape |
 |---|---|---|
-| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs populated per plugin. |
+| Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
 | Any task | Unresolved (`<UNRESOLVED: …>` in `tasks.md`) | Placeholder task per Rule 8 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
 
@@ -151,7 +164,9 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Retry policy
 
-Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
+> **v20 mode.** When `tasks.md` carries `Schema: v20`, Phase 4 follows the same retry policy as v19 below — the CLI now accepts the v20 top-level shape, so validate authoritatively, retry-and-fix on failure, and hard-stop on the 3rd failure.
+
+**Retry policy (both schemas).** Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
 
 - `Retry with fix` — agent attempts fix, re-runs validate (counter does not reset).
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.

@@ -4,7 +4,7 @@ Execute a flow on demand and monitor progress. Three modes: **debug** (controlle
 
 ## Pre-flight
 
-1. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#4-login-state).
+1. **Logged in.** `uip login status --output json` returns success. See [shared/cli-conventions.md — Login state](../../shared/cli-conventions.md#5-login-state).
 2. **For debug runs: solution resources refreshed.** Always run before `flow debug` so connection and process resource declarations are in sync with project bindings:
 
    ```bash
@@ -37,7 +37,9 @@ UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
   --attachment <variableId>=<localPath>
 ```
 
-> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#attachment-preflight).
+> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#pre-flight---attachment-binding).
+
+> **Reading the bound file.** At runtime a `file` variable is an object — a Script node reads the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [shared/variables-and-expressions.md — Runtime shape of a `file` variable](../../shared/variables-and-expressions.md#file-input).
 
 ### Reporting debug runs to the user
 
@@ -72,7 +74,7 @@ uip maestro flow process run <process-key> <folder-key> --output json \
   --attachment <variableId>=<localPath>
 ```
 
-> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#attachment-preflight). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
+> **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#pre-flight---attachment-binding). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
 
 Run `uip maestro flow process --help` for all subcommands and options.
 

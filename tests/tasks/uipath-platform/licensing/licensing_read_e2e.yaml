@@ -15,12 +15,7 @@ skip: true
 # subcommands. See PLT-103133.
 
 agent:
-  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write", "WebFetch"]
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Use the `uipath-platform` skill.

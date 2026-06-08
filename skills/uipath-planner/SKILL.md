@@ -1,7 +1,7 @@
 ---
 name: uipath-planner
-description: "UiPath task planner — reads SDDs from uipath-solution or elicits non-PDD requests, derives multi-skill task lists, emits live TaskCreate calls. Detects project type (.cs, .xaml, .flow, .bpmn, .py). For PDDs→uipath-solution first."
-when_to_use: "User makes a non-trivial UiPath request — 'build a UiPath solution for X', 'set up a process from scratch', 'help me plan this' — OR provides an SDD path. Skip when project type and scope are already clear for a single-skill task — invoke the specialist directly."
+description: "UiPath task planner — reads SDDs from uipath-design or elicits non-PDD requests, derives multi-skill task lists, emits live TaskCreate calls. Detects project type (.cs, .xaml, .flow, .bpmn, .py). For PDDs→uipath-design first."
+when_to_use: "User makes a non-trivial UiPath request that spans SEPARATE buildable projects — e.g. 'build a UiPath solution for X', 'set up a process from scratch', a Flow that orchestrates standalone RPA processes or agents — OR provides an SDD path. Skip when the request targets a SINGLE project, even a Flow/Agent/RPA project with inline HITL, script, or connector nodes wrapped in its own solution (e.g. a Flow with an inline approval step is one uipath-maestro-flow task, not a plan) — invoke that specialist directly."
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, EnterPlanMode, ExitPlanMode, TaskCreate, TaskUpdate, TaskList
 ---
 
@@ -18,20 +18,20 @@ The lane is decided by the **Entry Guard** below.
 
 ## When to Use This Skill
 
-- The request is **non-trivial** — multi-step, multi-skill, UI automation, or unclear scope
+- The request is **non-trivial** — spans **separate buildable projects** that each need their own specialist (e.g. a Flow orchestrating standalone RPA processes or agents), or UI automation with unclear scope
 - The request is **ambiguous** — no single specialist skill clearly matches
 - The user asks "what can I build?" or needs help choosing a project type
 - The user provides an SDD path — Lane A runs
 
-Skip this planner for simple, well-defined single-skill tasks (e.g., "create a workflow that sends an email") — load the specialist directly.
+Skip this planner for single-project tasks — load the specialist directly. A request is **single-project** (one specialist owns it end-to-end) even when it bundles several things *inside one project*: a Flow with script nodes plus an inline HITL approval step plus its own solution wrapper is **one** `uipath-maestro-flow` task. Inline nodes (HITL QuickForm, script, connector, inline agent) and the solution scaffolding are author sub-steps the specialist performs itself — they are **not** separate skills to orchestrate. Counting them as distinct skills ("solution + flow + human-in-the-loop") and emitting a plan is the most common mis-trigger. The planner is only for requests spanning **separate buildable projects** — distinct `.uipx` projects (a Flow consuming standalone RPA processes, an Agent using published processes as tools).
 
 ## Critical Rules
 
 1. **Plan only — never execute the work yourself.** Do NOT write automation code (XAML, C#, Python, JSON) or create project files. Plan / tasks files and live `TaskCreate` calls are the only outputs you produce.
-2. **For PDDs, hard-block and redirect to `uipath-solution`.** A PDD (PDF, docx, or markdown describing process steps + applications + exceptions) does NOT belong in this skill. The dedicated PDD→SDD skill produces a much better deliverable. The only escape is the user explicitly saying "skip SDD".
+2. **For PDDs, hard-block and redirect to `uipath-design`.** A PDD (PDF, docx, or markdown describing process steps + applications + exceptions) does NOT belong in this skill. The dedicated PDD→SDD skill produces a much better deliverable. The only escape is the user explicitly saying "skip SDD".
 3. **Never exceed 5 `AskUserQuestion` calls in any planning session.** Each call is one user-facing prompt; batch related questions (e.g., the Step 4 UI elicitation in Lane B batches App type, Targeting approach, App state into one call). If you cannot fit the elicitation in 5 calls, plan with best available info and note the assumption. Lane A typically uses 0–2 calls.
 4. **Always include a mandatory Testing task per generation skill** in the plan. Testing is non-negotiable — happy path + edge cases + error scenarios + e2e for Master Projects. The Testing task routes to the specialist's testing references and does NOT describe the testing procedure inline.
-5. **Route — do not redescribe.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe specialist-internal flows (target configuration, OR registration, XAML authoring pipelines, auth flows, testing procedures). Each specialist's docs own those details.
+5. **Route — do not redescribe.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe specialist-internal flows (target configuration, OR registration, XAML authoring pipelines, **HITL field/outcome schema design**, auth flows, testing procedures). Each specialist's docs own those details. **For a HITL step, pass the business intent only** ("manager approves or rejects an expense; can add a reason if rejected") — never a field-level spec (do not prescribe field names, types like `approved: boolean`, `required` flags, or outcome lists). The HITL specialist chooses the schema shape (boolean decision field vs Approve/Reject outcomes) from the intent; a field-level prescription forces one shape and defeats that choice.
 
 ## Entry Guard
 
@@ -49,7 +49,7 @@ When the planner is invoked, run this guard before anything else.
 
    > What is the document at <path>?
    > 1. Solution Design Document (SDD) — proceed with task generation (Lane A, hand-written SDD)
-   > 2. Process Design Document (PDD) — load uipath-solution first
+   > 2. Process Design Document (PDD) — load uipath-design first
    > 3. Other context — note its existence; proceed with non-PDD elicitation (Lane B)
 
 4. Based on user's choice:
@@ -58,7 +58,7 @@ When the planner is invoked, run this guard before anything else.
    - PDD → HARD BLOCK with this message:
 
      > The document at <path> is a Process Design Document. UiPath has a dedicated skill
-     > for PDD→SDD generation that produces a much better deliverable: uipath-solution.
+     > for PDD→SDD generation that produces a much better deliverable: uipath-design.
      > Load it with this PDD path; it will produce an SDD that I can then use to generate
      > the task list.
      >
@@ -69,7 +69,7 @@ When the planner is invoked, run this guard before anything else.
    - Other context → Lane B, with the document path noted in plan header.
 ```
 
-The `## Planner Handoff` heading **and** the `<!-- planner-handoff:v1 -->` marker are the load-bearing detection contract — `uipath-solution` writes both deterministically, this skill detects either. Templates ship with both; either alone is enough to take Lane A. Do not pattern-match on filename or extension; those are unreliable.
+The `## Planner Handoff` heading **and** the `<!-- planner-handoff:v1 -->` marker are the load-bearing detection contract — `uipath-design` writes both deterministically, this skill detects either. Templates ship with both; either alone is enough to take Lane A. Do not pattern-match on filename or extension; those are unreliable.
 
 ## Lane A — PDD-driven (summary)
 
@@ -109,7 +109,9 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | `uipath-coded-apps` | Web apps (`.uipath/` dir): build, sync, package, publish, deploy | Yes (`uip login`) | **Yes** — end-to-end |
 | `uipath-maestro-flow` | `.flow` files orchestrating RPA, agents, apps | Yes (`uip login`) | **Partial** — follows plan `Solution scope` (SW or local); `uipath-platform` for Orchestrator |
 | `uipath-platform` | Auth (`uip login`), Orchestrator (folders, processes, jobs, machines, users, roles), resources (assets, queues, storage buckets + bucket files, libraries, webhooks, triggers), Integration Service (connectors, connections, activities, IS triggers), traces, licensing | Yes (auth hub) | **Yes** — for non-solution single packages and Orchestrator-side post-deploy ops |
-| `uipath-solution` | PDD→SDD architecture authoring AND `uip solution` lifecycle (init, pack, publish, deploy, activate). Runs in PDD-driven flows as the first skill (design) and again as the final skill (deploy of `.uipx` solutions). | Yes (`uip login` for ops half) | **Yes** — for multi-project Solution (`.uipx`) deploys |
+| `uipath-mcp-servers` | UiPath AgentHub MCP server registration (6 types: `uipath`, `coded`, `command`, `remote`, `swagger`, `platform`) and tool authoring on `uipath`-type servers (3 kinds: `is-activity`, `resource`, `raw`). Wraps IS connector activities (Jira, Slack, Outlook, Salesforce, ...), Orchestrator resources (process / agent / api-workflow), external HTTP MCP endpoints, OpenAPI specs, published coded agents (as Orchestrator processes), local subprocess commands, or first-party UiPath services as MCP tools agents can consume. NOT for FastMCP / Python `mcp` SDK / `uipath-mcp-python` server-implementation work. | Yes (`uip login`) | **Yes** — registration is deployment (posts directly to AgentHub) |
+| `uipath-design` | PDD→SDD architecture authoring. Runs in PDD-driven flows as the first skill — produces the SDD this planner reads. | No | **No** — architecture only; hands off to specialists then `uipath-solution` for deploy |
+| `uipath-solution` | `uip solution` lifecycle (init, pack, publish, deploy, activate) for `.uipx` solutions. Runs as the final skill in PDD-driven flows (deploy of `.uipx` solutions). | Yes (`uip login`) | **Yes** — for multi-project Solution (`.uipx`) deploys |
 
 ## Reference Navigation
 
@@ -137,5 +139,5 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 13. **Omitting the mandatory Testing task per generation skill.** Every generation skill in the plan gets a `Testing (MANDATORY)` task that routes to that skill's testing references. Never replace it with a `Validate:` sub-step. Never describe test-case authoring / data-driven testing / mock testing in the plan.
 14. **Asking about test coverage depth.** Testing is always thorough. The implementation specialist can scope down at execution time if the user wants a quick MVP; the planner does not offer the option.
 15. **Omitting `Execution autonomy` from the plan header, or leaving `Stop conditions` empty when autonomy is `autonomous`.** Downstream specialists rely on both to decide whether to interrupt. Populate `Stop conditions` with the hard blockers realistic for this specific plan (auth, app state, element-capture limits, missing resources) — do not leave a generic placeholder.
-16. **Generating an SDD or copying SDD content into the plan.** SDD is owned by `uipath-solution`. The plan references SDD section paths in skill prompts but does not duplicate architecture content.
+16. **Generating an SDD or copying SDD content into the plan.** SDD is owned by `uipath-design`. The plan references SDD section paths in skill prompts but does not duplicate architecture content.
 17. **Asking the user what the planner / library / filesystem can already answer.** Project type is resolved by explicit naming, keyword signals, and filesystem detection before any prompt fires. Skill capability is fixed in the capability map — never ask "which skill should I use". Existence of a `project.json`, `.flow`, `.uipath/`, or `pyproject.toml` is observable. Default first; ask only when no safe default applies. A user prompt is the most expensive resource the planner has — spend it on decisions only the user can make.

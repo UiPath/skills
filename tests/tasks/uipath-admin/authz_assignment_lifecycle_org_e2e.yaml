@@ -13,18 +13,10 @@ description: >
   Command-construction only — no live tenant available.
 tags: [uipath-admin, e2e, authz, assignment-lifecycle, scope:organization]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 16
   max_turns: 40
   turn_timeout: 600
-
-sandbox:
-  driver: tempdir
-  python: {}
 
 initial_prompt: |
   Grant me organization-wide access by giving my account an existing

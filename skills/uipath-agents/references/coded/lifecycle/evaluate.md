@@ -80,6 +80,15 @@ def fetch_weather(query: str) -> dict:
 
 During evaluations, calls matching an `ExampleCall.input` return the paired `output`. During normal execution, the real function runs.
 
+`@mockable` only *registers* the function as interceptable — mock values come from the test case's `mockingStrategy`. `example_calls` matter only for LLM-driven mocking:
+
+| Mock values supplied by | `example_calls` needed? |
+|---|---|
+| Declarative `mockingStrategy: mockito` behaviors | No — bare `@mockable()` is correct; mockito ignores `example_calls` |
+| LLM mocking (`mockingStrategy: llm`, or user wants LLM-decided substitution values) | Yes — they ground the LLM mocker; without them outputs are nondeterministic and structured-output evaluators score erratically |
+
+When `example_calls` are needed, provide ≥1 `ExampleCall` per decorated function with `output` matching the real return shape. Do NOT add `example_calls` to mockito-mocked functions. If no mock matches at runtime, the real function runs.
+
 **Declarative** — Set `mockingStrategy` on each test case in the eval set (`type: "mockito"` for function mocks, `type: "llm"` for LLM mocks). See [Evaluation Sets](evaluations/evaluation-sets.md) § Mocking Strategies.
 
 ## Troubleshooting

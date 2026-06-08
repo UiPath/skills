@@ -13,29 +13,25 @@ description: >
 tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, wrong-activity-type, rpa]
 
 agent:
-  type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
-  max_turns: 60
-  turn_timeout: 3600   # 60 min per turn — LLMGW-proxied diagnostic runs observe up to ~30 min per turn
 
 run_limits:
-  task_timeout: 1800
+  expected_turns: 40
+  task_timeout: 5400
+
+  max_turns: 60
+  turn_timeout: 3600
 
 sandbox:
-  driver: tempdir
-  python: {}
   template_sources:
-    # 1. Shared dispatcher (mocks/uip + mocks/uip.cmd).
     - type: template_dir
       path: ../_shared/mock_template
-    # 2. Project source — snapshot of the failing UiPath project.
     - type: template_dir
       path: process
-    # 3. Per-scenario fixtures (manifest + canned uip responses).
     - type: template_dir
       path: fixtures
-  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
-  mock_path_dirs: ["mocks"]
+  mock_path_dirs:
+    - mocks
 
 reference:
   file: RESOLUTION.md

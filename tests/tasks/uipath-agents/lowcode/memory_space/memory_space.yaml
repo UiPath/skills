@@ -1,0 +1,162 @@
+task_id: skill-agent-memory-space
+description: >
+  End-to-end test: scaffold a standalone low-code agent that attaches
+  an existing UiPath Memory Space with `uip agent memory` and seeds an
+  episodic memory item. Verifies the CLI-managed
+  features/{FeatureName}/feature.json convention, dynamic few-shot
+  settings, seed item metadata, and generated memorySpace binding.
+tags: [uipath-agents, e2e, "mode:build", low-code, "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 32
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath solution "MemorySol" containing a single low-code
+  agent "SupportMemoryAgent". The agent accepts a required
+  `userQuestion` string and returns an `answer` string.
+
+  Attach the existing UiPath memory space named
+  "UiPathAgentsSupportMemory" from the Orchestrator folder
+  "Shared/uipath-agents" as an agent memory feature named
+  `SupportRecall`. Enable dynamic few-shot retrieval with hybrid
+  search, threshold 0.25, result count 5, and field weighting
+  `userQuestion=1`.
+
+  Add one seed memory item to `SupportRecall`: key
+  `refund-policy-tone`, value `Use empathetic wording and cite the
+  remembered support precedent when a refund case resembles a prior
+  escalation.`, memory type `episodic`, feedback ID
+  `d640fe25-3c05-4f2e-bd8d-42bdb20704c1`, and metadata
+  `{"source":"seed","scenario":"support"}`.
+
+  Use the full low-code memory CLI workflow for memory features:
+  discover the memory space before attaching it and refresh solution
+  resources after migration, even though the memory name and folder
+  are provided. Do not hand-create memory feature JSON. Do NOT
+  publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation.
+  Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the memory space with uip solution resource list --kind MemorySpace"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--kind\s+MemorySpace'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attached the memory space using uip agent memory add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+memory\s+add\s+SupportRecall\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent seeded the episodic memory item using uip agent memory item add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+memory\s+item\s+add\s+SupportRecall\s+refund-policy-tone\b(?=.*--memory-type\s+episodic)(?=.*--feedback-id\s+d640fe25-3c05-4f2e-bd8d-42bdb20704c1)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files and bindings"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed solution resources after memory binding generation"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not hand-author memory feature JSON with shell redirection"
+    tool_name: "Bash"
+    command_pattern: '(?:\btee\b\s+[^;&|]*features/[^;&|]*/feature\.json|(?:>|>>)\s*["'']?[^"''\s;&|]*features/[^"''\s;&|]*/feature\.json|\bpython3?\b[\s\S]*(?:open\([^)]*features/[^)]*/feature\.json[^)]*["'']w["'']|write_text\([^)]*features/[^)]*/feature\.json)|\bnode\b[\s\S]*(?:writeFileSync|writeFile)\([^)]*features/[^)]*/feature\.json)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not hand-author memory feature JSON with the Write tool"
+    tool_name: "Write"
+    command_pattern: 'features/.*/feature\.json'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "MemorySol/MemorySol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SupportMemoryAgent/agent.json was created"
+    path: "MemorySol/SupportMemoryAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SupportRecall memory feature file was created by the CLI workflow"
+    path: "MemorySol/SupportMemoryAgent/features/SupportRecall/feature.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "bindings_v2.json was generated"
+    path: "MemorySol/SupportMemoryAgent/bindings_v2.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Memory feature shape, seed item, schema sync, and memorySpace binding"
+    command: "python3 $TASK_DIR/check_memory_space.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

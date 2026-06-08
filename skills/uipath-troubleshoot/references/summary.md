@@ -36,6 +36,23 @@ CLI: `uip is --help`
 - [products/integration-service/overview.md](./products/integration-service/overview.md) — Product overview, connectors, connections, and CLI commands
 - [products/integration-service/summary.md](./products/integration-service/summary.md) — All playbooks for Integration Service issues
 
+## Agents
+
+Low-code agents built with `uip agent`. Issues here involve LLM call failures, context grounding index misconfigurations, and input schema validation errors. Primary investigation surface: `uip traces spans get <traceId> --output json` — spans carry the full error text including error codes and field-level detail.
+
+CLI: `uip agent run status`, `uip traces spans get`, `uip agent context`, `uip context-grounding`, `uip agent validate`, `uip agent publish`
+
+- [products/agents/summary.md](./products/agents/summary.md) — All playbooks for Agents issues
+
+## LLM Gateway
+
+Service that routes agent / product LLM calls to a model — platform default or tenant-owned (BYO) provider key. Issues here involve BYO LLM product configurations failing at runtime, server-side validation probes failing on `create` / `update`, and routing being bypassed (call hits the platform default despite an active BYO record). LLM Gateway failures often surface through the consuming agent / product (agents, agenthub, jarvis, IXP) or as auth-shaped errors referencing the vendor directly (OpenAI, Azure OpenAI, Bedrock, Vertex, Anthropic). The gateway does **not** expose per-request invocation logs via CLI — diagnosis is current-state + trace-evidence only.
+
+CLI: `uip llm-configuration --help`, `uip traces spans get`, `uip gov aops-policy deployed-policy resolve`
+
+- [products/llm-gateway/overview.md](./products/llm-gateway/overview.md) — Service model, dependencies, CLI surface, and what the CLI does NOT expose
+- [products/llm-gateway/summary.md](./products/llm-gateway/summary.md) — All playbooks for LLM Gateway / BYO LLM issues
+
 ## UI Automation
 
 Activities for interacting with desktop and web application UIs. Robots use selectors (XML descriptors) to find and interact with UI elements. Issues here involve selector failures, element not found exceptions, timeout issues, Healing Agent problems, and data validation errors during UI interactions.
@@ -71,6 +88,15 @@ Namespaces: `UiPath.MicrosoftOffice365.Activities`
 
 - [activity-packages/o365-activities/overview.md](./activity-packages/o365-activities/overview.md) — Package overview, activity types, and common failure patterns
 - [activity-packages/o365-activities/summary.md](./activity-packages/o365-activities/summary.md) — All playbooks for Microsoft Office 365 Activities issues
+
+## Excel Activities
+
+Activities for automating Microsoft Excel on Windows via COM interop (modern `Excel Process Scope` activities) and OpenXML file access (legacy workbook activities). Issues here involve `Invoke VBA` failures — Trust Center security blocks, malformed external code files, entry method name mismatches, parameter marshaling errors, and COM interop instability (`0x80010100 RPC_E_SYS_CALL_FAILED` and related HRESULTs).
+
+Namespaces: `UiPath.Excel.Activities`
+
+- [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, `Invoke VBA` execution model, and common failure patterns
+- [activity-packages/excel-activities/summary.md](./activity-packages/excel-activities/summary.md) — All playbooks for Excel Activities issues
 
 
 ## Playbooks

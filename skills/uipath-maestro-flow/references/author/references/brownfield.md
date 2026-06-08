@@ -6,13 +6,17 @@ Recipe-driven journey for targeted changes to an existing `.flow` file. Author t
 
 ## Read this first
 
-**[editing-operations.md](editing-operations.md)** — `Edit` / `Write` is required for non-carve-out `.flow` edits — the `Edit` tool for in-place changes, `Write` only when ≥70% of nodes change. Flow CLI is used only for connector activity, connector-trigger, and managed HTTP carve-outs. Read the strategy selection matrix before any modification.
+> **Before each node you add or modify, classify it as user-owned or CLI-owned (see [CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node)). Connector activities, connector triggers, and `core.action.http.v2` are CLI-only — use `uip maestro flow node add` + `uip maestro flow node configure`, never Edit. Hand-writing these will fail `flow validate`.** The same risk applies when *adding* a connector node to an existing flow as when building a new one.
+
+**[editing-operations.md](editing-operations.md)** — `Edit` is the default tool for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change. For CLI-owned nodes use the relevant plugin's `impl.md` configuration workflow (`node add` + `node configure`). Read the strategy selection matrix before any modification.
 
 > **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 ## Common edits
 
 For each edit, run `uip maestro flow validate` once after **all** edits are complete, then `uip maestro flow format`. Do not validate after each individual change — intermediate states are expected to be invalid.
+
+When a single edit touches more than one top-level array (e.g. insert-a-node hits `nodes`, `edges`, and `definitions`), follow the [parallel same-file Edit rules](editing-operations.md#parallel-same-file-edits) — anchor each Edit on its own array's opening key, never on top-level key order.
 
 | Edit | Description | Guide |
 |------|-------------|-------|
@@ -36,6 +40,16 @@ The table intentionally routes OOTB structural CRUD to Edit/Write only. There is
 
 1. **Validate** — `uip maestro flow validate <ProjectName>.flow --output json`. Fix any errors and re-validate.
 2. **Format** — `uip maestro flow format <ProjectName>.flow --output json`. Required before publish or debug (see "Always run `flow format` after edits" in [the Author capability index](../CAPABILITY.md)) — without format, hand-edited or stale `layout` data renders as misshapen rectangles in Studio Web.
+
+## "Refusing to serialize a vX workflow" — migrate first
+
+If `flow format`, `flow debug`, or `flow pack` fails with `[inMemoryWorkflowToFileFormat] Refusing to serialize a vX workflow to the v<current> file format`, the `.flow` file predates the current schema version. Recover with one command:
+
+```bash
+uip maestro flow migrate <ProjectName>.flow --output json
+```
+
+`migrate` is lossless — it walks the per-version migration chain (e.g. `=js:` expression strings become rich expression objects) and bumps the file to the current version. Re-run `flow format` and `flow validate` afterward; both should now pass. **A passing `flow validate` does NOT imply `format`/`debug`/`pack` will pass** — `validate` never re-serializes the workflow, so it skips the version guard those commands enforce. When you see the refusal, always migrate; never assume the edit was wrong.
 
 ## Completion Output
 

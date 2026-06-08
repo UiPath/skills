@@ -23,7 +23,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 ```json
 {
   "id": "<uuid>",
-  "version": "1.1",
+  "version": "<version from `uip maestro flow init`>",
   "name": "MyFlow",
   "nodes": [],
   "edges": [],
@@ -36,7 +36,11 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 }
 ```
 
-**Top-level `version`** = workflow file-format version, currently `"1.1"` — what `uip maestro flow init` scaffolds and what Zod `workflowFileSchema` (`workflowSchemaV1_1`) accepts. Not a semver string; schema gates on a literal (`z.literal("1.1")`). Do not use `"1.0.0"`, `"1.0"`, or other values for new flows; older values exist only for legacy parser compatibility.
+> **Key order is NOT guaranteed — never anchor edits on it.** The skeleton above is illustrative; the CLI does not commit to a stable top-level key sequence or to which optional keys are present. Real flows vary: `runtime` may appear (and has been observed *before* `nodes`, not after `definitions`) or be absent entirely; `bindings`, `variables`, `solutionId`, `projectId`, and a trailing `metadata` object surface in different positions depending on CLI version and what the flow contains. When editing a `.flow`, anchor each `Edit` on the **target array's own key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`) located in the text you just `Read` — never on "the key that follows X." See [greenfield.md — Anchoring parallel `.flow` Edits](../author/references/greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
+
+Optional top-level `runtime`: a CLI-managed object that appears on some flows (e.g. after `uip maestro flow node add` for an HTTP/connector node) and is absent on others. It is not user-authored — do not add, remove, or anchor on it. Its presence and position are not guaranteed.
+
+**Top-level `version`** = workflow file-format version. **Use the exact value `uip maestro flow init` scaffolds** — do not hand-pick, hardcode, or downgrade it. It is not a semver string; the schema gates on an exact literal for the current file-format version, so an older value (e.g. `"1.0"`, `"1.0.0"`) that worked for a legacy parser will fail for a new flow. `init` always writes the accepted value; preserve it. To see the current value, scaffold a throwaway flow with `init` and read its top-level `version`, or read it from an existing `init`-generated `.flow`.
 
 > **Don't confuse top-level `version` with `definitions[].version` / `typeVersion`.** Node-definition `version` (and matching node-instance `typeVersion`) are validated by `versionSchema`, a regex that accepts both `x.y` and `x.y.z` (`/^\d+\.\d+(\.\d+)?$/`, error `'Version must be in format "x.y" or "x.y.z"'`). Both layers are canonically `x.y`, but the node-level regex still accepts legacy 3-part strings so registry definitions (`"1.0"`) and older scaffolded nodes (`"1.0.0"`) both parse. The two layers report distinct errors, but Zod may collapse a node-level mismatch to path `(root)`. If you see a version-related error at `(root)`, audit the top-level `version` first; if it's correct, check each node's `typeVersion` against the matching `definitions[].version`.
 
@@ -86,7 +90,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 
 **Required fields on every node**: `id`, `type`, `typeVersion`, **`display`** (with at least a `label`). This applies to **every** node — triggers (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers), action nodes, control-flow nodes (`core.control.end`, `core.logic.terminate`), and human-task nodes. The Zod `nodeSchema` declares `display: displayConfigSchema` without `.optional()`, so no node type is exempt — even ones that "feel" trivial.
 
-`typeVersion` must match the corresponding `definitions[].version` exactly. The registry often returns versions such as `"1.0"` while older examples or scaffolded files may show `"1.0.0"`. If a node uses `typeVersion: "1.0.0"` but the copied definition is `"version": "1.0"`, validation reports "Node type `<type>:1.0.0` has no matching definition." When direct-authoring a new node from `registry get`, set `typeVersion` to the copied definition's `version`; when preserving an existing node, preserve its existing node/definition pair unless you intentionally update both together.
+`typeVersion` must match the corresponding `definitions[].version` exactly. The registry often returns versions such as `"1.0"` while older examples or scaffolded files may show `"1.0.0"`. If a node uses `typeVersion: "1.0.0"` but the copied definition is `"version": "1.0"`, validation reports "Node type `<type>:1.0.0` has no matching definition." When direct-authoring a new node from `registry get`, set `typeVersion` to the copied definition's `version`; when preserving an existing node, preserve its existing node/definition pair unless you intentionally update both together. <!-- version-check-skip --> (explains the x.y vs x.y.z mismatch mechanic; literals are illustrative, not pinned)
 
 > **Gotcha — vague schema-validation error on missing `display`.** Omitting `display` on any node produces:
 >
@@ -96,7 +100,7 @@ The `.flow` file is a JSON document at `<ProjectName>.flow` in the project root.
 >
 > The error path is `(root)` and does NOT pinpoint which node or which field is missing. If you see this error after editing a `.flow` file, audit every node for a `display` block before doing anything else. (Improving the validator's path specificity is tracked in [MST-9368](https://uipath.atlassian.net/browse/MST-9368).)
 
-> **No full `model` block on nodes.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). Attached inline-agent resource nodes that still require a source use the minimal instance block `"model": { "source": "<resourceId>" }`; do not copy `serviceType`, `version`, or `context` into the instance. `uipath.agent.autonomous` is the inline-agent exception: flow-core hoists the manifest-declared source identity onto `inputs.source`, so the node instance has no `model` block.
+> **No instance `model` block.** BPMN type, serviceType, event definition, and binding/context templates all live in the node's **definition** (the manifest copied from the registry into `definitions[]`). The runtime hydrates them from the definition at serialization time — instances carry only per-instance data (`inputs`, `outputs`, `display`). This applies to every inline-agent-related node too: `uipath.agent.autonomous` plus every attached `uipath.agent.resource.*` node (tool, escalation, context) carries source identity at `inputs.source`. Their definitions declare `model.source: true`; flow-core hoists that identity onto each instance's `inputs.source`. Do not write a `"model": { "source": ... }` block on the instance.
 >
 > **No `ui` block on nodes.** Position and size are stored in the top-level `layout` object, not on individual nodes. See [Layout](#layout) below.
 
@@ -108,8 +112,7 @@ A few per-instance identity fields live on the node instance:
 |-------|---------|---------|
 | `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
 | `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
-| `inputs.source` | Inline-agent node (`uipath.agent.autonomous`) | The inline agent's `projectId`. flow-core hoists the manifest-declared source identity here. |
-| `model.source` | Attached inline-agent resource nodes whose definition declares `model.source: true` | The attached resource UUID. This is the only allowed instance `model` field for those resource nodes. |
+| `inputs.source` | `uipath.agent.autonomous` and every attached `uipath.agent.resource.*` node (tool, escalation, context) | For `uipath.agent.autonomous`: the inline agent's `projectId`. For resource nodes: the attached resource UUID. Definitions declare `model.source: true`; flow-core hoists onto the instance — no instance `model` block. |
 | `inputs.color`, `inputs.content` | Sticky-note nodes | Visual content of the sticky note |
 
 Example — manual start trigger:
@@ -289,7 +292,7 @@ Connector activities, agent nodes, and RPA nodes follow the same pattern as the 
 
 Verify exact ports for any node type:
 ```bash
-uip maestro flow registry get <nodeType> --output json
+uip maestro flow registry get <node-type> --output json
 # Look at Data.Node.handleConfiguration[].handles[].id
 # Also check Data.Node.supportsErrorHandling — see "Implicit error port" below
 ```
@@ -298,7 +301,7 @@ uip maestro flow registry get <nodeType> --output json
 
 Any node with `supportsErrorHandling: true` in the registry exposes an implicit `error` source port for catching node-level failures. This applies to HTTP, Script, Transform (all variants), connector activities, agent nodes, and RPA nodes — essentially every action node.
 
-The port is **not** listed in the registry's `handleConfiguration`. It's only visible at serialization time: when the flow contains an outgoing edge with `sourcePort: "error"` from the node, the serializer emits a BPMN boundary error event attached to the node.
+The port is **not** listed in the registry's `handleConfiguration`. Studio Web only exposes it when the source node has `inputs.errorHandlingEnabled: true`; when the flow contains an outgoing edge with `sourcePort: "error"` from that node, the serializer emits a BPMN boundary error event attached to the node. Because of this gate, `uip maestro flow validate` reports an error when a node has an outgoing `sourcePort: "error"` edge but `inputs.errorHandlingEnabled` is not `true` — so the inconsistency is caught before publish rather than surfacing as a hidden edge in Studio Web.
 
 ### When the error port fires
 
@@ -315,12 +318,22 @@ Without a wired error edge, any of these fails the whole flow with `finalStatus:
 
 ```bash
 # Confirm the node supports error handling
-uip maestro flow registry get <nodeType> --output json \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['Data']['Node'].get('supportsErrorHandling'))"
+uip maestro flow registry get <node-type> --output json --output-filter "Node.SupportsErrorHandling"
 
 # Add an outgoing edge with sourcePort: "error"
 uip maestro flow edge add <Project>.flow <actionNodeId> <errorHandlerId> \
   --source-port error --target-port input --output json
+```
+
+`uip maestro flow edge add --source-port error` and `uip maestro flow format` set `inputs.errorHandlingEnabled: true` on the source node automatically. When editing `.flow` JSON directly, set the flag yourself:
+
+```json
+{
+  "id": "<actionNodeId>",
+  "inputs": {
+    "errorHandlingEnabled": true
+  }
+}
 ```
 
 Inside the error handler, `$vars.{actionNodeId}.error` resolves to the error object. For HTTP it's `{ code, message, detail, category, status }`; other nodes have similar shapes — check the node's `outputDefinition.error.schema` in the registry.
@@ -340,12 +353,12 @@ Building a flow is a two-step process: write the nodes/edges structure, then pop
 
 ### Step 1 — Write nodes and edges
 
-Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator). The same UUID must appear in `entry-points.json` as `uniqueId`.
+Replace `<uuid>` with any generated UUID (e.g. `crypto.randomUUID()` in Node.js, or any UUID v4 generator). The same UUID must appear in `entry-points.json` as `uniqueId`. Set top-level `version` to the value `uip maestro flow init` scaffolds — never hand-pick it (see [Top-level structure](#top-level-structure)).
 
 ```json
 {
   "id": "3d4a8c34-5682-4ebe-a6bc-d92a18830bb5",
-  "version": "1.1",
+  "version": "<version from `uip maestro flow init`>",
   "name": "DiceRoller",
   "nodes": [
     {

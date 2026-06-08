@@ -9,18 +9,9 @@ description: >
   it from the attachment download command.
 tags: [uipath-test, integration, mode:operate, lifecycle:report, feature:execution]
 
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 10
   max_turns: 35
-
-sandbox:
-  driver: docker
-  python: {}
-  node:
-    env_packages:
-      - "@uipath/test-manager-tool"
 
 initial_prompt: |
   Before starting, load the uipath-test skill and follow its workflow.

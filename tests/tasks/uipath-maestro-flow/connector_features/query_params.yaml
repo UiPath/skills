@@ -4,20 +4,12 @@ description: >
   query parameter on the Google Tasks connector.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-google-tasks, ipe]
 
-agent:
-  type: claude-code
-  permission_mode: acceptEdits
-  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
 run_limits:
+  expected_turns: 43
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
 
-sandbox:
-  driver: tempdir
-  python: {}
-  node: {}
 initial_prompt: |
   Create a new Flow project called "QueryParamsTest" with a manual trigger.
   You need a flow that lists all Google Tasks including hidden ones. Discover

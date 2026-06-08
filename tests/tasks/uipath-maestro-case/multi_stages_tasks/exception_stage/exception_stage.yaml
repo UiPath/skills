@@ -1,0 +1,229 @@
+task_id: skill-case-multi-exception-stage
+description: >
+  Build a Case Management definition with a regular Process stage plus
+  TWO exception (secondary) stages — Issues and Critical. Issues is
+  reached via an interrupting stage-entry condition (rule-type
+  selected-stage-exited), contains its own wait-for-timer task that
+  uses the timeDate branch (wait until a specific datetime, not a
+  duration) with a current-stage-entered task-entry condition, exits
+  via a return-to-origin condition, and carries a stage-level default
+  SLA (2 hours) with a sla-breached escalation that notifies a
+  UserGroup. Critical is reached via a second interrupting
+  selected-stage-exited entry on Process exit and exits via
+  return-to-origin. Both exception
+  stages have no edges. Exercises: ExceptionStage type (×2 —
+  multi-exception flow), no-edges wiring rule, interrupting entry
+  (selected-stage-exited ×2), return-to-origin exit,
+  ExceptionStage SLA, sla-breached escalation, UserGroup recipient
+  scope, a task embedded inside an ExceptionStage, and the
+  wait-for-timer plugin's timeDate branch.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:exception-stage, feature:multi-exception, feature:conditions, feature:sla, feature:escalation, feature:wait-for-timer]
+max_iterations: 1
+
+run_limits:
+  expected_turns: 81
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "ExceptionStage" containing
+  a project also named "ExceptionStage" from the sdd.md below. Use v20
+  schema. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — ExceptionStage
+
+  **Case Definition Blueprint** · Generic — Exception Stage Coverage
+
+  One regular Process stage plus TWO ExceptionStage nodes (Issues, Critical) reached only via interrupting entry conditions and exiting via return-to-origin. Exercises multi-exception flow, no-edges wiring, interrupting entry (selected-stage-exited ×2 on Process exit), return-to-origin exit, ExceptionStage SLA with sla-breached escalation, UserGroup recipient scope, a task embedded inside an ExceptionStage, and the wait-for-timer plugin's timeDate branch.
+
+  Prepared date: 2026-05-19
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | ExceptionStage |
+  | Case Description | One regular Process stage plus two ExceptionStage nodes (Issues, Critical) reached only via interrupting entry conditions and exiting via return-to-origin. |
+  | Case Identifier | Prefix: ES, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.2 SLA Escalation
+  | SLA Status | Threshold | Action |
+  |---|---|---|
+  | - | - | No case-level SLA escalation declared. |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.4a Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | No case-exit hand-off declared. | - | - | No |
+
+  ### 1.5 Case Variables
+  | Variable | Category | Type | Default | Description |
+  |---|---|---|---|---|
+  | - | - | - | - | No case-level variables declared. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Process (`process`)
+  **Type:** Stage
+  **Description:** Main processing stage. Exits trigger the Issues ExceptionStage.
+  **Required for Case Completion:** Yes
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `process.doWork` | Do Work | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 1.1: Do Work (`process.doWork`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer that briefly holds the case while Process is active.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered ("On Process entered") | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 10s |
+  | Repeat | No |
+
+  ### Stage 2: Issues (`issues`)
+  **Type:** ExceptionStage
+  **Description:** Handles errors that occur while Process is active. Has no inbound or outbound edges — exception stages are detached from the edge graph; reached via an interrupting stage-entry condition only.
+  **Required for Case Completion:** No
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-exited ("On Process exit") | selected-stage: Process | **Yes** |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | return-to-origin | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | required-tasks-completed | - | return-to-origin | (origin) | Yes |
+  **Stage SLA**
+
+  | Threshold | Trigger | Recipient |
+  |---|---|---|
+  | Default | 2h | - |
+  | Breached | sla-breached ("Notify Resolution Team") | UserGroup: Issue Resolution Team (UUID UNRESOLVED per the skill rules; do NOT fabricate) |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `issues.acknowledgeIssue` | Acknowledge Issue | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 2.1: Acknowledge Issue (`issues.acknowledgeIssue`)
+
+  **Type:** wait-for-timer
+  **Description:** Waits until a specific datetime before acknowledging the issue. Exercises the timeDate branch of the timer plugin (specific datetime `at`, not `every`).
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered ("On Issues entered") | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Trigger Style | SPECIFIC DATETIME (`at`, not `every`) |
+  | Timer Type | timeDate |
+  | Time Date | 2026-05-01T09:00:00.000+00:00 (ISO 8601 datetime with timezone offset and milliseconds, per the wait-for-timer impl-json contract) |
+
+  ### Stage 3: Critical (`critical`)
+  **Type:** ExceptionStage
+  **Description:** Handles a hard fault that occurs while Process is active. Has no inbound or outbound edges; reached via an interrupting selected-stage-exited entry condition only.
+  **Required for Case Completion:** No
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | selected-stage-exited ("On Process exit") | selected-stage: Process | **Yes** |
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | return-to-origin | Yes |
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
+  |---|---|---|---|---|
+  | required-tasks-completed | - | return-to-origin | (origin) | Yes |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `critical.handleCritical` | Handle Critical | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 3.1: Handle Critical (`critical.handleCritical`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer for the Critical exception stage.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered ("On Critical entered") | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 10s |
+  | Repeat | No |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval, confirmation, or feedback. Build end-to-end
+  in a single pass and finish with `uip maestro case validate` passing on
+  the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate ExceptionStage/ExceptionStage/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Process is a regular Stage with an explicit exit-only exit condition (required-tasks-completed, marks stage complete); two ExceptionStage nodes (Issues + Critical) both with no edges; Issues carries interrupting selected-stage-exited entry + return-to-origin exit + 2h stage SLA with sla-breached UserGroup escalation + a wait-for-timer task using timeDate (specific datetime 2026-05-01) with current-stage-entered task-entry; Critical carries a second interrupting selected-stage-exited entry (on Process exit) + return-to-origin exit"
+    command: "python3 $TASK_DIR/check_exception_stage.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

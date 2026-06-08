@@ -1,0 +1,107 @@
+task_id: skill-datafabric-smoke-csv-complex-drop
+description: >
+  Smoke test: agent uses the uipath-data-fabric skill to seed an entity whose
+  schema includes complex field types (CHOICE_SET_SINGLE, CHOICE_SET_MULTIPLE,
+  RELATIONSHIP). `records import` silently drops complex-field columns —
+  verified server behavior in BulkUploadCSVHelper. The agent must use
+  `records insert --file <json>` instead and must NOT put complex-field
+  columns in a CSV file.
+tags: [uipath-data-fabric, smoke, complex-fields, bulk-import]
+
+run_limits:
+  expected_turns: 15
+  max_turns: 25
+
+sandbox:
+  driver: docker
+
+initial_prompt: |
+  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
+  Every uip df command will fail with an auth error — that is expected and normal.
+  Run each command exactly once, ignore the auth error, and continue to the next step.
+  Do NOT retry any command. Do NOT attempt to login.
+
+  Context — existing entity "Expense" (ID "exp-ent-001") with fields:
+  - amount       (DECIMAL)
+  - description  (MULTILINE_TEXT)
+  - category     (CHOICE_SET_SINGLE,   choiceSetId "cs-cat-001")
+  - tags         (CHOICE_SET_MULTIPLE, choiceSetId "cs-tags-001")
+  - customerId   (RELATIONSHIP → Customer)
+
+  Seed 3 Expense records covering plain + complex fields:
+    R1: amount=100, description="taxi", category=1 (travel), tags=[1,3],
+        customerId="c-uuid-A"
+    R2: amount=250, description="dinner", category=2 (meals), tags=[2],
+        customerId="c-uuid-A"
+    R3: amount=400, description="hotel", category=3 (lodging), tags=[3],
+        customerId="c-uuid-B"
+
+  IMPORTANT — picking the right bulk path:
+  - `uip df records import <id> --file data.csv` only processes Basic field
+    types (STRING, INTEGER, DECIMAL, BOOLEAN, DATE, DATETIME, MULTILINE_TEXT,
+    UUID). For CHOICE_SET_*, RELATIONSHIP, FILE, and AUTO_NUMBER columns it
+    silently drops the row value — column header is accepted but the field
+    inserts as null with no warning. Verified server behavior.
+  - For entities that include any complex field, write a JSON array to a
+    file and pass it via `uip df records insert <id> --file <json>`. The
+    insert endpoint handles all field types.
+
+  Do this in order. Use --output json on every uip df command.
+
+  1. Write the 3 seed records to a file. Pick the format that works for an
+     entity with complex fields. Name the file accordingly. Do not write
+     `category`, `tags`, or `customerId` columns into a CSV.
+  2. Run the matching uip df command to load the file.
+  3. Save a one-paragraph note in `decision.md` explaining which command you
+     chose (`records import` vs `records insert`) and why — specifically
+     referencing the CSV silent-drop behavior for complex fields.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent used `records insert --file <json>` for the entity with complex fields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert\s+exp-ent-001\s+.*--file\s+\S+\.json'
+    min_count: 1
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT call `records import` on an entity with complex fields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+import\s+exp-ent-001'
+    min_count: 0
+    max_count: 0
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT produce a .csv file or call records import with one (would silently drop complex fields)"
+    tool_name: "Bash"
+    command_pattern: '(uip\s+df\s+records\s+import\b.*\.csv|>\s*\S*\.csv\b|tee\s+\S*\.csv\b)'
+    min_count: 0
+    max_count: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "decision.md was written"
+    path: "decision.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "decision.md cites the silent-drop reason and the `records insert` choice"
+    path: "decision.md"
+    includes:
+      - "silent"
+      - "records insert"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip df commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

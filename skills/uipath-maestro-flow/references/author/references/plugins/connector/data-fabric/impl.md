@@ -25,7 +25,7 @@ Use the exact CamelCase `Name` (e.g. `BankDetails`). For Create/Update, also run
 
 ## Step 3 — Set Up the Flow File
 
-Author the standard top-level `bindings[]` pair (`ConnectionId` + `FolderKey`) per [parent impl.md § Authoring top-level `bindings[]`](../impl.md#authoring-top-level-bindings). Data Fabric specifics:
+Author the standard top-level `bindings[]` pair (`ConnectionId` + `FolderKey`) per [parent impl.md § Top-level `bindings[]` shape](../impl.md#top-level-bindings-shape-cli-emitted-reference-only). Data Fabric specifics:
 
 - Connection binding `name` = the IS connection display name (not the `<CONNECTOR_KEY> connection` placeholder), since `node configure` is run with this value pre-resolved.
 - Both bindings share the same `resourceKey` = `<connectionId>`.
@@ -123,7 +123,7 @@ For the full set of `inputs.detail` fields populated by `node configure`, see [p
 
 ## Configuration Strings
 
-`<activityVersion>` is the `version` field inside the definition's `connectorDetail.configuration` JSON string — currently `"1.0.0"` for all Data Fabric activities. `connectorVersion` is set by `node configure` at run time.
+`<activityVersion>` is the `version` field inside the definition's `connectorDetail.configuration` JSON string — a **connector-internal activity version, distinct from the node `typeVersion`**. Read its value from the `definitions[]` entry you copied from `registry get` (do not hardcode it); the same value fills every `<activityVersion>` placeholder in the configuration string. `connectorVersion` is set by `node configure` at run time.
 
 **Query Entity Records:**
 ```
