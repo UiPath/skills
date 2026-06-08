@@ -15,7 +15,7 @@ const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DISPLAY_AS = '<<DISPLAY_AS>>'
+const DISPLAY_AS: string = '<<DISPLAY_AS>>'
 
 const COLUMNS: ColumnDef<Row>[] = <<COLUMNS>>
 

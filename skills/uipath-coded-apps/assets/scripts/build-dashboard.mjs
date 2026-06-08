@@ -425,20 +425,18 @@ function widgetLayoutGroup(template) {
 
 /**
  * Inject generated import and route blocks into App.tsx markers.
- * Only injects routes for widgets that have a view file (T1 and T3 — not T2).
  * @param {string} projectPath
- * @param {string[]} widgetNames
- * @param {Record<string, { tier: string }>} allWidgetHashes
+ * @param {string[]} viewWidgetNames - Widget names that have a generated view file
  */
-function injectAppRoutes(projectPath, widgetNames, allWidgetHashes) {
+function injectAppRoutes(projectPath, viewWidgetNames) {
   const appPath = join(projectPath, 'src', 'App.tsx')
+  if (!existsSync(appPath)) {
+    emit('PARTIAL_BUILD_DETECTED', { message: 'App.tsx not found — scaffold may not be copied yet' })
+    return
+  }
   let content = readFileSync(appPath, 'utf8')
 
-  // Only inject routes for widgets that have a view file (not T2)
-  const viewNames = widgetNames.filter(n => {
-    const info = allWidgetHashes[n]
-    return info?.tier !== 'T2'
-  })
+  const viewNames = viewWidgetNames
 
   const imports = [
     `import { Dashboard } from '@/dashboard/Dashboard'`,
@@ -925,16 +923,20 @@ async function runDashboardBuild(intent, intentPath) {
     // Step 5 — Generate Dashboard.tsx + index.ts
     generateDashboardFiles(P, widgetMeta, dashboardName)
 
-    // Step 5a — Generate view files (T1 and T3 only — T2 widgets already show tabular data)
+    // Step 5a — Generate view files and track which ones were written
+    // T3-SDK widgets (fnBody only, no namespace+method) are excluded from widgetSpecs
+    // and therefore get no view file — only T1 and T3-Insights produce view files.
+    const generatedViewNames = []
     for (const [componentName, spec] of Object.entries(widgetSpecs)) {
       const info = widgetHashes[componentName]
       if (info?.tier === 'T2') continue
       const viewContent = generateViewFile(spec)
       writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
+      generatedViewNames.push(componentName)
     }
 
-    // Step 5b — Inject imports and routes into App.tsx
-    injectAppRoutes(P, Object.keys(widgetHashes), widgetHashes)
+    // Step 5b — Only inject routes for widgets that actually have view files
+    injectAppRoutes(P, generatedViewNames)
 
     // Step 6 — Full tsc
     try {
@@ -1116,6 +1118,12 @@ async function runIncrementalEdit(editIntent, intentPath) {
     template: info.template ?? 'ranked-table',
   }))
   generateDashboardFiles(P, widgetMeta, state.app?.name ?? 'Dashboard')
+
+  // Re-inject App.tsx routes — only for widgets that have an actual view file on disk
+  const viewNames = Object.keys(state.widgets ?? {}).filter(name =>
+    existsSync(join(P, 'src', 'dashboard', 'views', `${name}View.tsx`))
+  )
+  injectAppRoutes(P, viewNames)
 
   // tsc validate
   try {
