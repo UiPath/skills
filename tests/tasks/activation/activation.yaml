@@ -12,6 +12,7 @@ dataset:
     - uipath-agents.jsonl
     - uipath-coded-apps.jsonl
     - uipath-data-fabric.jsonl
+    - uipath-design.jsonl
     - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
@@ -102,6 +103,11 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-rpa activation"
     skill_name: uipath-rpa
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-design activation"
+    skill_name: uipath-design
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
