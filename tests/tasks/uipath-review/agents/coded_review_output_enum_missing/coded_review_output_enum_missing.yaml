@@ -1,0 +1,98 @@
+task_id: skill-review-agents-coded-output-enum-missing
+description: >
+  Judgment test for uipath-review on a coded classifier agent whose output
+  field `classification` is a bare str (no Literal/Enum) even though the
+  logic maps to a fixed set (Billing/Technical/Account). pre_run scaffolds a
+  coded FUNCTION agent then rewrites main.py. The reviewer must run
+  `uip codedagent review --output json` (Step 2.5a), then apply the judgment
+  catalog and cite `CODED_OUTPUT_ENUM_MISSING_ON_CLASSIFIER` (schema
+  category) — recognizing the classifier shape is a semantic read, so it is
+  the skill's responsibility.
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/coded_review_output_enum_missing/inject_output_enum_missing.py"
+    timeout: 30
+
+initial_prompt: |
+  A UiPath coded agent project exists at `CodedAgent` in the current
+  directory. Review the agent project and produce a structured review
+  report with Critical / Warning / Info findings.
+
+  Before doing anything else, load the `uipath-review` skill and follow
+  its review workflow (discover, classify, run validation, apply the
+  rule catalog, produce the report).
+
+  This is a read-only review. Do NOT modify, create, or delete any
+  files inside `CodedAgent/`. Do NOT scaffold a new project. Do NOT
+  ask for approval, confirmation, or feedback.
+
+  Important — produce the review in TWO places, identical content:
+
+  1. As the chat output (the normal review surface), AND
+  2. Save the SAME report to a file at `./_review_report.md` at the
+     sandbox root (NOT inside `CodedAgent/`).
+
+  Writing the file copy first, before producing the chat report, is
+  encouraged — that way the file persists even if the chat response is
+  cut off. The file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside CodedAgent/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*CodedAgent'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside CodedAgent/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*CodedAgent'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Ran the review CLI first (Step 2.5a): uip codedagent review --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+review'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent consulted the coded judgment catalog (agents-coded-rules.md)"
+    tool_name: "Read"
+    command_pattern: 'agents-coded-rules\.md'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent consulted the common agent judgment catalog (agents-common-rules.md)"
+    tool_name: "Read"
+    command_pattern: 'agents-common-rules\.md'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review report applies the judgment catalog: cites CODED_OUTPUT_ENUM_MISSING_ON_CLASSIFIER for the classification field"
+    command: "python3 $TASK_DIR/check_coded_review_output_enum_missing.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

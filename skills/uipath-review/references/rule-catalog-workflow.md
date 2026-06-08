@@ -1,22 +1,45 @@
 # Rule Catalog — Workflow (SKILL.md Step 2.5)
 
-Step 2.5 of the review workflow. Runs **after** Step 2 (`uip agent validate` and related CLI validation) and **before** Step 3 (manual checklist review). Adds rule-ID-level findings to the report.
+Step 2.5 of the review workflow. Runs **after** Step 2 (`uip agent validate` and related CLI validation) and **before** Step 3 (manual checklist review). Adds rule-ID-level findings to the report from two sources, in order:
 
-The rule catalog is a single contract per project type, mixing mechanical rules (resolved via `Read` / `Grep` / `Glob` / `Bash` / `uip agent review`) and judgment rules (the agent reads source and reasons). Both kinds emit findings into the same report section.
+1. **The review CLI** (`uip agent review` / `uip codedagent review`) — all deterministic static checks.
+2. **The judgment catalog** (`agents-*-rules.md`) — checks that require the agent to read source and reason.
 
 ## Procedure
 
-1. **Identify which catalog files apply.** Use the detection table below for the current project type.
-2. **Read each catalog file in full** (including its `## Constants` section).
-3. **Group rows by detection method to avoid redundant work:**
-   - Inline rows (Glob / Read+JSON / Grep / Bash) — execute each one with the agent's tools.
-   - CLI rows — collect by checker section and invoke `uip agent review` once per section (see [CLI invocation](#cli-invocation) below).
-   - Judgment rows — read the source material once and assess each rule against it.
-4. **For each row, apply the `detection_method` verbatim:**
-   - Mechanical rows → produce a finding when the condition holds.
-   - Judgment rows → reason about the evidence; emit a finding when the criteria are met. Log the reasoning in the finding's `description`.
-5. **Track skipped rules.** If a rule cannot apply (`status: deferred`, missing optional file, not a git repo, CLI not installed), record `rule_id` + reason for the report's "Rules Skipped" subsection. **Never silently skip.**
-6. **Merge findings into the Step 5 report** under the "Rule Catalog Results" subsection. Use the canonical line format:
+### 2.5a — Run the review CLI first
+
+Run the review command for the agent type, once, capturing JSON:
+
+| Agent type | Command |
+|---|---|
+| Low-code (`agent.json`) | `uip agent review --project-dir "<PROJECT_DIR>" --output json` |
+| Coded (`main.py` + framework config) | `uip codedagent review --project-dir "<PROJECT_DIR>" --output json` |
+
+Parse the JSON. Findings live under `Data.Issues[]`; each issue is:
+
+```json
+{
+  "RuleId": "LOWCODE_ENTRY_POINTS_MISSING",
+  "Category": "schema",
+  "Severity": "error",
+  "Description": "...",
+  "File": "entry-points.json",
+  "SuggestedFix": "..."
+}
+```
+
+The response also carries `Data.Verdict` (PASS/FAIL), `Data.Score`, `Data.Grade`, and `Data.Stats` — report the verdict/score if useful, but the `Issues[]` are the findings. Carry each issue into the report **verbatim**; do not re-derive, rename, or re-rank. These `RuleId`s are authoritative as the CLI emits them and are **not** duplicated in the skill catalog.
+
+If the review command is unavailable (CLI not installed, or a version without `agent review` / `codedagent review`), record one line in the report's "Rules Skipped" subsection with `reason: "uip agent review / codedagent review CLI not available"`, then continue with 2.5b.
+
+### 2.5b — Apply the judgment catalog
+
+1. **Identify which catalog files apply.** Use the detection table below.
+2. **Read each catalog file in full.**
+3. **Apply each rule's `detection_method`** (always the judgment form): read the named source material, reason about it, emit a finding when the criteria hold. Log the reasoning in the finding's `description`.
+4. **Track skipped rules.** If a rule cannot apply (`status: deferred`, missing optional file, no eval set to assess against), record `rule_id` + reason for the report's "Rules Skipped" subsection. **Never silently skip.**
+5. **Merge findings into the Step 5 report** under the "Rule Findings" subsection. Use the canonical line format:
 
    ```
    [<prefix><n>] `<rule_id>` — <file> — <description>. Fix: <suggested_fix>.
@@ -26,7 +49,7 @@ The rule catalog is a single contract per project type, mixing mechanical rules 
 
 ## Detection table
 
-Maps project signals to the catalog files that must be loaded. Extend this table when adding new artifact types — do not edit SKILL.md.
+Maps project signals to the judgment catalog files that must be loaded. Extend this table when adding new artifact types — do not edit SKILL.md.
 
 | Signals present | Project type | Catalog files |
 |---|---|---|
@@ -39,53 +62,19 @@ Maps project signals to the catalog files that must be loaded. Extend this table
 | `.uipath/` or `app.config.json` | Coded App | *(phase 2)* |
 | None of the above with no agent signal | unknown | Skip Step 2.5; flag in the report's "Notes" section that no catalog matched. |
 
-## CLI invocation
+## Why the split
 
-For rows whose `detection_method` is the CLI form, batch by checker section to minimize invocations:
-
-```bash
-uip agent review --project-dir "<PROJECT_DIR>" --checks <name>[,<name>...] --output json
-```
-
-`--checks` accepts a comma-separated list of checker names matching catalog H2 sections: `evals`, `schema`, `tools`, `guardrails`, `general`, `lowcode`.
-
-Expected stdout (JSON; one object):
-
-```json
-{
-  "findings": [
-    {
-      "rule_id": "EVAL_LOW_DIVERSITY",
-      "severity": "error",
-      "category": "evals",
-      "file": "evals/eval-sets/smoke.json",
-      "line": null,
-      "description": "...",
-      "suggested_fix": "..."
-    }
-  ],
-  "skipped": [
-    {
-      "rule_id": "EVAL_RUN_OUTDATED",
-      "reason": "Not a git repository."
-    }
-  ]
-}
-```
-
-Pick out only the findings whose `rule_id` matches the rule rows whose `detection_method` cited this CLI invocation. Other findings the CLI returns are not in scope for those rows — the catalog is authoritative for which rule_ids the skill applies, not the CLI.
-
-If `uip agent review` is not available in the environment (CLI not installed, version doesn't support `agent review`), record every CLI-form rule in the report's "Rules Skipped" subsection with `reason: "uip agent review CLI not available"`.
+Deterministic checks (file presence, schema walks, counts, set-membership, regex, run-artifact analysis) are faster and byte-reproducible in code, so they live in the review CLI — the agent does not re-implement them. The catalog carries only what code cannot decide reliably: prompt quality, tool-selection ambiguity, framework fit, semantic schema/eval mismatches, whole-program dataflow. Running the CLI first means the catalog never re-litigates a deterministic finding.
 
 ## Coexistence with manual checklists (Step 3)
 
-- The catalog covers what can be checked mechanically or with focused judgment. The checklists in `references/<type>/<type>-review-checklist.md` cover broader semantic / contextual checks (PDD alignment, business-logic correctness, escalation coverage, architectural fit).
-- Checklist rows that overlap with a catalog rule are tagged like `*(rule: \`RULE_ID\`)*` — when reviewing, the catalog already covered them; do not re-flag.
-- Findings from the catalog appear in their own report subsection; findings from manual review continue to use the existing Critical / Warning / Info sections.
+- The CLI + judgment catalog cover what can be checked mechanically or with focused judgment. The checklists in `references/<type>/<type>-review-checklist.md` cover broader semantic / contextual checks (PDD alignment, business-logic correctness, architectural fit).
+- Checklist rows that overlap with a rule are tagged like `*(rule: \`RULE_ID\`)*` — when reviewing, that rule (CLI or judgment) already covered it; do not re-flag.
+- Findings from the CLI + judgment catalog appear in the "Rule Findings" subsection; findings from manual review use the Critical / Warning / Info sections.
 
 ## Determinism contract
 
-Two consecutive runs over the same project produce identical findings *for mechanical rules*. Judgment rules are best-effort identical — the agent should reason from the same evidence in the same order, but minor wording variation in `description` is acceptable.
+Two consecutive runs over the same project produce identical findings *for the review-CLI checks*. Judgment-catalog rules are best-effort identical — the agent should reason from the same evidence in the same order, but minor wording variation in `description` is acceptable.
 
 - Sort findings by (severity, category, rule_id, file, line) — never by discovery order.
 - Do not include timestamps in finding text.
@@ -93,9 +82,9 @@ Two consecutive runs over the same project produce identical findings *for mecha
 
 ## Anti-patterns
 
-1. **Do not invent rule IDs.** If you observe a real issue not in the catalog, surface it under the existing Critical / Warning / Info sections as a normal finding — do not promote it to a catalog rule_id.
-2. **Do not re-rank severities.** The catalog's `severity` column is authoritative for `error` / `warning` / `info`. For `judgment` severity rows, log the reasoning when picking the report band.
+1. **Do not invent rule IDs.** If you observe a real issue covered by neither the review CLI nor the judgment catalog, surface it under the Critical / Warning / Info sections as a normal finding — do not promote it to a `rule_id`.
+2. **Do not re-rank severities.** The CLI's `Severity` and the catalog's `severity` are authoritative for `error` / `warning` / `info`. For `judgment` rows, log the reasoning when picking the report band.
 3. **Do not silently skip rules.** Every skip belongs in the report's "Rules Skipped" subsection with a reason.
-4. **Do not run the catalog before Step 2.** `uip agent validate` often answers the same question (e.g., it catches `LOWCODE_GUARDRAIL_TOOL_REF_NONEXISTENT` semantically) — running it first lets the catalog focus on what validation misses.
+4. **Do not run the catalog before the CLI.** Run `uip agent review` / `uip codedagent review` first (2.5a), then `uip agent validate` is assumed already passed (Step 2) — so the judgment catalog focuses only on reasoning the CLI cannot do.
 5. **Do not load catalog files outside the detection table.** Loading low-code rules against a non-agent project produces false positives.
-6. **Do not call helper scripts or install Python packages.** All code-execution rules go through `uip agent review`. The skill itself ships no executable code.
+6. **Do not re-implement deterministic checks inline.** Counts, regex, schema-presence, and set-membership are the review CLI's job. The skill itself ships no executable code.

@@ -4,8 +4,8 @@
 Writes a minimal-but-valid coded agent project directly (no `uip
 codedagent new` / uv venv / package install). The reviewer does
 read-only static analysis, so a statically-written project is enough
-to exercise the agents-coded-rules.md catalog deterministically and
-fast.
+to exercise the uipath-review pipeline (the `uip codedagent review` CLI
+plus the judgment agents-coded-rules.md catalog) fast.
 
 The baseline FUNCTION (Simple Function) agent mirrors what
 `uip codedagent new` + `uip codedagent init` produce:

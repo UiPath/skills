@@ -48,7 +48,7 @@ Before reviewing implementation details, verify the right agent type was chosen:
 | System prompt is in English (best performance) | Info | Check language |
 | No hardcoded examples that should be in eval sets | Info | Check for inline examples |
 | Prompt length appropriate (not excessively long) | Info | Check token count *(rule: `SYSTEM_PROMPT_TOO_LONG`)* |
-| Prompts over ~2000 tokens have clear structural headers (Role / Task / Constraints / Output Format / Examples) | Warning | Long prompts without structure degrade LLM attention. Flag >2000-token prompts that read as unstructured prose *(rule: `PROMPT_LACKS_STRUCTURE`, `LC_PROMPT_OVERSPECIFICATION`)* |
+| Prompts over ~2000 tokens have clear structural headers (Role / Task / Constraints / Output Format / Examples) | Warning | Long prompts without structure degrade LLM attention. Flag >2000-token prompts that read as unstructured prose *(rule: `LC_PROMPT_OVERSPECIFICATION`)* |
 | NO hardcoded customer-specific logic in the system prompt (names, rules, identifiers specific to one tenant/customer) | Warning | Customer-specific content should live in Context Grounding / knowledge base / config — not in the prompt. Makes the agent reusable across customers |
 
 ### Temperature Guidance
@@ -90,7 +90,6 @@ Before reviewing implementation details, verify the right agent type was chosen:
 | Escalation resources defined for high-risk decisions | Warning | Check resources for escalation type *(rule: `LC_FAILURE_IRREVERSIBLE_ACTION`)* |
 | Escalation criteria specified in system prompt | Warning | Read system prompt for escalation guidance *(rule: `LC_PROMPT_STOPPING_CRITERIA`)* |
 | Escalation assignee configured | Critical | Check escalation resource config |
-| Escalation has an SLA / timeout / expiry | Info | Check escalation resource config *(rule: `LOWCODE_ESCALATION_NO_SLA`)* |
 | Escalation is not overbroad (universal quantifier without narrowing condition) | Warning | Check escalation description *(rule: `LC_ESCALATION_OVERBROAD`)* |
 | Agent does not make irreversible decisions without escalation path | Warning | Review decision scope *(rule: `LC_FAILURE_IRREVERSIBLE_ACTION`)* |
 
@@ -245,7 +244,7 @@ Before reviewing implementation details, verify the right agent type was chosen:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| External dependencies mocked in eval sets | Warning | Check mockingStrategy in eval sets *(rule: `MOCKABLE_DECORATOR_MISSING`)* |
+| External dependencies mocked in eval sets | Warning | Check mockingStrategy in eval sets |
 | Mock responses are realistic (not placeholder data) | Info | Review mock data |
 | Mocking consistent across eval sets | Info | Compare mocking strategies |
 
@@ -321,8 +320,8 @@ Review whether the agent design accounts for known UiPath limitations:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| No PII in agent traces or logs (unless required) | Warning | Review trace content *(rule: `TRACING_DATA_LEAK`, `CODED_PII_IN_TRACES`)* |
-| Sensitive inputs/outputs masked appropriately | Warning | Check data handling *(rule: `TRACING_DATA_LEAK`)* |
+| No PII in agent traces or logs (unless required) | Warning | Review trace content *(rule: `CODED_PII_IN_TRACES`)* |
+| Sensitive inputs/outputs masked appropriately | Warning | Check data handling *(rule: `CODED_PII_IN_TRACES`)* |
 | Context grounding indexes don't contain sensitive data in public-facing agents | Critical | Review index content |
 | Memory TTL configured (default 3-month, 80-char key limit) | Info | Check memory config |
 

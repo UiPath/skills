@@ -1,12 +1,12 @@
 # Rule Catalog — Row Format
 
-Schema for every row in `agents-*-rules.md` catalog files. The catalog is the contract — the agent applies it verbatim and emits findings using its `rule_id`, `severity`, and `suggested_fix` values.
+Schema for every row in the `agents-*-rules.md` judgment catalogs. The catalog is the contract — the agent applies each rule by reasoning and emits findings using its `rule_id`, `severity`, and `suggested_fix`.
 
-The agent applying rules is itself an LLM, so the catalog mixes two row kinds in one table: rules that resolve mechanically (file presence, schema walks, CLI output) and rules that require the agent's own reasoning (prompt quality, tool overlap, failure-mode risk). Both use the same row schema; only the `detection_method` column differs.
+The catalog is **judgment-only**: every rule requires the agent (itself an LLM) to read source and reason — prompt quality, tool-selection ambiguity, framework fit, semantic schema/eval mismatches. Deterministic checks (file presence, schema walks, counts, regex, run-artifact analysis) are **not** in the catalog; they run in the `uip agent review` / `uip codedagent review` CLI (SKILL.md Step 2.5a), which emits its findings in the same shape (`RuleId`, `Severity`, `Category`, `Description`, `File`, `SuggestedFix`).
 
 ## Row schema
 
-Every catalog file uses a single H2 section per logical checker (e.g., `## EvalsChecker`, `## SchemaChecker`). Inside each section, rules sit in one uniform table:
+Each catalog file uses one H2 section per logical checker (e.g., `## SchemaChecker`, `## ToolsChecker`). Inside each section, rules sit in one uniform table:
 
 ```markdown
 | rule_id | severity | category | trigger | detection_method | suggested_fix |
@@ -14,12 +14,12 @@ Every catalog file uses a single H2 section per logical checker (e.g., `## Evals
 
 | Column | Type | Source |
 |---|---|---|
-| `rule_id` | UPPER_SNAKE_CASE identifier in backticks | Verbatim from POC. Stable contract. Never rename. |
-| `severity` | One of `error` / `warning` / `info` / `judgment` (always a single value — rules with observation-dependent severity are split into distinct `rule_id`s, e.g., `TOO_MANY_TOOLS` / `EXCESSIVE_TOOL_COUNT`). | Verbatim from POC. Mapped at report time (see below). |
-| `category` | `evals` / `schema` / `tools` / `guardrails` / `general` / `lowcode` / `code` / `security` / `runtime` / `eval-results` | Matches the `uip agent review --checks <name>` argument vocabulary. Drives report grouping. Not every catalog uses every value — the low-code catalog uses `evals` / `schema` / `tools` / `guardrails` / `general` / `lowcode`; the coded catalog additionally uses `code` / `security` / `runtime` / `eval-results`. |
-| `trigger` | Short condition phrase | Verbatim from POC. |
-| `detection_method` | One of the forms below | Concrete instruction the agent executes (mechanical) or reasons through (judgment). |
-| `suggested_fix` | One imperative sentence | Verbatim from POC `_fix_suggestion()` / rule body. |
+| `rule_id` | UPPER_SNAKE_CASE identifier in backticks | Stable contract. Never rename. |
+| `severity` | One of `error` / `warning` / `info` / `judgment` (always a single value) | Mapped at report time (see below). |
+| `category` | `evals` / `schema` / `tools` / `guardrails` / `general` / `code` / `security` / `runtime` | Drives report grouping. |
+| `trigger` | Short condition phrase | What the rule fires on. |
+| `detection_method` | The **judgment form** (see below) | The concrete evidence to read and how to reason about it. |
+| `suggested_fix` | One imperative sentence | The remediation. |
 
 ## Severity mapping (catalog → report)
 
@@ -30,25 +30,15 @@ Every catalog file uses a single H2 section per logical checker (e.g., `## Evals
 | `info` | Info | `I-D-` |
 | `judgment` | Warning (default; agent picks Critical / Warning / Info based on contextual severity) | `W-D-` (or `C-D-` / `I-D-` when the agent escalates / de-escalates with reasoning logged in the finding's `description`) |
 
-The `-D-` infix marks the finding as catalog-driven (vs `-V-` for validation CLI output or no infix for manual checklist findings).
+The `-D-` infix marks the finding as rule-driven (vs `-V-` for Step 2 validation output, or no infix for manual checklist findings). Review-CLI findings carry the `RuleId` the CLI emits and are reported in the same "Rule Findings" subsection.
 
-## Detection method forms
+## Detection method — the judgment form
 
-`detection_method` cells must be one of these forms. Pick the simplest that works.
+Every catalog row's `detection_method` is the judgment form:
 
-### Mechanical forms (resolve to a yes/no on file content)
+> **Judgment** — `Read <files>; assess whether <condition>; emit when <criteria>.` The agent reads the relevant source material (system prompt, tool descriptions, eval datapoints, schema, code) and applies the rule by reasoning. The `trigger` column states the rule; `detection_method` states the concrete evidence to inspect; the agent decides whether the rule fires and logs its reasoning in the finding's `description`.
 
-1. **Glob** — `Glob '<pattern>' relative to project root; emit when <count condition>.`
-2. **Read + JSON walk** — `Read <file>; parse JSON; check <jsonpath>; emit when <condition>.`
-3. **Grep** — `Grep -n '<regex>' <file-or-glob>; emit one finding per match.`
-4. **Bash one-liner** — `Bash: <command>; emit if <stdout condition>.` (e.g., `git ls-files .env` → non-empty)
-5. **CLI** — `Run \`uip agent review --project-dir "<PROJECT_DIR>" --checks <name> --output json\` and pick out findings where \`rule_id == "<RULE_ID>"\`.` Use when the rule requires code execution the agent cannot perform inline (AST parsing, embedding-based diversity, complex flow analysis).
-
-### Judgment form (agent applies via reasoning)
-
-6. **Judgment** — `Read <files>; assess whether <condition>; emit when <criteria>.` The agent reads the relevant source material (system prompt, tool descriptions, eval datapoints, schema, etc.) and applies the rule by reasoning. The `trigger` column states the rule; the `detection_method` states the concrete evidence to inspect; the agent decides whether the rule fires.
-
-Mix freely within one section — a row's `detection_method` can be inline-mechanical, CLI-mechanical, or judgment, depending on the rule.
+Deterministic forms (Glob, Read+JSON walk, Grep, Bash, count/threshold, set-membership) do **not** appear in catalog rows — those checks live in the review CLI. If a check can be made a reliable single-file regex, count, or schema walk, it belongs in the CLI, not here.
 
 ## Status field (optional 7th column)
 
@@ -56,7 +46,6 @@ A rule MAY add a `status` column for deferred or experimental rules:
 
 ```markdown
 | rule_id | severity | category | trigger | detection_method | suggested_fix | status |
-| `EVAL_LOW_DIVERSITY` | error | evals | … | Run `uip agent review --checks evals --output json` and pick `rule_id == "EVAL_LOW_DIVERSITY"`. | … | |
 ```
 
 Allowed `status` values:
@@ -64,58 +53,39 @@ Allowed `status` values:
 - (omitted / blank) — active. Apply the rule.
 - `deferred` — documented for traceability; do not apply. Record in the report's "Rules Skipped" section with reason "deferred (status: deferred)".
 
-🔲 proposed and 🚫 retired POC rows do not migrate to the catalog at all.
+## The review CLI (deterministic findings)
 
-## CLI invocation pattern
-
-When a row's `detection_method` is the CLI form, the agent runs:
+The agent runs the review command once per agent, capturing JSON:
 
 ```bash
-uip agent review --project-dir "<PROJECT_DIR>" --checks <name>[,<name>...] --output json
+uip agent review --project-dir "<PROJECT_DIR>" --output json        # low-code
+uip codedagent review --project-dir "<PROJECT_DIR>" --output json   # coded
 ```
 
-`--checks` accepts a comma-separated list of checker names matching the H2 sections of the catalog. Low-code catalog: `evals`, `schema`, `tools`, `guardrails`, `general`, `lowcode`. Coded catalog adds: `code`, `security`, `runtime`, `eval-results`. The CLI returns JSON containing findings keyed by `rule_id` — the agent picks out the ones it needs.
-
-> Batching multiple checks in one invocation is preferred when several CLI-form rules belong to the same checker (e.g., all eval rules in one `--checks evals` call).
+It returns `Data.Issues[]` — deterministic findings keyed by `RuleId`, in the same severity/category/description/file/fix shape as a catalog row. The agent carries these into the report verbatim. The catalog does not list these `RuleId`s; the CLI's registry is their source of truth.
 
 ## Constants section
 
-Each catalog file MAY end with a `## Constants` H2 listing thresholds the rows reference by name:
-
-```markdown
-## Constants
-
-| Constant | Value | Used by |
-|---|---|---|
-| `MAX_TOOLS_WARNING` | 20 | `TOO_MANY_TOOLS` |
-| `MAX_TOOLS_ERROR` | 30 | `TOO_MANY_TOOLS` |
-```
-
-Rows then reference the constant by name in `trigger` / `detection_method` instead of inlining the literal — keeps thresholds in one place.
+Judgment rows reference thresholds inline as soft cues (e.g. "a `<20-char` description is almost always too thin") rather than as hard constants — the agent reasons about sufficiency, not a fixed cutoff. A catalog file MAY still add a `## Constants` H2 if a kept rule genuinely needs a named threshold.
 
 ## Worked examples
 
-**Mechanical (inline):**
-
-```markdown
-| `LOWCODE_MESSAGES_NO_USER` | error | lowcode | `messages[]` has no `role: "user"` entry | Read `agent.json` → `.messages[]`. Emit when no element has `.role == "user"`. file = `agent.json`. | Add a `{"role": "user", "content": "..."}` message — input templating only reaches the model through the user message. |
-```
-
-**Mechanical (CLI):**
-
-```markdown
-| `EVAL_LOW_DIVERSITY` | error | evals | Input embedding entropy < `DIVERSITY_ERROR_THRESHOLD` | Run `uip agent review --project-dir "<PROJECT_DIR>" --checks evals --output json`; pick findings where `rule_id == "EVAL_LOW_DIVERSITY"`. | Diversify eval inputs — current inputs cluster too tightly in semantic space. |
-```
-
-**Judgment:**
+**Judgment (prompt quality):**
 
 ```markdown
 | `LC_PROMPT_ROLE_DEFINITION` | warning | general | System prompt does not open with a clear role / persona statement | Read the system prompt. Assess whether the opening paragraph states what the agent is and what it does. Emit when missing. file = system prompt source. | Add an opening sentence: `"You are an X that does Y."` |
 ```
 
+**Judgment (tool sufficiency):**
+
+```markdown
+| `VAGUE_TOOL_DESCRIPTION` | judgment | tools | Tool description missing or too vague for the LLM to choose the tool correctly | Walk tools; read each `.description`. Assess: is it specific enough — purpose, side effects, when to use vs not — that the model can pick this tool over its siblings? Blank or boilerplate fires; a 2-3 sentence description does not. file = tool source, element = tool name. | Write a 2-3 sentence description covering purpose, side effects, and when to use vs not use the tool. |
+```
+
 ## Reading order for the agent
 
 1. Read this file once.
-2. Read [`rule-catalog-workflow.md`](rule-catalog-workflow.md) for the Step 2.5 procedure.
-3. Read the catalog files indicated by the detection table for the current project type.
-4. Apply rows; emit findings using the canonical line format from SKILL.md Step 5.
+2. Read [`rule-catalog-workflow.md`](rule-catalog-workflow.md) for the Step 2.5 procedure (run the review CLI first, then the judgment catalog).
+3. Run the review CLI; capture `Data.Issues[]`.
+4. Read the catalog files indicated by the detection table for the current project type.
+5. Apply rows; emit findings using the canonical line format from SKILL.md Step 5.

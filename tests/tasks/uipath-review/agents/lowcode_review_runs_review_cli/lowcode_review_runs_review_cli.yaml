@@ -1,13 +1,15 @@
-task_id: skill-review-agents-lowcode-vague-tool-description
+task_id: skill-review-agents-lowcode-runs-review-cli
 description: >
-  Smoke test for uipath-review on a low-code agent project with an
-  injected VAGUE_TOOL_DESCRIPTION violation. pre_run scaffolds a
-  minimal agent then creates `resources/VagueTool/resource.json` with
-  an empty `description`. This is the most common real-world
-  LLM-quality bug — tools the model can't choose between. The reviewer
-  runs `uip agent review --output json` first (Step 2.5a), then applies
-  the judgment catalog and must cite `VAGUE_TOOL_DESCRIPTION` (warning
-  severity, tools category), which remains a judgment rule in the catalog.
+  Delegation check of the CLI-first review contract on a low-code agent.
+  pre_run scaffolds a minimal agent then DELETES entry-points.json so
+  `uip agent validate` has a concrete structural finding to surface. The
+  reviewer must classify the project, run `uip agent validate` and
+  `uip agent review --output json` (Step 2.5a) — gracefully recording the
+  review CLI as skipped if that subcommand is unavailable — stay read-only,
+  read the judgment catalog, and produce a report. (Asserting a specific
+  CLI-emitted rule_id such as LOWCODE_ENTRY_POINTS_MISSING is deferred until
+  `uip agent review` ships in the installed CLI; the delegation contract is
+  what this test pins down.)
 tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -20,7 +22,7 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_vague_tool_description/inject_vague_tool_description.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_runs_review_cli/inject_missing_entry_points.py"
     timeout: 30
 
 initial_prompt: |
@@ -70,33 +72,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent consulted the low-code rule catalog (agents-lowcode-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-lowcode-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consulted the common agent rule catalog (agents-common-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-common-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Ran the review CLI first (Step 2.5a): uip agent review --output json"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+review'
     min_count: 1
-    weight: 2.0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json on the review CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+review.*--output\s+json'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Review report applies the catalog: cites VAGUE_TOOL_DESCRIPTION for vague_tool; no invented rule_ids"
-    command: "python3 $TASK_DIR/check_lowcode_review_vague_tool_description.py"
+    description: "A non-trivial review report was produced"
+    command: "python3 $TASK_DIR/check_lowcode_review_runs_review_cli.py"
     timeout: 30
     expected_exit_code: 0
-    weight: 5.0
+    weight: 2.0
     pass_threshold: 1.0

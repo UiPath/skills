@@ -4,9 +4,10 @@
 Writes a minimal-but-valid low-code agent-builder project directly (no
 `uip solution init` / `uip agent init`). The reviewer does read-only
 static analysis, so a statically-written project is enough to exercise
-the agents-lowcode-rules.md catalog deterministically and fast — and
-without requiring the `uip` CLI to be on PATH (it isn't on the Linux
-GitHub runner used in CI for tempdir-driver tasks).
+the uipath-review pipeline (the `uip agent review` CLI plus the judgment
+`agents-lowcode-rules.md` catalog) fast — and without requiring the `uip`
+CLI to *scaffold* the fixture (it isn't on the Linux GitHub runner used in
+CI for tempdir-driver tasks; the runner installs it for the task itself).
 
 The baseline layout mirrors what `uip agent init` produces for an
 agent-builder low-code agent inside a solution:

@@ -1,13 +1,12 @@
-task_id: skill-review-agents-lowcode-vague-tool-description
+task_id: skill-review-agents-lowcode-tool-overlap
 description: >
-  Smoke test for uipath-review on a low-code agent project with an
-  injected VAGUE_TOOL_DESCRIPTION violation. pre_run scaffolds a
-  minimal agent then creates `resources/VagueTool/resource.json` with
-  an empty `description`. This is the most common real-world
-  LLM-quality bug — tools the model can't choose between. The reviewer
-  runs `uip agent review --output json` first (Step 2.5a), then applies
-  the judgment catalog and must cite `VAGUE_TOOL_DESCRIPTION` (warning
-  severity, tools category), which remains a judgment rule in the catalog.
+  Judgment test for uipath-review on a low-code agent with two tools whose
+  descriptions are interchangeable (lookup_customer / find_customer both
+  "look up a customer by email and return their profile"). pre_run scaffolds
+  a minimal agent then writes the two tool resources. The reviewer must run
+  the review CLI first (Step 2.5a), then apply the judgment catalog and cite
+  `LC_TOOL_OVERLAP` (tools category) — a tool-selection-ambiguity read a
+  regex cannot make, so it is the skill's responsibility.
 tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
 
 run_limits:
@@ -20,7 +19,7 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_vague_tool_description/inject_vague_tool_description.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_tool_overlap/inject_tool_overlap.py"
     timeout: 30
 
 initial_prompt: |
@@ -70,22 +69,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent consulted the low-code rule catalog (agents-lowcode-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-lowcode-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consulted the common agent rule catalog (agents-common-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-common-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Ran the review CLI first (Step 2.5a): uip agent review --output json"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+review'
@@ -93,9 +76,25 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent consulted the low-code judgment catalog (agents-lowcode-rules.md)"
+    tool_name: "Read"
+    command_pattern: 'agents-lowcode-rules\.md'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent consulted the common agent judgment catalog (agents-common-rules.md)"
+    tool_name: "Read"
+    command_pattern: 'agents-common-rules\.md'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: run_command
-    description: "Review report applies the catalog: cites VAGUE_TOOL_DESCRIPTION for vague_tool; no invented rule_ids"
-    command: "python3 $TASK_DIR/check_lowcode_review_vague_tool_description.py"
+    description: "Review report applies the judgment catalog: cites LC_TOOL_OVERLAP for find_customer"
+    command: "python3 $TASK_DIR/check_lowcode_review_tool_overlap.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

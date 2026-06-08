@@ -106,7 +106,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Missing Escalation Paths
 
-> *Rule catalog: `LC_FAILURE_IRREVERSIBLE_ACTION`, `LOWCODE_ESCALATION_NO_SLA` cover this at Step 2.5.*
+> *Rule catalog: `LC_FAILURE_IRREVERSIBLE_ACTION` covers this at Step 2.5.*
 
 **Symptom:** Agent makes irreversible decisions (approvals, deletions, financial transactions) without any human escalation path.
 
@@ -130,7 +130,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Poor System Prompt Design
 
-> *Rule catalog: `MISSING_SYSTEM_PROMPT`, `LC_PROMPT_ROLE_DEFINITION`, `LC_PROMPT_SCOPE_BOUNDARIES`, `LC_PROMPT_WHEN_GUIDANCE`, `LC_PROMPT_STOPPING_CRITERIA`, `LC_PROMPT_OUTPUT_FORMAT`, `LC_PROMPT_INSTRUCTION_CONFLICTS`, `PROMPT_LACKS_STRUCTURE` cover the structural deficiencies at Step 2.5.*
+> *Rule catalog: `LC_PROMPT_ROLE_DEFINITION`, `LC_PROMPT_SCOPE_BOUNDARIES`, `LC_PROMPT_WHEN_GUIDANCE`, `LC_PROMPT_STOPPING_CRITERIA`, `LC_PROMPT_OUTPUT_FORMAT`, `LC_PROMPT_INSTRUCTION_CONFLICTS` cover the prompt-quality deficiencies at Step 2.5; missing/empty/over-long system prompts are caught by the review CLI.*
 
 **Symptom:** System prompt is vague, overly broad, or missing key elements.
 
