@@ -1,10 +1,10 @@
 task_id: skill-sdd-integration-product-selection
 description: >
-  Skill-guided evaluation: agent uses the uipath-solution skill to
+  Skill-guided evaluation: agent uses the uipath-design skill to
   analyze a PDD with clear AI agent signals. Tests whether the product
   selection decision table correctly identifies Agents as the primary product
   instead of defaulting to RPA Process.
-tags: [uipath-solution, integration, lifecycle:generate]
+tags: [uipath-design, integration, lifecycle:generate]
 initial_prompt: |
   Analyze the following Process Design Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.

@@ -61,9 +61,13 @@
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
 
-# Solution skill (design + uip solution lifecycle)
+# Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-solution/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
+
+# Design skill (PDD → SDD authoring)
+/skills/uipath-design/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
+/tests/tasks/uipath-design/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
