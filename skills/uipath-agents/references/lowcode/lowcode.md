@@ -6,7 +6,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 
 - Create a new low-code agent project (standalone or inline in a flow)
 - Edit `agent.json` — prompts, model, schemas, settings
-- Add tools, contexts, or escalations as files in `resources/{Name}/resource.json`
+- Add tools, contexts, escalations, or MCP servers as files in `resources/{Name}/resource.json`
 - Add memory spaces or seed memory items with `uip agent memory`
 - Wire agent-to-agent calls within a solution or to an external deployed agent
 - Design input/output schemas and sync with `entry-points.json`
@@ -35,7 +35,7 @@ Standard workflow for any low-code agent task:
 4. **Refresh** — `uip agent refresh --output json`. Applies pending migrations and regenerates `entry-points.json` and `bindings_v2.json`. Confirm `MigrationApplied`, `StorageVersion`.
 5. **Validate** — `uip agent validate --output json`. Strict read-only. Confirm `Status: "Valid"`, `Validated` counts.
 6. **Refresh solution resources** — `uip solution resource refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, memory spaces, escalations).
-7. **Bundle and upload** — `uip solution bundle` then `uip solution upload --output json` (with user consent per Rule 6).
+7. **Upload** — `uip solution upload . --output json` (bundles and uploads in one pass; with user consent per Rule 6).
 
 Capabilities are **orthogonal**: there is no ordering requirement among them. Adding a tool and an escalation in parallel is safe — they do not interact at the file level. Validate and refresh once after all capability edits are complete, not after each one.
 
@@ -67,6 +67,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add a process tool (RPA / agent / API / agentic) — local or external | [capabilities/process/process.md](capabilities/process/process.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |
 | Wire a multi-agent solution (parent + tool agents) | [capabilities/process/process.md](capabilities/process/process.md) § Multi-Agent Solution Example | |
 | Add an Integration Service tool | [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md) | |
+| Add an MCP (Model Context Protocol) server tool | [capabilities/mcp/mcp.md](capabilities/mcp/mcp.md) | |
 | Add a built-in tool (Analyze Files) | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) | [capabilities/built-in-tools/analyze-attachments.md](capabilities/built-in-tools/analyze-attachments.md) |
 | Accept a file as agent input or return a file as output | [agent-definition.md](agent-definition.md) § File Attachments | [capabilities/built-in-tools/built-in-tools.md](capabilities/built-in-tools/built-in-tools.md) |
 | Add a context (Context Grounding / attachments / DataFabric) | [capabilities/context/context.md](capabilities/context/context.md) | applicable sibling |

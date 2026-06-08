@@ -325,6 +325,7 @@ For each resource type's full schema, see the relevant capability file:
 - Tool resources (`$resourceType: "tool"`) — [capabilities/process/process.md](capabilities/process/process.md), [capabilities/integration-service/integration-service.md](capabilities/integration-service/integration-service.md)
 - Context resources (`$resourceType: "context"`) — [capabilities/context/context.md](capabilities/context/context.md)
 - Escalation resources (`$resourceType: "escalation"`) — [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md)
+- MCP server resources (`$resourceType: "mcp"`) — [capabilities/mcp/mcp.md](capabilities/mcp/mcp.md)
 
 ## Common Edits
 
