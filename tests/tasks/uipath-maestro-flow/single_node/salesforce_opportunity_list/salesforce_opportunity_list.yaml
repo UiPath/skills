@@ -9,7 +9,19 @@ description: >
   object-name resolution, connection binding, and live execution. The IS Salesforce
   connector returns flattened records (top-level `Id`, `Name`, …), so the checker
   asserts a non-empty array of objects carrying a Salesforce `Id`.
-tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, uipath-salesforce-sfdc]
+tags:
+  [
+    uipath-maestro-flow,
+    e2e,
+    mode:operate,
+    lifecycle:generate,
+    shape:single-node,
+    connector,
+    uipath-salesforce-sfdc,
+  ]
+skip: true
+# Blocked: requires a live tenant Salesforce connection and real Opportunity.
+# Often required re-athentificate due to vendor security policy, thus the task is not maintainable for long term.
 
 agent:
   type: claude-code
