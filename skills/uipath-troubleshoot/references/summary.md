@@ -6,7 +6,7 @@ Start here. Find the product or package that matches the user's issue, then foll
 
 Manages automation resources, robots, processes, and execution. Handles job scheduling, queue management, asset storage, triggers, storage buckets, and folder-based access control. Issues here involve failed jobs, stuck jobs, queue item failures, trigger problems, robot connectivity, permissions, and platform availability.
 
-CLI: `uip or --help`, `uip resource --help`
+CLI: `uip or --help`, `uip or --help`
 
 - [products/orchestrator/overview.md](./products/orchestrator/overview.md) — Product overview, features, and dependencies
 - [products/orchestrator/summary.md](./products/orchestrator/summary.md) — All playbooks for Orchestrator issues

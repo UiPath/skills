@@ -17,8 +17,8 @@ Hand-rolling HTTP calls — reading `~/.uipath/.auth` and POSTing to `/odata/...
 
 If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Search the command index first. Examples of what people often miss:
 
-- "upload a file to a storage bucket" → `uip resource bucket-files upload` (NOT a `PUT /buckets/.../signedUrl` dance)
-- "create an asset" → `uip resource assets create` (NOT a `POST /odata/Assets`)
+- "upload a file to a storage bucket" → `uip or bucket-files upload` (NOT a `PUT /buckets/.../signedUrl` dance)
+- "create an asset" → `uip or assets create` (NOT a `POST /odata/Assets`)
 - "start a job for a process" → `uip or jobs start <process-key>` (NOT `POST /odata/Jobs/UiPath.Server.Configuration.OData.StartJobs`)
 - "configure an Integration Service connection" → `uip is connections create <connector-key>` (NOT a hand-rolled OAuth flow)
 

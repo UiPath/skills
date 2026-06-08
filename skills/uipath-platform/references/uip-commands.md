@@ -53,7 +53,7 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 
 ---
 
-## Resource (`uip resource`)
+## Resource (`uip or`)
 
 Manage assets, queues, triggers, buckets, libraries, and webhooks. See [`uipath-resources`](resources/resources.md).
 

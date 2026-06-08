@@ -80,7 +80,7 @@ uip or calendars create "US Holidays" --time-zone "America/New_York" --output js
 # Save the returned Key (GUID)
 
 # Use the calendar key when creating a time trigger
-uip resource triggers create --type time --name "WeekdayReport" \
+uip or triggers create --type time --name "WeekdayReport" \
   --release-key <process-key> --cron "0 9 * * 1-5" \
   --calendar-key <calendar-key> --time-zone "America/New_York" \
   --runtime-type Unattended --job-priority Normal \
@@ -158,7 +158,7 @@ uip or feeds list --output json
 Feed IDs are used with:
 - `uip or packages list --feed-id <id>` -- browse packages in a specific feed
 - Omit `--feed-id` to use the default tenant feed
-- `uip resource libraries list` does NOT accept `--feed-id` -- it always queries the default tenant feed. Filter results client-side via `--output-filter "<JMESPath>"`.
+- `uip or libraries list` does NOT accept `--feed-id` -- it always queries the default tenant feed. Filter results client-side via `--output-filter "<JMESPath>"`.
 
 ---
 
@@ -213,7 +213,7 @@ uip or attachments download "<attachment-id>" -o error-screenshot.png
 - **Calendar timezone affects trigger scheduling.** A trigger using a calendar will skip dates according to the calendar's timezone, which may differ from the trigger's own timezone. Keep them aligned.
 - **Audit log export is async.** The `--export` flag triggers a server-side export job. The CLI polls until the CSV is ready, then downloads it. Large exports may take a few seconds.
 - **Credential store keys are numeric**, not GUIDs. This is an exception to the usual GUID convention in the Orchestrator CLI.
-- **Feed IDs apply to `packages` only.** `uip or packages` commands accept `--feed-id` for multi-feed tenants; `uip resource libraries` commands do NOT — they always target the default tenant feed.
+- **Feed IDs apply to `packages` only.** `uip or packages` commands accept `--feed-id` for multi-feed tenants; `uip or libraries` commands do NOT — they always target the default tenant feed.
 - **Attachments are tenant-scoped.** You do not need `--folder-path` or `--folder-key` -- the `list` command resolves the folder from the job key automatically.
 
 ---

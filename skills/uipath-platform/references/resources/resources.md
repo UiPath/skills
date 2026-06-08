@@ -1,10 +1,10 @@
-# Resources (`uip resource`)
+# Resources (`uip or`)
 
 Manage Orchestrator resources -- assets, queues, queue items, buckets, files, triggers, libraries, and webhooks.
 
-> **Important:** These commands use `uip resource`, NOT `uip or`. The old `storage-buckets`/`storage-bucket-files` names have been renamed to `buckets`/`bucket-files`.
+> **Important:** These commands live under `uip or` (the former standalone `uip resource` tool was retired and folded into `uip or`). The old `storage-buckets`/`storage-bucket-files` names are now `buckets`/`bucket-files`.
 
-> For full option details on any command, use `--help` (e.g., `uip resource assets list --help`).
+> For full option details on any command, use `--help` (e.g., `uip or assets list --help`).
 
 ---
 
@@ -25,7 +25,7 @@ Manage Orchestrator resources -- assets, queues, queue items, buckets, files, tr
 ## Command Tree
 
 ```
-uip resource
+uip or
   ├── assets              (9 verbs)
   ├── queues              (8 verbs)
   ├── queue-items         (15 verbs)
@@ -57,37 +57,37 @@ Libraries are tenant-scoped -- no folder context needed.
 
 | Command | Description |
 |---------|-------------|
-| `uip resource libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--sort-by "<field> <asc\|desc>"`. No native search — filter client-side via global `--output-filter "<JMESPath>"`. Returns `Key`, `Title`, `Version`, `Authors`. |
-| `uip resource libraries get <key>` | Get library details. Key format is `PackageId:Version` (e.g., `MyLib:1.0.0`). Returns the full API DTO. |
-| `uip resource libraries versions <package-id>` | List all versions of a library by package ID (the `Title` from `list` output). |
-| `uip resource libraries upload --file <path>` | Upload a `.nupkg` library package to the tenant feed. |
-| `uip resource libraries download <key> --destination <path>` | Download a `.nupkg` to local disk. |
-| `uip resource libraries delete <key>` | Delete a specific library version. |
+| `uip or libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--sort-by "<field> <asc\|desc>"`. No native search — filter client-side via global `--output-filter "<JMESPath>"`. Returns `Key`, `Title`, `Version`, `Authors`. |
+| `uip or libraries get <key>` | Get library details. Key format is `PackageId:Version` (e.g., `MyLib:1.0.0`). Returns the full API DTO. |
+| `uip or libraries versions <package-id>` | List all versions of a library by package ID (the `Title` from `list` output). |
+| `uip or libraries upload --file <path>` | Upload a `.nupkg` library package to the tenant feed. |
+| `uip or libraries download <key> --destination <path>` | Download a `.nupkg` to local disk. |
+| `uip or libraries delete <key>` | Delete a specific library version. |
 
 ```bash
 # List libraries (first 500). Default --limit is 50; bump it for tenants with many libraries.
-uip resource libraries list --limit 500 --output json
+uip or libraries list --limit 500 --output json
 
 # Filter by name client-side. Title can be null — guard with `Title != null` or contains() will error.
-uip resource libraries list --limit 500 \
+uip or libraries list --limit 500 \
   --output-filter "[?Title != null && contains(Title, 'Excel')]" \
   --output json
 
 # Multi-keyword OR filter
-uip resource libraries list --limit 500 \
+uip or libraries list --limit 500 \
   --output-filter "[?Title != null && (contains(Title, 'Common') || contains(Title, 'Shared'))]" \
   --output json
 
 # Upload a library
-uip resource libraries upload --file ./MyLibrary.1.0.0.nupkg --output json
+uip or libraries upload --file ./MyLibrary.1.0.0.nupkg --output json
 
 # List versions, then download a specific one
-uip resource libraries versions "UiPath.System.Activities" --output json
-uip resource libraries download "UiPath.System.Activities:24.10.0" \
+uip or libraries versions "UiPath.System.Activities" --output json
+uip or libraries download "UiPath.System.Activities:24.10.0" \
   --destination ./system-activities.nupkg --output json
 
 # Delete an old version
-uip resource libraries delete "UiPath.System.Activities:24.4.0" --output json
+uip or libraries delete "UiPath.System.Activities:24.4.0" --output json
 ```
 
 ---
