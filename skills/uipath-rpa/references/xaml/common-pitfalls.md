@@ -134,7 +134,7 @@ When `Text` contains literal `[k(...)]`, `[d(...)]`, or `[u(...)]` special-key t
 ```
 
 Alternatives:
-- Build the bracket characters with `Chr(91)` / `Chr(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; Chr(91) &amp; &quot;k(enter)&quot; &amp; Chr(93)]"`.
+- Build the bracket characters with `ChrW(91)` / `ChrW(93)` so the string carries no literal `[` / `]`: `Text="[&quot;13700132&quot; &amp; ChrW(91) &amp; &quot;k(enter)&quot; &amp; ChrW(93)]"`.
 - Split the input: one `NTypeInto` for the digits, one `NKeyboardShortcuts` (or a second `NTypeInto`) for `[k(enter)]`.
 
 ## ActivityAction/ActivityFunc Initialization
@@ -344,15 +344,23 @@ Or omit `Default` entirely if the variable is assigned before its first read.
 
 The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLanguage` enum, which has **only two valid values**: `VBNet` and `CSharp`.
 
-**Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` — it is not a valid `NetLanguage` value. `"CSharp"` is the same in both.
+**Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` or `"VB"` — neither is a valid `NetLanguage` value. `"CSharp"` is the same in both.
 
-**What happens:** Using `Language="VisualBasic"` passes Studio validation but fails at runtime:
+**What happens:** `Language="VisualBasic"` (or `"VB"`) passes Studio validation but fails at runtime:
 ```
 Failed to create a 'Language' from the text 'VisualBasic'.
 System.FormatException: VisualBasic is not a valid value for NetLanguage.
 ```
 
-**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` (not `"VisualBasic"`) or `"CSharp"`. See `InvokeCode.md` in `../activity-docs/UiPath.System.Activities/` for full details.
+**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` or `"CSharp"`.
+
+## `Chr()` / `Asc()` Break at Runtime in Modern Projects — Use `ChrW()` / `AscW()`
+
+`Chr(n)` / `Asc(c)` go through ANSI code page 1252, which .NET 6+ does not register. For `n ≥ 128` they throw `System.NotSupportedException: No data is available for encoding 1252` at runtime — after passing both `validate` and `build`. Use `ChrW(n)` / `AscW(c)` (Unicode, no code page) instead, or the BCL `Convert.ToChar(n)` / `CInt(c)`.
+
+`Chr`/`ChrW`/`Asc`/`AscW` live in `Microsoft.VisualBasic`, which is not auto-imported — `BC30451: 'ChrW' is not declared` means you must add `Microsoft.VisualBasic` to both `NamespacesForImplementation` and `ReferencesForImplementation`. The `Convert.*` BCL forms avoid this.
+
+`ContinueOnError=True` silently swallows the runtime exception (workflow looks successful, output is wrong/empty) — set it to `False` while debugging.
 
 ## HTTP Request Activity Complexity
 
@@ -462,6 +470,10 @@ Activity tag names rarely match Studio display names. Guessing the tag from the 
 |--------------|-------------|-------------|
 | Delete File | `ui:DeleteFile` | `ui:DeleteFileX` |
 | Wait | `ui:Wait` | `Delay` (MWF primitive — no prefix) |
+
+### `InvokeProcess` vs `StartProcess`
+
+To launch a local executable (`.exe`/`.cmd`/`.bat`), use `ui:StartProcess` (property `FileName` + `Arguments`). `ui:InvokeProcess` runs an Orchestrator process/package (property `ProcessName`) and has **no `FileName`** — reaching for one means you picked the wrong activity. Don't work around it with `Shell()`, `Process.Start`, or `InvokeCode`; for PowerShell use `InvokePowerShell<T>`.
 
 ### Tag Verification Gate
 
