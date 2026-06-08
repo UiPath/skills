@@ -5,7 +5,7 @@ description: >
   that drafts a customer-facing billing-dispute resolution email. Graded by
   flow validate plus one flow debug run: the inline agent node must be present
   and the drafted email must cite the disputed invoice number.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, resource]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, node:inline-agent]
 
 run_limits:
   max_turns: 120

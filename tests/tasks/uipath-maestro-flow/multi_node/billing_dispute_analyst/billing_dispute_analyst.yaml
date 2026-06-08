@@ -6,7 +6,7 @@ description: >
   context handle (a uipath.agent.resource.context.index node). Graded by flow
   validate plus one flow debug run: both nodes must be present and the agent
   must return a non-empty determination.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, resource]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, node:inline-agent]
 
 run_limits:
   max_turns: 120
