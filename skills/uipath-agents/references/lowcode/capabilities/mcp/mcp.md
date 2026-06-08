@@ -29,7 +29,7 @@ Each row carries what the agent resource needs:
 
 | `resource list` field | Use as |
 |---|---|
-| `Name` | `slug` (the server's canonical slug) |
+| `Name` | the server's canonical name — use it for `slug`, the resource `name`, and the folder `resources/<name>/` (all match) |
 | `Key` | `solutionProperties.resourceKey` (the cloud server UUID) |
 | `Folder` | `folderPath` (the literal Orchestrator folder, e.g. `"Shared"`) — same convention as external process tools |
 | `Type` | informational — the subtype refresh files the resource under |
@@ -50,7 +50,9 @@ The response is `Data.Spec` with PascalCase fields. `Data.Spec.Tools[]` is the *
 
 ## Agent-Level Resource Shape
 
-**Path:** `<AGENT_NAME>/resources/<McpName>/resource.json`
+**Path:** `<AGENT_NAME>/resources/<ServerName>/resource.json`
+
+**Name the resource after the MCP server itself** — use the server's `Name` from `resource list` (e.g. `github-mcp`) verbatim for both the `name` field and the folder `resources/<name>/`; the two must match. Do not name it after the task or the tool subset — the selected tools go in `availableTools`, not in the resource name.
 
 Generate a fresh UUID for the top-level `id` (this is the agent-local resource id — distinct from `solutionProperties.resourceKey`, which is the cloud server's key).
 
@@ -58,9 +60,9 @@ Generate a fresh UUID for the top-level `id` (this is the agent-local resource i
 {
   "$resourceType": "mcp",
   "id": "<uuid-v4>",                         // fresh agent-local id (NOT the cloud key)
-  "name": "GitHubMcp",                       // folder name & resource name match
+  "name": "github-mcp",                      // = the server's `Name`/slug; folder `resources/github-mcp/` matches
   "description": "GitHub MCP server",        // non-empty
-  "slug": "github-mcp",                      // from resource list `Name`
+  "slug": "github-mcp",                      // the server's canonical slug (= resource list `Name`)
   "folderPath": "Shared",                    // the server's real folder from resource list `Folder` (external resource — same as a process tool)
   "availableTools": [                         // the SELECTED subset, mapped from `resource get` Spec.Tools
     {

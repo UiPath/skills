@@ -15,9 +15,9 @@ run_limits:
 initial_prompt: |
   Create a UiPath low-code agent "DevAssistantAgent" that connects to the
   UiPath Orchestrator MCP server to manage Orchestrator jobs (start, list,
-  inspect, stop, restart). Declare the MCP server as a resource named
-  "OrchestratorJobs" on the agent, selecting the job-related tools. The
-  solution should be named "DevToolsSol".
+  inspect, stop, restart). Declare the MCP server as a resource on the agent,
+  naming the resource after the server itself ("orchestrator"), and select the
+  job-related tools. The solution should be named "DevToolsSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -83,8 +83,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "OrchestratorJobs MCP resource.json was created"
-    path: "DevToolsSol/DevAssistantAgent/resources/OrchestratorJobs/resource.json"
+    description: "orchestrator MCP resource.json was created (named after the server)"
+    path: "DevToolsSol/DevAssistantAgent/resources/orchestrator/resource.json"
     weight: 2.5
     pass_threshold: 1.0
 

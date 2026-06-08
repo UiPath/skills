@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """MCP server resource check.
 
-Validates resources/OrchestratorJobs/resource.json declares the UiPath
+Validates resources/orchestrator/resource.json declares the UiPath
 Orchestrator MCP server reference in the authoritative shape
 (agents-storage-schemas `mcpStorageSchemaV16`):
   - $resourceType == "mcp"  (not "tool" — MCP is a distinct resource type)
-  - name == "OrchestratorJobs"
+  - name == "orchestrator"  (the resource is named after the MCP server itself,
+    matching its folder; the job-subset lives in availableTools, not the name)
   - description is a non-empty string
   - id is a UUID-shaped non-empty string (agent-local id)
   - slug is a non-empty string (the AgentHub server slug)
@@ -25,7 +26,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(os.getcwd()) / "DevToolsSol" / "DevAssistantAgent"
-RESOURCE = ROOT / "resources" / "OrchestratorJobs" / "resource.json"
+RESOURCE = ROOT / "resources" / "orchestrator" / "resource.json"
 
 
 def load(path: Path) -> dict:
@@ -51,9 +52,10 @@ def assert_mcp_resource(resource: dict) -> None:
             f'FAIL: $resourceType should be "mcp" (distinct from "tool"), got {rtype!r}'
         )
     name = resource.get("name")
-    if name != "OrchestratorJobs":
+    if name != "orchestrator":
         sys.exit(
-            f'FAIL: MCP resource name should be "OrchestratorJobs", got {name!r}'
+            f'FAIL: MCP resource name should be "orchestrator" (named after the '
+            f"MCP server itself, matching its folder), got {name!r}"
         )
 
     require_nonempty_str(resource, "description")
@@ -87,7 +89,7 @@ def assert_mcp_resource(resource: dict) -> None:
             )
 
     print(
-        f'OK: resource.json is $resourceType="mcp", name="OrchestratorJobs", id={rid}, '
+        f'OK: resource.json is $resourceType="mcp", name="orchestrator", id={rid}, '
         f'slug={resource.get("slug")!r}, folderPath={resource.get("folderPath")!r}, '
         f'resourceKey present, availableTools list present ({len(tools)} selected)'
     )
