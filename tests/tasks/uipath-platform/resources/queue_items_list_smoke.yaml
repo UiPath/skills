@@ -17,7 +17,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed queue items via uip or queue-items list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+queue-items\s+list'
+    command_pattern: 'uip\s+or\s+queue-items\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -25,7 +25,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scoped the list to a folder via --folder-key or --folder-path"
     tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+queue-items\s+list.*--folder-(key|path)'
+    command_pattern: 'uip\s+or\s+queue-items\s+list.*--folder-(key|path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
