@@ -2,7 +2,7 @@ task_id: skill-ipe-slack-add-users-to-usergroup
 description: >
   Reference-lookup test on the Slack connector — exercises the "Add Users to User Group"
   activity with structural and CLI-pattern validation.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
+tags: [uipath-platform, uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
 
 agent:
   type: claude-code
@@ -48,7 +48,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant has at least one Slack connection"
-    command: "python3 $TASK_DIR/../check_connection_available.py uipath-salesforce-slack"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-salesforce-slack"
     timeout: 35
     expected_exit_code: 0
     weight: 1.0

@@ -1,9 +1,9 @@
-task_id: skill-ipe-slack-send-message
+task_id: skill-ipe-slack-upload-file
 description: >
-  Basic CRUD body-parameter test on the Slack connector — wires the "Send
-  Message to Channel" activity with required body fields and a Decision +
-  Terminate failure-routing pair.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
+  Multipart upload test on the Slack connector — wires the "Send File to
+  Channel" activity with a small text file and a Decision + Terminate
+  failure-routing pair.
+tags: [uipath-platform, uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
 
 agent:
   type: claude-code
@@ -18,15 +18,17 @@ run_limits:
 initial_prompt: |
   Use the `uipath-maestro-flow` skill to build this flow.
 
-  Create a new Flow project called "SlackSendMessageTest" with a manual trigger.
+  Create a new Flow project called "SlackUploadFileTest" with a manual trigger.
   The flow must:
 
-  1. Add a Slack "Send Message to Channel" connector node that posts the text
-     "Hello from the Slack eval" to the channel named "coding-agent-testing".
-     Use connection name 'is-sandboxes' for the Slack node.
-  2. Add a Decision node to check whether the operation succeeded.
-  3. Route failure to a Terminate node with error message "SlackSendMessageTest test failed".
-  4. Route success to a final action that logs "SlackSendMessageTest test passed".
+  1. Upload a small text file (filename "eval-upload.txt", contents
+     "uploaded from the Slack eval") into the Slack channel named
+     "coding-agent-testing" via Slack's "Send File to Channel" activity.
+     Send as `user`. Use connection name 'is-sandboxes' for the Slack node.
+  2. Add a Decision node to check whether the upload succeeded.
+  3. Route failure to a Terminate node with error message
+     "SlackUploadFileTest test failed".
+  4. Route success to a final action that logs "SlackUploadFileTest test passed".
   5. Validate the final flow with `uip maestro flow validate`.
 
   Auth failures and connection errors are expected in sandbox — build the
@@ -41,21 +43,22 @@ initial_prompt: |
   `uip is connections list` call.
 
   If the connector node is not present in the registry, use a managed HTTP
-  fallback for the equivalent REST call and finish after validation. Do not
-  keep searching for a connector node that the registry does not expose.
+  fallback for the equivalent REST call (multipart upload to files.upload /
+  files.uploadV2) and finish after validation. Do not keep searching for a
+  connector node that the registry does not expose.
 
 success_criteria:
   - type: run_command
     description: "Tenant has at least one Slack connection"
-    command: "python3 $TASK_DIR/../check_connection_available.py uipath-salesforce-slack"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-salesforce-slack"
     timeout: 35
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow structure: Slack send-message node present, channel + text wired, Decision + Terminate"
-    command: "python3 $TASK_DIR/check_send_message.py"
+    description: "Flow structure: Slack upload-file node present, channel + filename wired, Decision + Terminate"
+    command: "python3 $TASK_DIR/check_upload_file.py"
     timeout: 30
     expected_exit_code: 0
     weight: 10.0

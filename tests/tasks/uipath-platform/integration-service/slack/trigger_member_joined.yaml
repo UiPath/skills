@@ -1,9 +1,9 @@
-task_id: skill-ipe-slack-trigger-button-clicked
+task_id: skill-ipe-slack-trigger-member-joined
 description: >
   Webhook-trigger test on the Slack connector — config-only flow wiring the
-  "Button Clicked" (BUTTON_CLICKED) trigger node. No event simulation; the eval
+  "Member Joined a Slack Channel" (SLACK_EVENT_MEMBER_JOINED) trigger node. No event simulation; the eval
   environment cannot receive live webhooks.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, connector-trigger, uipath-salesforce-slack, ipe]
+tags: [uipath-platform, uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, connector-trigger, uipath-salesforce-slack, ipe]
 
 agent:
   type: claude-code
@@ -18,13 +18,13 @@ run_limits:
 initial_prompt: |
   Use the `uipath-maestro-flow` skill to build this flow.
 
-  Create a new Flow project called "SlackTriggerButtonClickedTest" with a Slack "Button Clicked"
-  connector trigger (BUTTON_CLICKED). The flow must:
+  Create a new Flow project called "SlackTriggerMemberJoinedTest" with a Slack "Member Joined a Slack Channel"
+  connector trigger (SLACK_EVENT_MEMBER_JOINED). The flow must:
 
-  1. Use the Slack BUTTON_CLICKED webhook trigger as the entry node.
+  1. Use the Slack SLACK_EVENT_MEMBER_JOINED webhook trigger as the entry node.
      Use connection name 'is-sandboxes' for the Slack trigger.
   2. Wire the trigger to at least one downstream Script node that logs
-     the clicked button payload.
+     the joining member's user id.
   3. Validate the final flow with `uip maestro flow validate`.
 
   This is a webhook trigger (eventMode: webhook). Do NOT attempt to simulate
@@ -35,7 +35,7 @@ initial_prompt: |
   structure and wiring correctly; do not attempt a live debug run.
 
   Confirm the trigger is registered before adding nodes:
-    uip maestro flow registry search "BUTTON_CLICKED"
+    uip maestro flow registry search "SLACK_EVENT_MEMBER_JOINED"
 
   Test connections for this task live in Orchestrator folder "uipath-maestro-flow".
   Resolve its key with `uip or folders list --all -o json` (look for Name
@@ -48,15 +48,15 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant has at least one Slack connection"
-    command: "python3 $TASK_DIR/../check_connection_available.py uipath-salesforce-slack"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-salesforce-slack"
     timeout: 35
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow structure: BUTTON_CLICKED webhook trigger node present"
-    command: "python3 $TASK_DIR/check_trigger_button_clicked.py"
+    description: "Flow structure: SLACK_EVENT_MEMBER_JOINED webhook trigger node present"
+    command: "python3 $TASK_DIR/check_trigger_member_joined.py"
     timeout: 30
     expected_exit_code: 0
     weight: 10.0

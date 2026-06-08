@@ -1,8 +1,8 @@
-task_id: skill-ipe-slack-invite-to-channel
+task_id: skill-ipe-slack-list-all-usergroups-paginated
 description: >
-  Reference-lookup test on the Slack connector — exercises the "Invite Users to Channel"
+  Paginated reference-lookup test on the Slack connector — exercises the "List All User Groups"
   activity with structural and CLI-pattern validation.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
+tags: [uipath-platform, uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
 
 agent:
   type: claude-code
@@ -17,16 +17,18 @@ run_limits:
 initial_prompt: |
     Use the `uipath-maestro-flow` skill to build this flow.
 
-    Create a new Flow project called "SlackInviteToChannelTest" with a manual trigger.
+    Create a new Flow project called "SlackListAllUsergroupsPaginatedTest" with a manual trigger.
     The flow must:
 
-    1. Use Slack "List All Users" to resolve at least one user id and Slack's channel-list
-       to resolve the id of channel "coding-agent-testing".
-       Wire both into a Slack "Invite Users to Channel" connector node.
-       Use connection name 'is-sandboxes' for all Slack nodes.
-    2. Add a Decision node to check whether the invite succeeded.
-    3. Route failure to a Terminate node with error message "SlackInviteToChannelTest test failed".
-    4. Route success to a final action that logs "SlackInviteToChannelTest test passed".
+    1. Use the Slack "List All User Groups" activity with a small page size (e.g. limit=2)
+       so pagination is forced — invoke `uip is resources run list` (or the equivalent
+       activities run) MORE THAN ONCE with the next-page cursor.
+       Pick any user group returned on a page AFTER the first page.
+       Wire the resolved group id into a downstream Script node that logs the group name.
+       Use connection name 'is-sandboxes' for the Slack node.
+    2. Add a Decision node to check whether the list call succeeded.
+    3. Route failure to a Terminate node with error message "SlackListAllUsergroupsPaginatedTest test failed".
+    4. Route success to a final action that logs "SlackListAllUsergroupsPaginatedTest test passed".
     5. Validate the final flow with `uip maestro flow validate`.
 
     Auth failures and connection errors are expected in sandbox — build the
@@ -48,25 +50,25 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant has at least one Slack connection"
-    command: "python3 $TASK_DIR/../check_connection_available.py uipath-salesforce-slack"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-salesforce-slack"
     timeout: 35
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow structure: Invite Users to Channel node present, required fields wired, Decision + Terminate"
-    command: "python3 $TASK_DIR/check_invite_to_channel.py"
+    description: "Flow structure: List All User Groups node present, required fields wired, Decision + Terminate"
+    command: "python3 $TASK_DIR/check_list_all_usergroups_paginated.py"
     timeout: 30
     expected_exit_code: 0
     weight: 10.0
     pass_threshold: 1.0
   - type: command_executed
-    description: "Agent invoked `uip is resources run list` (reference lookup)"
+    description: "Agent paginated through Slack results (≥2 list invocations)"
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+is\\s+(resources|activities)\\s+run\\s+\\S+"
-    min_count: 1
-    weight: 1.5
+    min_count: 2
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed

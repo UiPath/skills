@@ -3,7 +3,7 @@ description: >
   Pagination + reference lookup test on the Slack connector — forces the
   agent to resolve a user via the paginated "List All Users" operation
   (≥2 paged calls) and then send a direct message to the resolved user id.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
+tags: [uipath-platform, uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
 
 agent:
   type: claude-code
@@ -59,7 +59,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant has at least one Slack connection"
-    command: "python3 $TASK_DIR/../check_connection_available.py uipath-salesforce-slack"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-salesforce-slack"
     timeout: 35
     expected_exit_code: 0
     weight: 1.0

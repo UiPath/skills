@@ -1,8 +1,8 @@
-task_id: skill-ipe-slack-send-reply
+task_id: skill-ipe-slack-channel-unarchive
 description: >
-  Reference-lookup test on the Slack connector — exercises the "Send Reply"
+  Reference-lookup test on the Slack connector — exercises the "Unarchive Channel"
   activity with structural and CLI-pattern validation.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
+tags: [uipath-platform, uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce-slack, ipe]
 
 agent:
   type: claude-code
@@ -17,16 +17,15 @@ run_limits:
 initial_prompt: |
     Use the `uipath-maestro-flow` skill to build this flow.
 
-    Create a new Flow project called "SlackSendReplyTest" with a manual trigger.
+    Create a new Flow project called "SlackChannelUnarchiveTest" with a manual trigger.
     The flow must:
 
-    1. Use Slack's channel-list to resolve the id of channel "coding-agent-testing".
-       Add a Slack "Send Reply" connector node that posts the reply text "eval-reply-text"
-       to thread timestamp "1700000000.000100" in the resolved channel.
+    1. Use Slack's channel-list operation to resolve the id of an archived channel.
+       Wire that channel id into a Slack "Unarchive Channel" connector node.
        Use connection name 'is-sandboxes' for all Slack nodes.
-    2. Add a Decision node to check whether the reply was sent.
-    3. Route failure to a Terminate node with error message "SlackSendReplyTest test failed".
-    4. Route success to a final action that logs "SlackSendReplyTest test passed".
+    2. Add a Decision node to check whether the unarchive succeeded.
+    3. Route failure to a Terminate node with error message "SlackChannelUnarchiveTest test failed".
+    4. Route success to a final action that logs "SlackChannelUnarchiveTest test passed".
     5. Validate the final flow with `uip maestro flow validate`.
 
     Auth failures and connection errors are expected in sandbox — build the
@@ -48,15 +47,15 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant has at least one Slack connection"
-    command: "python3 $TASK_DIR/../check_connection_available.py uipath-salesforce-slack"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-salesforce-slack"
     timeout: 35
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow structure: Send Reply node present, required fields wired, Decision + Terminate"
-    command: "python3 $TASK_DIR/check_send_reply.py"
+    description: "Flow structure: Unarchive Channel node present, required fields wired, Decision + Terminate"
+    command: "python3 $TASK_DIR/check_channel_unarchive.py"
     timeout: 30
     expected_exit_code: 0
     weight: 10.0

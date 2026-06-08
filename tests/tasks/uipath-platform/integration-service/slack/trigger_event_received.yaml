@@ -3,7 +3,7 @@ description: >
   Webhook-trigger test on the Slack connector — config-only flow wiring the
   "Webhook Event Received (Real Time)" (SLACK_EVENT) trigger node. No event simulation; the eval
   environment cannot receive live webhooks.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, connector-trigger, uipath-salesforce-slack, ipe]
+tags: [uipath-platform, uipath-maestro-flow, integration, lifecycle:generate, shape:single-node, connector, connector-trigger, uipath-salesforce-slack, ipe]
 
 agent:
   type: claude-code
@@ -48,7 +48,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Tenant has at least one Slack connection"
-    command: "python3 $TASK_DIR/../check_connection_available.py uipath-salesforce-slack"
+    command: "python3 $TASK_DIR/check_connection_available.py uipath-salesforce-slack"
     timeout: 35
     expected_exit_code: 0
     weight: 1.0
