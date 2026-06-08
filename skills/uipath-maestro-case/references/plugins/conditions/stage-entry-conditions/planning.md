@@ -39,6 +39,8 @@ Allowed `ruleType` values and when to pick each:
 
 `is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use for exception/interrupt flows.
 
+> **First-stage start — `case-entered` is the case-start signal (edges retired).** With edges gone, there is no Trigger→first-stage edge; the case begins at the stage whose entry condition is `case-entered`. **At least one regular stage must carry `case-entered`**, or the case can never start. The sdd.md's first stage normally declares it — emit it verbatim. If NO stage declares `case-entered`, flag to the user via AskUserQuestion; do NOT silently inject one (Rule 2 — trust the sdd.md, no gap-fill). The reachability walk in [`sdd-generation-rules.md` § Logical integrity](../../../sdd-generation-rules.md) treats a case with no `case-entered` stage as a blocking orphan.
+
 ## Ordering
 
 Stage entry conditions are created **after** all stages exist (Step 7 in implementation.md). Source/target stage IDs must both be captured by then.

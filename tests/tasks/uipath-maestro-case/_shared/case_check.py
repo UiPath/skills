@@ -141,7 +141,7 @@ def task_is_skeleton(task: dict) -> bool:
 # ── Schema-aware structural helpers ─────────────────────────────────────────
 #
 # v19 wraps case-level metadata under a `root` node; v20 hoists it to the
-# top-level + a `metadata` block. Node and edge internals are identical.
+# top-level + a `metadata` block. Node internals are identical across both.
 
 
 def _is_v20(plan: dict) -> bool:
@@ -184,24 +184,57 @@ def find_node_by_label(plan: dict, label: str) -> dict:
     _fail(f"no node with data.label={label!r}; available labels: {labels}")
 
 
-def find_edges(
+def stage_transitions(plan: dict) -> list[dict]:
+    """Stage→stage transitions derived from entry/exit conditions.
+
+    Edges are retired — ``plan["edges"]`` always stays ``[]`` — so reachability
+    lives entirely in the conditions. A transition ``{"source": X, "target": Y}``
+    exists when EITHER:
+
+    - ``Y``'s ``entryConditions`` carries a ``selected-stage-completed`` /
+      ``selected-stage-exited`` rule with ``selectedStageId == X``, OR
+    - ``X``'s ``exitConditions`` carries ``exitToStageId == Y``.
+
+    ``case-entered`` entries are NOT transitions — their source is the case
+    start, not a stage. Both encodings are unioned so a caller need not know
+    which convention an SDD used to wire a given hop. Mirrors the connector
+    graph the frontend now derives from conditions.
+    """
+    stage_types = {"case-management:Stage", "case-management:ExceptionStage"}
+    pairs: set[tuple[str, str]] = set()
+    for node in plan.get("nodes") or []:
+        if node.get("type") not in stage_types:
+            continue
+        nid = node.get("id")
+        for cond in iter_stage_entry_conditions(node):
+            for group in cond.get("rules") or []:
+                for rule in group or []:
+                    src = (rule or {}).get("selectedStageId")
+                    if src:
+                        pairs.add((src, nid))
+        for cond in iter_stage_exit_conditions(node):
+            dst = cond.get("exitToStageId")
+            if dst:
+                pairs.add((nid, dst))
+    return [{"source": s, "target": t} for s, t in sorted(pairs)]
+
+
+def find_transitions(
     plan: dict, *, source: str | None = None, target: str | None = None
 ) -> list[dict]:
+    """Condition-derived stage transitions, filterable by ``source``/``target``.
+
+    Replaces the retired ``find_edges``. Returns ``{"source", "target"}`` dicts
+    so existing graph walks that read ``.get("target")`` keep working unchanged.
+    """
     out: list[dict] = []
-    for edge in plan.get("edges") or []:
-        if source is not None and edge.get("source") != source:
+    for tr in stage_transitions(plan):
+        if source is not None and tr["source"] != source:
             continue
-        if target is not None and edge.get("target") != target:
+        if target is not None and tr["target"] != target:
             continue
-        out.append(edge)
+        out.append(tr)
     return out
-
-
-def edge_labels_from(plan: dict, source_id: str) -> list[str]:
-    return [
-        (e.get("data") or {}).get("label") or ""
-        for e in find_edges(plan, source=source_id)
-    ]
 
 
 def first_rule_of_condition(cond: dict | None) -> dict | None:

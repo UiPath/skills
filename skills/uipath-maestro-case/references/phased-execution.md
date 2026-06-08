@@ -27,7 +27,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
+| **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Skip to Publish` |
@@ -41,7 +41,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 - Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
 - Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — all edges written; sources and targets resolve.
+- Edges — none authored; `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 
 ### Tasks (shape depends on resolution state + task class)
@@ -69,7 +69,7 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 `--skeleton` runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules — all unbound at this gate, filled in Phase 3.
 
-**Informational — do NOT halt on errors or warnings.** Capture error and warning counts (and optionally first few messages); include in hard-stop summary. Errors that remain are structural (dangling edge, missing trigger, duplicate names) and meaningful — user inspects via the existing `Abort` option before continuing.
+**Informational — do NOT halt on errors or warnings.** Capture error and warning counts (and optionally first few messages); include in hard-stop summary. Errors that remain are structural (unreachable/orphan stage, missing trigger, duplicate names) and meaningful — user inspects via the existing `Abort` option before continuing.
 
 ### Phase 2 hard stop
 
@@ -79,8 +79,8 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 Print before prompt:
 
-1. Counts: stages / primary stages / exception stages / edges / triggers / tasks total / placeholder tasks / unresolved resources.
-2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (dangling edge, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
+1. Counts: stages / primary stages / exception stages / triggers / tasks total / placeholder tasks / unresolved resources.
+2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (unreachable/orphan stage, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
@@ -192,7 +192,7 @@ After debug completes, return to Phase 5 prompt so user can re-run or move on. P
 ### Report fields (printed before prompt)
 
 1. File path of `caseplan.json`.
-2. What was built — summary of stages, edges, tasks, conditions, SLA.
+2. What was built — summary of stages, tasks, conditions, SLA.
 3. Validation status — `validate` pass / remaining warnings.
 4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [placeholder-tasks.md](placeholder-tasks.md).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.

@@ -4,7 +4,7 @@
         {
             "id": 1,
             "prompt": "I have an sdd.md and spec.json for a loan approval case. Generate the implementation tasks from these spec files so I can build it.",
-            "expected_output": "Skill triggers, produces a tasks.md with ordered task entries covering case creation, stages, edges, tasks, and conditions, then writes caseplan.json directly after user approval",
+            "expected_output": "Skill triggers, produces a tasks.md with ordered task entries covering case creation, stages, tasks, and conditions, then writes caseplan.json directly after user approval",
             "expectations": [
                 "The case-management skill was triggered",
                 "References uip maestro case registry pull for upfront caching",

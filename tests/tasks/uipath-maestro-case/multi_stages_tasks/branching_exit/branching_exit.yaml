@@ -5,8 +5,7 @@ description: >
   widest fan-out (1→3) covered in multi_stages_tasks. The Approved branch uses
   a wait-for-user exit; Approved Path declares a user-selected-stage
   entry condition. The Rejected branch uses exit-only with
-  selected-tasks-completed and marks-stage-complete:false AND custom edge
-  handle overrides (sourceHandle=bottom / targetHandle=top). The
+  selected-tasks-completed and marks-stage-complete:false. The
   Pending branch uses exit-only with required-tasks-completed and
   marks-stage-complete:TRUE. The two marks-complete:false routing exits
   (Approved/Rejected) gate on selected-tasks-completed referencing the
@@ -14,10 +13,10 @@ description: >
   on required-tasks-completed. Every stage carries a process placeholder
   (skeleton) task. Exercises both stage-exit types (wait-for-user +
   exit-only), the selected-tasks-completed and required-tasks-completed
-  exit rules, the user-selected-stage entry rule, branching edge labels,
-  routing via exitToStageId, the edge handle override path, wide fan-out,
-  and skeleton placeholder tasks.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:conditions, feature:edges, feature:edge-handles, feature:wait-for-user, feature:wide-fanout, feature:tasks, feature:task-entry, feature:skeleton-task]
+  exit rules, the user-selected-stage entry rule, condition-driven branch
+  routing via exitToStageId with conditionExpression discrimination, wide
+  fan-out, and skeleton placeholder tasks (edges retired).
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:conditions, feature:wait-for-user, feature:wide-fanout, feature:tasks, feature:task-entry, feature:skeleton-task]
 max_iterations: 1
 
 run_limits:
@@ -35,7 +34,7 @@ initial_prompt: |
 
   **Case Definition Blueprint** · Generic — Wide Fan-Out Routing
 
-  A single Triage stage that wide fan-outs (1→3) to three downstream stages via three stage-exit conditions. Exercises both stage-exit types (wait-for-user + exit-only), the user-selected-stage entry rule, branching edge labels, exitToStageId routing, the edge handle override path, the selected-tasks-completed (marks-complete:false) and required-tasks-completed (marks-complete:true) exit rules, and skeleton placeholder tasks on every stage.
+  A single Triage stage that wide fan-outs (1→3) to three downstream stages via three stage-exit conditions. Exercises both stage-exit types (wait-for-user + exit-only), the user-selected-stage entry rule, exitToStageId routing with conditionExpression branch discrimination, the selected-tasks-completed (marks-complete:false) and required-tasks-completed (marks-complete:true) exit rules, and skeleton placeholder tasks on every stage (edges retired — branch routing is condition-driven).
 
   > **Unresolved-fallback rule.** None of the per-stage process tasks are registered in the tenant. For each, the agent MUST leave `taskTypeId` as `<UNRESOLVED: ...>`, omit inputs/outputs, and emit a skeleton process task. DO NOT fabricate a taskTypeId. Each skeleton's TaskId is still captured so the stage-exit `selected-tasks-completed` / `required-tasks-completed` rules and the task-entry conditions still reference it.
 
@@ -127,11 +126,6 @@ initial_prompt: |
   | Process Reference (Name) | Triage Review Process |
   | Folder | Shared |
   | taskTypeId | `<UNRESOLVED: not registered in tenant>` (do NOT fabricate) |
-
-  Edge handles:
-  - Triage → Approved Path: label "Approved", sourceHandle "right", targetHandle "left" (default horizontal routing).
-  - Triage → Rejected Path: label "Rejected", sourceHandle "bottom", targetHandle "top" (explicit vertical routing so the Rejected edge drops down instead of using the default right→left layout).
-  - Triage → Pending Path: label "Pending". Default handles.
 
   ### Stage 2: Approved Path (`approvedPath`)
   **Type:** Stage
@@ -269,7 +263,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Triage WIDE fan-outs to 3 branches; exits cover wait-for-user + exit-only(marks-complete:false) + exit-only(marks-complete:TRUE on Pending); Approved/Rejected exits use selected-tasks-completed referencing the Triage Review placeholder task, Pending exit uses required-tasks-completed; every stage carries a process-typed skeleton placeholder task; Approved Path has user-selected-stage entry; Approved/Rejected/Pending labels present; Triage→Rejected edge carries non-default handles (sourceHandle=bottom, targetHandle=top)"
+    description: "Triage WIDE fan-outs to 3 branches via stage-exit conditions routing through exitToStageId; exits cover wait-for-user + exit-only(marks-complete:false) + exit-only(marks-complete:TRUE on Pending); Approved/Rejected exits use selected-tasks-completed referencing the Triage Review placeholder task, Pending exit uses required-tasks-completed; branch discrimination via conditionExpression on vars.decision; every stage carries a process-typed skeleton placeholder task; Approved Path has user-selected-stage entry (edges retired)"
     command: "python3 $TASK_DIR/check_branching_exit.py"
     timeout: 720
     expected_exit_code: 0

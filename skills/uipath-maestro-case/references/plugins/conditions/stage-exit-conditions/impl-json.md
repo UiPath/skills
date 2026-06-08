@@ -38,7 +38,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 
 | `type` | When to pick |
 |---|---|
-| `exit-only` | Default — stage exits normally along configured edges |
+| `exit-only` | Default — stage exits normally; next stage resolves via entry conditions (or `exitToStageId` when set). No edges. |
 | `wait-for-user` | Manual user decision required |
 | `return-to-origin` | Rework / exception loop — sends the case back to the previous stage |
 

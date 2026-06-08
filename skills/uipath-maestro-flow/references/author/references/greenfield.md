@@ -224,10 +224,11 @@ Manual HTTP is the **bottom of the ladder** — only the search returning no con
 
 ```bash
 uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
+uip maestro flow registry search "<keyword>" --local --output json  # keyword search across in-solution nodes
 uip maestro flow registry get "<node-type>" --local --output json  # get full manifest for a local node
 ```
 
-Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first.
+Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first. `search --local` omits `AvailableOnTenant` — drop it from `--output-filter` projections.
 
 ## Step 4 — Build the flow **[T2]**
 
