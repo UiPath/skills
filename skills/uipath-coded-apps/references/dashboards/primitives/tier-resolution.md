@@ -1,68 +1,89 @@
 # Tier Resolution — Classifying Metrics
 
-Every metric in `intent.json` has a `tier` field you must set during Phase 3.
+Every metric in `intent.json` has a `tier` field you must set during Phase 2.
 
 ## Tier Decision Tree
 
 ```
 User asks for metric
   ↓
-T0 — Impossible check (FIRST — before anything else)
-  → Does the metric match the Hard Refuse list?
-    → YES: refuse only that metric, explain why, offer the closest alternative
-           (other metrics in the request still build normally)
+T0 — Check the Hard Refuse list first
+  → Does the metric match? → YES: refuse only that metric, offer alternative
   ↓
 T1 — Catalog check
-  → Exact name or alias match in capability-registry.json t1?
+  → Exact name or alias match in capability-registry.json?
     → YES: tier = "T1"
   ↓
 T2 — Parametric check
-  → Maps to a known SDK service + user-controlled filter parameter?
-    → YES: tier = "T2", include compact params object
+  → Known SDK service + user-controlled filter value?
+    → YES: tier = "T2", include params object
   ↓
 T3 — Custom
-  → tier = "T3"
-  → T3-SDK: agent writes fnBody
+  → tier = "T3", write fnBody
 ```
 
-## Tier 1 — Known catalog metrics
+---
+
+## T0 — Hard Refuse
+
+**Refuse ONLY the specific metric — never the whole dashboard.** Always offer the closest alternative and build the remaining widgets normally.
+
+| User asks for | Why it's impossible | Offer instead |
+|--------------|---------------------|---------------|
+| Agent cost in dollars | Platform tracks AGU units, not currency | `invocation-volume` for AGU consumption |
+| CPU or memory per agent | Not exposed by any API | `agent-latency` for fleet-level latency trends |
+| Who triggered a job | Job records carry no end-user identity | `job-completion-trend` grouped by process |
+| Data from multiple tenants | Dashboards are scoped to one tenant only | Multi-widget view within the same tenant |
+| SLA breach percentage | Platform has no SLA metadata | Compute success rate from `job-completion-trend` |
+| Error message text or stack traces | No aggregation endpoint exists | `agent-errors` for error counts |
+| Governance policy summary | Requires a specific policy UUID — the build cannot infer it | Ask the user for the UUID, then use T3-SDK with the `Governance` service |
+
+---
+
+## T1 — Known catalog metrics
+
+These are pre-built. The build script generates the entire widget from the metric name — no additional configuration needed.
 
 | Metric name | What it shows |
 |-------------|--------------|
-| `agent-errors` | Daily error counts as trend line |
-| `invocation-volume` | AGU consumption over time as area chart (uses getConsumptionTimeline — xKey: timeSlice, yKey: aguConsumption) |
+| `agent-errors` | Daily error counts as a trend line |
+| `invocation-volume` | AGU consumption over time |
 | `top-failing-agents` | Agents ranked by error count |
 | `active-agents-kpi` | Count of agents with at least one run |
-| `agent-latency` | P50/P95 latency over time |
+| `agent-latency` | P50 and P95 execution time side by side |
 | `job-failures` | Processes ranked by failure count |
 | `job-completion-trend` | Completed jobs per day |
 
-## Tier 2 — Parametric metrics
+---
 
-| Metric name | What it does | Required params |
-|-------------|-------------|----------------|
-| `jobs-duration-threshold` | Jobs running longer than threshold (minutes) | `{ threshold: number, direction: "gt" }` |
-| `jobs-by-state` | Jobs filtered by execution state | `{ value: "Faulted" \| "Running" \| "Stopped" \| "Successful" }` |
+## T2 — Parametric metrics
+
+The build script generates a filtered SDK query from the metric name and the filter values the user provides.
+
+| Metric name | What it does | Params |
+|-------------|-------------|--------|
+| `jobs-duration-threshold` | Jobs running longer than N minutes | `{ threshold: number, direction: "gt" }` |
+| `jobs-by-state` | Jobs in a specific execution state | `{ value: "Faulted" \| "Running" \| "Stopped" \| "Successful" }` |
 | `tasks-by-status` | Action Center tasks filtered by status | `{ value: "Pending" \| "Completed" \| "Unassigned" }` |
-| `cases-running-above` | Maestro processes where running case count exceeds threshold | `{ threshold: number, direction: "gt" }` |
+| `cases-running-above` | Maestro processes with high active case counts | `{ threshold: number, direction: "gt" }` |
 
-T2 params format:
 ```json
-// Numeric filter
+// Numeric filter example
 { "name": "jobs-duration-threshold", "tier": "T2", "params": { "threshold": 30, "direction": "gt" } }
 
-// String equality filter
+// String filter example
 { "name": "jobs-by-state", "tier": "T2", "params": { "value": "Faulted" } }
-{ "name": "tasks-by-status", "tier": "T2", "params": { "value": "Pending" } }
 ```
 
-## Tier 3 — Custom metrics
+---
 
-Use when the metric doesn't match T1 or T2. There is now one path: T3-SDK.
+## T3 — Custom metrics
 
-All Insights metrics that aren't in the T1 catalog should use T3-SDK with the Insights SDK service classes — the same pattern as all other SDK services.
+Use when the metric doesn't match T1 or T2. The agent writes an async function body (`fnBody`) that fetches and shapes the data.
 
-### T3-SDK: agent writes an async function body
+`displayAs` must be one of: `kpi-card`, `ranked-table`, `data-table`.
+
+### Example — ranked table from Insights
 
 ```json
 {
@@ -76,9 +97,8 @@ All Insights metrics that aren't in the T1 catalog should use T3-SDK with the In
 }
 ```
 
-`displayAs` must be one of: `kpi-card`, `ranked-table`, `data-table`.
+### Example — KPI card
 
-For `kpi-card`, also provide `valueField` (which field to display) and optionally `valueLabel`:
 ```json
 {
   "name": "total-active-agents",
@@ -92,29 +112,21 @@ For `kpi-card`, also provide `valueField` (which field to display) and optionall
 ```
 
 ### fnBody rules
-- Returns `Promise<Array<Record<string, unknown>>>`
+
+- Must return `Promise<Array<Record<string, unknown>>>`
 - Use dynamic import: `const { ServiceClass } = await import('@uipath/uipath-typescript/...')`
 - Use constructor injection: `new ServiceClass(sdk as never)`
 - `sdk` and `getToken` are available as parameters — do not import `useAuth`
 - No JSX, no static top-level imports
-- Time constants available: `NOW`, `ONE_DAY_AGO`, `SEVEN_DAYS_AGO`, `THIRTY_DAYS_AGO`, `NINETY_DAYS_AGO`
+- Time constants (`Date` objects): `NOW`, `ONE_DAY_AGO`, `SEVEN_DAYS_AGO`, `THIRTY_DAYS_AGO`, `NINETY_DAYS_AGO`
 
-### SDK service class reference
+---
 
-Use constructor injection in every fnBody. Never use dot-chain syntax.
+## SDK service reference
 
-```typescript
-// Correct
-const svc = new Jobs(sdk as never)
-const results = await svc.getAll({})
-
-// Wrong — sdk.jobs does not exist
-const results = await sdk.jobs.getAll({})
-```
-
-| Service class | Import subpath | Key fields |
-|--------------|----------------|------------|
-| `Agents` | `@uipath/uipath-typescript/agents` | 14 Insights methods for agent metrics |
+| Service | Import | Key response fields |
+|---------|--------|---------------------|
+| `Agents` | `@uipath/uipath-typescript/agents` | 14 Insights methods — errors, latency, consumption, incidents |
 | `Governance` | `@uipath/uipath-typescript/governance` | `getPolicyTraces()`, `getOperationSummary()` |
 | `Memory` | `@uipath/uipath-typescript/memory` | `getTimeline()`, `getCallsTimeline()`, `getTopSpaces()` |
 | `Jobs` | `@uipath/uipath-typescript/jobs` | `key`, `state`, `processName`, `startTime`, `endTime` |
@@ -125,98 +137,33 @@ const results = await sdk.jobs.getAll({})
 | `Entities` | `@uipath/uipath-typescript/entities` | `id`, `name`, `displayName`, `entityType` |
 | `Cases` | `@uipath/uipath-typescript/cases` | `processKey`, `runningCount`, `completedCount` |
 
-**Insights methods take positional Date params** (not options object):
+**Insights methods take two positional `Date` arguments**, not an options object:
 ```typescript
-// Correct — startTime and endTime are positional Date arguments
+// Correct
 new Agents(sdk as never).getErrorsTimeline(THIRTY_DAYS_AGO, NOW)
 
-// Wrong — options style does not match SDK signature
+// Wrong — options syntax does not match the SDK signature
 new Agents(sdk as never).getErrors({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
 ```
 
-Time constants are `Date` objects: `NOW`, `ONE_DAY_AGO`, `SEVEN_DAYS_AGO`, `THIRTY_DAYS_AGO`, `NINETY_DAYS_AGO`.
-
-Note: `getAll()` on non-Insights services returns paginated or non-paginated response. Access items via `result?.items ?? result?.value ?? []`.
-
-## T0 Hard Refuse List
-
-**Refuse ONLY the specific metric — not the whole dashboard.** Offer to build the remaining metrics. Always provide the closest achievable alternative.
-
-Checked before T1/T2/T3. If a metric matches any row below, it cannot be built in any tier — the data simply does not exist in the platform.
-
-| User asks for | Reason | Suggest instead |
-|--------------|--------|----------------|
-| Agent cost in dollars | Platform tracks AGU, not currency | `invocation-volume` for AGU consumption |
-| CPU/memory per agent | Not exposed by any API | `agent-latency` for fleet-level latency |
-| Who triggered a job | Job records carry no end-user identity | `job-completion-trend` by process |
-| Cross-tenant data | Single-tenant scope only | Multi-widget view within one tenant |
-| SLA breach % | No SLA metadata in platform | Success rate from `job-completion-trend` |
-| Error message text | No aggregation endpoint | `agent-errors` for counts |
-| Governance policy summary | Requires a specific policy UUID the build script cannot infer | Ask user for the UUID, then use T3-SDK with `Governance` from `@uipath/uipath-typescript/governance` |
-
-## SDK usage patterns
-
-Patterns specific to how the dashboard skill uses the SDK inside generated widget code.
-
-### Constructor injection — use `as never`, not bare `sdk`
-
-The SDK docs show `new Jobs(sdk)` but the TypeScript types require a cast:
-
-```typescript
-// ✓ Correct — used in every T3-SDK fnBody and T2 compiled code
-const svc = new Jobs(sdk as never)
-
-// ✗ Wrong — type error at tsc
-const svc = new Jobs(sdk)
-
-// ✗ Wrong — sdk.jobs does not exist at runtime
-sdk.jobs.getAll()
-```
-
-### Paginated response normalisation
-
-SDK methods return either `PaginatedResponse<T>` or `NonPaginatedResponse<T>` depending on options passed. Always normalise:
-
+**Paginated responses** — normalise with:
 ```typescript
 const items = result?.items ?? result?.value ?? []
 ```
 
-- `PaginatedResponse<T>` → items are under `.items`
-- `NonPaginatedResponse<T>` → items are under `.value`
-- Either can be `undefined` if the call returns nothing
-
-### Dynamic import inside T3-SDK fnBody
-
-The generated widget file has no static SDK imports. Service classes must be loaded dynamically:
-
-```typescript
-// Inside fnBody — this is valid TypeScript in an async function
-const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-const svc = new Jobs(sdk as never)
-const result = await svc.getAll({})
-const items = result?.items ?? result?.value ?? []
-```
-
-Static imports at the top of fnBody are not available — the shell template provides only React and dashboard chrome imports.
-
-### Duration — not a direct field, compute it
-
-`JobGetResponse` does not have a `duration` field. Compute from timestamps:
-
+**Duration** is not a response field on `Jobs`. Compute it:
 ```typescript
 const durationMs = new Date(j.endTime).getTime() - new Date(j.startTime).getTime()
-const durationMins = Math.round(durationMs / 60_000)
 ```
 
-### fnBody contract
-
-Every T3-SDK `fnBody` must satisfy this interface:
-
+**Constructor injection** requires the `as never` cast:
 ```typescript
-type DataFn = (
-  sdk: UiPathClient,         // from useAuth().sdk
-  getToken: () => Promise<string>  // from useAuth().getToken
-) => Promise<Record<string, unknown>[]>
-```
+// ✓ Correct
+const svc = new Jobs(sdk as never)
 
-The function receives `sdk` and `getToken` as arguments — do not import `useAuth` inside fnBody.
+// ✗ Wrong — TypeScript error without the cast
+const svc = new Jobs(sdk)
+
+// ✗ Wrong — sdk.jobs doesn't exist at runtime
+sdk.jobs.getAll()
+```

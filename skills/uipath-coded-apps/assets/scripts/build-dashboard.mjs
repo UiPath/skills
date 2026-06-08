@@ -59,10 +59,7 @@ const REGISTRY = JSON.parse(readFileSync(resolve(__dirname, 'capability-registry
  * @property {number}      [params.threshold]
  * @property {string}      [params.direction] - 'gt'|'lt'|'eq'|'gte'|'lte'|'neq'
  * @property {string}      [fnBody]      - T3-SDK: async function body using sdk.*
- * @property {string}      [namespace]   - T3-Insights: Insights RTM namespace
- * @property {string}      [method]      - T3-Insights: endpoint method name
- * @property {string}      [template]    - T3-Insights: widget template name
- * @property {string}      [displayAs]   - T3-SDK: widget template name
+ * @property {string}      [displayAs]   - T3-SDK: widget template name (kpi-card | ranked-table | data-table)
  * @property {string}      [valueField]  - T3-SDK kpi-card: which field to display as the headline number
  * @property {string}      [valueLabel]  - T3-SDK kpi-card: label shown below the headline (e.g. "running jobs")
  * @property {string}      [dataSelector]
@@ -334,7 +331,7 @@ function applyTemplate(templateName, subs) {
 }
 
 /**
- * Generate a detail view file for a T1 or T3-Insights widget.
+ * Generate a detail view file for a T1 widget.
  * Columns are auto-detected from the first data row at runtime via autoColumns().
  * @param {{ componentName: string, title: string, description: string, dataHook: string, dataSelector: string }} widget
  * @returns {string} Full TypeScript file content

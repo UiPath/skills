@@ -203,7 +203,7 @@ Where `<SCAFFOLD_DIR>` is the project directory + `/../scaffold` relative to SKI
 **When to read:**
 - **T2 metrics**: Read the `.d.ts` for the service in the registry entry (e.g. `dist/jobs/index.d.ts` for `jobs-by-state`). Verify the `filterField` exists on the response type.
 - **T3-SDK metrics**: Read the `.d.ts` for any service the `fnBody` imports (e.g. if fnBody uses `Jobs`, read `dist/jobs/index.d.ts`). Verify field names used in `.map()` expressions match the response type.
-- **T1 and T3-Insights**: Skip — they use Insights RTM via `useInsights`, which has no SDK types yet.
+- **T1 metrics**: Skip — field names come from the capability registry and are pre-verified against the SDK response types.
 
 **Fire all relevant reads in ONE parallel message.** If the scaffold's node_modules doesn't exist yet (pre-warm still running), skip this phase and rely on the SDK docs from Turn 2.
 
@@ -281,19 +281,22 @@ Opening your dashboard at http://localhost:57173
 
 **Event → display mapping:**
 
-| Event | Show to user |
-|-------|-------------|
-| `PREWARM_DONE` | (silent — already running) |
+| Event | What to show the user |
+|-------|----------------------|
+| `PREWARM_START` | (silent — installing in background while you read the plan) |
+| `PREWARM_DONE` | (silent — dependencies ready) |
 | `SCAFFOLD_READY` | (silent) |
 | `ENV_WRITTEN` | (silent) |
-| `WIDGET_READY:{"name":"X",...}` | `  ✓ X` (one line per widget) |
-| `T3_RETRY:{...}` | `  ↻ [Name] — refining query…` then retry |
-| `TSC_PASS` | `  ✓ TypeScript clean` |
-| `AUTH_MISSING:{...}` | Pause, tell user to complete OAuth setup |
-| `PARTIAL_BUILD_DETECTED` | `  ↻ Resuming previous build…` |
-| `SERVER_READY:{...}` | `Opening your dashboard at [url]` |
-| `BUILD_RESULT:{...}` | Open previewUrl in browser |
-| `PREWARM_FAILED:{...}` | "Dependency install failed — [stderr excerpt]. Try running `npm ci` manually in [dir]." |
+| `WIDGET_READY:{"name":"X","index":N,"total":M}` | `  ✓ X  (N of M)` |
+| `T3_RETRY:{"widget":"X","errors":[...]}` | `  ↻ X — adjusting code, one moment…` — update fnBody and re-run |
+| `TSC_PASS` | `  ✓ All code validated` |
+| `AUTH_MISSING` | Pause — ask the user for a client ID before continuing |
+| `PARTIAL_BUILD_DETECTED` | `  ↻ Picking up from where we left off…` |
+| `SERVER_READY:{"url":"..."}` | `Opening your dashboard…` |
+| `BUILD_RESULT:{"success":true,...}` | Open previewUrl in browser, then show success message |
+| `PREWARM_FAILED` | "Dependency install failed. If this keeps happening, run `npm ci` manually in [projectDir] and try again." |
+
+If `T3_RETRY` fires and a second attempt still fails (exit code 2 again): tell the user "I couldn't get that widget to compile. I've removed it from the dashboard — the rest built cleanly. You can re-add it once we figure out the right query."
 
 ### Success message
 

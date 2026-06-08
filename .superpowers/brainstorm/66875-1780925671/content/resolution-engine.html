@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resolution Engine — How it Works</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #080b14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #e2e8f0; padding: 32px 28px 60px; }
+h1 { font-size: 22px; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+.sub { font-size: 13px; color: #475569; margin-bottom: 40px; letter-spacing: 0.5px; text-transform: uppercase; }
+code { font-family: 'Fira Code', 'Cascadia Code', monospace; }
+
+/* ── Flow arrow between tiers ── */
+.flow { text-align: center; font-size: 28px; color: #1e293b; padding: 8px 0; line-height: 1; }
+
+/* ── Tier card ── */
+.tier { border-radius: 12px; padding: 0; margin-bottom: 12px; overflow: hidden; }
+
+.tier-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+}
+.tier-badge {
+  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 4px 10px; border-radius: 4px;
+  flex-shrink: 0; white-space: nowrap;
+}
+.tier-title { font-size: 17px; font-weight: 700; }
+.tier-desc { font-size: 12px; color: #64748b; margin-top: 2px; }
+.tier-speed { margin-left: auto; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+.tier-body { padding: 0 20px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ── Example flow ── */
+.ex-flow { display: flex; flex-direction: column; gap: 6px; }
+.ex-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #334155; margin-bottom: 2px; }
+
+.step {
+  border-radius: 6px; padding: 10px 12px;
+  font-size: 12px; line-height: 1.5;
+}
+.step-arrow { color: #334155; text-align: center; font-size: 14px; padding: 1px 0; }
+
+/* ── Code block ── */
+.code-block {
+  background: rgba(0,0,0,0.4); border-radius: 8px; padding: 12px 14px;
+  font-family: 'Fira Code', monospace; font-size: 11px; line-height: 1.8;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.k { color: #818cf8; }  /* keyword / key */
+.v { color: #fbbf24; }  /* value string */
+.n { color: #34d399; }  /* number */
+.c { color: #475569; }  /* comment */
+.m { color: #f472b6; }  /* method call */
+.t { color: #94a3b8; }  /* text */
+
+/* ── T1 ── */
+.t1 { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.25); }
+.t1 .tier-badge { background: rgba(16,185,129,0.2); color: #34d399; }
+.t1 .tier-title { color: #6ee7b7; }
+.t1 .tier-speed { color: #34d399; }
+.t1-step { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); }
+
+/* ── T2 ── */
+.t2 { background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.25); }
+.t2 .tier-badge { background: rgba(99,102,241,0.2); color: #a78bfa; }
+.t2 .tier-title { color: #c4b5fd; }
+.t2 .tier-speed { color: #a78bfa; }
+.t2-step { background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15); }
+
+/* ── T3 ── */
+.t3 { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.25); }
+.t3 .tier-badge { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.t3 .tier-title { color: #fcd34d; }
+.t3 .tier-speed { color: #fbbf24; }
+.t3-step { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); }
+
+/* ── Hard Refuse ── */
+.refuse { background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); }
+.refuse-inner { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* ── Output widget preview ── */
+.widget-preview {
+  border-radius: 8px; padding: 14px; border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+}
+.wp-title { font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px; }
+.wp-chart { height: 48px; border-radius: 4px; margin-top: 6px; position: relative; overflow: hidden; }
+.wp-bar { position: absolute; bottom: 0; width: 12%; border-radius: 2px 2px 0 0; }
+
+.pill { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+
+/* ── Summary row ── */
+.summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 28px; }
+.sum-card { border-radius: 10px; padding: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Resolution Engine</h1>
+<p class="sub">How a metric name becomes a TypeScript widget — with examples</p>
+
+<!-- ══ ENTRY POINT ══ -->
+<div style="background:rgba(255,255,255,0.03);border:1px solid #1e293b;border-radius:10px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;">
+  <div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#334155;text-transform:uppercase;margin-bottom:4px;">Entry point — intent.json</div>
+    <div style="font-family:monospace;font-size:12px;color:#94a3b8;">
+      { <span class="k">"name"</span>: <span class="v">"agent-errors"</span>, <span class="k">"tier"</span>: <span class="v">"T1"</span> }
+    </div>
+  </div>
+  <div style="color:#1e293b;font-size:28px;flex-shrink:0;">→</div>
+  <div style="font-size:12px;color:#475569;">The agent writes only a metric name + tier. The build script does everything else.</div>
+</div>
+
+<!-- ══ TIER 1 ══ -->
+<div class="tier t1">
+  <div class="tier-header">
+    <span class="tier-badge">Tier 1</span>
+    <div>
+      <div class="tier-title">Catalog — Pure Template Substitution</div>
+      <div class="tier-desc">8 known metrics · exact registry match · agent writes nothing except the name</div>
+    </div>
+    <span class="tier-speed">⚡ &lt;1s / widget</span>
+  </div>
+  <div class="tier-body">
+
+    <div class="ex-flow">
+      <div class="ex-label">Step-by-step — "agent-errors"</div>
+
+      <div class="step t1-step">
+        <span style="color:#34d399;font-weight:700;">1</span>
+        <code style="color:#fbbf24;"> resolveMetric({ name: "agent-errors", tier: "T1" })</code>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="step t1-step">
+        <span style="color:#34d399;font-weight:700;">2</span>  Look up <code style="color:#fbbf24;">"agent-errors"</code> in <code style="color:#94a3b8;">capability-registry.json</code><br>
+        <span style="color:#64748b;font-size:11px;">→ namespace: "agents" · method: "getErrors" · template: "line-chart"</span>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="step t1-step">
+        <span style="color:#34d399;font-weight:700;">3</span>  <code style="color:#fbbf24;">buildT1WidgetSpec(metric, entry, "30d")</code><br>
+        <span style="color:#64748b;font-size:11px;">→ derives dataHook, icon, deltaDir, columns from registry defaults</span>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="step t1-step">
+        <span style="color:#34d399;font-weight:700;">4</span>  <code style="color:#fbbf24;">applyTemplate("line-chart", subs)</code><br>
+        <span style="color:#64748b;font-size:11px;">→ substitute 19 &lt;PLACEHOLDER&gt; markers in template file</span>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="step t1-step">
+        <span style="color:#34d399;font-weight:700;">✓</span>  Write <code style="color:#94a3b8;">AgentErrors.tsx</code> — TypeScript always valid (pre-tested template)
+      </div>
+    </div>
+
+    <div>
+      <div class="ex-label">Generated widget code (key lines)</div>
+      <div class="code-block">
+<span class="c">// dataHook — fully derived by build script</span><br>
+<span class="k">const</span> { data } = <span class="m">useInsights</span>&lt;...&gt;(<br>
+&nbsp;&nbsp;<span class="v">'agents.getErrors'</span>,<br>
+&nbsp;&nbsp;{ startTime: <span class="n">THIRTY_DAYS_AGO</span>, endTime: <span class="n">NOW</span> }<br>
+)<br><br>
+<span class="c">// chartData auto-extracted via dataSelector</span><br>
+<span class="k">const</span> chartData = <span class="t">(data as any)?.data ?? []</span><br><br>
+<span class="c">// layout from registry: down-good, AlertTriangle icon</span><br>
+&lt;<span class="m">LineChart</span> data={chartData}&gt;<br>
+&nbsp;&nbsp;&lt;<span class="m">XAxis</span> dataKey=<span class="v">"date"</span> tickFormatter={…}/&gt;<br>
+&nbsp;&nbsp;&lt;<span class="m">Line</span> dataKey=<span class="v">"value"</span> /&gt;<br>
+&lt;/<span class="m">LineChart</span>&gt;
+      </div>
+
+      <div class="ex-label" style="margin-top:12px;">T1 catalog (all 8 metrics)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">
+        <span class="pill" style="background:rgba(16,185,129,0.15);color:#34d399;">agent-errors</span>
+        <span class="pill" style="background:rgba(16,185,129,0.15);color:#34d399;">invocation-volume</span>
+        <span class="pill" style="background:rgba(16,185,129,0.15);color:#34d399;">top-failing-agents</span>
+        <span class="pill" style="background:rgba(16,185,129,0.15);color:#34d399;">active-agents-kpi</span>
+        <span class="pill" style="background:rgba(16,185,129,0.15);color:#34d399;">agent-latency</span>
+        <span class="pill" style="background:rgba(16,185,129,0.15);color:#34d399;">job-failures</span>
+        <span class="pill" style="background:rgba(16,185,129,0.15);color:#34d399;">job-completion-trend</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="flow">↓</div>
+
+<!-- ══ TIER 2 ══ -->
+<div class="tier t2">
+  <div class="tier-header">
+    <span class="tier-badge">Tier 2</span>
+    <div>
+      <div class="tier-title">Parametric — Typed Descriptor Compiled to TypeScript</div>
+      <div class="tier-desc">Known SDK service + user-supplied filter values · agent writes params only, not code</div>
+    </div>
+    <span class="tier-speed">⚡ &lt;2s / widget</span>
+  </div>
+  <div class="tier-body">
+
+    <div class="ex-flow">
+      <div class="ex-label">Step-by-step — "queues where failure &gt; 20"</div>
+
+      <div class="code-block" style="margin-bottom:8px;">
+<span class="c">// Agent writes in intent.json:</span><br>
+{<br>
+&nbsp;&nbsp;<span class="k">"name"</span>: <span class="v">"queue-failure-threshold"</span>,<br>
+&nbsp;&nbsp;<span class="k">"tier"</span>: <span class="v">"T2"</span>,<br>
+&nbsp;&nbsp;<span class="k">"params"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"threshold"</span>: <span class="n">20</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"direction"</span>: <span class="v">"gt"</span><br>
+&nbsp;&nbsp;}<br>
+}
+      </div>
+
+      <div class="step t2-step">
+        <span style="color:#a78bfa;font-weight:700;">1</span>  Registry lookup → Queues service, <code>getAll()</code>, filterField: <code>"failureCount"</code>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="step t2-step">
+        <span style="color:#a78bfa;font-weight:700;">2</span>  JSON schema validation of params (op must be gt/lt/eq/gte/lte/neq)
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="step t2-step">
+        <span style="color:#a78bfa;font-weight:700;">3</span>  <code style="color:#c4b5fd;">compileT2ToTypeScript(descriptor)</code> → safe TS function body
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="step t2-step">
+        <span style="color:#a78bfa;font-weight:700;">✓</span>  Inject into sdk-data-table template — agent wrote <em>zero</em> TypeScript
+      </div>
+    </div>
+
+    <div>
+      <div class="ex-label">What compileT2ToTypeScript produces</div>
+      <div class="code-block">
+<span class="c">// Build script compiles this from params — never agent-authored:</span><br>
+<span class="k">const</span> svc = <span class="k">new</span> <span class="m">Queues</span>(sdk <span class="k">as</span> never)<br>
+<span class="k">const</span> result = <span class="k">await</span> svc.<span class="m">getAll</span>({})<br>
+<span class="k">const</span> items = (result?.items ?? [])<br>
+&nbsp;&nbsp;<span class="k">as</span> Array&lt;Record&lt;string, number&gt;&gt;<br><br>
+<span class="c">// "gt" → ">" · threshold=20 · filterField="failureCount"</span><br>
+<span class="k">const</span> filtered = items.<span class="m">filter</span>(<br>
+&nbsp;&nbsp;item =&gt; (item.failureCount ?? <span class="n">0</span>) &gt; <span class="n">20</span><br>
+)<br>
+items.<span class="m">sort</span>((a, b) =&gt; b.failureCount - a.failureCount)<br>
+<span class="k">return</span> filtered
+      </div>
+
+      <div style="margin-top:10px;font-size:11px;color:#475569;line-height:1.6;">
+        The agent only provided <code style="color:#fbbf24;">threshold: 20</code> and <code style="color:#fbbf24;">direction: "gt"</code>.<br>
+        The build script derived: import path, class name, method, field name, JS operator, sort order.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="flow">↓</div>
+
+<!-- ══ TIER 3 ══ -->
+<div class="tier t3">
+  <div class="tier-header">
+    <span class="tier-badge">Tier 3</span>
+    <div>
+      <div class="tier-title">Custom — Two Sub-paths for Novel Metrics</div>
+      <div class="tier-desc">T3-Insights: useInsights with a valid InsightsKey · T3-SDK: typed fnBody with tsc enforcement</div>
+    </div>
+    <span class="tier-speed">⏱ 5–10s + retry</span>
+  </div>
+
+  <!-- T3-Insights -->
+  <div style="padding: 0 20px 16px; border-bottom: 1px solid rgba(245,158,11,0.1);">
+    <div class="ex-label" style="margin-bottom:8px;">Sub-path A — T3-Insights (validated InsightsKey, standard template)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div class="code-block">
+<span class="c">// Agent writes:</span><br>
+{<br>
+&nbsp;&nbsp;<span class="k">"name"</span>: <span class="v">"incident-distribution"</span>,<br>
+&nbsp;&nbsp;<span class="k">"tier"</span>: <span class="v">"T3"</span>,<br>
+&nbsp;&nbsp;<span class="k">"title"</span>: <span class="v">"Incident Types"</span>,<br>
+&nbsp;&nbsp;<span class="k">"namespace"</span>: <span class="v">"agents"</span>,<br>
+&nbsp;&nbsp;<span class="k">"method"</span>: <span class="v">"getIncidentDistribution"</span>,<br>
+&nbsp;&nbsp;<span class="k">"template"</span>: <span class="v">"donut-chart"</span>,<br>
+&nbsp;&nbsp;<span class="k">"dataSelector"</span>: <span class="v">"(data as any)?.data ?? []"</span><br>
+}
+        </div>
+      </div>
+      <div class="ex-flow">
+        <div class="step t3-step">
+          <span style="color:#fbbf24;font-weight:700;">1</span>  Check <code>"agents.getIncidentDistribution"</code> is in <code>VALID_INSIGHTS_KEYS</code> (28 keys)<br>
+          <span style="color:#64748b;font-size:11px;">→ ✓ valid — build continues. If invalid, fails immediately with the valid list.</span>
+        </div>
+        <div class="step-arrow">↓</div>
+        <div class="step t3-step">
+          <span style="color:#fbbf24;font-weight:700;">2</span>  Build script derives <code>useInsights('agents.getIncidentDistribution', ...)</code> hook
+        </div>
+        <div class="step-arrow">↓</div>
+        <div class="step t3-step">
+          <span style="color:#fbbf24;font-weight:700;">✓</span>  Applies to <code>donut-chart</code> template — same path as T1, no agent TypeScript
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- T3-SDK -->
+  <div style="padding: 16px 20px 20px;">
+    <div class="ex-label" style="margin-bottom:8px;">Sub-path B — T3-SDK (agent writes async fn body, tsc enforces the interface)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div class="code-block">
+<span class="c">// Agent writes fnBody (just the data logic):</span><br>
+<span class="k">const</span> { Jobs } = <span class="k">await</span> <span class="m">import</span>(<br>
+&nbsp;&nbsp;<span class="v">'@uipath/uipath-typescript/jobs'</span><br>
+)<br>
+<span class="k">const</span> svc = <span class="k">new</span> <span class="m">Jobs</span>(sdk <span class="k">as</span> never)<br>
+<span class="k">const</span> r = <span class="k">await</span> svc.<span class="m">getAll</span>({ state: <span class="v">'Running'</span> })<br>
+<span class="k">return</span> (r?.items ?? []).<span class="m">map</span>(<br>
+&nbsp;&nbsp;(j: any) =&gt; ({<br>
+&nbsp;&nbsp;&nbsp;&nbsp;name: j.processName,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;state: j.state<br>
+&nbsp;&nbsp;})<br>
+)
+        </div>
+      </div>
+      <div class="ex-flow">
+        <div class="step t3-step">
+          <span style="color:#fbbf24;font-weight:700;">1</span>  Build script injects fnBody into <code>t3-shell.tsx.template</code><br>
+          <span style="color:#64748b;font-size:11px;">→ Component shell (card, loading, error boundary) is always deterministic</span>
+        </div>
+        <div class="step-arrow">↓</div>
+        <div class="step t3-step">
+          <span style="color:#fbbf24;font-weight:700;">2</span>  <code style="color:#fbbf24;">tsc --noEmit</code> on the generated file<br>
+          <span style="color:#64748b;font-size:11px;">→ TypeScript enforces: fn must return Promise&lt;Row[]&gt;, no JSX, valid SDK calls</span>
+        </div>
+        <div class="step-arrow">↓</div>
+        <div class="step" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);">
+          <span style="color:#f87171;font-weight:700;">✗  If tsc fails</span> — emits <code>T3_RETRY</code> with the errors. Agent fixes fnBody. Max 1 retry, then exit 2.
+        </div>
+        <div class="step-arrow">↓</div>
+        <div class="step t3-step">
+          <span style="color:#fbbf24;font-weight:700;">✓  If tsc passes</span> — widget written. WIDGET_READY emitted.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow">↓</div>
+
+<!-- ══ HARD REFUSE ══ -->
+<div class="tier refuse" style="margin-bottom:32px;">
+  <div class="tier-header" style="padding:14px 20px 10px;">
+    <span class="tier-badge" style="background:rgba(239,68,68,0.15);color:#f87171;">Hard Refuse</span>
+    <div>
+      <div class="tier-title" style="color:#fca5a5;">Checked before any tier routing</div>
+      <div class="tier-desc">6 impossible requests · agent refuses only the metric, builds dashboard without it</div>
+    </div>
+  </div>
+  <div class="refuse-inner">
+    <div>
+      <div style="font-size:11px;color:#7f1d1d;margin-bottom:6px;font-weight:700;">❌ REFUSED</div>
+      <div style="font-size:12px;color:#6b7280;line-height:2;">
+        "agent cost in dollars"<br>
+        "CPU per agent"<br>
+        "who triggered this job"<br>
+        "cross-tenant comparison"<br>
+        "SLA breach %"<br>
+        "error stack traces"
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:#475569;margin-bottom:6px;font-weight:700;">WHY NOT POSSIBLE</div>
+      <div style="font-size:12px;color:#475569;line-height:2;">
+        Platform tracks AGU, not $<br>
+        Not exposed by any API<br>
+        No end-user identity in job records<br>
+        Single-tenant scope only<br>
+        No SLA metadata in platform<br>
+        No aggregation endpoint
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:#475569;margin-bottom:6px;font-weight:700;">OFFERED INSTEAD</div>
+      <div style="font-size:12px;color:#64748b;line-height:2;">
+        invocation-volume (AGU chart)<br>
+        agent-latency (fleet-level)<br>
+        job-completion-trend by process<br>
+        multi-widget single-tenant view<br>
+        success rate % (computable)<br>
+        agent-errors (count by type)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SUMMARY ══ -->
+<div class="summary">
+  <div class="sum-card" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);">
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:#10b981;margin-bottom:8px;">T1 KEY PROPERTY</div>
+    <div style="font-size:13px;color:#e2e8f0;line-height:1.6;">Agent writes the metric name. Build script writes all TypeScript. Zero hallucination risk.</div>
+  </div>
+  <div class="sum-card" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);">
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:#818cf8;margin-bottom:8px;">T2 KEY PROPERTY</div>
+    <div style="font-size:13px;color:#e2e8f0;line-height:1.6;">Agent writes values (threshold, direction). Build script compiles to TypeScript. No code generation by AI.</div>
+  </div>
+  <div class="sum-card" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);">
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:#fbbf24;margin-bottom:8px;">T3 KEY PROPERTY</div>
+    <div style="font-size:13px;color:#e2e8f0;line-height:1.6;">Agent writes only a function body. tsc enforces the interface. Component shell is always deterministic.</div>
+  </div>
+</div>
+
+</body>
+</html>

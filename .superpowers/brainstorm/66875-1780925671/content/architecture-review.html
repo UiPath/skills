@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Architecture Review</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #080b14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #e2e8f0; padding: 32px 28px 80px; max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 22px; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+.sub { font-size: 13px; color: #475569; margin-bottom: 40px; letter-spacing: 0.5px; text-transform: uppercase; }
+h2 { font-size: 16px; font-weight: 700; color: #f1f5f9; margin: 32px 0 12px; display: flex; align-items: center; gap: 10px; }
+h3 { font-size: 13px; font-weight: 700; color: #cbd5e1; margin: 16px 0 8px; }
+p { font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 10px; }
+code { font-family: 'Fira Code', monospace; font-size: 11px; background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 3px; }
+.verdict { display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 9px; border-radius: 4px; }
+.v-good    { background: rgba(16,185,129,0.15); color: #34d399; }
+.v-ok      { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.v-problem { background: rgba(239,68,68,0.15); color: #f87171; }
+.v-future  { background: rgba(99,102,241,0.15); color: #a78bfa; }
+
+.card { border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; }
+.card-good    { background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); }
+.card-ok      { background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.15); }
+.card-problem { background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); }
+.card-neutral { background: rgba(255,255,255,0.02); border: 1px solid #1e293b; }
+
+.card-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.card-body  { font-size: 12px; color: #64748b; line-height: 1.7; }
+.card-body strong { color: #94a3b8; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+.root-cause { border-left: 3px solid #ef4444; padding-left: 14px; margin: 10px 0; }
+.root-cause .label { font-size: 10px; font-weight: 700; color: #ef4444; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+
+.divider { height: 1px; background: #1e293b; margin: 28px 0; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+th { text-align: left; padding: 8px 12px; background: rgba(255,255,255,0.03); color: #64748b; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #1e293b; }
+td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #94a3b8; vertical-align: top; }
+td:first-child { color: #e2e8f0; font-weight: 600; }
+
+.alt-box { border-radius: 10px; padding: 18px; border: 1px solid; margin-bottom: 12px; }
+.alt-a { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.04); }
+.alt-b { border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.04); }
+.alt-c { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.04); }
+.alt-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.alt-body { font-size: 12px; color: #64748b; line-height: 1.7; }
+.pro { color: #34d399; }
+.con { color: #f87171; }
+</style>
+</head>
+<body>
+
+<h1>Architecture Review — Dashboard Skill</h1>
+<p class="sub">Is the current path right? What would we do differently?</p>
+
+<!-- ══ SECTION 1: WHAT'S WORKING ══ -->
+<h2>✅ What's working well</h2>
+
+<div class="grid-2">
+  <div class="card card-good">
+    <div class="card-title" style="color:#34d399;">Code-as-Orchestrator principle</div>
+    <div class="card-body">The core insight — agent writes a minimal <code>intent.json</code>, build script generates all TypeScript — is <strong>sound</strong>. Agent hallucination risk is contained to metric names and params, not widget code. This is the right design.</div>
+  </div>
+  <div class="card card-good">
+    <div class="card-title" style="color:#34d399;">T3-SDK tsc validation loop</div>
+    <div class="card-body">Agent writes a function body, <code>tsc --noEmit</code> validates it, exit code 2 triggers a retry. This is a clean, tight feedback loop. The only place AI-generated TypeScript can be written, and it's enforced by the compiler.</div>
+  </div>
+  <div class="card card-good">
+    <div class="card-title" style="color:#34d399;">Structured event streaming</div>
+    <div class="card-body"><code>WIDGET_READY</code>, <code>T3_RETRY</code>, <code>BUILD_RESULT</code> — each event is a single contract between the build script and the agent. Clean, testable, and easy to extend.</div>
+  </div>
+  <div class="card card-good">
+    <div class="card-title" style="color:#34d399;">Live SDK docs as source of truth</div>
+    <div class="card-body">Replacing hand-maintained <code>sdk-field-reference.md</code> with a WebFetch of the official <code>llms-full-content.txt</code> was the right call. Agent always has current field names from the actual SDK, not our snapshot.</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══ SECTION 2: ROOT PROBLEMS ══ -->
+<h2>🔴 Root problems — not symptoms</h2>
+
+<p>We've fixed many symptoms (wrong field names, blank views, TypeScript errors) but four root problems remain:</p>
+
+<div class="card card-problem">
+  <div class="card-title" style="color:#f87171;">Root Problem 1 — Everything is <code>as any</code> in T1/T2 widgets</div>
+  <div class="card-body">
+    <div class="root-cause">
+      <div class="label">The issue</div>
+      T1 and T2 generated widgets use <code>(data as any)?.data ?? []</code>. TypeScript compiles fine regardless of what field names you put in <code>yKey</code>, <code>columns</code>, or <code>dataSelector</code>. Wrong field names silently render <code>—</code>. The bugs we've been fixing (name vs processName, value vs count, etc.) are all downstream of this.
+    </div>
+    <div class="root-cause" style="border-color:#fbbf24;">
+      <div class="label" style="color:#fbbf24;">Why it exists</div>
+      The Insights RTM HTTP client returns untyped JSON. Until Insights is in the TypeScript SDK with proper response interfaces, there's no static type to validate against. <code>as any</code> is the honest reflection of that gap.
+    </div>
+    <div class="root-cause" style="border-color:#10b981;">
+      <div class="label" style="color:#10b981;">When it goes away</div>
+      When Insights lands in the SDK. Response types become concrete interfaces. <code>(data as any)</code> becomes <code>response: AgentErrorsResponse</code>. Wrong field access = compile error. The <code>autoColumns()</code> workaround becomes unnecessary.
+    </div>
+  </div>
+</div>
+
+<div class="card card-problem">
+  <div class="card-title" style="color:#f87171;">Root Problem 2 — npm ci is the bottleneck and there's no avoiding it per-build</div>
+  <div class="card-body">
+    <div class="root-cause">
+      <div class="label">The issue</div>
+      We generate a full Vite + React project per dashboard. <code>npm ci</code> runs once per project (cold: 2–5 min, warm: 30s). The pre-warm mitigates this for the confirm→build step, but first runs are always slow. Users feel it.
+    </div>
+    <div class="root-cause" style="border-color:#fbbf24;">
+      <div class="label" style="color:#fbbf24;">Why it exists</div>
+      We chose code generation over config-driven rendering. A compiled React app per dashboard is powerful but expensive to bootstrap.
+    </div>
+    <div class="root-cause" style="border-color:#10b981;">
+      <div class="label" style="color:#10b981;">Mitigation available now</div>
+      A global npm cache shared across all dashboard projects reduces warm installs to 15–30s. Set <code>npm ci --prefer-offline --cache ~/.uipath-dashboard-cache</code> — packages downloaded once, reused for every dashboard.
+    </div>
+  </div>
+</div>
+
+<div class="card card-ok">
+  <div class="card-title" style="color:#fbbf24;">Root Problem 3 — T2 is a thin tier with weak guarantees</div>
+  <div class="card-body">
+    <div class="root-cause" style="border-color:#fbbf24;">
+      <div class="label" style="color:#fbbf24;">The issue</div>
+      T2 has 1 entry (<code>jobs-duration-threshold</code>). The original <code>queue-failure-threshold</code> entry was removed because <code>QueueGetResponse</code> doesn't expose failure counts. T2 was designed for parametric SDK filtering but the SDK response shapes don't always expose what users want to filter on. The <code>filterField</code> concept only works if the field actually exists on the response type.
+    </div>
+    <div class="root-cause" style="border-color:#10b981;">
+      <div class="label" style="color:#10b981;">Assessment</div>
+      T2 is a good idea when it works. But one entry makes it look like a premature abstraction. When Insights SDK ships with richer response types, T2 can expand meaningfully. For now, it's correct but thin.
+    </div>
+  </div>
+</div>
+
+<div class="card card-problem">
+  <div class="card-title" style="color:#f87171;">Root Problem 4 — OAuth setup is a hard blocker for non-technical users</div>
+  <div class="card-body">
+    <div class="root-cause">
+      <div class="label">The issue</div>
+      Every dashboard requires an external OAuth app with specific scopes. Creating one requires <code>uip admin</code> permissions, scope discovery, and explicit Claude Code approval. If the user doesn't have admin rights, they're blocked. If the command fails, they have to create the app manually.
+    </div>
+    <div class="root-cause" style="border-color:#fbbf24;">
+      <div class="label" style="color:#fbbf24;">Why it exists</div>
+      Dashboards run on <code>localhost:57173</code>. PKCE OAuth requires a registered redirect URI. The platform won't issue tokens to unregistered apps. This is a security requirement, not a skill limitation.
+    </div>
+    <div class="root-cause" style="border-color:#10b981;">
+      <div class="label" style="color:#10b981;">Better path</div>
+      One OAuth app per tenant, created once by an admin, shared across all dashboards. The <code>clientId</code> is stored in the user's environment or retrieved from a tenant-level config. Not re-created per dashboard.
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══ SECTION 3: COMPLEXITY AUDIT ══ -->
+<h2>⚠️ Complexity that may not be paying off</h2>
+
+<table>
+  <tr>
+    <th>Component</th><th>Complexity</th><th>Is it paying off?</th>
+  </tr>
+  <tr>
+    <td>7 docs in parallel blast</td>
+    <td>Agent must load 7 files + 1 live fetch + 2 commands + prewarm simultaneously</td>
+    <td><span class="verdict v-ok">Mostly — but agents sometimes don't parallelise correctly. A startup script that prints all context in one shot would be simpler.</span></td>
+  </tr>
+  <tr>
+    <td>T2 tier</td>
+    <td>compileT2ToTypeScript(), buildT2WidgetSpec(), 1 registry entry, descriptor schema validation</td>
+    <td><span class="verdict v-ok">Too thin to justify complexity now. Becomes valuable when SDK exposes more filterable response fields.</span></td>
+  </tr>
+  <tr>
+    <td>14 widget templates</td>
+    <td>14 separate .tsx files with &lt;PLACEHOLDER&gt; substitution via text search-and-replace</td>
+    <td><span class="verdict v-ok">Works but fragile — a typo in a placeholder name is a silent failure. Typed component factories would be more robust.</span></td>
+  </tr>
+  <tr>
+    <td>viewColumns in registry</td>
+    <td>Hand-specified field names per T1 entry — source of several "shows —" bugs</td>
+    <td><span class="verdict v-problem">Partially superseded by autoColumns(). With Insights SDK, strongly typed response interfaces remove the need for both.</span></td>
+  </tr>
+  <tr>
+    <td>incremental editor (ADD/REMOVE/CHANGE/REBUILD)</td>
+    <td>classifyEditIntent(), runIncrementalEdit(), hash tracking, HAND_EDIT_DETECTED</td>
+    <td><span class="verdict v-good">Fully paying off. Hot-reload in 2–5s is a major UX win. Hash-based hand-edit protection is smart.</span></td>
+  </tr>
+  <tr>
+    <td>PID-based server lifecycle</td>
+    <td>killPreviousDevServer(), server.pid file, taskkill on Windows</td>
+    <td><span class="verdict v-good">Necessary for stable port 57173. Port stability is critical for OAuth redirect URI matching.</span></td>
+  </tr>
+</table>
+
+<div class="divider"></div>
+
+<!-- ══ SECTION 4: ALTERNATIVE APPROACHES ══ -->
+<h2>🔷 Is there a fundamentally better approach?</h2>
+
+<div class="alt-box alt-a">
+  <div class="alt-title" style="color:#34d399;">Option A — Config-driven runtime rendering (no per-dashboard compilation)</div>
+  <div class="alt-body">
+    Instead of generating TypeScript files per dashboard, generate a JSON dashboard config. A single pre-built, pre-compiled React app reads the JSON and renders widgets.<br><br>
+    <span class="pro">✓</span> Eliminates npm ci entirely — first dashboard in ~15s<br>
+    <span class="pro">✓</span> No tsc per dashboard — compile happens once for the shared app<br>
+    <span class="pro">✓</span> The JSON config is strongly typed and easy to validate<br>
+    <span class="pro">✓</span> Agent writes JSON params, not TypeScript — no hallucination in code<br>
+    <span class="con">✗</span> Loses T3-SDK flexibility — can't inject arbitrary TypeScript functions into JSON<br>
+    <span class="con">✗</span> Significant rewrite — shared app needs all 14 widget types parameterised<br>
+    <span class="con">✗</span> Custom widgets require the shared app to be re-deployed<br><br>
+    <strong style="color:#94a3b8;">Best for:</strong> The primary user persona (Admin/CoE Lead) who needs T1/T2 metrics. T3-SDK is a power-user feature they probably don't need. If 90% of dashboards are T1-only, this is the right trade.
+  </div>
+</div>
+
+<div class="alt-box alt-b">
+  <div class="alt-title" style="color:#a78bfa;">Option B — Keep current approach, but address root problems now</div>
+  <div class="alt-body">
+    Stay with code generation but make targeted fixes:<br><br>
+    <span class="pro">✓ Now:</span> Shared npm cache (<code>--cache ~/.uipath-dashboard-cache</code>) — warm installs in 15s<br>
+    <span class="pro">✓ Now:</span> One OAuth app per tenant (admin creates it once, stored as env var) — remove per-dashboard OAuth flow<br>
+    <span class="pro">✓ Now:</span> Replace <code>&lt;PLACEHOLDER&gt;</code> template substitution with typed component factories — no silent failures<br>
+    <span class="pro">✓ When SDK ships:</span> Replace <code>as any</code> with proper response interfaces — TypeScript catches wrong fields<br>
+    <span class="pro">✓ When SDK ships:</span> T2 expands to include Insights parametric queries<br><br>
+    <span class="con">✗</span> Still slower than config-driven (5–30s warm, 2–5min cold)<br>
+    <span class="con">✗</span> Still requires TypeScript compilation per dashboard<br><br>
+    <strong style="color:#94a3b8;">Best for:</strong> Preserving T3-SDK flexibility while improving on the current pain points incrementally.
+  </div>
+</div>
+
+<div class="alt-box alt-c">
+  <div class="alt-title" style="color:#fbbf24;">Option C — Hybrid (config-driven for T1/T2, code-gen for T3)</div>
+  <div class="alt-body">
+    Run two pipelines based on dashboard composition:<br><br>
+    <span class="pro">✓</span> If all metrics are T1/T2: render from JSON config in pre-built app → 15s<br>
+    <span class="pro">✓</span> If any metric is T3-SDK: fall back to full code generation → 3-5min<br>
+    <span class="pro">✓</span> Best of both worlds for the common case<br>
+    <span class="con">✗</span> Two build paths = twice the code to maintain<br>
+    <span class="con">✗</span> Config-driven app needs to be maintained alongside widget templates<br><br>
+    <strong style="color:#94a3b8;">Best for:</strong> Optimising the common case (most dashboards are T1-only) while not losing T3 power.
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══ SECTION 5: RECOMMENDATION ══ -->
+<h2>📌 Recommendation</h2>
+
+<div class="card card-neutral" style="padding:20px;">
+  <h3 style="color:#f1f5f9;margin-bottom:12px;">The architecture is on the right path. The pain points are real but solvable.</h3>
+
+  <p>The Code-as-Orchestrator principle, tiered resolution, and event streaming are all correct decisions. The problems are in the <em>implementation layer</em>, not the architecture itself.</p>
+
+  <p>The two highest-impact changes to make now:</p>
+
+  <div style="margin:16px 0;display:flex;flex-direction:column;gap:10px;">
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(16,185,129,0.2);color:#34d399;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;margin-top:1px;">1</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Shared npm cache — eliminates the cold-start problem now</div>
+        <div style="font-size:12px;color:#64748b;">Set <code>npm ci --prefer-offline --cache ~/.uipath-dashboard-cache</code> in <code>runPrewarm()</code>. First install populates the cache. Every subsequent dashboard reuses it. Cold start goes from 3–5min to 30s.</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(16,185,129,0.2);color:#34d399;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;margin-top:1px;">2</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">Tenant-level OAuth app — removes the per-dashboard OAuth flow</div>
+        <div style="font-size:12px;color:#64748b;">One external app per tenant, created by an admin, stored in env or user config. The build script reads it automatically. Phase 4 (OAuth client) disappears from the flow entirely for returning users.</div>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:8px;">The <code>as any</code> problem and full config-driven rendering are both solved when Insights lands in the SDK. The architecture is already structured to accommodate that — <code>useInsights</code> is isolated in one file, T3-Insights maps directly to future SDK methods. The migration will be a targeted swap, not a rewrite.</p>
+
+  <div style="margin-top:16px;padding:12px 16px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:8px;">
+    <div style="font-size:11px;font-weight:700;color:#818cf8;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Longer-term consideration</div>
+    <div style="font-size:12px;color:#64748b;">Option C (hybrid) is worth exploring after the Insights SDK ships. At that point, T1/T2 metrics can move to a config-driven renderer (no compilation, 15s builds) while T3-SDK retains the code generation path for advanced use cases. The current architecture is the right foundation for that hybrid — the tier separation already exists.</div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -6,9 +6,10 @@ Every widget automatically gets a detail view file generated at build time. Deta
 
 For each widget with component name `Foo`, the build script generates `src/dashboard/views/FooView.tsx` and registers a route at `/<foo>` in `App.tsx`.
 
-Detail views are generated automatically for T1 and T3-Insights widgets. T2 widgets are already tabular — they do not get a separate detail view.
+Detail views are generated automatically for **T1 widgets only**.
 
-> **T3-SDK widgets do not get a detail view.** T3-SDK widgets fetch data via the TypeScript SDK (not Insights RTM), so no `useInsights` hook can back a detail view. The widget itself shows the full data. If a drilldown is needed, implement it by hand in the generated project.
+- **T2 widgets**: already show tabular data — no separate detail view needed
+- **T3-SDK widgets**: the `fnBody` returns a custom shape that the build script has no schema for — columns can't be inferred reliably at build time. The widget itself shows the full data. Add a detail view by hand in the generated project if needed.
 
 ## Column mapping rules
 

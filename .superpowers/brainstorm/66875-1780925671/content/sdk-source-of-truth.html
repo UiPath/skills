@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SDK as Source of Truth</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #080b14; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #e2e8f0; padding: 32px 28px 60px; }
+h1 { font-size: 22px; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+.sub { font-size: 13px; color: #475569; margin-bottom: 40px; letter-spacing: 0.5px; text-transform: uppercase; }
+code { font-family: 'Fira Code', monospace; }
+
+.layer { border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+.layer-header { padding: 14px 20px; display: flex; align-items: center; gap: 14px; }
+.layer-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+.layer-title { font-size: 16px; font-weight: 700; }
+.layer-subtitle { font-size: 11px; color: #64748b; margin-top: 2px; }
+.layer-body { padding: 0 20px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.layer-body-full { padding: 0 20px 20px; }
+
+.state-box { border-radius: 8px; padding: 14px; }
+.state-label { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+
+.code-block { background: rgba(0,0,0,0.4); border-radius: 8px; padding: 12px 14px; font-family: 'Fira Code', monospace; font-size: 11px; line-height: 1.8; border: 1px solid rgba(255,255,255,0.06); }
+.k { color: #818cf8; } .v { color: #fbbf24; } .n { color: #34d399; } .c { color: #475569; } .m { color: #f472b6; } .t { color: #94a3b8; } .err { color: #f87171; }
+
+.badge-now { background: rgba(239,68,68,0.15); color: #f87171; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 3px; letter-spacing: 1px; text-transform: uppercase; }
+.badge-future { background: rgba(16,185,129,0.15); color: #34d399; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 3px; letter-spacing: 1px; text-transform: uppercase; }
+.badge-ok { background: rgba(16,185,129,0.15); color: #34d399; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 3px; letter-spacing: 1px; text-transform: uppercase; }
+
+.flow-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.flow-node { border-radius: 8px; padding: 10px 14px; font-size: 12px; flex: 1; }
+.flow-arrow { color: #334155; font-size: 20px; flex-shrink: 0; }
+.check { color: #10b981; margin-right: 4px; }
+.cross { color: #ef4444; margin-right: 4px; }
+
+.divider { height: 1px; background: #1e293b; margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<h1>SDK as Source of Truth</h1>
+<p class="sub">How each layer gets SDK knowledge — current gaps and the right fix</p>
+
+<!-- ══ LAYER 1: Plan time ══ -->
+<div class="layer" style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.25);">
+  <div class="layer-header">
+    <div class="layer-num" style="background:rgba(99,102,241,0.2);color:#a78bfa;">1</div>
+    <div>
+      <div class="layer-title" style="color:#c4b5fd;">Plan Time — Agent writing intent.json</div>
+      <div class="layer-subtitle">Turn 2 parallel blast · agent classifies metrics, selects field names, writes T3 fnBody</div>
+    </div>
+  </div>
+  <div class="layer-body">
+
+    <div>
+      <div class="state-label" style="color:#ef4444;">Current — hand-curated docs</div>
+      <div class="state-box" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);">
+        <div class="flow-row">
+          <div class="flow-node" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);">
+            <span class="cross">✗</span> <code>sdk-field-reference.md</code><br>
+            <span style="font-size:10px;color:#475569;">Hand-written by us. Can diverge from SDK.</span>
+          </div>
+        </div>
+        <div class="flow-row">
+          <div class="flow-node" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);">
+            <span class="cross">✗</span> <code>capability-registry.json</code><br>
+            <span style="font-size:10px;color:#475569;">Response field names typed by hand. <br>Caused all the "shows —" bugs.</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#7f1d1d;margin-top:8px;padding:8px;background:rgba(239,68,68,0.06);border-radius:6px;">
+          Agent's SDK knowledge = our best guess at the time of writing. Nothing validates it against actual SDK types.
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="state-label" style="color:#10b981;">Right approach — SDK types in context</div>
+      <div class="state-box" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);">
+        <div class="flow-row">
+          <div class="flow-node" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);">
+            <span class="check">✓</span> Fetch <code>llms-full-content.txt</code> from SDK docs<br>
+            <span style="font-size:10px;color:#475569;">Auto-generated from TypeScript types. Always current.</span>
+          </div>
+        </div>
+        <div class="flow-row">
+          <div class="flow-node" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);">
+            <span class="check">✓</span> <code>sdk-field-reference.md</code> auto-generated<br>
+            <span style="font-size:10px;color:#475569;">Script regenerates this file from SDK types on each SDK release. Not hand-written.</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#065f46;margin-top:8px;padding:8px;background:rgba(16,185,129,0.06);border-radius:6px;">
+          Agent's SDK knowledge = actual TypeScript type definitions. Field names are exact.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ LAYER 2: Build time ══ -->
+<div class="layer" style="background:rgba(14,165,233,0.06);border:1px solid rgba(14,165,233,0.25);">
+  <div class="layer-header">
+    <div class="layer-num" style="background:rgba(14,165,233,0.2);color:#38bdf8;">2</div>
+    <div>
+      <div class="layer-title" style="color:#7dd3fc;">Build Time — build-dashboard.mjs generating widget code</div>
+      <div class="layer-subtitle">Template substitution, T2 compilation, T3 injection, tsc validation</div>
+    </div>
+  </div>
+  <div class="layer-body">
+
+    <div>
+      <div class="state-label" style="color:#ef4444;">Current — unvalidated string literals</div>
+      <div class="state-box" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);">
+
+        <div style="font-size:12px;margin-bottom:10px;">
+          <span class="badge-ok" style="margin-right:6px;">OK</span>
+          T3-SDK: <code>tsc --noEmit</code> catches type errors in fnBody
+        </div>
+        <div style="font-size:12px;margin-bottom:10px;">
+          <span class="badge-ok" style="margin-right:6px;">OK</span>
+          T3-Insights: <code>VALID_INSIGHTS_KEYS</code> validates method before codegen
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:12px;margin-bottom:8px;color:#f87171;">
+          <span class="badge-now" style="margin-right:6px;">GAP</span>
+          T1 templates: <code>yKey="value"</code> is a string — tsc doesn't know "value" must exist on the API response
+        </div>
+        <div style="font-size:12px;margin-bottom:8px;color:#f87171;">
+          <span class="badge-now" style="margin-right:6px;">GAP</span>
+          T2 filterField: <code>"failureCount"</code> is unvalidated — can compile and silently return 0 rows
+        </div>
+        <div style="font-size:12px;color:#f87171;">
+          <span class="badge-now" style="margin-right:6px;">GAP</span>
+          viewColumns keys: string literals — TypeScript has no way to validate them against response shape
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="state-label" style="color:#10b981;">Right approach — typed interfaces per metric</div>
+      <div class="state-box" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);">
+        <div class="code-block" style="margin-bottom:10px;">
+<span class="c">// Today — no type safety on field names:</span><br>
+<span class="k">const</span> chartData: <span class="t">Record&lt;string, unknown&gt;[]</span> =<br>
+&nbsp;&nbsp;<span class="t">(data as any)?.data ?? []</span><br><br>
+<span class="c">// With SDK types — field errors caught at tsc:</span><br>
+<span class="k">import type</span> { AgentErrorItem } <span class="k">from</span> <br>
+&nbsp;&nbsp;<span class="v">'@uipath/uipath-typescript/insights'</span><br>
+<span class="k">const</span> chartData: <span class="n">AgentErrorItem[]</span> =<br>
+&nbsp;&nbsp;response?.data ?? []<br>
+<span class="c">// chartData[0].value ✓ · .wrongField ✗ compile error</span>
+        </div>
+        <div style="font-size:11px;color:#065f46;padding:8px;background:rgba(16,185,129,0.06);border-radius:6px;">
+          When Insights is in the SDK, every widget is strongly typed end-to-end. Wrong field names = tsc error before the user ever runs the dashboard.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ LAYER 3: Runtime ══ -->
+<div class="layer" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);">
+  <div class="layer-header">
+    <div class="layer-num" style="background:rgba(16,185,129,0.2);color:#34d399;">3</div>
+    <div>
+      <div class="layer-title" style="color:#6ee7b7;">Runtime — browser executing the dashboard</div>
+      <div class="layer-subtitle">Last line of defence — should never be the only line of defence</div>
+    </div>
+  </div>
+  <div class="layer-body-full">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="state-box" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.15);">
+        <div class="state-label" style="color:#10b981;">✓ Already in place</div>
+        <div style="font-size:12px;color:#94a3b8;line-height:1.8;">
+          <code>autoColumns(rows)</code> in detail views — detects real field names from first data row at runtime. If viewColumns is wrong, the view still shows actual data.
+        </div>
+      </div>
+      <div class="state-box" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);">
+        <div class="state-label" style="color:#ef4444;">✗ Still a gap</div>
+        <div style="font-size:12px;color:#94a3b8;line-height:1.8;">
+          Main widgets (KPI cards, charts) use template-substituted keys like <code>yKey="value"</code>. If "value" doesn't exist, the chart renders empty with no error shown to the user.
+        </div>
+      </div>
+      <div class="state-box" style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);">
+        <div class="state-label" style="color:#818cf8;">→ Right fix</div>
+        <div style="font-size:12px;color:#94a3b8;line-height:1.8;">
+          Strongly typed widget templates (possible when Insights is in SDK). tsc catches wrong field names before runtime. Runtime validation becomes redundant, not primary.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TRANSITION PLAN ══ -->
+<div style="margin-top:28px;background:rgba(255,255,255,0.02);border:1px solid #1e293b;border-radius:12px;padding:20px;">
+  <div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:16px;">Closing the gap — ordered by impact</div>
+
+  <div class="flow-row" style="align-items:flex-start;">
+    <div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,0.2);color:#fbbf24;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:2px;">1</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:600;color:#e2e8f0;">Auto-generate <code>sdk-field-reference.md</code> from SDK release artefacts</div>
+      <div style="font-size:11px;color:#475569;margin-top:3px;">A script runs on SDK version bump → regenerates the file → no manual curation. Agent's context is always the real SDK types.</div>
+    </div>
+    <div style="flex-shrink:0;"><span class="badge-future">Next step</span></div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="flow-row" style="align-items:flex-start;">
+    <div style="width:28px;height:28px;border-radius:50%;background:rgba(245,158,11,0.2);color:#fbbf24;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:2px;">2</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:600;color:#e2e8f0;">Validate T1/T2 registry field names at build-script startup</div>
+      <div style="font-size:11px;color:#475569;margin-top:3px;">Build script reads SDK type definitions and verifies each registry entry's <code>filterField</code>, <code>yKey</code>, <code>viewColumns</code> keys exist on the declared response type. Fails loudly at build time.</div>
+    </div>
+    <div style="flex-shrink:0;"><span class="badge-future">Next step</span></div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="flow-row" style="align-items:flex-start;">
+    <div style="width:28px;height:28px;border-radius:50%;background:rgba(16,185,129,0.2);color:#34d399;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:2px;">3</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:600;color:#e2e8f0;">When Insights SDK ships — replace <code>useInsights + InsightsClient</code> with typed SDK service calls</div>
+      <div style="font-size:11px;color:#475569;margin-top:3px;"><code>(data as any)?.data ?? []</code> becomes <code>response.data ?? []</code> typed against SDK response interfaces. Wrong field access = compile error. The tier system has one data source.</div>
+    </div>
+    <div style="flex-shrink:0;"><span class="badge-future">When SDK ships</span></div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="flow-row" style="align-items:flex-start;margin-bottom:0;">
+    <div style="width:28px;height:28px;border-radius:50%;background:rgba(16,185,129,0.2);color:#34d399;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:2px;">4</div>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:600;color:#e2e8f0;">Remove all <code>as any</code> casts — widget templates typed end-to-end against SDK interfaces</div>
+      <div style="font-size:11px;color:#475569;margin-top:3px;">T3-SDK <code>fnBody</code> already validated by tsc. T1/T2 generated code validated by tsc. Wrong field names are compile errors, not silent <code>—</code> values.</div>
+    </div>
+    <div style="flex-shrink:0;"><span class="badge-future">When SDK ships</span></div>
+  </div>
+
+</div>
+
+<!-- ══ TODAY's chain ══ -->
+<div style="margin-top:24px;background:rgba(255,255,255,0.02);border:1px solid #1e293b;border-radius:12px;padding:20px;">
+  <div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:12px;">Where SDK knowledge currently enters the skill</div>
+  <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;">
+    <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#c4b5fd;text-align:center;">
+      <div style="font-size:10px;color:#475569;margin-bottom:3px;">TURN 2</div>
+      sdk-field-reference.md<br><span style="color:#475569;font-size:10px;">hand-curated</span>
+    </div>
+    <div style="color:#334155;font-size:18px;padding:0 8px;">→</div>
+    <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#c4b5fd;text-align:center;">
+      <div style="font-size:10px;color:#475569;margin-bottom:3px;">TURN 2</div>
+      capability-registry.json<br><span style="color:#475569;font-size:10px;">hand-curated</span>
+    </div>
+    <div style="color:#334155;font-size:18px;padding:0 8px;">→</div>
+    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#fbbf24;text-align:center;">
+      <div style="font-size:10px;color:#475569;margin-bottom:3px;">BUILD TIME</div>
+      VALID_INSIGHTS_KEYS<br><span style="color:#475569;font-size:10px;">derived from InsightsClient ✓</span>
+    </div>
+    <div style="color:#334155;font-size:18px;padding:0 8px;">→</div>
+    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#fbbf24;text-align:center;">
+      <div style="font-size:10px;color:#475569;margin-bottom:3px;">BUILD TIME</div>
+      tsc --noEmit<br><span style="color:#475569;font-size:10px;">T3-SDK only ✓</span>
+    </div>
+    <div style="color:#334155;font-size:18px;padding:0 8px;">→</div>
+    <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#34d399;text-align:center;">
+      <div style="font-size:10px;color:#475569;margin-bottom:3px;">RUNTIME</div>
+      autoColumns(rows)<br><span style="color:#475569;font-size:10px;">detail views only ✓</span>
+    </div>
+  </div>
+  <div style="margin-top:12px;font-size:11px;color:#475569;">The two leftmost nodes are the weakest links — they're manual snapshots, not live SDK types. Steps 1–2 above close this.</div>
+</div>
+
+</body>
+</html>
