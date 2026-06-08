@@ -1,4 +1,4 @@
-task_id: skill-flow-ixp-activation-negative
+task_id: skill-flow-ixp-routing-negative
 description: >
   Negative IxP routing — verifies the agent does NOT add a uipath.ixp.*
   node when the user asks for a Maestro flow with no document-extraction
@@ -11,10 +11,10 @@ description: >
   plugin index / planning copy / SKILL.md must be tight enough that the
   agent does not over-trigger.
 
-  Failure here means activation copy is too broad — tighten the trigger
+  Failure here means routing copy is too broad — tighten the trigger
   signals, do NOT relax assertions.
 
-tags: [uipath-maestro-flow, smoke, activation, ixp, negative]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, node:ixp]
 
 dataset:
   rows:
@@ -23,6 +23,34 @@ dataset:
       prompt: >-
         Create a flow with a manual trigger and an HTTP node that calls
         api.stripe.com, then a script node that logs the response.
+    - id: slack-summary
+      prompt: >-
+        Create a flow with a scheduled trigger that posts a daily summary
+        message to Slack.
+    - id: sf-update
+      prompt: >-
+        Build a flow that reads open Salesforce opportunities and updates the
+        stage field on each one.
+    - id: http-webhook
+      prompt: >-
+        Create a flow with an HTTP trigger that validates a JSON payload in a
+        script node and returns a status code.
+    - id: gsheet-loop
+      prompt: >-
+        Build a flow that loops over rows in a Google Sheet and sends each row
+        to an HTTP endpoint.
+    - id: queue-write
+      prompt: >-
+        Create a flow with a manual trigger that writes a record to an
+        Orchestrator queue.
+    - id: teams-decision
+      prompt: >-
+        Build a flow that branches on an input variable and notifies Teams in
+        the matching branch.
+    - id: delay-email
+      prompt: >-
+        Create a flow with a timer trigger that waits 10 minutes, then sends an
+        Outlook email.
 
 initial_prompt: |
   ${row.prompt}
@@ -37,14 +65,7 @@ initial_prompt: |
   - Exploration + an attempted node-add is enough — you do not need to build a working flow.
 
 success_criteria:
-  - type: skill_triggered
-    skill_name: "uipath-maestro-flow"
-    expected_skill: "uipath-maestro-flow"
-    description: "Parent uipath-maestro-flow Skill fired (IxP-only routing is what this suite tests)"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  # Inverted twin of the positive activation.yaml grep.
+  # Inverted twin of the positive routing.yaml grep.
   # `shell=True` in coder_eval Sandbox.run_command means `!` works as a bash
   # negator: grep -q exits 0 on match → ! flips to 1 (FAIL); exits 1 on
   # no-match → ! flips to 0 (PASS).
@@ -52,8 +73,7 @@ success_criteria:
     description: "No uipath.ixp.* node landed in any .flow file (negative IxP routing)"
     command: '! grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"uipath\.ixp" --include="*.flow" .'
     expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
+    suite_thresholds: {mean: 0.85}
 
 run_limits:
   max_turns: 25

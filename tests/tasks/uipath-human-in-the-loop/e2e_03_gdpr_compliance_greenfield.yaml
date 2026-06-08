@@ -54,7 +54,7 @@ success_criteria:
     description: "Flow wires the completed handle"
     path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 2.0
     pass_threshold: 1.0
 

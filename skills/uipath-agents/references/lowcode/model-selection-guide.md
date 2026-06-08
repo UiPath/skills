@@ -59,11 +59,11 @@ If `uip agent model list` fails (not logged in, offline, command unavailable), p
 
 ## 5. Apply the choice
 
-Edit `settings.model` (and `settings.maxTokens`) in `agent.json`, then validate and migrate:
+Edit `settings.model` (and `settings.maxTokens`) in `agent.json`, then refresh and validate:
 
 1. Set `settings.model` to the discovered `Name`.
 2. Set `settings.maxTokens` ≤ the model's `MaxTokens`.
-3. `uip agent validate --output json`
-4. `uip agent migrate --output json`
+3. `uip agent refresh --output json`
+4. `uip agent validate --output json`
 
 For inline-in-flow agents add `--inline-in-flow` to both commands. Full field reference: [agent-definition.md](agent-definition.md#change-model-settings).

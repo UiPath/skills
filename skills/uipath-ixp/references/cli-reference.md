@@ -110,4 +110,4 @@ For working with runtime (deployed) IXP models — separate from the training wo
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp deployments get-taxonomy <model-name> --folder-key <key> --output json` | Get the taxonomy (field names) of a deployed model. Pairs with `uip maestro flow registry get` — use `inputDefaults.modelName` and `inputDefaults.folderKey` from that output. |
+| `uip ixp deployments get-taxonomy <project-name> --version <N> --output json` | Get the project taxonomy (data types + field groups) at a specific trained model version. `--version` is the model version number from `projects list-models`. Output mirrors `projects get-taxonomy` — `EntityDefs[]` + `LabelGroups[]` — pinned to the snapshot the version was trained on. |
