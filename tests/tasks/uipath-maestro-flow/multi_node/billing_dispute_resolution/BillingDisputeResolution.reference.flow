@@ -477,7 +477,7 @@
         "icon": "autonomous-agent"
       },
       "inputs": {
-        "source": "785894ae-aaf0-4741-8eb7-ba9ddb03526a",
+        "source": "74eaa9af-1cfc-4137-b688-ad8f8092ed1a",
         "agentInputVariables": [],
         "agentOutputVariables": [
           {
@@ -490,7 +490,10 @@
             "type": "string",
             "description": "body of the email"
           }
-        ]
+        ],
+        "systemPrompt": "You draft concise, professional customer-facing billing-dispute resolution emails.",
+        "userPrompt": "Draft the resolution email subject and body for the analyzed dispute. Cite the disputed invoice number and the approved credit amount.",
+        "model": "gpt-4o-2024-11-20"
       },
       "outputs": {
         "error": {
@@ -546,7 +549,7 @@
         "icon": "autonomous-agent"
       },
       "inputs": {
-        "source": "e9096737-371c-44c7-a242-6d5b6f61e347",
+        "source": "d452210b-d1e7-43e6-8525-489620820899",
         "agentInputVariables": [],
         "agentOutputVariables": [
           {
@@ -573,7 +576,10 @@
             "id": "rationale",
             "type": "string"
           }
-        ]
+        ],
+        "systemPrompt": "You are a billing-dispute analyst. Apply the Billing Dispute SOP to decide whether a disputed invoice is valid and how it should be resolved.",
+        "userPrompt": "Using the extracted invoice fields, the matched ERP and CRM records, the computed pricing discrepancies, and the SOP context, determine the dispute outcome. Set recommendedAction to one of: escalate_to_manager, auto_resolve, or reject.",
+        "model": "gpt-4o-2024-11-20"
       },
       "outputs": {
         "error": {
@@ -620,7 +626,7 @@
     },
     {
       "id": "billingDisputeSopIndex1",
-      "type": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
+      "type": "uipath.agent.resource.context.index.billing-dispute-sop-index.2c4d1df2-dccd-49b9-4f04-08deaca45773",
       "typeVersion": "1.0.0",
       "display": {
         "label": "Analysis SOP",
@@ -630,7 +636,7 @@
         "description": ""
       },
       "inputs": {
-        "source": "2970f41c-b907-46bc-b55e-0433b8ee7eeb"
+        "source": "0caaec49-875a-4362-a591-18f5ed7165e7"
       }
     },
     {
@@ -2976,6 +2982,453 @@
       }
     },
     {
+      "nodeType": "uipath.agent.resource.context.index.billing-dispute-sop-index.2c4d1df2-dccd-49b9-4f04-08deaca45773",
+      "version": "1.0.0",
+      "description": "",
+      "category": "agent",
+      "tags": [
+        "agent-context",
+        "index"
+      ],
+      "sortOrder": 505,
+      "display": {
+        "label": "Billing Dispute SOP Index",
+        "description": "",
+        "icon": "file-text",
+        "shape": "circle"
+      },
+      "handleConfiguration": [
+        {
+          "position": "top",
+          "handles": [
+            {
+              "id": "input",
+              "type": "target",
+              "handleType": "artifact",
+              "constraints": {
+                "allowedSources": [
+                  {
+                    "nodeType": "uipath.agent.autonomous",
+                    "handleId": "context"
+                  },
+                  {
+                    "nodeType": "uipath.agent.conversational",
+                    "handleId": "context"
+                  }
+                ],
+                "validationMessage": "Only Agent's context handle can connect here"
+              }
+            }
+          ]
+        }
+      ],
+      "inputDefaults": {
+        "indexId": "2c4d1df2-dccd-49b9-4f04-08deaca45773",
+        "indexName": "Billing Dispute SOP Index",
+        "folderKey": "f3ce19ae-8931-4db9-b59c-6ba5e2fe2ecd",
+        "folderPath": "Shared/uipath-maestro-flow/BillingDispute/Billing Dispute - SOP Folder",
+        "retrievalMode": "semantic",
+        "query": {
+          "mode": "prompt",
+          "textValue": "",
+          "promptValue": "The query for the Semantic strategy",
+          "argumentPath": ""
+        },
+        "threshold": 0,
+        "resultCount": 3,
+        "fileExtension": "All",
+        "folderPathPrefix": {
+          "mode": "text-builder",
+          "textValue": "",
+          "promptValue": "",
+          "argumentPath": ""
+        },
+        "citations": "enabled",
+        "outputColumns": [],
+        "webSearchGrounding": {
+          "value": "enabled"
+        }
+      },
+      "inputDefinition": {
+        "type": "object",
+        "properties": {
+          "indexId": {
+            "type": "string"
+          },
+          "indexName": {
+            "type": "string"
+          },
+          "folderKey": {
+            "type": "string"
+          },
+          "folderPath": {
+            "type": "string"
+          },
+          "retrievalMode": {
+            "type": "string"
+          },
+          "query": {
+            "type": "object"
+          },
+          "threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "resultCount": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 40
+          },
+          "fileExtension": {
+            "type": "string"
+          },
+          "folderPathPrefix": {
+            "type": "object"
+          },
+          "citations": {
+            "type": "string"
+          },
+          "outputColumns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "webSearchGrounding": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "retrievalMode": {
+                  "const": "semantic"
+                }
+              },
+              "required": [
+                "retrievalMode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "query": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "prompt"
+                        },
+                        "promptValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "promptValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "text-builder"
+                        },
+                        "textValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "textValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "variable"
+                        },
+                        "argumentPath": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "argumentPath"
+                      ]
+                    }
+                  ],
+                  "errorMessage": "Query is required"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "retrievalMode": {
+                  "const": "structured"
+                }
+              },
+              "required": [
+                "retrievalMode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "query": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "prompt"
+                        },
+                        "promptValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "promptValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "text-builder"
+                        },
+                        "textValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "textValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "variable"
+                        },
+                        "argumentPath": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "argumentPath"
+                      ]
+                    }
+                  ],
+                  "errorMessage": "Query is required"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "retrievalMode": {
+                  "const": "deeprag"
+                }
+              },
+              "required": [
+                "retrievalMode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "query": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "prompt"
+                        },
+                        "promptValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "promptValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "text-builder"
+                        },
+                        "textValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "textValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "variable"
+                        },
+                        "argumentPath": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "argumentPath"
+                      ]
+                    }
+                  ],
+                  "errorMessage": "DeepRAG task is required"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "retrievalMode": {
+                  "const": "batchtransform"
+                }
+              },
+              "required": [
+                "retrievalMode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "query": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "prompt"
+                        },
+                        "promptValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "promptValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "text-builder"
+                        },
+                        "textValue": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "textValue"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "mode": {
+                          "const": "variable"
+                        },
+                        "argumentPath": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "mode",
+                        "argumentPath"
+                      ]
+                    }
+                  ],
+                  "errorMessage": "Batch Transform task is required"
+                },
+                "outputColumns": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "description": {
+                        "type": "string",
+                        "minLength": 1,
+                        "errorMessage": "Description is required for every output column"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "description"
+                    ]
+                  },
+                  "errorMessage": {
+                    "minItems": "At least one output column is required"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "model": {
+        "source": true
+      },
+      "form": {
+        "id": "context-index-form",
+        "title": "Context Index",
+        "sections": [
+          {
+            "id": "index-settings",
+            "title": "Index Settings",
+            "collapsible": true,
+            "defaultExpanded": true,
+            "fields": [
+              {
+                "name": "inputs",
+                "type": "custom",
+                "component": "index-settings-editor",
+                "label": ""
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "nodeType": "uipath.core.api-workflow.c09cf5f6-febc-45c9-aca5-8ebf2f838a2e",
       "version": "1.0.0",
       "category": "api-workflow",
@@ -3182,516 +3635,6 @@
         "exclude": [
           "api-function"
         ]
-      }
-    },
-    {
-      "nodeType": "uipath.agent.resource.context.index.billing-dispute-sop-index.cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
-      "version": "1.0.0",
-      "category": "agent",
-      "tags": [
-        "agent-context",
-        "index"
-      ],
-      "description": "SOP grounding for the Billing Dispute Analyst agent.",
-      "sortOrder": 505,
-      "display": {
-        "label": "Billing Dispute SOP Index",
-        "description": "SOP grounding for the Billing Dispute Analyst agent.",
-        "icon": "file-text",
-        "shape": "circle"
-      },
-      "handleConfiguration": [
-        {
-          "position": "top",
-          "handles": [
-            {
-              "id": "input",
-              "type": "target",
-              "handleType": "artifact",
-              "constraints": {
-                "allowedSources": [
-                  {
-                    "nodeType": "uipath.agent.autonomous",
-                    "handleId": "context"
-                  },
-                  {
-                    "nodeType": "uipath.agent.conversational",
-                    "handleId": "context"
-                  }
-                ],
-                "validationMessage": "Only Agent's context handle can connect here"
-              }
-            }
-          ]
-        }
-      ],
-      "model": {
-        "source": true
-      },
-      "form": {
-        "id": "context-index-form",
-        "title": "Context Index",
-        "sections": [
-          {
-            "id": "index-settings",
-            "title": "Index Settings",
-            "collapsible": true,
-            "defaultExpanded": true,
-            "fields": [
-              {
-                "name": "inputs.retrievalMode",
-                "type": "custom",
-                "component": "index-strategy-select",
-                "label": "Strategy",
-                "componentProps": {
-                  "options": [
-                    {
-                      "value": "semantic",
-                      "label": "Semantic"
-                    },
-                    {
-                      "value": "structured",
-                      "label": "Structured",
-                      "preview": true
-                    },
-                    {
-                      "value": "deeprag",
-                      "label": "DeepRAG"
-                    },
-                    {
-                      "value": "batchtransform",
-                      "label": "Batch Transform",
-                      "preview": true
-                    }
-                  ]
-                }
-              },
-              {
-                "name": "inputs.query",
-                "type": "custom",
-                "component": "context-query-editor",
-                "label": "Query",
-                "componentProps": {
-                  "placeholder": "The query for the Semantic strategy."
-                },
-                "rules": [
-                  {
-                    "id": "show-query-semantic",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "semantic"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.query",
-                "type": "custom",
-                "component": "context-query-editor",
-                "label": "Query",
-                "componentProps": {
-                  "placeholder": "The query for the Structured strategy."
-                },
-                "rules": [
-                  {
-                    "id": "show-query-structured",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "structured"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.query",
-                "type": "custom",
-                "component": "context-query-editor",
-                "label": "DeepRAG Task",
-                "componentProps": {
-                  "placeholder": "Describe the task: what to research across documents, what to synthesize, and how to cite sources"
-                },
-                "rules": [
-                  {
-                    "id": "show-query-deeprag",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "deeprag"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.query",
-                "type": "custom",
-                "component": "context-query-editor",
-                "label": "Batch Transform Task",
-                "componentProps": {
-                  "placeholder": "Describe the task for each row: what to analyze, what to extract, and how to populate the output columns"
-                },
-                "rules": [
-                  {
-                    "id": "show-query-batchtransform",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "batchtransform"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.folderPathPrefix",
-                "type": "custom",
-                "component": "context-query-editor",
-                "label": "Folder path prefix",
-                "componentProps": {
-                  "placeholder": "e.g., /documents/project",
-                  "allowedModes": [
-                    "text-builder",
-                    "variable"
-                  ]
-                }
-              },
-              {
-                "name": "inputs.fileExtension",
-                "type": "select",
-                "label": "File Extension",
-                "options": [
-                  {
-                    "value": "All",
-                    "label": "All"
-                  },
-                  {
-                    "value": "pdf",
-                    "label": "pdf"
-                  },
-                  {
-                    "value": "csv",
-                    "label": "csv"
-                  },
-                  {
-                    "value": "json",
-                    "label": "json"
-                  },
-                  {
-                    "value": "docx",
-                    "label": "docx"
-                  },
-                  {
-                    "value": "xlsx",
-                    "label": "xlsx"
-                  },
-                  {
-                    "value": "txt",
-                    "label": "txt"
-                  }
-                ],
-                "rules": [
-                  {
-                    "id": "show-file-extension-semantic",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "semantic"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.fileExtension",
-                "type": "select",
-                "label": "File Extension",
-                "options": [
-                  {
-                    "value": "pdf",
-                    "label": "pdf"
-                  },
-                  {
-                    "value": "txt",
-                    "label": "txt"
-                  }
-                ],
-                "rules": [
-                  {
-                    "id": "show-file-extension-deeprag",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "deeprag"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.citations",
-                "type": "select",
-                "label": "Citations",
-                "options": [
-                  {
-                    "value": "enabled",
-                    "label": "Enabled"
-                  },
-                  {
-                    "value": "disabled",
-                    "label": "Disabled"
-                  }
-                ],
-                "rules": [
-                  {
-                    "id": "show-citations",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "deeprag"
-                      },
-                      {
-                        "when": "inputs.fileExtension",
-                        "is": "pdf"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.threshold",
-                "type": "slider",
-                "label": "Relevance score threshold",
-                "min": 0,
-                "max": 1,
-                "step": 0.01,
-                "rules": [
-                  {
-                    "id": "show-threshold",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "semantic"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.resultCount",
-                "type": "slider",
-                "label": "Max results retrieved",
-                "min": 1,
-                "max": 10,
-                "step": 1,
-                "rules": [
-                  {
-                    "id": "show-result-count",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "semantic"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.outputColumns",
-                "type": "custom",
-                "component": "output-columns-editor",
-                "label": "Output columns",
-                "componentProps": {
-                  "maxColumns": 10,
-                  "namePlaceholder": "Column name",
-                  "descriptionPlaceholder": "Describe what this new column should contain"
-                },
-                "rules": [
-                  {
-                    "id": "show-output-columns",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "batchtransform"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "inputs.webSearchGrounding.value",
-                "type": "select",
-                "label": "Web search grounding",
-                "options": [
-                  {
-                    "label": "Enabled",
-                    "value": "enabled"
-                  },
-                  {
-                    "label": "Disabled",
-                    "value": "disabled"
-                  }
-                ],
-                "rules": [
-                  {
-                    "id": "show-web-search-grounding",
-                    "conditions": [
-                      {
-                        "when": "inputs.retrievalMode",
-                        "is": "batchtransform"
-                      }
-                    ],
-                    "effects": {
-                      "visible": true
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "inputDefinition": {
-        "type": "object",
-        "properties": {
-          "indexId": {
-            "type": "string"
-          },
-          "indexName": {
-            "type": "string"
-          },
-          "folderKey": {
-            "type": "string"
-          },
-          "folderPath": {
-            "type": "string"
-          },
-          "retrievalMode": {
-            "type": "string"
-          },
-          "query": {
-            "type": "object"
-          },
-          "threshold": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          },
-          "resultCount": {
-            "type": "number",
-            "minimum": 1,
-            "maximum": 10
-          },
-          "fileExtension": {
-            "type": "string"
-          },
-          "folderPathPrefix": {
-            "type": "object"
-          },
-          "citations": {
-            "type": "string"
-          },
-          "outputColumns": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "webSearchGrounding": {
-            "type": "object",
-            "properties": {
-              "value": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "if": {
-          "properties": {
-            "retrievalMode": {
-              "const": "batchtransform"
-            }
-          },
-          "required": [
-            "retrievalMode"
-          ]
-        },
-        "then": {
-          "properties": {
-            "outputColumns": {
-              "minItems": 1,
-              "errorMessage": "At least one output column is required"
-            }
-          }
-        }
-      },
-      "inputDefaults": {
-        "indexId": "cc45b9b4-dbf6-47b3-40ac-08debc0cec5b",
-        "indexName": "Billing Dispute SOP Index",
-        "folderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
-        "folderPath": "Shared/uipath-maestro-flow/BillingDispute",
-        "retrievalMode": "semantic",
-        "query": {
-          "mode": "text-builder",
-          "textValue": "",
-          "promptValue": "",
-          "argumentPath": ""
-        },
-        "threshold": 0,
-        "resultCount": 3,
-        "fileExtension": "All",
-        "folderPathPrefix": {
-          "mode": "text-builder",
-          "textValue": "",
-          "promptValue": "",
-          "argumentPath": ""
-        },
-        "citations": "disabled",
-        "outputColumns": [],
-        "webSearchGrounding": {
-          "value": "enabled"
-        }
       }
     }
   ],
