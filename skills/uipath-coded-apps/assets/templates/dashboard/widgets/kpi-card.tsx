@@ -1,7 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { <ICON> } from 'lucide-react'
-import { useInsightsSDK } from '@/hooks/useInsightsSDK'
+<HOOK_IMPORT>
 <RESPONSE_TYPE_IMPORT>
 <SDK_IMPORT_LINE>
 import { DeltaBadge, ViewAllLink, LoadingState } from '@/dashboard/chrome'

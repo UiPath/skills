@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { <ICON> } from 'lucide-react'
-import { useInsightsSDK } from '@/hooks/useInsightsSDK'
+<HOOK_IMPORT>
 <RESPONSE_TYPE_IMPORT>
 <SDK_IMPORT_LINE>
 import { DeltaBadge, ViewAllLink, LoadingState, EmptyState } from '@/dashboard/chrome'

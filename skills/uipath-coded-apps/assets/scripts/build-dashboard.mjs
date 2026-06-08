@@ -768,6 +768,7 @@ function specToSubs(spec) {
     SDK_RESULT_TYPE: '',
     SDK_IMPORT_LINE: spec.sdkImportLine ?? '',
     RESPONSE_TYPE_IMPORT: spec.responseTypeImport ?? '',
+    HOOK_IMPORT: "import { useInsightsSDK } from '@/hooks/useInsightsSDK'",
   }
 }
 
