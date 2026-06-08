@@ -1062,7 +1062,7 @@ async function runDashboardBuild(intent, intentPath) {
     const server = spawn(
       'npm',
       ['run', 'dev', '--', '--port', String(DASHBOARD_PORT)],
-      { cwd: P, detached: true, stdio: 'pipe', shell: isWindows }
+      { cwd: P, detached: true, stdio: 'ignore', shell: isWindows }
     )
     server.on('error', () => {})
     server.unref()
