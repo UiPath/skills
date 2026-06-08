@@ -6,7 +6,7 @@ description: >
   acceptable; the goal is correct command shape, not tenant state.
 
   Note: locally requires the `@uipath/orchestrator-tool` plugin installed once via
-  `GH_NPM_REGISTRY_TOKEN=$(gh auth token) uip tools install orchestrator-tool`.
+  `GH_NPM_REGISTRY_TOKEN=$(gh auth token) uip tools install @uipath/orchestrator-tool`.
   In CI the plugin auth is provisioned, so this is environment-transparent.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
