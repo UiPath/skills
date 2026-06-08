@@ -18,33 +18,24 @@ Every internal mechanic (reads, pre-warm, login, intent.json) happens invisibly.
 
 ## Turn 2 — Everything in ONE parallel message (this turn)
 
-Fire all of these simultaneously. This is the only turn before the plan.
+Fire all of these simultaneously in **a single response**. Use multiple tool calls in the same message — do not wait for one to complete before starting another.
 
-**Reads (all parallel):**
-
-> **Path note:** All file paths in the table below are relative to `SKILL_BASE_DIR` — the directory where `SKILL.md` lives (shown as "Base directory for this skill:" in your activation message). They are **not** relative to this file's location (`references/dashboards/`). When reading these files, prefix each path with your `SKILL_BASE_DIR`.
+> **Path note:** All file paths below are relative to `SKILL_BASE_DIR` — the directory where `SKILL.md` lives (shown as "Base directory for this skill:" in your activation message). They are **not** relative to this file's location (`references/dashboards/`).
 >
 > Verify: this file's own path is `$SKILL_BASE_DIR/references/dashboards/CAPABILITY.md`
+
+**4 file reads (all in one message — parallel):**
 
 | File | Purpose |
 |------|---------|
 | `references/dashboards/plugins/build/impl.md` *(from skill root)* | Build instructions, preflight, plan format, intent.json schema |
-| `references/dashboards/primitives/tier-resolution.md` *(from skill root)* | Metric classification, hard-refuse list, SDK usage patterns |
+| `references/dashboards/primitives/tier-resolution.md` *(from skill root)* | Metric classification, hard-refuse list, SDK service reference, SDK usage patterns |
 | `references/dashboards/aesthetic/layout-patterns.md` *(from skill root)* | Layout rules |
 | `assets/scripts/capability-registry.json` *(from skill root)* | Metric catalog |
 
-> All `references/dashboards/` paths are inside this file's own directory. The `assets/` paths are at the skill root — two levels up from this file.
+> `tier-resolution.md` contains the SDK service class reference table (import subpaths + response field names). **Do not** fetch the live SDK docs URL — it takes 60–90 seconds and the information is already in `tier-resolution.md`. For T2/T3-SDK field verification, Phase 3.5 reads local `.d.ts` files instead.
 
-**Also fetch the live SDK documentation in the same message:**
-
-```
-WebFetch: https://uipath.github.io/uipath-typescript/llms-full-content.txt
-Prompt: Extract all service classes with their import subpaths, method signatures, and response type field names.
-```
-
-This is the authoritative SDK reference — always current, maintained by the SDK team. Use it to verify field names before writing `intent.json` or T3-SDK `fnBody`. `tier-resolution.md` covers the skill-specific SDK patterns (casting, normalisation, dynamic import) that the SDK docs omit.
-
-**Commands (in the same message):**
+**2 commands (same message, parallel with reads):**
 
 ```bash
 uip login status --output json
@@ -57,16 +48,15 @@ fs.existsSync('.dashboard/state.json') ? process.exit(0) : process.exit(1)
 " && echo INCREMENTAL || echo FRESH
 ```
 
-**Pre-warm — fire in background, do NOT wait:**
+**Pre-warm (same message — MUST use `run_in_background: true` on the Bash tool call):**
 
-Derive `<PROJECT_DIR>` from the user's request (e.g. `~/dashboards/agent-health-x7k2` or an absolute path the user specifies), then fire the build script's prewarm mode immediately:
+Derive `<PROJECT_DIR>` from the user's request first, then include this Bash call in the same message as the reads and commands above:
 
 ```bash
-# run_in_background: true — fire this and continue immediately, do NOT wait
 node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" --prewarm "<PROJECT_DIR>"
 ```
 
-This uses the build script to copy the scaffold and run `npm ci` — works correctly on Windows and Unix. Set `run_in_background: true` on this Bash call. The build script emits `PREWARM_DONE` when complete. Continue to the plan output immediately — do not wait.
+⚠️ **Set `run_in_background: true` on this specific Bash tool call.** This is a parameter on the tool call itself, not a shell flag. Without it the call blocks and the plan is delayed by 60–90 seconds of npm ci. The build script emits `PREWARM_DONE` when complete — do not wait for it.
 
 ---
 
@@ -87,11 +77,13 @@ See `plugins/build/impl.md` for the plan format and subsequent phases.
 
 ## Hard stops
 
+- **Never** fetch `https://uipath.github.io/uipath-typescript/llms-full-content.txt` — it takes 60–90s; SDK service reference is already in `tier-resolution.md`
+- **Never** use the Agent tool for SDK documentation — use Read on local files only
 - **Never** read `build-dashboard.mjs` — fully documented in impl.md
 - **Never** run `ls`, `find`, or directory exploration
 - **Never** read `sdk-capabilities.md` — tier-resolution.md + capability-registry.json are sufficient
 - **Never** read files one at a time
 - **Never** show tool call output to the user between their request and the plan
-- **Never** wait for pre-warm before showing the plan — fire it in background and move on
+- **Never** wait for pre-warm before showing the plan — it must use run_in_background: true
 - **Never** auto-deploy
 - **Never** commit generated dashboard files
