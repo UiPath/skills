@@ -1,0 +1,131 @@
+task_id: skill-flow-devcon-billing-dispute-resolution
+description: >
+  E2E (DevCon BillingDisputeResolution scenario): build the full end-to-end
+  billing-dispute flow — IxP invoice extraction, Data Service ERP/CRM lookups,
+  an inline analyst agent grounded on the Billing Dispute SOP index, switch +
+  decision routing, an API-workflow financial-posting call, and an inline writer
+  agent. This is more or less the full DevCon demo flow, with two edits: the
+  human-in-the-loop approval node is removed (the escalation case routes
+  straight to the approval decision), and the terminal Outlook send-email nodes
+  are replaced by `core.control.end` nodes that RETURN the resolution as flow
+  outputs instead of sending mail. Graded by flow validate, a structural check,
+  and one flow debug run.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, node:inline-agent, node:ixp, connector]
+
+run_limits:
+  max_turns: 160
+  turn_timeout: 1200
+  task_timeout: 3600
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 90
+
+initial_prompt: |
+  Build a Maestro Flow "BillingDisputeResolution" (in a solution of the same
+  name) that resolves a customer billing dispute end to end, then RETURNS the
+  resolution as flow outputs. You are logged in to the tenant that hosts every
+  resource named below — discover and wire them; do not create or mock them.
+
+  ## Trigger inputs (manual trigger)
+  - `disputedInvoice` — file. The disputed invoice PDF.
+  - `webhookPayload` — object. The billing-dispute submission event. Relevant
+    fields the flow reads:
+      - `webhookPayload.customer.accountNumber` (string)
+      - `webhookPayload.invoice.invoiceNumber` (string; may be messy)
+      - `webhookPayload.dispute.disputedLineItems[]` with `lineNumber`,
+        `quantity`, `unitPrice`, `amount`, `description`.
+
+  ## Pipeline (in order)
+  1. **Invoice Extraction (IxP)** — extract `disputedInvoice` with the existing
+     IxP extraction model `invoices-billing-f0c606f9-ixp` in folder
+     `Shared/uipath-maestro-flow/BillingDispute`.
+  2. **Normalize Data (Script)** — flatten the IxP extraction result
+     (`$vars.<ixpNode>.output.ExtractionResult.ResultsDocument.Fields`) into a
+     simple `{Id, Name, Value, Type, ...}` projection for downstream use.
+  3. **CRM Lookup + ERP Lookup (two Data Service query-entity-records nodes,
+     run in parallel)**:
+       - CRM: query entity `BillingDisputeCRM` where
+         `accountNumber = '<webhookPayload.customer.accountNumber>'`.
+       - ERP: query entity `BillingDisputeERP` where `invoiceNumber` equals the
+         normalized invoice number — trim, uppercase, and prepend `MCS-` if the
+         prefix is absent.
+  4. **Merge** — join the two lookup branches.
+  5. **Discrepancy Detection (Script)** — compare the disputed line items
+     (`$vars.start.output.webhookPayload.dispute.disputedLineItems`) against the
+     ERP contract rows (the ERP lookup output), matching on `lineNumber`. Compute
+     the per-line pricing mismatches, total overcharge, and total undercharge.
+  6. **Dispute Analyst Agent (inline `uipath.agent.autonomous`)** — embedded in
+     the flow project (scaffold with `uip agent init --inline-in-flow`), grounded
+     on the existing context index **"Billing Dispute SOP Index"** via its context
+     handle. It reads the normalized invoice, the ERP/CRM records, and the
+     discrepancy summary, and returns:
+       - `determination` (string), `recommendedAction` (string, one of
+         `escalate_to_manager` | `auto_resolve` | `reject`),
+         `autoResolutionEligible` (boolean), `creditAmount` (number),
+         `confidence` (number), `rationale` (string).
+  7. **Switch on `recommendedAction`**:
+       - `escalate_to_manager` → the **approval decision** node (step 8).
+       - `auto_resolve` → a small Script ("Log Credit Amount", returns
+         `$vars.<analyst>.output.creditAmount`) → the **financial posting** node
+         (step 9).
+       - `reject` → **Return Rejection** end node (step 10).
+  8. **Approval decision (`core.logic.decision`)** — represents the manager
+     approval outcome. The human approval step has been removed, so evaluate the
+     decision to **Approved** by default (expression `false`, with `trueLabel`
+     "Rejected" and `falseLabel` "Approved"):
+       - Approved (false) → the **financial posting** node (step 9).
+       - Rejected (true) → **Return Manager Rejection** end node (step 10).
+  9. **Financial posting + resolution drafting**:
+       - **FinancialPostingFunction** — the existing API workflow named
+         `FinancialPostingFunction` in folder
+         `Shared/uipath-maestro-flow/BillingDispute`; pass the disputed
+         `invoiceNumber`.
+       - then **Resolution Writer Agent** (a second inline
+         `uipath.agent.autonomous` embedded in the flow project) — drafts the
+         customer-facing resolution email and returns `subject` (string) and
+         `body` (string). The body must cite the invoice number and the approved
+         credit amount.
+       - then the **Return Resolution** end node (step 10).
+  10. **Do NOT send email.** Every terminal path ends at a `core.control.end`
+      node that maps the flow's output variables. Declare these flow `out`
+      variables and map them on EACH end node:
+        - `determination`, `recommendedAction`, `creditAmount`, `rationale` —
+          all from the analyst agent's outputs (these resolve on every path).
+        - `resolutionEmailBody` — on the **Return Resolution** path, map it to
+          the writer agent's `body`; on the two rejection end nodes, map it to a
+          short literal string noting that no resolution email was drafted.
+
+  ## Done criteria
+  Validate the final flow file — the task is not complete until `uip maestro
+  flow validate` passes. Grading then runs the flow under debug against live
+  tenant data, so build it to actually run, not merely validate. Do not run
+  debug yourself.
+
+  Use the `uipath-maestro-flow` skill workflow, and build the complete flow
+  without stopping to ask me.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Structural check: full orchestration present (IxP, Data Service, 2 inline agents, SOP context index, API-workflow, switch, decision, end); NO HITL node; NO send-email node; flow returns out variables"
+    command: "python3 $TASK_DIR/check_structure_billing_dispute_resolution.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "E2E check debugs the flow: it completes and RETURNS a real SOP-grounded resolution citing the disputed invoice (no email sent)"
+    command: "python3 $TASK_DIR/check_e2e_billing_dispute_resolution.py"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
