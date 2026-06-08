@@ -213,9 +213,9 @@
       "inputs": {
         "detail": {
           "connector": "uipath-uipath-dataservice",
-          "connectionId": "8b273e5a-49e1-45b4-8db1-8a043951011a",
-          "connectionResourceId": "8b273e5a-49e1-45b4-8db1-8a043951011a",
-          "connectionFolderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "connectionId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionResourceId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
           "method": "POST",
           "endpoint": "/v2/{entityName}/qer",
           "pathParameters": {
@@ -302,9 +302,9 @@
       "inputs": {
         "detail": {
           "connector": "uipath-uipath-dataservice",
-          "connectionId": "8b273e5a-49e1-45b4-8db1-8a043951011a",
-          "connectionResourceId": "8b273e5a-49e1-45b4-8db1-8a043951011a",
-          "connectionFolderKey": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+          "connectionId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionResourceId": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+          "connectionFolderKey": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
           "method": "POST",
           "endpoint": "/v2/{entityName}/qer",
           "pathParameters": {
@@ -4692,8 +4692,8 @@
       "name": "uipath-uipath-dataservice connection",
       "type": "string",
       "resource": "connection",
-      "resourceKey": "8b273e5a-49e1-45b4-8db1-8a043951011a",
-      "default": "8b273e5a-49e1-45b4-8db1-8a043951011a",
+      "resourceKey": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "default": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
       "propertyAttribute": "ConnectionId"
     },
     {
@@ -4701,8 +4701,8 @@
       "name": "FolderKey",
       "type": "string",
       "resource": "connection",
-      "resourceKey": "8b273e5a-49e1-45b4-8db1-8a043951011a",
-      "default": "79a7d12e-da84-4bf4-ab60-7f34b44dd178",
+      "resourceKey": "d61e5d0e-04af-4f93-95cc-151d81fa08dc",
+      "default": "c4359cde-55f0-4f0e-9322-c6cdce74ab4c",
       "propertyAttribute": "FolderKey"
     }
   ],
