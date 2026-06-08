@@ -97,7 +97,7 @@ Structural shape (placeholders in angle brackets — fill from `get-default-xaml
         <!-- One or more local trigger activities. Get full XAML via:
                uip rpa activities get-default-xaml \
                  --activity-class-name <FullClassName> \
-                 --project-dir "<PROJECT_DIR>" --use-studio --output json -->
+                 --project-dir "<PROJECT_DIR>" --output json -->
         <<TriggerPrefix>:<TriggerClassName> DisplayName="..." ... />
       </ui:TriggerScope.Triggers>
       <ui:TriggerScope.Action>

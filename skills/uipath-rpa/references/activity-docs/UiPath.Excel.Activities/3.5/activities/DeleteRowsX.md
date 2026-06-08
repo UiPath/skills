@@ -6,4 +6,4 @@
 |---------------|
 | `Range`, `DeleteRowsOption="Specific"`, `RowPositions`, `HasHeaders` |
 
-Use `uip rpa activities get-default-xaml --use-studio` for full XAML.
+Use `uip rpa activities get-default-xaml` for full XAML.
