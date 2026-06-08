@@ -1,0 +1,63 @@
+task_id: skill-agent-coded-eval-subset-output
+description: >
+  Coded-agent eval run coverage for `--eval-ids` and `--output-file`.
+  The agent must run only one selected deterministic test case and save the
+  results, proving it can use targeted local eval runs during debugging.
+tags: [uipath-agents, integration, mode:build, coded, lifecycle:generate, feature:eval]
+
+run_limits:
+  expected_turns: 28
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a Simple Function coded agent named `subset-eval` whose main function
+  accepts `a` and `b` integers and returns their sum as `result`.
+
+  Add a deterministic ExactMatch eval set with exactly three cases:
+  `case-selected`, `case-skipped-a`, and `case-skipped-b`. Run only
+  `case-selected` locally and save the eval output to
+  `selected-results.json`.
+
+  Do NOT publish, upload, deploy, call `uip login`, or use cloud reporting.
+  Complete the task in one pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran codedagent eval with --eval-ids"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--eval-ids(?:\s+|=)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent saved eval output with --output-file selected-results.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--output-file\s+selected-results\.json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran local-only eval with --no-report"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--no-report'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not report eval results to Studio Web"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+eval\s+.*--report'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Only the selected eval case ran and scored successfully"
+    command: "python3 $TASK_DIR/check_eval_subset_output.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
