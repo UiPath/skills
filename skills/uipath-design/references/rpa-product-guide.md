@@ -134,7 +134,7 @@ The skill that builds the workflows owns the final, detailed decision — this i
 
 **If the process is mostly UI with one non-trivial data step,** use **Hybrid**: XAML for orchestration + UI; one Coded Workflow invoked via `Invoke Workflow File` for the data step.
 
-For the full coded-vs-XAML decision flow, see [coded-vs-xaml-guide.md](../../../uipath-rpa/references/coded-vs-xaml-guide.md) in the `uipath-rpa` skill (architectural design only — final per-workflow decisions are made by the build skill).
+For the full coded-vs-XAML decision flow, see [coded-vs-xaml-guide.md](../../uipath-rpa/references/coded-vs-xaml-guide.md) in the `uipath-rpa` skill (architectural design only — final per-workflow decisions are made by the build skill).
 
 ### Selection checklist before recommending Coded C#
 

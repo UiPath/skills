@@ -1,7 +1,7 @@
 # Stub solution package
 
 `e2e-stub-1.0.0.zip` — pre-built minimal UiPath coded Python agent. Used by
-`uipath-solution/operate/deploy_round_trip_e2e` (the test publishes + deploys
+`uipath-solution/deploy_round_trip_e2e` (the test publishes + deploys
 it as part of the scenario) and `config_lifecycle_e2e` (config edits against
 its config file).
 

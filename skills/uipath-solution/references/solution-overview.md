@@ -70,7 +70,7 @@ Always run `resource refresh` before either path so the bundled artefact files a
 ```
 uip solution
   ├── init <name>                         Create a new solution directory with .uipx manifest
-  │                                        (pre-rename CLIs expose this as `new`; see SKILL.md Operate-half "CLI Surface Probe")
+  │                                        (pre-rename CLIs expose this as `new`; see SKILL.md "CLI Surface Probe")
   ├── delete <solution-id>                Delete a solution from Studio Web
   ├── upload <path>                       Upload solution to Studio Web
   ├── pack <solution> <output>            Pack into a deployable .zip package
@@ -121,5 +121,5 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 
 ## Related
 
-- **Orchestrator** (`uip or`) — folders, processes, jobs, machines → [`uipath-orchestrator`](../orchestrator/orchestrator.md)
-- **Resources** (`uip resource`) — assets, queues, buckets used by solutions → [`uipath-resources`](../resources/resources.md)
+- **Orchestrator** (`uip or`) — folders, processes, jobs, machines → [`uipath-platform`](../../uipath-platform/references/orchestrator/orchestrator.md)
+- **Resources** (`uip resource`) — assets, queues, buckets used by solutions → [`uipath-platform`](../../uipath-platform/references/resources/resources.md)

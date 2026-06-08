@@ -112,5 +112,5 @@ When `HasMore` is `true`, increment `--offset` by `--limit` and fetch again. Con
 ## Related
 
 - **Orchestrator** (`uip or`) — folders, jobs, processes, packages, users, machines → [`uipath-orchestrator`](../orchestrator/orchestrator.md)
-- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](../solution/solution.md)
+- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](/uipath:uipath-solution)
 - **Folder/user setup** — required before folder-scoped resources can be used → [`uipath-orchestrator/setup-environment`](../orchestrator/setup-environment.md)

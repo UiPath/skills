@@ -127,4 +127,4 @@ Token expiry: re-run `uip login` if you get a 401.
 ## Related
 
 - **Resources** (`uip resource`) — assets, queues, triggers, buckets, webhooks, libraries → [`uipath-resources`](../resources/resources.md)
-- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](../solution/solution.md)
+- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](/uipath:uipath-solution)

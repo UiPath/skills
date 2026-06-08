@@ -1,50 +1,11 @@
-{"id": "uipath-solution-001", "prompt": "Analyze this PDD and generate an SDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-002", "prompt": "I have a Process Design Document \u2014 turn it into a Solution Design Document", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-003", "prompt": "Read the attached PDD.pdf and produce an implementation-ready SDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-004", "prompt": "Convert pdd.md into sdd.md so a coding agent can build from it", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-005", "prompt": "Generate a UiPath solution design document from this requirements doc", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-006", "prompt": "Take this PDD docx and recommend whether it should be RPA, Flow, Case Management, or Agents, then write the SDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-007", "prompt": "I need an SDD for the bank statement reconciliation PDD \u2014 pick the right product and design it", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-008", "prompt": "Design a UiPath solution from this invoice processing PDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-009", "prompt": "Help me architect a UiPath solution for this AP automation requirement document", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-010", "prompt": "Read PDD.pdf in this folder and propose the project structure", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-011", "prompt": "Given this PDD, decide if we need a multi-project Solution or a single project, then write the SDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-012", "prompt": "I want to build from a PDD \u2014 start by writing the solution design", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-013", "prompt": "Review this PDD and tell me which UiPath product fits best, then generate the design doc", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-014", "prompt": "Create an SDD that breaks the PDD into projects, workflows, and packages", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-015", "prompt": "Turn the attached process documentation into an SDD with a Project Structure section", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-016", "prompt": "I have a PDD describing email ingestion + extraction + reporting \u2014 design the multi-project Solution", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-017", "prompt": "Write the solution design document for this purchase order processing PDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-018", "prompt": "Generate sdd.md from pdd.md using REFramework where appropriate", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-019", "prompt": "I need PDD-to-SDD analysis for a mortgage origination automation", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-020", "prompt": "Pick scope and produce an SDD for this customer's process design document", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-021", "prompt": "Plan a UiPath Solution from scratch given this PDD \u2014 RPA libraries, Flow, the works", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-022", "prompt": "Read the requirements PDF and architect the implementation", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-023", "prompt": "Design an end-to-end UiPath automation from this business requirements doc", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-024", "prompt": "Take this SOP and produce an SDD I can hand to a coding agent", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-025", "prompt": "PDD says Finance wants invoice extraction with HITL approval \u2014 design it", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-026", "prompt": "Read pdd.md and write a kebab-cased sdd.md in the cwd", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-027", "prompt": "Walk me through scope selection for this PDD \u2014 single product or Solution?", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-028", "prompt": "Design a Case Management solution from this stages-and-SLAs PDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-029", "prompt": "Generate the implementation plan and SDD from this PDD so we can scaffold it", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-030", "prompt": "Decompose this PDD into Orchestrator-queue-connected sub-projects", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-031", "prompt": "Create a solution design doc covering Apps + RPA + entities for this PDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-032", "prompt": "I'd like the recommended scope and project list before we start coding \u2014 analyze the PDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-033", "prompt": "Build me an SDD from this Confluence PDD link", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-034", "prompt": "PDD has AI reasoning steps \u2014 should this be Agents? Generate the SDD accordingly", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-035", "prompt": "Read the PDD, identify SME review gaps, and write the SDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-036", "prompt": "Translate this PDD into an SDD with workflow inventory and NuGet packages", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-037", "prompt": "I want a full UiPath solution architecture for the PepsiCo scenario PDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-038", "prompt": "Recommend the product mix (RPA, Flow, Apps, Agents) for this PDD and write the design", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-039", "prompt": "Scaffold a project from this PDD \u2014 start with the SDD, then the tasks plan", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-040", "prompt": "Produce a solution-level SDD plus per-project SDDs for this multi-product automation", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-041", "prompt": "Help me design a UiPath automation: I'll share the PDD, you write the SDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-042", "prompt": "From this process spec, decide RPA sub-type (Process vs Library vs Test Auto) and design it", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-043", "prompt": "Architect a Maestro Flow solution from this PDD with referenced RPA and agent projects", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-044", "prompt": "I need an SDD with C# record data definitions for this coded RPA PDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-045", "prompt": "Read the PDD and generate the SDD plus the implementation task breakdown", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-046", "prompt": "Solution design please \u2014 PDD attached, target is Coded Apps + API Workflows", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-047", "prompt": "Analyze this denials management PDD and design the agentic solution", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-048", "prompt": "Write the architecture doc for this automation before we implement anything", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-049", "prompt": "Given this PDF process design, propose project decomposition and write the SDD", "expected_skill": "uipath-solution"}
-{"id": "uipath-solution-050", "prompt": "Prepare a UiPath solution design from the PDD so a coding agent can build the projects next", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-001", "prompt": "Pack my solution into a deployable zip", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-002", "prompt": "uip solution publish .output/myapp_1.0.4.zip", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-003", "prompt": "Deploy the latest version of my solution to the Invoices folder", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-004", "prompt": "Why is my deploy failing with 'Package version for deployment is not ready'?", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-005", "prompt": "Create a new solution project, add my flow to it, then pack publish and deploy", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-006", "prompt": "Set up a CI/CD pipeline that uses uip CLI with client credentials to publish my UiPath solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-007", "prompt": "Activate the deployment I just published", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-008", "prompt": "Uninstall the old solution from my dev tenant", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-009", "prompt": "Upgrade my solution to the latest published version in the Shared folder", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-010", "prompt": "List solution packages in the tenant feed and filter by name", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-011", "prompt": "Deploy my solution to production Orchestrator with a deployment pipeline and approval gates", "expected_skill": "uipath-solution"}

@@ -20,8 +20,9 @@ from pathlib import Path
 # Rounded recall.yes baseline (in %) per skill, from the 2026-05-08 full
 # activation run. Nearest 5%. Skills omitted have no activation test set
 # yet (uipath-admin, uipath-ixp) — the gate SKIPs them.
-# uipath-solution is the merged successor of uipath-solution-design + the
-# `uip solution` slice of uipath-platform; rebaseline after the next full run.
+# uipath-design (PDD→SDD authoring) and uipath-solution (`uip solution`
+# lifecycle) were split out of the former merged uipath-solution skill;
+# both omitted here pending a fresh full activation run — the gate SKIPs them.
 #
 # uipath-rpa: held at the pre-merge modern value of 70 after the
 # uipath-rpa-legacy merge (PILOT-5232). The legacy half's 75% baseline
