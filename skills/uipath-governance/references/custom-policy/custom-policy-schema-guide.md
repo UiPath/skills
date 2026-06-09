@@ -30,7 +30,6 @@ policy:
   description: <string>  # optional
   version: "<string>"    # required — e.g. "1.0"
   scope:
-    agent_tag: [<string>, ...]   # required — target agents with ANY of these tags
     hook: [<hook_name>, ...]     # required — lifecycle hooks this policy fires on
   rules:
     - <rule>
@@ -154,7 +153,6 @@ policy:
   description: Flag non-SSN PII in tax-filing agent prompts; allow SSN through.
   version: "1.0"
   scope:
-    agent_tag: [tax-filing, finance]
     hook: [before_model, after_model]
   rules:
     - id: allow-ssn
@@ -182,7 +180,6 @@ policy:
   description: Flag unapproved models and excess tool calls for audit.
   version: "1.0"
   scope:
-    agent_tag: [internal]
     hook: [before_model, tool_call]
   rules:
     - id: approved-models
@@ -209,7 +206,6 @@ policy:
 ## Authoring Checklist
 
 - [ ] `policy.name` is unique within the tenant (`list` to verify no collision)
-- [ ] `scope.agent_tag` matches the tags the target agents declare at startup
 - [ ] `scope.hook` lists only hooks relevant to the check types used (e.g. `tool_name.allowed_only` requires `tool_call`)
 - [ ] Every rule has a unique `id` (used in audit records)
 - [ ] `priority` is set intentionally — allow rules that must override deny rules have a higher priority number
