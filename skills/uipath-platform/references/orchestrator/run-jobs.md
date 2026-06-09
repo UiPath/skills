@@ -329,4 +329,4 @@ uip or packages download "MyProcess:1.0.0" --destination ./packages/ --output js
 
 - [setup-environment.md](setup-environment.md) — Folder creation, machine assignment, user setup
 - [traces.md](../traces/traces.md) — Deep-dive into LLM/agentic traces and spans
-- Resources (assets, queues, buckets, triggers, webhooks, libraries) → [`uipath-resources`](../resources/resources.md)
+- Resources (assets, queues, buckets, triggers, webhooks, libraries) → [resources.md](resources.md)

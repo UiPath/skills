@@ -297,6 +297,6 @@ None --> InReview (reviewer assigned) --> Verified | Retried
 
 ## Related
 
-- [resources.md](resources.md) -- Resource tool overview and libraries
+- [resources.md](resources.md) -- Orchestrator resources overview and libraries
 - [Triggers & Webhooks](triggers-and-webhooks.md) -- Queue triggers fire automations when item count exceeds a threshold
-- [Setup Environment](../orchestrator/setup-environment.md) -- Folder and machine setup
+- [Setup Environment](setup-environment.md) -- Folder and machine setup

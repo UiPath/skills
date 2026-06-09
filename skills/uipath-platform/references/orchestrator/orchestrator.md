@@ -109,7 +109,7 @@ X-UIPATH-OrganizationUnitId: <FOLDER_ID>
 
 Always check `uip or --help` first -- most operations are covered by the CLI. Only fall back to REST when there is no CLI command for the operation you need.
 
-**Example -- list triggers (no CLI command yet):**
+**Example -- raw OData query (for triggers prefer `uip or triggers list`; shown here only to illustrate the REST mechanics):**
 
 ```bash
 ACCESS_TOKEN=$(cat ~/.uipath/.auth | jq -r '.access_token')
@@ -126,5 +126,5 @@ Token expiry: re-run `uip login` if you get a 401.
 
 ## Related
 
-- **Resources** (`uip or`) — assets, queues, triggers, buckets, webhooks, libraries → [`uipath-resources`](../resources/resources.md)
+- **Resources** (`uip or`) — assets, queues, triggers, buckets, webhooks, libraries → [resources.md](resources.md)
 - **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](/uipath:uipath-solution)

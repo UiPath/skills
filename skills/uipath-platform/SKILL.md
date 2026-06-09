@@ -108,10 +108,10 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 | **Manage sessions and runtimes** | [references/orchestrator/manage-sessions.md](references/orchestrator/manage-sessions.md) |
 | **Tenant settings, calendars, audit logs** | [references/orchestrator/tenant-admin.md](references/orchestrator/tenant-admin.md) |
 | **Understand Orchestrator concepts** | [references/orchestrator/orchestrator.md](references/orchestrator/orchestrator.md) |
-| **Manage assets** | [references/resources/manage-assets.md](references/resources/manage-assets.md) |
-| **Work with queues and queue items** | [references/resources/process-queues.md](references/resources/process-queues.md) |
-| **Work with storage buckets and files** | [references/resources/work-with-storage.md](references/resources/work-with-storage.md) |
-| **Set up triggers and webhooks** | [references/resources/triggers-and-webhooks.md](references/resources/triggers-and-webhooks.md) |
+| **Manage assets** | [references/orchestrator/manage-assets.md](references/orchestrator/manage-assets.md) |
+| **Work with queues and queue items** | [references/orchestrator/process-queues.md](references/orchestrator/process-queues.md) |
+| **Work with storage buckets and files** | [references/orchestrator/work-with-storage.md](references/orchestrator/work-with-storage.md) |
+| **Set up triggers and webhooks** | [references/orchestrator/triggers-and-webhooks.md](references/orchestrator/triggers-and-webhooks.md) |
 | **Develop / pack / publish / deploy / activate solutions; set up CI/CD** | [/uipath:uipath-solution](/uipath:uipath-solution) |
 | **Debug LLM/agent traces (spans)** | [references/traces/traces.md](references/traces/traces.md) |
 | **Annotate traces with feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
@@ -274,7 +274,7 @@ The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip 
 
 - **[CLI Command Reference](references/uip-commands.md)** — Every `uip` command with workflow links
 - **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
-- **[Resources](references/resources/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
+- **[Resources](references/orchestrator/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
 - **[Solutions](/uipath:uipath-solution)** — Solution lifecycle (`uip solution init/pack/publish/deploy/activate`)
 - **[Design](/uipath:uipath-design)** — PDD/SDD authoring (Process → Solution Design Document)
 - **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability

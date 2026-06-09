@@ -14,7 +14,7 @@ Create configuration assets, share them across folders, and manage credential ro
 ## Prerequisites
 
 - Authenticated (`uip login`)
-- Target folder exists (see [setup-environment.md](../orchestrator/setup-environment.md))
+- Target folder exists (see [setup-environment.md](setup-environment.md))
 - For Credential/Secret types: a credential store must exist (`uip or credential-stores list`)
 
 ## Flow
@@ -274,4 +274,4 @@ Decimals and non-numeric strings are rejected.
 ## Related
 
 - [resources.md](resources.md) -- Overview of all resource commands
-- [setup-environment.md](../orchestrator/setup-environment.md) -- Create folders before creating assets
+- [setup-environment.md](setup-environment.md) -- Create folders before creating assets

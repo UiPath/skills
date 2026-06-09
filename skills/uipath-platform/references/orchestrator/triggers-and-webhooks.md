@@ -14,7 +14,7 @@ Automate job execution with time, queue, and API triggers, and set up webhooks f
 ## Prerequisites
 
 - Authenticated (`uip login`)
-- Target folder exists with machines assigned (see [setup-environment.md](../orchestrator/setup-environment.md))
+- Target folder exists with machines assigned (see [setup-environment.md](setup-environment.md))
 - Process (release) created -- you need the release key from `uip or processes list`
 
 ---
@@ -271,7 +271,7 @@ uip or webhooks list --enabled --output json
 
 ## Related
 
-- [resources.md](resources.md) — Resource tool overview and common flags
-- Get the release key for `--release-key` → [`uipath-orchestrator`](../orchestrator/run-jobs.md)
-- Calendar management + tenant settings affecting trigger behavior → [`uipath-orchestrator`](../orchestrator/tenant-admin.md)
+- [resources.md](resources.md) — Orchestrator resources overview and common flags
+- Get the release key for `--release-key` → [`uipath-orchestrator`](run-jobs.md)
+- Calendar management + tenant settings affecting trigger behavior → [`uipath-orchestrator`](tenant-admin.md)
 - [process-queues.md](process-queues.md) -- Queue setup required before creating queue triggers

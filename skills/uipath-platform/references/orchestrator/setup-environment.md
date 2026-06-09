@@ -407,4 +407,4 @@ Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) onl
 ## Related
 
 - [Run Jobs](run-jobs.md) — After setup, deploy packages and start jobs in the folder.
-- Create assets, queues, and buckets in the folder → [`uipath-resources`](../resources/resources.md)
+- Create assets, queues, and buckets in the folder → [resources.md](resources.md)

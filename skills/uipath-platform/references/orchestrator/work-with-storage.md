@@ -253,6 +253,6 @@ uip or bucket-files get-download-url <bucket-key> "2026/04/expenses.pdf" \
 
 ## Related
 
-- [resources.md](resources.md) — Resource tool overview and libraries
-- Credential stores used by external storage providers → [`uipath-orchestrator`](../orchestrator/tenant-admin.md)
-- Folder setup → [`uipath-orchestrator`](../orchestrator/setup-environment.md)
+- [resources.md](resources.md) — Orchestrator resources overview and libraries
+- Credential stores used by external storage providers → [`uipath-orchestrator`](tenant-admin.md)
+- Folder setup → [`uipath-orchestrator`](setup-environment.md)
