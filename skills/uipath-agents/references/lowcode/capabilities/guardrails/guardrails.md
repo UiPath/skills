@@ -286,7 +286,10 @@ import os, sys, json, urllib.request, urllib.error
 key = sys.argv[1]
 base = f"{os.environ['UIPATH_URL']}/{os.environ['UIPATH_ORGANIZATION_ID']}/apps_/default/api/v1/default"
 hdr = {"Authorization": "Bearer " + os.environ["UIPATH_ACCESS_TOKEN"],
-       "X-Uipath-Tenantid": os.environ["UIPATH_TENANT_ID"], "Accept": "application/json"}
+       "X-Uipath-Tenantid": os.environ["UIPATH_TENANT_ID"], "Accept": "application/json",
+       # The Apps API gateway rejects the default "Python-urllib/x.y" User-Agent with 403.
+       # Send an explicit UA so this call doesn't false-fail (curl works because it sets one).
+       "User-Agent": "uipath-guardrail-verify"}
 def get(u):
     try:
         return json.load(urllib.request.urlopen(urllib.request.Request(u, headers=hdr)))

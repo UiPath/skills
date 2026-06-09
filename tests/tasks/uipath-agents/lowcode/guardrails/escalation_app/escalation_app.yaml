@@ -21,9 +21,10 @@ initial_prompt: |
   Create a UiPath low-code agent "ComplianceAgent" for handling user requests
   about financial data. Add a guardrail that detects PII — specifically
   email addresses and phone numbers — and instead of blocking, escalates
-  violations to a human reviewer via the
-  "Tool.Guardrail.Escalation.Action.App" app, notifying
-  reviewer@example.com. The solution should be named "EscalateSol".
+  violations to a human reviewer via the deployed Action Center app whose
+  name contains "Guardrail.Escalation.Action.App" (match it even if the
+  deployed name carries a prefix or a version suffix such as ".2"),
+  notifying reviewer@example.com. The solution should be named "EscalateSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
