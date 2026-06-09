@@ -1,6 +1,6 @@
 ---
 name: uipath-ixp
-description: "[PREVIEW] UiPath IXP (Document Understanding) — review IXP predictions with Claude, confirm valid fields, improve prompts, publish models."
+description: "[PREVIEW] UiPath IXP (Document Understanding) — create, label, train, review, and publish document-extraction projects/models: review predictions, confirm valid fields, improve prompts, manage model versions."
 ---
 
 # UiPath IXP Document Extraction Assistant
