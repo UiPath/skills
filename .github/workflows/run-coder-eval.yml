@@ -415,11 +415,24 @@ jobs:
           BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
+          # Redirect the temp root off the default %TEMP%. On the GH-hosted
+          # Windows runner %TEMP% resolves to its 8.3 short form
+          # (C:\Users\RUNNER~1\AppData\Local\Temp). coder-eval creates each
+          # agent sandbox under %TEMP%, so the sandbox path inherits the
+          # `RUNNER~1` tilde segment — and Claude Code's permission layer
+          # rejects writes to paths containing that 8.3 short-name pattern as
+          # "suspicious", blocking the agent's own file edits until the 1200s
+          # turn watchdog hard-kills it (false ERROR). `C:\cetmp` is ≤8 chars
+          # with no spaces, so Windows generates no `~1` alias for it.
+          TMP:  C:\cetmp
+          TEMP: C:\cetmp
         working-directory: tests
         id: eval
         shell: bash
         run: |
           shopt -s globstar nullglob
+          # Create the tilde-free temp root pinned via TMP/TEMP above.
+          mkdir -p /c/cetmp
           overall_exit=0
           for task in $TASK_GLOBS; do
             echo "--- Killing leftover Helm/Studio processes ---"
