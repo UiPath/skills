@@ -62,9 +62,6 @@ success_criteria:
     include_reference: true
     include_agent_output: true
     include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
       You are grading a UiPath diagnostic agent against a known-correct
       reference outcome. The Reference solution attached to this prompt
@@ -87,13 +84,12 @@ success_criteria:
         error) -- is the verbatim Branch 6 signature.
 
         Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` -- the
-             execute-query-failures playbook should appear (absolute or
-             relative path).
+          1. The agent's final response -- it should name the
+             execute-query-failures playbook / Branch 6.
           2. The agent's tool-call summary -- a Read on the file under
              references/activity-packages/database-activities/playbooks/.
-          3. state.json's `scope.domain` -- should include the
-             database-activities or activity-packages domain.
+        Grade only what the agent presented (final response + tool
+        calls); do NOT inspect internal investigation state.
 
         Acceptable / non-penalized: the agent may also Read neighboring
         execute-query branches (null connection, provider mismatch, SQL
@@ -126,17 +122,17 @@ success_criteria:
             stable version via Manage Packages.
 
         Evidence sources (in priority order):
-          1. state.json -- `requirements`/`triage_summary`/scope/domain:
-             the 0xE0434352 process-level termination with no clean
-             activity exception, and the unbounded SELECT materializing
-             a huge result set.
-          2. hypotheses.json -- the hypothesis flagged
-             `is_root_cause: true` should describe the oversized result
-             set exhausting Robot memory / CLR crash (NOT a null
-             connection, NOT a SQL syntax error, NOT a provider/driver
-             mismatch, NOT a timeout, NOT a wrong activity, NOT a
-             database outage).
-          3. The agent's last text response.
+          1. The agent's final response -- it should reference the
+             0xE0434352 process-level termination with no clean activity
+             exception, and the unbounded SELECT materializing a huge
+             result set, describing the oversized result set exhausting
+             Robot memory / CLR crash (NOT a null connection, NOT a SQL
+             syntax error, NOT a provider/driver mismatch, NOT a timeout,
+             NOT a wrong activity, NOT a database outage).
+          2. The agent's tool-call summary and any evidence it cites
+             from the job logs / Main.xaml (the unbounded SELECT).
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
 
       WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
       concludes any of these as the root cause):

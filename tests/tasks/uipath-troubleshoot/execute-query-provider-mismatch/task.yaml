@@ -63,9 +63,6 @@ success_criteria:
     include_reference: true
     include_agent_output: true
     include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
       You are grading a UiPath diagnostic agent against a known-correct
       reference outcome. The Reference solution attached to this prompt
@@ -91,13 +88,12 @@ success_criteria:
         is the verbatim Branch 2 signature.
 
         Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` -- the
-             execute-query-failures playbook should appear (absolute or
-             relative path).
+          1. The agent's final response -- it should name the
+             execute-query-failures playbook / Branch 2.
           2. The agent's tool-call summary -- a Read on a file under
              references/activity-packages/database-activities/playbooks/.
-          3. state.json's `scope.domain` -- should include the
-             database-activities or activity-packages domain.
+        Grade only what the agent presented (final response + tool
+        calls); do NOT inspect internal investigation state.
 
         Acceptable / non-penalized: the agent may also Read neighboring
         execute-query branches (null connection, SQL syntax, timeout,
@@ -128,16 +124,17 @@ success_criteria:
             machine.
 
         Evidence sources (in priority order):
-          1. state.json -- `requirements.error_message`,
-             `triage_summary`, scope/domain: should reference the
+          1. The agent's final response -- it should reference the
              "Keyword not supported" ArgumentException, the Windows
-             (migrated) project, and the legacy SqlClient provider.
-          2. hypotheses.json -- the hypothesis flagged
-             `is_root_cause: true` should describe the post-migration
-             provider/keyword mismatch (NOT a null connection, NOT a SQL
-             syntax error, NOT a timeout, NOT a CLR crash, NOT a wrong
-             activity, NOT a database/connectivity outage).
-          3. The agent's last text response.
+             (migrated) project, and the legacy SqlClient provider, and
+             describe the post-migration provider/keyword mismatch (NOT a
+             null connection, NOT a SQL syntax error, NOT a timeout, NOT
+             a CLR crash, NOT a wrong activity, NOT a
+             database/connectivity outage).
+          2. The agent's tool-call summary and any evidence it cites
+             from the job logs / Main.xaml / project.json.
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
 
       WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
       concludes any of these as the root cause):
