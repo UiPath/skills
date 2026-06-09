@@ -16,9 +16,19 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 - User provides a taxonomy file to import into a project
 - User asks for the project taxonomy at a specific trained model version — what the schema looked like when version N was published (use `deployments get-taxonomy <project-name> --version <N>`)
 
+## When NOT to Use This Skill — defer to uipath-maestro-flow
+
+This skill covers standalone IXP-project work. STOP and invoke the `uipath-maestro-flow` skill instead when any of these hold:
+
+- The user asks which IxP / document-extraction models, extractors, or nodes are available **to a `.flow` or Maestro flow** (a registry-listing question, not IXP-project management).
+- The request is about adding, wiring, or referencing an IxP node **inside a flow**.
+- The working context is a `.flow` file or a Maestro flow rather than a standalone IXP project.
+
+Do not answer these from this skill. Re-activate `uipath-maestro-flow` and follow the commands it documents. This overrides Critical Rule 1.
+
 ## Critical Rules
 
-1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase.
+1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase. (Exception: defer flow/Maestro registry questions to `uipath-maestro-flow` — see *When NOT to Use This Skill* above.)
 2. **Run workflows end-to-end automatically** — do NOT ask the user to do individual steps.
 3. **Always use `--output json`** when parsing CLI output programmatically.
 4. **Use `/tmp/ixp/<project-name>/` as the working directory with this structure:**
