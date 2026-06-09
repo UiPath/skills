@@ -3,11 +3,12 @@ description: >
   Smoke test: agent builds a simple invoice approval flow containing an inline
   HITL node (uipath.human-in-the-loop). Verifies the node is written directly
   into the .flow file as JSON and the flow validates.
-tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:single-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, lifecycle:generate, shape:single-node, node:hitl]
 
 run_limits:
   expected_turns: 21
   max_turns: 80
+  turn_timeout: 600
 initial_prompt: |
   Build a UiPath Flow named "InvoiceApproval" that:
   1. Starts with a manual trigger

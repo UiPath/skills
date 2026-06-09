@@ -3,7 +3,7 @@ description: >
   Smoke test: agent wires the HITL node's `outcome-completed` output port
   (the current registry handle labelled Completed). Verifies correct edge structure in
   a three-node approval flow.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
   expected_turns: 24

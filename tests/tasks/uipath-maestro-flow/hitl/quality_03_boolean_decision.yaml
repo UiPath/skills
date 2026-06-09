@@ -4,7 +4,7 @@ description: >
   Decision node condition using the exact runtime path
   $vars.<nodeId>.output.<fieldName>. Tests field-level variable access
   and that both Decision branches are wired to distinct downstream nodes.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
   expected_turns: 33
