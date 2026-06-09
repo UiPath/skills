@@ -86,7 +86,7 @@ Key options:
 |---|---|
 | `--entry-point <path>` | Required for multi-entry-point packages |
 | `--auto-update` / `--no-auto-update` | Auto-pick the latest package version on deploy |
-| `--job-priority <Low\|Normal\|High>` | Default execution priority |
+| `--job-priority <Low\|Normal\|High>` | Default execution priority. The CLI sets the matching `SpecificPriorityValue` band (Low=25, Normal=45, High=65) — the API derives the band from that value, so the change actually applies. |
 | `--specific-priority <1-100>` | Numeric priority override (mutually exclusive with `--job-priority`). Use when you need fine-grained ordering inside the same priority bucket. |
 | `--robot-size <Small\|Standard\|Medium\|Large>` | Cloud robot sizing for serverless runtimes |
 | `--input-arguments <json>` | Default input arguments (merged with per-job inputs) |
@@ -94,7 +94,7 @@ Key options:
 | `--tags <list>` | Comma-separated tags for filtering |
 | `--hidden-for-attended` / `--visible-for-attended` | Toggle visibility to attended robot users |
 | `--auto-create-triggers` / `--no-auto-create-triggers` | Auto-create connected triggers on deploy |
-| `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <id>`) | Job retention policy |
+| `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <id>`) | Job retention policy. `--retention-period` must be 1-180 (validated client-side). |
 | `--stale-retention-period <days>` + `--stale-retention-action <Delete\|Archive\|None>` | Stale-job retention policy |
 
 > The runtime kind (Unattended / Headless / NonProduction / AgentService / Serverless) is **not** a process-level setting; it's chosen per-job on `jobs start --runtime-type`. The process binds the package to a folder; runtime selection happens at execution time.
