@@ -1,0 +1,86 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa2222cc-001",
+      "JobKey": "aa222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T09:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelMultiReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa2222cc-002",
+      "JobKey": "aa222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T09:00:01.418Z",
+      "Message": "[ExcelMultiReportProcess] Reading Q1 and Q2 sales workbooks for the quarterly comparison report",
+      "ProcessName": "ExcelMultiReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa2222cc-003",
+      "JobKey": "aa222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T09:00:01.610Z",
+      "Message": "Use Excel File: sales-q1.xlsm — ReadFormatting=True forces COM fallback (OpenXML provider declined). Launching new EXCEL.EXE process (PID 8472).",
+      "ProcessName": "ExcelMultiReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa2222cc-004",
+      "JobKey": "aa222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T09:00:03.110Z",
+      "Message": "Read Range: Q1 sales — returned 1247 rows. Body of UseExcelFile_1 complete.",
+      "ProcessName": "ExcelMultiReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa2222cc-005",
+      "JobKey": "aa222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T09:00:03.510Z",
+      "Message": "Use Excel File: sales-q1.xlsm — scope exiting. No outer Excel Process Scope detected: terminating EXCEL.EXE PID 8472 per scope-owned-lifecycle policy.",
+      "ProcessName": "ExcelMultiReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa2222cc-006",
+      "JobKey": "aa222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T09:00:04.210Z",
+      "Message": "Use Excel File: sales-q2.xlsm — ReadFormatting=True forces COM fallback. Attempting to reuse Excel COM apartment from previous scope (PID 8472).",
+      "ProcessName": "ExcelMultiReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa2222cc-007",
+      "JobKey": "aa222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T09:00:07.910Z",
+      "Message": "Use Excel File: sales-q2.xlsm — COM apartment for PID 8472 is unreachable (process terminated). HRESULT 0x80010108 RPC_E_DISCONNECTED.",
+      "ProcessName": "ExcelMultiReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa2222cc-008",
+      "JobKey": "aa222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-30T09:00:08.402Z",
+      "Message": "Use Excel File: sales-q2.xlsm — System.Runtime.InteropServices.COMException (0x80010108): The object invoked has disconnected from its clients. (RPC_E_DISCONNECTED)",
+      "ProcessName": "ExcelMultiReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}
