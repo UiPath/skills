@@ -430,7 +430,7 @@ Also remove the `xmlns:uiascb` namespace declaration from the root `<Activity>` 
 `FieldObject Name` values are connector-specific and schema-driven. Never guess. Always read:
 
 ```bash
-uip is resources describe <connector-key> <operation-name> --operation Create --output json
+uip is resources describe <connector-key> <object-name> --operation Create --output json
 cat ~/.uipath/cache/integrationservice/<connector-key>/_static/<operation>.Create.json
 ```
 

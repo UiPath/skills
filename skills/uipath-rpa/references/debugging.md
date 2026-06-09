@@ -43,7 +43,7 @@ All other `debug` verbs (`break`, `continue`, `resume`, `continue-retry`, `conti
 | `--file-path` | Workflow file to run (relative to project root). Applies to `run` and `debug start` only |
 | `--input-arguments` | JSON object with project-level input arguments. Only for `run`, `debug start`, `debug test-activity`, and `debug start-from-here` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--input-variables` | JSON object with workflow-level variable values. Only for `debug test-activity` and `debug start-from-here` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
-| `--log-level` | Minimum log level: `Verbose`, `Trace`, `Information` (default), `Warning`, `Error`, `Critical` |
+| `--log-level` | Minimum log level: `Verbose`, `Trace` (default), `Information`, `Warning`, `Error`, `Critical` |
 | `--skip-build` | Skip the pre-run build step (use only when you've just built) |
 | `--output` | Output format: `json` (recommended), `table`, `yaml`, `plain` |
 | `--profiling` | Collect per-activity timings and runtime screenshots — verifies UI automation correctness and workflow performance. Only effective on start verbs (`run`, `debug start`, `debug test-activity`, `debug start-from-here`); ignored on stepping / breakpoint verbs. Boolean flag (no value needed). See [Profiling Workflow Performance](#profiling-workflow-performance). |
