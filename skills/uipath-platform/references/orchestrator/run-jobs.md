@@ -144,10 +144,10 @@ uip or jobs start <process-key> --folder-path "Production" \
 
 Key options:
 
-- `--input-arguments <json>` / `--input-file <path>` — pick one. `--input-arguments` inlines a JSON object; `--input-file` uploads a file as the job's `InputFile` argument.
+- `--input-arguments <json>` / `--input-file <path>` — pick one. `--input-arguments` inlines a JSON object (validated client-side — invalid JSON is rejected before the call); `--input-file` uploads a file as the job's `InputFile` argument.
 - `--attachment <[name=]path>` — upload one or more files and attach them to the job. Repeat the flag for multiple. Pair with `--attachment-id <guid>` to reuse an attachment that was previously uploaded.
 - `--runtime-type <type>` — `Unattended`, `Headless`, `NonProduction`, `AgentService`, or `Serverless`. Picks the runtime kind the scheduler will use.
-- `--strategy <strategy>` — `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (use `--user-keys` / `--machine-keys`).
+- `--strategy <strategy>` — one of `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (use `--user-keys` / `--machine-keys`), or `JobsCount`. Validated client-side. `--jobs-count` must be a whole number greater than 0.
 - `--user-keys <guids>` / `--machine-keys <guids>` — comma-separated GUIDs to pin the job to specific identities. With `--strategy ModernJobsCount` they restrict the candidate pool; with `Specific` they're required.
 - `--healing-agent` — enable Autopilot for Robots (Healing Agent) just for this job, regardless of the process-level `--healing-agent` setting on `processes edit`. Useful for one-off self-healing without flipping the process default.
 - `--reference <text>` — user-set reference (free-form string) attached to the job. Useful for correlation with external systems.
@@ -190,7 +190,7 @@ Retrieve LLM and agentic execution traces for Agent-type processes:
 uip or jobs traces <job-key> --output json
 ```
 
-Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For deeper span-level data, use `uip traces spans get [trace-id]` (or `uip traces spans get --job-key <key>`) — see [traces.md](../traces/traces.md).
+Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For a standard Process the result is an empty list, and the response adds an `Instructions` note saying so — that's how you tell "no traces recorded" apart from "this isn't an Agent process". For deeper span-level data, use `uip traces spans get [trace-id]` (or `uip traces spans get --job-key <key>`) — see [traces.md](../traces/traces.md).
 
 Traces are cross-folder -- no `--folder-path` required.
 
@@ -217,18 +217,22 @@ uip or jobs history <job-key> --output json
 Control running or suspended jobs:
 
 ```bash
-# Stop a running job
+# Stop a running job (SoftStop is best-effort -- a job whose activity ignores
+# the cancellation token can still run to completion)
 uip or jobs stop <job-key> --strategy SoftStop --output json
 
 # Force-kill a job
 uip or jobs stop <job-key> --strategy Kill --output json
 
-# Restart a faulted or stopped job
+# Restart a finished job (any outcome -- faulted, stopped, or successful).
+# Returns the new run in the same { Jobs: [...] } shape as `jobs start`.
 uip or jobs restart <job-key> --output json
 
 # Resume a suspended job with new input
 uip or jobs resume <job-key> --input-arguments '{"approved": true}' --output json
 ```
+
+Jobs are immutable audit records -- there is no `jobs delete`. They age out per the binding process's retention period.
 
 ## Step 11: Manage Processes
 
