@@ -100,11 +100,11 @@ Namespaces: `UiPath.MicrosoftOffice365.Activities`
 
 ## Excel Activities
 
-Activities for automating Microsoft Excel on Windows via COM interop (modern `Excel Process Scope` activities) and OpenXML file access (legacy workbook activities). Issues here involve `Invoke VBA` failures — Trust Center security blocks, malformed external code files, entry method name mismatches, parameter marshaling errors, and COM interop instability (`0x80010100 RPC_E_SYS_CALL_FAILED` and related HRESULTs).
+Desktop Excel activities from `UiPath.Excel.Activities` — read, write, delete, and manipulate `.xlsx` / `.xls` workbooks, run VBA macros (`Invoke VBA`, `Execute Macro`), and look up ranges on the host filesystem via Excel COM (Excel installed) or the OpenXML provider (Excel not required). Issues here involve workbooks locked by other processes, sheet names not found, range parsing failures, provider-specific parsing errors on heavily formatted or sensitivity-labeled files, Trust Center macro blocks, entry-method / parameter marshaling errors, COM-interop instability (`0x80010100 RPC_E_SYS_CALL_FAILED` and related HRESULTs), and Application Scope / Use Excel File container failures. For cloud Excel via Microsoft Graph, see Microsoft Office 365 Activities above.
 
 Namespaces: `UiPath.Excel.Activities`
 
-- [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, `Invoke VBA` execution model, and common failure patterns
+- [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, providers, scopes, execution models, and common failure patterns
 - [activity-packages/excel-activities/summary.md](./activity-packages/excel-activities/summary.md) — All playbooks for Excel Activities issues
 
 

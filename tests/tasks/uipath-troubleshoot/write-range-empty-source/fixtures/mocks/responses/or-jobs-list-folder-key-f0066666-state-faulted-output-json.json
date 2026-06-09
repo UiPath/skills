@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-25T08:00:01.300Z",
+      "EndTime": "2026-05-25T08:00:02.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelInvoiceProcess",
+      "Source": "Schedule",
+      "Reference": "DailyOverdueA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0066666-3333-4444-5555-666677778888",
+      "Info": "UiPath.Excel.BusinessException: The Excel Activity option 'Ignore empty source' is ineffective: the source DataTable has 0 rows and 'Exclude headers' is False.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

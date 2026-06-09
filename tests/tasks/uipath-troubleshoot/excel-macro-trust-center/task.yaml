@@ -1,0 +1,172 @@
+task_id: skill-troubleshoot-excel-macro-trust-center
+description: >
+  UiPath troubleshoot agent must diagnose an Execute Macro failure
+  with the same 'Cannot run the macro...' COMException as the
+  macro-not-found case, but here the macro IS present in the
+  workbook (VBA enumeration in job logs confirms it). The agent
+  must recognize Excel Trust Center policy on the Robot host as
+  the cause (branch 5) — distinct from branch 1 (macro absent) —
+  using the user clue 'works on my dev machine'. CLI cannot enumerate
+  Trust Center settings; agent must hand the user host-side
+  inspection commands. Remote-user framing.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, execute-macro, trust-center, needs-host]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 50
+turn_timeout: 5400
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.Runtime.InteropServices.COMException: Cannot run the macro 'Module1.ProcessData'. The macro may not be available in this workbook or all macros may be disabled.`
+  Pinned job key: cc333333-cccc-dddd-eeee-ffffaaaabbbb. The
+  macro Module1.ProcessData IS in the workbook — I just opened
+  it in Excel on my dev machine and ran it manually, and it
+  worked fine. Why is the Robot saying the macro isn't available?
+
+  I'm not on the Robot host right now and have no shell access
+  to MOCK-HOST — only Orchestrator. Don't try to run anything
+  on the host yourself; just tell me what to run and I'll come
+  back with the output. If a local Bash call gets rejected,
+  treat that as a hard signal to switch to writing
+  recommendations for me rather than retrying.
+
+  The project source for the failing process is at ./ExcelMacroProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-macro-failures playbook AND identified the Trust Center branch (branch 5) as the cause — distinguished from branch 1 (macro-not-found) by the macro's presence in the VBA enumeration + the 'works on dev machine' user clue. Recommended host-side Trust Center / Trusted Locations inspection."
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.Runtime.InteropServices.COMException: Cannot run the
+         macro 'Module1.ProcessData'. The macro may not be available
+         in this workbook or all macros may be disabled.` Pinned job
+         key: cc333333-cccc-dddd-eeee-ffffaaaabbbb. The macro
+         Module1.ProcessData IS in the workbook — I just opened it
+         in Excel on my dev machine and ran it manually, and it
+         worked fine. Why is the Robot saying the macro isn't
+         available? I'm remote; give me commands to run on the host."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/execute-macro-failures.md
+        because the runtime error is the macro-not-found COMException
+        signature.
+
+      DIMENSION B -- Trust Center branch (branch 5)
+        The reference root cause is:
+          - The workflow's configured `MacroName` is
+            `Module1.ProcessData`.
+          - The workbook's VBA enumeration in job logs shows
+            `['Module1.ProcessData', 'Module2.UpdateReport']` --
+            the configured macro IS PRESENT in the workbook.
+            This rules out branch 1 (macro not found).
+          - The error string is the canonical "Cannot run the
+            macro 'X'. The macro may not be available in this
+            workbook or all macros may be disabled." Same as
+            branch 1, but the second clause -- "all macros may
+            be disabled" -- is what applies here.
+          - The user's clue "works on my dev machine" is the
+            canonical "works on dev / fails on Robot" pattern
+            for Trust Center divergence. Developer Excel has
+            permissive Trust Center defaults (or trusted
+            locations covering the dev workspace); Robot host's
+            Excel under the Robot user has the default-disabled
+            Trust Center setting.
+          - CLI evidence (workflow source, job logs) confirms
+            the playbook match and distinguishes branch 5 from
+            branch 1. CLI alone cannot inspect the Robot host's
+            Trust Center settings; the agent must hand the user
+            host-side inspection commands.
+
+        TWO acceptable paths to a 1.0 score:
+
+        PATH A -- Confident branch 5 diagnosis from CLI evidence
+        + reasoning. The agent identifies that the macro IS in
+        the workbook (rules out branch 1), notes the "works on
+        dev" clue, and names Trust Center / Trusted Locations
+        as the cause. Recommends adding the workbook to Trusted
+        Locations OR adjusting Trust Center macro setting OR
+        signing the macro.
+
+        PATH B -- Recommend host-side verification before
+        committing. The agent identifies the same evidence but
+        defers the confident branch call until the user verifies
+        Trust Center settings on the Robot host (Excel ->
+        File -> Options -> Trust Center -> Trust Center Settings
+        -> Macro Settings; OR via registry / PowerShell).
+
+        Both arrive at branch 5. Reward either; what's penalized
+        is confidently picking branch 1 (macro not found) when
+        the evidence shows the macro IS present.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the execute-macro-failures playbook AND
+             reached one of the two paths (confident branch 5
+             diagnosis OR host-side Trust Center verification).
+             Named the recommended fix (Trusted Locations, Trust
+             Center macro setting, or code signing).
+        0.8  Both dimensions partially correct: matched the
+             playbook and recognized the Trust Center
+             possibility but did not contrast vs. branch 1 with
+             the VBA-enumeration evidence; OR named the
+             commands without explaining why.
+        0.5  Only one dimension correct: matched the playbook
+             but classified as branch 1 (macro-not-found)
+             despite the VBA-enumeration showing the macro
+             present; OR identified Trust Center without
+             matching the specific playbook.
+        0.2  Agent recognized the COMException but neither
+             matched the playbook nor identified the Trust
+             Center pattern.
+        0.0  Agent confidently picked branch 1 (macro-not-found)
+             when the evidence shows the macro is present;
+             concluded a different root cause; got blocked;
+             or failed.
+
+      Be substance-focused. The combination of (a) macro IS in
+      the workbook per VBA enumeration AND (b) "works on dev
+      machine" user clue is the decisive signal for branch 5 vs.
+      branch 1. Penalize agents that miss the distinction.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

@@ -1,0 +1,86 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-ee2222cc-001",
+      "JobKey": "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-25T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelInvoiceProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee2222cc-002",
+      "JobKey": "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-25T08:00:01.418Z",
+      "Message": "[ExcelInvoiceProcess] Filtering overdue invoices and writing report to C:\\Robot\\Data\\invoice-report.xlsx",
+      "ProcessName": "ExcelInvoiceProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee2222cc-003",
+      "JobKey": "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-25T08:00:01.510Z",
+      "Message": "Use Excel File: invoices-source.xlsx — workbook opened (OpenXML provider)",
+      "ProcessName": "ExcelInvoiceProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee2222cc-004",
+      "JobKey": "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-25T08:00:01.810Z",
+      "Message": "Read Range: load invoices (Invoices!A1:Z10000) — returned 247 rows (Status values: Paid=189, Pending=58, Overdue=0)",
+      "ProcessName": "ExcelInvoiceProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee2222cc-005",
+      "JobKey": "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-25T08:00:02.010Z",
+      "Message": "Filter Data Table: Status = Overdue — input 247 rows, output 0 rows (no matches)",
+      "ProcessName": "ExcelInvoiceProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee2222cc-006",
+      "JobKey": "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-25T08:00:02.310Z",
+      "Message": "Use Excel File: invoice-report.xlsx — workbook opened (OpenXML provider)",
+      "ProcessName": "ExcelInvoiceProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee2222cc-007",
+      "JobKey": "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-25T08:00:02.510Z",
+      "Message": "Write Range: overdue report — resolved config Sheet='Overdue' StartingCell='A1' ExcludeHeaders=False DataTable='dtOverdue' (rows=0 cols=8)",
+      "ProcessName": "ExcelInvoiceProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee2222cc-008",
+      "JobKey": "ee222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-25T08:00:02.802Z",
+      "Message": "Write Range: overdue report — UiPath.Excel.BusinessException: The Excel Activity option 'Ignore empty source' is ineffective: the source DataTable has 0 rows and 'Exclude headers' is False.",
+      "ProcessName": "ExcelInvoiceProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

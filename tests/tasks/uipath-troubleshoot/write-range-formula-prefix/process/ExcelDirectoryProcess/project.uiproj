@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDirectoryProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Write Range fails because a name scraped from the HR system contained a leading equals sign ('=Smith, John') that Excel COM interpreted as a malformed formula, raising COMException 0x800A03EC. Exercises the formula-prefix sub-cause of branch 5 in the write-range-failures playbook.",
+  "MainFile": "Main.xaml"
+}

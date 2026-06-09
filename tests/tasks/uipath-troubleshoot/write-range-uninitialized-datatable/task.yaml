@@ -1,0 +1,162 @@
+task_id: skill-troubleshoot-write-range-uninitialized-datatable
+description: >
+  UiPath troubleshoot agent must diagnose a Write Range failure
+  (NullReferenceException at the activity) where the DataTable argument
+  'dtSource' was never assigned because the preceding Read Range is
+  nested inside an If activity whose condition (File.Exists on the
+  source workbook) evaluated to False and skipped the Then-branch.
+  Agent must match the activity-packages/excel-activities/playbooks/write-range-failures.md
+  playbook, identify the uninitialized-DataTable branch from the
+  skipped-If Trace + the DataTable-resolved-to-Nothing Trace in the
+  job logs, and recommend either initializing the variable at
+  declaration, guarding the Write Range with an If on rows count,
+  failing fast on the missing source, or restructuring the workflow
+  to make the dependency explicit.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, write-range, uninitialized-datatable]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.NullReferenceException: Object reference not set to an instance of an object.`
+  Pinned job key: ee111111-cccc-dddd-eeee-ffffaaaabbbb. It's a Write
+  Range activity. Nothing in the workflow changed since yesterday's
+  successful run — what's wrong?
+
+  The project source for the failing process is at ./ExcelExportProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the write-range-failures playbook AND identified the uninitialized-DataTable branch (dtSource was never assigned because the preceding If File.Exists branch was skipped this run)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.NullReferenceException: Object reference not set to an
+         instance of an object.` Pinned job key:
+         ee111111-cccc-dddd-eeee-ffffaaaabbbb. It's a Write Range
+         activity. Nothing in the workflow changed since yesterday's
+         successful run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/write-range-failures.md
+        because the runtime error is the NullReferenceException-on-activity
+        signature for Write Range with a null DataTable argument.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workflow's Write Range activity receives dtSource.
+          - The preceding Read Range that populates dtSource is wrapped
+            in an If activity (`File.Exists("C:\Robot\Data\customer-source.xlsx")`).
+          - This run, that condition evaluated to False (the source
+            workbook was missing on the host filesystem), so the
+            Then-branch was skipped.
+          - dtSource was therefore never assigned, defaulted to Nothing.
+          - Write Range's argument resolver dereferenced the Nothing
+            variable and threw NRE before any provider call.
+
+        The reference fix:
+          - Initialize dtSource to `New System.Data.DataTable()` at
+            declaration (defensive default).
+          - AND guard the Write Range with
+            `If dtSource IsNot Nothing AndAlso dtSource.Rows.Count > 0`.
+          - OR fail fast on the missing source (replace the If with
+            unconditional Use Excel File on the source, OR throw
+            explicitly in the Else-branch).
+
+        Evidence sources (in priority order):
+          1. Job logs -- the decisive pair of Trace lines:
+             (a) "If source workbook exists — condition: File.Exists(...)
+                 evaluated to False (file not found on host filesystem).
+                 Then-branch skipped."
+             (b) "Write Range: export customers — DataTable argument
+                 'dtSource' resolved to Nothing (no assignment found in
+                 execution path)"
+             These two together prove the skipped-If → null-variable
+             chain.
+          2. Workflow source -- Main.xaml shows the If wrapping the
+             only assignment to dtSource, with the Write Range OUTSIDE
+             the If at the same scope as the variable declaration.
+          3. The "yesterday it worked" framing from the user reinforces
+             that the workflow itself didn't change — what changed is
+             the host filesystem state (the source workbook is now
+             missing).
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the write-range-failures playbook AND
+             traced the failure to the skipped If-branch → null
+             dtSource → NRE chain, AND recommended at least one
+             of the fixes (initialize at declaration, guard with
+             If on rows.count, fail-fast on missing source, or
+             restructure). The agent must explicitly name the
+             skipped If condition AND the null dtSource — both
+             halves of the chain.
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified that dtSource is null, but didn't trace
+             back to the If skipping; OR identified the If skipping
+             but didn't connect it to dtSource being null; OR
+             recommended only a generic "check the DataTable" fix
+             without a specific remediation.
+        0.5  Only one dimension correct: matched the playbook but
+             classified the cause-branch incorrectly (file-lock,
+             empty-source, hidden-rows, formula-prefix) without
+             supporting evidence; OR identified the null-DataTable
+             chain without matching the specific playbook.
+        0.2  Agent recognized the NRE as a Write Range issue but
+             never connected the chain from the missing source
+             workbook through the skipped If to the null variable.
+        0.0  Reached the wrong conclusion (e.g., blamed Excel COM,
+             claimed a package version bug, recommended killing
+             EXCEL.EXE), got blocked, or failed.
+
+      Be substance-focused. The decisive chain is
+      "missing source workbook on host → If File.Exists evaluated
+      to False → Then-branch skipped → dtSource never assigned →
+      Write Range NRE." An agent that names this full chain and
+      recommends a viable fix scores 1.0 even if it hedges about
+      confidence.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

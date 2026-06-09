@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for branch 2 (workbook held by another EXCEL.EXE) of the excel-activities/excel-application-scope-failures playbook. The Classic scope fails with 'Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected.' The decisive evidence (jobs logs) is that the file is locked by an ORPHAN EXCEL.EXE (PID 7312, session 0, no main window) left running by a prior job that faulted mid-scope — NOT corruption and NOT password protection (the two other red-herring reasons in the message). Agent must chain: folders -> jobs list faulted -> jobs get (Failed opening / COMException cannot access file) -> jobs logs (orphan EXCEL.EXE lock holder + originating crashed job) -> workflow source (single Classic scope). Fix: clear the orphan (Kill Process EXCEL on dedicated unattended hosts only) AND fix what leaves orphans (clean scope close); do NOT conclude corruption/password.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f00fffff-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f00fffff-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f00fffff-3333-4444-5555-666677778888 --state Faulted --output json", "file": "or-jobs-list-folder-key-f00fffff-state-faulted-output-json.json"},
+    {"match": "or jobs get \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-get-aa5555cc-output-json.json"},
+    {"match": "or jobs get aa555555-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-get-aa5555cc-output-json.json"},
+    {"match": "or jobs history \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-history-aa5555cc-output-json.json"},
+    {"match": "or jobs history aa555555-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-history-aa5555cc-output-json.json"},
+    {"match": "or jobs logs \"aa555555-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-logs-aa5555cc-output-json.json"},
+    {"match": "or jobs logs aa555555-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-logs-aa5555cc-output-json.json"}
+  ]
+}
