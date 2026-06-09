@@ -261,8 +261,8 @@ success_criteria:
     description: "Both branch expressions reference the approved boolean"
     path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
     includes:
-      - "approved == true"
-      - "approved == false"
+      - "vars.approved === true"
+      - "vars.approved === false"
     weight: 3.0
     pass_threshold: 1.0
 
