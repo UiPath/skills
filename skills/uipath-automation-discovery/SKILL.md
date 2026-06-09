@@ -1,9 +1,11 @@
 ---
 name: uipath-automation-discovery
-description: "[PREVIEW] UiPath automation discovery — mines Slack/email/wikis/CRM/HRIS/ERP for repetitive work, SPOFs, and replicable models; produces 4-tier prioritized opportunity report with UiPath implementation paths. TRIGGER when: user asks to discover automations, find automation opportunities, run an internal automation audit, or asks what to automate across their organization. DO NOT TRIGGER when: user is building a specific automation (→uipath-rpa), authoring a Flow (→uipath-maestro-flow), or working with agents (→uipath-agents)."
+description: "UiPath automation discovery — mines Slack/email/wikis/CRM/HRIS/ERP for repetitive work, SPOFs, and replicable models; produces a 4-tier prioritized opportunity report with UiPath implementation paths. Use to discover automation opportunities, find what to automate, or run an internal automation audit across an organization. For building a specific automation→uipath-rpa, authoring a Flow→uipath-maestro-flow, working with agents→uipath-agents."
 ---
 
 # Automation Discovery
+
+> **Preview** — this skill is in preview and may change.
 
 Investigate how employees actually work, then identify and prioritize internal
 automation opportunities backed by real behavioral evidence. Produces a
