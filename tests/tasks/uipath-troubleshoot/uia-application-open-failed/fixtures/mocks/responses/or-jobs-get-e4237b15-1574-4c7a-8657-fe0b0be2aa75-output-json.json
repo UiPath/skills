@@ -1,0 +1,48 @@
+GET_EXIT=0
+===DETAILS===
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "e4237b15-1574-4c7a-8657-fe0b0be2aa75",
+    "StartTime": "2026-06-05T07:34:54.547Z",
+    "EndTime": "2026-06-05T07:34:56.163Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 45,
+    "Source": "Agent",
+    "SourceType": "Agent",
+    "BatchExecutionKey": "e4237b15-1574-4c7a-8657-fe0b0be2aa75",
+    "Info": "Could not open target application.\r\nSpecified file path 'C:\\Users\\original_user\\AppData\\Local\\GitHubDesktop\\app-3.5.12\\githubdesktop2.exe' does not refer to an existing file.\r\n\r\nin DesktopApp.xaml\r\n    at NApplicationCard \"GitHub Desktop\"\r\n    at Sequence \"DesktopApp\"\r\n    at DesktopApp \"DesktopApp\"\r\n\r\nUiPath.UIAutomationNext.Exceptions.ApplicationOpenException: Could not open target application.\r\nSpecified file path 'C:\\Users\\original_user\\AppData\\Local\\GitHubDesktop\\app-3.5.12\\githubdesktop2.exe' does not refer to an existing file.\r\n   at UiPath.UIAutomationNext.Services.DriverApplicationService.IsOpenApplicationEnabled(ITargetApp targetApplication)\r\n   at UiPath.UIAutomationNext.Services.DriverApplicationService.ActivateApplicationInternalAsync(ITargetApp target, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Services.DriverApplicationService.ActivateApplicationAsync(ITargetApp target, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.GetMainWindowByTargetApp(IActivityContextWrapper context, ITargetApp targetApp, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.GetRuntimeData(IActivityContextWrapper context, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.OpenOrAttach(IActivityContextWrapper context, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ExecuteAsync(IActivityContextWrapper context, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\r\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)",
+    "CreationTime": "2026-06-05T07:34:54.547Z",
+    "ReleaseName": "ERN",
+    "Type": "Attended",
+    "InputArguments": "{}",
+    "EnvironmentVariables": "",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "StudioPro",
+    "RequiresUserInteraction": true,
+    "ReleaseVersionId": 20846849,
+    "EntryPointPath": "DesktopApp.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+    "Reference": "",
+    "ProcessType": "Process",
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "UIPATH\\ORIGINAL_USER",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "RemoteControlAccess": "None",
+    "LastModificationTime": "2026-06-05T07:34:56.163Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "e4237b1515744c7a8657fe0b0be2aa75",
+    "AutopilotForRobots": {
+      "Enabled": false,
+      "HealingEnabled": false
+    },
+    "Id": 66152281
+  }
+}

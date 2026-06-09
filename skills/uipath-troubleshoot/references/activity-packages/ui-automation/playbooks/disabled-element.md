@@ -21,8 +21,6 @@ What this looks like:
 
 - Exception class: `UiPath.UIAutomationNext.Exceptions.UiNodeDisabledElementException`
 - Friendly message: `The target element is disabled. Operation canceled.`
-- HRESULT: `0x8004027D` (`E_UINODE_CANNOT_ALTER_DISABLED_ELEM`)
-- Stack origin: `UiInputService.<Click|Type|SetText|Check|Select>Async` → `DriverServiceCore.WrapComAsync` → `ExceptionExtensions.ThrowFriendly`
 - Activity duration is short (sub-second to a few seconds) — the failure is NOT a timeout. The element was found, then rejected.
 - Selector resolved successfully (no `NodeNotFoundException` / `SelectorNotFoundException` in the same trace).
 
