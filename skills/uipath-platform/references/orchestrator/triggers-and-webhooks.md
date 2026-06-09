@@ -132,6 +132,8 @@ uip or triggers update <trigger-key> --type time \
 
 > **`--type` matters on get/update/delete.** Default is `time`. If you pass an api or queue trigger key without `--type api` / `--type queue`, the command hits ProcessSchedules and returns `HTTP 404: ProcessSchedule does not exist.` The error instructions surface a hint pointing at the right `--type` — re-run with the correct one. (`triggers list` shows the type per entry.)
 
+> **`--type` filters the list.** `triggers list --type time` returns only time triggers, `--type queue` only queue triggers (both live in ProcessSchedules, so the CLI discriminates by queue binding). The curated output carries a canonical `Type` field with one of `Time`, `Queue`, or `Api` across `create`/`get`/`list` (use `--all-fields` for the raw entity, where api triggers report `Http`). `get` also returns `StartProcessCronSummary` (a human-readable cron, e.g. "At 12:00 PM").
+
 > **Enum flag values are case-insensitive.** `--method POST`, `--runtime-type SERVERLESS`, `--job-priority HIGH` all work and are normalized to canonical PascalCase before the API call. Same on `queue-items` (`--priority high` ≡ `High`) and `processes edit` (`--retention-action delete`, `--robot-size standard`).
 
 ---
