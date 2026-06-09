@@ -29,6 +29,7 @@ When a robot executes a UI activity (Click, Type Into, Get Text, etc.), it uses 
 - **UiElementNotFoundException** — UI element lookup failed (similar to selector not found, different internal path)
 - **ElementNotInteractableException** — element was found but can't be clicked/typed into (hidden, disabled, covered by overlay)
 - **UiNodeDisabledElementException** — element was found but is disabled and the activity's `AlterIfDisabled` property is not `True`. Driver HRESULT `E_UINODE_CANNOT_ALTER_DISABLED_ELEM` (0x8004027D). Raised by interaction activities `NClick`, `NTypeInto`, `NSetText`, `NCheck`, `NSelectItem`, `NSAPClickPictureOnScreen`.
+- **VerifyActivityExecutionException** — activity's primary action succeeded but its `VerifyOptions` post-condition assertion did not hold within the verify retry window. Thrown by `VerifyExecutionService`, not COM-friendlied. Raised by `NClick`, `NHover`, `NKeyboardShortcuts`, `NTypeInto`. Multiple friendly messages route to distinct cause branches (`ExceptionCheckActivity`, `ExceptionVerificationTargetNotFoundOrInvalid`, `ExceptionVerificationTextNotSupported`, `ExceptionVerificationImageCouldNotBeRetrieved`, `ExceptionRecoveredButValidationFailed`, plus NTypeInto-specific text-match keys).
 - **NodeNotFoundException** — DOM or UI tree node missing
 - **TimeoutException** — activity exceeded its wait time (ambiguous — could be UI or non-UI)
 - **ImageOperationException** — image-based UI automation failure
