@@ -228,39 +228,42 @@ Write intent.json to disk, then run:
 node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" "<INTENT_JSON_PATH>"
 ```
 
-### What to show the user
+### What to show during build
 
-Show a clean, minimal build experience. Translate events into one line of progress — no raw JSON, no event names.
+Show a minimal, clean progress experience. Most events are silent.
 
-**Progress template:**
+**Silent (never show to user):**
+- `PREWARM_START`, `PREWARM_DONE` — pre-warm is background, user doesn't need to know
+- `SCAFFOLD_READY`, `ENV_WRITTEN` — internal setup steps
+- `PARTIAL_BUILD_DETECTED` — resume silently
+
+**Show as a single tick line:**
+- `WIDGET_READY:{"name":"X","index":N,"total":M}` → `  ✓ X`
+
+**Show as status line:**
+- `TSC_PASS` → `  ✓ All code validated`
+- `SERVER_READY:{"url":"..."}` → `Opening your dashboard…`
+
+**Show and act on:**
+- `T3_RETRY:{"widget":"X","errors":[...]}` → `  ↻ X — fixing a type error, one moment…` then update fnBody and re-run
+- `AUTH_MISSING` → pause, complete Phase 3 first
+- `PREWARM_FAILED:{"stderr":"..."}` → `Dependency install failed. Try running npm ci in [projectDir].`
+- `BUILD_RESULT:{"success":true,...}` → open previewUrl in browser, show success message
+
+**Progress template — this is ALL the user should see during a build:**
 
 ```
 Building **[Dashboard Name]**…
 
-  ✓ [Widget Name]
-  ✓ [Widget Name]
-  ✓ [Widget Name]
-  ✓ TypeScript clean
+  ✓ [Widget 1]
+  ✓ [Widget 2]
+  ✓ [Widget 3]
+  ✓ All code validated
 
 Opening your dashboard at http://localhost:57173
 ```
 
-**Event → display mapping:**
-
-| Event | What to show the user |
-|-------|----------------------|
-| `PREWARM_START` | (silent — installing in background while you read the plan) |
-| `PREWARM_DONE` | (silent — dependencies ready) |
-| `SCAFFOLD_READY` | (silent) |
-| `ENV_WRITTEN` | (silent) |
-| `WIDGET_READY:{"name":"X","index":N,"total":M}` | `  ✓ X  (N of M)` |
-| `T3_RETRY:{"widget":"X","errors":[...]}` | `  ↻ X — adjusting code, one moment…` — update fnBody and re-run |
-| `TSC_PASS` | `  ✓ All code validated` |
-| `AUTH_MISSING` | Pause — ask the user for a client ID before continuing |
-| `PARTIAL_BUILD_DETECTED` | `  ↻ Picking up from where we left off…` |
-| `SERVER_READY:{"url":"..."}` | `Opening your dashboard…` |
-| `BUILD_RESULT:{"success":true,...}` | Open previewUrl in browser, then show success message |
-| `PREWARM_FAILED` | "Dependency install failed. If this keeps happening, run `npm ci` manually in [projectDir] and try again." |
+Never show: raw JSON, event name strings, bash command output, tsc output, npm output.
 
 If `T3_RETRY` fires and a second attempt still fails (exit code 2 again): tell the user "I couldn't get that widget to compile. I've removed it from the dashboard — the rest built cleanly. You can re-add it once we figure out the right query."
 

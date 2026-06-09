@@ -20,6 +20,14 @@ If the intent is unclear, ask one question: "Do you want to build a new dashboar
 
 ## Path A — BUILD (new dashboard)
 
+## Turn 2 output — Show the plan (zero tool calls, zero intermediate output)
+
+After all reads complete and pre-warm is fired, output the plan as the first and only text.
+
+**The user should see nothing between their request and the plan.** No "Reading files…", no "Checking login…", no "Starting pre-warm…". Pure silence then the plan.
+
+If you need to show something, show only the plan.
+
 ### Turn 2 — Everything in ONE parallel message
 
 Fire all of these simultaneously. Use multiple tool calls in one response — do not wait for one before starting another.
@@ -57,6 +65,8 @@ node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" --prewarm "<ROUTING_N
 ```
 
 ⚠️ `run_in_background: true` is a tool call parameter, not a shell flag. Without it, the call blocks for 60–90s before the plan appears.
+
+> **What the user should see:** Only the plan text. Nothing else — not file reads, not login output, not pre-warm status, not bash results. If there is ANY output before the plan, that is a bug.
 
 **After all reads:** output the plan as pure text. No tool calls until user confirms. See `plugins/build/impl.md`.
 
@@ -123,6 +133,9 @@ This skill only handles dashboard building, editing, and deploying. For anything
 
 ## Hard stops
 
+- **Never** show raw tool call outputs to the user — read results in context, surface only meaningful information
+- **Never** echo raw event names (WIDGET_READY, TSC_PASS, BUILD_RESULT, etc.) — translate them to clean progress lines
+- **Never** show intermediate bash command outputs between the user's request and the plan — the plan is the first visible output
 - **Never** run ANY CLI command before presenting the plan and getting user confirmation
 - **Never** improvise deploy steps — always read `plugins/deploy/impl.md` first
 - **Never** run `uip tools list`, `npm run build`, or any command not in the relevant impl.md

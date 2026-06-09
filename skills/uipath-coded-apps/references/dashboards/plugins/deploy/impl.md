@@ -4,6 +4,8 @@ Publishes a built dashboard to Automation Cloud as a Coded Web App.
 
 **Pipeline order:** Production build → Pack → Publish → Deploy.
 
+> **What the user should see:** The deploy plan (Step 4), progress ticks, and the final URL. All other steps are silent — run commands, read outputs in context, never echo raw JSON or bash output to the user.
+
 ---
 
 ## Pre-flight
@@ -26,7 +28,7 @@ If `routingName` is empty: tell the user to run the build first.
 
 If `deployment.folderKey` is already in state.json, skip this entire step.
 
-Use the provisioning script — it handles all lookups, creation, and role assignment idempotently:
+Run the provisioning script (silent — no output to user until "AdminDashboards folder is ready"):
 
 ```bash
 node "<SKILL_BASE_DIR>/assets/scripts/setup-admin-folder.mjs" "AdminDashboards" "<PROJECT_DIR>"
@@ -55,7 +57,7 @@ Tell the user: "AdminDashboards folder is ready."
 
 ---
 
-## Step 3 — Bump version
+## Step 3 — Bump version (silent)
 
 ```bash
 node -e "
@@ -64,7 +66,7 @@ process.stdout.write([a, b, c + 1].join('.'))
 " <CURRENT_SEMVER>
 ```
 
-This gives `NEXT_SEMVER`. Check whether this version is already published:
+This gives `NEXT_SEMVER`. Check whether this version is already published (silent):
 
 ```bash
 uip codedapp list --output json
@@ -119,7 +121,7 @@ If build fails: restore has already run. Show the error.
 
 ---
 
-## Step 6 — Pack
+## Step 6 — Pack (silent)
 
 `-n` is the display name — must be identical across pack, publish, and deploy:
 
@@ -129,13 +131,13 @@ cd <PROJECT_DIR> && uip codedapp pack dist -n "<APP_NAME>" --version "<NEXT_SEMV
 
 ---
 
-## Step 7 — Publish
+## Step 7 — Publish (silent)
 
 ```bash
 cd <PROJECT_DIR> && uip codedapp publish -n "<APP_NAME>" --version "<NEXT_SEMVER>" --output json
 ```
 
-Read the JSON output:
+Read the JSON output (silent — no output shown until success or error):
 - **Success** (`Result === "Success"`)→ extract `DeploymentVersion`, continue
 - **Contains "409" or "already exists"** → bump version once more, re-pack, retry publish (up to 4 attempts total)
 - **Contains "5xx" or HTML** → this is a transient gateway error; wait 10 seconds and retry (up to 4 attempts)
@@ -152,21 +154,16 @@ Set tags based on the user's pinning choice:
 ```bash
 cd <PROJECT_DIR> && uip codedapp deploy \
   -n "<APP_NAME>" \
+  --version "<NEXT_SEMVER>" \
   --path-name "<ROUTING_NAME>" \
   --folder-key "<FOLDER_KEY>" \
   --tags "<TAGS>" \
   --output json
 ```
 
-> Note: `--version` is intentionally omitted — passing it causes "app still indexing" race errors. The CLI resolves the latest published version automatically.
-
 Read the JSON output:
 - **Success** → extract `SystemName` and `AppUrl`, continue
-- **Contains "indexing" or "not been published"** → this is a platform propagation delay after publish. Wait 10 seconds and retry (up to 3 times):
-  ```
-  ↻ App is indexing — retrying in 10 seconds (attempt N/3)…
-  ```
-  If all 3 retries fail, surface the error and stop.
+- **Contains "indexing" or "not been published"** → platform propagation delay after publish. Show `↻ App is indexing — retrying in 10 seconds (attempt N/3)…`. Wait 10 seconds and retry (up to 3 times). If all 3 fail, surface the error and stop.
 - **Contains "conflict", "already exist", or "path" + "name"** → generate a new routing suffix and retry:
 
 ```bash
@@ -230,7 +227,7 @@ Always: "To update after making changes, say 'deploy this dashboard' again."
 | Build fails | Show the error — dev credentials are always restored |
 | Publish 409 | Auto-bump version and retry (up to 4 times) |
 | Publish 5xx / HTML | Wait 10s and retry (up to 4 times) |
-| Deploy "indexing" / "not been published" | Platform propagation delay after publish — wait 10s, retry up to 3 times |
+| Deploy "indexing" / "not been published" | Propagation delay — show retry ticker, wait 10s, retry up to 3 times |
 | Deploy path-name conflict | Generate new suffix, retry deploy only (pack/publish already done) |
 | state.json missing | Tell user to run the build first |
 
@@ -238,6 +235,6 @@ Always: "To update after making changes, say 'deploy this dashboard' again."
 
 - `-n` must be the same human-readable name in pack, publish, and deploy
 - `--path-name` is only in deploy — sets the URL slug
-- `--version` is in pack and publish only — omit from deploy to avoid indexing race
+- `--version` must match across pack, publish, and deploy
 - Routing name is permanent after first successful deploy
 - Always include `--tags` — minimum `governance`, add `dashboard` if user opted to pin
