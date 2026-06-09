@@ -343,14 +343,27 @@ function applyTemplate(templateName, subs) {
 /**
  * Generate a detail view file for a widget.
  * Columns are auto-detected from the first data row at runtime via autoColumns().
- * @param {{ componentName: string, title: string, description: string, dataHook: string, dataSelector: string }} widget
+ * When the dataHook references customDataFn and fnBody is provided, injects a
+ * customDataFn definition so the view file compiles without referencing an
+ * undefined symbol.
+ * @param {{ componentName: string, title: string, description: string, dataHook: string, dataSelector: string, fnBody?: string }} widget
  * @returns {string} Full TypeScript file content
  */
 function generateViewFile(widget) {
-  const { componentName, title, description, dataHook, dataSelector } = widget
+  const { componentName, title, description, dataHook, dataSelector, fnBody } = widget
 
   const staticColumnsDecl = ''
   const columnsExpr = 'autoColumns(rows)'
+
+  // If dataHook references customDataFn, define it here too so the view compiles
+  const needsCustomFn = dataHook && dataHook.includes('customDataFn') && fnBody
+  const customFnBlock = needsCustomFn ? `
+// ── Custom data function (same fnBody as parent widget) ──────────────────────
+const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<Record<string, unknown>[]> => {
+${fnBody.split('\n').map(l => '  ' + l).join('\n')}
+}
+// ─────────────────────────────────────────────────────────────────────────────
+` : ''
 
   return `import React from 'react'
 import { DetailViewShell } from '@/dashboard/chrome/DetailViewShell'
@@ -377,7 +390,7 @@ function autoColumns(rows: Row[]): ColumnDef<Row>[] {
       ...(typeof v === 'number' && { align: 'right' as const }),
     }))
 }
-
+${customFnBlock}
 export function ${componentName}View() {
   const { data, loading, error } = ${dataHook}
 
@@ -710,6 +723,18 @@ function specToSubs(spec) {
 // ── Build pipelines ────────────────────────────────────────────────────────────
 
 /**
+ * Parse tsc error output to find which widget file caused the error.
+ * Falls back to defaultName if the path can't be extracted.
+ * @param {string} tscOutput
+ * @param {string} defaultName
+ * @returns {string}
+ */
+function widgetNameFromTscErrors(tscOutput, defaultName) {
+  const match = tscOutput.match(/widgets[/\\](\w+)\.tsx\(\d+/)
+  return match?.[1] ?? defaultName
+}
+
+/**
  * Kill a previously-started dev server using the PID stored in a file.
  * Cross-platform: taskkill /T on Windows (kills process tree), SIGTERM on Unix.
  * Waits up to 1500ms for the port to become free after killing.
@@ -833,6 +858,22 @@ async function runDashboardBuild(intent, intentPath) {
       log('⚠ Warning: clientId is empty — dashboard auth will not work. See Phase 4.5 in build plugin docs.')
     }
 
+    // Write partial state.json early so deploy can find app metadata even if build fails
+    const stateDir = join(P, '.dashboard')
+    mkdirSync(stateDir, { recursive: true })
+    const statePath = join(stateDir, 'state.json')
+    const existingState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {}
+    const partialState = {
+      schemaVersion: 1,
+      app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0' },
+      env: cloudUrl.includes('alpha') ? 'alpha' : cloudUrl.includes('staging') ? 'staging' : 'prod',
+      org: orgName, tenant: tenantName, cloudUrl,
+      widgets: existingState.widgets ?? {},
+      deployment: existingState.deployment ?? { systemName: null, folderKey: null, appUrl: null, lastDeployedAt: null },
+      buildStatus: 'in-progress',
+    }
+    writeAtomic(statePath, JSON.stringify(partialState, null, 2))
+
     // Step 3 — Pre-warm guarantee
     const LOCK_SIGNAL = join(P, 'node_modules', '.package-lock.json')
     const PREWARM_LOCK_PATH = join(P, '.prewarm.lock')
@@ -880,6 +921,7 @@ async function runDashboardBuild(intent, intentPath) {
           dataSelector: metric.dataSelector ?? entry.defaults?.dataSelector ?? '[]',
           columns: metric.columns ?? entry.defaults?.columns,
           viewColumns: entry.defaults?.viewColumns,
+          fnBody: metric.fnBody,
         }
       }
 
@@ -907,10 +949,12 @@ async function runDashboardBuild(intent, intentPath) {
       try {
         execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
       } catch (e) {
-        const errors = (e.stdout?.toString() ?? '').split('\n').filter(l => l.includes('error TS')).slice(0, 5)
+        const tscOut = e.stdout?.toString() ?? ''
+        const errors = tscOut.split('\n').filter(l => l.includes('error TS')).slice(0, 5)
+        const failingWidget = widgetNameFromTscErrors(tscOut, toPascalCase(metric.name))
         // Exit code 2 signals the agent to fix fnBody in intent.json and re-run
-        emit('T3_RETRY', { widget: metric.name, errors, intentPath })
-        log(`⚠ T3 "${metric.name}" has TypeScript errors. Fix fnBody in ${intentPath} and re-run.`)
+        emit('T3_RETRY', { widget: failingWidget, errors, intentPath })
+        log(`⚠ Widget "${failingWidget}" has TypeScript errors. Fix fnBody in ${intentPath} and re-run.`)
         process.exit(2)
       }
 
@@ -948,11 +992,7 @@ async function runDashboardBuild(intent, intentPath) {
       fail(`TypeScript errors:\n${err}`)
     }
 
-    // Step 7 — Write state.json
-    const stateDir = join(P, '.dashboard')
-    mkdirSync(stateDir, { recursive: true })
-    const statePath = join(stateDir, 'state.json')
-    const existingState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {}
+    // Step 7 — Write final state.json (upgrade partial → complete)
     const newState = {
       schemaVersion: 1,
       app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0' },
@@ -960,6 +1000,7 @@ async function runDashboardBuild(intent, intentPath) {
       org: orgName, tenant: tenantName, cloudUrl,
       widgets: widgetHashes,
       deployment: existingState.deployment ?? { systemName: null, folderKey: null, appUrl: null, lastDeployedAt: null },
+      buildStatus: 'complete',
     }
     writeAtomic(statePath, JSON.stringify(newState, null, 2))
 
@@ -1022,6 +1063,9 @@ async function runIncrementalEdit(editIntent, intentPath) {
   const statePath = join(P, '.dashboard', 'state.json')
   if (!existsSync(statePath)) fail('No .dashboard/state.json found. Run a fresh build first.')
   const state = JSON.parse(readFileSync(statePath, 'utf8'))
+  if (state.buildStatus === 'in-progress') {
+    log('⚠ Warning: Previous build did not complete — widgets may be missing. Consider running a full build first.')
+  }
   const { op, target, metric, delta } = classifyEditIntent(editIntent)
   const timeRange = state.timeRange ?? '30d'
 
