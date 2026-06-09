@@ -1,0 +1,153 @@
+task_id: skill-troubleshoot-delete-range-shift-conflict
+description: >
+  UiPath troubleshoot agent must diagnose a Delete Range failure
+  (COMException 0x800A03EC 'Application-defined or object-defined
+  error') where ShiftCells=True with ShiftOption=ShiftUp on range
+  A3:C5 collides with a merged region D5:D7 anchored on the bottom
+  edge of the deletion target. Agent must match the
+  activity-packages/excel-activities/playbooks/delete-range-failures.md
+  playbook, identify the shift-conflict branch from the merged-region
+  scan in the job logs + the ShiftCells/ShiftOption configuration in
+  the workflow source, and recommend either disabling the shift,
+  switching to EntireRow, replacing with Clear Range, or restructuring
+  the merge.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, delete-range, shift-conflict]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.Runtime.InteropServices.COMException (0x800A03EC): Application-defined or object-defined error.`
+  Pinned job key: dd222222-cccc-dddd-eeee-ffffaaaabbbb. It's a Delete
+  Range activity that I haven't touched in months — same workbook,
+  same range. Started failing this week. What's happening?
+
+  The project source for the failing process is at ./ExcelQuarterlyProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the delete-range-failures playbook AND identified the shift-conflict branch (ShiftCells=True ShiftOption=ShiftUp on A3:C5 collides with merged region D5:D7)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.Runtime.InteropServices.COMException (0x800A03EC):
+         Application-defined or object-defined error.` Pinned job
+         key: dd222222-cccc-dddd-eeee-ffffaaaabbbb. It's a Delete
+         Range activity that I haven't touched in months — same
+         workbook, same range. Started failing this week."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/delete-range-failures.md
+        because the runtime error is the Excel COM 0x800A03EC
+        "Application-defined or object-defined error" from a
+        Range.Delete shift operation.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Delete Range activity targets Q1!A3:C5 with
+            ShiftCells=True, ShiftOption=ShiftUp.
+          - Sheet Q1 has a merged region D5:D7 whose anchor sits on
+            the bottom edge of the deletion target (row 5).
+          - Excel COM's Range.Delete xlShiftUp cannot relocate the
+            merge anchor up by 2 rows, so it returns 0x800A03EC.
+          - Same operation would fail interactively in Excel with
+            "This operation requires the merged cells to be
+            identically sized."
+
+        The reference fix:
+          - Primary: set ShiftCells=False (clears values without
+            shifting; sidesteps the merge interaction).
+          - Switch to ShiftOption=EntireRow (whole-row deletes don't
+            relocate adjacent merges).
+          - Replace with Clear Range (purpose-built for value
+            wiping; ignores merges).
+          - Restructure the merge at the workbook source.
+
+        Evidence sources (in priority order):
+          1. Job logs -- the merged-region scan Trace line:
+             "Delete Range: drop stale block — sheet 'Q1' merged
+             regions adjacent to target: ['D5:D7'] (bottom edge of
+             A3:C5 abuts merge anchor at D5)"
+             paired with the resolved-config Trace line:
+             "Delete Range: drop stale block — resolved config
+             Sheet='Q1' Range='A3:C5' ShiftCells=True ShiftOption=ShiftUp"
+             These two together are decisive.
+          2. Workflow source -- Main.xaml's DeleteRange_1 has the
+             ShiftCells/ShiftOption configuration as literals.
+          3. The HRESULT 0x800A03EC and the Range.Delete stack
+             frame from `or jobs get` confirm this is Excel COM
+             rejecting the shift, not a UiPath-side issue.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the delete-range-failures playbook AND
+             converged on the shift-conflict branch: named the
+             ShiftCells=True ShiftOption=ShiftUp configuration AND
+             named the merged region D5:D7 collision AND
+             recommended at least one of the four fixes (disable
+             shift, EntireRow, Clear Range, restructure merge).
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified the shift configuration but did not name
+             the merge region; OR named the merge region but only
+             recommended a generic "review the merge" fix without
+             a concrete activity-level change.
+        0.5  Only one dimension correct: matched the playbook but
+             classified the cause-branch incorrectly (scope-missing,
+             invalid-syntax, file-lock, filter-misalignment) without
+             supporting evidence; OR identified the merge collision
+             without matching the specific playbook.
+        0.2  Agent recognized the COMException as a Delete Range
+             issue but neither matched the playbook nor identified
+             the shift/merge interaction.
+        0.0  Reached the wrong conclusion (e.g., blamed the workbook
+             corruption, recommended killing EXCEL.EXE, claimed a
+             package version bug), got blocked, or failed.
+
+      Be substance-focused. The connection between the
+      ShiftCells/ShiftOption configuration and the merged-region
+      scan is the decisive signal — penalize agents that report
+      the COMException without that connection.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

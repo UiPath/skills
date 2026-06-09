@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelMacroProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Execute Macro with same 'Cannot run the macro' COMException as the macro-not-found case, but the macro IS in the workbook; Trust Center on the Robot host blocks it. Exercises the Trust Center branch of the execute-macro-failures playbook.",
+  "MainFile": "Main.xaml"
+}

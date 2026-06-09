@@ -1,0 +1,142 @@
+task_id: skill-troubleshoot-excel-macro-vba-error
+description: >
+  UiPath troubleshoot agent must diagnose an Execute Macro failure
+  where the macro ran but threw a VBA runtime error inside the
+  macro code. The activity surfaces this as COMException with
+  HRESULT 0x80020009 (DISP_E_EXCEPTION) wrapping the inner VBA
+  error 'Run-time error 91: Object variable or With block variable
+  not set'. Agent must match the activity-packages/excel-activities/playbooks/execute-macro-failures.md
+  playbook, identify the VBA-error branch (branch 2) from the
+  HRESULT + inner-message evidence, and recommend opening the
+  workbook in the VBA editor to fix the macro's logic.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, execute-macro, vba-error]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 50
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.Runtime.InteropServices.COMException (0x80020009): Exception occurred. ---> Run-time error '91': Object variable or With block variable not set`
+  Pinned job key: bb222222-cccc-dddd-eeee-ffffaaaabbbb. The macro
+  was working fine last week. What's wrong now?
+
+  The project source for the failing process is at ./ExcelMacroProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-macro-failures playbook AND identified the VBA-error branch (branch 2): 0x80020009 DISP_E_EXCEPTION wrapping Run-time error 91 (Object variable or With block variable not set) — a bug inside the macro's VBA code, not a workflow / workbook / Trust Center issue"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.Runtime.InteropServices.COMException (0x80020009):
+         Exception occurred. ---> Run-time error '91': Object
+         variable or With block variable not set` Pinned job key:
+         bb222222-cccc-dddd-eeee-ffffaaaabbbb. The macro was working
+         fine last week. What's wrong now?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/execute-macro-failures.md
+        because the runtime error is the DISP_E_EXCEPTION signature
+        with an inner VBA Run-time error.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The macro `Module1.ProcessData` ran successfully past
+            the "macro lookup" stage (Excel dispatched the call;
+            VBA started executing), then threw `Run-time error '91':
+            Object variable or With block variable not set` inside
+            the macro code.
+          - HRESULT 0x80020009 (DISP_E_EXCEPTION) is Excel's COM
+            wrapper for "the macro threw via IDispatch"; the inner
+            VBA error is the actual cause.
+          - Run-time error 91 specifically means the macro tried to
+            use an object variable (typically a Range, Worksheet,
+            or Workbook reference) that was never `Set`. Common
+            patterns: a `Worksheets("Sheet1")` lookup returned
+            Nothing because Sheet1 was deleted; a Range search via
+            `Find()` returned Nothing and the code immediately
+            tried to dereference it; or a workbook variable was
+            declared but never assigned.
+
+        The reference fix:
+          - Open the workbook in Excel -> `Alt+F11` (VBA editor).
+          - Reproduce the macro with the same input data (the user
+            noted it worked last week, so a recent change in
+            workbook structure or data is likely).
+          - The VBE will break at the line throwing Run-time error
+            91. Fix the missing `Set` (defensive: `If Not rng Is
+            Nothing Then ...` guards around object references
+            sourced from lookups / Find / etc.).
+          - Add structured error handling: `On Error GoTo
+            ErrHandler` + `Err.Raise` with a clear description so
+            future failures surface a useful message rather than
+            a generic Run-time error 91.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the execute-macro-failures playbook AND
+             converged on the VBA-error branch (branch 2). Named
+             Run-time error 91 and its meaning (object variable
+             not Set); explained the DISP_E_EXCEPTION wrapper;
+             recommended VBE inspection + fix.
+        0.8  Both dimensions partially correct: matched the
+             playbook and identified the VBA-error pattern but
+             didn't fully explain DISP_E_EXCEPTION vs. the inner
+             error.
+        0.5  Only one dimension correct: matched the playbook but
+             classified the cause-branch incorrectly (e.g.,
+             missing add-in / branch 7); OR identified the VBA
+             error without matching the specific playbook.
+        0.2  Agent recognized the COMException but neither
+             matched the playbook nor identified the inner VBA
+             cause.
+        0.0  Reached the wrong branch (Trust Center, macro-not-
+             found) without evidence; concluded a different root
+             cause; got blocked; or failed.
+
+      Be substance-focused. The HRESULT 0x80020009 + inner
+      Run-time error 91 text is the decisive signal for branch 2
+      vs. branch 7 (which would have 424/429 inner).
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
