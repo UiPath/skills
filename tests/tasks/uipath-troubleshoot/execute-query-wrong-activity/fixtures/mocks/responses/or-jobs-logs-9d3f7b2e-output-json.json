@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-29T03:05:00.640Z",
+      "Message": "StagingCleanup execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-29T03:05:00.918Z",
+      "Message": "Connect to Database: opened connection with ProviderName 'Microsoft.Data.SqlClient' to 'Server=sqlprod07;Database=Warehouse'"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-29T03:05:01.187Z",
+      "Message": "Execute Query: executing 'DELETE FROM TempStaging WHERE LoadDate < ''2026-05-01''' (CommandType=Text); result set returned 0 rows"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-29T03:05:01.205Z",
+      "Message": "Assign 'Compute deleted count': evaluating CInt(dt_Deleted.Rows(0)(0)) against an empty DataTable (0 rows)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-29T03:05:01.241Z",
+      "Message": "Assign: There is no row at position 0.\r\nSystem.ArgumentOutOfRangeException: There is no row at position 0.\r\n   at System.Data.DataRowCollection.get_Item(Int32 index)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-29T03:05:01.258Z",
+      "Message": "Assign: There is no row at position 0.\r\nin Main.xaml\r\n    at Assign \"Compute deleted count\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

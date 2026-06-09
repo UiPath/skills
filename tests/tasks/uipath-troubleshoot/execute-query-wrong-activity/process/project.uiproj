@@ -1,0 +1,6 @@
+{
+  "Name": "StagingCleanup",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Execute Query failure caused by using Execute Query (a SELECT activity) to run a DELETE; the empty DataTable makes a downstream Assign reading Rows(0) throw ArgumentOutOfRangeException.",
+  "MainFile": "Main.xaml"
+}

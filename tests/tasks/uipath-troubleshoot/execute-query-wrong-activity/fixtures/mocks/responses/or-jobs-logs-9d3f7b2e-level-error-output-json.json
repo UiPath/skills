@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-29T03:05:01.241Z",
+      "Message": "Assign: There is no row at position 0.\r\nSystem.ArgumentOutOfRangeException: There is no row at position 0.\r\n   at System.Data.DataRowCollection.get_Item(Int32 index)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-29T03:05:01.258Z",
+      "Message": "Assign: There is no row at position 0.\r\nin Main.xaml\r\n    at Assign \"Compute deleted count\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

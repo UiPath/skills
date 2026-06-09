@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "8c4e1a7d-3f6b-4e2a-9d8c-0a5f3b7e1c4d",
+      "Name": "Data Operations",
+      "Path": "Data Operations",
+      "Description": "Folder hosting the nightly warehouse maintenance and staging-cleanup processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b1d6f0a2-7c3e-4d59-8a1b-4f0c2e6d9a37",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

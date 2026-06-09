@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "9d3f7b2e-5a8c-4f1d-b6e9-2c4a8d0f3b5e",
+      "State": "Faulted",
+      "ProcessName": "StagingCleanup",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-29T03:05:00.402Z",
+      "EndTime": "2026-05-29T03:05:01.302Z",
+      "CreationTime": "2026-05-29T03:05:00.190Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

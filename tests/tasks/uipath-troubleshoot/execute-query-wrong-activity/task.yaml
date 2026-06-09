@@ -1,0 +1,192 @@
+task_id: skill-troubleshoot-execute-query-wrong-activity
+description: >
+  UiPath diagnostic agent must diagnose a StagingCleanup process that
+  faults every night in Orchestrator. The Connect to Database step is
+  fine. The bug is the wrong activity for the statement type: an
+  Execute Query activity (which is for SELECT and returns a DataTable)
+  was used to run a modification statement
+  (DELETE FROM TempStaging WHERE LoadDate < '2026-05-01'). A modification
+  produces no result set, so Execute Query returns an empty DataTable; a
+  downstream Assign that reads dt_Deleted.Rows(0)(0) then throws
+  System.ArgumentOutOfRangeException: There is no row at position 0. The
+  agent must identify that Execute Query was used for a DELETE (wrong
+  activity), explain the empty-DataTable -> Rows(0) fault is the
+  structural consequence, and recommend switching to Execute Non Query
+  and reading its AffectedRecords (Int32) for the count — NOT add an
+  empty-DataTable guard / Try-Catch (the playbook's named anti-pattern),
+  NOT blame a data problem, a null connection, a provider mismatch, a SQL
+  syntax error, a timeout, a CLR crash, or a database outage.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-query, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My StagingCleanup process faults in Orchestrator every night. Can you
+  investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-query-failures playbook (Branch 7) AND identified the wrong-activity root cause (Execute Query used for a DELETE) with the Execute Non Query fix"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My StagingCleanup process faults in Orchestrator every night.
+         Can you investigate why?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook + Branch 7
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/execute-query-failures.md
+        specifically BRANCH 7 (wrong activity for the statement type --
+        Execute Query, a SELECT activity, used to run a modification
+        such as a DELETE).
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should name the
+             execute-query-failures playbook / Branch 7.
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+        Grade only what the agent presented (final response + tool
+        calls); do NOT inspect internal investigation state.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        execute-query branches (null connection, provider mismatch, SQL
+        syntax, timeout, CLR crash) while ruling them out. Exploration
+        is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Execute Query activity (which is for SELECT and returns
+            a DataTable) was used to run a modification statement:
+            DELETE FROM TempStaging WHERE LoadDate < '2026-05-01'.
+          - A modification produces no result set, so the DataTable
+            (dt_Deleted) is ALWAYS empty -- this is structural, not
+            data-dependent.
+          - The downstream Assign "Compute deleted count" reads
+            dt_Deleted.Rows(0)(0); against the empty DataTable it throws
+            System.ArgumentOutOfRangeException: There is no row at
+            position 0.
+        The reference fix:
+          - Switch the DELETE to an Execute Non Query activity and read
+            its AffectedRecords output (an Int32) for the deleted-row
+            count.
+          - Do NOT add an empty-DataTable guard / Try-Catch around the
+            existing Execute Query -- that is the playbook's named
+            anti-pattern and hides the bug.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should identify the
+             wrong-activity root cause (Execute Query ran a DELETE) and
+             cite the Execute-Query-ran-a-DELETE evidence (the empty
+             result set), and describe the empty-DataTable -> Rows(0)
+             fault.
+          2. The agent's tool-call summary and any evidence it cites
+             from the job logs / Main.xaml.
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
+      concludes any of these as the root cause OR recommends the
+      anti-pattern as the primary fix):
+        - "The DELETE matched no rows / it is a data problem." (The
+          DELETE ran fine; the empty DataTable is structural -- Execute
+          Query never returns rows for a modification regardless of how
+          many rows the DELETE touched.)
+        - "Add a guard / Try-Catch for the empty DataTable as the
+          primary fix." (Anti-pattern -- hides the bug; caps at 0.2.)
+        - "The connection was null / out of scope / expired." (branch 1)
+        - "Driver / provider mismatch after migration." (branch 2)
+        - "SQL syntax error / unsafe concatenation." (branch 3)
+        - "Query timeout / the query is too slow." (branch 5)
+        - "CLR-level crash (0xE0434352)." (branch 6)
+        - "The database is down / unreachable / a network outage."
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched execute-query-failures Branch 7 AND
+             identified the wrong-activity root cause. Conclusion must
+             (a) identify that Execute Query was used for a DELETE
+             (the wrong activity for a modification), (b) explain the
+             empty DataTable -> Rows(0) fault
+             (ArgumentOutOfRangeException: There is no row at position
+             0) is the structural consequence, and (c) recommend
+             switching to Execute Non Query and reading AffectedRecords
+             (NOT adding an empty-row guard / Try-Catch).
+        0.8  Both partial: e.g., correct playbook and names the
+             wrong-activity issue but does not connect the empty
+             DataTable to the Rows(0) fault; or identifies the
+             wrong-activity issue but recommends only catching the
+             empty DataTable rather than switching to Execute Non Query.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Execute Query / empty DataTable /
+             Rows(0) error) but neither matched the branch nor
+             identified the wrong-activity root cause -- OR concluded
+             one of the WRONG ANSWERS above (including recommending the
+             empty-DataTable guard / Try-Catch as the primary fix).
+        0.0  Got blocked, or produced no usable conclusion.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    The StagingCleanup process runs on a nightly schedule and faults
+    every run. You are waiting for the diagnostic agent to finish its
+    investigation and trust its expertise. You only have the information
+    you wrote in your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
