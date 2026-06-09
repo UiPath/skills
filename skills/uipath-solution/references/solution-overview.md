@@ -29,15 +29,16 @@ Full delivery-option matrix: [Product and feature availability across delivery o
 
 #### Available project types by Automation Suite version
 
-Which project types a Solution can bundle/deploy on self-hosted Automation Suite depends on the AS version — the backing products land in different releases of the `2.2510` line.
+This table is about the **Solutions feature** (`.uipx` bundling/deploy). Which project types a Solution can bundle/deploy on self-hosted Automation Suite depends on the AS version — the backing products land in different releases of the `2.2510` line.
 
-| Automation Suite version | Solution project types available |
+| Automation Suite version | Project types deployable **as a Solution** (`.uipx`) |
 |---|---|
-| `< 2.2510.0` | None — Solutions is not on Automation Suite |
+| `< 2.2510.0` | None as a Solution — the Solutions feature is not on Automation Suite yet. **RPA still runs**: processes / libraries / tests deploy to Orchestrator directly (classic publish → deploy), as they have on Automation Suite since well before Solutions |
 | `2.2510.0`+ | RPA workflow (cross-platform / Windows — **not** Windows-Legacy), App, API workflow, Agent, Agentic process |
 | `2.2510.2`+ | adds Maestro (self-hosted): agentic-orchestration / BPMN-process runtime |
 
-- Same project-type set as cloud, gated by AS version. Standalone is unsupported at any version.
+- Pre-`2.2510.0` is a gap in the **Solutions packaging path only** — Orchestrator (and RPA on it) is supported on every Automation Suite version, including Standalone.
+- From `2.2510.0`+, same Solution project-type set as cloud, gated by AS version. The Solutions feature itself is unsupported on Standalone at any version.
 - Agent / agentic-process / API-workflow runtimes ship across the `2.2510` patch line; confirm exact patch level against each product's Automation Suite release notes.
 - Sources: [AS `2.2510.0` product bundle](https://docs.uipath.com/automation-suite/automation-suite/2.2510/release-notes/automation-suite-on-eks-aks-2-2510-0) · [Solutions on Automation Suite](https://docs.uipath.com/solutions-management/automation-suite/2.2510/user-guide/solutions-management-overview) · [Maestro on Automation Suite `2.2510.2`](https://docs.uipath.com/maestro/automation-suite/2.2510/release-notes/2-2510-2).
 
