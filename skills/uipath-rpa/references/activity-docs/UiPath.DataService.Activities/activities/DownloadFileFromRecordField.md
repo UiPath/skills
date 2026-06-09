@@ -34,7 +34,7 @@ Downloads a file from a file-type field on an entity record.
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Timeout in milliseconds |
 
-> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, **omit these properties entirely** — the members do not exist on the activity in standalone scope. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
+> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) are inherited from `BaseEntityActivity` and exist on every activity, but only apply when the project has a SolutionId. For standalone projects, omit them — they're ignored outside solution context. See [overview — Solution Scope Properties](../overview.md#solution-scope-properties-conditional) and [Solution Context](../overview.md#solution-context-folder-vs-tenant-scope).
 
 ## XAML Example
 
@@ -53,7 +53,7 @@ Downloads a file from a file-type field on an entity record.
 
 - `Field` — bare string, not expression-wrapped. Use the field name exactly as it appears in `EntitiesStore.json`
 - `FilePath` — set to `{x:Null}` when using `DownloadedFileResource` (preferred). If saving to a specific path, use a bare string: `FilePath="C:\downloads\output.pdf"`
-- Studio explicitly serializes unused nullable properties as `{x:Null}` — include them for properties that exist on the activity (do not include `ScopeValue`/`SolutionEntityKey`/`SolutionEntityName` in standalone projects)
+- Studio explicitly serializes unused nullable properties as `{x:Null}` — include them for properties applicable to the activity (omit `ScopeValue`/`SolutionEntityKey`/`SolutionEntityName` in standalone projects — they're ignored outside solution context)
 
 ### Variable Declaration
 
@@ -61,7 +61,7 @@ Downloads a file from a file-type field on an entity record.
 <Variable x:TypeArguments="upr:ILocalResource" Name="downloadedFileResource" />
 ```
 
-Requires `xmlns:upr="clr-namespace:UiPath.Platform.ResourceHandling;assembly=UiPath.Platform"` on the root `<Activity>` element. See [overview — XAML Namespace Declarations](overview.md#xaml-namespace-declarations).
+Requires `xmlns:upr="clr-namespace:UiPath.Platform.ResourceHandling;assembly=UiPath.Platform"` on the root `<Activity>` element. See [overview — XAML Namespace Declarations](../overview.md#xaml-namespace-declarations).
 
 ## Round-Trip Pattern (Download → Upload)
 

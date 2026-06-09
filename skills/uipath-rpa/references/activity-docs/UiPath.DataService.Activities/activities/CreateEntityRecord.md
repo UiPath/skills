@@ -44,7 +44,7 @@ Creates a new record in a Data Fabric entity.
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Timeout in milliseconds |
 
-> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, omit them. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
+> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, omit them. See [overview — Solution Scope Properties](../overview.md#solution-scope-properties-conditional) and [Solution Context](../overview.md#solution-context-folder-vs-tenant-scope).
 
 ## Field Binding — Two Required Components
 
@@ -76,7 +76,7 @@ Studio syncs `SelectedFields` → `InputEntityInFieldView` on file load, keeping
 
 ## XAML Example (VB.NET expression language)
 
-> This snippet uses the `udam:` prefix (`RecordState`, `DynamicEntityField`). Ensure `xmlns:udam` is declared on the root `<Activity>` element — see [overview — XAML Namespace Declarations](overview.md#xaml-namespace-declarations).
+> This snippet uses the `udam:` prefix (`RecordState`, `DynamicEntityField`). Ensure `xmlns:udam` is declared on the root `<Activity>` element — see [overview — XAML Namespace Declarations](../overview.md#xaml-namespace-declarations).
 
 ```xml
 <uda:CreateEntityRecord

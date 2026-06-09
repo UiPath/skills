@@ -88,7 +88,7 @@ xmlns:local="clr-namespace:<ProjectName>;assembly=DataService.<ProjectName>"
 ```
 
 - The `local` namespace **must** include `assembly=DataService.<ProjectName>`. Without the assembly qualifier, the XAML parser cannot locate entity types: `Cannot create unknown type '{clr-namespace:<ProjectName>}EntityName'`.
-- The `upr` namespace is required for file activity variables — `DownloadFileFromRecordField.DownloadedFileResource` outputs `upr:ILocalResource`. See [DownloadFileFromRecordField](DownloadFileFromRecordField.md).
+- The `upr` namespace is required for file activity variables — `DownloadFileFromRecordField.DownloadedFileResource` outputs `upr:ILocalResource`. See [DownloadFileFromRecordField](activities/DownloadFileFromRecordField.md).
 
 Namespace imports for `TextExpression.NamespacesForImplementation`:
 ```xml

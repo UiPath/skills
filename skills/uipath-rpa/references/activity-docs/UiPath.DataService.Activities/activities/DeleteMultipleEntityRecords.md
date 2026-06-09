@@ -40,7 +40,7 @@ Deletes multiple records from a Data Fabric entity by their IDs.
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Timeout in milliseconds |
 
-> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, omit them. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
+> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, omit them. See [overview — Solution Scope Properties](../overview.md#solution-scope-properties-conditional) and [Solution Context](../overview.md#solution-context-folder-vs-tenant-scope).
 
 No `ExpansionDepth` or `OutputRecords` — delete returns only failed record IDs, not entity objects.
 

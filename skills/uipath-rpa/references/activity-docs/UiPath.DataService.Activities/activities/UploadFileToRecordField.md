@@ -36,7 +36,7 @@ Uploads a file to a file-type field on an entity record.
 | `ContinueOnError` | `InArgument<bool>` | No | `false` | Continue workflow on error |
 | `TimeoutInMs` | `InArgument<int>` | No | `30000` | Timeout in milliseconds |
 
-> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) only apply when the project has a SolutionId. For standalone projects, **omit these properties entirely** — the members do not exist on the activity in standalone scope. See [overview — Solution Scope Properties](overview.md#solution-scope-properties-conditional) and [Solution Context](overview.md#solution-context-folder-vs-tenant-scope).
+> **Solution scope properties** (`ScopeValue`, `SolutionEntityKey`, `SolutionEntityName`) are inherited from `BaseEntityActivity` and exist on every activity, but only apply when the project has a SolutionId. For standalone projects, omit them — they're ignored outside solution context. See [overview — Solution Scope Properties](../overview.md#solution-scope-properties-conditional) and [Solution Context](../overview.md#solution-context-folder-vs-tenant-scope).
 
 ## XAML Example — Upload from FilePath
 
