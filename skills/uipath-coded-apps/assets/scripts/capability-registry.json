@@ -91,41 +91,6 @@
         "series": "[{key:\"P50\",color:\"hsl(var(--chart-1))\",label:\"P50 ms\"},{key:\"P95\",color:\"hsl(var(--chart-2))\",label:\"P95 ms\"}]",
         "pivotExpression": "rawData.reduce((acc: Record<string, unknown>[], row: any) => { const existing = acc.find((r: any) => r.date === row.date); if (existing) { existing[row.name] = row.value; } else { acc.push({ date: row.date, [row.name]: row.value }); } return acc; }, [])"
       }
-    },
-    "job-failures": {
-      "aliases": ["job failures", "job failure rate", "rpa failures", "process failures", "failed jobs"],
-      "sdkImport": "@uipath/uipath-typescript/jobs-insights",
-      "sdkService": "JobsInsights",
-      "sdkMethod": "getTopFailures",
-      "template": "ranked-table",
-      "responseType": "JobTopFailuresResponse",
-      "defaults": {
-        "title": "Top Job Failures",
-        "description": "Processes with the most failures",
-        "icon": "XCircle",
-        "dataSelector": "data?.data ?? []",
-        "columns": "[{key:\"processName\",label:\"Process\"},{key:\"failureCount\",label:\"Failures\",align:\"right\" as const}]",
-        "deltaDir": "down-good",
-        "deltaText": "failures today"
-      }
-    },
-    "job-completion-trend": {
-      "aliases": ["job completions", "completed jobs", "jobs over time", "job volume", "rpa throughput"],
-      "sdkImport": "@uipath/uipath-typescript/jobs-insights",
-      "sdkService": "JobsInsights",
-      "sdkMethod": "getCompletedTimeline",
-      "template": "area-chart",
-      "responseType": "JobCompletedTimelineResponse",
-      "defaults": {
-        "title": "Job Completions",
-        "description": "Jobs completed per day",
-        "icon": "CheckCircle",
-        "xKey": "date",
-        "yKey": "count",
-        "deltaDir": "up-good",
-        "deltaText": "completions today",
-        "dataSelector": "data?.data ?? []"
-      }
     }
   },
   "t2": {
@@ -216,11 +181,13 @@
   "hardRefuse": [
     { "pattern": "cost.*dollar|dollar.*cost|\\$.*agent|agent.*\\$", "reason": "The platform tracks AGU units, not currency.", "alternative": "AGU consumption chart (metric: invocation-volume)" },
     { "pattern": "cpu|memory per agent|per.agent memory", "reason": "Per-agent CPU/memory is not exposed by any API.", "alternative": "Fleet-level latency (metric: agent-latency)" },
-    { "pattern": "who triggered|triggered by|user.*job|job.*user", "reason": "Job records carry no end-user identity.", "alternative": "Job counts by process name (metric: job-completion-trend)" },
+    { "pattern": "who triggered|triggered by|user.*job|job.*user", "reason": "Job records carry no end-user identity.", "alternative": "T3-SDK: new Jobs(sdk as never).getAll({ filter: \"ProcessName eq 'x'\" }) grouped by processName" },
     { "pattern": "cross.tenant|multi.tenant|compare.*tenant", "reason": "Dashboards are scoped to one tenant.", "alternative": "Multi-widget single-tenant view" },
-    { "pattern": "sla.*breach|breach.*sla", "reason": "Raw counts only — no SLA metadata in any API.", "alternative": "Success rate % (computable from job-completion-trend)" },
+    { "pattern": "sla.*breach|breach.*sla", "reason": "Raw counts only — no SLA metadata in any API.", "alternative": "T3-SDK: new Jobs(sdk as never).getAll({ filter: \"State eq 'Faulted'\" }) to compute failure rate" },
     { "pattern": "error.*message|stack.*trace|exception.*text", "reason": "No aggregation endpoint for error text or stack traces.", "alternative": "Error count by type (metric: agent-errors)" },
     { "pattern": "governance.*policy.*summary|policy.*summary.*governance|getPolicySummary", "reason": "governance.getPolicySummary requires a specific policy UUID that must be supplied by the user.", "alternative": "Ask the user which policy UUID to report on, then classify as T3-Insights with method: getPolicySummary and the UUID injected into the request body." },
-    { "pattern": "queue.*failure.*threshold|queues.*failing|high.failure.*queue", "reason": "QueueGetResponse does not include a failure count field. SDK fields are: id, name, maxRetries, acceptsRejectedItems only.", "alternative": "T3-Insights: use namespace: 'jobs', method: 'getTopFailures' to see processes with most failures, or request queue metrics via T3-SDK if your tenant has queue analytics enabled." }
+    { "pattern": "queue.*failure.*threshold|queues.*failing|high.failure.*queue", "reason": "QueueGetResponse does not include a failure count field. SDK fields are: id, name, maxRetries, acceptsRejectedItems only.", "alternative": "T3-Insights: use namespace: 'jobs', method: 'getTopFailures' to see processes with most failures, or request queue metrics via T3-SDK if your tenant has queue analytics enabled." },
+    { "pattern": "job failures|job failure rate|top failing processes|process failures", "reason": "Jobs analytics SDK service not yet available. Use T3-SDK with @uipath/uipath-typescript/jobs to query raw job data.", "alternative": "T3-SDK: new Jobs(sdk as never).getAll({ filter: \"State eq 'Faulted'\" })" },
+    { "pattern": "job completion trend|completed jobs over time|jobs per day|rpa throughput", "reason": "Jobs analytics SDK service not yet available. Use T3-SDK with @uipath/uipath-typescript/jobs to query raw job data.", "alternative": "T3-SDK: new Jobs(sdk as never).getAll({ filter: \"EndTime ge ...\" })" }
   ]
 }

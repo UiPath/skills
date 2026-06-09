@@ -193,25 +193,22 @@ After the user confirms, before writing intent.json to disk, verify field names 
 
 These files are the exact same source the TypeScript compiler uses — field names are guaranteed correct.
 
-**Path:** `<SCAFFOLD_DIR>/node_modules/@uipath/uipath-typescript/dist/<service>/index.d.ts`
+**Path:** `<PROJECT_DIR>/node_modules/@uipath/uipath-typescript/dist/<service>/index.d.ts`
 
-Where `<SCAFFOLD_DIR>` is the project directory + `/../scaffold` relative to SKILL_BASE_DIR:
-```
-<SKILL_BASE_DIR>/assets/templates/dashboard/scaffold/node_modules/@uipath/uipath-typescript/dist/
-```
+Where `<PROJECT_DIR>` is the dashboard project directory (e.g. `~/dashboards/agent-health-x7k2`), NOT the skill's scaffold template directory.
 
 **When to read:**
 - **T2 metrics**: Read the `.d.ts` for the service in the registry entry (e.g. `dist/jobs/index.d.ts` for `jobs-by-state`). Verify the `filterField` exists on the response type.
 - **T3-SDK metrics**: Read the `.d.ts` for any service the `fnBody` imports (e.g. if fnBody uses `Jobs`, read `dist/jobs/index.d.ts`). Verify field names used in `.map()` expressions match the response type.
 - **T1 metrics**: Skip — field names come from the capability registry and are pre-verified against the SDK response types.
 
-**Fire all relevant reads in ONE parallel message.** If the scaffold's node_modules doesn't exist yet (pre-warm still running), skip this phase and rely on the SDK docs from Turn 2.
+**Fire all relevant reads in ONE parallel message.** If the project's node_modules doesn't exist yet (pre-warm still running), skip this phase and rely on the SDK docs from Turn 2.
 
-**Check: does the scaffold have node_modules?**
+**Check: does the project have node_modules?**
 ```bash
 node -e "
 const path = require('path')
-const sdkDist = path.join('<SKILL_BASE_DIR>', 'assets', 'templates', 'dashboard', 'scaffold', 'node_modules', '@uipath', 'uipath-typescript', 'dist')
+const sdkDist = path.join('<PROJECT_DIR>', 'node_modules', '@uipath', 'uipath-typescript', 'dist')
 process.exit(require('fs').existsSync(sdkDist) ? 0 : 1)
 " && echo SDK_TYPES_AVAILABLE || echo SDK_TYPES_NOT_READY
 ```
@@ -222,7 +219,7 @@ process.exit(require('fs').existsSync(sdkDist) ? 0 : 1)
 
 **Example — verifying `jobs-by-state` T2 metric:**
 
-Read `<SKILL_BASE_DIR>/assets/templates/dashboard/scaffold/node_modules/@uipath/uipath-typescript/dist/jobs/index.d.ts`
+Read `<PROJECT_DIR>/node_modules/@uipath/uipath-typescript/dist/jobs/index.d.ts`
 
 Check that `JobGetResponse` has a `state` field. From the `.d.ts`:
 ```typescript

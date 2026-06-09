@@ -66,8 +66,19 @@ uip or users list --username "Administrators" --output json > "${TEMP_DIR}/uip-a
 ADMINS_GROUP_KEY=$(node -e "
 const data   = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))
 const users  = data.Data ?? data.data ?? (Array.isArray(data) ? data : [])
-const group  = users.find(u => u.UserName === 'Administrators' || u.Name === 'Administrators')
-if (!group) { process.stderr.write('\"Administrators\" group not found\n'); process.exit(1) }
+const group = users.find(u => {
+  const name = (u.UserName ?? u.Name ?? '').toLowerCase()
+  const type = (u.Type ?? u.type ?? '')
+  return name === 'administrators' && (type === 'DirectoryGroup' || type === 'Group' || type === '')
+})
+if (!group) {
+  // List all groups to help debug
+  const groups = users
+    .filter(u => (u.Type ?? u.type ?? '').toLowerCase().includes('group'))
+    .map(u => u.UserName ?? u.Name)
+  process.stderr.write('Could not find \"Administrators\" group. Available groups: ' + groups.join(', ') + '\n')
+  process.exit(1)
+}
 process.stdout.write(group.Key ?? group.key ?? '')
 " "${TEMP_DIR}/uip-admins.json")
 rm -f "${TEMP_DIR}/uip-admins.json"
@@ -193,16 +204,21 @@ Present this to the user:
 ```
 Your **[Dashboard Name]** is ready to be deployed.
 
-📦  Version:   [SEMVER] → [NEXT_SEMVER]
-🔗  URL path:  [ROUTING_NAME]
-📁  Folder:    AdminDashboards
-🔄  Type:      Fresh deploy  OR  Updating existing deployment
+📦  Version:    [SEMVER] → [NEXT_SEMVER]
+🔗  URL path:   [ROUTING_NAME]
+📁  Folder:     AdminDashboards
+🔄  Type:       Fresh deploy  OR  Updating existing deployment
 
 📌  Do you want to pin this dashboard to the Governance UI?
+   → "deploy and pin" — visible in the Governance section
+   → "deploy" — deploy without pinning
 
-   → Say **"deploy and pin"** to make it visible in the Governance section
-   → Say **"deploy"** (or just **"yes"**) to deploy without pinning
+⚠️  First deploy: I'll also create the AdminDashboards folder and assign the
+    Administrators group as Folder Administrator. This requires elevated permissions
+    and Claude Code will ask for your explicit approval before running those commands.
 ```
+
+Only show the ⚠️ note when `folderKey` is not in state.json (fresh deploy scenario).
 
 Wait for the user's response:
 - `"deploy and pin"` / `"pin"` / `"yes, pin"` → `PIN_TO_GOVERNANCE=true`
@@ -290,9 +306,10 @@ rm -f "${TEMP_DIR}/uip-publish.json"
 **If the user opted to pin to Governance UI** (`PIN_TO_GOVERNANCE=true`):
 
 ```bash
+# Note: --version is intentionally omitted — passing it causes "app still indexing"
+# race errors immediately after publish. The CLI resolves the latest published version.
 uip codedapp deploy \
   -n "${APP_NAME}" \
-  --version "${NEXT_SEMVER}" \
   --path-name "${ROUTING_NAME}" \
   --folder-key "${FOLDER_KEY}" \
   --tags "governance,dashboard" \
@@ -302,16 +319,17 @@ uip codedapp deploy \
 **If the user did not opt to pin** (`PIN_TO_GOVERNANCE=false`):
 
 ```bash
+# Note: --version is intentionally omitted — passing it causes "app still indexing"
+# race errors immediately after publish. The CLI resolves the latest published version.
 uip codedapp deploy \
   -n "${APP_NAME}" \
-  --version "${NEXT_SEMVER}" \
   --path-name "${ROUTING_NAME}" \
   --folder-key "${FOLDER_KEY}" \
   --tags "governance" \
   --output json > "${TEMP_DIR}/uip-deploy.json" 2>&1
 ```
 
-> **`-n`, `--version` must be identical across pack, publish, and deploy.** Deploy `--version` means "deploy this already-published version" — it does not create a new version.
+> **`-n` must be identical across pack, publish, and deploy.** `--version` is omitted from deploy — the CLI resolves the latest published version automatically, avoiding race errors immediately after publish.
 
 Handle `--path-name` collision — package is already published, only retry deploy with a new slug:
 
@@ -327,7 +345,6 @@ while echo "${DEPLOY_OUT}" | grep -qiE "conflict|already.*exist|path.*name" && [
   TAGS_ARG=$([ "${PIN_TO_GOVERNANCE}" = "true" ] && echo "governance,dashboard" || echo "governance")
   uip codedapp deploy \
     -n "${APP_NAME}" \
-    --version "${NEXT_SEMVER}" \
     --path-name "${NEW_ROUTING}" \
     --folder-key "${FOLDER_KEY}" \
     --tags "${TAGS_ARG}" \

@@ -732,6 +732,18 @@ export function buildT3WidgetFile(metric, timeRange = '30d') {
     .split('<<COLUMNS>>').join(columns)
     .split('<<VALUE_FIELD>>').join(valueField)
     .split('<<VALUE_LABEL>>').join(valueLabel)
+
+  // Inject time constants after the last import line (same as applyTemplate)
+  const lines = content.split('\n')
+  let lastImportIdx = -1
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith('import ')) lastImportIdx = i
+  }
+  if (lastImportIdx >= 0) {
+    lines.splice(lastImportIdx + 1, 0, '', TIME_CONSTANTS.trimEnd())
+    content = lines.join('\n')
+  }
+
   return content
 }
 

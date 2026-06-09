@@ -32,9 +32,9 @@ T3 — Custom
 |--------------|---------------------|---------------|
 | Agent cost in dollars | Platform tracks AGU units, not currency | `invocation-volume` for AGU consumption |
 | CPU or memory per agent | Not exposed by any API | `agent-latency` for fleet-level latency trends |
-| Who triggered a job | Job records carry no end-user identity | `job-completion-trend` grouped by process |
+| Who triggered a job | Job records carry no end-user identity | T3-SDK: `new Jobs(sdk as never).getAll({})` grouped by `processName` |
 | Data from multiple tenants | Dashboards are scoped to one tenant only | Multi-widget view within the same tenant |
-| SLA breach percentage | Platform has no SLA metadata | Compute success rate from `job-completion-trend` |
+| SLA breach percentage | Platform has no SLA metadata | T3-SDK: `new Jobs(sdk as never).getAll({ filter: "State eq 'Faulted'" })` to compute failure rate |
 | Error message text or stack traces | No aggregation endpoint exists | `agent-errors` for error counts |
 | Governance policy summary | Requires a specific policy UUID — the build cannot infer it | Ask the user for the UUID, then use T3-SDK with the `Governance` service |
 
@@ -51,8 +51,6 @@ These are pre-built. The build script generates the entire widget from the metri
 | `top-failing-agents` | Agents ranked by error count |
 | `active-agents-kpi` | Count of agents with at least one run |
 | `agent-latency` | P50 and P95 execution time side by side |
-| `job-failures` | Processes ranked by failure count |
-| `job-completion-trend` | Completed jobs per day |
 
 ---
 
@@ -118,7 +116,7 @@ Use when the metric doesn't match T1 or T2. The agent writes an async function b
 - Use constructor injection: `new ServiceClass(sdk as never)`
 - `sdk` and `getToken` are available as parameters — do not import `useAuth`
 - No JSX, no static top-level imports
-- Time constants (`Date` objects): `NOW`, `ONE_DAY_AGO`, `SEVEN_DAYS_AGO`, `THIRTY_DAYS_AGO`, `NINETY_DAYS_AGO`
+- Time constants (`Date` objects) are injected at the top of the generated file: `NOW`, `ONE_DAY_AGO`, `SEVEN_DAYS_AGO`, `THIRTY_DAYS_AGO`, `NINETY_DAYS_AGO`. Use them directly in fnBody.
 
 ---
 
