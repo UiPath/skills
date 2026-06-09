@@ -8,7 +8,7 @@ description: >
   `uip solution resource list` to look up the escalation app, and
   correctly authors the escalate action with $actionType, app.name,
   app.version, app.folderName, and a recipient.
-tags: [uipath-agents, smoke, low-code, guardrail]
+tags: [uipath-agents, e2e, low-code, guardrail]
 
 agent:
   # Disallow built-in todo tools — they aren't gated by allowed_tools, and the
