@@ -24,7 +24,7 @@ if not feedback_id:
     print("SKIP: no Data.Id in feedback_create.json")
     sys.exit(0)
 
-cmd = ["uip", "traces", "feedback", "delete", feedback_id, "--output", "json"]
+cmd = ["uip", "traces", "feedback", "delete", feedback_id, "--yes", "--output", "json"]
 if folder_key:
     cmd += ["--folder-key", folder_key]
 

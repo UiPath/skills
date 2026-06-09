@@ -31,7 +31,7 @@ initial_prompt: |
   3. Download the file back from the same field, saving to downloaded.txt:
        uip df files download doc-001-ent rec-001-id Attachment --destination downloaded.txt
   4. Delete the file attachment from that field:
-       uip df files delete doc-001-ent rec-001-id Attachment
+       uip df files delete doc-001-ent rec-001-id Attachment --yes --reason "smoke test cleanup"
 
   Additional constraints:
   - Use --output json on every uip df command.

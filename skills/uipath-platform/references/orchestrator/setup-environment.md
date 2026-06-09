@@ -88,8 +88,8 @@ uip or folders move "Finance/Invoicing" --parent "Operations" --output json
 uip or folders move <folder-key-guid> --root --output json   # promote to top level
 
 # Delete an empty folder (recursive removal must be explicit)
-uip or folders delete "Finance/Invoicing" --output json
-uip or folders delete <folder-key-guid> --output json
+uip or folders delete "Finance/Invoicing" --yes --output json
+uip or folders delete <folder-key-guid> --yes --output json
 ```
 
 The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`). Without `--all`, only folders the current user is assigned to are returned.
@@ -139,7 +139,7 @@ uip or roles users <role-key> --add-users <user-key-1>,<user-key-2> --output jso
 uip or roles users <role-key> --remove-users <user-key-1> --output json
 
 # Delete a role. Static built-in roles (Folder Administrator etc.) cannot be deleted.
-uip or roles delete <role-key> --output json
+uip or roles delete <role-key> --yes --output json
 ```
 
 `roles user-permissions` is the right command for "what can this user actually do here" debugging; it accounts for inherited folder roles and tenant overrides. `roles user-roles` is the inverse — given a user, which role assignments exist.
@@ -284,10 +284,10 @@ uip or machines edit <machine-key-guid> \
 uip or machines unassign <machine-key-guid> --folder-path "Finance" --output json
 
 # Delete the machine template entirely (tenant-level)
-uip or machines delete <machine-key-guid> --output json
+uip or machines delete <machine-key-guid> --yes --output json
 
 # Bulk delete
-uip or machines delete <key1> <key2> --output json
+uip or machines delete <key1> <key2> --yes --output json
 ```
 
 Notes:

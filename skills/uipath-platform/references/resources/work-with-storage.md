@@ -81,7 +81,7 @@ uip or buckets list --all-folders --name "invoice" --output json
 uip or buckets get <bucket-key> --folder-path "Finance" --output json
 uip or buckets update <bucket-key> --folder-path "Finance" \
   --name "invoices-2026" --description "Updated invoice store" --output json
-uip or buckets delete <bucket-key> --folder-path "Finance" --output json
+uip or buckets delete <bucket-key> --folder-path "Finance" --yes --output json
 ```
 
 ### Share Buckets Across Folders
@@ -163,7 +163,7 @@ uip or bucket-files download <bucket-key> "reports/summary.csv" \
 
 # Delete a file
 uip or bucket-files delete <bucket-key> "reports/summary.csv" \
-  --folder-path "Finance" --output json
+  --folder-path "Finance" --yes --output json
 ```
 
 Without `--destination`, `download` writes content to stdout. Use `-d` as shorthand.

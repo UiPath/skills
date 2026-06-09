@@ -123,7 +123,7 @@ uip or processes update-version <process-key-guid> --package-version 1.0.2 --out
 uip or processes rollback <process-key-guid> --output json
 
 # Delete the process (release). Package itself stays in the feed.
-uip or processes delete <process-key-guid> --output json
+uip or processes delete <process-key-guid> --yes --output json
 ```
 
 `processes edit` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.

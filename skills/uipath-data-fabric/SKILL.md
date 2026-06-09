@@ -72,7 +72,7 @@ Respond that the operation is not supported. Do not try to work around it.
 
 9. **Only work with native entities.** When listing entities before a write, use `entities list --native-only` to filter out federated entities. Never write to federated entities.
 
-10. **Entity delete is irreversible — surface dependents first.** `entities delete <id> --confirm --reason "<why>"` deletes the entity and every record in it. Before invoking, scan for dependents and list them to the user one by one: (a) other entities that reference this one (run `entities list --output json` and pull every entry whose `Fields[].ReferenceEntity.Id == <id>` — these will have broken FKs after the delete); (b) choice sets used by this entity's fields (`Fields[].ChoiceSetId` from `entities get`) — those choice sets are shared and may still be in use elsewhere. Ask the user explicitly for each dependent: delete it too, leave it, or stop. Apply only the choices the user confirms — never cascade silently.
+10. **Entity delete is irreversible — surface dependents first.** `entities delete <id> --yes --reason "<why>"` deletes the entity and every record in it. Before invoking, scan for dependents and list them to the user one by one: (a) other entities that reference this one (run `entities list --output json` and pull every entry whose `Fields[].ReferenceEntity.Id == <id>` — these will have broken FKs after the delete); (b) choice sets used by this entity's fields (`Fields[].ChoiceSetId` from `entities get`) — those choice sets are shared and may still be in use elsewhere. Ask the user explicitly for each dependent: delete it too, leave it, or stop. Apply only the choices the user confirms — never cascade silently.
 
 11. **Field delete is irreversible — surface impact first.** `entities update <id> --body '{"removeFields":[{"fieldName":"<name>"}]}' --confirm --reason "<why>"` drops the field and every record's value in it. Note `removeFields` takes `{"fieldName": "..."}` (NOT `{"id": "..."}` like `updateFields`). Before invoking: (a) if it's a RELATIONSHIP / FILE field, identify any code or flows that read its value; (b) if it's a CHOICE_SET field, note the choice set itself is unaffected (still shared). Ask the user explicitly: confirm the field name, confirm the loss is intentional, supply a reason for the audit log. Apply only after explicit confirmation.
 
@@ -145,7 +145,7 @@ For Complex types  field shapes and value formats, see [`references/entity-schem
 | Update entity / add fields | `entities update <id> --body '{"addFields":[{"fieldName":"NewField","type":"STRING"}]}'` |
 | Update existing field metadata | `entities update <id> --body '{"updateFields":[{"id":"<field-uuid>","displayName":"New Label","isRequired":true}]}'` — `id` is the field UUID from `entities get Fields[].ID` |
 | Update entity metadata | `entities update <id> --body '{"displayName":"New Name","description":"desc"}'` |
-| Delete an entity (irreversible — list dependents first) | `entities delete <id> --confirm --reason "<why>"` — see Rule 10 for the dependent-discovery flow |
+| Delete an entity (irreversible — list dependents first) | `entities delete <id> --yes --reason "<why>"` — see Rule 10 for the dependent-discovery flow |
 | Delete a field (irreversible — confirm impact first) | `entities update <id> --body '{"removeFields":[{"fieldName":"<name>"}]}' --confirm --reason "<why>"` — note `removeFields` uses `fieldName`, NOT `id` like `updateFields`. See Rule 11 |
 | Read records (first page) | `records list <entity-id> --limit 50` |
 | Read records (next page) | `records list <entity-id> --cursor <NextCursor>` |
@@ -154,14 +154,14 @@ For Complex types  field shapes and value formats, see [`references/entity-schem
 | Batch insert | `records insert <entity-id> --body '[{...},{...}]'` |
 | Update one record | `records update <entity-id> --body '{"Id":"<record-id>","field":"val"}'` |
 | Batch update | `records update <entity-id> --body '[{"Id":"<id1>","field":"val"},{"Id":"<id2>","field":"val"}]'` |
-| Delete records | `records delete <entity-id> <id1> <id2>` |
+| Delete records | `records delete <entity-id> <id1> <id2> --yes --reason "<why>"` |
 | Filter/search records | `records query <entity-id> --body '{...}'`. Choice / relationship filter operators: see [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields) |
 | Aggregate / group-by metrics | `records query <entity-id> --body '{"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}],"groupBy":["FieldName"]}'` |
 | Bulk import from CSV (Basic field types only — `CHOICE_SET_*`, `RELATIONSHIP`, `FILE`, `AUTO_NUMBER` are silently dropped) | `records import <entity-id> --file data.csv` |
 | Bulk seed records that include complex fields | `records insert <entity-id> --file records.json` with a JSON array body |
 | Upload file to record | `files upload <entity-id> <record-id> <field-name> --file path` |
 | Download file | `files download <entity-id> <record-id> <field-name> --destination path` |
-| Delete file | `files delete <entity-id> <record-id> <field-name>` |
+| Delete file | `files delete <entity-id> <record-id> <field-name> --yes --reason "<why>"` |
 
 ---
 

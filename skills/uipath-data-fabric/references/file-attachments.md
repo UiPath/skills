@@ -41,7 +41,7 @@ Response: `{ Code: "FileDownloaded", Data: { EntityId, RecordId, FieldName, Outp
 ## Delete a File
 
 ```bash
-uip df files delete <entity-id> <record-id> <field-name> --output json
+uip df files delete <entity-id> <record-id> <field-name> --yes --reason "<why>" --output json
 ```
 
 Response: `{ Code: "FileDeleted", Data: { EntityId, RecordId, FieldName } }`

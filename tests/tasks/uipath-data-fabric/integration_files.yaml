@@ -48,7 +48,7 @@ initial_prompt: |
       matches updated.txt, not original.txt.
 
   11. Delete the file attachment:
-        uip df files delete <entity-id> <record-id> Document
+        uip df files delete <entity-id> <record-id> Document --yes --reason "integration test cleanup"
 
   12. Attempt to download again. The download should fail since the file was deleted.
       Record the result (expected: error or empty response).

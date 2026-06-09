@@ -15,6 +15,9 @@
   curated PascalCase projection. Resource tool returns full DTO by default
   on every list/get and does not expose this flag.
 
+**Confirmation & non-interactive behavior:**
+The CLI is non-interactive by default and never prompts. Destructive commands (deletes, removals, uninstalls) require `--yes` to proceed — and overwrite operations require `--force` — otherwise they fail fast with a structured error instead of asking for confirmation. To enable interactive prompts for human use, pass the global `--interactive` flag or set `core.interactive` once with `uip config set interactive auto`.
+
 ---
 
 ## Authentication
@@ -103,7 +106,7 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | `uip traces feedback list` | List feedback for a trace |
 | `uip traces feedback list detailed` | Cross-trace feedback with span context |
 | `uip traces feedback update <id>` | Change sentiment, comment, or categories |
-| `uip traces feedback delete <id>` | Remove feedback |
+| `uip traces feedback delete <id> --yes` | Remove feedback |
 
 ---
 
