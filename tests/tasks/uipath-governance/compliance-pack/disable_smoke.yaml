@@ -1,0 +1,57 @@
+task_id: skill-governance-compliance-disable
+description: >
+  Skill-guided: "remove ISO 42001 settings from my tenant" must check current pack
+  state first, then call state disable. Must NOT call state enable (that would be
+  the opposite operation) and must NOT skip the state get pre-check.
+
+  Platform note: uip commands fail with auth errors - expected.
+tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Remove all ISO 42001 recommended settings from my tenant.
+
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - uip CLI is not connected to a live tenant - auth errors expected.
+  - Run each command once, capture output, move on. Do NOT retry or login.
+  - Use --output json on all uip gov commands.
+  - Do NOT prompt for confirmation - this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked current pack state before disabling"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called state disable to remove pack settings"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+disable\s+.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Disable flow does NOT call state enable (wrong direction)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Disable flow does NOT call aops-policy create (wrong path)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

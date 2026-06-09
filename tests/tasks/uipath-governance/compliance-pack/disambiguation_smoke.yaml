@@ -1,0 +1,69 @@
+task_id: skill-governance-compliance-disambiguation
+description: >
+  Skill-guided: ambiguous prompt "restrict AI model access for my finance team"
+  matches both Branch A (AOps: block a model provider in AI Trust Layer) and
+  Branch B (Access: restrict which identities can invoke agents). The skill must
+  ask the numbered disambiguation question and NOT run any governance mutations
+  before the user replies.
+
+  This tests the most fragile routing path — wrong silent routing here produces
+  a real artifact on the wrong branch.
+tags: [uipath-governance, smoke, lifecycle:discover, feature:compliance]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+run_limits:
+  max_turns: 5
+
+initial_prompt: |
+  Restrict AI model access for my finance team in UiPath.
+
+  Use the uipath-governance skill. Capture your response to ./output.txt.
+
+  Important:
+  - Do NOT run any uip gov commands yet — wait for the user to clarify.
+  - Write your clarification question to output.txt.
+
+success_criteria:
+  - type: llm_judge
+    description: "Agent asks the numbered disambiguation question before running any commands"
+    include_agent_output: true
+    prompt: |
+      The user asked: "Restrict AI model access for my finance team in UiPath."
+
+      This prompt is ambiguous — it could mean:
+      1. Block an AI model provider in AI Trust Layer for all users (AOps product policy)
+      2. Restrict which agents or flows the finance team can invoke as tools (Access ToolUsePolicy)
+
+      The correct behavior is for the agent to present a numbered disambiguation question
+      asking the user which layer they want to govern, WITHOUT running any CLI commands first.
+
+      Score 1.0 if the agent:
+        - Presents a numbered list with at least two options (product governance vs resource/tool-use governance)
+        - Does NOT describe having already created or deployed any policy
+        - Does NOT list any CLI commands it has already run
+      Score 0.5 if the agent asks a clarifying question but does not use a numbered list or
+        conflates both paths.
+      Score 0.0 if the agent silently picks one branch and runs commands without asking.
+    weight: 3.0
+    pass_threshold: 0.8
+
+  - type: command_not_executed
+    description: "Agent does NOT run any aops-policy create before disambiguation"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent does NOT run any compliance-packs state commands before disambiguation"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent does NOT run any access-policy mutations before disambiguation"
+    command_pattern: 'uip\s+gov\s+access-policy\s+(create|update|delete|activate)'
+    weight: 2.0
+    pass_threshold: 1.0
