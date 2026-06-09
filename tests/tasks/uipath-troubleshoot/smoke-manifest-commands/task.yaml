@@ -45,6 +45,7 @@ pre_run:
       uip tools install @uipath/orchestrator-tool;
       uip tools install @uipath/integrationservice-tool;
       uip tools install @uipath/maestro-tool;
+      uip tools install @uipath/agent-tool;
       uip tools install @uipath/resource-tool;
       uip tools install @uipath/docsai-tool;
       uip tools install @uipath/traces-tool;

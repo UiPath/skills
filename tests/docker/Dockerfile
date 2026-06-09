@@ -38,6 +38,7 @@ RUN set -euo pipefail && \
     uip tools install @uipath/orchestrator-tool && \
     uip tools install @uipath/integrationservice-tool && \
     uip tools install @uipath/maestro-tool && \
+    uip tools install @uipath/agent-tool && \
     # AgentHub command group ships as a separate plugin (CLI fetches it lazily).
     # Pre-install from the same @alpha feed so live `uip agenthub …` MCP e2e
     # tasks don't hit a missing-plugin 401.
