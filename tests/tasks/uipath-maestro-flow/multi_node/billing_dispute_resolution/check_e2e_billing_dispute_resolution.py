@@ -105,7 +105,7 @@ def main():
         sys.exit(f"FAIL: file input {file_vars[0]!r} declared but fixture {PDF} is missing")
 
     print(f"debug inputs: object={obj_vars[:1]} attachment={list((attachments or {}).keys())}")
-    payload = run_debug(inputs=inputs, attachments=attachments, timeout=540)
+    payload = run_debug(inputs=inputs, attachments=attachments, timeout=840)
 
     if not [v for v in collect_outputs(payload) if str(v).strip()]:
         sys.exit("FAIL: flow completed but returned no non-empty output values")

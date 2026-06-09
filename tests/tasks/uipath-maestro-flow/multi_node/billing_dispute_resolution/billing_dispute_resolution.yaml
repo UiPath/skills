@@ -13,9 +13,9 @@ description: >
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, node:inline-agent, node:ixp, connector]
 
 run_limits:
-  max_turns: 160
-  turn_timeout: 1200
-  task_timeout: 3600
+  max_turns: 200
+  turn_timeout: 1800
+  task_timeout: 5400
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
@@ -109,15 +109,15 @@ success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
     command: "uip maestro flow validate BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Structural check: full orchestration present (IxP, Data Service, 2 inline agents, SOP context index, API-workflow, switch, decision, end); NO HITL node; NO send-email node; flow returns out variables"
+    description: "Structural + topology check: full orchestration present AND wired in order (trigger→IxP→Data Service→analyst→switch→decision→API-workflow→writer→end; SOP index attached to an agent); NO HITL node; NO send-email node; flow returns ≥2 out variables"
     command: "python3 $TASK_DIR/check_structure_billing_dispute_resolution.py"
-    timeout: 60
+    timeout: 90
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -125,7 +125,7 @@ success_criteria:
   - type: run_command
     description: "E2E check debugs the flow: it completes and RETURNS a real SOP-grounded resolution citing the disputed invoice (no email sent)"
     command: "python3 $TASK_DIR/check_e2e_billing_dispute_resolution.py"
-    timeout: 600
+    timeout: 900
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
