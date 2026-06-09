@@ -261,7 +261,9 @@ Then in `openai_agents.json`:
 
 ### Input
 
-All OpenAI Agents accept a `messages` field (for the LLM conversation) **plus** context fields from the Pydantic model:
+> **CONSTRAINT — `messages` is mandatory and cannot be removed.** The OpenAI Agents runner only accepts conversation input: a string (treated as a user message) or a list of message objects in the OpenAI Responses API format ([SDK docs — The agent loop](https://openai.github.io/openai-agents-python/running_agents/)). UiPath surfaces this as the `messages` field, so `uip codedagent init` ALWAYS emits `messages` as a **required** property in the entry-point input schema — every OpenAI Agents agent carries it, with or without a context model. Context fields from `Agent[ContextType]` are added **alongside** `messages`, never instead of it. There is no way to produce an OpenAI Agents input contract without `messages`. If the agent must accept a strict structured input with no `messages` field, OpenAI Agents cannot express it — pick a different framework (see [build.md](../lifecycle/build.md) § framework selection).
+
+OpenAI Agents accept the required `messages` field (the LLM conversation) **plus** optional context fields from the Pydantic model:
 
 ```json
 {"messages": "What is the weather?", "location": "New York"}
