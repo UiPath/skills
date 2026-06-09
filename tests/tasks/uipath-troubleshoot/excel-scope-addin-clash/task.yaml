@@ -1,0 +1,158 @@
+task_id: skill-troubleshoot-excel-scope-addin-clash
+description: >
+  UiPath troubleshoot agent must diagnose a Classic Excel Application
+  Scope failure (System.InvalidCastException on System.__ComObject,
+  QueryInterface for Microsoft.Office.Interop.Excel._Application returns
+  0x80004002 E_NOINTERFACE) caused by a COM add-in
+  (UiPath.Integration.ExcelAddin, the Studio design-time add-in present
+  on a runtime host) corrupting the interop interface negotiation. Agent
+  must match the
+  activity-packages/excel-activities/playbooks/excel-application-scope-failures.md
+  playbook, identify branch 3 (COM add-in interface clash), use the
+  loaded-add-ins log + 'excel.exe /safe' success to rule out
+  not-installed and lock, and recommend disabling the offending add-in
+  (COM Add-ins UI or LoadBehavior=0) with /safe confirmation.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, excel-application-scope, com-addin-clash]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Excel._Application'.`
+  Pinned job key: aa666666-cccc-dddd-eeee-ffffaaaabbbb. Excel is
+  installed and opens fine on that host. What's causing this and how
+  do I fix it?
+
+  The project source for the failing process is at ./ExcelReconExport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the excel-application-scope-failures playbook AND identified branch 3 (COM add-in interface clash via E_NOINTERFACE, ruling out not-installed/lock) AND recommended disabling the offending COM add-in (UI or LoadBehavior=0) with /safe confirmation"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.InvalidCastException: Unable to cast COM object of type
+         'System.__ComObject' to interface type
+         'Microsoft.Office.Interop.Excel._Application'.` Pinned job key:
+         aa666666-cccc-dddd-eeee-ffffaaaabbbb. Excel is installed and
+         opens fine on that host. What's causing this and how do I fix
+         it?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/excel-application-scope-failures.md
+        branch 3 (COM add-in interface clash).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Classic Excel Application Scope instantiates
+            Excel.Application, but a COM add-in loaded into that Excel
+            instance corrupts the interop QueryInterface, so the cast to
+            Microsoft.Office.Interop.Excel._Application (IID {000208D5-...})
+            fails with 0x80004002 E_NOINTERFACE.
+          - The offending add-in is UiPath.Integration.ExcelAddin (the
+            Studio design-time Excel Add-in, LoadBehavior=3) registered
+            on a RUNTIME host where it shouldn't be; a third-party
+            AcmeBudgetTools.Connect is also loaded.
+          - 'excel.exe /safe' (add-ins disabled) succeeds and a manual
+            COM bind works -> proves an add-in is the culprit, and that
+            Excel itself / the COM stack is healthy.
+
+        The reference fix:
+          - Disable the offending COM add-in: Excel File > Options >
+            Add-ins > Manage: COM Add-ins > Go > uncheck
+            UiPath.Integration.ExcelAddin; OR set LoadBehavior=0 in the
+            registry for unattended provisioning.
+          - Confirm with excel.exe /safe.
+          - Acceptable alternative: isolate to a host without the add-in,
+            or migrate to the Workbook surface (no EXCEL.EXE).
+          - NOT acceptable: "install/repair Excel" (it's installed and
+            /safe works); a Delay; a bare Try-Catch that continues.
+
+        Evidence sources (priority order):
+          1. jobs get / logs -- inner HRESULT 0x80004002 E_NOINTERFACE
+             inside an InvalidCastException on System.__ComObject (an
+             interface-cast fault, NOT REGDB_E_CLASSNOTREG /
+             TYPE_E_LIBNOTREGISTERED, NOT a lock).
+          2. Job logs -- the enumeration of loaded COM add-ins
+             (UiPath.Integration.ExcelAddin + AcmeBudgetTools.Connect)
+             and the statement that 'excel.exe /safe' succeeds.
+          3. Workflow source -- single Classic scope; workflow logic is
+             not at fault.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the playbook branch 3 AND identified the COM
+             add-in clash (citing E_NOINTERFACE and the loaded
+             UiPath.Integration.ExcelAddin, ideally noting /safe
+             succeeds) AND recommended disabling the offending add-in
+             (COM Add-ins UI or LoadBehavior=0) with /safe confirmation.
+        0.9  Correct diagnosis (add-in clash) + correct fix (disable the
+             add-in) but didn't cite E_NOINTERFACE or the /safe
+             diagnostic explicitly.
+        0.8  Identified that a loaded add-in is interfering and to
+             disable add-ins, but didn't single out
+             UiPath.Integration.ExcelAddin or explain the interface-cast
+             mechanism.
+        0.7  Recognized it's a COM interop problem tied to the Excel
+             instance's environment and suggested disabling add-ins as
+             one option among several, without confidence.
+        0.5  Recognized a COM/interop fault but couldn't localize it to
+             add-ins (left it as "some COM issue") and gave no
+             actionable add-in fix.
+        0.2  Concluded Excel isn't installed / needs repair or
+             reinstall, ignoring that Excel opens fine and /safe works.
+        0.0  Reached an unrelated conclusion (blamed the path, a lock,
+             corruption, a macro), got blocked, or failed.
+
+      Be substance-focused. The decisive chain is "Classic scope +
+      Excel installed + InvalidCastException on System.__ComObject with
+      E_NOINTERFACE + COM add-ins loaded (UiPath.Integration.ExcelAddin)
+      + excel.exe /safe succeeds -> COM add-in interface clash ->
+      disable the add-in (UI or LoadBehavior=0), confirm with /safe."
+      Penalize HARD (cap at 0.2) any answer whose primary fix is
+      installing or repairing Excel, since Excel is confirmed healthy.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-24T08:00:01.300Z",
+      "EndTime": "2026-05-24T08:00:02.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelExportProcess",
+      "Source": "Schedule",
+      "Reference": "NightlyExportA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0055555-3333-4444-5555-666677778888",
+      "Info": "System.NullReferenceException: Object reference not set to an instance of an object.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

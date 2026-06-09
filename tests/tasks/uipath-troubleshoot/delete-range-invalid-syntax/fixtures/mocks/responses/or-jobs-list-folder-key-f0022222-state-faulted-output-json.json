@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "dd111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-21T08:00:01.300Z",
+      "EndTime": "2026-05-21T08:00:02.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelCleanupProcess",
+      "Source": "Schedule",
+      "Reference": "DailyCleanupA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0022222-3333-4444-5555-666677778888",
+      "Info": "System.ArgumentException: The range is invalid",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

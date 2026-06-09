@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelMacroProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Execute Macro; the macro Module1.ProcessData runs but throws Run-time error 91 (Object variable not set) inside its VBA code. Exercises the VBA-error branch of execute-macro-failures playbook.",
+  "MainFile": "Main.xaml"
+}

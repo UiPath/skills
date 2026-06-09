@@ -1,0 +1,169 @@
+task_id: skill-troubleshoot-delete-range-filter-misalignment
+description: >
+  UiPath troubleshoot agent must diagnose a Delete Range silent
+  corruption where the visible runtime fault is a downstream Throw
+  ('Customer CUST-9001 missing from post-delete data') but the
+  originating fault is Delete Range operating on cell coordinates
+  while an AutoFilter on column Status was hiding rows in the
+  deletion target — silently deleting CUST-9001 along with the
+  intentional test rows. Agent must trace backward from the Throw
+  through the AutoFilter Trace line + the successful Delete Range
+  Trace line to identify branch 5 (filter misalignment), match the
+  delete-range-failures playbook, and recommend either removing the
+  filter before Delete Range, refactoring to in-memory DataTable
+  operations, or deleting by content-based key.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, delete-range, filter-misalignment]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.Exception: Customer CUST-9001 missing from post-delete data`.
+  Pinned job key: dd333333-cccc-dddd-eeee-ffffaaaabbbb. CUST-9001
+  is definitely supposed to be there — I can see it in the workbook
+  when I open it. What happened?
+
+  The project source for the failing process is at ./ExcelCustomerProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the delete-range-failures playbook AND identified the filter-misalignment branch by tracing backward from the Throw through the AutoFilter Trace + successful Delete Range Trace to Delete Range as the silent-corruption origin"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.Exception: Customer CUST-9001 missing from post-delete
+         data`. Pinned job key: dd333333-cccc-dddd-eeee-ffffaaaabbbb.
+         CUST-9001 is definitely supposed to be there — I can see it
+         in the workbook when I open it."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/delete-range-failures.md
+        because the runtime fault originated in Delete Range silently
+        deleting hidden rows under an active AutoFilter, NOT in the
+        Throw activity that surfaced the exception.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workflow targets Customers!A10:D20 with
+            DeleteRangeX ShiftCells=True ShiftOption=ShiftCellsUp.
+          - The workbook has an active AutoFilter on column Status
+            hiding rows where Status='Archived'.
+          - CUST-9001 sits on a hidden row inside A10:D20.
+          - Delete Range operates on coordinates, not visible rows;
+            it silently deletes CUST-9001 along with the intentional
+            test rows.
+          - The downstream For Each Row + Throw post-condition check
+            fires because CUST-9001 is missing from the post-delete
+            DataTable.
+
+        The reference fix:
+          - Primary: insert Remove Data Filter / Filter Range
+            Action=Remove before Delete Range.
+          - Refactor to in-memory DataTable mutation + Write Range
+            (eliminates the coordinate-vs-visibility mismatch).
+          - Delete by content-based key (CustomerId) instead of
+            coordinate range.
+
+        Evidence sources (in priority order):
+          1. Job logs -- the critical pair of Trace lines:
+             (a) "Use Excel File: customer-list.xlsx — workbook has
+                 active AutoFilter on sheet 'Customers' column
+                 'Status' (hiding rows where Status='Archived')"
+             (b) "Delete Range: drop legacy customers
+                 (Customers!A10:D20 ShiftCells=True
+                 ShiftOption=ShiftCellsUp) — completed successfully
+                 (44 cells deleted across 11 rows, 0 errors)"
+             These two together prove Delete Range was the silent
+             corruption origin. The pre-delete row count
+             "47 rows (filtered view: 22 visible, 25 hidden
+             including rows 15-22)" reinforces that hidden rows
+             existed inside the deletion target.
+          2. Workflow source -- Main.xaml shows the sequence
+             Read Range → Delete Range → Read Range → ForEach →
+             If Not found Then Throw. The Throw is a post-condition
+             check, not the originating fault.
+          3. The user's "I can see it when I open it" framing --
+             reinforces that the workbook still has visible data,
+             so the issue is what the workflow saw (filter-affected)
+             vs. what the user saw (filter-applied view).
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the delete-range-failures playbook AND
+             traced the failure backward from Throw_1 to Delete
+             Range as the silent-corruption origin AND named the
+             AutoFilter on Status as the mechanism AND recommended
+             at least one of the three fixes (remove filter,
+             DataTable refactor, key-based deletion). The agent
+             must explicitly NOT stop at "the data is missing" or
+             "the source workbook lost CUST-9001".
+        0.8  Both dimensions partially correct: agent identified
+             the filter/coordinate mismatch but matched a different
+             playbook (e.g., system-activities NRE or data-quality)
+             alongside; OR agent matched the right playbook and
+             named the filter but did not recommend a specific
+             remediation activity.
+        0.5  Only one dimension correct: agent matched the playbook
+             but classified the cause-branch incorrectly (scope-
+             missing, invalid-syntax, shift-conflict, file-lock);
+             OR agent identified the filter-coordinate issue
+             without matching the specific playbook.
+        0.2  Agent recognized that Delete Range was involved but
+             never connected the AutoFilter to the silent deletion.
+        0.0  Agent stopped at the Throw and concluded a data-quality
+             issue, a missing customer record at source, or a
+             workbook corruption; OR blamed Excel COM, the
+             OpenXML provider, or another non-filter root cause;
+             OR got blocked / timed out.
+
+      Be substance-focused. The decisive chain is
+      "AutoFilter on Status (hidden rows) + Delete Range on
+      coordinates A10:D20 → silent deletion of CUST-9001 → Throw
+      post-condition fires." An agent that names all three pieces
+      and recommends a viable fix scores 1.0 even if it hedges
+      about confidence. Penalize agents that report only the
+      Throw exception without back-tracing.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

@@ -1,0 +1,41 @@
+{
+  "name": "ExcelLedgerReport",
+  "projectId": "a4c2d3e4-5f60-4178-92a3-aa4444ccd8d9",
+  "description": "Repro: Classic Excel Application Scope on a Robot host that HAS Excel installed, but whose Excel.Application COM type-library registration was corrupted by a recent Microsoft 365 upgrade. The scope throws 'Make sure Excel is installed.' with inner TYPE_E_LIBNOTREGISTERED. Exercises branch 1 of the excel-application-scope-failures playbook (registration corruption, NOT not-installed).",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.Excel.Activities": "[2.24.7]",
+    "UiPath.System.Activities": "[26.2.6]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "26.0.194.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "netFrameworkLazyLoading": false,
+    "isPausable": false,
+    "isAttended": false,
+    "requiresUserInteraction": false,
+    "supportsPersistence": false,
+    "workflowSerialization": "NewtonsoftJson",
+    "excludedLoggedData": ["Private:*", "*password*"],
+    "executionType": "Workflow",
+    "readyForPiP": false,
+    "startsInPiP": false,
+    "mustRestoreAllDependencies": true,
+    "pipType": "ChildSession"
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {"privateWorkflows": []},
+    "processOptions": {"ignoredFiles": []},
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "VisualBasic",
+  "modernBehavior": true,
+  "targetFramework": "Windows"
+}

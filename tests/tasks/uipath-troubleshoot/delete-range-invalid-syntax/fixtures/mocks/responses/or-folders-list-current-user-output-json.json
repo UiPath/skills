@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f0022222-3333-4444-5555-666677778888",
+      "DisplayName": "ExcelImports",
+      "FullyQualifiedName": "ExcelImports",
+      "Description": "Folder for daily Excel imports.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6020001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

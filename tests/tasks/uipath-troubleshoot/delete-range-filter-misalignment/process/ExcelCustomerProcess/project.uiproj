@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelCustomerProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Modern Use Excel File scope with a Read → Delete Range → Read → For Each Row sequence over a workbook with an active AutoFilter on the Status column. Delete Range on A10:D20 silently deletes hidden rows containing CUST-9001; downstream Throw fires because the customer is missing from the post-delete data. Exercises the filter-misalignment branch of the delete-range-failures playbook.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,76 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-ee1111cc-001",
+      "JobKey": "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-24T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelExportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee1111cc-002",
+      "JobKey": "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-24T08:00:01.418Z",
+      "Message": "[ExcelExportProcess] Exporting customer data from source to C:\\Robot\\Data\\customer-export.xlsx",
+      "ProcessName": "ExcelExportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee1111cc-003",
+      "JobKey": "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-24T08:00:01.510Z",
+      "Message": "If source workbook exists — condition: File.Exists(\"C:\\Robot\\Data\\customer-source.xlsx\") evaluated to False (file not found on host filesystem). Then-branch skipped.",
+      "ProcessName": "ExcelExportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee1111cc-004",
+      "JobKey": "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-24T08:00:02.010Z",
+      "Message": "Use Excel File: customer-export.xlsx — workbook opened (OpenXML provider)",
+      "ProcessName": "ExcelExportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee1111cc-005",
+      "JobKey": "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-24T08:00:02.310Z",
+      "Message": "Write Range: export customers — resolving DataTable argument 'dtSource'",
+      "ProcessName": "ExcelExportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee1111cc-006",
+      "JobKey": "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-24T08:00:02.510Z",
+      "Message": "Write Range: export customers — DataTable argument 'dtSource' resolved to Nothing (no assignment found in execution path)",
+      "ProcessName": "ExcelExportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-ee1111cc-007",
+      "JobKey": "ee111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-24T08:00:02.802Z",
+      "Message": "Write Range: export customers — System.NullReferenceException: Object reference not set to an instance of an object.",
+      "ProcessName": "ExcelExportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}
