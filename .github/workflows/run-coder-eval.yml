@@ -247,7 +247,7 @@ jobs:
           fi
           python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
-          rows = [json.loads(p.read_text()) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
           for r in rows:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
@@ -479,7 +479,7 @@ jobs:
           fi
           python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
-          rows = [json.loads(p.read_text()) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
           for r in rows:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
