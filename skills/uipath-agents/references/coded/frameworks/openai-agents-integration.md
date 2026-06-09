@@ -4,6 +4,8 @@ A lightweight integration for running OpenAI Agents SDK agents on the UiPath pla
 
 > **Note:** This is a streamlined integration focused on agent execution and streaming. It does **not** support Human-in-the-Loop (HITL), state persistence/checkpointing, or UiPath process invocation from within agents. For workflows that need those features, use the [LangGraph](langgraph-integration.md) or [LlamaIndex](llamaindex-integration.md) integrations instead.
 
+> **STOP — input shape decides framework fit.** OpenAI Agents accept **only** a `messages` conversation input. The caller's input always arrives as a chat message (a string or a list of message objects), and `uip codedagent init` always emits a **required** `messages` field. Typed fields from `Agent[ContextType]` are only ever added *alongside* `messages` — they never replace it. So OpenAI Agents cannot express an input contract without `messages`, nor a non-conversational (typed/named-field or programmatic) input. When the requested input is not a conversation, do NOT proceed by mapping it onto `messages` — STOP before scaffolding, tell the user OpenAI Agents only accept a `messages` conversation input, and let them choose another framework (e.g. [LangGraph](langgraph-integration.md), whose declared input model becomes the input schema verbatim). Proceed with OpenAI Agents only once a `messages` conversation input is confirmed acceptable.
+
 ## Scaffolding a New Project
 
 If there is **no existing agent code**, scaffold an OpenAI Agents project with:
