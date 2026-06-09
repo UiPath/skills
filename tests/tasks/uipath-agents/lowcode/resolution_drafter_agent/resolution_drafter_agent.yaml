@@ -8,7 +8,7 @@ description: >
   input/output field presence, contentTokens for every input, and uses
   an LLM judge to score the system prompt's three-way adjustment
   coverage.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
   expected_turns: 21

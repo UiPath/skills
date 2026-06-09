@@ -11,7 +11,7 @@ description: >
   validate` emits a `resource: "process"` binding pinned to the
   deployed name + folder. Distinct from `solution_rpa_tool` which
   uses `location: "solution"`.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
   expected_turns: 24

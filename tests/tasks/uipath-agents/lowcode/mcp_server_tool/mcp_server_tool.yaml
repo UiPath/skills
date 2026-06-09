@@ -6,7 +6,7 @@ description: >
   "mcp"` (distinct from `$resourceType: "tool"`) and the documented
   reference shape (id, name, description, slug, folderPath,
   availableTools, solutionProperties.resourceKey).
-tags: [uipath-agents, e2e, "mode:build", low-code, "lifecycle:generate"]
+tags: [uipath-agents, e2e, mode:build, low-code, lifecycle:generate]
 
 run_limits:
   expected_turns: 17
