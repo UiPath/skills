@@ -71,8 +71,10 @@ uip or queues get <queue-key> --output json
 # Update queue properties (cross-folder)
 uip or queues update <queue-key> --max-retries 5 --no-auto-retry --output json
 
-# Delete queue (cross-folder)
+# Delete queue (cross-folder). Refuses if the queue still has items;
+# pass --force to delete it and its items anyway.
 uip or queues delete <queue-key> --output json
+uip or queues delete <queue-key> --force --output json
 ```
 
 ### Share a Queue Across Folders
