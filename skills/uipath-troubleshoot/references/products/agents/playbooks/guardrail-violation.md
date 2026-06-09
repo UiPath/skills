@@ -45,7 +45,7 @@ What can cause it:
      --output-filter "traceId"
    ```
 
-2. Find erroring spans, identify container span, classify pre/post using the table above. If error appears only on `agentRun`, proceed to step 3 to find the originating evaluation span:
+2. Find erroring spans, identify container span, classify pre/post using the table above. If the only erroring span is `agentRun` and no container guardrail span appears in the results, the termination error propagated from a child evaluation — proceed to step 3 to find the `guardrailEvaluation` or `toolGuardrailEvaluation` span directly:
 
    ```bash
    uip traces spans get <trace-id> --output json \
@@ -63,7 +63,7 @@ What can cause it:
 
    ```bash
    uip agent guardrails list --output json \
-     --output-filter "[?contains(Validator, '<guardrail-name>')].{validator: Validator, scopes: AllowedScopes, stages: GuardrailStages, status: Status}"
+     --output-filter "[?contains(Validator, '<GUARDRAIL_NAME>')].{validator: Validator, scopes: AllowedScopes, stages: GuardrailStages, status: Status}"
    ```
 
    Then fetch the catalog entry:
@@ -78,7 +78,7 @@ What can cause it:
    uip agent config get guardrails --path <PROJECT_DIR> --output json
    ```
 
-   To confirm action type and last-modified date: open agent in AgentBuilder or Flow → Guardrails → find rule by name from step 3.
+   To confirm action type and last-modified date: open agent in AgentBuilder or Flow → Guardrails → find rule by name from step 3 (optional — confirms action type and last-modified date; CLI output above is sufficient to identify the rule).
 
 5. Escalate action only — check reviewer outcome:
 
@@ -91,13 +91,13 @@ What can cause it:
 
 ## Resolution
 
-**Block + legitimate violation:** Fix the caller payload (pre/input-side container span) so it does not contain prohibited content before sending. For post/output-side violations, tighten the system prompt in `agent.json → messages[0].content` to constrain LLM output (e.g., "Respond only in JSON. Do not include names or email addresses.").
+**Block + legitimate violation:** Fix caller payload (pre/input-side container span) so it does not contain prohibited content before sending. For post/output-side violations, tighten the system prompt in `agent.json → messages[0].content` to constrain LLM output (e.g., "Respond only in JSON. Do not include names or email addresses.").
 
 **Rule too broad:** Narrow the pattern in AgentBuilder or Flow → Guardrails. For centralized guardrails enforced by a tenant admin: Automation Ops → Governance → AI Trust Layer → find policy by name from step 3. Replace the overly broad expression with a more specific match. Re-test with the previously blocked input.
 
 **Action changed from Log/Escalate to Block:** Revert the action in AgentBuilder or Flow → Guardrails if the prior review workflow is still required. Or keep Block and fix the underlying data (system prompt or rule narrowing above).
 
-**Escalate reviewer rejected:** Determine if the rejection was correct or reviewer error. If reviewer error, re-invoke the agent to create a new Action Center task. If the rule intent is the issue, adjust the rule or fix data handling before re-invoking.
+**Escalate reviewer rejected:** Determine if the rejection was correct or reviewer error. If reviewer error, re-invoke agent to create a new Action Center task. If the rule intent is the issue, adjust the rule or fix data handling before re-invoking.
 
 **Filter causing unexpected behavior (not a fault):** Inspect `updatedInput`/`updatedOutput` on the evaluation span from step 3 to see which fields were removed. Verify the agent handles absent fields gracefully. Add fallback logic if required fields can be stripped.
 
