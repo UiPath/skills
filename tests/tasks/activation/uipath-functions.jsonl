@@ -2,7 +2,7 @@
 {"id": "uipath-functions-002", "prompt": "Scaffold a Python function with uip functions new -l py", "expected_skill": "uipath-functions"}
 {"id": "uipath-functions-003", "prompt": "Write a Python function that uploads invoices to an Orchestrator storage bucket", "expected_skill": "uipath-functions"}
 {"id": "uipath-functions-004", "prompt": "I need a deterministic UiPath function that validates ERP records and returns is_valid plus a list of validation errors", "expected_skill": "uipath-functions"}
-{"id": "uipath-functions-005", "prompt": "How do I declare [tool.uipath] type = \"function\" in pyproject.toml?", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-005", "prompt": "How do I register a Python Coded Function entrypoint in the functions map in uipath.json?", "expected_skill": "uipath-functions"}
 {"id": "uipath-functions-006", "prompt": "uip functions init keeps saying \"No entrypoints found\" — what's missing in my project?", "expected_skill": "uipath-functions"}
 {"id": "uipath-functions-007", "prompt": "Pack and publish my Python function to my Personal Workspace feed", "expected_skill": "uipath-functions"}
 {"id": "uipath-functions-008", "prompt": "How do I write Input and Output schemas for a UiPath function? Should I use Pydantic or @dataclass?", "expected_skill": "uipath-functions"}

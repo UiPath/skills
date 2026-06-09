@@ -8,19 +8,21 @@ a project that satisfies all structural invariants.
 Checks performed:
 
   1. `invoice-validator/pyproject.toml` has `[project]` with `authors`, no
-     `[build-system]`, and declares `[tool.uipath] type = "function"` (required
-     to identify this as a Python Coded Function, not a coded agent).
-     No LLM framework dependencies.
-  2. `invoice-validator/main.py` uses `@dataclass` for Input and Output (not
-     BaseModel), declares all required fields (`invoice_number`, `vendor_name`,
+     `[build-system]`, and no LLM framework dependencies. (Project type is
+     determined from `uipath.json`, not pyproject — see check 3.)
+  2. `invoice-validator/main.py` uses typed I/O for Input and Output (stdlib
+     `@dataclass`, pydantic `BaseModel`, or `pydantic.dataclasses.dataclass`),
+     declares all required fields (`invoice_number`, `vendor_name`,
      `total_amount`, `currency`, `is_valid`, `validation_errors`,
      `normalized_currency`), includes the `@traced` decorator (SDK integration),
      and contains no LLM imports.
   3. `invoice-validator/uipath.json` has a `functions` key with a valid
-     `<file>:<function_name>` entrypoint.
+     `<file>:<function_name>` entrypoint — this is what identifies the project
+     as a Coded Function (`determine_project_type()` reads the entrypoint type
+     from uipath.json, not pyproject).
   4. `invoice-validator/entry-points.json` has at least one entrypoint whose
      schema mentions `invoice_number` and `is_valid` — proves `uip functions init`
-     ran after the dataclass models were written.
+     ran after the schema models were written.
   5. `invoice-validator/run_marker.txt` exists — proves `uip functions run`
      completed successfully.
 
@@ -98,12 +100,6 @@ def check_pyproject() -> None:
         sys.exit("FAIL: pyproject.toml has no [project] section")
     if "authors" not in text:
         sys.exit("FAIL: pyproject.toml has no `authors` entry")
-    if 'type = "function"' not in text and "type='function'" not in text:
-        sys.exit(
-            "FAIL: pyproject.toml is missing `[tool.uipath] type = \"function\"` — "
-            "this declaration is required to identify the project as a Python Coded "
-            "Function. Without it the runtime treats it as a coded agent."
-        )
     for pkg in _LLM_PACKAGES:
         if pkg in text:
             sys.exit(
@@ -111,23 +107,20 @@ def check_pyproject() -> None:
                 f"are deterministic and must not depend on LLM frameworks."
             )
     print("OK: pyproject.toml — [project], authors, no [build-system], "
-          "[tool.uipath] type=function, no LLM packages")
+          "no LLM packages")
 
 
 def check_main_py() -> None:
     main_path = ROOT / "main.py"
     text = _read_text(main_path)
 
-    # Schema must use @dataclass, not BaseModel
-    if "class Input(BaseModel)" in text or "class Output(BaseModel)" in text:
+    # Typed I/O is required, but the SDK accepts several forms: stdlib
+    # @dataclass, pydantic BaseModel, or pydantic.dataclasses.dataclass (the
+    # shipped samples use pydantic). Accept any recognized typed form.
+    if not any(m in text for m in ("@dataclass", "BaseModel", "pydantic")):
         sys.exit(
-            "FAIL: main.py uses Pydantic BaseModel for Input/Output. "
-            "Python Coded Functions use @dataclass (not BaseModel) for schemas."
-        )
-    if "@dataclass" not in text:
-        sys.exit(
-            "FAIL: main.py does not use @dataclass — Python Coded Function schemas "
-            "must be defined as dataclasses, not Pydantic models."
+            "FAIL: main.py Input/Output are not typed — use a stdlib @dataclass, "
+            "pydantic BaseModel, or pydantic.dataclasses.dataclass."
         )
 
     for needle in ("class Input", "class Output"):
@@ -146,7 +139,7 @@ def check_main_py() -> None:
             "SDK tracing integration is required for Python Coded Functions."
         )
 
-    print("OK: main.py — @dataclass Input/Output, all required fields, @traced present")
+    print("OK: main.py — typed Input/Output, all required fields, @traced present")
 
     for token in _LLM_IMPORT_TOKENS:
         if token in text:
@@ -188,7 +181,7 @@ def check_entry_points() -> None:
         if field not in raw:
             sys.exit(
                 f"FAIL: entry-points.json schemas do not mention `{field}`. "
-                f"Either `uip functions init` ran before the dataclass models "
+                f"Either `uip functions init` ran before the schema models "
                 f"were written, or the models did not declare the expected fields. "
                 f"Got: {raw}"
             )

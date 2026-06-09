@@ -18,7 +18,7 @@ user-invocable: true
 
 Determine the agent mode before proceeding:
 
-1. **First — confirm this is an agent, not a Coded Function.** If `pyproject.toml` contains `[tool.uipath] type = "function"`, the project is a **Python Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip functions new/init/pack/publish/run`).
+1. **First — confirm this is an agent, not a Coded Function.** If `uipath.json` declares a `functions` map (e.g. `"functions": {"main": "main.py:main"}`), the project is a **Python Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip functions new/init/pack/publish/run`).
 2. **Check for existing agent project files** in the working directory:
    - `pyproject.toml` + `.py` files + a framework dep (`uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents`) → **Coded**. The framework package already declares `uipath` as a dependency, so an explicit `uipath` entry is not required.
    - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**

@@ -4,9 +4,9 @@ description: >
   validation request — no mention of LLM, AI, or frameworks — must be recognised as
   a Python Coded Function and routed to the `uipath-functions` skill. Verifies the
   agent passes `-l py` to `uip functions new`, runs `uip functions init`, produces
-  a correct @dataclass schema, includes SDK tracing, declares `[tool.uipath]
-  type = "function"` in pyproject.toml, contains no LLM imports, and runs the
-  function locally with `uip functions run`.
+  a correct typed I/O schema (pydantic/dataclass), includes SDK tracing, registers
+  the entrypoint in `uipath.json`'s `functions` map, contains no LLM imports, and
+  runs the function locally with `uip functions run`.
 tags: [uipath-functions, e2e, mode:build, lifecycle:generate]
 
 run_limits:
@@ -60,7 +60,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Correct @dataclass schema, [tool.uipath] type=function, no LLM imports, init ran, SDK tracing present"
+    description: "Correct typed I/O schema, uipath.json functions entrypoint, no LLM imports, init ran, SDK tracing present"
     command: "python3 $TASK_DIR/check_e2e_lifecycle.py"
     timeout: 30
     expected_exit_code: 0
