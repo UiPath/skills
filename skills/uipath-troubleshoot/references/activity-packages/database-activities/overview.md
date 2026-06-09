@@ -14,11 +14,11 @@ A data activity therefore fails for one of two broad reasons: the **connection**
 
 ## Key Activities
 
-- **Connect to Database** (`DatabaseConnect`) — open a connection. Properties: `ConnectionString`, `ProviderName`, output `DatabaseConnection`. The connection variable's scope determines where downstream activities can use it.
+- **Connect to Database** (`DatabaseConnect`) — open a connection. Properties: `ConnectionString`, `ProviderName`, output `DatabaseConnection`. The connection variable's scope determines where downstream activities can use it. Connection-open failures (especially the Excel-as-a-database / ACE OLE DB case) are catalogued in the [Connect to Database failures playbook](./playbooks/connect-to-database-failures.md).
 - **Start Transaction** (`DatabaseTransaction`) — open a connection inside a transactional scope; child activities run under one transaction, committed at scope end (or rolled back on fault). Properties: `ConnectionString`, `ProviderName`, `UseTransaction`, output `DatabaseConnection`.
 - **Disconnect** (`DatabaseDisconnect`) — close a `DatabaseConnection`.
 - **Execute Query** (`ExecuteQuery`) — run a `SELECT` and return a `DataTable`. Properties: `ExistingDbConnection` (or inline `ConnectionString`/`ProviderName`), `Sql`, `CommandType`, `Parameters`, `TimeoutMS` (milliseconds; default `30000`), output `DataTable`. See the [Execute Query failures playbook](./playbooks/execute-query-failures.md).
-- **Execute Non Query** (`ExecuteNonQuery`) — run `INSERT`/`UPDATE`/`DELETE`/DDL and return the affected-row count. Properties as above, output `AffectedRecords` (`Int32`).
+- **Execute Non Query** (`ExecuteNonQuery`) — run `INSERT`/`UPDATE`/`DELETE`/DDL and return the affected-row count. Properties as above, output `AffectedRecords` (`Int32`). Failures (output-parameter sizing, unsafe SQL/parameters, empty `Sql`, driver load) are catalogued in the [Execute Non Query failures playbook](./playbooks/execute-non-query-failures.md).
 - **Run Command** (`ExecuteCommand`) — run a statement or stored procedure where the result shape is configured via `CommandType` (`Text` vs `StoredProcedure`). Properties: `ExistingDbConnection`/inline connection, `Sql` (command/proc name), `CommandType`, `Parameters`, `TimeoutMS`.
 - **Insert / Bulk Update Database** (`BulkUpdate`) — write a `DataTable` to a target table. Properties: `ExistingDbConnection`/inline connection, `TableName`, the source `DataTable`, `TimeoutMS`.
 

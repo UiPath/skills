@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDbReport",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Connect to Database failure caused by the 64-bit ACE OLE DB provider not being registered on the Robot host (only 32-bit ACE installed).",
+  "MainFile": "Main.xaml"
+}
