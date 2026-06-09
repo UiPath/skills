@@ -1,6 +1,6 @@
 ---
 name: uipath-automation-discovery
-description: "[PREVIEW] UiPath automation discovery — mines Slack/email/wikis/CRM/HRIS/ERP for repetitive work, SPOFs, and replicable models; produces 4-tier prioritized opportunity report with UiPath implementation paths. TRIGGER when: user asks to discover automations, find automation opportunities, run an internal automation audit, or asks what to automate in a UiPath project context. DO NOT TRIGGER when: user is building a specific automation (→uipath-rpa), authoring a Flow (→uipath-maestro-flow), or working with agents (→uipath-agents)."
+description: "[PREVIEW] UiPath automation discovery — mines Slack/email/wikis/CRM/HRIS/ERP for repetitive work, SPOFs, and replicable models; produces 4-tier prioritized opportunity report with UiPath implementation paths. TRIGGER when: user asks to discover automations, find automation opportunities, run an internal automation audit, or asks what to automate across their organization. DO NOT TRIGGER when: user is building a specific automation (→uipath-rpa), authoring a Flow (→uipath-maestro-flow), or working with agents (→uipath-agents)."
 ---
 
 # Automation Discovery
@@ -11,7 +11,7 @@ UiPath-ready backlog with recommended implementation paths.
 
 ## When to Use This Skill
 
-- User asks to **discover automation opportunities** in a UiPath project context
+- User asks to **discover automation opportunities** across their organization — before any specific automation project exists
 - User wants to **find manual work to automate** and build a UiPath implementation backlog
 - User asks "what should we automate?" while working with UiPath tools
 - User wants an **internal automation audit** to feed into UiPath Automation Hub or a UiPath pipeline
