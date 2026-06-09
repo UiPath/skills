@@ -40,7 +40,7 @@ def main():
         print("SKIP: no 'slug' key in report.json")
         sys.exit(0)
 
-    cmd = ["uip", "agenthub", "mcp", "delete", slug]
+    cmd = ["uip", "agenthub", "mcp", "delete", slug, "--yes"]
     if report.get("folder_key"):
         cmd += ["--folder-key", report["folder_key"]]
     else:
