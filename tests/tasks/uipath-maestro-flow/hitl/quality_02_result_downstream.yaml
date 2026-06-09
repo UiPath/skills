@@ -18,7 +18,9 @@ initial_prompt: |
        - Outcomes: Approve (primary), Reject
   3. Script node — reads the reviewer's decision from the HITL output and
      logs: "Decision: <approved value>, Comments: <comments value>"
-     The script must reference the HITL output via the correct runtime variable path.
+     The script must reference the HITL output via $vars.<nodeId>.output —
+     e.g. $vars.<nodeId>.output.approved and $vars.<nodeId>.output.comments,
+     where <nodeId> is the HITL node's id.
   4. End node
 
   Wire: Trigger -> HITL ->|completed| Script -> End
