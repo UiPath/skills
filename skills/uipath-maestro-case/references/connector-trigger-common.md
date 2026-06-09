@@ -15,7 +15,11 @@ All three use the same TypeCache (`typecache-triggers-index.json`), same single-
 
 ### 1. Find the trigger in TypeCache
 
+If `~/.uip/case-resources/typecache-triggers-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 17 gate does not apply). If still absent after pull, the tenant has no connector triggers — mark `<UNRESOLVED>` and fall through to § Placeholder fallback.
+
 Read `~/.uip/case-resources/typecache-triggers-index.json` directly. Match on `displayName`, `connectorKey`, or `eventOperation` from sdd.md. Record `uiPathActivityTypeId`.
+
+**No match (Scenario A — connector not found).** A 0-match inside the existing cache is gated by Rule 17 — run the [registry-discovery.md § MUST Confirm Before Placeholder Fallback](registry-discovery.md#must-confirm-before-placeholder-fallback) AskUserQuestion (`Force pull` / `Skip and use placeholders`) for the lookup batch before any fallback. Only after the user picks `Skip`: mark `type-id` **and** `connector-key` `<UNRESOLVED: no typecache trigger for <query>>` and skip § 2 entirely — with no `activity-type-id` there is nothing to pass to `get-connection`. Fall through to § Placeholder fallback (event trigger → placeholder node; connector-trigger task → `data: {}`; condition rule → stub `uipath`). Continue planning — do not halt ([planning.md § 3.4](planning.md)).
 
 ### 2. Resolve the connection
 
@@ -25,15 +29,16 @@ uip maestro case registry get-connection \
   --activity-type-id "<uiPathActivityTypeId>" --output json
 ```
 
-Returns `Entry`, `Config`, and `Connections`.
+Returns `Entry`, `Config`, and `Connections`. If the sdd.md names a connection, match it by `name` and use it directly. Otherwise **always present the choice via AskUserQuestion — do not auto-select**, even when one connection exists:
 
-- **Single connection** → use it.
-- **Multiple connections** → **AskUserQuestion** with connection names + "Something else".
-- **Empty `Connections`** → mark `<UNRESOLVED>`. Both plugins emit placeholders at execution time (different shapes per plugin) — see [placeholder-tasks.md](placeholder-tasks.md) for connector-task placeholders and [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) for event-trigger placeholders.
+- **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option**.
+- **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
+- **Create chosen** → create it (background `is connections create`, capture `ConnectionId`), then continue with the new id. Procedure: [connector-integration.md § Creating a Connection](connector-integration.md#creating-a-connection).
+- **Skip / create fails** → mark `<UNRESOLVED>`. Both plugins emit placeholders at execution time (different shapes per plugin) — see [placeholder-tasks.md](placeholder-tasks.md) for connector-task placeholders and [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) for event-trigger placeholders.
 
-Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response.
+Record `connection-id`, `connector-key`, `object-name`, `eventOperation` from the response (or from the create output).
 
-Connection selection rules (default-preference, `--refresh` retry, multi-connection disambiguation, ping verification, BYOA workflow): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
+Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
 
 > **Entity-typed Curated triggers** (e.g. UiPath Data Service `Record Created (Preview)`) carry a placeholder `objectName` in the typecache (`{tenantEntityName|folderEntityName}`). Pick a real entity via `uip is triggers objects <connector-key> <eventOperation>` and pass it as `--object-name` on the `case spec` call in Step 3.
 
@@ -336,7 +341,7 @@ Conventions (shared with activity):
 - `id` = same as `var`
 - `elementId` = the task's elementId (in-stage `wait-for-connector` task), the trigger node's id (case-level event trigger), or `<ownerNodeId>-<ruleId>` (connector-bound condition rule — see [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule))
 
-For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger / **connector-bound condition rule** already in `caseplan.json`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks / triggers / rules), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged. **Rule outputs participate in the same global pool** — the dedup must walk condition `rules[][].uipath.outputs[]` across all 4 condition scopes (stage-entry / stage-exit / case-exit / task-entry, plus root `caseExitConditions` v19 / `metadata.caseExitRules` v20) in **both directions**: when a rule mints outputs, dedupe against tasks + triggers + rules; when a task / trigger mints outputs, dedupe against existing rule outputs. See [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule) for the full enumeration.
+For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger / **connector-bound condition rule** already in `caseplan.json`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks / triggers / rules), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged. **Rule outputs participate in the same global pool** — the dedup must walk condition `rules[][].uipath.outputs[]` across all 4 condition scopes (stage-entry / stage-exit / case-exit / task-entry, case-exit rules living under `metadata.caseExitRules`) in **both directions**: when a rule mints outputs, dedupe against tasks + triggers + rules; when a task / trigger mints outputs, dedupe against existing rule outputs. See [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule) for the full enumeration.
 
 > **Trigger-NODE inputs only:** the case-level event-**trigger node** gets no `elementId` on its inputs (different from in-stage task inputs). This does **NOT** apply to connector-bound **condition rules** — a rule's inputs AND outputs BOTH get `elementId = <ownerNodeId>-<ruleId>` (= `root-<ruleId>` for case-exit). See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule), and each plugin's `impl-json.md` for the target-specific shape.
 
@@ -395,7 +400,7 @@ A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) b
 | Task-level fields (`type`, `displayName`, `isRequired`, `shouldRunOnlyOnce`) | yes | none — it's a rule, not a node |
 | `conditionExpression` | n/a | optional extra `=js:` gate on **case state** (`vars.X` / `metadata`) — NOT the event payload (no `event` namespace) |
 
-`<ownerNodeId>` = the **stage id** for stage-entry / stage-exit / task-entry rules (all stage-scoped); **`root`** for case-exit rules (v19 `root.caseExitConditions` / v20 `metadata.caseExitRules`).
+`<ownerNodeId>` = the **stage id** for stage-entry / stage-exit / task-entry rules (all stage-scoped); **`root`** for case-exit rules (which live under `metadata.caseExitRules`).
 
 ### Procedure (Phase 3)
 
@@ -420,7 +425,7 @@ A `wait-for-connector` rule inside a condition (`…conditions[].rules[i][j]`) b
 }
 ```
 
-5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when `uipath` is absent.
+5b. If the T-entry has `outputs:`, dispatch `rule.uipath.outputs[]` per [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](plugins/variables/io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) — rewrite each already-minted output entry per its `->` / `=` operator. Skip when the rule has no `uipath.outputs[]` (stub placeholder — the stub always emits `uipath`, but with empty `outputs[]`).
 
 6. Append root bindings (ConnectionId + FolderKey) and run the deferred `bindings_v2` sync — identical to the task ([§ Root-level bindings](#root-level-bindings)).
 
@@ -451,11 +456,33 @@ Rule `id`s are opaque to the FE (no format validation on import) — `Rule_xxxxx
 ### Caveats
 
 - **Not a case-start trigger.** A connector rule compiles to an in-flight wait (ReceiveTask / event subprocess), so it gets **no entry-points.json entry** and **no rule-specific registration key** — FE `PackagingUtil` trigger registration is gated on `Intsvc.EventTrigger` start events only, which a rule is not. If the `case spec` caseShape carries a `metadata.body.bindings[Property]` registration entry (event-parameter connectors), substitute it exactly as the task does (Step 3 / Step 4); there is nothing rule-specific.
-- **CLI `validate` does NOT check `rule.uipath`.** The case-tool connector validator is task-only (reads `task.data`). A passing Phase-4 validate does **not** confirm a connector rule is valid — Studio Web (or an FE round-trip) is the real check. Emit the `uipath` block correctly; do not rely on validate to catch omissions.
+- **Full `validate` requires `rule.uipath` + `context`** — absent → `connector activity missing`. It does NOT check the `uipath` *internals* (a wrong `serviceType` passes), so a clean validate confirms the block is *present*, not that the connector *resolves* — confirm in Studio Web. Unresolved → stub placeholder (§ Placeholder fallback). `--skeleton` (Phase 2) skips condition rules.
 
 ### Placeholder fallback
 
-On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, emit the rule **without** its `uipath` block — `{ id, rule: "wait-for-connector", conditionExpression? }`. The rule itself is not a placeholder; only the connector configuration (the `uipath` payload) is deferred until the registry resolves, exactly like task connector data deferred via `data:{}`. Absence of `uipath` naturally skips the dependent subsystems: io-binding has no `outputs[]` to wire, root bindings has no Connection/Folder pair to add, IS-cache has no entry to register, global var-id dedup has no outputs to consider, and the Step-10 `bindings_v2` sync has nothing to regenerate for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8 and log per [logging/impl-json.md](plugins/logging/impl-json.md). Upgrade by re-running the [§ Procedure](#procedure-phase-3) once the connector resolves; same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks.
+Two entry paths reach this fallback: **Scenario A** — connector not found in TypeCache (§ 1 No-match, after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the [§ 2 create offer](#2-resolve-the-connection) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight to the placeholder.
+
+On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connector-key`, emit the rule with a **stub `uipath`**. A *bare* rule (no `uipath`) is NOT a valid placeholder — full `validate` errors `connector activity missing` and Studio Web rejects it. The stub is the **minimum that clears `validate`**: `serviceType` plus the two `context` entries the validator checks for — named `connectorKey` + `operation`, each the literal `"placeholder"` — with empty `inputs` / `outputs` / `bindings`. Do NOT pad it with the other resolved context fields (`connection`, `objectName`, …): Studio Web flags the unresolved connector regardless of how complete the stub is, so extra placeholders buy nothing until the connector is real. The full attach checklist lives in the `tasks.md` `<UNRESOLVED>` markers and the completion report, not in the stub.
+
+```json
+{
+  "id": "<ruleId>",
+  "rule": "wait-for-connector",
+  "uipath": {
+    "serviceType": "Intsvc.WaitForEvent",
+    "context": [
+      { "name": "connectorKey", "value": "placeholder", "type": "string" },
+      { "name": "operation",    "value": "placeholder", "type": "string" }
+    ],
+    "inputs": [],
+    "outputs": [],
+    "bindings": []
+  },
+  "conditionExpression": "<carry from the T-entry if present>"
+}
+```
+
+This stub is a **deliberate mock** — it clears `validate` only. Studio Web flags the unresolved connector, and the rule **fails at debug/run until resolved** (it cannot wait on a `"placeholder"` connector). It still skips the dependent subsystems: io-binding has no real `outputs[]` to wire, no Connection/Folder bindings, no IS-cache entry, no `bindings_v2` regen for this rule. Stamp the `tasks.md` entry with `<UNRESOLVED>` markers per Rule 8, log per [logging/impl-json.md](plugins/logging/impl-json.md), and list it in the completion report as **"replace the `placeholder` connector values before debug / publish-to-run."** Upgrade by re-running the [§ Procedure](#procedure-phase-3) once the connector resolves; same upgrade flow as `placeholder-tasks.md § Upgrade Procedure` for connector tasks.
 
 ---
 
@@ -474,4 +501,4 @@ On `case spec` failure or `<UNRESOLVED>` `type-id` / `connection-id` / `connecto
 
 ## Known Limitation (shared)
 
-The CLI-produced `essentialConfiguration` uses `essentialConfiguration` only (not `optionalConfiguration`). Triggers work at **runtime** but the FE editor may not render certain fields until the user re-configures the trigger in the UI. DAP repopulates these on form open. Documented in `~/Documents/knowledge/Skill_CLI/connector/case-spec-fe-discrepancies.md` (CLI-side).
+The CLI-produced `essentialConfiguration` uses `essentialConfiguration` only (not `optionalConfiguration`). Triggers work at **runtime** but the FE editor may not render certain fields until the user re-configures the trigger in the UI. DAP repopulates these on form open.

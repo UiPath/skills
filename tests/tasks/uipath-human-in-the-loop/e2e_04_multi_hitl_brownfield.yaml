@@ -57,7 +57,7 @@ success_criteria:
     description: "Completed handles wired in the flow file"
     path: "HROnboarding/HROnboarding/HROnboarding.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 2.0
     pass_threshold: 1.0
 

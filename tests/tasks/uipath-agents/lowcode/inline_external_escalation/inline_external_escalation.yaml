@@ -16,7 +16,7 @@ run_limits:
 initial_prompt: |
   Create a UiPath Flow project "FraudFlow" that uses an inline low-code agent
   to triage transactions and escalate uncertain cases to an EXISTING
-  EXTERNAL ActionCenter app named "FraudEscalationQueue" already
+  EXTERNAL ActionCenter app named "FraudEscalation" already
   deployed to the Orchestrator "Shared" folder (not inside this
   solution). Wire the escalation as a resource on the inline agent.
   The solution should be named "FraudFlowSol".
@@ -51,6 +51,14 @@ success_criteria:
       - expression: "length(Projects)"
         operator: "gte"
         expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 

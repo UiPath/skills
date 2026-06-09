@@ -96,8 +96,8 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
    }
    ```
 
-4. **Validate** with `uip agent validate "<AGENT_NAME>" --output json` (read-only). Confirm `MigrationPending`, `Validated`.
-5. **Migrate** with `uip agent migrate "<AGENT_NAME>" --output json`. Confirm `MigrationApplied`, `StorageVersion`.
+4. **Refresh** with `uip agent refresh "<AGENT_NAME>" --output json`. Regenerates `entry-points.json` and `bindings_v2.json`.
+5. **Validate** with `uip agent validate "<AGENT_NAME>" --output json` (read-only). Confirm `Validated`.
 6. **Bundle and upload** with `uip solution bundle` then `uip solution upload --output json` (with user consent).
 7. **Test** from Studio Web or via Orchestrator job invocation — `uip` CLI cannot supply attachments at run time.
 

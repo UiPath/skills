@@ -22,6 +22,7 @@
 # RPA skill (coded + XAML workflows)
 /skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
+/tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
 
 # Platform skill
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
@@ -37,8 +38,8 @@
 /tests/fixtures/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 
 # Agents skill (coded + low-code)
-/skills/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
-/tests/tasks/uipath-agents/ @gabrielavaduva @AlvinStanescu @Adrian-badea @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
+/skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
+/tests/tasks/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
 
 # Context grounding capabilities (DeepRAG + BatchTransform) — now part of uipath-agents
 /skills/uipath-agents/references/coded/capabilities/deeprag/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
@@ -60,13 +61,20 @@
 
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
+/tests/tasks/uipath-planner/ @RaduAna-Maria
 
-# Solution skill (design + uip solution lifecycle)
+# Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-solution/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
 
+# Design skill (PDD → SDD authoring)
+/skills/uipath-design/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
+/tests/tasks/uipath-design/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
+
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
+# Flow test tasks (general) — more specific subfolder rules below override this
+/tests/tasks/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 
 # Context grounding team — flow plugins (Summarize/Batch Transform) + tasks
 /skills/uipath-maestro-flow/references/author/references/plugins/summarize/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
@@ -78,6 +86,7 @@
 /tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 # API Workflow skill
 /skills/uipath-api-workflow/ @rares-baesu-uipath
+/tests/tasks/uipath-api-workflow/ @rares-baesu-uipath
 
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
@@ -89,6 +98,7 @@
 
 # Coded Apps skill
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
+/tests/tasks/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
 
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
@@ -103,6 +113,7 @@
 
 # Review skill
 /skills/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
+/tests/tasks/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
 # Legacy RPA — merged into uipath-rpa
 /skills/uipath-rpa/references/legacy/ @roalexandru @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii

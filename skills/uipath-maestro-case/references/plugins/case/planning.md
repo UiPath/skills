@@ -51,7 +51,7 @@ The case plugin writes a pure skeleton at T01 — no trigger node. The primary t
 - case-app-enabled: false
 - description: "<one-sentence description>"
 - order: first
-- verify: Confirm caseplan.json written and parses; root.id == "root", nodes == [], edges == []
+- verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "20.0.0", nodes == [], edges == []
 ```
 
 > **External variant.** Replace the two identifier lines with `identifier-type: external` + `case-identifier: "=vars.<varId>"` (or a `=js:` expression). See § External identifier value.

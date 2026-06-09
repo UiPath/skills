@@ -131,7 +131,7 @@ cat "<PROJECT_DIR>/project.json" | python3 -c "import json,sys; d=json.load(sys.
 
 ```bash
 # Run for EACH entry point file discovered above
-uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 **Step 3 — Report ALL results:**

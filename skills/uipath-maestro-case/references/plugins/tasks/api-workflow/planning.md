@@ -12,7 +12,7 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 |-------|--------|-------|
 | `display-name` | API Workflow Reference "Name" | |
 | `name` | API Workflow Reference "Name" |  |
-| `folder-path` | API Workflow Reference "Folder" |  |
+| `folder-path` | Resolved registry `folders[0].fullyQualifiedName` (NOT the sdd.md "Folder") | Binds to `data.folderPath`; Orchestrator starts the workflow here at runtime. The sdd.md "Folder" only seeds the lookup and may be a parent/truncated path. See [§ Registry Resolution](#registry-resolution). |
 | `task-type-id` | Registry resolution (below) | `entityKey` in `api-index.json` |
 | `inputs` | sdd.md task data mapping | See [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
 | `outputs` | Discovered via `tasks describe` | |
@@ -24,7 +24,8 @@ Pick this plugin when the sdd.md labels a task as `API_WORKFLOW` — typically a
 1. **Primary cache file:** `api-index.json`.
 2. **Identifier field:** `entityKey`.
 3. Match by exact name + folder.
-4. Discover inputs/outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
+4. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder" — see the field table above). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
+5. Discover inputs/outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
 ## Unresolved Fallback
 

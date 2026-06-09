@@ -206,7 +206,7 @@ Report per guardrail:
 - **Actionability issue** — describe the problem (e.g., "'Agent' is in selector.scopes but AllowedScopes for this validator is ['Llm', 'Tool'] — 'Agent' is not allowed; change scope to 'Llm' or 'Tool'") and the fix
 - **Relevance issue** — describe why the guardrail may not be appropriate and what to consider instead
 
-If the user asks to fix identified issues: apply corrections to `agent.json`, run `uip agent validate` to confirm the fix passes checks, then `uip agent migrate` to persist the regenerated `.agent-builder/`.
+If the user asks to fix identified issues: apply corrections to `agent.json`, run `uip agent refresh` to regenerate `entry-points.json` and `bindings_v2.json`, then `uip agent validate` to confirm the fix passes checks.
 
 ---
 

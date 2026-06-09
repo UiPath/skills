@@ -62,7 +62,8 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-solution** | Solution lifecycle (`.uipx`) — author SDD from PDD, then `uip solution init/pack/publish/deploy/activate`. |
+| **uipath-design** | PDD → SDD authoring — turn a Process Design Document into an implementation-ready Solution Design Document. |
+| **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-planner** | Multi-skill task planner — reads SDDs or non-PDD requests and derives an executable task list across the other skills. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
 

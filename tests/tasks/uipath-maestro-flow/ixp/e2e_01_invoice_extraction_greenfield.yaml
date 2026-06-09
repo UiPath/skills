@@ -87,7 +87,7 @@ success_criteria:
 
   - type: run_command
     description: "Generated flow references the IxP extraction output via $vars (downstream consumption)"
-    command: 'grep -rqE "\$vars\." --include="*.flow" .'
+    command: 'grep -rqF ''$vars.'' --include="*.flow" .'
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0

@@ -163,7 +163,7 @@ Report **all** results — Errors, Warnings, and Info — in the final review re
 2. For **each** entry point file, run validation yourself:
 
 ```bash
-uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 3. **Then run a project-level build** to catch what `validate` misses (unknown member names like `NGetText.Value`, invalid enum values like `Operator="StartsWith"`, member resolution / CacheMetadata failures, attribute-form C# expression JIT failures):
@@ -184,7 +184,7 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 The Workflow Analyzer checks code quality rules (ST-NMG naming, ST-DBP design, ST-MRD maintainability, ST-USG usage, ST-SEC security, ST-REL reliability). Run it explicitly:
 
 ```bash
-uip rpa analyze --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa analyze --project-dir "<PROJECT_DIR>" --output json
 ```
 
 If `uip rpa analyze` is not available, `uip rpa validate` includes Workflow Analyzer results. Check the output for all rule violations:

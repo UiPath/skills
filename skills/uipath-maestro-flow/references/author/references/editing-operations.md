@@ -21,7 +21,7 @@ If the change feels too tangled for a sequence of `Edit` calls, use `Write` for 
 
 ## Required Strategy
 
-> **Use Edit / Write for all non-carve-out `.flow` edits.** Flow CLI is not an opt-in alternative for OOTB structural edits. Use CLI only for connector activity, connector-trigger, and managed HTTP carve-outs. Inline-agent project lifecycle commands (`uip agent init --inline-in-flow`, `uip agent validate --inline-in-flow`, `uip agent migrate --inline-in-flow`) are allowed for the agent project, but the `uipath.agent.autonomous` flow node and edges are authored directly in `.flow` JSON.
+> **Use Edit / Write for all non-carve-out `.flow` edits.** Flow CLI is not an opt-in alternative for OOTB structural edits. Use CLI only for connector activity, connector-trigger, and managed HTTP carve-outs. Inline-agent project lifecycle commands (`uip agent init --inline-in-flow`, `uip agent refresh --inline-in-flow`, `uip agent validate --inline-in-flow`) are allowed for the agent project, but the `uipath.agent.autonomous` flow node and edges are authored directly in `.flow` JSON.
 
 | Strategy | Guide | When to use |
 |----------|-------|-------------|

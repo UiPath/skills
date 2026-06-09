@@ -6,20 +6,22 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shared'))
-from admin_helpers import run_cli, find_one, fail, ok
+from admin_helpers import run_cli, find_one, poll, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="check_fedcred: %(message)s")
 
 
 def main():
-    # Find the external app
-    apps = run_cli(["admin", "external-apps", "list"])
-    if not apps or apps.get("Result") != "Success":
-        fail("external-apps list did not return Success")
+    # Find the external app (poll for eventual consistency)
+    def find_app():
+        apps = run_cli(["admin", "external-apps", "list"])
+        if not apps or apps.get("Result") != "Success":
+            return None
+        return find_one(apps, "e2e-federated-app", ["name"])
 
-    app = find_one(apps, "e2e-federated-app", ["name"])
+    app = poll(find_app)
     if not app:
-        fail("External app 'e2e-federated-app' not found")
+        fail("External app 'e2e-federated-app' not found after retries")
 
     client_id = app.get("id")
     if not client_id:
