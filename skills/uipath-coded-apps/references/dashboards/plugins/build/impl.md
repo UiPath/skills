@@ -151,39 +151,29 @@ Routing name: `<kebab-name>-<4-char-random>`. Set once at plan time. Never chang
 - User requests a change → update plan, re-render with OAuth question, HALT again
 - User cancels → discard
 
-**If user says "create one":** Run scope discovery + app creation here:
-
-```bash
-uip admin scopes list --output json
-```
-
-From the JSON response, extract scope names (look for a `Data` array with `Name` or `Scope` fields). Intersect with the desired scopes:
-
-**Desired scopes** (use whichever are available in the environment):
-```
-OR.Assets OR.Assets.Read OR.Jobs OR.Jobs.Read OR.Folders OR.Folders.Read
-OR.Buckets OR.Buckets.Read OR.Execution OR.Execution.Read
-OR.Tasks OR.Tasks.Read OR.Queues OR.Queues.Read
-OR.Users OR.Users.Read Insights Insights.RealTimeData
-```
-
-Build the `--user-scope` argument from the intersection (comma-separated, no spaces). Then:
+**If user says "create one":** Run this single command:
 
 ```bash
 uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
   --non-confidential \
   --redirect-uri "http://localhost:57173" \
-  --user-scope "<INTERSECTION_OF_AVAILABLE_SCOPES>" \
+  --user-scope "OR.Assets,OR.Jobs,OR.Folders,OR.Buckets,OR.Execution,OR.Tasks,OR.Queues,OR.Users,Insights,Insights.RealTimeData" \
   --output json
 ```
 
-Read `ClientId` from response, write to intent.json.
+Read `ClientId` from the JSON response and write it to intent.json. Tell the user: "OAuth app created — building now."
 
-> **Note:** If `Insights` and `Insights.RealTimeData` are not available in this environment, T1 Insights widgets will return 401/403 in the browser. Warn the user: "Insights scopes are not available in this environment — Insights-based widgets will not show data. SDK-based widgets (T3-SDK) will still work."
+**If the command fails** (invalid scopes for this environment): retry with the minimal set:
 
-Tell the user: "OAuth app created — building now."
+```bash
+uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
+  --non-confidential \
+  --redirect-uri "http://localhost:57173" \
+  --user-scope "OR.Assets,OR.Jobs,OR.Folders,OR.Buckets,OR.Execution,OR.Tasks,OR.Queues,OR.Users" \
+  --output json
+```
 
-**If command fails:** direct user to `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalApps`. Do not proceed without `clientId`.
+If both fail: direct the user to `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalApps` to create one manually and paste back the client ID. Do not proceed without `clientId`.
 
 ---
 

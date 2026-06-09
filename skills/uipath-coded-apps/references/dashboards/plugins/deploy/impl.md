@@ -38,118 +38,26 @@ If `routingName` is empty — state.json is missing or the build never ran. Tell
 
 ## Step 1 — Provision AdminDashboards folder (idempotent, once per tenant)
 
-All dashboards deploy to a dedicated **AdminDashboards** folder with the **Administrators** group assigned as Folder Administrators. This step runs the first time (when `folderKey` is not in state.json) and is skipped on every subsequent deploy.
+All dashboards deploy to a dedicated **AdminDashboards** folder. Run this once — subsequent deploys skip it because `folderKey` will already be in state.json.
 
 **Skip this entire step if `folderKey` is already set in state.json.**
 
-### 1a — Find the Folder Administrator role key
+Run the provisioning script immediately after user confirmation — no extra user prompt needed:
 
 ```bash
-TEMP_DIR=$(node -e "process.stdout.write(require('os').tmpdir())")
-uip or roles list --limit 500 --output json > "${TEMP_DIR}/uip-roles.json"
-
-FOLDER_ADMIN_ROLE_KEY=$(node -e "
-const data  = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))
-const roles = data.Data ?? data.data ?? (Array.isArray(data) ? data : [])
-const role  = roles.find(r => r.Name === 'Folder Administrator')
-if (!role) { process.stderr.write('Role \"Folder Administrator\" not found\n'); process.exit(1) }
-process.stdout.write(role.Key ?? role.key ?? '')
-" "${TEMP_DIR}/uip-roles.json")
-rm -f "${TEMP_DIR}/uip-roles.json"
+node "<SKILL_BASE_DIR>/assets/scripts/provision-admin-folder.mjs" "<PROJECT_DIR>"
 ```
 
-### 1b — Find the Administrators group key
+This single command:
+- Runs roles, users, and folder lookups **in parallel**
+- Creates AdminDashboards if it doesn't exist
+- Assigns Folder Administrator to the Administrators group if not already assigned
+- Writes the folder key to state.json
+- Is fully idempotent — safe to re-run
 
-```bash
-uip or users list --username "Administrators" --output json > "${TEMP_DIR}/uip-admins.json"
+> **Note:** The role assignment step requires elevated permissions. Claude Code will ask for explicit approval before running it — this is expected and not a bug. Approve it once and it won't be asked again for this tenant.
 
-ADMINS_GROUP_KEY=$(node -e "
-const data   = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))
-const users  = data.Data ?? data.data ?? (Array.isArray(data) ? data : [])
-const group = users.find(u => {
-  const name = (u.UserName ?? u.Name ?? '').toLowerCase()
-  const type = (u.Type ?? u.type ?? '')
-  return name === 'administrators' && (type === 'DirectoryGroup' || type === 'Group' || type === '')
-})
-if (!group) {
-  // List all groups to help debug
-  const groups = users
-    .filter(u => (u.Type ?? u.type ?? '').toLowerCase().includes('group'))
-    .map(u => u.UserName ?? u.Name)
-  process.stderr.write('Could not find \"Administrators\" group. Available groups: ' + groups.join(', ') + '\n')
-  process.exit(1)
-}
-process.stdout.write(group.Key ?? group.key ?? '')
-" "${TEMP_DIR}/uip-admins.json")
-rm -f "${TEMP_DIR}/uip-admins.json"
-```
-
-### 1c — Check if AdminDashboards folder exists; create if not
-
-```bash
-uip or folders list --all --output json > "${TEMP_DIR}/uip-folders.json"
-
-FOLDER_KEY=$(node -e "
-const data    = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))
-const folders = Array.isArray(data) ? data : (data.Data ?? data.data ?? [])
-const folder  = folders.find(f => f.Name === 'AdminDashboards')
-process.stdout.write(folder ? (folder.Key ?? folder.key ?? '') : 'NONE')
-" "${TEMP_DIR}/uip-folders.json")
-rm -f "${TEMP_DIR}/uip-folders.json"
-
-if [ "${FOLDER_KEY}" = "NONE" ]; then
-  uip or folders create "AdminDashboards" --output json > "${TEMP_DIR}/uip-new-folder.json"
-  FOLDER_KEY=$(node -e "
-  const data = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))
-  const folder = data.Data ?? data.data ?? data
-  process.stdout.write(folder.Key ?? folder.key ?? '')
-  " "${TEMP_DIR}/uip-new-folder.json")
-  rm -f "${TEMP_DIR}/uip-new-folder.json"
-fi
-```
-
-### 1d — Check if Administrators already has Folder Administrator role; assign if not
-
-```bash
-uip or roles user-roles list "Administrators" --type Group --output json > "${TEMP_DIR}/uip-user-roles.json"
-
-ROLE_ASSIGNED=$(node -e "
-const data  = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))
-const roles = data.Data ?? data.data ?? (Array.isArray(data) ? data : [])
-const hit   = roles.find(r =>
-  (r.FolderPath === 'AdminDashboards' || r.folderPath === 'AdminDashboards') &&
-  (r.Role === 'Folder Administrator'  || r.role === 'Folder Administrator')
-)
-process.stdout.write(hit ? 'YES' : 'NO')
-" "${TEMP_DIR}/uip-user-roles.json")
-rm -f "${TEMP_DIR}/uip-user-roles.json"
-
-if [ "${ROLE_ASSIGNED}" = "NO" ]; then
-  uip or roles assign \
-    --user-key  "${ADMINS_GROUP_KEY}" \
-    --role-keys "${FOLDER_ADMIN_ROLE_KEY}" \
-    --folder-key "${FOLDER_KEY}" \
-    --output json
-fi
-```
-
-### 1e — Persist folder key to state.json
-
-```bash
-node -e "
-const fs    = require('fs')
-const path  = require('path')
-const fp    = path.join('.dashboard', 'state.json')
-const state = JSON.parse(fs.readFileSync(fp, 'utf8'))
-state.deployment         = state.deployment ?? {}
-state.deployment.folderKey  = process.argv[1]
-state.deployment.folderName = 'AdminDashboards'
-const tmp = fp + '.tmp'
-fs.writeFileSync(tmp, JSON.stringify(state, null, 2))
-fs.renameSync(tmp, fp)
-process.stdout.write('AdminDashboards folder provisioned\n')
-" "${FOLDER_KEY}"
-```
+After the script prints `✓ AdminDashboards ready`, read `state.json` again to get the updated `folderKey` for use in the deploy command.
 
 Tell the user:
 > "Set up the **AdminDashboards** folder and granted Administrators full access. All your dashboards will deploy here."
