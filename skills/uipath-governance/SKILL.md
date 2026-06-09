@@ -1,6 +1,6 @@
 ---
 name: uipath-governance
-description: "UiPath governance via `uip gov` — author and deploy policies on two layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case), gated by tag, caller, or actor (User/Group). Skill classifies product-layer vs resource/tool-use intent before authoring. For platform ops→uipath-platform."
+description: "UiPath governance via `uip gov` — author and deploy policies on three layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case), gated by tag, caller, or actor (User/Group). Custom policies (`uip gov custom-policy`): WASM rules evaluated at every lifecycle hook — PII, model, tool checks; verdicts in audit trail (audit mode only); create/update/delete/enable/disable. Skill classifies intent before authoring. For platform ops→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
@@ -8,14 +8,15 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 
 > **Preview** — skill is under active development; surface and behavior may change.
 
-Uber skill for UiPath governance authoring. Two backing CLI surfaces:
+Uber skill for UiPath governance authoring. Three backing CLI surfaces:
 
 | Surface | Governs | CLI |
 |---|---|---|
 | **AOps product policy** | Product feature behavior — what Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder can do at design-time / runtime | `uip gov aops-policy` |
 | **Access policy** (`ToolUsePolicy`) | Resource/tool-use boundary — when an Actor Process invokes a child Resource (Agent / Maestro / Flow / RPA / API / Case Management), is the call allowed? | `uip gov access-policy` |
+| **Custom policy** | Agent runtime rules — WASM-compiled, evaluated at every lifecycle hook (model calls, tool calls, agent I/O); verdicts recorded in audit trail (audit mode only — enforcement coming) | `uip gov custom-policy` |
 
-Both surfaces share verbs (`block`, `restrict`, `deny`, `allow`, `require`, `enforce`). The same English sentence often maps to either layer, so this skill **classifies first** and only then routes to the matching mechanic.
+All three surfaces share verbs (`block`, `restrict`, `deny`, `allow`, `require`, `enforce`). The same English sentence often maps to different layers, so this skill **classifies first** and only then routes to the matching mechanic.
 
 ## When to Use This Skill
 
@@ -43,7 +44,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 
 ## Workflow
 
-1. **Classify the intent.** Read [`references/disambiguation-guide.md`](./references/disambiguation-guide.md) — it lists the strong signals for each branch, the phrase patterns that need disambiguation, and the canonical worked example. If a strong signal matches, route silently. If the phrasing is ambiguous (matches both branches), ask the [disambiguation question](#disambiguation-question) and wait for a digit reply. If the user replies with anything other than `1` or `2`, treat it as a re-statement of intent and re-classify. **Do not run any CLI command before classification is settled** — the disambiguation question itself does not need `uip`, and an unrelated request (platform ops, agent authoring) must redirect to a sibling skill before any setup happens here.
+1. **Classify the intent.** Read [`references/disambiguation-guide.md`](./references/disambiguation-guide.md) — it lists the strong signals for each branch, the phrase patterns that need disambiguation, and the canonical worked example. If a strong signal matches, route silently. If the phrasing is ambiguous (matches both branches), ask the [disambiguation question](#disambiguation-question) and wait for a digit reply. If the user replies with anything other than `1`, `2`, or `3`, treat it as a re-statement of intent and re-classify. **Do not run any CLI command before classification is settled** — the disambiguation question itself does not need `uip`, and an unrelated request (platform ops, agent authoring) must redirect to a sibling skill before any setup happens here.
 2. **Verify `uip` and login** *(only after classification routes to a governance branch).*
    ```bash
    which uip && uip --version
@@ -53,6 +54,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 3. **Route to the chosen mechanic** and follow its flow end-to-end.
    - Branch A → [`references/aops-policy/aops-policy-overview-guide.md`](./references/aops-policy/aops-policy-overview-guide.md)
    - Branch B → [`references/access-policy/access-policy-overview-guide.md`](./references/access-policy/access-policy-overview-guide.md)
+   - Branch C → [`references/custom-policy/custom-policy-overview-guide.md`](./references/custom-policy/custom-policy-overview-guide.md)
 
 ## Disambiguation Question
 
@@ -63,6 +65,7 @@ When the user's intent fits both branches, render exactly this numbered list (no
 
 1. **Govern the product** — control what Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder *can do* (e.g. block ChatGPT inside Studio, enforce Workflow Analyzer, disable a Marketplace widget). Backed by `uip gov aops-policy`.
 2. **Govern resource/tool use** — control which Actor Processes / identities can *invoke* which child Resource as a tool (e.g. block agents tagged `Sandbox` from being called, only let the finance group trigger this Flow). Backed by `uip gov access-policy`.
+3. **Govern agent runtime** — enforce guardrails inside a running agent at every lifecycle hook (e.g. block PII in prompts, restrict which models the agent may call, cap tool calls per session). Backed by `uip gov custom-policy`.
 
 Reply with the number.
 ```
@@ -81,6 +84,9 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 | **Look up CLI flags / output shapes** (AOps) | [`references/aops-policy/aops-policy-commands.md`](./references/aops-policy/aops-policy-commands.md) |
 | **Look up CLI flags / output shapes** (Access) | [`references/access-policy/access-policy-commands.md`](./references/access-policy/access-policy-commands.md) |
 | **Resolve a name to a UUID for Access** | [`references/access-policy/resource-lookup-guide.md`](./references/access-policy/resource-lookup-guide.md) |
+| **Manage or author an agent runtime policy** | [`references/custom-policy/custom-policy-overview-guide.md`](./references/custom-policy/custom-policy-overview-guide.md) |
+| **Look up CLI flags / output shapes** (custom policy) | [`references/custom-policy/custom-policy-commands.md`](./references/custom-policy/custom-policy-commands.md) |
+| **Custom policy YAML schema and check types** | [`references/custom-policy/custom-policy-schema-guide.md`](./references/custom-policy/custom-policy-schema-guide.md) |
 
 ## Anti-patterns
 

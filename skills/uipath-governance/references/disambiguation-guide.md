@@ -2,10 +2,11 @@
 
 > Used by [`../SKILL.md`](../SKILL.md) Workflow Step 2. Lists the strong signals, the phrase patterns that need disambiguation, and the canonical worked example. Read once per governance request to classify the intent.
 
-The two branches:
+The three branches:
 
 - **Branch A — AOps product policy** (`uip gov aops-policy`) → governs *product feature behavior* on Studio / StudioX / Assistant / Robot / AI Trust Layer / Agent Builder.
 - **Branch B — Access ToolUsePolicy** (`uip gov access-policy`) → governs *resource/tool use* on the Actor Process → child Resource boundary.
+- **Branch C — Custom policy** (`uip gov custom-policy`) → governs *agent runtime behavior* via WASM-compiled guardrails enforced at every lifecycle hook (model calls, tool calls, agent I/O).
 
 ## Strong signals — Branch A (AOps)
 
@@ -29,6 +30,19 @@ Route directly when the user:
 - Mentions `ToolUsePolicy`, `tool-use policy`, or `uip gov access-policy`.
 
 → Continue at [`access-policy/access-policy-overview-guide.md`](./access-policy/access-policy-overview-guide.md).
+
+## Strong signals — Branch C (Custom policy)
+
+Route directly when the user:
+
+- Mentions `custom-policy`, `custom policy`, `uip gov custom-policy`, `custom agent policy`, `agent policy`, `runtime guardrail`, `WASM policy`, or `runtime policy`.
+- Wants to **block PII / regex patterns in prompts or responses** at agent runtime — not at the Studio/product layer.
+- Wants to **restrict which models** an agent can call at runtime.
+- Wants to **allowlist tools** an agent may invoke, or **cap tool calls** per session.
+- Mentions **lifecycle hooks** — `before_model`, `after_model`, `tool_call`, `after_tool`, `before_agent`, `after_agent`.
+- Wants to **list, enable, disable, create, update, or delete** an custom policy by name or ID.
+
+→ Continue at [`custom-policy/custom-policy-overview-guide.md`](./custom-policy/custom-policy-overview-guide.md).
 
 ## Phrases that commonly need disambiguation
 
@@ -54,6 +68,10 @@ Skip the question and route directly when the phrasing is unambiguous.
 | "When my Agent calls sub-agent X, allow it" | B — Actor → Resource |
 | "Only Production-tagged agents may be invoked" | B — selectors + tags |
 | "Only `<group>` can invoke `<flow>`" | B — actorRule |
+| "Block PII / SSN / credit cards in agent prompts" | C — agent runtime guardrail |
+| "Cap tool calls at N per session" | C — agent runtime guardrail |
+| "Only allow GPT-4o / Claude for this agent" | C — agent runtime guardrail |
+| "List / enable / disable my agent policies" | C — agent policy management |
 
 ## Worked example — the canonical ambiguous prompt
 
