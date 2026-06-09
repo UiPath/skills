@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the broken-named-range branch of the excel-activities/read-range-null-reference playbook. Agent must chain: folders → jobs list faulted → jobs get (bare NRE) → jobs logs (Get Workbook Sheets succeeded; Read Range Trace shows 'resolving named range MyDataRange (RefersTo: #REF!)') → workflow source. The combination of (named-range Range in source) + (RefersTo: #REF! in logs) is decisive for branch 3.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json", "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"},
+    {"match": "or jobs get \"bb222222-bbbb-cccc-dddd-eeeeffffaaaa\" --output json", "file": "or-jobs-get-bb2222bb-output-json.json"},
+    {"match": "or jobs get bb222222-bbbb-cccc-dddd-eeeeffffaaaa --output json", "file": "or-jobs-get-bb2222bb-output-json.json"},
+    {"match": "or jobs history \"bb222222-bbbb-cccc-dddd-eeeeffffaaaa\" --output json", "file": "or-jobs-history-bb2222bb-output-json.json"},
+    {"match": "or jobs history bb222222-bbbb-cccc-dddd-eeeeffffaaaa --output json", "file": "or-jobs-history-bb2222bb-output-json.json"},
+    {"match": "or jobs logs \"bb222222-bbbb-cccc-dddd-eeeeffffaaaa\" --output json", "file": "or-jobs-logs-bb2222bb-output-json.json"},
+    {"match": "or jobs logs bb222222-bbbb-cccc-dddd-eeeeffffaaaa --output json", "file": "or-jobs-logs-bb2222bb-output-json.json"}
+  ]
+}

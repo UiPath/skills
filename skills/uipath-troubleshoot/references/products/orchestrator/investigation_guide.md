@@ -18,7 +18,7 @@ Only after identity is resolved, fetch data and verify every result against it:
 If data doesn't match: **discard it**. Do NOT fetch details for jobs or items from other processes. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
 4. **Job selection** — if multiple jobs exist for the identified process, present the list to the user (showing state, timestamp, error summary) and ask which one to investigate. If the user said "latest" or didn't specify, default to the most recent faulted job and state this assumption explicitly. Do NOT fetch details for multiple jobs — investigate one at a time. **If the user gave no job key but described the job by state + folder** (e.g. "my pending job in Shared"), resolve it by enumeration: `uip or jobs list --folder-key <key> --state <State> --output json`. If exactly one candidate matches, proceed with it; if several, present them and ask. Do not ask the user for a key you can discover this way.
-5. **Queue item** — if the issue is queue-related, resolve the queue and item. Use `uip resource queues list --folder-key <key> --name <name>` to find the queue definition key. If the user provided a queue item key, use `uip resource queue-items get <item-key> --folder-key <key>` to confirm it exists and extract the queue name, error details, and retry status. If the queue item is not found in the first folder, try other folders from `folders list`.
+5. **Queue item** — if the issue is queue-related, resolve the queue and item. Use `uip or queues list --folder-key <key> --name <name>` to find the queue definition key. If the user provided a queue item key, use `uip or queue-items get <item-key> --folder-key <key>` to confirm it exists and extract the queue name, error details, and retry status. If the queue item is not found in the first folder, try other folders from `folders list`.
 
 ## Job Data Bundle
 
@@ -35,15 +35,15 @@ This is the baseline. Domain-specific data gathering builds on it — see the in
 
 For every queue item under investigation, gather these in order. Write each to `raw/` immediately.
 
-1. **Resolve queue** — `uip resource queues list --folder-key <key> --name <name>` — find the queue definition and its key
-2. **Queue item details** — `uip resource queue-items get <item-key> --folder-key <key>` — status, SpecificContent, processingException, retry count
-3. **Queue item history** — `uip resource queue-items get-history <item-key> --folder-key <key>` — state transitions with timestamps (New → InProgress → Failed/Retried)
-4. **Last retry** — `uip resource queue-items get-last-retry <item-key> --folder-key <key>` — details of the most recent retry attempt
+1. **Resolve queue** — `uip or queues list --folder-key <key> --name <name>` — find the queue definition and its key
+2. **Queue item details** — `uip or queue-items get <item-key> --folder-key <key>` — status, SpecificContent, processingException, retry count
+3. **Queue item history** — `uip or queue-items get-history <item-key> --folder-key <key>` — state transitions with timestamps (New → InProgress → Failed/Retried)
+4. **Last retry** — `uip or queue-items get-last-retry <item-key> --folder-key <key>` — details of the most recent retry attempt
 
 For comparison investigations (e.g., queue-items-failing playbook), also gather successful items:
 
-5. **List failed items** — `uip resource queue-items list --queue-definition-key <queue-key> --folder-key <key> --status Failed` — all failed items for comparison
-6. **List successful items** — `uip resource queue-items list --queue-definition-key <queue-key> --folder-key <key> --status Successful --limit 3` — sample of successful items to compare SpecificContent
+5. **List failed items** — `uip or queue-items list --queue-definition-key <queue-key> --folder-key <key> --status Failed` — all failed items for comparison
+6. **List successful items** — `uip or queue-items list --queue-definition-key <queue-key> --folder-key <key> --status Successful --limit 3` — sample of successful items to compare SpecificContent
 
 ## Finding Related Jobs
 

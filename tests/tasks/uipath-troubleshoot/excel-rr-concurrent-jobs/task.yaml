@@ -1,0 +1,140 @@
+task_id: skill-troubleshoot-excel-rr-concurrent-jobs
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (System.IO.IOException: ... used by another process) where two Orchestrator
+  jobs ran concurrently against the same workbook on the same host. The agent
+  must match the activity-packages/excel-activities/playbooks/read-range-file-locked.md
+  playbook, identify the concurrent-jobs branch from overlapping `or jobs
+  list` windows and `or triggers list` schedules, and recommend
+  serialization (single-instance via lock asset, single-performer queue,
+  or non-overlapping trigger windows).
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, file-locked, concurrent-jobs]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.IO.IOException: The process cannot access the file 'C:\Robot\Data\sales-2026-05.xlsx' because it is being used by another process.`
+  Pinned job key: aa111111-2222-3333-4444-555566667777. The workbook is on the Robot host itself — no human had it open.
+  Why is the file locked and how do I stop this from happening again?
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-range-file-locked playbook AND identified concurrent Robot jobs racing on the same workbook as the cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.IO.IOException: The process cannot access the file
+         'C:\Robot\Data\sales-2026-05.xlsx' because it is being used by
+         another process.` Pinned job key:
+         aa111111-2222-3333-4444-555566667777. The workbook is on the
+         Robot host itself — no human had it open. Why is the file
+         locked and how do I stop this from happening again?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-locked.md
+        because the runtime error
+          "System.IO.IOException: The process cannot access the file
+          '<path>' because it is being used by another process."
+        is the verbatim file-acquisition signature of that playbook.
+
+        Acceptable / non-penalized: agent may also Read the excel-activities
+        investigation_guide, the orchestrator playbooks for job-faulted-*,
+        the top-level investigation_guide, or neighboring activity-package
+        overviews. Exploration during triage is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Two Orchestrator jobs (aa111111-... and
+            bb222222-3333-4444-5555-666677778888) ran concurrently against
+            the same workbook (`sales-2026-05.xlsx`).
+          - Both jobs target the same process (`ExcelDailyImport`) in the
+            same folder (`ExcelImports`).
+          - Two triggers fire the process on overlapping schedules so the
+            jobs' Running windows overlap.
+          - The first job to start acquired the workbook's file lock
+            (through Excel COM or OpenXML). The second job's Read Range
+            tried to open the same file and the OS refused with
+            `IOException`.
+
+        The reference fix:
+          - Serialize the process. Options: per-workbook lock asset
+            acquired at job start, single-performer queue, or stagger the
+            triggers so the Running windows do not overlap.
+          - Verify by inspecting trigger schedules
+            (`uip or triggers list`) and confirming no two firings of the
+            same process fall within the workbook's expected runtime
+            window.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched the read-range-file-locked playbook AND
+             converged on the concurrent-jobs branch (named the sibling
+             job key, identified overlapping triggers, recommended
+             serialization).
+        0.8  Both dimensions partially correct: e.g., matched the
+             playbook but described the lock generically without naming
+             the sibling job; or named the sibling job but matched a
+             different (or no specific) playbook.
+        0.5  Only one dimension correct: e.g., agent identified Excel
+             ReadRange as the failing surface but never matched the
+             specific playbook and never named the concurrent job;
+             OR matched the right playbook but never reached a coherent
+             conclusion about WHICH branch applied.
+        0.2  Agent recognized SOME aspect (e.g., domain classified as
+             excel-activities) but neither matched the playbook nor
+             named the concurrent job.
+        0.0  Reached the wrong branch (e.g., concluded orphan process,
+             network-share lock, or AV without supporting evidence),
+             concluded a different root cause entirely, got blocked
+             without progress, or failed.
+
+      Be substance-focused, not schema-focused. The skill's intermediate
+      file shapes may differ between runs -- look at the meaning of what
+      the agent recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

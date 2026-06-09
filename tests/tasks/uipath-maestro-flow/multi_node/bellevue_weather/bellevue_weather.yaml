@@ -14,6 +14,7 @@ initial_prompt: |
   in Bellevue from open-meteo, formats a summary with a script, and if the
   temperature is greater than 60F returns a summary with a message field 'nice day',
   otherwise the message field should be 'bring a jacket'.
+  Use a Managed HTTP Request node (core.action.http.v2) to call the open-meteo API directly — do not use an Integration Service connector.
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.

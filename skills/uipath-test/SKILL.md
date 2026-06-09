@@ -7,8 +7,6 @@ user-invocable: true
 
 # UiPath Test Assistant
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Manage UiPath Test Manager resources (projects, test cases, test sets, executions) and generate persona-tailored shareable test reports.
 
 ## When to Use This Skill

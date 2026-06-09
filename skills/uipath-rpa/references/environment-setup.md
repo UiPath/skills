@@ -4,7 +4,7 @@
 
 ## Studio Desktop vs headless Studio
 
-`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, `indicate-application`/`indicate-element`, the `uia` group, etc. all work headless.
+`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, the `uia` group (indication, capture, interaction), etc. all work headless.
 
 Studio Desktop is only required for two interactive UI tools:
 - `uip rpa files diff` — opens an interactive diff window in Studio's UI.
@@ -181,7 +181,7 @@ Two `uip rpa` commands need a running Studio Desktop instance — they have UI s
 
 | Command | Why it needs Studio |
 |---------|---------------------|
-| `uip rpa diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
+| `uip rpa files diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
 | `uip rpa focus-activity` | Selects/highlights an activity in Studio's active workflow designer. |
 
 When (and only when) you need to run one of these, ensure Studio Desktop is up:

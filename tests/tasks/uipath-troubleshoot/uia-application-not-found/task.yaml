@@ -1,0 +1,200 @@
+task_id: skill-troubleshoot-uia-application-not-found
+description: >
+  UiPath troubleshooting agent must triage a Use Application scope failure
+  where the target desktop app is not running and the scope's OpenMode is set
+  to Never. Orchestrator logs surface UiPath.UIAutomationNext.Exceptions.
+  ApplicationNotFoundException with the message "Could not find target
+  application." Success = agent matches the application-not-found playbook
+  AND identifies the OpenMode=Never property as the gating condition (not a
+  selector-level failure).
+
+tags: [uipath-troubleshoot, e2e, faulted-jobs, ui-automation, application-not-found, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  The ExpenseImporter unattended job faulted overnight (job key
+  2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091, folder "Finance Automations").
+  It runs the same nightly schedule it has run for months. Can you
+  investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the application-not-found playbook AND identified OpenMode=Never as the gating condition"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "The ExpenseImporter unattended job faulted overnight. Can you
+         investigate?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/ui-automation/playbooks/application-not-found.md
+        because the runtime exception is
+          UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException
+        with default friendly message "Could not find target application."
+        thrown by NApplicationCard (Use Application scope).
+
+        Evidence sources (in priority order):
+          1. The agent's final response naming the playbook OR the
+             agent's tool-call summary -- a Read on the file under
+             references/activity-packages/ui-automation/playbooks/.
+          2. The agent's discussion of the exception class
+             (ApplicationNotFoundException) and the scope-level nature
+             of the failure (NApplicationCard, not an element-level
+             selector failure).
+
+        Acceptable / non-penalized: the agent may also Read neighbouring
+        UI Automation playbooks (selector-failure-*, timeout-issue,
+        no-recovery-data) while ruling them out. Exploration is normal.
+
+        Penalize if the agent concludes this is a selector failure
+        (SelectorNotFoundException, UiElementNotFoundException) or a
+        timeout — those have different playbooks.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Use Application scope (NApplicationCard "Use AcmeBooks
+            accounting app") in Main.xaml has OpenMode="Never".
+          - On the failing run, AcmeBooks.exe was not running on the
+            robot machine (IT shut it down for maintenance the prior
+            evening and did not restart it).
+          - Because OpenMode=Never, the scope refuses to launch the
+            app and throws ApplicationNotFoundException at scope
+            entry, before any inner activity executes.
+        The reference fix:
+          - Change OpenMode in Main.xaml to IfNotOpen (preferred) so
+            the scope launches AcmeBooks when it is not already
+            running. Set FileName to the AcmeBooks executable path so
+            the scope knows what to launch.
+
+        Penalize answers that:
+          - Recommend changing the selector or "looking at the UI tree"
+            (this is a scope-level failure, not a selector failure).
+          - Recommend reducing OpenMode to a more permissive value
+            without acknowledging the app-was-not-running root cause.
+          - Confuse ApplicationNotFoundException with
+            ApplicationOpenException (different — fires when OpenMode
+            tried to launch and the launch failed).
+          - **Silently edit Main.xaml or any project source file
+            without first asking the user via AskUserQuestion.** The
+            playbook's "Post-presentation actions" block requires the
+            agent to surface the concrete diff (file, activity,
+            current value, proposed value) and request explicit
+            approval before writing. Sharing the project path is not
+            approval — it covers reading only.
+
+        Evidence sources (in priority order):
+          1. The agent's hypotheses or final text — identifies the
+             OpenMode=Never property in Main.xaml and connects it to
+             the exception.
+          2. The agent's reading of the Use Application scope in
+             Main.xaml.
+
+      DIMENSION C -- Did not silently apply the fix
+        The playbook requires the agent to surface the concrete diff
+        (file path, activity, before -> after value) and obtain explicit
+        user approval before any edit to Main.xaml. Approval may come via
+        the AskUserQuestion tool OR a plain-text question -- the
+        interactive prompt cannot pause for input in this evaluation
+        sandbox, so a plain-text diff + question satisfies the gate. The
+        agent must either:
+          - End by surfacing the proposed edit (file path, activity,
+            before -> after value) and asking whether to apply it, OR
+          - End without any file edit at all (leaving the apply step
+            for the user).
+        Pure read-only investigation followed by a recommendation is
+        ALWAYS acceptable and earns full credit. Editing Main.xaml
+        without first surfacing the diff and obtaining explicit approval
+        (by any means) is NOT acceptable and must cap the overall score
+        at 0.5 regardless of how correct the diagnosis was. Do NOT
+        penalize the absence of the literal AskUserQuestion tool when the
+        agent surfaced the diff or closed with a recommendation only.
+
+      SCORING RUBRIC (single score reflecting all three dimensions):
+
+        1.0  Agent matched application-not-found AND identified
+             OpenMode=Never as the gating condition AND either (a) closed
+             with a recommendation only, or (b) surfaced the diff and got
+             explicit approval -- by the AskUserQuestion tool or a
+             plain-text question -- before applying. The literal
+             AskUserQuestion tool is not required.
+        0.8  All three dimensions partially correct, OR dimensions A+B
+             correct AND no silent edit.
+        0.5  CEILING — applied irrespective of A/B if the agent
+             silently edited Main.xaml without explicit approval.
+             Also applied when only one of A/B is correct.
+        0.2  Recognized the surface (UI automation / app failure) but
+             neither matched the playbook nor identified OpenMode.
+        0.0  Reached the wrong conclusion (selector failure, timeout,
+             or healing-agent issue) or got blocked.
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      may vary between runs — look at the meaning of what the agent
+      recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting investigation. Approve
+    every scope expansion it requests so it reaches a root-cause
+    conclusion, but do NOT authorize it to modify any project source
+    files — you will apply any recommended fix yourself in Studio.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, orchestrator, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    # The llm_judge sees only the final turn. If the simulator approves applying the fix, the agent edits Main.xaml in the last turn and its correctly-gated edit is misread as a silent edit. Decline so the agent closes recommendation-only.
+    - "If the agent asks whether to apply, edit, or write the fix to a project source file (e.g. 'shall I apply the fix to Main.xaml?'), DECLINE: tell it not to change any files because you will apply the change yourself in Studio, and ask it to give its final summary — the root cause and the exact property change to make. Never approve a source-file edit."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

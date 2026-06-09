@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "aa111111-7777-8888-9999-000011112222",
+      "StartTime": "2026-05-19T08:00:01.300Z",
+      "EndTime": "2026-05-19T08:00:02.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelDailyImport",
+      "Source": "Schedule",
+      "Reference": "HourlySalesA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0011111-2222-3333-4444-555566667777",
+      "Info": "UiPath.Excel.BusinessException: The sheet with the name 'Datab' does not exist.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

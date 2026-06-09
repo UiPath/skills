@@ -2,16 +2,7 @@
 
 Shared procedure for keeping `bindings_v2.json` in sync after any plugin writes to the bindings array in `caseplan.json`.
 
-## Schema-dependent source path
-
-Read `Schema:` header from `tasks.md` per Rule 18.
-
-| Schema | Source path in `caseplan.json` |
-|---|---|
-| **v19** | `root.data.uipath.bindings[]` |
-| **v20** | `bindings[]` *(top level)* |
-
-Field shape inside the array is identical across schemas — only the source path for the regeneration read differs. Output `bindings_v2.json` shape is unchanged across schemas.
+Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.json` shape is independent of the source.
 
 ## When to Run
 
@@ -23,17 +14,17 @@ Run at these three points only:
 2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
 3. **End of Phase 3 Step 10** (after all connector condition RULES written across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for rules. Required because connector rules are written in Step 10 (conditions), not Step 9.7 (tasks); without this third sync point, rule-introduced Connection/Folder bindings + IS-cache entries wouldn't land until the post-Phase-3 catch-all, and `resource refresh` would miss them.
 
-Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (path per § Schema-dependent source path above). The batch regeneration reads the full bindings array once from the schema-appropriate path and converts everything in one pass.
+Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
 
 ---
 
 ## § Regenerate bindings_v2.json
 
-After writing bindings (to the schema-appropriate path), regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
+After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
 
 ### Procedure
 
-1. Read the bindings array from `caseplan.json` — `root.data.uipath.bindings[]` in v19, top-level `bindings[]` in v20
+1. Read top-level `bindings[]` from `caseplan.json`
 2. Group bindings by `resourceKey` — entries sharing the same key belong to one resource
 3. For each group, produce one resource entry using the shapes below
 4. Write the full file (always overwrite, never append) to `<SolutionDir>/<ProjectName>/bindings_v2.json`
@@ -74,7 +65,7 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 
 ## § Populate IS connection cache
 
-`uip solution resource refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 8), and connector **condition rules** in any of the 4 scopes (Step 10).
+`uip solution resource refresh` reads a local IS cache that connector plugins must populate after `get-connection`. Applies to all three connector-resolving paths: connector **tasks** (Step 9.7), connector **triggers** (Step 6.1), and connector **condition rules** in any of the 4 scopes (Step 10).
 
 **Path:** `~/.uipath/cache/integrationservice/<connectorKey>/connections.json`
 

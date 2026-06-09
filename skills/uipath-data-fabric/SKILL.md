@@ -5,8 +5,6 @@ description: "UiPath Data Fabric entity/record CRUD via `uip df`. Create entitie
 
 # UiPath Data Fabric — Agent Skill
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Data Fabric is UiPath's structured data store. Entities are typed schemas;
 records are rows; file fields store binary attachments.
 

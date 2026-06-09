@@ -13,10 +13,10 @@ description: >
   all emitted as skeletons per the skill's unresolved-fallback rule.
   This closes four task-type plugin paths (rpa, api-workflow, agent,
   case-management) inside a multi-stage flow. Validates and asserts on
-  edge structure (4 stage→stage edges into a single target), both
-  entry rules on Join, and the skeleton task types each in its
-  assigned stage.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:edges, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:agent, feature:case-management-task]
+  the condition-driven diamond reachability (Triage→{Validate,Enrich}→Join,
+  edges retired), both entry rules on Join, and the skeleton task types
+  each in its assigned stage.
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:conditions, feature:fan-in, feature:tasks, feature:skeleton-task, feature:rpa, feature:api-workflow, feature:agent, feature:case-management-task]
 max_iterations: 1
 
 run_limits:

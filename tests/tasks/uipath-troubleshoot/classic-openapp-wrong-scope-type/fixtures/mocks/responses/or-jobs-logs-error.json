@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T10:50:12.351Z",
+      "Message": "Click 'push button': The target Element was not specified for this activity. You should set its Target property or use this activity inside of a scope activity (Attach Browser, Open Browser, Open Application, Attach Window, Get Active Window, Element Scope activities).\r\nin Workflow.xaml\r\n    at Click \"Click 'push button'\"\r\n    at Sequence \"Do\"\r\n    at OpenApplication \"Open Application 'msedge.exe Google'\"\r\n    at Sequence \"Workflow\"\r\n    at DynamicActivity \"Workflow\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.Core.Activities.ElementNotSetException\r\n   at UiPath.Core.Activities.ScopeActivity.OnFaulted(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\r\n   at System.Activities.Runtime.FaultCallbackWrapper.Invoke(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\r\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

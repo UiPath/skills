@@ -4,10 +4,10 @@ Use this when a low-code agent needs an attached UiPath memory space for dynamic
 
 ## Critical Rules
 
-1. **Use `uip agent memory` for memory features.** Do not hand-author `features/{Name}/feature.json` unless recovering from a broken project. The CLI updates both the feature file and `.agent-builder/agent.json`.
+1. **Use `uip agent memory` for memory features.** Do not hand-author `features/{Name}/feature.json` unless recovering from a broken project. The CLI updates the feature file; run `uip agent refresh` afterwards to regenerate derived files.
 2. **`uip agent memory add` attaches an existing memory space; it does not create the platform memory space.** Always attempt `uip solution resource list --kind MemorySpace` discovery before attaching, even when the user supplied an exact memory space name and folder. Treat provided values as search inputs and fallback values only if discovery is blocked by auth or connectivity.
 3. **Use folder paths, not folder keys.** `--folder-path` must be the literal folder path where the memory space exists, such as `Shared` or `Shared/Sales`.
-4. **Validate, migrate, and refresh after memory changes.** Memory bindings are generated during `uip agent migrate`; do not edit `bindings_v2.json` directly. In a solution, always attempt `uip solution resource refresh --output json` from the solution root after migration so the generated `memorySpace` binding is imported into solution resources.
+4. **Refresh, validate, and solution-refresh after memory changes.** Memory bindings are generated during `uip agent refresh`; do not edit `bindings_v2.json` directly. In a solution, always attempt `uip solution resource refresh --output json` from the solution root after refresh so the generated `memorySpace` binding is imported into solution resources.
 5. **Seed only non-sensitive examples.** Memory items become agent project configuration. Do not store secrets, credentials, or raw PII as seed items.
 
 ## Workflow
@@ -93,12 +93,12 @@ Episodic memory items require `--feedback-id`; use the feedback ID for the conve
 ```bash
 uip agent memory list --path "<AGENT_PROJECT_DIR>" --output json
 uip agent memory item list SupportRecall --path "<AGENT_PROJECT_DIR>" --output json
+uip agent refresh "<AGENT_PROJECT_DIR>" --output json
 uip agent validate "<AGENT_PROJECT_DIR>" --output json
-uip agent migrate "<AGENT_PROJECT_DIR>" --output json
 uip solution resource refresh --output json
 ```
 
-After migration, inspect `<AGENT_PROJECT_DIR>/bindings_v2.json` only to verify that a `memorySpace` binding exists. Do not edit it. Run `uip solution resource refresh` from the solution root so the solution resource catalogue sees the memory binding. Do not skip refresh because the memory space name/folder were provided, because `bindings_v2.json` looks correct, or because publish/deploy is out of scope. If refresh fails due authentication, leave the generated files intact and report the failed refresh command.
+After refresh, inspect `<AGENT_PROJECT_DIR>/bindings_v2.json` only to verify that a `memorySpace` binding exists. Do not edit it. Run `uip solution resource refresh` from the solution root so the solution resource catalogue sees the memory binding. Do not skip refresh because the memory space name/folder were provided, because `bindings_v2.json` looks correct, or because publish/deploy is out of scope. If refresh fails due authentication, leave the generated files intact and report the failed refresh command.
 
 ## Remove
 
@@ -183,4 +183,4 @@ Expected shape, for review only:
 | `Invalid memory-type value` | Unsupported type | Use `episodic`, `escalation`, `0`, or `1` |
 | `Invalid metadata JSON` | Metadata is malformed or not an object | Pass a valid JSON object, e.g. `'{"source":"seed"}'` |
 | `Memory space "<name>" matches by memory space name` | More than one feature references the same memory space name | Pass `--folder-path`, use the feature name, or use the feature ID |
-| No `memorySpace` binding after migration | Migrate was not run after the memory edit | Run `uip agent migrate "<AGENT_PROJECT_DIR>" --output json` |
+| No `memorySpace` binding after refresh | Refresh was not run after the memory edit | Run `uip agent refresh "<AGENT_PROJECT_DIR>" --output json` |

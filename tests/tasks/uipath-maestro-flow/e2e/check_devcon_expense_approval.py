@@ -60,8 +60,8 @@ def main() -> None:
         fail("HITL node is missing id")
 
     version = str(hitl.get("typeVersion", ""))
-    if not version.startswith("1.0"):
-        fail(f"HITL node typeVersion should be a v1.0 schema, found {version!r}")
+    if not version.startswith("1."):
+        fail(f"HITL node typeVersion should be a v1.x schema, found {version!r}")
 
     schema = hitl.get("inputs", {}).get("schema", {})
     fields = schema.get("fields")

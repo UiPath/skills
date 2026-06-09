@@ -10,9 +10,9 @@ description: >
   SLA (2 hours) with a sla-breached escalation that notifies a
   UserGroup. Critical is reached via a second interrupting
   selected-stage-exited entry on Process exit and exits via
-  return-to-origin. Both exception
-  stages have no edges. Exercises: ExceptionStage type (×2 —
-  multi-exception flow), no-edges wiring rule, interrupting entry
+  return-to-origin. Both exception stages are reached only via
+  interrupting entry conditions (edges retired). Exercises: ExceptionStage
+  type (×2 — multi-exception flow), interrupting entry
   (selected-stage-exited ×2), return-to-origin exit,
   ExceptionStage SLA, sla-breached escalation, UserGroup recipient
   scope, a task embedded inside an ExceptionStage, and the
@@ -36,7 +36,7 @@ initial_prompt: |
 
   **Case Definition Blueprint** · Generic — Exception Stage Coverage
 
-  One regular Process stage plus TWO ExceptionStage nodes (Issues, Critical) reached only via interrupting entry conditions and exiting via return-to-origin. Exercises multi-exception flow, no-edges wiring, interrupting entry (selected-stage-exited ×2 on Process exit), return-to-origin exit, ExceptionStage SLA with sla-breached escalation, UserGroup recipient scope, a task embedded inside an ExceptionStage, and the wait-for-timer plugin's timeDate branch.
+  One regular Process stage plus TWO ExceptionStage nodes (Issues, Critical) reached only via interrupting entry conditions and exiting via return-to-origin (edges retired — reachability is condition-driven). Exercises multi-exception flow, interrupting entry (selected-stage-exited ×2 on Process exit), return-to-origin exit, ExceptionStage SLA with sla-breached escalation, UserGroup recipient scope, a task embedded inside an ExceptionStage, and the wait-for-timer plugin's timeDate branch.
 
   Prepared date: 2026-05-19
 
@@ -116,7 +116,7 @@ initial_prompt: |
 
   ### Stage 2: Issues (`issues`)
   **Type:** ExceptionStage
-  **Description:** Handles errors that occur while Process is active. Has no inbound or outbound edges — exception stages are detached from the edge graph; reached via an interrupting stage-entry condition only.
+  **Description:** Handles errors that occur while Process is active. Reached via an interrupting stage-entry condition only (edges retired — exception stages are condition-driven).
   **Required for Case Completion:** No
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
@@ -161,7 +161,7 @@ initial_prompt: |
 
   ### Stage 3: Critical (`critical`)
   **Type:** ExceptionStage
-  **Description:** Handles a hard fault that occurs while Process is active. Has no inbound or outbound edges; reached via an interrupting selected-stage-exited entry condition only.
+  **Description:** Handles a hard fault that occurs while Process is active. Reached via an interrupting selected-stage-exited entry condition only (edges retired).
   **Required for Case Completion:** No
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
@@ -217,7 +217,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Process is a regular Stage with an explicit exit-only exit condition (required-tasks-completed, marks stage complete); two ExceptionStage nodes (Issues + Critical) both with no edges; Issues carries interrupting selected-stage-exited entry + return-to-origin exit + 2h stage SLA with sla-breached UserGroup escalation + a wait-for-timer task using timeDate (specific datetime 2026-05-01) with current-stage-entered task-entry; Critical carries a second interrupting selected-stage-exited entry (on Process exit) + return-to-origin exit"
+    description: "Process is a regular Stage with an explicit exit-only exit condition (required-tasks-completed, marks stage complete); two ExceptionStage nodes (Issues + Critical) reached via interrupting entries (edges retired); Issues carries interrupting selected-stage-exited entry + return-to-origin exit + 2h stage SLA with sla-breached UserGroup escalation + a wait-for-timer task using timeDate (specific datetime 2026-05-01) with current-stage-entered task-entry; Critical carries a second interrupting selected-stage-exited entry (on Process exit) + return-to-origin exit"
     command: "python3 $TASK_DIR/check_exception_stage.py"
     timeout: 720
     expected_exit_code: 0

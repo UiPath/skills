@@ -4,6 +4,6 @@
 
 | Key Attributes |
 |---------------|
-| `Range` + child elements `Alignment`, `Font`, `Format`, `NumberFormat` (use `uip rpa activities get-default-xaml --use-studio` for child structure) |
+| `Range` + child elements `Alignment`, `Font`, `Format`, `NumberFormat` (use `uip rpa activities get-default-xaml` for child structure) |
 
-Use `uip rpa activities get-default-xaml --use-studio` for full XAML.
+Use `uip rpa activities get-default-xaml` for full XAML.

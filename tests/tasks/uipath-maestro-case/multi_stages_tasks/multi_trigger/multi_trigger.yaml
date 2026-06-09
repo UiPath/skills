@@ -3,17 +3,18 @@ description: >
   Build a Case Management definition with THREE case-level triggers —
   one manual trigger, one infinite timer trigger ("every 1 hour",
   canonical R/PT1H), and one BOUNDED + SCHEDULED timer trigger ("every
-  day at 09:00 UTC, 5 times", canonical R5/<iso>/P1D). Each trigger
-  has its own outgoing edge to the single Run stage. Exercises the
-  multi-trigger code path (≥3 trigger nodes, three TriggerEdges), the
+  day at 09:00 UTC, 5 times", canonical R5/<iso>/P1D). All three triggers
+  start the case at the single Run stage via its case-entered entry
+  condition (edges retired — no per-trigger edge). Exercises the
+  multi-trigger code path (≥3 trigger nodes), the
   manual trigger plugin's serviceType "None", AND all three forms of
   the timer plugin's timeCycle composition — infinite (R), bounded
   (R<n>), and bounded-with-explicit-start-time (R<n>/<iso>/<dur>) —
   closing the bounded-count + scheduled-start gaps in the timer
   trigger plugin. The single Run stage carries one placeholder rpa task
   (unresolved process → type "rpa", empty data) so the sink stage is not
-  empty. Validates and asserts on the trigger nodes, all three
-  TriggerEdges, plus the rpa task in Run.
+  empty. Validates and asserts on the trigger nodes, Run's case-entered
+  entry, plus the rpa task in Run.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:trigger, feature:timer, feature:multi-trigger, feature:bounded-timer, feature:scheduled-timer]
 max_iterations: 1
 
@@ -32,7 +33,7 @@ initial_prompt: |
 
   **Case Definition Blueprint** · Generic — Multi-Trigger Coverage
 
-  Three case-level triggers — one manual, one infinite timer (R/PT1H), one bounded + scheduled timer (R5/<iso>/P1D) — each with its own outgoing edge to a single Run stage. Exercises the multi-trigger code path (≥3 trigger nodes, three TriggerEdges), the manual trigger plugin's serviceType "None", AND all three forms of the timer plugin's timeCycle composition — infinite (R), bounded (R<n>), and bounded-with-explicit-start-time (R<n>/<iso>/<dur>).
+  Three case-level triggers — one manual, one infinite timer (R/PT1H), one bounded + scheduled timer (R5/<iso>/P1D) — all starting the case at a single Run stage via its case-entered entry condition (edges retired). Exercises the multi-trigger code path (≥3 trigger nodes), the manual trigger plugin's serviceType "None", AND all three forms of the timer plugin's timeCycle composition — infinite (R), bounded (R<n>), and bounded-with-explicit-start-time (R<n>/<iso>/<dur>).
 
   Prepared date: 2026-05-19
 
@@ -79,7 +80,7 @@ initial_prompt: |
 
   ### Stage 1: Run (`run`)
   **Type:** Stage
-  **Description:** Receives the case after any trigger fires. Each of the three triggers carries its own TriggerEdge to this stage.
+  **Description:** Receives the case after any trigger fires — reached via its own case-entered entry condition (edges retired; no per-trigger edge).
   **Required for Case Completion:** Yes
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
@@ -133,7 +134,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Caseplan has 3 triggers (manual + infinite-hourly R/PT1H + bounded-daily R5/2026-04-26T09:00:00.000Z/P1D) each with its own TriggerEdge to Run, and the Run stage carries 1 rpa task"
+    description: "Caseplan has 3 triggers (manual + infinite-hourly R/PT1H + bounded-daily R5/2026-04-26T09:00:00.000Z/P1D) all starting the case via Run's case-entered entry (edges retired), and the Run stage carries 1 rpa task"
     command: "python3 $TASK_DIR/check_multi_trigger.py"
     timeout: 720
     expected_exit_code: 0

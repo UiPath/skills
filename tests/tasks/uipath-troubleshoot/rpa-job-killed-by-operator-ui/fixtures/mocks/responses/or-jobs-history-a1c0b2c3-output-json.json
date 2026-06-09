@@ -1,0 +1,29 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "_doc": "State transitions for the failing job. The presence of 'Stopping' is the signal that the kill was operator-initiated from Orchestrator. Host-side terminations (logoff, OOM, service restart) would go Running → Faulted directly with no Stopping/Killing.",
+  "Data": [
+    {
+      "State": "Pending",
+      "Timestamp": "2026-05-19T08:00:00.302Z",
+      "Reason": "JobCreated"
+    },
+    {
+      "State": "Running",
+      "Timestamp": "2026-05-19T08:00:00.500Z",
+      "Reason": "ExecutorStarted"
+    },
+    {
+      "State": "Stopping",
+      "Timestamp": "2026-05-19T08:01:30.000Z",
+      "Reason": "StopRequested",
+      "Strategy": "Kill"
+    },
+    {
+      "State": "Faulted",
+      "Timestamp": "2026-05-19T08:01:32.105Z",
+      "Reason": "ExecutorExited",
+      "ExitCode": "0x40010004"
+    }
+  ]
+}

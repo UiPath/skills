@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "_doc": "Verbatim uip CLI responses captured from the source session. Matches are core uip subcommand substrings — the troubleshoot agent's shared.md redirect-to-raw pipeline wraps these in `> .local/.../raw.json && head -c N`, but the dispatcher's substring match still catches the wrapped form. docsai queries proxy to the live CLI per tests/tasks/uipath-troubleshoot/CLAUDE.md.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json-local-investigations-raw-triage-.json"
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --state Faulted",
+      "file": "or-jobs-list-folder-key-defb8e05-e36b-4c36-bf11-0b4d08ce6cd1.json"
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --output json",
+      "file": "or-jobs-list-folder-key-defb8e05-e36b-4c36-bf11-0b4d08ce6cd1-2.json"
+    },
+    {
+      "match": "or jobs get 8c994220-a19a-4c62-9868-6df7b61c97e3",
+      "file": "or-jobs-get-8c994220-a19a-4c62-9868-6df7b61c97e3-output-json.json"
+    },
+    {
+      "match": "or jobs logs 8c994220-a19a-4c62-9868-6df7b61c97e3",
+      "file": "or-jobs-get-8c994220-a19a-4c62-9868-6df7b61c97e3-output-json.json"
+    },
+    {
+      "match": "traces spans get --job-key 8c994220-a19a-4c62-9868-6df7b61c97e3",
+      "file": "or-jobs-get-8c994220-a19a-4c62-9868-6df7b61c97e3-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy any docsai query to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  }
+}

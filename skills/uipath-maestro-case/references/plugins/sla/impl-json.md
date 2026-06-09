@@ -29,28 +29,16 @@ Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", 
 
 ## Target resolution
 
-Read the `Schema:` header from `tasks.md` to pick the root-target path. Stage-target path is identical across schemas.
-
-### v19
-
-- `target: "root"` → `root.data.slaRules` (**inside `root.data`** — sibling of `intsvcActivityConfig` and `uipath`, NOT a top-level key and NOT a direct child of `root`)
-- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules` (inside the stage node's `data`)
-
-### v20
-
-- `target: "root"` → **`metadata.slaRules`** (top-level `metadata` block, NOT `root.data.slaRules` — there is no `root` in v20)
-- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules` (unchanged from v19 — node internals are identical)
-
-### Common
-
+- `target: "root"` → **`metadata.slaRules`** (top-level `metadata` block — there is no `root` key on disk)
+- `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules`
 - Accepted node types: `case-management:Stage` and `case-management:ExceptionStage`.
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
 
 ## Recipe — one target
 
-After grouping T-entries by target, compose the `slaRules` array and write it into the target's location per the table above. The composed array shape is **identical** across v19 and v20 — only the destination path differs.
+After grouping T-entries by target, compose the `slaRules` array and write it into the target's location per the rules above.
 
-### Composed array (both schemas)
+### Composed array
 
 ```json
 [
@@ -68,25 +56,7 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ]
 ```
 
-### v19 root-target shape
-
-```json
-{
-  "root": {
-    "id": "root",
-    "name": "<name>",
-    "type": "case-management:root",
-    "...": "...",
-    "data": {
-      "intsvcActivityConfig": "v2",
-      "uipath": { "...": "..." },
-      "slaRules": [ <composed array above> ]
-    }
-  }
-}
-```
-
-### v20 root-target shape
+### Root-target shape
 
 ```json
 {
@@ -102,12 +72,11 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 }
 ```
 
-For a stage target (both schemas), the same `slaRules` array is written under `node.data.slaRules` (sibling of `label`, `tasks`, `parentElement`).
+For a stage target, the same `slaRules` array is written under `node.data.slaRules` (sibling of `label`, `tasks`, `parentElement`).
 
 > **Common failures:**
-> - **v19:** emitting `slaRules` at the caseplan top level or directly on `root` (sibling of `data`). Both wrong — must nest inside `data`.
-> - **v20:** emitting `slaRules` under a non-existent `root` key, or under `root.data.slaRules`. Both wrong — must nest under top-level `metadata`. There is no `root` key in v20.
-> - **Either:** writing `slaRules` to a stage's top level (sibling of `id`/`type`). Stage SLA always lives under `node.data.slaRules` regardless of schema.
+> - Emitting `slaRules` under a non-existent `root` key. Wrong — must nest under top-level `metadata`. There is no `root` key on disk.
+> - Writing `slaRules` to a stage's top level (sibling of `id`/`type`). Stage SLA always lives under `node.data.slaRules`.
 
 Emission rules:
 
@@ -156,8 +125,7 @@ List every unresolved recipient in the completion report (per SKILL.md § Comple
 
 ## Post-write validation
 
-- **v19:** confirm `root.data.slaRules` or `node.data.slaRules` exists with the expected entries. Verify the key is nested under `data`.
-- **v20:** confirm `metadata.slaRules` (top-level) or `node.data.slaRules` (stage) exists. Verify v20's root-target uses `metadata` — not `root.data` (which doesn't exist in v20).
+- Confirm `metadata.slaRules` (root) or `node.data.slaRules` (stage) exists with the expected entries. Verify the root-target uses `metadata` — not `root.data` (which doesn't exist on disk).
 - Confirm the trailing entry's `expression === "=js:true"` when any SLA T-entry targeted this node.
 - Confirm every generated `esc_` ID appears in `id-map.json`.
 - Run `uip maestro case validate <file> --output json` after all SLA targets have been written (not per-target).

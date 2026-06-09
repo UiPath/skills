@@ -3,12 +3,12 @@ description: >
   End-to-end test: given a goal-only prompt to build a flow that uses
   a low-code agent, the agent must derive from the skill that the
   right architecture is the inline-in-flow pattern. Verifies the agent
-  uses `uip agent init --inline-in-flow` and the full validate →
-  migrate split with `--inline-in-flow`, and produces the UUID-named
+  uses `uip agent init --inline-in-flow` and the full refresh →
+  validate split with `--inline-in-flow`, and produces the UUID-named
   subdirectory layout (no entry-points.json, no project.uiproj,
   empty flow-layout.json) wired into the flow with the correct
   `uipath.agent.autonomous` node and edges.
-tags: [uipath-agents, e2e, low-code, inline-flow]
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
 
 run_limits:
   expected_turns: 31
@@ -53,17 +53,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent validated the inline agent with --inline-in-flow (read-only check)"
+    description: "Agent refreshed the inline agent with --inline-in-flow"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent migrated the inline agent with --inline-in-flow (writes .agent-builder/*)"
+    description: "Agent validated the inline agent with --inline-in-flow (read-only check)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+migrate\s+.*--inline-in-flow'
+    command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

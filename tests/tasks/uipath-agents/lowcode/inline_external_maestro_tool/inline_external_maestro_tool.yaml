@@ -8,7 +8,7 @@ description: >
   "external"`, real `folderPath`, and that a
   `uipath.agent.resource.tool.*` flow node is wired to the autonomous
   agent node's `tool` handle.
-tags: [uipath-agents, e2e, low-code, inline-flow]
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
 
 run_limits:
   expected_turns: 69
@@ -96,6 +96,14 @@ success_criteria:
       - expression: "length(Projects)"
         operator: "gte"
         expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 

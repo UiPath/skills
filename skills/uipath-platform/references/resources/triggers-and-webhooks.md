@@ -2,7 +2,7 @@
 
 Automate job execution with time, queue, and API triggers, and set up webhooks for external event notifications.
 
-> For full option details on any command, use `--help` (e.g., `uip resource triggers create --help`).
+> For full option details on any command, use `--help` (e.g., `uip or triggers create --help`).
 
 ## When to Use
 
@@ -55,7 +55,7 @@ uip or processes list --folder-path "Finance" --output json
 ### Time Trigger
 
 ```bash
-uip resource triggers create --type time \
+uip or triggers create --type time \
   --name "WeekdayInvoiceRun" \
   --release-key <process-key> \
   --cron "0 0 9 ? * MON-FRI" \
@@ -84,9 +84,9 @@ Additional options:
 ### Queue Trigger
 
 ```bash
-uip resource queues list --folder-path "Finance" --output json  # get queue key
+uip or queues list --folder-path "Finance" --output json  # get queue key
 
-uip resource triggers create --type queue \
+uip or triggers create --type queue \
   --name "InvoiceQueueTrigger" \
   --release-key <process-key> \
   --queue-key <queue-key> \
@@ -99,7 +99,7 @@ Additional options: `--items-per-job` (default 1), `--activate-on-complete` (re-
 ### API Trigger
 
 ```bash
-uip resource triggers create --type api \
+uip or triggers create --type api \
   --name "InvoiceEndpoint" \
   --release-key <process-key> \
   --slug "process-invoice" \
@@ -117,16 +117,16 @@ CallingMode values: `AsyncRequestReply`, `AsyncCallback`, `LongPolling`, `FireAn
 
 ```bash
 # List time triggers in a folder
-uip resource triggers list --type time --folder-path "Finance" --output json
+uip or triggers list --type time --folder-path "Finance" --output json
 
 # Filter: only enabled, by name
-uip resource triggers list --type queue --folder-path "Finance" --enabled --name "Invoice" --output json
+uip or triggers list --type queue --folder-path "Finance" --enabled --name "Invoice" --output json
 
 # Get details
-uip resource triggers get <trigger-key> --type time --folder-path "Finance" --output json
+uip or triggers get <trigger-key> --type time --folder-path "Finance" --output json
 
 # Update (only provided fields change)
-uip resource triggers update <trigger-key> --type time \
+uip or triggers update <trigger-key> --type time \
   --cron "0 30 8 ? * MON-FRI" --folder-path "Finance" --output json
 ```
 
@@ -144,9 +144,9 @@ exclusive `--enabled` / `--disabled` flags. Same applies to all three
 trigger types (time, queue, api).
 
 ```bash
-uip resource triggers update <trigger-key> --type time --folder-path "Finance" --disabled --output json
-uip resource triggers update <trigger-key> --type time --folder-path "Finance" --enabled --output json
-uip resource triggers delete <trigger-key> --type time --folder-path "Finance" --output json
+uip or triggers update <trigger-key> --type time --folder-path "Finance" --disabled --output json
+uip or triggers update <trigger-key> --type time --folder-path "Finance" --enabled --output json
+uip or triggers delete <trigger-key> --type time --folder-path "Finance" --output json
 ```
 
 ---
@@ -156,7 +156,7 @@ uip resource triggers delete <trigger-key> --type time --folder-path "Finance" -
 Shows every activation attempt and why it succeeded or failed. Check this before assuming broken config.
 
 ```bash
-uip resource triggers history <trigger-key> --folder-path "Finance" --output json
+uip or triggers history <trigger-key> --folder-path "Finance" --output json
 ```
 
 Entries include `logEventType` (Fired, Failed, Skipped) and `message` ("No machines available", "License limit reached", "Calendar exclusion").
@@ -170,7 +170,7 @@ Webhooks are **tenant-scoped** -- no `--folder-path` needed. They POST to your U
 ### Discover Event Types
 
 ```bash
-uip resource webhooks event-types --output json
+uip or webhooks event-types --output json
 ```
 
 Returns names like `job.completed`, `job.faulted`, `queueItem.failed`. Use these with `--events`.
@@ -181,13 +181,13 @@ The webhook name is a **positional argument**, aligned with `calendars create <n
 
 ```bash
 # Subscribe to specific events
-uip resource webhooks create "JobFailureAlert" \
+uip or webhooks create "JobFailureAlert" \
   --url "https://hooks.example.com/uipath" \
   --events "job.faulted,job.stopped" \
   --secret "my-signing-secret" --output json
 
 # Subscribe to ALL events (omit --events)
-uip resource webhooks create "AuditHook" \
+uip or webhooks create "AuditHook" \
   --url "https://hooks.example.com/audit" --output json
 ```
 
@@ -199,19 +199,19 @@ Options:
 ### List, Get, Update, Test, Delete
 
 ```bash
-uip resource webhooks list --enabled --output json
-uip resource webhooks get <webhook-key> --output json
+uip or webhooks list --enabled --output json
+uip or webhooks get <webhook-key> --output json
 
-uip resource webhooks update <webhook-key> \
+uip or webhooks update <webhook-key> \
   --url "https://new.example.com/hook" \
   --events "job.faulted,queueItem.failed" --output json
 
 # Toggle without renaming or changing other fields:
-uip resource webhooks update <webhook-key> --disabled --output json
-uip resource webhooks update <webhook-key> --enabled --output json
+uip or webhooks update <webhook-key> --disabled --output json
+uip or webhooks update <webhook-key> --enabled --output json
 
-uip resource webhooks ping <webhook-key> --output json     # test connectivity
-uip resource webhooks delete <webhook-key> --output json
+uip or webhooks ping <webhook-key> --output json     # test connectivity
+uip or webhooks delete <webhook-key> --output json
 ```
 
 ---
@@ -227,7 +227,7 @@ uip or processes list --folder-path "Finance" --output json
 
 # 2. Time trigger: weekdays at 9 AM, skip US holidays
 uip or calendars list --output json   # get calendar key
-uip resource triggers create --type time \
+uip or triggers create --type time \
   --name "WeekdayInvoiceRun" \
   --release-key "c3d4e5f6-..." \
   --cron "0 0 9 ? * MON-FRI" --time-zone "UTC" \
@@ -235,8 +235,8 @@ uip resource triggers create --type time \
   --runtime-type Unattended --job-priority Normal --output json
 
 # 3. Queue trigger: fire when 10+ items accumulate
-uip resource queues list --folder-path "Finance" --output json   # get queue key
-uip resource triggers create --type queue \
+uip or queues list --folder-path "Finance" --output json   # get queue key
+uip or triggers create --type queue \
   --name "InvoiceOverflowTrigger" \
   --release-key "c3d4e5f6-..." \
   --queue-key "d4e5f6a7-..." \
@@ -244,14 +244,14 @@ uip resource triggers create --type queue \
   --runtime-type Unattended --job-priority High --output json
 
 # 4. Webhook: notify on job failures
-uip resource webhooks create "InvoiceFailureAlert" \
+uip or webhooks create "InvoiceFailureAlert" \
   --url "https://hooks.slack.com/services/T00/B00/xxx" \
   --events "job.faulted,job.stopped" \
   --secret "webhook-signing-key" --output json
 
 # 5. Verify everything is active
-uip resource triggers list --type time --folder-path "Finance" --enabled --output json
-uip resource webhooks list --enabled --output json
+uip or triggers list --type time --folder-path "Finance" --enabled --output json
+uip or webhooks list --enabled --output json
 ```
 
 ---

@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-12T02:00:02.220Z",
+      "Message": "ExpenseImporter started - importing yesterday's expense reports into AcmeBooks"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-12T02:00:02.301Z",
+      "Message": "Execution started: Main.xaml"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-12T02:00:02.355Z",
+      "Message": "Activity start: 'Use AcmeBooks accounting app' (NApplicationCard) — OpenMode=Never, Selector=<wnd app='acmebooks.exe' cls='Afx:00007FF6:0' />"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T02:00:04.587Z",
+      "Message": "Use AcmeBooks accounting app: Could not find target application.\r\n\r\nException type: UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException\r\nMessage: Could not find target application.\r\n\r\nin Main.xaml\r\n    at NApplicationCard \"Use AcmeBooks accounting app\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\""
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-12T02:00:04.611Z",
+      "Message": "UiPath.UIAutomationNext.Exceptions.ApplicationNotFoundException: Could not find target application.\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.GetAppNotFoundExceptionAsync(String appSelector, NAppOpenMode openMode, Boolean showClosestMatchesInSearchError, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ProcessAppNotFoundAsync(ITargetApp targetApp, Boolean showClosestMatchesInSearchError, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.ExecuteAsync(NativeActivityContext context, CancellationToken token)"
+    }
+  ]
+}
