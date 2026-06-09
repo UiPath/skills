@@ -74,7 +74,13 @@ Sends `keyword` to the TypeCache server search (`projectType=Api`), then tokeniz
 
 If multiple connectors offer the same operation (e.g. Gmail "Send Email" vs Outlook "Send Mail"), narrow by connector name instead of operation name: `resolve "outlook send"` vs `resolve "gmail send"`.
 
-If `ResultCount` is 0, try a different keyword. Connector activity names can differ from the vendor's marketing name — Outlook calls it "Get Newest Email", Gmail calls it "Get Latest Message".
+If `ResultCount` is 0 — or the only matches are the wrong connector — **a keyword miss is NOT proof no curated activity exists.** `resolve` AND-matches every whitespace token against `displayName`/`description`/`connectorKey`/`objectName`/`fullName`, so a marketing phrase plus a guessed verb over-narrows fast: the product is "UiPath Data Fabric" but its activities are named "Create Entity Record" on connector `uipath-uipath-dataservice` — so `resolve "data fabric insert"` returns **0** (no activity name contains all of `data` + `fabric` + `insert`), even though "Create/Query Entity Record" exist. The fix is fewer/truer tokens, not more. Recover **connector-first** instead of guessing more keywords:
+
+1. **Map the product/vendor name → connector key.** `uip is connectors list --filter "<product words>" --output json` → read `Key` (e.g. `Name: "UiPath Data Fabric"` → `Key: "uipath-uipath-dataservice"`). The friendly name lives on the connector record, not on any activity — exactly why resolving the marketing phrase can miss. Look the key up here every time; never hardcode or guess it (keys have non-obvious vendor segments).
+2. **Enumerate that connector's activities.** `uip is activities list <connector-key> --output json` lists every activity for the connector (e.g. `CreateEntityRecord_V3`, `QueryEntityRecords`). Only conclude "no curated activity exists" if this list has nothing for your operation. Note: `is activities list` confirms *what* exists but omits the editor metadata — `resolve` + `stub` are still required to author one (they supply the `UiPathActivityTypeId` and `metadata.configuration`).
+3. **Resolve/stub by a distinctive noun from the real activity name** ("entity record", "create record"), not the marketing phrase.
+
+Only fall back to a hand-built HTTP call (a big design fork — escalate to the user) once steps 1–2 confirm the connector has no activity for the operation. Connector activity names also differ from the vendor's marketing name — Outlook calls it "Get Newest Email", Gmail calls it "Get Latest Message".
 
 ### Step 2 — Verify a vendor connection (IntSvc kind only)
 
