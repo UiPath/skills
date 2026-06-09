@@ -1,143 +1,83 @@
 # Tier Resolution — Classifying Metrics
 
-Every metric in `intent.json` has a `tier` field you must set during Phase 2.
+Every metric in `intent.json` requires a `fnBody` that you write based on the SDK documentation. The tier tells the build script where to find display hints — it does not drive code generation.
 
-## Tier Decision Tree
+---
+
+## How it works
 
 ```
-User asks for metric
+User asks for a metric
   ↓
-T0 — Check the Hard Refuse list first
-  → Does the metric match? → YES: refuse only that metric, offer alternative
+T0 — Check Hard Refuse list (first)
+  → Match? Refuse only that metric, offer alternative
   ↓
 T1 — Catalog check
-  → Exact name or alias match in capability-registry.json?
-    → YES: tier = "T1"
+  → Name/alias in capability-registry.json?
+    → YES: registry provides display hints (template, xKey, yKey, icon)
+           You still write the fnBody from SDK docs
   ↓
 T2 — Parametric check
-  → Known SDK service + user-controlled filter value?
-    → YES: tier = "T2", include params object
+  → Known metric with user-supplied filter?
+    → YES: registry provides hints + you incorporate params into fnBody
   ↓
 T3 — Custom
-  → tier = "T3", write fnBody
+  → Not in catalog: you provide everything (fnBody + displayAs + hints)
 ```
 
----
-
-## T0 — Hard Refuse
-
-**Refuse ONLY the specific metric — never the whole dashboard.** Always offer the closest alternative and build the remaining widgets normally.
-
-| User asks for | Why it's impossible | Offer instead |
-|--------------|---------------------|---------------|
-| Agent cost in dollars | Platform tracks AGU units, not currency | `invocation-volume` for AGU consumption |
-| CPU or memory per agent | Not exposed by any API | `agent-latency` for fleet-level latency trends |
-| Who triggered a job | Job records carry no end-user identity | T3-SDK: `new Jobs(sdk as never).getAll({})` grouped by `processName` |
-| Data from multiple tenants | Dashboards are scoped to one tenant only | Multi-widget view within the same tenant |
-| SLA breach percentage | Platform has no SLA metadata | T3-SDK: `new Jobs(sdk as never).getAll({ filter: "State eq 'Faulted'" })` to compute failure rate |
-| Error message text or stack traces | No aggregation endpoint exists | `agent-errors` for error counts |
-| Governance policy summary | Requires a specific policy UUID — the build cannot infer it | Ask the user for the UUID, then use T3-SDK with the `Governance` service |
+**Every tier requires `fnBody`.** The registry never generates code — it only describes what template and keys to use.
 
 ---
 
-## T1 — Known catalog metrics
+## Writing fnBody
 
-These are pre-built. The build script generates the entire widget from the metric name — no additional configuration needed.
+The agent reads SDK documentation (loaded in the parallel blast) to find the right service and method. The `fnBody` must:
 
-| Metric name | What it shows |
-|-------------|--------------|
-| `agent-errors` | Daily error counts as a trend line |
-| `invocation-volume` | AGU consumption over time |
-| `top-failing-agents` | Agents ranked by error count |
-| `active-agents-kpi` | Count of agents with at least one run |
-| `agent-latency` | P50 and P95 execution time side by side |
-| `job-failures` | Faulted jobs (process name, state, start time) |
-| `job-completion-trend` | Recently completed jobs |
+- Return `Promise<Array<Record<string, unknown>>>`
+- Use dynamic import: `const { ServiceClass } = await import('@uipath/uipath-typescript/...')`
+- Use constructor injection: `new ServiceClass(sdk as never)`
+- Return a flat array — the build script passes it directly to the chart/table
+
+Time constants (all `Date` objects, injected by build script):
+`NOW`, `ONE_DAY_AGO`, `SEVEN_DAYS_AGO`, `THIRTY_DAYS_AGO`, `NINETY_DAYS_AGO`
 
 ---
 
-## T2 — Parametric metrics
+## T1 — Catalog metrics with display hints
 
-The build script generates a filtered SDK query from the metric name and the filter values the user provides.
+The registry entry describes the metric and the expected SDK call. Use it as your guide, then write the correct `fnBody` from the SDK documentation.
 
-| Metric name | What it does | Params |
-|-------------|-------------|--------|
-| `jobs-duration-threshold` | Jobs running longer than N minutes | `{ threshold: number, direction: "gt" }` |
-| `jobs-by-state` | Jobs in a specific execution state | `{ value: "Faulted" \| "Running" \| "Stopped" \| "Successful" }` |
-| `tasks-by-status` | Action Center tasks filtered by status | `{ value: "Pending" \| "Completed" \| "Unassigned" }` |
-| `cases-running-above` | Maestro processes with high active case counts | `{ threshold: number, direction: "gt" }` |
+| Metric name | What it shows | Registry template | SDK hint |
+|-------------|--------------|-------------------|----------|
+| `agent-errors` | Daily error counts | `line-chart` | `Agents.getErrorsTimeline(start, end)` → `{ data: [{date, value}] }` |
+| `invocation-volume` | AGU consumption over time | `area-chart` | `Agents.getConsumptionTimeline(start, end)` → `{ data: [{timeSlice, aguConsumption}] }` |
+| `top-failing-agents` | Agents ranked by errors | `ranked-table` | `Agents.getTopErroredAgents(start, end)` → `{ data: [{name, count}] }` |
+| `active-agents-kpi` | Count of active agents | `kpi-card` | `Agents.getAll(start, end)` → `{ items: AgentListItem[] }` |
+| `agent-latency` | P50/P95 execution time | `multi-line-chart` | `Agents.getLatencyTimeline(start, end)` → `{ data: [{name:'P50'\|'P95', value, date}] }` |
+| `job-failures` | Faulted jobs | `data-table` | `new Jobs(sdk).getAll({ filter: "State eq 'Faulted'" })` → `{ items: [{processName, state, createdTime}] }` |
+| `job-completion-trend` | Completed jobs | `data-table` | `new Jobs(sdk).getAll({ filter: "State eq 'Successful'" })` → `{ items: [{processName, state, endTime}] }` |
 
-```json
-// Numeric filter example
-{ "name": "jobs-duration-threshold", "tier": "T2", "params": { "threshold": 30, "direction": "gt" } }
-
-// String filter example
-{ "name": "jobs-by-state", "tier": "T2", "params": { "value": "Faulted" } }
-```
-
----
-
-## T3 — Custom metrics
-
-Use when the metric doesn't match T1 or T2. The agent writes an async function body (`fnBody`) that fetches and shapes the data.
-
-`displayAs` can be any widget type: `kpi-card`, `ranked-table`, `data-table`, `area-chart`, `line-chart`, `bar-chart`, `donut-chart`, `multi-line-chart`.
-
-For **chart types** (`area-chart`, `line-chart`, `bar-chart`, `donut-chart`), also provide `xKey` and `yKey` matching field names in the array your `fnBody` returns. The build script uses the standard chart template with your `customDataFn` injected — the `fnBody` return value is used directly as chart data.
-
-### Example — area chart from SDK data
+### T1 intent format
 
 ```json
 {
-  "name": "faulted-jobs-trend",
-  "tier": "T3",
-  "title": "Faulted Jobs Over Time",
-  "description": "Daily count of faulted jobs",
-  "displayAs": "area-chart",
-  "xKey": "date",
-  "yKey": "count",
-  "deltaDir": "down-good",
-  "deltaText": "faulted jobs today",
-  "fnBody": "const { Jobs } = await import('@uipath/uipath-typescript/jobs')\nconst svc = new Jobs(sdk as never)\nconst result = await svc.getAll({ filter: \"State eq 'Faulted'\" })\nconst byDate: Record<string, number> = {}\nfor (const j of result?.items ?? []) {\n  const date = String(j.createdTime).slice(0, 10)\n  byDate[date] = (byDate[date] ?? 0) + 1\n}\nreturn Object.entries(byDate).sort().map(([date, count]) => ({ date, count }))"
+  "name": "agent-errors",
+  "tier": "T1",
+  "title": "Agent Error Rate",
+  "fnBody": "const { Agents } = await import('@uipath/uipath-typescript/agents')\nconst svc = new Agents(sdk as never)\nreturn (await svc.getErrorsTimeline(THIRTY_DAYS_AGO, NOW))?.data ?? []"
 }
 ```
 
-### Example — donut chart showing job state distribution
+The registry fills in: `template: "line-chart"`, `xKey: "date"`, `yKey: "value"`, `title` default, `icon`, `deltaDir`.
+You can override any of these in the intent.
+
+### T1 kpi-card example (active agents)
 
 ```json
 {
-  "name": "jobs-state-breakdown",
-  "tier": "T3",
-  "title": "Jobs by State",
-  "description": "Distribution of job execution states",
-  "displayAs": "donut-chart",
-  "xKey": "name",
-  "yKey": "value",
-  "fnBody": "const { Jobs } = await import('@uipath/uipath-typescript/jobs')\nconst svc = new Jobs(sdk as never)\nconst result = await svc.getAll({})\nconst counts: Record<string, number> = {}\nfor (const j of result?.items ?? []) { counts[j.state ?? 'Unknown'] = (counts[j.state ?? 'Unknown'] ?? 0) + 1 }\nreturn Object.entries(counts).map(([name, value]) => ({ name, value }))"
-}
-```
-
-### Example — ranked table from Insights
-
-```json
-{
-  "name": "incident-distribution",
-  "tier": "T3",
-  "title": "Incident Distribution",
-  "description": "Types of agent incidents",
-  "displayAs": "ranked-table",
-  "columns": "[{key:\"name\",label:\"Type\"},{key:\"count\",label:\"Count\",align:\"right\" as const}]",
-  "fnBody": "const { Agents } = await import('@uipath/uipath-typescript/agents')\nconst svc = new Agents(sdk as never)\nconst result = await svc.getIncidentDistribution(THIRTY_DAYS_AGO, NOW)\nreturn result?.data ?? []"
-}
-```
-
-### Example — KPI card
-
-```json
-{
-  "name": "total-active-agents",
-  "tier": "T3",
-  "title": "Total Active Agents",
+  "name": "active-agents-kpi",
+  "tier": "T1",
+  "title": "Active Agents",
   "displayAs": "kpi-card",
   "valueField": "count",
   "valueLabel": "active agents",
@@ -145,59 +85,122 @@ For **chart types** (`area-chart`, `line-chart`, `bar-chart`, `donut-chart`), al
 }
 ```
 
-### fnBody rules
+---
 
-- Must return `Promise<Array<Record<string, unknown>>>`
-- Use dynamic import: `const { ServiceClass } = await import('@uipath/uipath-typescript/...')`
-- Use constructor injection: `new ServiceClass(sdk as never)`
-- `sdk` and `getToken` are available as parameters — do not import `useAuth`
-- No JSX, no static top-level imports
-- Time constants (`Date` objects) are injected at the top of the generated file: `NOW`, `ONE_DAY_AGO`, `SEVEN_DAYS_AGO`, `THIRTY_DAYS_AGO`, `NINETY_DAYS_AGO`. Use them directly in fnBody.
+## T2 — Parametric metrics (catalog with user filter)
+
+The agent incorporates the user's filter parameters directly into the `fnBody`.
+
+| Metric name | What it does | Params |
+|-------------|-------------|--------|
+| `jobs-duration-threshold` | Jobs running longer than N minutes | `{ threshold: number, direction: "gt" }` |
+| `jobs-by-state` | Jobs in a specific state | `{ value: "Faulted" \| "Running" \| "Stopped" }` |
+| `tasks-by-status` | Tasks by status | `{ value: "Pending" \| "Completed" }` |
+| `cases-running-above` | Cases exceeding threshold | `{ threshold: number, direction: "gt" }` |
+
+### T2 intent format
+
+```json
+{
+  "name": "jobs-by-state",
+  "tier": "T2",
+  "title": "Faulted Jobs",
+  "params": { "value": "Faulted" },
+  "displayAs": "data-table",
+  "columns": "[{key:\"processName\",label:\"Process\"},{key:\"state\",label:\"State\"},{key:\"createdTime\",label:\"Started\"}]",
+  "fnBody": "const { Jobs } = await import('@uipath/uipath-typescript/jobs')\nconst svc = new Jobs(sdk as never)\nreturn (await svc.getAll({ filter: \"State eq 'Faulted'\" }))?.items ?? []"
+}
+```
+
+The `params` field is documentation — the actual filter logic is in `fnBody`.
+
+---
+
+## T3 — Custom metrics
+
+For any metric not in the catalog. You provide all display config and write the `fnBody` entirely from SDK documentation.
+
+### T3 area chart from SDK data
+
+```json
+{
+  "name": "faulted-jobs-trend",
+  "tier": "T3",
+  "title": "Faulted Jobs Over Time",
+  "displayAs": "area-chart",
+  "xKey": "date",
+  "yKey": "count",
+  "fnBody": "const { Jobs } = await import('@uipath/uipath-typescript/jobs')\nconst svc = new Jobs(sdk as never)\nconst result = await svc.getAll({ filter: \"State eq 'Faulted'\" })\nconst byDate: Record<string, number> = {}\nfor (const j of result?.items ?? []) {\n  const date = String(j.createdTime).slice(0, 10)\n  byDate[date] = (byDate[date] ?? 0) + 1\n}\nreturn Object.entries(byDate).sort().map(([date, count]) => ({ date, count }))"
+}
+```
+
+### T3 ranked table from Insights
+
+```json
+{
+  "name": "incident-distribution",
+  "tier": "T3",
+  "title": "Incident Distribution",
+  "displayAs": "ranked-table",
+  "columns": "[{key:\"name\",label:\"Type\"},{key:\"count\",label:\"Count\",align:\"right\" as const}]",
+  "fnBody": "const { Agents } = await import('@uipath/uipath-typescript/agents')\nconst svc = new Agents(sdk as never)\nconst result = await svc.getIncidentDistribution(THIRTY_DAYS_AGO, NOW)\nreturn result?.data ?? []"
+}
+```
+
+### T3 kpi-card
+
+```json
+{
+  "name": "running-jobs-count",
+  "tier": "T3",
+  "title": "Running Jobs",
+  "displayAs": "kpi-card",
+  "valueField": "count",
+  "valueLabel": "running jobs",
+  "fnBody": "const { Jobs } = await import('@uipath/uipath-typescript/jobs')\nconst svc = new Jobs(sdk as never)\nconst result = await svc.getAll({ filter: \"State eq 'Running'\" })\nreturn [{ count: result?.items?.length ?? 0 }]"
+}
+```
+
+---
+
+## T0 — Hard Refuse
+
+**Refuse ONLY the specific metric — not the whole dashboard.** Always offer an alternative.
+
+| User asks for | Why impossible | Suggest instead |
+|--------------|----------------|-----------------|
+| Agent cost in dollars | Platform tracks AGU, not currency | `invocation-volume` for AGU consumption |
+| CPU/memory per agent | Not exposed by any API | `agent-latency` for fleet-level latency |
+| Who triggered a job | Job records have no end-user identity | `job-completion-trend` grouped by process |
+| Cross-tenant data | Single-tenant scope only | Multi-widget single-tenant view |
+| SLA breach % | No SLA metadata in platform | Success rate from job completions |
+| Error text / stack traces | No aggregation endpoint | `agent-errors` for error counts |
+| Governance policy summary | Requires a policy UUID | Ask user for UUID, use T3 with `Governance` service |
 
 ---
 
 ## SDK service reference
 
+**Insights methods take positional Date params:**
+```typescript
+new Agents(sdk as never).getErrorsTimeline(THIRTY_DAYS_AGO, NOW)  // ✓
+new Agents(sdk as never).getErrors({ startTime: ..., endTime: ... })  // ✗ wrong signature
+```
+
 | Service | Import | Key response fields |
 |---------|--------|---------------------|
-| `Agents` | `@uipath/uipath-typescript/agents` | 14 Insights methods — errors, latency, consumption, incidents |
-| `Governance` | `@uipath/uipath-typescript/governance` | `getPolicyTraces()`, `getOperationSummary()` |
-| `Memory` | `@uipath/uipath-typescript/memory` | `getTimeline()`, `getCallsTimeline()`, `getTopSpaces()` |
-| `Jobs` | `@uipath/uipath-typescript/jobs` | `key`, `state`, `processName`, `startTime`, `endTime` |
+| `Agents` | `@uipath/uipath-typescript/agents` | Insights: getErrorsTimeline, getConsumptionTimeline, getLatencyTimeline, getTopErroredAgents, getAll, getIncidentDistribution |
+| `Jobs` | `@uipath/uipath-typescript/jobs` | `key`, `state`, `processName`, `startTime`, `endTime`, `createdTime` |
 | `Queues` | `@uipath/uipath-typescript/queues` | `id`, `name`, `maxRetries`, `acceptsRejectedItems` |
-| `Assets` | `@uipath/uipath-typescript/assets` | `id`, `name`, `hasValue`, `value` |
-| `Tasks` | `@uipath/uipath-typescript/tasks` | `id`, `title`, `priority`, `status`, `assignedTo` |
+| `Tasks` | `@uipath/uipath-typescript/tasks` | `id`, `title`, `priority`, `status`, `assignedTo`, `createdTime` |
 | `Processes` | `@uipath/uipath-typescript/processes` | `id`, `name`, `key`, `processType` |
-| `Entities` | `@uipath/uipath-typescript/entities` | `id`, `name`, `displayName`, `entityType` |
 | `Cases` | `@uipath/uipath-typescript/cases` | `processKey`, `runningCount`, `completedCount` |
+| `Entities` | `@uipath/uipath-typescript/entities` | `id`, `name`, `displayName`, `entityType` |
+| `Governance` | `@uipath/uipath-typescript/governance` | `getPolicyTraces()`, `getOperationSummary()` |
 
-**Insights methods take two positional `Date` arguments**, not an options object:
+**Non-Insights services:** access items via `result?.items ?? result?.value ?? []`
+
+**Duration** is not a direct field on Jobs. Compute it:
 ```typescript
-// Correct
-new Agents(sdk as never).getErrorsTimeline(THIRTY_DAYS_AGO, NOW)
-
-// Wrong — options syntax does not match the SDK signature
-new Agents(sdk as never).getErrors({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
-```
-
-**Paginated responses** — normalise with:
-```typescript
-const items = result?.items ?? result?.value ?? []
-```
-
-**Duration** is not a response field on `Jobs`. Compute it:
-```typescript
-const durationMs = new Date(j.endTime).getTime() - new Date(j.startTime).getTime()
-```
-
-**Constructor injection** requires the `as never` cast:
-```typescript
-// ✓ Correct
-const svc = new Jobs(sdk as never)
-
-// ✗ Wrong — TypeScript error without the cast
-const svc = new Jobs(sdk)
-
-// ✗ Wrong — sdk.jobs doesn't exist at runtime
-sdk.jobs.getAll()
+const ms = new Date(j.endTime).getTime() - new Date(j.startTime).getTime()
 ```
