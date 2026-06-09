@@ -122,7 +122,7 @@ When the request is "automate this dialog/form" or "build a UI test from these m
 3. **Capture all targets** screen by screen via `uia-configure-target` and screen advancement ([§ Multi-Step UI Flows](references/uia-configure-target-workflows.md)).
 4. **Then enter authoring phase:** project-context discovery (the precondition above), analyzer rules (Critical Rule 3 — Authoring-phase start), write code, validate.
 
-Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use the § Placeholder-Selector Stub Pattern above instead.
+Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use the § Placeholder-Selector Stub Pattern above instead. Never assume "app not installed" — confirm via the Window Baseline, or the user.
 
 ## Session Pre-warm
 
