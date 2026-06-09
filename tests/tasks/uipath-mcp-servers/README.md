@@ -98,7 +98,7 @@ uip agenthub mcp-tools create-is-activity --mcp <slug> --name "<name>" --descrip
 uip agenthub mcp-tools get --name "<tool>" --mcp <slug> --folder-path <folder> --output json
 uip agenthub mcp-tools update <tool-id> --mcp <slug> --folder-path <folder> --description "<text>" \
   --metadata "<json>" --input-schema "<json>" --output-schema "<json>" --dry-run --output json
-uip agenthub mcp-tools delete <tool-id> --mcp <slug> --folder-key <guid> --output json
+uip agenthub mcp-tools delete <tool-id> --mcp <slug> --folder-key <guid> --yes --output json
 ```
 
 Then translate the captured shapes into the per-scenario `manifest.json` + response files using synthetic values.
