@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-22T11:02:08.940Z",
+      "Message": "OrderNotesSearch execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-22T11:02:09.011Z",
+      "Message": "Connect to Database: connection opened to 'Server=sqlprod01;Database=Sales' using provider Microsoft.Data.SqlClient"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-22T11:02:09.114Z",
+      "Message": "Execute Query: TimeoutMS=30000; executing SQL against connection 'Server=sqlprod01;Database=Sales': SELECT * FROM Orders WHERE UPPER(Notes) LIKE '%URGENT REFUND%'"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-22T11:02:38.640Z",
+      "Message": "Execute Query: command aborted after 30000 ms; the query did not complete within TimeoutMS. Orders has no index on Notes and UPPER(Notes) is not sargable, so the provider performed a full-table scan."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-22T11:02:38.689Z",
+      "Message": "Execute Query: Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding.\r\nMicrosoft.Data.SqlClient.SqlException: Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-22T11:02:38.712Z",
+      "Message": "Execute Query: Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding.\r\nin Main.xaml\r\n    at ExecuteQuery \"Execute Query\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}
