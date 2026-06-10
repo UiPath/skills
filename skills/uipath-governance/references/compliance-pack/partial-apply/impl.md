@@ -14,9 +14,15 @@ Synthesizes and deploys AOPS policies for the NLP-matched clause/product subset 
 For each `productIdentifier` in `targetProducts`:
 
 ```bash
-# Reuse SESSION_TEMP set during catalog get; initialize only if not already set
-SESSION_TEMP="${SESSION_TEMP:-$(mktemp -d)}"  # Windows PS5+: if (-not $env:SESSION_TEMP) { $env:SESSION_TEMP = Join-Path $env:TEMP ('compliance-' + [guid]::NewGuid().ToString('N').Substring(0,8)) ; New-Item $env:SESSION_TEMP -ItemType Directory | Out-Null }
+# Read the session dir written by catalog get — same unique dir across all tool calls.
+SESSION_TEMP=$(cat "$HOME/.uipath-compliance-current-session")
+```
+```powershell
+# Windows PowerShell
+$tmpDir = (Get-Content "$env:TEMP\uipath-compliance-current-session.txt" -Raw).Trim()
+```
 
+```bash
 # Write synthesize-formdata.mjs to disk first — script at references/compliance-pack/scripts/synthesize-formdata.md
 node "$SESSION_TEMP/synthesize-formdata.mjs" \
   --catalog    "$SESSION_TEMP/catalog.json" \
@@ -154,7 +160,7 @@ uip gov aops-policy deployment tenant get $TENANT_ID --output json \
   > "$SESSION_TEMP/current-assignments-raw.json"
 ```
 
-**Windows (PowerShell):** Use a fixed temp path, not `$env:SESSION_TEMP` — PS env vars do not persist between tool calls. Use e.g. `$tmpDir = "$env:TEMP\uipath-compliance-iso42001"`.
+**Windows (PowerShell):** Read the session dir from the sentinel file written by `catalog get` — never use a fixed hardcoded path (that causes cross-session contamination). `$tmpDir = (Get-Content "$env:TEMP\uipath-compliance-current-session.txt" -Raw).Trim()`
 
 Build the new assignments array using Node.js to handle PascalCase CLI output and correct JSON serialization. Write a script `$SESSION_TEMP/merge-assignments.mjs`:
 

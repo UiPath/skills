@@ -13,7 +13,11 @@ Pure information — no state commands, no mutations. Uses `catalog get` data on
 ## Command (if not already fetched)
 
 ```bash
-SESSION_TEMP="${SESSION_TEMP:-$(mktemp -d)}"  # Windows PS5+: if (-not $env:SESSION_TEMP) { $env:SESSION_TEMP = Join-Path $env:TEMP ('compliance-' + [guid]::NewGuid().ToString('N').Substring(0,8)) ; New-Item $env:SESSION_TEMP -ItemType Directory | Out-Null }
+# Read the session dir written by catalog get; run catalog get if not yet fetched this session.
+SESSION_TEMP=$(cat "$HOME/.uipath-compliance-current-session" 2>/dev/null) || {
+  SESSION_TEMP=$(mktemp -d)
+  echo "$SESSION_TEMP" > "$HOME/.uipath-compliance-current-session"
+}
 uip gov compliance-packs catalog get iso-42001-2023 --output json > "$SESSION_TEMP/catalog.json"
 ```
 

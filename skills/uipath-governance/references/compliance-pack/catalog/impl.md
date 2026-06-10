@@ -14,12 +14,22 @@ Parse `Data.packs[]`. Present each pack:
 ## Get full pack detail
 
 ```bash
-# Initialize session temp dir — reuse if already set by a prior step, create otherwise
-SESSION_TEMP="${SESSION_TEMP:-$(mktemp -d)}"  # Windows PS5+: if (-not $env:SESSION_TEMP) { $env:SESSION_TEMP = Join-Path $env:TEMP ('compliance-' + [guid]::NewGuid().ToString('N').Substring(0,8)) ; New-Item $env:SESSION_TEMP -ItemType Directory | Out-Null }
+# Create a unique session dir and persist the path to disk so it survives between tool calls.
+# Every downstream plugin reads this file to find the shared session dir.
+SESSION_TEMP=$(mktemp -d)
+echo "$SESSION_TEMP" > "$HOME/.uipath-compliance-current-session"
 uip gov compliance-packs catalog get <packId> --output json > "$SESSION_TEMP/catalog.json"
 ```
 
-Save to `$SESSION_TEMP/catalog.json`. This file feeds all downstream plugins. Always run this step **before** `state coverage`, `partial-apply`, or `query` — those plugins read `catalog.json` from SESSION_TEMP.
+```powershell
+# Windows PowerShell — env vars don't persist between tool calls; write the path to a file instead.
+$tmpDir = Join-Path $env:TEMP ('compliance-' + [guid]::NewGuid().ToString('N').Substring(0,8))
+New-Item -ItemType Directory -Force $tmpDir | Out-Null
+$tmpDir | Set-Content "$env:TEMP\uipath-compliance-current-session.txt" -NoNewline
+uip gov compliance-packs catalog get <packId> --output json | Set-Content "$tmpDir\catalog.json"
+```
+
+Save to `$SESSION_TEMP/catalog.json` (Bash) or `$tmpDir\catalog.json` (Windows). This file feeds all downstream plugins. Always run this step **before** `state coverage`, `partial-apply`, or `query` — those plugins resolve the session dir from the sentinel file.
 
 Key fields in `Data`:
 

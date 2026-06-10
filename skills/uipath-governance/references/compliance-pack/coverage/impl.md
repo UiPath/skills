@@ -7,10 +7,19 @@ Compares the pack's recommended settings against what is currently deployed on t
 **Pre-condition:** `$SESSION_TEMP/catalog.json` must exist — run `catalog get` first (see `catalog/impl.md`). Coverage joins with catalog data to display meaningful control names.
 
 ```bash
-SESSION_TEMP="${SESSION_TEMP:-$(mktemp -d)}"  # Windows PS5+: if (-not $env:SESSION_TEMP) { $env:SESSION_TEMP = Join-Path $env:TEMP ('compliance-' + [guid]::NewGuid().ToString('N').Substring(0,8)) ; New-Item $env:SESSION_TEMP -ItemType Directory | Out-Null }
+# Read the session dir written by catalog get — never create a new one here.
+SESSION_TEMP=$(cat "$HOME/.uipath-compliance-current-session")
 TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
 uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json \
   > "$SESSION_TEMP/coverage.json"
+```
+
+```powershell
+# Windows PowerShell
+$tmpDir = (Get-Content "$env:TEMP\uipath-compliance-current-session.txt" -Raw).Trim()
+$tenantId = (Select-String '^UIPATH_TENANT_ID=(.+)' "$env:USERPROFILE\.uipath\.auth").Matches[0].Groups[1].Value
+uip gov compliance-packs state coverage tenant $tenantId <packId> --output json |
+  Set-Content "$tmpDir\coverage.json"
 ```
 
 ## Parse the response
