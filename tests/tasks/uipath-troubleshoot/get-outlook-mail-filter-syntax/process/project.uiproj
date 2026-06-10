@@ -1,0 +1,6 @@
+{
+  "Name": "SupportTriageReader",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Get Outlook Mail Messages failure caused by a malformed DASL/Jet Filter: the right-hand value is unquoted ([Subject] = VarSubject), so Outlook cannot parse the restriction.",
+  "MainFile": "Main.xaml"
+}

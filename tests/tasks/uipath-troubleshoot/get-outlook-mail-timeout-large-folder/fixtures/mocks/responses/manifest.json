@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the get-outlook-mail-failures playbook Branch 2 (timeout on a large folder) signature.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a9b0c1d2-3e4f-4a5b-8c6d-7e8f90123456\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-a9b0c1d2-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key a9b0c1d2-3e4f-4a5b-8c6d-7e8f90123456 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-a9b0c1d2-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678\" --output json",
+      "file": "or-jobs-get-b0c1d2e3-output-json.json"
+    },
+    {
+      "match": "or jobs get b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678 --output json",
+      "file": "or-jobs-get-b0c1d2e3-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678\" --level Error --output json",
+      "file": "or-jobs-logs-b0c1d2e3-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678 --level Error --output json",
+      "file": "or-jobs-logs-b0c1d2e3-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678\" --output json",
+      "file": "or-jobs-logs-b0c1d2e3-output-json.json"
+    },
+    {
+      "match": "or jobs logs b0c1d2e3-4f5a-4b6c-9d7e-8f9012345678 --output json",
+      "file": "or-jobs-logs-b0c1d2e3-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}
