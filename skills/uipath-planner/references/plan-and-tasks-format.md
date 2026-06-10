@@ -20,6 +20,7 @@ Both share the same task row schema. The difference is the prelude — `<feature
 **Expression language:** VB.NET (XAML only; N/A for coded / AI Agent / Flow / Application)
 **Approach:** <explore-first / simultaneous>
 **Execution autonomy:** <autonomous / interactive>
+**Delivery model:** <cloud / automation-suite <version> / standalone>  <!-- only when delivery signals were present in the request; omit otherwise -->
 **App type:** <web / desktop / citrix / N/A>
 **App state:** <open-and-ready / user-will-open / skip-discovery / N/A>
 **UI targeting:** <agent-builds-you-review / user-indicates / N/A>
@@ -58,6 +59,7 @@ In `interactive` mode this section is optional — the user is available to reso
 **Source SDD:** `<process>-sdd.md`
 **SDD scope:** <single-product / solution>
 **Execution autonomy:** <autonomous / interactive>
+**Delivery model:** <cloud / automation-suite <version> / standalone / unspecified>
 **Generation date:** <YYYY-MM-DD>
 
 > Tasks below are derived from the SDD. The SDD remains the architectural source of truth.

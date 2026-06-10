@@ -16,6 +16,18 @@ This file is the canonical home for **Levels 1, 1.75, 2.5 Part B, and 3**. RPA-s
 | **2.5. Part B — Merge** | Final unified project list with roles, frameworks, queues | All scopes | This file |
 | **3. Capabilities** | HITL, Integration Service, API Workflow as component | All products | This file |
 
+## Constraint Gate
+
+The delivery model (asked or detected at Phase 1 Step 0) and any user-stated product exclusions filter every candidate **before** any level recommends it. Run the gate at Level 1 (before presenting the primary scope), at Level 1.75 Pass A (before composing the option list), and at Level 3 (before flagging a capability add-on).
+
+1. **Look each candidate product up in [platform-availability-guide.md](platform-availability-guide.md)** under the customer's delivery model column.
+2. **Not available → BLOCK.** Remove the product from the recommendation and from Level 1.75 Pass A options. Recommend the matrix's documented alternative instead. Record the block in the `Decisions Made` row 1 and in the Recommended Scope summary (`Blocked by platform:` line).
+3. **Partial / uncertain → WARN.** Keep the product but attach an explicit warning line naming what is limited or unverified, and apply the verification rule in [platform-availability-guide.md](platform-availability-guide.md) before finalizing the SDD.
+4. **User exclusions are blocks.** When the user excludes a product ("we don't want Maestro"), treat it exactly like a matrix block for the rest of the session: never re-offer it at any level or revision, record the exclusion and its reason in the Recommended Scope summary.
+5. **Never silently substitute.** A blocked product's alternative changes the architecture — present the substitution and its consequence in the summary, not buried in a section.
+
+> Delivery model `unspecified` (user picked "Not sure") gates nothing — proceed assuming Automation Cloud, and carry an `[SME REVIEW]` row stating the assumption and which recommended products would be affected if the customer is actually on Automation Suite or standalone.
+
 ## Level 1 — Primary Scope Selection
 
 ### Decision table
@@ -31,6 +43,8 @@ Walk through in priority order. **First match wins.** Signals that match *below*
 | 5 | Orchestrating MULTIPLE automation types (RPA + agents + apps) | Maestro Flow |
 | 6 | UI automation, data processing, reusable component, or application testing (no other product fits) | **RPA** (sub-type decided at Level 1.5) |
 | 7 | Multiple coordinated projects across products or mixed RPA sub-types (e.g., Flow + API Workflows, or 2 Libraries + 1 Test Automation project) | **Solution** (composition decided at Level 1.75) |
+
+Apply the [Constraint Gate](#constraint-gate) to the matched primary before presenting it — a first-match product that is blocked on the customer's delivery model is replaced by the matrix's alternative, not presented with a caveat.
 
 ### Solution Signals
 
@@ -152,6 +166,8 @@ Applies only when Level 1 = Solution OR when the user picks "Solution (customize
 The goal of Level 1.75 is to produce a concrete list of projects the SDD will cover. Composition runs in three passes.
 
 ### Pass A — Select products to include (multi-select)
+
+**Gate the option list first.** Before composing the questions, drop every product the [Constraint Gate](#constraint-gate) blocks for this delivery model (matrix block or user exclusion) — do not show a blocked product as a selectable option. When a dropped product had matching Level 1 signals, say so in the question preamble with the alternative (e.g., "Coded Apps is not available on Automation Suite — the app touchpoint is covered per the availability guide's alternative").
 
 `AskUserQuestion` has a hard 4-option cap per question. Pass A covers 8 candidate products, so it **must be a single `AskUserQuestion` call containing two question objects**, each with `multiSelect: true` and ≤4 options. The user answers both questions on one screen; both sets of selections return together.
 
@@ -388,6 +404,8 @@ Emit this block as the Phase 1 summary content:
 ```markdown
 ## Recommended Scope
 **Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, <PRODUCT_2>, ...)>
+**Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
+**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... | none>
 **Reasoning:**
 - <SIGNAL_FROM_PDD> → <PRODUCT_MAPPING>
 - ...

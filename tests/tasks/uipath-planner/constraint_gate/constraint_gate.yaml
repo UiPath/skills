@@ -1,0 +1,164 @@
+task_id: skill-sdd-integration-constraint-gate
+description: >
+  Skill-guided evaluation: agent uses the uipath-planner skill on a PDD with
+  strong Coded Apps and Maestro signals BUT an explicit Automation Suite
+  2024.10 delivery constraint. Tests the Constraint Gate: Coded Apps
+  (cloud-only) and Maestro (AS 2.2510.2+) must be blocked per
+  platform-availability-guide.md, the Delivery model must land in the Planner
+  Handoff header, and the Decisions Made block must carry the Platform
+  constraints row.
+tags: [uipath-planner, integration, mode:build]
+
+run_limits:
+  expected_turns: 16
+  turn_timeout: 1200
+
+initial_prompt: |
+  Analyze the Process Design Document below and generate a Solution Design
+  Document (SDD). Use Autonomous mode — do not pause for checkpoints.
+
+  For any [SME REVIEW] items, use the defaults and proceed.
+
+  Important:
+  - Do NOT attempt to create a UiPath project or run any `uip` commands.
+  - Your only deliverable is the SDD markdown file.
+  - Before starting, load the uipath-planner skill. Read and follow its
+    workflow steps exactly.
+
+  --- BEGIN PDD ---
+
+  # Process Design Document: Purchase Request Approval
+
+  ## 1. Introduction
+  - **Process Name:** Purchase Request Approval
+  - **Objective:** Automate the intake, validation, and multi-step approval of
+    direct purchase requests, coordinating the request lifecycle across
+    procurement and finance.
+  - **Department:** Procurement (public-sector hospital)
+
+  ## 2. Infrastructure Constraints
+  - The customer runs **UiPath Automation Suite 2024.10 (self-hosted)** in an
+    isolated data center. There is **no connectivity to UiPath Automation
+    Cloud** and no plan to migrate.
+
+  ## 3. Process Overview
+  | Field | Value |
+  |-------|-------|
+  | Full name | Purchase Request Approval |
+  | Description | Employees submit purchase requests; the system validates budget and vendor data, routes the request through a two-level manager approval, and registers the approved purchase in the ERP. |
+  | Required roles | Unattended Robot |
+  | Schedule | Continuous, business hours |
+  | Volume | 30–60 requests per day |
+  | Input | Request data entered by employees |
+  | Output | Approved purchase registered in ERP; requester notified |
+
+  ### In Scope
+  - Request intake via a simple web dashboard where employees submit and track
+    their purchase requests and managers review and approve them
+  - Budget threshold validation against the finance Excel export
+  - Two-level approval routing (department manager, then finance) with
+    end-to-end orchestration of the request lifecycle across these steps
+  - ERP registration of approved purchases (web UI data entry)
+  - Email notification to the requester at each state change
+
+  ### Out of Scope
+  - Vendor onboarding
+  - Invoice processing
+
+  ## 4. Detailed Process Steps
+  | Step | Action | Application | Expected Result | Remarks |
+  |------|--------|-------------|-----------------|---------|
+  | 1.1 | Employee submits purchase request in the dashboard | Web dashboard | Request stored with status "Submitted" | Fields: vendor, amount, cost center, justification |
+  | 1.2 | Validate amount against budget threshold | Excel (finance export) | Request marked "Valid" or "Over budget" | Threshold per cost center; over budget → B1 |
+  | 1.3 | Route to department manager for approval | Web dashboard | Manager approves or rejects with reason | Reminder after 24h |
+  | 1.4 | Route approved requests to finance for second approval | Web dashboard | Finance approves or rejects | Amounts over 10,000 RON only; else skip to 1.5 |
+  | 1.5 | Register approved purchase in ERP | Browser (Edge) | ERP confirmation number captured | ERP is an internal web application |
+  | 1.6 | Notify requester of the outcome | Email (SMTP) | Email sent | Template per outcome |
+
+  ## 5. Business Exceptions
+  | ID | Name | Trigger Step | Condition | Action |
+  |----|------|-------------|-----------|--------|
+  | B1 | Over budget | 1.2 | Amount exceeds cost-center threshold | Mark "Over budget", notify requester, stop |
+  | B2 | Rejected | 1.3/1.4 | Approver rejects | Notify requester with reason, stop |
+  | B3 | Missing cost center | 1.2 | Cost center not in finance export | Notify requester to correct, stop |
+
+  ## 6. System Errors
+  | ID | Name | Trigger Step | Condition | Retry | Action |
+  |----|------|-------------|-----------|-------|--------|
+  | E1 | ERP unavailable | 1.5 | Page does not load within 30s | 3 retries, 60s backoff | Park request, alert IT |
+  | E2 | SMTP failure | 1.6 | Send fails | 2 retries | Log for manual notification |
+
+  ## 7. Application Details
+  | Application | Interface | Login Method | Access Method | Language |
+  |-------------|-----------|-------------|---------------|----------|
+  | ERP | Web | Username/password | Edge browser, internal URL | English |
+  | Excel | Desktop | Local | Installed, .xlsx files | English |
+  | Email | SMTP | Service account | Internal mail relay | English |
+
+  ## 8. Credentials
+  | Asset Name | Type | Description |
+  |------------|------|-------------|
+  | Cred_ERP | Credential | ERP service account |
+  | Cred_SMTP | Credential | Mail relay service account |
+
+  --- END PDD ---
+
+success_criteria:
+  - type: file_exists
+    description: "SDD file created with kebab-case name"
+    path: "purchase-request-approval-sdd.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Planner Handoff carries the Delivery model field set to automation-suite (Constraint Gate input recorded)"
+    path: "purchase-request-approval-sdd.md"
+    includes:
+      - "Delivery model"
+      - "automation-suite"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Decisions Made block carries the Platform constraints row (Constraint Gate outcome scannable)"
+    path: "purchase-request-approval-sdd.md"
+    includes:
+      - "Decisions Made"
+      - "Platform constraints"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "SDD exists and is NOT built on the Coded Apps template despite the web-dashboard signal (cloud-only product blocked on AS)"
+    command: "bash -c 'test -f purchase-request-approval-sdd.md && ! grep -q \"App Type & Tech Stack\" purchase-request-approval-sdd.md'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "SDD exists and is NOT built on the Maestro Flow template despite the orchestration signal (Maestro needs AS 2.2510.2+; customer is on 2024.10)"
+    command: "bash -c 'test -f purchase-request-approval-sdd.md && ! grep -q \"Nodes Inventory\" purchase-request-approval-sdd.md'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD names the gated products in its constraint reporting (blocked products are presented, not silently dropped)"
+    path: "purchase-request-approval-sdd.md"
+    includes:
+      - "Coded Apps"
+      - "Maestro"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD has a populated Planner Handoff header"
+    path: "purchase-request-approval-sdd.md"
+    includes:
+      - "Planner Handoff"
+      - "Execution autonomy"
+      - "Generated by"
+    weight: 1.0
+    pass_threshold: 1.0

@@ -20,6 +20,7 @@
 | Field | Value |
 |---|---|
 | **Execution autonomy** | <autonomous \| interactive> |
+| **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
 | **Project list section** | §9 Project Structure |
 | **Tasks file** | `<AGENT_NAME_KEBAB>-tasks.md` |

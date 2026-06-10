@@ -20,6 +20,7 @@
 | Field | Value |
 |---|---|
 | **Execution autonomy** | <autonomous \| interactive> |
+| **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
 | **Project list section** | §10 Project Structure + §5 Connectors |
 | **Tasks file** | `<API_WORKFLOW_NAME_KEBAB>-tasks.md` |

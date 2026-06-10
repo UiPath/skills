@@ -21,6 +21,7 @@
 | Field | Value |
 |---|---|
 | **Execution autonomy** | <autonomous \| interactive> |
+| **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
 | **Project list section** | <§11 \| §10 + §11 \| Project Inventory> |
 | **Tasks file** | `<PROCESS_NAME_KEBAB>-tasks.md` |
@@ -36,14 +37,15 @@ See sdd-generation-guide.md Phase 3 Step 2 item 3 for the format spec.
 -->
 ## Decisions Made
 
-> Autonomous mode picked the four architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
+> Autonomous mode picked the five architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
-| 1 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON> |
-| 2 | **RPA sub-type** (Level 1.5) | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON> |
-| 3 | **Authoring mode** (Level 2) | <XAML_OR_CODED_OR_HYBRID> | <REASON> |
-| 4 | **Framework** | <REFRAMEWORK_OR_SEQUENCE> | <REASON> |
+| 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; BLOCKED_PRODUCTS_OR_NONE> | <REASON> |
+| 2 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON> |
+| 3 | **RPA sub-type** (Level 1.5) | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON> |
+| 4 | **Authoring mode** (Level 2) | <XAML_OR_CODED_OR_HYBRID> | <REASON> |
+| 5 | **Framework** | <REFRAMEWORK_OR_SEQUENCE> | <REASON> |
 
 ---
 

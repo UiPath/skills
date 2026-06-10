@@ -4,23 +4,36 @@ Step-by-step instructions for transforming a PDD into an SDD. Follow the 3-phase
 
 ## Phase 1 — PDD Analysis & Scope Selection
 
-### Step 0: Determine Execution Mode
+### Step 0: Determine Execution Mode & Delivery Model
 
-Before reading the PDD, ask the user how they want the interaction to work. Use `AskUserQuestion` with the numbered-choice format:
+Before reading the PDD, ask **one `AskUserQuestion` call containing two question objects** — execution mode and delivery model. Batching keeps the prompt budget flat: the delivery model gates every product decision (see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate)) and asking it later costs a second interruption.
+
+*Question 1 — Execution mode:*
 
 > How should I handle this SDD generation?
 >
 > 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions, and generate the full SDD. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
 > 2. **Interactive** — I will pause at each phase checkpoint (summary, architecture, final SDD) for your review before proceeding.
 
-Record the choice — it goes into the SDD's `## Planner Handoff` header (Phase 3 Step 2) and propagates to Lane A (task derivation) for task review behavior.
+*Question 2 — Delivery model:*
+
+> Where will this automation run?
+>
+> 1. **UiPath Automation Cloud** — full product catalog available
+> 2. **Automation Suite (self-hosted)** — product availability depends on the Suite version; I will gate recommendations accordingly
+> 3. **Standalone Orchestrator (MSI)** — most restrictive; modern platform products unavailable
+> 4. **Not sure** — I will proceed assuming Automation Cloud and flag the assumption as `[SME REVIEW]`
+
+**Skip Question 2** when the delivery model is already resolved — the user's request states it, or the PDD carries a delivery-model signal (see [PDD Analysis Guide → Environment & Constraint Signals](pdd-analysis-guide.md#environment--constraint-signals)). Record the detected value instead of asking. If the answer is Automation Suite and the version is unknown, do not ask a follow-up — gate against the latest matrix column and add an `[SME REVIEW]` row for the version in §16 Deployment Environment.
+
+Record both choices — they go into the SDD's `## Planner Handoff` header (Phase 3 Step 2) and propagate to Lane A (task derivation): execution mode drives task review behavior; delivery model is passed to specialists as a platform constraint.
 
 In **Autonomous** mode:
 - Skip Phase 1 summary presentation (generate internally, do not wait for confirmation)
 - Skip Phase 2 architecture review (generate, do not wait)
 - Still ask the SME Review resolution question before writing (Step 1.5) — this is a hard blocker
 - Still ask the Agent/Coded App gap-filling question if triggered — this is a hard blocker
-- **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the four highest-leverage architectural picks with one-sentence reasons. See Phase 3 Step 2 item 3 for the exact block format. Do **NOT** use `AskUserQuestion` — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
+- **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the five highest-leverage architectural picks with one-sentence reasons. See Phase 3 Step 2 item 3 for the exact block format. Do **NOT** use `AskUserQuestion` — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
 
 In **Interactive** mode:
 - Present and wait at every checkpoint as described in the steps below
@@ -105,6 +118,8 @@ Scan for missing or vague information. Use the Gap Detection Checklist in the [P
 > **Progress:** Mark "Read PDD and extract data" as `completed`. Mark "Select product" as `in_progress`.
 
 This step orchestrates four levels of decision. Each level lives in its own canonical reference; this guide does not restate them. Run in order — output of each level feeds the next.
+
+> **Constraint Gate applies at every level.** The delivery model from Step 0 and any user-stated product exclusions filter the candidates before each level recommends — see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate) and [platform-availability-guide.md](platform-availability-guide.md).
 
 | Level | Decision | Canonical reference | When |
 |---|---|---|---|
@@ -280,7 +295,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 - Value Mappings (RPA)
 - Exception / Error Handling (all)
 - Credentials & Assets (RPA)
-- Deployment Environment (RPA — robot type, Studio/Robot versions, VM hosts, screen resolution, scalability). Fill `[SME REVIEW]` when the PDD does not specify — these fields typically come from the deployment team, not the PDD. Never invent VM names, version pins, or robot types.
+- Deployment Environment (RPA — robot type, Studio/Robot versions, VM hosts, screen resolution, scalability). Fill the Orchestrator row from the Step 0 delivery model (Cloud / Automation Suite + version / standalone); fill `[SME REVIEW]` for the rest when the PDD does not specify — these fields typically come from the deployment team, not the PDD. Never invent VM names, version pins, or robot types.
 - Triggers (Flow)
 - SLA Rules & Escalations (Case)
 - Compliance Constraints (Case)
@@ -330,6 +345,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    | Field | Value |
    |---|---|
    | **Execution autonomy** | <autonomous | interactive>          ← from Phase 1 Step 0
+   | **Delivery model** | <cloud | automation-suite | standalone | unspecified> ← from Phase 1 Step 0 (append the Suite version when known, e.g. `automation-suite 2025.1`)
    | **SDD scope** | <single-product | solution>                  ← from Phase 1 Step 4 (Level 1 / Level 1.75)
    | **Project list section** | §11 / §10 + §11 / Project Inventory ← template-specific (RPA single: §11; RPA Master: §10 + §11; Flow: §3 + §7; etc.)
    | **Tasks file** | `<PROCESS_NAME_KEBAB>-tasks.md`             ← planner writes here on first run
@@ -339,28 +355,30 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    Do NOT rename the heading or strip the marker. They are redundant on purpose — keeping both means a hand-edit of one signal does not silently break Lane A detection.
 
-3. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or the Table of Contents. The block makes the four highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
+3. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or the Table of Contents. The block makes the five highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
 
    Format:
 
    ```markdown
    ## Decisions Made
 
-   > Autonomous mode picked the four architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode (`Execution autonomy: interactive` in the Planner Handoff header above) or by editing the relevant SDD section.
+   > Autonomous mode picked the five architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode (`Execution autonomy: interactive` in the Planner Handoff header above) or by editing the relevant SDD section.
 
    | # | Decision | Picked | One-sentence reason |
    |---|---|---|---|
-   | 1 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON_TIED_TO_PDD_SIGNAL> |
-   | 2 | **RPA sub-type** (Level 1.5) — per RPA project | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON_TIED_TO_PDD_SIGNAL> |
-   | 3 | **Authoring mode** (Level 2) — per RPA project | <XAML_OR_CODED_OR_HYBRID> | <REASON_TIED_TO_PROCESS_BODY_SHAPE> |
-   | 4 | **Framework** — per RPA Process project | <REFRAMEWORK_OR_SEQUENCE> | <REASON_TIED_TO_PER_ITEM_INDEPENDENCE> |
+   | 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; BLOCKED_PRODUCTS_WITH_ALTERNATIVES_OR_NONE> | <SOURCE_OF_DELIVERY_MODEL_AND_MATRIX_RULE_APPLIED> |
+   | 2 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON_TIED_TO_PDD_SIGNAL> |
+   | 3 | **RPA sub-type** (Level 1.5) — per RPA project | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON_TIED_TO_PDD_SIGNAL> |
+   | 4 | **Authoring mode** (Level 2) — per RPA project | <XAML_OR_CODED_OR_HYBRID> | <REASON_TIED_TO_PROCESS_BODY_SHAPE> |
+   | 5 | **Framework** — per RPA Process project | <REFRAMEWORK_OR_SEQUENCE> | <REASON_TIED_TO_PER_ITEM_INDEPENDENCE> |
    ```
 
    Rules for the block:
    - Each "Picked" cell is a single concrete value, not a placeholder.
    - Each "One-sentence reason" is ≤ 20 words and cites the PDD signal or process characteristic that drove the pick.
-   - For Solution scope, rows 2-4 repeat per RPA project (use a sub-table or one row per project — keep concise).
-   - For non-RPA scopes (e.g., Single-product Agent), rows 2-4 collapse to N/A with one row covering the product-specific Level-1.5-equivalent (framework choice, app type, etc.).
+   - Row 1 always appears, even when nothing was blocked (`cloud; no products blocked`) — the reviewer must see which platform the architecture assumes.
+   - For Solution scope, rows 3-5 repeat per RPA project (use a sub-table or one row per project — keep concise).
+   - For non-RPA scopes (e.g., Single-product Agent), rows 3-5 collapse to N/A with one row covering the product-specific Level-1.5-equivalent (framework choice, app type, etc.).
    - The block does NOT replace the per-section detail later in the SDD — §10 / §11 / §13 still carry the full justification. The block is the **scannable index** of those decisions.
 
 4. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` block if present) and before the Table of Contents:
