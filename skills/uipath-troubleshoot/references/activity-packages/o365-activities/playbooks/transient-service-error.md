@@ -16,13 +16,13 @@ What this looks like — the job faults on a server-side or transport-level fail
 - `Automation Cloud cannot be reached. It may be a network fluctuation on the Runtime machine.` — the Runtime machine couldn't reach the connection service.
 
 What activities can produce this:
-- **Any** Mail, Files/OneDrive, or Excel Online activity — the failure originates at the Microsoft Graph service or the network path, which every activity shares.
+- **Any** Mail, Files/OneDrive, or Excel Online activity — the failure originates at the Microsoft Graph service or the network path, which every activity shares. Legacy (non-Connections) activities surface the same class as a raw `Microsoft.Graph.ServiceException` / HTTP exception with the raw wording rather than the friendly sentence.
 
 What can cause it:
 - **Transient Microsoft Graph service errors** — 503 service-unavailable, 500 internal error, 504 gateway timeout. These usually clear on their own.
 - **Request / transport timeout** — the HTTP call exceeded its timeout (slow Graph response, large payload, or a network stall).
 - **Network fluctuation** reaching Automation Cloud / the connection service from the Runtime machine.
-- **(Mail only) a too-broad query or a transient server-side error** surfaces the Graph `UnknownError` advisory above (narrow the query / lower `Top`). A genuinely *malformed* OData filter is a different, deterministic error — `Invalid Query. Please use OData format for filter queries. Press F1 for examples.` — not a transient, so it doesn't belong in this playbook.
+- **(Mail only) a too-broad query or a transient server-side error** surfaces the Graph `UnknownError` advisory above (narrow the query / lower `Top`). A genuinely *malformed* OData filter is a different, deterministic error — `Invalid Query. Please use OData format for filter queries. Press F1 for examples.` — not a transient, so it doesn't belong in this playbook; use [mail-invalid-odata-query.md](./mail-invalid-odata-query.md).
 
 What to look for:
 - Intermittence — the same workflow succeeds on a later run. A consistent, repeatable failure usually points elsewhere (auth, scope, or a real not-found), not a transient.

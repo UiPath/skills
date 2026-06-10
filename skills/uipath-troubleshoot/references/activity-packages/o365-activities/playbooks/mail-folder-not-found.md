@@ -22,6 +22,7 @@ What activities can produce this error:
 - **For Each Email** (`ForEachEmailConnections`) — `MailFolder` argument when the source folder doesn't exist.
 - **Wait For Email Received** (`WaitForEmailReceived`) — `MailFolder` argument when the source folder doesn't exist.
 - **New Email Received trigger** (`NewEmailReceived`) — `MailFolder` argument on the trigger or its debug/healing sample lookup.
+- Legacy **Get Mail** (`GetMail`) — `MailFolder` property when the source folder doesn't resolve.
 - Any other Mail activity that reads a folder.
 
 What can cause it:
@@ -32,7 +33,7 @@ What can cause it:
 - **Insufficient scope to enumerate.** The connection lacks `Mail.Read` / `Mail.ReadWrite` / `Mail.ReadWrite.Shared` for the target mailbox, so the folder-list enumeration is empty or filtered. Graph may return 404 instead of 403 for cross-mailbox shared/delegated access.
 
 > **Different cause, do not apply this playbook:**
-> - `MarkAsReadUnreadConnections`, `DeleteEmailConnections`, `ArchiveEmailConnections`, `DownloadEmailConnections`, and similar message-by-ID activities surface `The resource could not be found.` for a missing **message** (not folder). The fix path is different — verify the message ID and mailbox, not the folder configuration.
+> - `MarkAsReadUnreadConnections`, `DeleteEmailConnections`, `ArchiveEmailConnections`, `DownloadEmailConnections`, and similar message-by-ID activities surface `The resource could not be found.` for a missing **message** (not folder) — use [mail-message-not-found.md](./mail-message-not-found.md).
 
 ## Resolution
 

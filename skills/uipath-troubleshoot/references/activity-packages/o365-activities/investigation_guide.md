@@ -5,6 +5,7 @@
 Before using any fetched data, verify it matches the user's reported problem:
 
 - **Activity** — the faulted activity's namespace and class match the reported failure (e.g., `UiPath.MicrosoftOffice365.Activities.Mail.MoveEmailConnections`). Modern connections activities and legacy activities (`MoveMail`, `DownloadFile`, `CreateFolder`, `UploadFile`, `CreateWorkbook`, `AddSheet`) sometimes share display names but run different code paths — treat them as different.
+- **Exception type routes the code path** — modern `*Connections` activities and triggers wrap every failure in `UiPath.MicrosoftOffice365.Office365Exception` with a friendly message; a **raw** `Microsoft.Graph.ServiceException`, `ArgumentNullException`, `NullReferenceException`, or `FileNotFoundException` therefore always means a **legacy** activity (no wrapper; raw ServiceException messages embed `Code: <graphErrorCode>` plus the same sentence the friendly mapping uses — match the sentence). A raw `UiPath.ConnectionClient.Contracts.ConnectionHttpException` means the failure happened at the Integration Service connection layer (trigger event/sample lookup or token fetch), not at Microsoft Graph; the wrapped form preserves its message verbatim.
 - **Connection / Microsoft 365 account** — the Integration Service connection in evidence authenticates against the same Microsoft 365 user principal the user is asking about. Different connections = different mailboxes, different OneDrive scopes, different SharePoint sites = unrelated data.
 - **Mailbox in scope** — for Mail activities, confirm the resolved mailbox is the one the user is asking about. The same connection can target the user's own mailbox, a shared mailbox, or a delegated mailbox via the activity argument; Outlook IDs are mailbox-scoped, so an item that resolves in one mailbox will not resolve in another.
 - **Target resource** — the resource identifier in evidence matches the one the user reports: mail folder ID or path, message ID, OneDrive/SharePoint item ID or URL or drive-relative path, drive ID, SharePoint site URL plus document library, workbook file name, sheet name. Don't substitute a similarly-named resource.
@@ -28,6 +29,15 @@ Route by message:
 - `Too many requests.` / `The app or user has been throttled.` / batched 429 → [request-throttled](./playbooks/request-throttled.md) (429).
 - `The server is unable to process the current request.` / `Request time out.` / 500 / 504 / batched 5xx → [transient-service-error](./playbooks/transient-service-error.md).
 - Faults **before any Graph call** (`Could not retrieve the selected asset`, `You must provide a value for ...`, `Please select an account.`, placement errors) → [application-scope-misconfigured](./playbooks/application-scope-misconfigured.md).
+- Raw `ConnectionHttpException` (or `Office365Exception` with the identical IS-status message) from a trigger → [email-trigger-connection-event-failure](./playbooks/email-trigger-connection-event-failure.md).
+- `The specified object was not found in the store.` / `Item ... doesn't belong to the targeted mailbox` / 404 on a message ID → [mail-message-not-found](./playbooks/mail-message-not-found.md).
+- `Invalid Query. Please use OData format for filter queries. Press F1 for examples.` → [mail-invalid-odata-query](./playbooks/mail-invalid-odata-query.md).
+- `File does not exist: <path>` / `ErrorInvalidRecipients` / `ErrorSendAsDenied` / `ErrorMessageSizeExceeded` on a send/forward/reply → [send-mail-rejected](./playbooks/send-mail-rejected.md).
+- `Value cannot be null. (Parameter 'DriveItem')` from legacy Copy Item → [copy-item-argument-null](./playbooks/copy-item-argument-null.md).
+- Raw `NullReferenceException` from a legacy Mail activity → [legacy-mail-null-reference](./playbooks/legacy-mail-null-reference.md).
+- `Folder path must contain at least one segment.` / segment whitespace / `'<segment>' is a file, not a folder.` / `Value cannot be null. (Parameter 'Folder name'/'Folder path'/'Parent folder')` → [create-folder-invalid-path](./playbooks/create-folder-invalid-path.md).
+- `Folders cannot be downloaded with this activity ...` / `Cannot convert the item into PDF format ...` / `Local File Path should point to a folder or directly to a .pdf file.` → [download-file-conversion-or-destination](./playbooks/download-file-conversion-or-destination.md).
+- `The user has reached their quota limit.` / `Max file size exceeded.` / `Upload session failed/incomplete/not found.` → [upload-file-quota-or-size](./playbooks/upload-file-quota-or-size.md) (quota is storage, **not** 429 throttling).
 
 ## Testing Prerequisites
 
