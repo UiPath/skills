@@ -276,7 +276,7 @@ Example unified project list for a Solution (Flow + RPA Library×2 + RPA Test Au
 
 ## Level 3 — Capability Add-ons
 
-These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section. `uipath-planner` reads the flags from the SDD when it derives the task list and routes the work to the correct skill.
+These are capabilities added to the primary product, not standalone products. When detected, flag them in the appropriate template section. Lane A (task derivation) reads the flags from the SDD when it derives the task list and routes the work to the correct skill.
 
 ### HITL (Human-in-the-Loop)
 
@@ -309,7 +309,7 @@ These are capabilities added to the primary product, not standalone products. Wh
 - The primary product invokes a callable system-to-system integration
 - Input/output is structured JSON, not UI
 
-**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to the API Workflow specialist.
+**How to flag:** In the primary product's template, list API Workflow invocations in the relevant section (Flow nodes, Agent tools, Case tasks). The planner picks this up and creates a per-API-Workflow task that routes to `uipath-api-workflow`.
 
 ## Template Mapping
 
@@ -342,11 +342,11 @@ For RPA projects in the Solution, use the RPA template once per RPA *group* — 
 The solution overview SDD includes:
 
 1. Solution Overview (objective, business context)
-2. Project Inventory — the unified project list from Level 2.5 Part B
-3. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
-4. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
-5. Per-Project SDD Index — filename + one-line scope per project
-6. Planner Handoff — solution-level handoff header plus cross-project ordering notes (integrated components built before their consumers) for `uipath-planner` to consume. Do not include a task list here — the planner owns task generation.
+2. Planner Handoff — solution-level handoff header plus cross-project ordering notes (integrated components built before their consumers) for Lane A to consume. Position 2 keeps the header inside the first ~50 lines the Entry Guard reads — do not move it lower. Do not include a task list here — Lane A owns task generation.
+3. Project Inventory — the unified project list from Level 2.5 Part B
+4. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
+5. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
+6. Per-Project SDD Index — filename + one-line scope per project
 
 ## Gap Handling for Agent / Coded App
 

@@ -1,7 +1,7 @@
 ---
 name: uipath-solution
-description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via the `uip solution` CLI: init/pack/publish/deploy/activate/upload, project add|import|remove, resource refresh|add|remove|edit. Bundles multiple automation projects (RPA/Flow/Case/Agents/API Workflows) into one deployable `.uipx`. For PDD→SDD authoring (sdd.md/pdd.md)→uipath-design. For task derivation across multiple skills→uipath-planner. For non-solution Orchestrator/IS/resources/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For .bpmn→uipath-maestro-bpmn. For agent.json and .py agents→uipath-agents. For coded-app deploy→uipath-coded-apps."
-when_to_use: "User mentions .uipx / 'uip solution' / 'pack the solution' / 'publish the solution' / 'deploy the solution' / 'activate' / multi-project / Solution scope / Solution Folder. Fires for 'create a new solution', 'add project/resource to solution', 'add a queue/asset/bucket/connection to the solution', 'import a cloud queue/asset', 'edit/remove a resource', 'change a queue/asset field', 'set an asset value in the solution'. Load BEFORE editing .uipx or running uip solution commands. For PDD→SDD design→uipath-design; for an 'architect then deploy' two-phase request, run uipath-design first, then return here to pack/deploy."
+description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via the `uip solution` CLI: init/pack/publish/deploy/activate/upload, project add|import|remove, resource refresh|add|remove|edit. Bundles multiple automation projects (RPA/Flow/Case/Agents/API Workflows) into one deployable `.uipx`. For PDD→SDD design (sdd.md/pdd.md) & multi-skill task derivation→uipath-planner. For non-solution Orchestrator/IS/resources/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For .bpmn→uipath-maestro-bpmn. For agent.json and .py agents→uipath-agents. For coded-app deploy→uipath-coded-apps."
+when_to_use: "User mentions .uipx / 'uip solution' / 'pack the solution' / 'publish the solution' / 'deploy the solution' / 'activate' / multi-project / Solution scope / Solution Folder. Fires for 'create a new solution', 'add project/resource to solution', 'add a queue/asset/bucket/connection to the solution', 'import a cloud queue/asset', 'edit/remove a resource', 'change a queue/asset field', 'set an asset value in the solution'. Load BEFORE editing .uipx or running uip solution commands. For PDD→SDD design→uipath-planner; for an 'architect then deploy' two-phase request, run uipath-planner first, then return here to pack/deploy."
 ---
 
 # UiPath Solution — `uip solution` lifecycle
@@ -19,7 +19,7 @@ Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via
 - A skill or main agent detected a `.uipx` file and redirected the user here
 
 **Skip this skill** when:
-- The task is PDD → SDD architecture/design (sdd.md / pdd.md) — load `uipath-design`.
+- The task is PDD → SDD architecture/design (sdd.md / pdd.md) — load `uipath-planner`.
 - The deployable is a single non-solution package (e.g., a one-off RPA library or coded app) — those use `uip rpa publish` / `uip codedapp publish` and route through `uipath-platform` or the relevant specialist.
 - The task is non-solution Orchestrator work (folders, jobs, assets, queues, IS connections) — load `uipath-platform`.
 
@@ -77,7 +77,7 @@ Two distinct distribution paths from the same source:
 
 Authentication is a prerequisite. Run `uip login --output json` before any work; see `uipath-platform` for full auth options (interactive OAuth, client credentials, tenant switching).
 
-This skill is the terminal step of an SDD-driven build: after `uipath-design` produces the SDD and implementation specialists build the projects, the `.uipx` is packed and shipped here.
+This skill is the terminal step of an SDD-driven build: after `uipath-planner` produces the SDD and derives the task list, and implementation specialists build the projects, the `.uipx` is packed and shipped here.
 
 ## Reference Navigation
 

@@ -8,6 +8,10 @@ When the planner is invoked without an SDD (the entry guard found no `## Planner
 
 Bundle every unresolved question from the table below into **one** `AskUserQuestion` call. Do not ask one at a time; do not split across turns. If a question is already resolved from the user's request, omit it from the batch. If **all** are resolved, do not call `AskUserQuestion` at all and record the inferred values in the plan header with a one-line note in Decisions & Trade-offs.
 
+Question phrasing follows the rules in [pdd-driven-lane-guide.md → Step 5](pdd-driven-lane-guide.md#step-5--ui-element-targeting-only-when-9-contains-ui-applications): no internal jargon, no domain or app names in question text.
+
+If the entry guard classified a provided document as "Other context", read it before building the batch — any question its content answers counts as resolved, and the content feeds the plan.
+
 ### Skip-rules table (apply before building the batch)
 
 | Question | Skip when | Default if skipped |
@@ -15,7 +19,7 @@ Bundle every unresolved question from the table below into **one** `AskUserQuest
 | Q1 Generation approach | Request is simple and well-defined; the user is modifying an existing automation; or the task is single-skill single-step. | `simultaneous` |
 | Q2 Execution autonomy | Explore-first mode (the approval gate at plan time already scopes autonomy). | `autonomous` |
 | Q3 Project type fallback | Project type resolves via explicit naming, keyword signals, or filesystem (Step 3) — see "Project type" below. | `RPA workflow (XAML)` |
-| Q5 Solution scope (Flow only) | Plan does not load `uipath-maestro-flow`; OR the user already stated intent (e.g., "upload to Studio Web", "keep it local", "just build it"); OR the plan contains no generation skill. | Omit `Solution scope` field from the plan header entirely. |
+| Q4 Solution scope (Flow only) | Plan does not load `uipath-maestro-flow`; OR the user already stated intent (e.g., "upload to Studio Web", "keep it local", "just build it"); OR the plan contains no generation skill. | Omit `Solution scope` field from the plan header entirely. |
 
 The batch contains only the questions that survive the skip rules. Build the `AskUserQuestion` call as one tool invocation with one `questions` array entry per surviving item.
 
@@ -65,9 +69,9 @@ If the request is genuinely vague ("I want to build something with UiPath") AND 
 > 3. **Flow** — visual node-based orchestration connecting multiple automations
 > 4. **Application** — custom UI deployed as a UiPath App
 
-If the user picks **RPA workflow**, record `Project type: XAML` and move on. **Never follow up with "XAML or C#?"** — that authoring-mode decision belongs to `uipath-rpa`, not the planner. Coded mode is set only when the user independently says "coded workflow" or ".cs file" (which rule 1 above already honors); never as a follow-up.
+If the user picks **RPA workflow**, record `Project type: XAML` and move on. **Never follow up with "XAML or C#?"** — that authoring-mode decision belongs to `uipath-rpa`, not the planner. Coded mode is set only when the user independently says "coded workflow" or ".cs file" (which rule 1 above already honors); never as a follow-up. **Never surface C# coded as a top-level recommendation for routine UI automation** — the coded fallback is an internal `uipath-rpa` decision.
 
-### Question 5 — Solution scope (Flow projects only)
+### Question 4 — Solution scope (Flow projects only)
 
 **Include this question in the Step 1 batch only when the plan loads `uipath-maestro-flow`.** For RPA / AI Agent / Application plans, omit the question entirely **and omit the `Solution scope` field from the plan header** — no other specialist reads it.
 
@@ -78,7 +82,7 @@ If the user picks **RPA workflow**, record `Project type: XAML` and move on. **N
 
 Record the answer in the plan header as `Solution scope: SW | local`. `uipath-maestro-flow` reads this field at runtime to decide whether to publish at the end.
 
-**Skip Q5** (and omit the field from the header) when:
+**Skip Q4** (and omit the field from the header) when:
 
 - The plan does not load `uipath-maestro-flow`.
 - The user's request already states the intent (e.g., "upload to Studio Web", "keep it local", "just build it") — record directly.
@@ -169,7 +173,7 @@ Option 2: parse the request fresh, run identity-matching against the old file (p
 
 ## Lane B budget
 
-Step 1 is **always one batched call** (Q1 + Q2 + optional Q3 in a single `AskUserQuestion`); Step 4 is one batched call when the plan has UI automation; resume adds one. The realistic floor is 0 calls and the realistic ceiling is 3.
+Step 1 is **always one batched call** (Q1 + Q2 + optional Q3/Q4 in a single `AskUserQuestion`); Step 4 is one batched call when the plan has UI automation; resume adds one. The realistic floor is 0 calls and the realistic ceiling is 3.
 
 | Scenario | `AskUserQuestion` calls |
 |---|---|
@@ -179,6 +183,6 @@ Step 1 is **always one batched call** (Q1 + Q2 + optional Q3 in a single `AskUse
 | Vague request, with UI automation | **2** (Step 1 batched — Q3 is part of the same batch — + Step 4 UI batch) |
 | Resume scenario | **+1** (continue/regenerate) |
 | Realistic maximum | **3** |
-| Hard cap (Critical Rule 3) | **5** |
+| Hard cap (per-phase prompt budget, Critical Rules) | **5** |
 
 The 5-call hard cap is defined in the planner's Critical Rules. If batching collapses the elicitation correctly, you should never approach it.
