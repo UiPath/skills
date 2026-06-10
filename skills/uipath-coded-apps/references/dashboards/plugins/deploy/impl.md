@@ -66,13 +66,7 @@ process.stdout.write([a, b, c + 1].join('.'))
 " <CURRENT_SEMVER>
 ```
 
-This gives `NEXT_SEMVER`. Check whether this version is already published (silent):
-
-```bash
-uip codedapp list --output json
-```
-
-If an entry with `Name === "<APP_NAME>"` and `Version === "<NEXT_SEMVER>"` exists, bump once more.
+This gives `NEXT_SEMVER`. Don't pre-check whether it already exists — Step 7 (Publish) auto-bumps and retries on a 409 / "already exists", so a version collision self-corrects.
 
 ---
 
