@@ -71,22 +71,13 @@ What to look for:
   uip is connections create <connector-key> --output json
   ```
 
-  Note the new connection ID from the output. List agent tools to identify which tool needs rebinding:
+  Note the new connection ID from the output. The span name from step 2 identifies `<ToolName>`. Update `properties.connection.id`, `properties.connection.name`, and `solutionProperties.resourceKey` in `<agent-path>/resources/<ToolName>/resource.json` to the new connection ID — see [`uipath-agents`](/uipath:uipath-agents) IS tool reference for the full resource shape.
 
-  ```bash
-  uip agent tool list --path <agent-path> --output json
-  ```
-
-  Rebind the tool to the new connection:
-
-  ```bash
-  uip agent tool connect <tool-name> --connection-id <new-connection-id> --path <agent-path> --output json
-  ```
-
-  Validate and republish:
+  Validate, refresh, and republish:
 
   ```bash
   uip agent validate --output json
+  uip solution resource refresh --output json
   uip solution publish --output json
   ```
 
@@ -98,7 +89,7 @@ What to look for:
   uip is connections create <connector-key> --output json
   ```
 
-  Then rebind and republish using the same `uip agent tool connect` sequence above.
+  Then update the `resource.json` and republish using the same sequence above.
 
 **If the connection appears healthy but the 404 persists — escalate to Integration Service team:**
 

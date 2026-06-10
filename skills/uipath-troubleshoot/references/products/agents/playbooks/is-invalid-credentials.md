@@ -78,12 +78,13 @@ What to look for:
   uip is connections create <connector-key> --output json
   ```
 
-  Note the new connection ID. Rebind the agent tool and republish:
+  Note the new connection ID. Update `properties.connection.id`, `properties.connection.name`, and `solutionProperties.resourceKey` in `<agent-path>/resources/<ToolName>/resource.json` to the new connection ID — see [`uipath-agents`](/uipath:uipath-agents) IS tool reference for the full resource shape.
+
+  Validate, refresh, and republish:
 
   ```bash
-  uip agent tool list --path <agent-path> --output json
-  uip agent tool connect <tool-name> --connection-id <new-connection-id> --path <agent-path> --output json
   uip agent validate --output json
+  uip solution resource refresh --output json
   uip solution publish --output json
   ```
 
