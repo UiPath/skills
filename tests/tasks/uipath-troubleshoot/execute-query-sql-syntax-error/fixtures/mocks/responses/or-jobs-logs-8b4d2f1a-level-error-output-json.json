@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:03.601Z",
+      "Message": "Execute Query: A database error occurred.\r\nMicrosoft.Data.SqlClient.SqlException: Incorrect syntax near 'Brien'.\r\nUnclosed quotation mark after the character string ''."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:03.618Z",
+      "Message": "Execute Query: A database error occurred.\r\nin Main.xaml\r\n    at ExecuteQuery \"Execute Query\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}
