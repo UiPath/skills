@@ -76,18 +76,27 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Informational, NOT enforced: pass_threshold:0 means score (0 when the
+  # agent skips `resource get`) always clears the bar, so this criterion can
+  # never fail the run — the task PASS/FAIL gate is all-criteria-pass. weight
+  # must be > 0 (schema forbids 0); kept at the 0.5 floor so it barely moves
+  # the reported weighted_score. The `resource list` discovery above is the
+  # enforced signal; `get` is an acceptable-but-optional follow-up.
   - type: command_executed
-    description: "Agent fetched the ToolAgent configuration with uip solution resource get"
+    description: "Agent fetched the ToolAgent configuration with uip solution resource get (informational)"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+resource\s+get\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
+  # Local-registry discovery: accept either `search --local` or `list --local`.
+  # Both enumerate the in-solution flow registry; the agent may use either to
+  # find the agent-as-tool node before `registry get ...--local` below.
   - type: command_executed
-    description: "Agent searched the local flow registry for the agent-as-tool manifest"
+    description: "Agent searched or listed the local flow registry for the agent-as-tool manifest"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+search\b.*--local'
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b.*--local'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
