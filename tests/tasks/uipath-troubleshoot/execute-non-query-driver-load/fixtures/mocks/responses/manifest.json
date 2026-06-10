@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the execute-non-query-failures playbook Branch 4 (driver / client library not loadable, ErrorCode 126). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"7c3e9a1d-5b8f-4a2c-9e6d-3f1a2b4c5d6e\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-7c3e9a1d-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key 7c3e9a1d-5b8f-4a2c-9e6d-3f1a2b4c5d6e --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-7c3e9a1d-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f\" --output json",
+      "file": "or-jobs-get-2b8d4f6a-output-json.json"
+    },
+    {
+      "match": "or jobs get 2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f --output json",
+      "file": "or-jobs-get-2b8d4f6a-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f\" --level Error --output json",
+      "file": "or-jobs-logs-2b8d4f6a-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs 2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f --level Error --output json",
+      "file": "or-jobs-logs-2b8d4f6a-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f\" --output json",
+      "file": "or-jobs-logs-2b8d4f6a-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs 2b8d4f6a-9c1e-4d3b-8a7f-5e2c1d3b4a6f --output json",
+      "file": "or-jobs-logs-2b8d4f6a-level-error-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

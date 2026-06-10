@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "7b2e9c4d-3a6f-4d1b-8e5c-2f9a1b3c4d5e",
+      "Name": "Finance Automations",
+      "Path": "Finance Automations",
+      "Description": "Production folder for finance back-office processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c5a1d8f3-4b7e-4a2c-9f6d-1e3b2a4c5d6f",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}
