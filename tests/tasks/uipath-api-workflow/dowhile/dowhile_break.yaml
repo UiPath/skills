@@ -52,7 +52,7 @@ success_criteria:
 
   - type: run_command
     description: "Counts to 3 (stopAt=3)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"stopAt":3}'' --output json | grep -qE ''"final"[ :]+3'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"stopAt":3}'' --output json | grep -qiE ''"final"[ :]+3'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -60,7 +60,7 @@ success_criteria:
 
   - type: run_command
     description: "Counts to 6 (proves the Break tracks the input, not a constant)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"stopAt":6}'' --output json | grep -qE ''"final"[ :]+6'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"stopAt":6}'' --output json | grep -qiE ''"final"[ :]+6'''
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

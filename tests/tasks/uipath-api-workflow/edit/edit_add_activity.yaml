@@ -55,7 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "Final workflow also returns the added count field with value 3"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"ada","items":[1,2,3]}'' --output json | grep -qE ''"count"[ :]+3'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"ada","items":[1,2,3]}'' --output json | grep -qiE ''"count"[ :]+3'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

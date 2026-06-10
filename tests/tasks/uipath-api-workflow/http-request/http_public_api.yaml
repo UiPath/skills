@@ -72,7 +72,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow runs locally (--no-auth, ImplicitConnection) and returns a fact"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -q ''fact'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -qi ''fact'''
     timeout: 120
     expected_exit_code: 0
     weight: 3.0

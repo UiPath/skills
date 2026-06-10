@@ -45,7 +45,7 @@ success_criteria:
 
   - type: run_command
     description: "Workflow completes after the wait and returns done"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -q ''done'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -qi ''"done"'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

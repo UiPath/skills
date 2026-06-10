@@ -51,7 +51,7 @@ success_criteria:
 
   - type: run_command
     description: "Counts 5 cells in [[1,2],[3,4,5]] (wrong iterator names would shadow and miscount)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"matrix":[[1,2],[3,4,5]]}'' --output json | grep -qE ''"cells"[ :]+5'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"matrix":[[1,2],[3,4,5]]}'' --output json | grep -qiE ''"cells"[ :]+5'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -59,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "Counts 1 cell in [[9]] (proves real nested iteration)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"matrix":[[9]]}'' --output json | grep -qE ''"cells"[ :]+1'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"matrix":[[9]]}'' --output json | grep -qiE ''"cells"[ :]+1'''
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

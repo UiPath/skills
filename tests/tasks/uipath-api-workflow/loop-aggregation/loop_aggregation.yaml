@@ -49,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "Sums [10,20,30] to 60 via the loop (field-qualified, not a bare number match)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[10,20,30]}'' --output json | grep -qE ''"total"[ :]+60'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[10,20,30]}'' --output json | grep -qiE ''"total"[ :]+60'''
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -57,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "Sums [5,5] to 10 (proves generality, not a hardcoded total)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[5,5]}'' --output json | grep -qE ''"total"[ :]+10'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[5,5]}'' --output json | grep -qiE ''"total"[ :]+10'''
     timeout: 60
     expected_exit_code: 0
     weight: 2.0

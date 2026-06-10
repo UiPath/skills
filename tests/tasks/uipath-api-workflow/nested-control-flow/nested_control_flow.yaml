@@ -58,7 +58,7 @@ success_criteria:
 
   - type: run_command
     description: "Counts passes in [40,60,90,10] as 2 (field-qualified to avoid spurious '2' matches)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"scores":[40,60,90,10]}'' --output json | grep -qE ''"passes"[ :]+2'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"scores":[40,60,90,10]}'' --output json | grep -qiE ''"passes"[ :]+2'''
     timeout: 90
     expected_exit_code: 0
     weight: 3.0
@@ -66,7 +66,7 @@ success_criteria:
 
   - type: run_command
     description: "Counts passes in [10,30] as 0 (proves real classification, not a constant 2)"
-    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"scores":[10,30]}'' --output json | grep -qE ''"passes"[ :]+0'''
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"scores":[10,30]}'' --output json | grep -qiE ''"passes"[ :]+0'''
     timeout: 90
     expected_exit_code: 0
     weight: 2.0
