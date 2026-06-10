@@ -1,4 +1,4 @@
-task_id: skill-platform-resources-assets-get
+task_id: skill-platform-orchestrator-assets-get
 description: >
   Smoke test: real user asks for an asset by name. The agent's job is to
   realize `uip or assets get` takes a GUID, so it must first run

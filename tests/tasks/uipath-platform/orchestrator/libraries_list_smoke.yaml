@@ -1,4 +1,4 @@
-task_id: skill-platform-resources-libraries-list
+task_id: skill-platform-orchestrator-libraries-list
 description: >
   Smoke test: agent uses the uipath-platform skill to list library packages
   uploaded to the tenant via `uip or libraries list --output json`.

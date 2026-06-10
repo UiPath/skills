@@ -1,7 +1,7 @@
-task_id: skill-platform-resources-assets-list
+task_id: skill-platform-orchestrator-queues-list
 description: >
-  Smoke test: agent uses the uipath-platform skill to list Orchestrator assets
-  in a folder via `uip or assets list --folder-(key|path) ...`. Prompt
+  Smoke test: agent uses the uipath-platform skill to list Orchestrator queues
+  in a folder via `uip or queues list --folder-(key|path) ...`. Prompt
   passes a placeholder folder key — CLI returning Auth/404 is acceptable; the
   goal is correct command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
@@ -10,14 +10,14 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  List the assets defined in the `Shared` folder of the current UiPath
-  tenant.
+  List the queues defined in the Orchestrator folder with key
+  `11111111-2222-3333-4444-555566667777` in the current UiPath tenant.
 
 success_criteria:
   - type: command_executed
-    description: "Agent listed assets via uip or assets list"
+    description: "Agent listed queues via uip or queues list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+assets\s+list'
+    command_pattern: 'uip\s+or\s+queues\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -25,7 +25,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scoped the list to a folder via --folder-key or --folder-path"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+assets\s+list.*--folder-(key|path)'
+    command_pattern: 'uip\s+or\s+queues\s+list.*--folder-(key|path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

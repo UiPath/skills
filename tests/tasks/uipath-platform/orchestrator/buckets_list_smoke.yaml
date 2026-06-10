@@ -1,4 +1,4 @@
-task_id: skill-platform-resources-buckets-list
+task_id: skill-platform-orchestrator-buckets-list
 description: >
   Smoke test: agent uses the uipath-platform skill to list storage buckets in
   an Orchestrator folder via `uip or buckets list --folder-(key|path)

@@ -1,4 +1,4 @@
-task_id: skill-platform-resources-queue-items-list
+task_id: skill-platform-orchestrator-queue-items-list
 description: >
   Smoke test: agent uses the uipath-platform skill to list queue items in an
   Orchestrator folder via `uip or queue-items list --folder-(key|path)
