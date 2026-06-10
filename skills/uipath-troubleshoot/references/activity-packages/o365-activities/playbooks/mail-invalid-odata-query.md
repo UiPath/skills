@@ -9,7 +9,7 @@ confidence: high
 What this looks like — a Mail read activity faults while applying its filter/query:
 
 - `Invalid Query. Please use OData format for filter queries. Press F1 for examples.` — the package's fixed message, raised as `Office365Exception` when Microsoft Graph rejects the request with a `RequestBroker--ParseUri` error code (malformed `$filter`). Thrown from the shared Mail proxy, so it surfaces with this exact text from **both** legacy and Connections activities.
-- A raw Graph invalid-filter message surfaced verbatim (e.g., wording about an invalid filter clause, unknown property, or binding error) — other malformed-query Graph codes that don't hit the fixed mapping; on legacy activities inside a raw `Microsoft.Graph.ServiceException`.
+- A raw Graph invalid-filter message surfaced verbatim — other malformed-query Graph codes that don't hit the fixed mapping; on legacy activities inside a raw `Microsoft.Graph.ServiceException` with `Code: BadRequest`, e.g. `Invalid filter clause: ')' or operator expected at position <n> in '<composed filter>'.` (the message echoes the full composed `$filter`, including the date-range clause the activity prepends).
 
 The failure is deterministic: the same query fails every run, independent of mailbox content.
 

@@ -11,6 +11,7 @@ What this looks like — a message-by-ID Mail operation cannot resolve the email
 - `The resource could not be found.` — the friendly mapping for Graph `ItemNotFound` (HTTP 404), raised by a **Mail** activity that addresses a specific message ID.
 - `The specified object was not found in the store.` — raw Graph `ErrorItemNotFound` wording; on legacy (non-Connections) activities it surfaces inside a raw `Microsoft.Graph.ServiceException` with `Code: ErrorItemNotFound`.
 - `Item ... doesn't belong to the targeted mailbox ...` — Graph `ErrorInvalidMailboxItemId`: the ID is valid but belongs to a different mailbox than the one the activity resolved.
+- `Id is malformed.` — Graph `ErrorInvalidIdMalformed`: the persisted ID was corrupted or truncated rather than pointing to a removed message. Outlook REST IDs are integrity-checked, so any altered/garbled stored ID surfaces as malformed, not as not-found. Same causes and fixes as a stale ID.
 
 The job faults the moment the activity dereferences the message ID.
 

@@ -6,7 +6,7 @@ confidence: high
 
 ## Context
 
-What this looks like — a download/export operation faults on the item type, the PDF conversion, or the local destination (not on resolving the remote item). All are package-fixed messages; `Office365Exception` on Connections activities, raw on legacy:
+What this looks like — a download/export operation faults on the item type, the PDF conversion, or the local destination (not on resolving the remote item). All are package-fixed messages thrown as `Office365Exception` from the shared download/export service, so the exception type is `Office365Exception` on **both** the Connections and legacy activities:
 
 - `Folders cannot be downloaded with this activity. Please input a different DriveItem.` — the configured item is a folder.
 - `Cannot convert the item into PDF format. The supported source extensions are: csv, doc, docx, odp, ods, odt, pot, potm, potx, pps, ppsx, ppsxm, ppt, pptm, pptx, rtf, xls, xlsx.` — PDF conversion requested for an unsupported source type.
