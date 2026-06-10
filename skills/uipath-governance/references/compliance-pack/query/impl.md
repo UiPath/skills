@@ -34,20 +34,27 @@ uip gov compliance-packs catalog get iso-42001-2023 --output json > "$SESSION_TE
 For each matched clause:
 
 ```
-Clause A.6.2.8 — AI system recording of event logs
-ISO 42001 recommends:
+<clauseName>  (<clauseId>)
+<N> controls  ·  <highCount> High  ·  <medCount> Medium  ·  <lowCount> Low
 
-AI Trust Layer (3 recommended settings, 2 High):
-  • Trace Data TTL — ≥30 days recommended [High]
-    Admin > AI Trust Layer > Settings > Data Retention
-  • Input/Output Logging — Enabled recommended [High]
-    Admin > AI Trust Layer > Settings > Audit
-  • Restrict Insights Trace — Per sensitivity [Medium]
-    Admin > AI Trust Layer > Insights
+┌──────────────────────────────┬─────────────────────────┬────────┬──────────────────────────────────────┐
+│ Control                      │ Recommendation          │ Impact │ Where to configure                   │
+├──────────────────────────────┼─────────────────────────┼────────┼──────────────────────────────────────┤
+│ <controlDisplayName>         │ <recommendedSetting>    │ High   │ <configLocation>                     │
+│ <controlDisplayName>         │ <recommendedSetting>    │ Medium │ <configLocation>                     │
+└──────────────────────────────┴─────────────────────────┴────────┴──────────────────────────────────────┘
+[repeat per matched clause]
 
-Robot (2 recommended settings, 2 High):
-  • UIAutomation Trace Retention — ≥30 days recommended [High]
-  • Trace Masking — Per data type [High]
+Current posture on <tenantName>: <inPlaceCount> / <totalCount> controls configured
+→ 'Check my ISO 42001 posture'  to see all gaps
+→ 'Apply <clauseName> controls'  to configure these
 ```
 
-End with: "To check your current posture towards ISO 42001: 'Check my ISO 42001 posture'. To configure recommended settings: 'Apply ISO 42001 settings'."
+**Data sources:**
+- `controls[].displayName` → Control column
+- `controls[].recommendedSetting` → Recommendation column
+- `controls[].impact` → Impact column
+- `controls[].configLocation` → Where to configure column
+- Current posture line: from `state coverage` if SESSION_TEMP/coverage.json exists, otherwise omit the line
+
+**Terminology:** "controls" NOT "settings". Plain-English clause name in headline, clause ID as secondary reference in parentheses.
