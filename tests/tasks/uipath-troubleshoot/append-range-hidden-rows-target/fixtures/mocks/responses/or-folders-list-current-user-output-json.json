@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f00aaaaa-3333-4444-5555-666677778888",
+      "DisplayName": "LedgerOps",
+      "FullyQualifiedName": "LedgerOps",
+      "Description": "Folder for daily transaction-ledger append automations.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6100001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

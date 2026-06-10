@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the hidden-rows-in-target (branch 6) of the excel-activities/append-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (BusinessException flagging hidden rows in the append region under package v2.8.5+) → jobs logs (AutoFilter active on column 'Status' hiding rows 4012-4089; the computed append target starts at row 4101 and the validator's lookback intersects the hidden region (rows 4012-4089)) → workflow source. The active AutoFilter + the v2.8.5+ package version are the smoking gun.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f00aaaaa-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f00aaaaa-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f00aaaaa-3333-4444-5555-666677778888 --state Faulted --output json", "file": "or-jobs-list-folder-key-f00aaaaa-state-faulted-output-json.json"},
+    {"match": "or jobs get \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-get-ff3333cc-output-json.json"},
+    {"match": "or jobs get ff333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-get-ff3333cc-output-json.json"},
+    {"match": "or jobs history \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-history-ff3333cc-output-json.json"},
+    {"match": "or jobs history ff333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-history-ff3333cc-output-json.json"},
+    {"match": "or jobs logs \"ff333333-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-logs-ff3333cc-output-json.json"},
+    {"match": "or jobs logs ff333333-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-logs-ff3333cc-output-json.json"}
+  ]
+}

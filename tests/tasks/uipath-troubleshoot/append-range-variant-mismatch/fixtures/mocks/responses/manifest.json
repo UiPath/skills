@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the activity-variant-mismatch (branch 1) of the excel-activities/append-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (BusinessException 'Append Range activity must be placed inside a Use Excel File container') → jobs logs (no Use Excel File scope opened before the activity; the agent fired against a workbook path it could not acquire) → workflow source. The Modern AppendRangeX at the workflow root with no surrounding scope is the smoking gun.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f0088888-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f0088888-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f0088888-3333-4444-5555-666677778888 --state Faulted --output json", "file": "or-jobs-list-folder-key-f0088888-state-faulted-output-json.json"},
+    {"match": "or jobs get \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-get-ff1111cc-output-json.json"},
+    {"match": "or jobs get ff111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-get-ff1111cc-output-json.json"},
+    {"match": "or jobs history \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-history-ff1111cc-output-json.json"},
+    {"match": "or jobs history ff111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-history-ff1111cc-output-json.json"},
+    {"match": "or jobs logs \"ff111111-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-logs-ff1111cc-output-json.json"},
+    {"match": "or jobs logs ff111111-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-logs-ff1111cc-output-json.json"}
+  ]
+}
