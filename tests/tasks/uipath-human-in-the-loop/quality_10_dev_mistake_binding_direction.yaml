@@ -6,6 +6,13 @@ description: >
   correct fieldId-based outputId path, and never puts binding on an output field.
 tags: [uipath-human-in-the-loop, integration, variable-binding, developer-mistake]
 
+skip: true
+skip_reason: >
+  Nightly experiment overrides turn_timeout to 900s and the task-level setting
+  is discarded (PATTERN 1 merge strategy). Building a 5-node flow with HITL
+  variable bindings and decision branching consistently exceeds 900s in a single
+  turn. Unblock when infra allows per-task turn_timeout override.
+
 run_limits:
   expected_turns: 28
   max_turns: 90
