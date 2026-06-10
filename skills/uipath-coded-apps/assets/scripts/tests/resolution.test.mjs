@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateIntent, resolveMetric, buildWidgetFile, emit, parseEvent, classifyEditIntent, VALID_DISPLAY_TYPES } from '../build-dashboard.mjs'
+import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, compileColumns, emit, parseEvent, classifyEditIntent, VALID_DISPLAY_TYPES } from '../build-dashboard.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REGISTRY_PATH = resolve(__dirname, '../capability-registry.json')
@@ -28,10 +28,10 @@ function resolveAlias(userText) {
 }
 
 test('T1 exact name lookup returns entry', () => {
-  const result = resolveT1('agent-errors')
+  const result = resolveT1('job-failures')
   assert.ok(result)
   assert.equal(result.tier, 'T1')
-  assert.equal(result.entry.template, 'line-chart')
+  assert.equal(result.entry.template, 'data-table')
 })
 
 test('T1 exact name lookup returns null for unknown metric', () => {
@@ -39,11 +39,11 @@ test('T1 exact name lookup returns null for unknown metric', () => {
   assert.equal(result, null)
 })
 
-test('alias lookup finds agent-errors by natural language', () => {
-  const result = resolveAlias('show me agent failures over time')
+test('alias lookup finds job-failures by natural language', () => {
+  const result = resolveAlias('show me faulted jobs')
   assert.ok(result)
   assert.equal(result.tier, 'T1')
-  assert.equal(result.key, 'agent-errors')
+  assert.equal(result.key, 'job-failures')
 })
 
 test('alias lookup finds T2 jobs-duration-threshold', () => {
@@ -173,9 +173,9 @@ test('validateIntent: rejects T3 metric without fnBody', () => {
 // ── resolveMetric tests ───────────────────────────────────────────────────────
 
 test('resolveMetric: T1 known name returns entry with template', () => {
-  const result = resolveMetric({ name: 'agent-errors', tier: 'T1' })
+  const result = resolveMetric({ name: 'job-failures', tier: 'T1' })
   assert.equal(result.tier, 'T1')
-  assert.equal(result.entry.template, 'line-chart')
+  assert.equal(result.entry.template, 'data-table')
 })
 
 test('resolveMetric: T2 known name returns entry with description', () => {
@@ -214,7 +214,7 @@ test('buildWidgetFile: T1 metric uses fnBody from agent (not hardcoded SDK)', ()
   assert.ok(content.includes('customDataFn'))
   assert.ok(content.includes('getErrorsTimeline'))
   // No hardcoded type params from registry
-  assert.ok(!content.includes('useInsightsSDK<'))
+  assert.ok(!content.includes('useWidgetData<'))
 })
 
 test('buildWidgetFile: uses registry defaults for xKey/yKey when not in metric', () => {
@@ -245,7 +245,7 @@ test('buildWidgetFile: T2 metric with fnBody uses chart path', () => {
   )
   assert.ok(content.includes('customDataFn'))
   assert.ok(content.includes('Jobs'))
-  assert.ok(!content.includes('useInsightsSDK<'))
+  assert.ok(!content.includes('useWidgetData<'))
 })
 
 test('buildWidgetFile: T3 metric (null registry entry) uses shell path for kpi-card', () => {
@@ -314,7 +314,9 @@ test('buildWidgetFile: no unresolved << >> placeholders remain', () => {
 })
 
 test('buildWidgetFile: uses registry defaults for icon when metric has none', () => {
-  const entry = registry.t1['agent-errors']
+  // agent-errors lives in t1_unavailable (Insights SDK not yet shipped) but its
+  // defaults still flow through buildWidgetFile when passed as the registry entry.
+  const entry = registry.t1_unavailable['agent-errors']
   const content = buildWidgetFile(
     { name: 'agent-errors', tier: 'T1', title: 'Errors', displayAs: 'line-chart', fnBody: 'return []' },
     entry,
@@ -427,4 +429,134 @@ test('buildWidgetFile: injects valueField and valueLabel placeholders', () => {
   assert.ok(content.includes("const VALUE_LABEL = 'running jobs'"))
   assert.ok(!content.includes('<<VALUE_FIELD>>'))
   assert.ok(!content.includes('<<VALUE_LABEL>>'))
+})
+
+// ── Presentation overhaul: headline / delta / subtitle / columns / rate ───────
+
+test('VALID_DISPLAY_TYPES includes rate-chart', () => {
+  assert.ok(VALID_DISPLAY_TYPES.includes('rate-chart'))
+})
+
+test('buildWidgetFile: chart injects headline aggregate + delta (not last point)', () => {
+  const content = buildWidgetFile(
+    { name: 'runs-trend', tier: 'T3', title: 'Runs', displayAs: 'line-chart', xKey: 'date', yKey: 'count', headlineMode: 'sum', deltaPolarity: 'up-good', fnBody: 'return []' },
+    null, '30d'
+  )
+  assert.ok(content.includes("headline(chartData, 'count', 'sum')"), 'headline aggregate not injected')
+  assert.ok(content.includes("delta(chartData, 'count', 'up-good')"), 'delta not injected')
+  assert.equal(content.match(/<SUBTITLE>|<HEADLINE_MODE>|<DELTA_POLARITY>/g), null, 'placeholders not replaced')
+})
+
+test('buildWidgetFile: chart subtitle auto-fills from time range when none given', () => {
+  const content = buildWidgetFile(
+    { name: 'x', tier: 'T3', title: 'X', displayAs: 'area-chart', yKey: 'value', fnBody: 'return []' },
+    null, '7d'
+  )
+  assert.ok(content.includes('Last 7 days'))
+})
+
+test('buildWidgetFile: rate-chart injects rate helpers + num/den fields', () => {
+  const content = buildWidgetFile(
+    { name: 'err-rate', tier: 'T3', title: 'Error Rate', displayAs: 'rate-chart', xKey: 'date', rateNum: 'faulted', rateDen: 'total', deltaPolarity: 'up-bad', fnBody: 'return []' },
+    null, '30d'
+  )
+  assert.ok(content.includes("rateSeries(raw, 'faulted', 'total', 'date')"))
+  assert.ok(content.includes("overallRate(raw, 'faulted', 'total')"))
+  assert.ok(!content.includes('<RATE_NUM>'))
+})
+
+test('compileColumns: passes a string literal through unchanged', () => {
+  const lit = '[{key:"name",label:"Name"}]'
+  assert.equal(compileColumns(lit), lit)
+})
+
+test('compileColumns: compiles an array with format/color into render fns', () => {
+  const out = compileColumns([
+    { key: 'processName', label: 'Process' },
+    { key: 'duration', label: 'Duration', align: 'right', format: 'duration' },
+    { key: 'successRate', label: 'Success', align: 'right', format: 'percent', color: 'goodHigh' },
+  ])
+  assert.ok(out.includes('key:"processName"'))
+  assert.ok(out.includes('fmtDuration(Number(v))'))
+  assert.ok(out.includes('fmtPercent(Number(v))'))
+  assert.ok(out.includes('toneClass(Number(v),"goodHigh")'))
+})
+
+test('validateIntent: rejects invalid headlineMode', () => {
+  const errors = validateIntent({
+    dashboardName: 'x', timeRange: '7d',
+    metrics: [{ name: 'm', tier: 'T3', title: 'M', displayAs: 'line-chart', fnBody: 'return []', headlineMode: 'median' }],
+  })
+  assert.ok(errors.some(e => e.includes('headlineMode')))
+})
+
+test('validateIntent: rejects invalid deltaPolarity', () => {
+  const errors = validateIntent({
+    dashboardName: 'x', timeRange: '7d',
+    metrics: [{ name: 'm', tier: 'T3', title: 'M', displayAs: 'line-chart', fnBody: 'return []', deltaPolarity: 'sideways' }],
+  })
+  assert.ok(errors.some(e => e.includes('deltaPolarity')))
+})
+
+test('validateIntent: rate-chart requires rateNum + rateDen', () => {
+  const errors = validateIntent({
+    dashboardName: 'x', timeRange: '7d',
+    metrics: [{ name: 'm', tier: 'T3', title: 'M', displayAs: 'rate-chart', fnBody: 'return []' }],
+  })
+  assert.ok(errors.some(e => e.includes('rateNum')))
+})
+
+test('validateIntent: accepts valid presentation hints', () => {
+  const errors = validateIntent({
+    dashboardName: 'x', timeRange: '30d',
+    metrics: [{ name: 'm', tier: 'T3', title: 'M', displayAs: 'line-chart', fnBody: 'return []', headlineMode: 'avg', deltaPolarity: 'up-bad' }],
+  })
+  assert.deepEqual(errors, [])
+})
+
+test('validateIntent: rejects detailColumns entry with bad format', () => {
+  const errors = validateIntent({
+    dashboardName: 'x', timeRange: '30d',
+    metrics: [{ name: 'm', tier: 'T3', title: 'M', displayAs: 'line-chart', fnBody: 'return []', detailColumns: [{ key: 'd', label: 'D', format: 'bogus' }] }],
+  })
+  assert.ok(errors.some(e => e.includes('invalid format')))
+})
+
+test('buildWidgetFile: every chart type generates with no leftover placeholders', () => {
+  for (const displayAs of ['line-chart', 'area-chart', 'bar-chart', 'donut-chart', 'multi-line-chart', 'rate-chart']) {
+    const metric = {
+      name: 'm', tier: 'T3', title: 'M', displayAs,
+      xKey: 'date', yKey: 'value', rateNum: 'num', rateDen: 'den', fnBody: 'return []',
+    }
+    const content = buildWidgetFile(metric, null, '30d')
+    assert.equal(content.match(/<[A-Z][A-Z_]*>|<<[A-Z_]+>>/g), null, `${displayAs} has leftover placeholders`)
+    assert.ok(content.includes('customDataFn'), `${displayAs} missing customDataFn`)
+  }
+})
+
+test('generateViewFile: uses record-grain detailFnBody + compiled detailColumns', () => {
+  const view = generateViewFile({
+    componentName: 'FaultedJobs',
+    title: 'Faulted Jobs',
+    subtitle: 'Last 30 days',
+    detailFnBody: "const { Jobs } = await import('@uipath/uipath-typescript/jobs')\nreturn (await new Jobs(sdk as never).getAll({ filter: \"State eq 'Faulted'\" }))?.items ?? []",
+    detailColumns: compileColumns([
+      { key: 'processName', label: 'Process' },
+      { key: 'startTime', label: 'Started', format: 'timeAgo' },
+    ]),
+    defaultSortKey: 'startTime',
+  })
+  assert.ok(view.includes('FaultedJobsView'))
+  assert.ok(view.includes('getAll'), 'record-grain fnBody not embedded')
+  assert.ok(view.includes('fmtTimeAgo(String(v))'), 'formatted column not embedded')
+  assert.ok(view.includes('defaultSortKey={"startTime"}'), 'explicit sort key not used')
+  assert.ok(!view.includes('autoColumns(rows)') || view.includes('function autoColumns'), 'autoColumns only as fallback definition')
+})
+
+test('generateViewFile: falls back to autoColumns when no detailColumns', () => {
+  const view = generateViewFile({
+    componentName: 'Trend', title: 'Trend', subtitle: '',
+    detailFnBody: 'return []', detailColumns: null,
+  })
+  assert.ok(view.includes('const columns = autoColumns(rows)'))
 })

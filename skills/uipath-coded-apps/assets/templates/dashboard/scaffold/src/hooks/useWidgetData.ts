@@ -3,20 +3,21 @@ import { useAuth } from './useAuth'
 import type { UiPath } from '@uipath/uipath-typescript/core'
 
 /**
- * Hook for fetching data from any SDK service method (Insights or otherwise).
- * The fetcher receives both sdk and getToken so fnBody can use either.
+ * Generic data hook for a dashboard widget. Runs the widget's own data function
+ * — whatever SDK calls it makes (Jobs, Queues, Cases, …) — and manages the
+ * loading / error / data state. Not tied to any specific service or API.
  *
  * Usage:
- *   const { data, loading, error } = useInsightsSDK(customDataFn, [])
+ *   const { data, loading, error } = useWidgetData(customDataFn, [])
  *
  * where customDataFn is:
  *   async (sdk: any, getToken: () => Promise<string>) => { ... }
  *
- * @template T - The response type returned by the fetcher
- * @param fetcher - Function that calls the SDK service method; receives sdk and getToken
- * @param deps - Dependency array for re-fetching (defaults to empty — runs once)
+ * @template T - The row/array type the fetcher returns
+ * @param fetcher - Calls the SDK; receives the authenticated sdk and a getToken helper
+ * @param deps - Re-fetch dependency array (defaults to empty — runs once)
  */
-export function useInsightsSDK<T>(
+export function useWidgetData<T>(
   fetcher: (sdk: UiPath, getToken: () => Promise<string>) => Promise<T>,
   deps: unknown[] = []
 ) {

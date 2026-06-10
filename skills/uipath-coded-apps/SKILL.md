@@ -1,7 +1,7 @@
 ---
 name: uipath-coded-apps
 description: "UiPath Coded Web Apps, Action Apps (app.config.json, action-schema.json), and NLP-driven dashboards. Build apps via uip codedapp + TS SDK. Generate agent-health, error-rate, invocation, latency, KPI, or observability dashboards from natural-language prompts using Insights RTM API. For .cs/XAML→uipath-rpa, Python→uipath-agents, .flow→uipath-maestro-flow."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, Task
 ---
 
 # UiPath Coded Apps

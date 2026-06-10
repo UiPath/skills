@@ -7,6 +7,8 @@ import { <ICON> } from 'lucide-react'
 <SDK_IMPORT_LINE>
 import { ViewAllLink, LoadingState, EmptyState } from '@/dashboard/chrome'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { fmtNumber } from '@/lib/format'
+import { headline } from '@/lib/widget'
 
 const CHART_COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))']
 
@@ -17,6 +19,8 @@ export function <COMPONENT_NAME>() {
 
   if (loading) return <LoadingState />
   if (error) return <EmptyState message={error.message} />
+
+  const head = fmtNumber(headline(chartData as Record<string, unknown>[], '<DATA_KEY>', 'sum'))
 
   return (
     <Card
@@ -30,11 +34,15 @@ export function <COMPONENT_NAME>() {
           </div>
           <div>
             <CardTitle className="text-base"><TITLE></CardTitle>
-            <CardDescription><DESCRIPTION></CardDescription>
+            <CardDescription><SUBTITLE></CardDescription>
           </div>
         </div>
         <ViewAllLink to="<DETAIL_ROUTE>" />
       </CardHeader>
+      <div className="px-6 pb-2">
+        <span className="text-3xl font-semibold tabular-nums">{head}</span>
+        <span className="ml-2 text-sm text-muted-foreground">total</span>
+      </div>
       <CardContent className="pt-0">
         <ResponsiveContainer width="100%" height={180}>
           <PieChart>

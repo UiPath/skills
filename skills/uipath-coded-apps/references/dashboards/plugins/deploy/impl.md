@@ -123,7 +123,7 @@ If build fails: restore has already run. Show the error.
 
 ## Step 6 — Pack (silent)
 
-`-n` is the display name — must be identical across pack, publish, and deploy:
+`-n` is the **friendly Title Case display name** (state.json `app.name`, e.g. `"Jobs Health Dashboard"`) — **never the routing slug.** The CLI sanitizes it to a slug (`jobshealthdashboard`) internally for package matching, but uses the friendly name as the display name in the catalog and Governance UI. Passing the slug makes the dashboard show up as `jobshealthdashboard`; the friendly name reads "Jobs Health Dashboard". Use the **same** `-n` for pack, publish, and deploy.
 
 ```bash
 cd <PROJECT_DIR> && uip codedapp pack dist -n "<APP_NAME>" --version "<NEXT_SEMVER>" --output json
@@ -151,11 +151,27 @@ Set tags based on the user's pinning choice:
 - "deploy and pin" → tags = `"governance,dashboard"`
 - "deploy" → tags = `"governance"`
 
+Two flags differ from pack/publish — getting these wrong is the most common deploy failure:
+
+- **No `--version` on deploy.** The CLI resolves the latest published version itself. Passing `--version` triggers a false `"...has not been published yet"` error.
+- **`--path-name` only on a FRESH deploy.** It sets the URL slug the first time. On an **upgrade** the routing name already exists — re-passing `--path-name` errors with `"routing name must be unique"`.
+
+**Fresh deploy** (`deployment.systemName` was empty):
+
 ```bash
 cd <PROJECT_DIR> && uip codedapp deploy \
   -n "<APP_NAME>" \
-  --version "<NEXT_SEMVER>" \
   --path-name "<ROUTING_NAME>" \
+  --folder-key "<FOLDER_KEY>" \
+  --tags "<TAGS>" \
+  --output json
+```
+
+**Upgrade** (`deployment.systemName` is set — omit `--path-name`):
+
+```bash
+cd <PROJECT_DIR> && uip codedapp deploy \
+  -n "<APP_NAME>" \
   --folder-key "<FOLDER_KEY>" \
   --tags "<TAGS>" \
   --output json
@@ -164,7 +180,7 @@ cd <PROJECT_DIR> && uip codedapp deploy \
 Read the JSON output:
 - **Success** → extract `SystemName` and `AppUrl`, continue
 - **Contains "indexing" or "not been published"** → platform propagation delay after publish. Show `↻ App is indexing — retrying in 10 seconds (attempt N/3)…`. Wait 10 seconds and retry (up to 3 times). If all 3 fail, surface the error and stop.
-- **Contains "conflict", "already exist", or "path" + "name"** → generate a new routing suffix and retry:
+- **(Fresh deploy only) Contains "conflict", "already exist", or "name must be unique"** → the routing slug is taken; generate a new suffix and retry the fresh deploy (keep `--path-name`):
 
 ```bash
 node -e "
@@ -227,14 +243,16 @@ Always: "To update after making changes, say 'deploy this dashboard' again."
 | Build fails | Show the error — dev credentials are always restored |
 | Publish 409 | Auto-bump version and retry (up to 4 times) |
 | Publish 5xx / HTML | Wait 10s and retry (up to 4 times) |
-| Deploy "indexing" / "not been published" | Propagation delay — show retry ticker, wait 10s, retry up to 3 times |
-| Deploy path-name conflict | Generate new suffix, retry deploy only (pack/publish already done) |
+| Deploy "indexing" / "not been published" (with NO `--version` passed) | Propagation delay — show retry ticker, wait 10s, retry up to 3 times |
+| Deploy "not been published" but you passed `--version` | Remove `--version` from the deploy call — deploy resolves the latest version itself |
+| Deploy "routing name must be unique" on an upgrade | You passed `--path-name` on an upgrade — omit it; routing already exists |
+| Deploy path-name conflict (fresh deploy) | Generate new suffix, retry deploy only (pack/publish already done) |
 | state.json missing | Tell user to run the build first |
 
 ## Rules
 
-- `-n` must be the same human-readable name in pack, publish, and deploy
-- `--path-name` is only in deploy — sets the URL slug
-- `--version` must match across pack, publish, and deploy
-- Routing name is permanent after first successful deploy
-- Always include `--tags` — minimum `governance`, add `dashboard` if user opted to pin
+- `-n` is the **friendly Title Case display name** (state.json `app.name`, e.g. "Jobs Health Dashboard") — same across pack, publish, deploy. Never the routing slug: the CLI slugifies it for package matching but shows the friendly name in the catalog/Governance UI.
+- `--version` goes on **pack and publish only — NOT deploy.** Deploy resolves the latest published version; passing `--version` causes a false "has not been published yet" error.
+- `--path-name` goes on **fresh deploy only** — it sets the URL slug. On an upgrade the routing already exists; re-passing it errors "routing name must be unique."
+- Routing name is permanent after the first successful deploy.
+- Always include `--tags` — minimum `governance`, add `dashboard` if the user opted to pin.

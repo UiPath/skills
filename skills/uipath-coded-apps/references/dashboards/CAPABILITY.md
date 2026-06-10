@@ -34,14 +34,23 @@ Fire all of these simultaneously. Use multiple tool calls in one response — do
 
 > **Path note:** All file paths are relative to `SKILL_BASE_DIR` — the directory where `SKILL.md` lives. Not relative to this file's location.
 
-**4 file reads (parallel):**
+**File reads (parallel) — fire all in one message:**
 
 | File | Purpose |
 |------|---------|
 | `references/dashboards/plugins/build/impl.md` *(from skill root)* | Build instructions, plan format, intent.json schema |
-| `references/dashboards/primitives/tier-resolution.md` *(from skill root)* | Metric classification, SDK service reference |
+| `references/dashboards/primitives/tier-resolution.md` *(from skill root)* | Metric classification and SDK validation rules |
 | `references/dashboards/aesthetic/layout-patterns.md` *(from skill root)* | Layout rules |
-| `assets/scripts/capability-registry.json` *(from skill root)* | Metric catalog |
+| `assets/scripts/capability-registry.json` *(from skill root)* | Metric catalog (T1/T2 display hints) |
+<!-- sdk/agents.md — omit until @uipath/uipath-typescript/agents ships (PR #438) -->
+| `references/sdk/orchestrator.md` *(from skill root)* | Jobs/Queues/Processes methods — validate job/process metrics |
+
+**Conditional reads (add to the same parallel message if the request mentions these):**
+
+| If user mentions | Also read |
+|-----------------|-----------|
+| tasks, action items | `references/sdk/action-center.md` *(from skill root)* |
+| cases, process instances, Maestro | `references/sdk/maestro.md` *(from skill root)* |
 
 **2 commands (same message):**
 
@@ -58,7 +67,7 @@ fs.existsSync('.dashboard/state.json') ? process.exit(0) : process.exit(1)
 
 **Pre-warm (same message — `run_in_background: true` on the Bash tool call):**
 
-Derive the routing name from the user's request now (e.g. `"agent health dashboard"` → `"agent-health-x7k2"`). Pass **only the routing name**, not a full path. The build script computes `~/dashboards/<routing-name>` internally using `os.homedir()` — works on Windows and Unix, never touches cwd.
+Derive the routing name from the user's request now (e.g. `"agent health dashboard"` → `"agent-health-x7k2"`). Pass **only the routing name**, not a full path. The build script creates `<cwd>/<routing-name>` — project lands in the current working directory.
 
 ```bash
 node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"

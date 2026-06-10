@@ -7,7 +7,6 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   sdk: UiPath
-  tenantId: string
   getToken: () => Promise<string>
   login: () => Promise<void>
   error: string | null
@@ -104,7 +103,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAuthenticated,
     isLoading,
     sdk,
-    tenantId: import.meta.env.VITE_INSIGHTS_TENANT_ID as string,
     getToken,
     login,
     error,

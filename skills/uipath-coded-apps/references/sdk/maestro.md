@@ -221,6 +221,21 @@ Returned by `getAll()` and `getById()` on each `ProcessInstanceGetResponse`:
 
 Returns `Promise<CaseGetAllResponse[]>`. Each case has: `processKey`, `packageId`, `name`, `folderKey`, `folderName`, `packageVersions`, `versionCount`, plus instance count fields (same as MaestroProcesses).
 
+**Example response** — a **bare top-level array** (no `.items` wrapper):
+
+```json
+[
+  {
+    "name": "Loan Processing", "processKey": "case-proc-uuid",
+    "folderKey": "f-1001", "folderName": "Lending", "versionCount": 2,
+    "pendingCount": 5, "runningCount": 3, "completedCount": 125,
+    "faultedCount": 1, "pausedCount": 0, "cancelledCount": 2
+  }
+]
+```
+
+> **Semantics:** same shape as `MaestroProcesses.getAll` — bare array, counts pre-aggregated per case process. Chart `runningCount` / `completedCount` / `faultedCount` directly.
+
 ## CaseInstanceGetResponse Fields
 
 `instanceId: string`, `packageKey: string`, `packageId: string`, `packageVersion: string`, `latestRunId: string`, `latestRunStatus: string`, `processKey: string`, `folderKey: string`, `userId: number`, `instanceDisplayName: string`, `startedByUser: string`, `source: string`, `creatorUserKey: string`, `startedTime: string`, `completedTime: string`, `instanceRuns: CaseInstanceRun[]`, `caseAppConfig?: CaseAppConfig`, `caseType?: string`, `caseTitle?: string`. Plus all `CaseInstanceMethods`.

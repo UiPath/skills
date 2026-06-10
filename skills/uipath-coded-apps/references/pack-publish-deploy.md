@@ -182,7 +182,7 @@ uip codedapp deploy -n my-webapp
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-n, --name <name>` | App name | From `app.config.json` or prompted |
-| `-v, --version <version>` | Target a **specific published version** to deploy (different semantic from `pack`/`publish`'s `-v`, which is the package version) | Latest |
+| `-v, --version <version>` | Target a **specific published version** (different semantic from `pack`/`publish`'s `-v`). **Prefer omitting it** — let it default to Latest. Passing a version that the catalog hasn't finished indexing yields a misleading `"...has not been published yet"` error. | Latest |
 | `--folder-key <key>` | UiPath folder **key** (GUID, not the name). **Always pass explicitly** — see below. | From `UIPATH_FOLDER_KEY` env var, else interactive (avoid) |
 | `--org-name <name>` | Organization name (for app URL) | From `.env` |
 

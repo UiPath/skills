@@ -29,14 +29,33 @@ T3 — Custom
 
 ---
 
+## SDK validation — do this before writing the plan
+
+For every requested metric, before writing it into the plan:
+
+1. Check T0 Hard Refuse list — if it matches, refuse that metric inline
+2. Check T1/T2 catalog — if name or alias matches, use the registry hint
+3. For T3 (custom) metrics: **find a method in the SDK service reference below** that can return the needed data. If no method maps to it, T0 refuse it — do not invent methods
+
+> If a metric is feasible but requires a method that may not be in the installed SDK version (e.g. a newly released Insights endpoint), include it in the plan with a note: "relies on `Agents.methodName` — will verify after install." `tsc` catches a missing method before build.
+
+After the plan is confirmed, **Phase 3.5 cross-checks each `fnBody` against the example response + semantics notes in `references/sdk/*.md`** — the example shows real field *values*, not just that a field exists. (E.g. an agent job is `packageType === 'Agent'` / OData `ProcessType eq 'Agent'` — `sourceType` is the trigger origin, not the agent discriminator.)
+
+---
+
 ## Writing fnBody
 
-The agent reads SDK documentation (loaded in the parallel blast) to find the right service and method. The `fnBody` must:
+The agent reads the SDK service reference (this file, loaded in the parallel blast) to find the right service and method. The `fnBody` must:
 
 - Return `Promise<Array<Record<string, unknown>>>`
 - Use dynamic import: `const { ServiceClass } = await import('@uipath/uipath-typescript/...')`
 - Use constructor injection: `new ServiceClass(sdk as never)`
 - Return a flat array — the build script passes it directly to the chart/table
+- **Read methods ONLY.** Dashboards display data; they never mutate. Allowed: `getAll`, `getById`, `getAllRecords`, `queryRecordsById`, `getIncidents`. Never call `create`, `complete`, `assign`, `start`, `stop`, `resume`, `restart`, `insert*`, `update*`, `delete*`, `upload*` — even though the shared `sdk/*.md` references document them for the app-building modes.
+
+**Presentation matters as much as the query.** A chart with the wrong headline or an empty subtitle reads as broken. For every chart metric set `headlineMode` + `deltaPolarity` + `subtitle`, and give it a record-grain `detailFnBody` + `detailColumns` so the drill-down shows real records, not the chart's buckets. For ratios (error rate, success rate) use `displayAs: "rate-chart"` with `rateNum`/`rateDen`. See `plugins/build/impl.md § Presentation fields` for the full schema and an example.
+
+**Don't add your own request caching.** The scaffold wraps `fetch` (`src/lib/fetch-cache.ts`) so identical GET requests across all widgets share one network call and are cached ~15s — this prevents 429s when many widgets mount at once. Just call the SDK normally; results may be up to 15s stale, which is fine for a dashboard.
 
 Time constants (all `Date` objects, injected by build script):
 `NOW`, `ONE_DAY_AGO`, `SEVEN_DAYS_AGO`, `THIRTY_DAYS_AGO`, `NINETY_DAYS_AGO`
@@ -49,11 +68,11 @@ The registry entry describes the metric and the expected SDK call. Use it as you
 
 | Metric name | What it shows | Registry template | SDK hint |
 |-------------|--------------|-------------------|----------|
-| `agent-errors` | Daily error counts | `line-chart` | `Agents.getErrorsTimeline(start, end)` → `{ data: [{date, value}] }` |
-| `invocation-volume` | AGU consumption over time | `area-chart` | `Agents.getConsumptionTimeline(start, end)` → `{ data: [{timeSlice, aguConsumption}] }` |
-| `top-failing-agents` | Agents ranked by errors | `ranked-table` | `Agents.getTopErroredAgents(start, end)` → `{ data: [{name, count}] }` |
-| `active-agents-kpi` | Count of active agents | `kpi-card` | `Agents.getAll(start, end)` → `{ items: AgentListItem[] }` |
-| `agent-latency` | P50/P95 execution time | `multi-line-chart` | `Agents.getLatencyTimeline(start, end)` → `{ data: [{name:'P50'\|'P95', value, date}] }` |
+| ~~`agent-errors`~~ | ~~Daily error counts~~ | — | ~~`Agents.getErrorsTimeline`~~ — unavailable (PR #438) |
+| ~~`invocation-volume`~~ | ~~AGU consumption~~ | — | ~~`Agents.getConsumptionTimeline`~~ — unavailable (PR #438) |
+| ~~`top-failing-agents`~~ | ~~Agents ranked by errors~~ | — | ~~`Agents.getTopErroredAgents`~~ — unavailable (PR #438) |
+| ~~`active-agents-kpi`~~ | ~~Count of active agents~~ | — | ~~`Agents.getAll`~~ — unavailable (PR #438) |
+| ~~`agent-latency`~~ | ~~P50/P95 execution time~~ | — | ~~`Agents.getLatencyTimeline`~~ — unavailable (PR #438) |
 | `job-failures` | Faulted jobs | `data-table` | `new Jobs(sdk).getAll({ filter: "State eq 'Faulted'" })` → `{ items: [{processName, state, createdTime}] }` |
 | `job-completion-trend` | Completed jobs | `data-table` | `new Jobs(sdk).getAll({ filter: "State eq 'Successful'" })` → `{ items: [{processName, state, endTime}] }` |
 
@@ -181,26 +200,16 @@ For any metric not in the catalog. You provide all display config and write the 
 
 ## SDK service reference
 
-**Insights methods take positional Date params:**
-```typescript
-new Agents(sdk as never).getErrorsTimeline(THIRTY_DAYS_AGO, NOW)  // ✓
-new Agents(sdk as never).getErrors({ startTime: ..., endTime: ... })  // ✗ wrong signature
-```
+Full method signatures, response types, and field names live in `references/sdk/` (loaded in the parallel blast). Use those files as the source of truth — do not rely on memory.
 
-| Service | Import | Key response fields |
-|---------|--------|---------------------|
-| `Agents` | `@uipath/uipath-typescript/agents` | Insights: getErrorsTimeline, getConsumptionTimeline, getLatencyTimeline, getTopErroredAgents, getAll, getIncidentDistribution |
-| `Jobs` | `@uipath/uipath-typescript/jobs` | `key`, `state`, `processName`, `startTime`, `endTime`, `createdTime` |
-| `Queues` | `@uipath/uipath-typescript/queues` | `id`, `name`, `maxRetries`, `acceptsRejectedItems` |
-| `Tasks` | `@uipath/uipath-typescript/tasks` | `id`, `title`, `priority`, `status`, `assignedTo`, `createdTime` |
-| `Processes` | `@uipath/uipath-typescript/processes` | `id`, `name`, `key`, `processType` |
-| `Cases` | `@uipath/uipath-typescript/cases` | `processKey`, `runningCount`, `completedCount` |
-| `Entities` | `@uipath/uipath-typescript/entities` | `id`, `name`, `displayName`, `entityType` |
-| `Governance` | `@uipath/uipath-typescript/governance` | `getPolicyTraces()`, `getOperationSummary()` |
+| Domain | Reference file | Key service classes |
+|--------|---------------|---------------------|
+| ~~Agents / Insights RTM~~ | ~~`sdk/agents.md`~~ | ~~`Agents`~~ — not yet available (PR #438 pending) |
+| Jobs, Queues, Processes, Assets | `sdk/orchestrator.md` *(from skill root)* | `Jobs`, `Queues`, `Processes`, `Assets` |
+| Tasks | `sdk/action-center.md` *(from skill root)* | `Tasks` |
+| Cases, Process Instances | `sdk/maestro.md` *(from skill root)* | `Cases`, `CaseInstances` |
+| Data entities | `sdk/data-fabric.md` *(from skill root)* | `Entities` |
+
+`sdk/orchestrator.md` is **always loaded** in the parallel blast. Load `sdk/action-center.md` or `sdk/maestro.md` only when the user's request involves tasks or cases. When PR #438 ships, uncomment `sdk/agents.md` in `CAPABILITY.md` and remove the strikethrough above.
 
 **Non-Insights services:** access items via `result?.items ?? result?.value ?? []`
-
-**Duration** is not a direct field on Jobs. Compute it:
-```typescript
-const ms = new Date(j.endTime).getTime() - new Date(j.startTime).getTime()
-```

@@ -1,25 +1,27 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { <ICON> } from 'lucide-react'
 <HOOK_IMPORT>
 <RESPONSE_TYPE_IMPORT>
 <SDK_IMPORT_LINE>
 import { DeltaBadge, ViewAllLink, LoadingState, EmptyState } from '@/dashboard/chrome'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { fmtNumber } from '@/lib/format'
-import { headline, delta } from '@/lib/widget'
+import { fmtPercent } from '@/lib/format'
+import { rateSeries, overallRate, rateDelta } from '@/lib/widget'
 
 export function <COMPONENT_NAME>() {
   const navigate = useNavigate()
   const { data, loading, error } = <DATA_HOOK>
-  const chartData: Record<string, unknown>[] = <DATA_SELECTOR>
+  const raw: Record<string, unknown>[] = <DATA_SELECTOR>
 
   if (loading) return <LoadingState />
   if (error) return <EmptyState message={error.message} />
 
-  const head = fmtNumber(headline(chartData, '<Y_KEY>', '<HEADLINE_MODE>'))
-  const d = delta(chartData, '<Y_KEY>', '<DELTA_POLARITY>')
+  // Each raw row carries a numerator and denominator; derive a per-bucket % series.
+  const chartData = rateSeries(raw, '<RATE_NUM>', '<RATE_DEN>', '<X_KEY>')
+  const head = fmtPercent(overallRate(raw, '<RATE_NUM>', '<RATE_DEN>'))
+  const d = rateDelta(chartData, '<DELTA_POLARITY>')
 
   return (
     <Card
@@ -44,7 +46,7 @@ export function <COMPONENT_NAME>() {
       </div>
       <CardContent className="pt-0">
         <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={chartData}>
+          <AreaChart data={chartData}>
             <XAxis
               dataKey="<X_KEY>"
               tick={{ fontSize: 11 }}
@@ -53,10 +55,10 @@ export function <COMPONENT_NAME>() {
                 return isNaN(dt.getTime()) ? String(v) : dt.toLocaleDateString([], { month: 'short', day: 'numeric' })
               }}
             />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
-            <Bar dataKey="<Y_KEY>" fill="hsl(var(--chart-1))" radius={[3, 3, 0, 0]} />
-          </BarChart>
+            <YAxis tick={{ fontSize: 11 }} unit="%" domain={[0, 'auto']} />
+            <Tooltip formatter={(v: number | string) => `${Number(v).toFixed(1)}%`} />
+            <Area dataKey="rate" fill="hsl(var(--chart-1))" stroke="hsl(var(--chart-1))" fillOpacity={0.2} />
+          </AreaChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

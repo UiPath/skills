@@ -1,5 +1,6 @@
 {
-  "t1": {
+  "t1_unavailable": {
+    "_note": "Metrics in this section require @uipath/uipath-typescript/agents (PR #438, not yet released). Move to t1 when the package ships.",
     "agent-errors": {
       "aliases": ["agent errors", "error count", "errors over time", "agent failures", "error rate trend", "error spikes", "which agents are failing"],
       "template": "line-chart",
@@ -76,7 +77,9 @@
         "series": "[{key:\"P50\",color:\"hsl(var(--chart-1))\",label:\"P50 ms\"},{key:\"P95\",color:\"hsl(var(--chart-2))\",label:\"P95 ms\"}]",
         "pivotExpression": "rawData.reduce((acc: Record<string, unknown>[], row: any) => { const existing = acc.find((r: any) => r.date === row.date); if (existing) { existing[row.name] = row.value; } else { acc.push({ date: row.date, [row.name]: row.value }); } return acc; }, [])"
       }
-    },
+    }
+  },
+  "t1": {
     "job-failures": {
       "aliases": ["faulted jobs", "failed jobs", "job failures", "rpa failures", "process failures", "jobs that failed"],
       "template": "data-table",
@@ -161,13 +164,18 @@
     }
   },
   "hardRefuse": [
+    { "pattern": "active agents|agent count|agents running|how many agents", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"ProcessType eq 'Agent'\" }), count distinct processName. Identify agent jobs by packageType==='Agent' (OData field ProcessType) — see sdk/orchestrator.md § Job classification." },
+    { "pattern": "invocation volume|agent runs|agu consumption|run volume|consumption timeline", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"ProcessType eq 'Agent'\" }) bucketed by date for run volume (AGU not available without Insights). See sdk/orchestrator.md § Job classification." },
+    { "pattern": "agent error|error rate|error trend|error count|error spike|agent failure", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"State eq 'Faulted' and ProcessType eq 'Agent'\" }). See sdk/orchestrator.md § Job classification." },
+    { "pattern": "top failing agent|most errors by agent|agent leaderboard", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"State eq 'Faulted' and ProcessType eq 'Agent'\" }) grouped by processName. See sdk/orchestrator.md § Job classification." },
+    { "pattern": "agent latency|p95 latency|p50 latency|latency trend|execution time", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"ProcessType eq 'Agent'\" }), compute (endTime - startTime). See sdk/orchestrator.md § Job classification." },
     { "pattern": "cost.*dollar|dollar.*cost|\\$.*agent|agent.*\\$", "reason": "The platform tracks AGU units, not currency.", "alternative": "AGU consumption chart (metric: invocation-volume)" },
     { "pattern": "cpu|memory per agent|per.agent memory", "reason": "Per-agent CPU/memory is not exposed by any API.", "alternative": "Fleet-level latency (metric: agent-latency)" },
     { "pattern": "who triggered|triggered by|user.*job|job.*user", "reason": "Job records carry no end-user identity.", "alternative": "T3-SDK: new Jobs(sdk as never).getAll({ filter: \"ProcessName eq 'x'\" }) grouped by processName" },
     { "pattern": "cross.tenant|multi.tenant|compare.*tenant", "reason": "Dashboards are scoped to one tenant.", "alternative": "Multi-widget single-tenant view" },
     { "pattern": "sla.*breach|breach.*sla", "reason": "Raw counts only — no SLA metadata in any API.", "alternative": "T3-SDK: new Jobs(sdk as never).getAll({ filter: \"State eq 'Faulted'\" }) to compute failure rate" },
     { "pattern": "error.*message|stack.*trace|exception.*text", "reason": "No aggregation endpoint for error text or stack traces.", "alternative": "Error count by type (metric: agent-errors)" },
-    { "pattern": "governance.*policy.*summary|policy.*summary.*governance|getPolicySummary", "reason": "governance.getPolicySummary requires a specific policy UUID that must be supplied by the user.", "alternative": "Ask the user which policy UUID to report on, then classify as T3-Insights with method: getPolicySummary and the UUID injected into the request body." },
-    { "pattern": "queue.*failure.*threshold|queues.*failing|high.failure.*queue", "reason": "QueueGetResponse does not include a failure count field. SDK fields are: id, name, maxRetries, acceptsRejectedItems only.", "alternative": "T3-Insights: use namespace: 'jobs', method: 'getTopFailures' to see processes with most failures, or request queue metrics via T3-SDK if your tenant has queue analytics enabled." }
+    { "pattern": "governance.*policy.*summary|policy.*summary.*governance|getPolicySummary", "reason": "Governance policy reporting requires a specific policy UUID that must be supplied by the user.", "alternative": "Ask the user which policy UUID to report on, then write a T3 fnBody using the Governance service (see sdk/orchestrator.md / governance reference) with that UUID." },
+    { "pattern": "queue.*failure.*threshold|queues.*failing|high.failure.*queue", "reason": "QueueGetResponse has no failure-count field (id, name, maxNumberOfRetries, … only) — see sdk/orchestrator.md.", "alternative": "T3 via Jobs SDK: getAll({ filter: \"State eq 'Faulted'\" }) grouped by processName for the most-failing processes." }
   ]
 }

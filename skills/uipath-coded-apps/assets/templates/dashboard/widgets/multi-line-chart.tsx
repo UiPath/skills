@@ -38,7 +38,7 @@ export function <COMPONENT_NAME>() {
           </div>
           <div>
             <CardTitle className="text-base"><TITLE></CardTitle>
-            <CardDescription><DESCRIPTION></CardDescription>
+            <CardDescription><SUBTITLE></CardDescription>
           </div>
         </div>
         <ViewAllLink to="<DETAIL_ROUTE>" />

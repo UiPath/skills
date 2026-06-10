@@ -8,6 +8,7 @@ import { <ICON> } from 'lucide-react'
 import { DeltaBadge, ViewAllLink, LoadingState, EmptyState } from '@/dashboard/chrome'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { fmtNumber } from '@/lib/format'
+import { headline, delta } from '@/lib/widget'
 
 export function <COMPONENT_NAME>() {
   const navigate = useNavigate()
@@ -17,7 +18,8 @@ export function <COMPONENT_NAME>() {
   if (loading) return <LoadingState />
   if (error) return <EmptyState message={error.message} />
 
-  const headline = chartData.length > 0 ? fmtNumber(Number((chartData[chartData.length - 1] as Record<string, unknown>)['<Y_KEY>'])) : '—'
+  const head = fmtNumber(headline(chartData, '<Y_KEY>', '<HEADLINE_MODE>'))
+  const d = delta(chartData, '<Y_KEY>', '<DELTA_POLARITY>')
 
   return (
     <Card
@@ -31,14 +33,14 @@ export function <COMPONENT_NAME>() {
           </div>
           <div>
             <CardTitle className="text-base"><TITLE></CardTitle>
-            <CardDescription><DESCRIPTION></CardDescription>
+            <CardDescription><SUBTITLE></CardDescription>
           </div>
         </div>
         <ViewAllLink to="<DETAIL_ROUTE>" />
       </CardHeader>
       <div className="px-6 pb-2 flex items-baseline gap-3">
-        <span className="text-3xl font-semibold tabular-nums">{headline}</span>
-        <DeltaBadge direction="<DELTA_DIR>" text="<DELTA_TEXT>" />
+        <span className="text-3xl font-semibold tabular-nums">{head}</span>
+        {d.text && <DeltaBadge direction={d.direction} text={d.text} />}
       </div>
       <CardContent className="pt-0">
         <ResponsiveContainer width="100%" height={180}>
@@ -47,8 +49,8 @@ export function <COMPONENT_NAME>() {
               dataKey="<X_KEY>"
               tick={{ fontSize: 11 }}
               tickFormatter={(v: string | number) => {
-                const d = new Date(String(v))
-                return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+                const dt = new Date(String(v))
+                return isNaN(dt.getTime()) ? String(v) : dt.toLocaleDateString([], { month: 'short', day: 'numeric' })
               }}
             />
             <YAxis tick={{ fontSize: 11 }} />

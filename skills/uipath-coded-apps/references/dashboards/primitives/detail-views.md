@@ -1,57 +1,29 @@
 # Detail Views
 
-Every widget automatically gets a detail view file generated at build time. Detail views use `DetailViewShell` + `RecordsTable` to show all rows from the same API call as the parent widget.
+A chart widget drills down to a detail view at `/<foo>`. The view shows **individual records** — the rows *behind* the chart — not the chart's aggregated buckets. It uses `DetailViewShell` + `RecordsTable`.
 
 ## What gets generated
 
-For each widget with component name `Foo`, the build script generates `src/dashboard/views/FooView.tsx` and registers a route at `/<foo>` in `App.tsx`.
+For each chart widget `Foo`, the build generates `src/dashboard/views/FooView.tsx` and registers its route in `App.tsx`.
 
-Detail views are generated automatically for **T1 widgets only**.
+Detail views are generated for **chart widgets only** — `line-chart`, `area-chart`, `bar-chart`, `donut-chart`, `multi-line-chart`, `rate-chart` — any tier. Only chart templates emit a `navigate()` / `ViewAllLink` drill-down, so only charts need a route. KPI cards and tables (`kpi-card`, `data-table`, `ranked-table`) link nowhere and show their value/rows in place — no detail view.
 
-- **T2 widgets**: already show tabular data — no separate detail view needed
-- **T3-SDK widgets**: the `fnBody` returns a custom shape that the build script has no schema for — columns can't be inferred reliably at build time. The widget itself shows the full data. Add a detail view by hand in the generated project if needed.
+> **Contract:** every widget that emits a navigation link must have a generated view + route. Never emit `navigate()` / `ViewAllLink` without the build generating the matching view.
 
-## Column mapping rules
+## Record grain — the detail must add information
 
-The columns for a detail view come from the same registry entry as its parent widget. The key rules:
+The chart's `fnBody` returns **aggregated buckets** (e.g. `{ date, count }`). A detail view that re-tables those buckets adds nothing. So a metric supplies a separate record-grain query:
 
-| Response shape | What to use as columns |
-|----------------|------------------------|
-| `{ data: Array<{ name, count }> }` | `name` + `count` — never `value` |
-| `{ data: Array<{ timeSlice, aguConsumption }> }` | `timeSlice` + `aguConsumption` |
-| `{ data: Array<{ name, P50, P95, date }> }` (after pivot) | `date` + `P50` + `P95` |
-| `{ data: { agents: [...] } }` | `toRows()` unwraps the nested array automatically |
-
-**Rule: column `key` must match the exact field name in the API response — never substitute `value` as a generic stand-in.**
+- **`detailFnBody`** — fetches the individual records (e.g. each faulted job: `{ processName, state, createdTime, ... }`). The view runs this, not the chart's aggregate. If omitted, it falls back to the chart's `fnBody` — which only restates the buckets, so **always provide `detailFnBody` for charts**.
+- **`detailColumns`** — `{ key, label, align?, format?, color? }[]`. `format`: `number` | `percent` | `duration` | `timeAgo` | `text`; `color`: `goodHigh` | `goodLow`. The build compiles these into formatted/coloured `render` functions. If omitted, columns are auto-detected from the first row at runtime (`autoColumns`) — workable but generic.
+- **`detailSortKey`** — the raw field to sort on (e.g. ISO `createdTime`). Render a friendly label in the column but sort on the raw value so chronological order is correct.
 
 ## toRows() — safe array extraction
 
-The generated view always calls `toRows(raw)` before passing data to `RecordsTable`. This handles the three response shapes Insights RTM returns:
-
-```typescript
-// Shape 1: direct array  { data: [...] }
-// Shape 2: nested object  { data: { agents: [...] } }
-// Shape 3: raw array at top level
-```
-
-`toRows` is defined inside every generated view file — no import needed.
-
-## Detail view per widget type
-
-| Parent widget template | Detail view shows |
-|-----------------------|-------------------|
-| `kpi-card` | Table of all data points |
-| `kpi-with-sparkline` | Table of all data points |
-| `line-chart` | Table of date + value columns |
-| `area-chart` | Table of date + value columns |
-| `multi-line-chart` | Table of date + P50 + P95 columns |
-| `ranked-table` | Already full-detail — view shows same data |
-| `data-table` | Already full-detail |
-| `donut-chart` | Table of name + value/count |
-| `bar-chart` | Table of name + value |
+The generated view calls `toRows(data)` before `RecordsTable`, handling `{ items: [...] }`, `{ data: [...] }`, a nested `data` object, or a top-level array. Defined inside every view file — no import needed.
 
 ## Anti-patterns
 
-- **Never** use `key: "value"` in columns if the API response field is named something else (`count`, `aguConsumption`, etc.)
-- **Never** call `dataSelector` directly without wrapping in `toRows()` — some responses are objects, not arrays
-- **Never** generate a detail view for T2 widgets — they are already tabular
+- **Never** ship a chart detail view backed by the chart's aggregate `fnBody` — supply `detailFnBody` so the drill-down shows records.
+- **Never** sort a time column on its rendered label — key the sort on the raw ISO field via `detailSortKey`.
+- **Never** emit `navigate()` / `ViewAllLink` from a widget the build won't generate a view for.

@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { WidgetBoundary } from '@/dashboard/chrome/WidgetBoundary'
 import { LoadingState, EmptyState } from '@/dashboard/chrome'
 import { RecordsTable, type ColumnDef } from '@/dashboard/chrome/RecordsTable'
+import { fmtNumber, fmtPercent, fmtDuration, fmtTimeAgo } from '@/lib/format'
+import { toneClass } from '@/lib/widget'
 import { <<ICON_NAME>> } from 'lucide-react'
 
 type Row = Record<string, unknown>

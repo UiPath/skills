@@ -158,8 +158,22 @@ const VALID_EDIT_OPS = ['ADD', 'REMOVE', 'CHANGE', 'REBUILD']
  */
 export const VALID_DISPLAY_TYPES = [
   'kpi-card', 'ranked-table', 'data-table',
-  'area-chart', 'line-chart', 'bar-chart', 'donut-chart', 'multi-line-chart',
+  'area-chart', 'line-chart', 'bar-chart', 'donut-chart', 'multi-line-chart', 'rate-chart',
 ]
+
+/** Headline aggregate modes — how a chart's big number is computed from its series. */
+export const VALID_HEADLINE_MODES = ['sum', 'avg', 'latest', 'count', 'max', 'min']
+
+/** Delta polarity — whether an increase is good, bad, or neutral (drives badge colour). */
+export const VALID_DELTA_POLARITIES = ['up-good', 'up-bad', 'neutral']
+
+/** Column value formatters supported in table column defs. */
+export const VALID_COLUMN_FORMATS = ['number', 'percent', 'duration', 'timeAgo', 'text']
+
+/** Map a time range to a human subtitle fragment. */
+function timeRangeLabel(timeRange) {
+  return { '1d': 'last 24 hours', '7d': 'last 7 days', '30d': 'last 30 days', '90d': 'last 90 days' }[timeRange] ?? timeRange
+}
 
 /**
  * OAuth scopes required for the dashboard.
@@ -349,44 +363,43 @@ function applyTemplate(templateName, subs) {
 
 /**
  * Generate a detail view file for a widget.
- * Columns are auto-detected from the first data row at runtime via autoColumns().
- * When the dataHook references customDataFn and fnBody is provided, injects a
- * customDataFn definition so the view file compiles without referencing an
- * undefined symbol.
- * @param {{ componentName: string, title: string, description: string, dataHook: string, dataSelector: string, fnBody?: string }} widget
+ *
+ * Drills to RECORD GRAIN: the view runs `detailFnBody` — the individual records
+ * behind the chart (e.g. each job run), not the chart's aggregated buckets. When
+ * `detailColumns` (a compiled ColumnDef literal) is supplied, it drives the table
+ * (formatted/coloured cells); otherwise columns are auto-detected at runtime.
+ * `defaultSortKey` keys the initial sort on the raw field (e.g. an ISO timestamp)
+ * so chronological order is correct even when a column renders a friendly label.
+ *
+ * @param {{ componentName: string, title: string, subtitle?: string, detailFnBody: string, detailColumns?: string|null, defaultSortKey?: string }} widget
  * @returns {string} Full TypeScript file content
  */
-function generateViewFile(widget) {
-  const { componentName, title, description, dataHook, dataSelector, fnBody } = widget
+export function generateViewFile(widget) {
+  const { componentName, title, subtitle = '', detailFnBody, detailColumns, defaultSortKey } = widget
 
-  const staticColumnsDecl = ''
-  const columnsExpr = 'autoColumns(rows)'
-
-  // If dataHook references customDataFn, define it here too so the view compiles
-  const needsCustomFn = dataHook && dataHook.includes('customDataFn') && fnBody
-  const customFnBlock = needsCustomFn ? `
-// ── Custom data function (same fnBody as parent widget) ──────────────────────
-const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<Record<string, unknown>[]> => {
-${fnBody.split('\n').map(l => '  ' + l).join('\n')}
-}
-// ─────────────────────────────────────────────────────────────────────────────
-` : ''
+  const indentedFn = detailFnBody.split('\n').map(l => '  ' + l).join('\n')
+  const columnsExpr = detailColumns ? detailColumns : 'autoColumns(rows)'
+  const sortKeyExpr = defaultSortKey ? JSON.stringify(defaultSortKey) : '(columns[0]?.key as string)'
 
   return `import React from 'react'
 import { DetailViewShell } from '@/dashboard/chrome/DetailViewShell'
 import { RecordsTable, type ColumnDef } from '@/dashboard/chrome/RecordsTable'
-import { useInsightsSDK } from '@/hooks/useInsightsSDK'
+import { useWidgetData } from '@/hooks/useWidgetData'
 import { LoadingState, EmptyState } from '@/dashboard/chrome'
+import { fmtNumber, fmtPercent, fmtDuration, fmtTimeAgo } from '@/lib/format'
+import { toneClass } from '@/lib/widget'
 
 ${TIME_CONSTANTS.trimEnd()}
-${staticColumnsDecl}
+
 type Row = Record<string, unknown>
 
-/**
- * Auto-generate column definitions from the first data row.
- * Only includes primitive fields (strings, numbers) — skips nested objects and nulls.
- * Column labels are derived by splitting camelCase into words.
- */
+// ── Detail data function (record grain — individual records behind the chart) ──
+const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<Row[]> => {
+${indentedFn}
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Auto-detect columns from the first row when explicit detailColumns aren't given. */
 function autoColumns(rows: Row[]): ColumnDef<Row>[] {
   if (rows.length === 0) return [{ key: 'value', label: 'Value' }]
   return Object.entries(rows[0])
@@ -397,40 +410,39 @@ function autoColumns(rows: Row[]): ColumnDef<Row>[] {
       ...(typeof v === 'number' && { align: 'right' as const }),
     }))
 }
-${customFnBlock}
-export function ${componentName}View() {
-  const { data, loading, error } = ${dataHook}
 
-  /** Safely extract a row array from any Insights API response shape */
+export function ${componentName}View() {
+  const { data, loading, error } = useWidgetData(customDataFn, [])
+
+  /** Safely extract a row array from any response shape */
   function toRows(raw: unknown): Row[] {
     if (!raw) return []
     if (Array.isArray(raw)) return raw as Row[]
     if (typeof raw === 'object') {
       const obj = raw as Record<string, unknown>
-      if (Array.isArray(obj.agents)) return obj.agents as Row[]
+      if (Array.isArray(obj.items)) return obj.items as Row[]
       if (Array.isArray(obj.data)) return obj.data as Row[]
       if (obj.data && typeof obj.data === 'object') return toRows(obj.data)
     }
     return []
   }
 
-  const raw: unknown = ${dataSelector ?? '(data as any)?.data ?? []'}
-  const rows = toRows(raw)
+  const rows = toRows(data ?? [])
   const columns = ${columnsExpr}
 
   if (loading) return (
-    <DetailViewShell title="${title ?? componentName}" description="${description ?? ''}">
+    <DetailViewShell title="${title ?? componentName}" description="${subtitle}">
       <LoadingState height="h-96" />
     </DetailViewShell>
   )
   if (error) return (
-    <DetailViewShell title="${title ?? componentName}" description="${description ?? ''}">
+    <DetailViewShell title="${title ?? componentName}" description="${subtitle}">
       <EmptyState message={error.message} />
     </DetailViewShell>
   )
   return (
-    <DetailViewShell title="${title ?? componentName}" description="${description ?? ''}">
-      <RecordsTable rows={rows} columns={columns} defaultSortKey={columns[0]?.key as string} />
+    <DetailViewShell title="${title ?? componentName}" description="${subtitle}">
+      <RecordsTable rows={rows} columns={columns} defaultSortKey={${sortKeyExpr}} />
     </DetailViewShell>
   )
 }
@@ -443,7 +455,7 @@ export function ${componentName}View() {
  * @param {WidgetMeta[]} widgetMeta
  * @param {string} dashboardName
  */
-function generateDashboardFiles(projectPath, widgetMeta, dashboardName) {
+export function generateDashboardFiles(projectPath, widgetMeta, dashboardName) {
   const widgetNames = widgetMeta.map(w => w.componentName)
 
   const kpis   = widgetMeta.filter(w => widgetLayoutGroup(w.template) === 'kpi')
@@ -501,7 +513,7 @@ ${kpiSection}${chartSection}${tableSection}
  * @param {string} template
  * @returns {'kpi'|'table'|'chart'}
  */
-function widgetLayoutGroup(template) {
+export function widgetLayoutGroup(template) {
   if (['kpi-card', 'kpi-with-sparkline'].includes(template)) return 'kpi'
   if (['data-table', 'ranked-table', 'progress-bar-list'].includes(template)) return 'table'
   return 'chart'
@@ -512,7 +524,7 @@ function widgetLayoutGroup(template) {
  * @param {string} projectPath
  * @param {string[]} viewWidgetNames - Widget names that have a generated view file
  */
-function injectAppRoutes(projectPath, viewWidgetNames) {
+export function injectAppRoutes(projectPath, viewWidgetNames) {
   const appPath = join(projectPath, 'src', 'App.tsx')
   if (!existsSync(appPath)) {
     emit('PARTIAL_BUILD_DETECTED', { message: 'App.tsx not found — scaffold may not be copied yet' })
@@ -577,6 +589,24 @@ export function validateIntent(intent) {
         errors.push(`T3 metric "${m.name}" has unsupported displayAs "${m.displayAs}". Valid: ${VALID_DISPLAY_TYPES.join(', ')}`)
       }
     }
+    // Presentation hints (all tiers, all optional) — validate enums when present
+    if (m.headlineMode && !VALID_HEADLINE_MODES.includes(m.headlineMode)) {
+      errors.push(`metric "${m.name}" has invalid headlineMode "${m.headlineMode}". Valid: ${VALID_HEADLINE_MODES.join(', ')}`)
+    }
+    if (m.deltaPolarity && !VALID_DELTA_POLARITIES.includes(m.deltaPolarity)) {
+      errors.push(`metric "${m.name}" has invalid deltaPolarity "${m.deltaPolarity}". Valid: ${VALID_DELTA_POLARITIES.join(', ')}`)
+    }
+    if (m.displayAs === 'rate-chart' && (!m.rateNum || !m.rateDen)) {
+      errors.push(`rate-chart metric "${m.name}" needs rateNum and rateDen (the numerator/denominator field names its fnBody returns per bucket)`)
+    }
+    if (Array.isArray(m.detailColumns)) {
+      for (const c of m.detailColumns) {
+        if (!c.key || !c.label) errors.push(`metric "${m.name}" detailColumns entry missing key/label`)
+        if (c.format && !VALID_COLUMN_FORMATS.includes(c.format)) {
+          errors.push(`metric "${m.name}" detailColumns "${c.key}" has invalid format "${c.format}". Valid: ${VALID_COLUMN_FORMATS.join(', ')}`)
+        }
+      }
+    }
   }
   return errors
 }
@@ -599,6 +629,79 @@ export function resolveMetric(metric) {
 }
 
 /**
+ * Resolve a widget subtitle (CardDescription). Falls back to a window label.
+ * @param {IntentMetric} metric
+ * @param {object} defaults - registry entry defaults
+ * @param {string} timeRange
+ * @returns {string}
+ */
+function autoSubtitle(metric, defaults, timeRange) {
+  const explicit = metric.subtitle ?? defaults.subtitle ?? metric.description ?? defaults.description
+  if (explicit) return explicit
+  const label = timeRangeLabel(timeRange)
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
+/**
+ * Compile a column spec into a TS array literal for RecordsTable.
+ * Accepts either a ready literal string (passed through) or an array of
+ * { key, label, align?, format?, color? } objects, for which it emits `render`
+ * functions that format (number/percent/duration/timeAgo) and optionally colour cells.
+ * @param {string|Array<object>} input
+ * @returns {string}
+ */
+export function compileColumns(input) {
+  if (typeof input === 'string') return input
+  if (!Array.isArray(input) || input.length === 0) return '[{key:"name",label:"Name"}]'
+  const cols = input.map((c) => {
+    const parts = [`key:${JSON.stringify(c.key)}`, `label:${JSON.stringify(c.label)}`]
+    if (c.align) parts.push(`align:${JSON.stringify(c.align)} as const`)
+    const render = columnRender(c)
+    if (render) parts.push(`render:${render}`)
+    return `{${parts.join(',')}}`
+  })
+  return `[${cols.join(',')}]`
+}
+
+/** Build a `render` function body for a column with `format` and/or `color`. Returns null if neither. */
+function columnRender(c) {
+  if (!c.format && !c.color) return null
+  let valExpr
+  switch (c.format) {
+    case 'number':   valExpr = 'fmtNumber(Number(v))'; break
+    case 'percent':  valExpr = 'fmtPercent(Number(v))'; break
+    case 'duration': valExpr = 'fmtDuration(Number(v))'; break
+    case 'timeAgo':  valExpr = 'fmtTimeAgo(String(v))'; break
+    default:         valExpr = 'String(v ?? "—")'
+  }
+  if (c.color) {
+    // color: 'goodHigh' (higher is better) | 'goodLow' (lower is better)
+    return `(v:unknown)=>React.createElement('span',{className:toneClass(Number(v),${JSON.stringify(c.color)})},${valExpr})`
+  }
+  return `(v:unknown)=>${valExpr}`
+}
+
+/**
+ * Build the spec passed to generateViewFile for a chart widget's detail view.
+ * Shared by the fresh build and incremental ADD/CHANGE so detail views stay
+ * consistent. Prefers a record-grain detailFnBody; falls back to the chart fnBody.
+ * @param {string} componentName
+ * @param {IntentMetric} metric
+ * @param {object|null} entry - registry entry (for defaults)
+ * @param {string} timeRange
+ */
+export function buildViewSpec(componentName, metric, entry, timeRange) {
+  return {
+    componentName,
+    title: metric.title ?? entry?.defaults?.title ?? componentName,
+    subtitle: autoSubtitle(metric, entry?.defaults ?? {}, timeRange),
+    detailFnBody: metric.detailFnBody ?? metric.fnBody,
+    detailColumns: metric.detailColumns ? compileColumns(metric.detailColumns) : null,
+    defaultSortKey: metric.detailSortKey,
+  }
+}
+
+/**
  * Generate the TypeScript source for any widget file.
  * All tiers (T1, T2, T3) use fnBody — the agent writes the SDK call.
  * Registry provides display hints; agent provides the data fetching logic.
@@ -618,7 +721,7 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
 
   if (!displayAs) throw new Error(`metric "${metric.name}" needs displayAs`)
 
-  const CHART_TYPES = new Set(['area-chart', 'line-chart', 'bar-chart', 'donut-chart', 'multi-line-chart'])
+  const CHART_TYPES = new Set(['area-chart', 'line-chart', 'bar-chart', 'donut-chart', 'multi-line-chart', 'rate-chart'])
 
   // ── Chart path ─────────────────────────────────────────────────────────────
   if (CHART_TYPES.has(displayAs)) {
@@ -639,18 +742,18 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
       detailRoute:       metric.detailRoute ?? `/${componentName.toLowerCase()}`,
       icon:              iconName,
       title:             metric.title,
-      description:       metric.description ?? defaults.description ?? '',
-      dataHook:          'useInsightsSDK(customDataFn, [])',
-      hookImport:        "import { useInsightsSDK } from '@/hooks/useInsightsSDK'",
+      subtitle:          autoSubtitle(metric, defaults, timeRange),
+      dataHook:          'useWidgetData(customDataFn, [])',
+      hookImport:        "import { useWidgetData } from '@/hooks/useWidgetData'",
       sdkImportLine:     '',
       responseTypeImport: '',
       dataSelector:      'data ?? []',
       xKey:              metric.xKey  ?? defaults.xKey  ?? 'date',
       yKey:              metric.yKey  ?? defaults.yKey  ?? 'value',
-      valueExpression:   "'—'",
-      columns:           metric.columns ?? '[{key:"name",label:"Name"}]',
-      deltaDir:          metric.deltaDir ?? defaults.deltaDir ?? 'neutral',
-      deltaText:         metric.deltaText ?? defaults.deltaText ?? '',
+      headlineMode:      metric.headlineMode  ?? defaults.headlineMode  ?? 'sum',
+      deltaPolarity:     metric.deltaPolarity ?? defaults.deltaPolarity ?? 'neutral',
+      rateNum:           metric.rateNum ?? defaults.rateNum ?? 'num',
+      rateDen:           metric.rateDen ?? defaults.rateDen ?? 'den',
       series:            metric.series ?? defaults.series ?? '[{key:"value",color:"hsl(var(--chart-1))"}]',
       pivotExpression:   metric.pivotExpression ?? defaults.pivotExpression ?? 'rawData',
     }
@@ -665,16 +768,17 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
     throw new Error(`T3 shell template not found at ${T3_SHELL_TEMPLATE_PATH}`)
   }
   const indentedFnBody = metric.fnBody.split('\n').map(l => '  ' + l).join('\n')
-  const columns    = metric.columns   ?? defaults.columns ?? '[{key:"name",label:"Name"},{key:"value",label:"Value",align:"right" as const}]'
+  const columns    = compileColumns(metric.columnDefs ?? metric.columns ?? defaults.columnDefs ?? defaults.columns ?? '[{key:"name",label:"Name"},{key:"value",label:"Value",align:"right" as const}]')
   const valueField = metric.valueField ?? ''
   const valueLabel = metric.valueLabel ?? ''
+  const subtitle   = autoSubtitle(metric, defaults, timeRange)
 
   let content = readFileSync(T3_SHELL_TEMPLATE_PATH, 'utf8')
   content = content
     .split('<<FN_BODY>>').join(indentedFnBody)
     .split('<<COMPONENT_NAME>>').join(componentName)
     .split('<<TITLE>>').join(metric.title ?? componentName)
-    .split('<<DESCRIPTION>>').join(metric.description ?? defaults.description ?? '')
+    .split('<<DESCRIPTION>>').join(subtitle)
     .split('<<ICON_NAME>>').join(iconName)
     .split('<<DISPLAY_AS>>').join(displayAs ?? 'ranked-table')
     .split('<<COLUMNS>>').join(columns)
@@ -702,7 +806,7 @@ function specToSubs(spec) {
   return {
     COMPONENT_NAME: spec.componentName,
     TITLE: spec.title,
-    DESCRIPTION: spec.description,
+    SUBTITLE: spec.subtitle,
     DETAIL_ROUTE: spec.detailRoute,
     ICON: spec.icon,
     DATA_HOOK: spec.dataHook,
@@ -711,19 +815,15 @@ function specToSubs(spec) {
     Y_KEY: spec.yKey,
     DATA_KEY: spec.yKey,
     NAME_KEY: spec.xKey,
-    VALUE_EXPRESSION: spec.valueExpression,
-    COLUMNS: spec.columns,
-    DELTA_DIR: spec.deltaDir,
-    DELTA_TEXT: spec.deltaText,
+    HEADLINE_MODE: spec.headlineMode,
+    DELTA_POLARITY: spec.deltaPolarity,
+    RATE_NUM: spec.rateNum,
+    RATE_DEN: spec.rateDen,
     SERIES: spec.series,
     PIVOT_EXPRESSION: spec.pivotExpression,
-    SDK_IMPORT: '',
-    SDK_SERVICE: '',
-    SDK_CALL: '',
-    SDK_RESULT_TYPE: '',
     SDK_IMPORT_LINE: spec.sdkImportLine ?? '',
     RESPONSE_TYPE_IMPORT: spec.responseTypeImport ?? '',
-    HOOK_IMPORT: "import { useInsightsSDK } from '@/hooks/useInsightsSDK'",
+    HOOK_IMPORT: "import { useWidgetData } from '@/hooks/useWidgetData'",
   }
 }
 
@@ -846,7 +946,6 @@ async function runDashboardBuild(intent, intentPath) {
       `VITE_UIPATH_BASE_URL=${apiUrl}`,
       `VITE_UIPATH_ORG_NAME=${orgName}`,
       `VITE_UIPATH_TENANT_NAME=${tenantName}`,
-      `VITE_INSIGHTS_TENANT_ID=${tenantId}`,
       `VITE_UIPATH_CLIENT_ID=${clientId}`,
       `VITE_UIPATH_SCOPE=${DASHBOARD_SCOPES}`,
       `VITE_DEV_PORT=${DASHBOARD_PORT}`,
@@ -897,18 +996,26 @@ async function runDashboardBuild(intent, intentPath) {
     }
 
     // Step 4 — Resolve + generate widgets
-    const nonT3 = metrics.filter(m => m.tier !== 'T3')
     const t3Metrics = metrics.filter(m => m.tier === 'T3')
     const widgetHashes = {}
     const widgetMeta = []    // { componentName, template }
-    const widgetSpecs = {}   // componentName → { componentName, title, description, dataHook, dataSelector, columns }
+    const widgetSpecs = {}   // componentName → view spec (see buildViewSpec); chart widgets only
     let widgetIndex = 0
     const total = metrics.length
 
-    // All non-T3 metrics use buildWidgetFile (unified path)
-    await Promise.all(nonT3.map(async (metric) => {
-      const { entry } = resolveMetric(metric)  // gets registry hints or null
-      const widgetContent = buildWidgetFile(metric, entry, timeRange)
+    // All widgets generated together — T1, T2, T3 in one pass (no per-widget tsc)
+    // T3 errors are caught by the single tsc in step 6 below.
+    for (const metric of metrics) {
+      const isT3 = metric.tier === 'T3'
+      const { entry } = isT3 ? { entry: null } : resolveMetric(metric)
+
+      let widgetContent
+      try {
+        widgetContent = buildWidgetFile(metric, entry, timeRange)
+      } catch (e) {
+        if (isT3) emit('T3_FAILED', { widget: metric.name, reason: e.message })
+        fail(`Widget "${metric.name}" could not be generated: ${e.message}`)
+      }
 
       const displayAs = metric.displayAs ?? entry?.template ?? 'data-table'
       const componentName = metric.componentName ?? toPascalCase(metric.name)
@@ -918,57 +1025,13 @@ async function runDashboardBuild(intent, intentPath) {
       widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: metric.tier, metric: metric.name, template: displayAs }
       widgetMeta.push({ componentName, template: displayAs })
 
-      // Generate view file for T1/T2 using registry's dataSelector + display hints
-      if (entry) {
-        widgetSpecs[componentName] = {
-          componentName,
-          title: metric.title ?? entry.defaults?.title ?? componentName,
-          description: metric.description ?? entry.defaults?.description ?? '',
-          dataHook: 'useInsightsSDK(customDataFn, [])',
-          dataSelector: metric.dataSelector ?? entry.defaults?.dataSelector ?? '[]',
-          columns: metric.columns ?? entry.defaults?.columns,
-          viewColumns: entry.defaults?.viewColumns,
-          fnBody: metric.fnBody,
-        }
+      // Detail views: only chart widgets emit navigate/ViewAllLink (the shell
+      // template for KPI/table links nowhere), so only charts need a generated
+      // view + route — any tier. Columns are auto-detected at runtime in the view.
+      if (widgetLayoutGroup(displayAs) === 'chart') {
+        widgetSpecs[componentName] = buildViewSpec(componentName, metric, entry, timeRange)
       }
 
-      widgetIndex++
-      emit('WIDGET_READY', { name: componentName, index: widgetIndex, total })
-    }))
-
-    // T3 widgets — sequential with exit-2 retry signal
-    for (const metric of t3Metrics) {
-      const currentIntent = JSON.parse(readFileSync(intentPath, 'utf8'))
-      const currentMetric = currentIntent.metrics.find(m => m.name === metric.name) ?? metric
-
-      let widgetContent
-      try {
-        widgetContent = buildWidgetFile(currentMetric, null, timeRange)
-      } catch (e) {
-        emit('T3_FAILED', { widget: metric.name, reason: e.message })
-        fail(`T3 widget "${metric.name}" could not be generated: ${e.message}`)
-      }
-
-      const componentName = toPascalCase(metric.name)
-      const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
-      writeAtomic(widgetPath, widgetContent)
-
-      try {
-        execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
-      } catch (e) {
-        const tscOut = e.stdout?.toString() ?? ''
-        const errors = tscOut.split('\n').filter(l => l.includes('error TS')).slice(0, 5)
-        const failingWidget = widgetNameFromTscErrors(tscOut, toPascalCase(metric.name))
-        // Exit code 2 signals the agent to fix fnBody in intent.json and re-run
-        emit('T3_RETRY', { widget: failingWidget, errors, intentPath })
-        log(`⚠ Widget "${failingWidget}" has TypeScript errors. Fix fnBody in ${intentPath} and re-run.`)
-        process.exit(2)
-      }
-
-      const t3Template = metric.displayAs ?? 'ranked-table'
-      widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: 'T3', metric: metric.name, template: t3Template }
-      widgetMeta.push({ componentName, template: t3Template })
-      // T3 widgets never get detail views — no Insights endpoint backs them
       widgetIndex++
       emit('WIDGET_READY', { name: componentName, index: widgetIndex, total })
     }
@@ -976,11 +1039,9 @@ async function runDashboardBuild(intent, intentPath) {
     // Step 5 — Generate Dashboard.tsx + index.ts
     generateDashboardFiles(P, widgetMeta, dashboardName)
 
-    // Step 5a — Generate view files and track which ones were written
+    // Step 5a — Generate view files (widgetSpecs is chart-only; every chart links to its view)
     const generatedViewNames = []
     for (const [componentName, spec] of Object.entries(widgetSpecs)) {
-      const info = widgetHashes[componentName]
-      if (info?.tier === 'T2') continue
       const viewContent = generateViewFile(spec)
       writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
       generatedViewNames.push(componentName)
@@ -989,12 +1050,27 @@ async function runDashboardBuild(intent, intentPath) {
     // Step 5b — Only inject routes for widgets that actually have view files
     injectAppRoutes(P, generatedViewNames)
 
-    // Step 6 — Full tsc
+    // Step 6 — Full tsc (catches errors for all tiers including T3)
     try {
       execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
       emit('TSC_PASS')
     } catch (e) {
-      const err = e.stdout?.toString() || e.stderr?.toString() || String(e)
+      const tscOut = e.stdout?.toString() ?? ''
+
+      // If T3 widgets are present, identify all that failed and signal the agent to fix them
+      if (t3Metrics.length > 0) {
+        const failingWidgets = t3Metrics
+          .map(m => ({ name: m.name, componentName: toPascalCase(m.name) }))
+          .filter(({ componentName }) => tscOut.includes(componentName))
+        if (failingWidgets.length > 0) {
+          const errors = tscOut.split('\n').filter(l => l.includes('error TS')).slice(0, 10)
+          emit('T3_RETRY', { widgets: failingWidgets.map(w => w.name), errors, intentPath })
+          log(`⚠ ${failingWidgets.length} T3 widget(s) have TypeScript errors. Fix fnBody in ${intentPath} and re-run.`)
+          process.exit(2)
+        }
+      }
+
+      const err = tscOut || e.stderr?.toString() || String(e)
       emit('TSC_FAIL', { errors: err.slice(0, 1000) })
       fail(`TypeScript errors:\n${err}`)
     }
@@ -1085,6 +1161,11 @@ async function runIncrementalEdit(editIntent, intentPath) {
     writeAtomic(widgetPath, widgetContent)
     state.widgets = state.widgets ?? {}
     state.widgets[componentName] = { hash: hashContent(widgetContent), tier, metric: metric.name, template: addTemplate }
+    // Chart widgets emit a drill-down link — generate the detail view so the route resolves
+    if (widgetLayoutGroup(addTemplate) === 'chart') {
+      const viewContent = generateViewFile(buildViewSpec(componentName, metric, entry, timeRange))
+      writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
+    }
 
   } else if (op === 'REMOVE') {
     const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${target}.tsx`)
@@ -1114,6 +1195,14 @@ async function runIncrementalEdit(editIntent, intentPath) {
     writeAtomic(widgetPath, widgetContent)
     const changeTemplate = metricRef.displayAs ?? entry?.template ?? stored?.template ?? 'data-table'
     if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name, template: changeTemplate }
+    // Keep the detail view in sync: regenerate for charts, drop it if no longer a chart
+    const changeViewPath = join(P, 'src', 'dashboard', 'views', `${target}View.tsx`)
+    if (widgetLayoutGroup(changeTemplate) === 'chart') {
+      const viewContent = generateViewFile(buildViewSpec(target, metricRef, entry, delta?.timeRange ?? timeRange))
+      writeAtomic(changeViewPath, viewContent)
+    } else if (existsSync(changeViewPath)) {
+      unlinkSync(changeViewPath)
+    }
 
   } else if (op === 'REBUILD') {
     // Rebuild all widgets from existing state entries — requires fnBody not stored in state
@@ -1155,13 +1244,10 @@ async function runIncrementalEdit(editIntent, intentPath) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 
   // --prewarm <routingName> mode: copy scaffold + run npm ci, then exit
-  // Takes a routing name (e.g. "agent-health-x7k2"), always creates the project
-  // under ~/dashboards/<routingName> — never in cwd.
-  // Path is computed by Node.js (os.homedir) so no bash path manipulation needed.
+  // Creates the project under <cwd>/<routingName>.
   if (process.argv[2] === '--prewarm' && process.argv[3]) {
-    const { homedir } = await import('os')
     const routingName = process.argv[3]
-    const prewarmDir  = join(homedir(), 'dashboards', routingName)
+    const prewarmDir  = join(process.cwd(), routingName)
     if (!existsSync(join(prewarmDir, 'package.json'))) {
       if (!existsSync(SCAFFOLD_DIR)) {
         process.stderr.write(`ERROR: Scaffold not found at ${SCAFFOLD_DIR}\n`)
