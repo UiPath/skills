@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelPayrollProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Modern AppendRangeX activity placed at the workflow root, outside any Use Excel File container. Throws BusinessException 'must be placed inside a Use Excel File' at runtime. Exercises the activity-variant-mismatch branch of the append-range-failures playbook.",
+  "MainFile": "Main.xaml"
+}

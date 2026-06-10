@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "ff222222-cccc-dddd-eeee-ffffaaaabbbb",
+      "StartTime": "2026-05-28T08:00:01.300Z",
+      "EndTime": "2026-05-28T08:00:03.812Z",
+      "State": "Faulted",
+      "ReleaseName": "ExcelHRProcess",
+      "Source": "Schedule",
+      "Reference": "WeeklyNewHiresA",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0099999-3333-4444-5555-666677778888",
+      "Info": "System.Runtime.InteropServices.COMException (0x800A03EC): Application-defined or object-defined error.",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

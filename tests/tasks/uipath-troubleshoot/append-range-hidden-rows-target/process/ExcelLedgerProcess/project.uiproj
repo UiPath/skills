@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelLedgerProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Append Range targets a ledger sheet that has an active AutoFilter hiding rows. Package v2.8.5+ throws BusinessException flagging the hidden rows in the append region. Exercises the hidden-rows-in-target branch of the append-range-failures playbook.",
+  "MainFile": "Main.xaml"
+}
