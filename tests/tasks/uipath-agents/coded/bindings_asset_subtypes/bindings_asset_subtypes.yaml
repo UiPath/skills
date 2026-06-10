@@ -7,7 +7,7 @@ description: >
   the inference is high-confidence, emit `metadata.SubType` matching
   the type annotation (`stringAsset` / `integerAsset` /
   `booleanAsset`).
-tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings, mode:build]
 
 run_limits:
   expected_turns: 11

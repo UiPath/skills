@@ -8,7 +8,7 @@ description: >
   `ImportError`), lets `uip codedagent init` regenerate the schema
   from the actual code, and runs the classifier end-to-end via
   `uip codedagent run agent`.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-langgraph, feature:schema-sync]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-langgraph, feature:schema-sync, mode:build]
 
 run_limits:
   expected_turns: 36

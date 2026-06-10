@@ -7,7 +7,7 @@ description: >
   schemas, instantiates `UiPathOpenAI` lazily inside a step
   (Critical Rule C4), and runs the workflow end-to-end via
   `uip codedagent run`.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-llamaindex]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-llamaindex, mode:build]
 
 run_limits:
   expected_turns: 26

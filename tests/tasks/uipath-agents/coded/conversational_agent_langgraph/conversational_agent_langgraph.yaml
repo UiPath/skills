@@ -5,7 +5,7 @@ description: >
   `langgraph.json` entry-point config, and that the agent ran locally
   for two turns. Lazy-LLM-init invariant (Critical Rule C4) still
   applies.
-tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:conversational, feature:framework-langgraph]
+tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:conversational, feature:framework-langgraph, mode:build]
 
 run_limits:
   expected_turns: 20

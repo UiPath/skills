@@ -4,7 +4,7 @@ description: >
   a custom evaluator with `uip codedagent add evaluator`, implement it, and
   register it with `uip codedagent register evaluator` to generate the JSON
   spec. The evaluator must be wired into an eval set and run successfully.
-tags: [uipath-agents, smoke, coded, lifecycle:validate, feature:eval]
+tags: [uipath-agents, smoke, coded, lifecycle:validate, feature:eval, mode:build]
 
 run_limits:
   expected_turns: 49

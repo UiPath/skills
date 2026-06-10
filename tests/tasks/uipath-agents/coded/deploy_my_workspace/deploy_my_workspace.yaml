@@ -7,7 +7,7 @@ description: >
   the package was built — a "version already exists" publish conflict
   does not fail the task. Exercises the production packaging path the
   rest of the suite never reaches.
-tags: [uipath-agents, e2e, coded, lifecycle:deploy, feature:deploy]
+tags: [uipath-agents, e2e, coded, lifecycle:deploy, feature:deploy, mode:build]
 
 run_limits:
   expected_turns: 43
