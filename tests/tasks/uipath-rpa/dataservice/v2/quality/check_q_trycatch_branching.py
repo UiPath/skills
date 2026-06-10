@@ -66,7 +66,7 @@ if __name__ == "__main__":
         fail("QueryEntityRecords must be inside the TryCatch")
     if under(query, parents, "Catch"):
         fail("QueryEntityRecords must be in the Try block, not inside a Catch")
-    assert_simple_filters_contain(query, [("Score", "Equals")])
+    assert_simple_filters_contain(query, [("Score", "=")])
 
     # --- Delete (must be inside a Catch block) ---
     delete = get_activity(root, "DeleteEntityRecord", type_arg=ENTITY)
