@@ -40,7 +40,7 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    description: "Agent reached the same root cause as RESOLUTION.md and recorded it in investigation state"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
@@ -51,30 +51,27 @@ success_criteria:
       - .local/investigations/hypotheses.json
     prompt: |
       You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md).
+      reference outcome (the attached RESOLUTION.md). The conclusion in the
+      agent's final response is what you grade (Dimensions A and B); the
+      attached investigation state files contribute only the bounded
+      deductions in Dimension C.
 
-      DIMENSION A -- Correct playbook (argument-null-exception)
-        `state.json.matched_playbooks` must contain a path ending in
-        `runtime-exceptions/playbooks/argument-null-exception.md`.
-        Neighboring-playbook reads during exploration are fine.
-
-      DIMENSION B -- Required findings
-        The agent's last response and `hypotheses.json` together must
-        cover ALL of the following. Each missing item is a half-point off
-        within this dimension.
+      DIMENSION A -- Required findings
+        The agent's final response must cover ALL of the following. Each
+        missing item is a half-point off within this dimension.
           1. Exception `System.ArgumentNullException`, parameter `'path'`,
              raised at the `Copy File` activity in `Main.xaml`.
           2. Job key `0686cab1-35c6-4d92-aed2-c91d9c275524`, release
              `ERN`, folder `Shared`.
           3. Root cause = the explicit `Assign myVar = null` upstream of
              `Copy File` (NOT a missing In argument, NOT a config/asset
-             lookup, NOT a runtime/platform fault).
-          4. H3 (caller-supplied In argument) explicitly eliminated with
-             evidence (`InputArguments={}` and release has no input args).
-          5. `hypotheses.json` has an entry with `is_root_cause: true`
-             corresponding to the Assign-null finding.
+             lookup, NOT a runtime/platform fault), citing the Main.xaml
+             content or the job log as evidence.
+          4. The caller-supplied-In-argument alternative is ruled out
+             (e.g. `InputArguments={}` / the release defines no input
+             arguments).
 
-      DIMENSION C -- Anti-fabrication
+      DIMENSION B -- Anti-fabrication
         Penalize any of these:
           - Claims an Orchestrator auto-retry policy for faulted jobs
             (none exists).
@@ -83,19 +80,30 @@ success_criteria:
           - Asserts a root cause without citing the Main.xaml content
             or the job log.
 
-      SCORING RUBRIC (single score):
-        1.0  All three dimensions clean.
-        0.8  Right playbook + all required findings, minor fabrication.
-        0.6  Right playbook; 1 required finding missing OR moderate
+      DIMENSION C -- Investigation state (bounded deductions)
+        Check the attached state files; deduct exactly 0.1 per miss
+        (max total deduction 0.2):
+          1. `state.json.matched_playbooks` contains a path ending in
+             `runtime-exceptions/playbooks/argument-null-exception.md`.
+             Neighboring-playbook reads during exploration are fine.
+          2. `hypotheses.json` has an entry with `is_root_cause: true`
+             corresponding to the Assign-null finding.
+
+      SCORING RUBRIC (base score from Dimensions A and B):
+        1.0  Correct root cause, all required findings, no fabrication.
+        0.8  Correct root cause + all required findings, minor
+             fabrication or one finding only implicit.
+        0.6  Correct root cause; 1 required finding missing OR moderate
              fabrication.
-        0.4  Right playbook only; findings substantially incomplete.
-        0.2  Recognized the surface but neither matched the playbook nor
-             produced the required findings.
+        0.4  Correct root cause but findings substantially incomplete.
+        0.2  Recognized the surface (exception/activity) but wrong or
+             missing root cause.
         0.0  Misdiagnosed or got blocked.
+      Final score = base score minus Dimension C deductions (floor 0.0).
 
       Return JSON:
         {"score": <float>, "rationale": "<one sentence>",
-         "findings": ["dim A: ...", "dim B item 1: ...", ...]}
+         "findings": ["dim A item 1: ...", "dim B: ...", "dim C: ..."]}
 
 # Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
 # end-to-end without a human. The simulator always picks the recommended /
