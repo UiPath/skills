@@ -32,7 +32,7 @@ if __name__ == "__main__":
     root = load(xaml)
 
     query = get_activity(root, "QueryEntityRecords", type_arg=FILE_ENTITY)
-    assert_simple_filters_contain(query, [("Owner.Title", "Contains")])
+    assert_simple_filters_contain(query, [("Owner.Title", "contains")])
     query_out = get_arg_expression(query, "OutputRecords")
     if not query_out:
         fail("QueryEntityRecords.OutputRecords is not bound")

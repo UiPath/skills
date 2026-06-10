@@ -412,15 +412,32 @@ def assert_simple_filters_contain(
 ) -> None:
     """Each (field, operator) pair must appear at least once in the activity's SimpleFilters.
 
-    Operators are matched as XAML-escaped strings — pass `&gt;` not `>`.
+    Operator comparison is case-insensitive (the activity emits `contains`
+    lowercase, `Equals true` mixed-case, `=`/`!=` symbolic — agent / runtime
+    versions vary on casing).
+
+    Canonical operator vocabulary (observed from real XAML output, with the
+    values as ElementTree returns them after un-escaping XML entities):
+      `=` `!=` `contains` `not contains` `startswith` `endswith` `is empty`
+      `is not empty` `is null` `is not null` `>` `<` `>=` `<=`
+      `Equals true` `Equals false`
+    Pass comparators in their literal form (`>` not `&gt;`) — ET un-escapes
+    attribute values on read, so the in-memory string is the literal char.
+    Case-insensitive compare is the safety net.
     """
     observed = collect_simple_filters(activity)
-    obs_pairs = {(f["field"], f["operator"]) for f in observed}
-    missing = [pair for pair in expected if pair not in obs_pairs]
+
+    def _norm(pair):
+        f, op = pair
+        return (f, (op or "").lower())
+
+    obs_pairs_norm = {_norm((f["field"], f["operator"])) for f in observed}
+    missing = [pair for pair in expected if _norm(pair) not in obs_pairs_norm]
     if missing:
+        obs_pairs_raw = sorted({(f["field"], f["operator"]) for f in observed})
         print(
             f"FAIL: {_local(activity)} missing SimpleFilter pairs: {missing}; "
-            f"observed: {sorted(obs_pairs)}",
+            f"observed: {obs_pairs_raw}",
             file=sys.stderr,
         )
         sys.exit(1)

@@ -72,9 +72,9 @@ if __name__ == "__main__":
     assert_simple_filters_contain(
         qa,
         [
-            ("Status", "Equals"),
-            ("IsActive", "Equals"),
-            ("Tags", "in"),
+            ("Status", "="),
+            ("IsActive", "Equals true"),
+            ("Tags", "contains"),
         ],
     )
     if not has_pair(collect_simple_filters(qa), "Notes", "empty"):
@@ -87,16 +87,16 @@ if __name__ == "__main__":
     assert_simple_filters_contain(
         qb,
         [
-            ("Score", "&gt;"),
-            ("Price", "&lt;"),
-            ("ScheduledAt", "&gt;"),
-            ("Status", "Equals"),
+            ("Score", ">"),
+            ("Price", "<"),
+            ("ScheduledAt", ">"),
+            ("Status", "="),
         ],
     )
     qb_filters = collect_simple_filters(qb)
     if not (
-        has_pair(qb_filters, "EventDate", "&gt;=")
-        and has_pair(qb_filters, "EventDate", "&lt;=")
+        has_pair(qb_filters, "EventDate", ">=")
+        and has_pair(qb_filters, "EventDate", "<=")
     ):
         fail("Query B missing EventDate range (NoLessThan + NoMoreThan)")
 
@@ -105,13 +105,13 @@ if __name__ == "__main__":
     assert_simple_filters_contain(
         qc,
         [
-            ("Title", "Contains"),
-            ("Title", "StartsWith"),
-            ("Status", "EndsWith"),
-            ("Status", "NotEquals"),
-            ("Title", "NotContains"),
-            ("Category", "Equals"),
-            ("EventDate", "Equals"),
+            ("Title", "contains"),
+            ("Title", "startswith"),
+            ("Status", "endswith"),
+            ("Status", "!="),
+            ("Title", "not contains"),
+            ("Category", "="),
+            ("EventDate", "="),
         ],
     )
 

@@ -55,17 +55,16 @@ if __name__ == "__main__":
             assert_simple_filters_contain(
                 activity,
                 [
-                    ("Status", "Equals"),
-                    ("Score", "&gt;"),
-                    ("Price", "&lt;"),
-                    # IsActive may render as Equals (with x:Boolean True) or IsTrue
-                    ("IsActive", "Equals"),
+                    ("Status", "="),
+                    ("Score", ">"),
+                    ("Price", "<"),
+                    ("IsActive", "Equals true"),
                 ],
             )
         elif kind == "OR":
             assert_group_filter_operator(activity, "OR")
             # Classification already proved there are exactly 2 Status filters;
-            # just verify the (Status, Equals) pair exists.
-            assert_simple_filters_contain(activity, [("Status", "Equals")])
+            # just verify the (Status, =) pair exists.
+            assert_simple_filters_contain(activity, [("Status", "=")])
 
     print(f"PASS: {xaml} — two QueryEntityRecords match I-QR1 spec")

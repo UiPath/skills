@@ -68,7 +68,7 @@ if __name__ == "__main__":
     assert_simple_filters_contain(
         query,
         [
-            ("Score", "&gt;"),
+            ("Score", ">"),
             ("IsActive", "Equals true"),
         ],
     )
