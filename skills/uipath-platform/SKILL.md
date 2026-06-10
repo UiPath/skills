@@ -43,7 +43,7 @@ For `uip solution` lifecycle (init / pack / publish / deploy / activate / upload
 The CLI stores credentials at **`~/.uipath/.auth`** after login:
 ```
 UIPATH_URL=https://alpha.uipath.com
-UIPATH_ORG_NAME=my_org
+UIPATH_ORGANIZATION_NAME=my_org
 UIPATH_TENANT_NAME=my_tenant
 UIPATH_ACCESS_TOKEN=eyJ...
 UIPATH_ORGANIZATION_ID=...
