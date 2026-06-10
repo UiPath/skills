@@ -6,7 +6,7 @@ description: >
   no upload, no run. Tests whether the skill teaches the correct local-CRUD
   workflow and `--output json` discipline on every `uip maestro flow eval`
   command.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, feature:eval]
+tags: [uipath-maestro-flow, mode:build, lifecycle:generate, feature:eval]
 
 run_limits:
   expected_turns: 20

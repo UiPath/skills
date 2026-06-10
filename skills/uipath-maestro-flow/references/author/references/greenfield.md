@@ -125,7 +125,7 @@ The `cd` is required. Running `uip maestro flow init` from outside the solution 
 
 ### 2c. Verify the project is registered in the solution
 
-When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx`. The success envelope reports this in `Data.SolutionRegistration`:
+When `uip maestro flow init` is run from inside a solution directory (Step 2b), it **auto-registers** the project with the nearest parent `.uipx` (pass `--skip-solution-registration` to skip this). The success envelope always reports the outcome in `Data.SolutionRegistration`:
 
 ```json
 {
@@ -144,9 +144,9 @@ When `uip maestro flow init` is run from inside a solution directory (Step 2b), 
 }
 ```
 
-If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check.
+If `Data.SolutionRegistration.Status` is `Registered` or `AlreadyRegistered`, **you are done** with this step — proceed to the layout check. If it is `OptedOut`, you passed `--skip-solution-registration` and the skip was intentional.
 
-**Fallback** — only if `Status` is `Skipped` or `Failed` (e.g., `init` was run outside the solution directory and produced a single-nested layout, or the `.uipx` write failed): wire the project manually.
+**Fallback** — when `Status` is `NotInSolution` (no parent `.uipx` found — `init` was run outside the solution directory and produced a single-nested layout), `Skipped` (ambiguous discovery), or `Failed` (the `.uipx` write failed): wire the project manually.
 
 ```bash
 uip solution project add \
@@ -224,10 +224,11 @@ Manual HTTP is the **bottom of the ladder** — only the search returning no con
 
 ```bash
 uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
+uip maestro flow registry search "<keyword>" --local --output json  # keyword search across in-solution nodes
 uip maestro flow registry get "<node-type>" --local --output json  # get full manifest for a local node
 ```
 
-Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first.
+Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first. `search --local` omits `AvailableOnTenant` — drop it from `--output-filter` projections.
 
 ## Step 4 — Build the flow **[T2]**
 
@@ -294,6 +295,8 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 ```
 
 `<DETAIL_JSON>` is node-type-specific — the schema is owned by each CLI-owned node's plugin, not duplicated here: HTTP → [http/impl.md](plugins/http/impl.md#critical-use-node-configure), connectors → [connector/impl.md](plugins/connector/impl.md), connector triggers → [connector-trigger/impl.md](plugins/connector-trigger/impl.md). Tail-append one `node configure` per CLI-owned node added in T1, using the node IDs captured from T1's chained output. Drop the entire `node configure` segment if no CLI-owned nodes exist.
+
+> **The plugin `impl.md` is authoritative — follow its full procedure, not just its `--detail` schema, and let it override this turn map.** A plugin may prescribe steps the three-turn collapse does not show — most importantly a **pre-`configure` live fetch** whose output you must read before you can author `--detail` (the value depends on the live response, so it cannot be guessed or copied from a doc example). When `impl.md` defines such a step, run it in its **own turn before T3** and build `--detail` from its result; do not batch it into the chain, skip it, or hand-author the payload. An empty or static base response is expected for these steps and is not a signal the step is unavailable. This is general to every CLI-owned node type — defer to the owning `impl.md` rather than assuming static config.
 
 **On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate after every individual Edit during T2 — intermediate states are expected to be invalid.
 

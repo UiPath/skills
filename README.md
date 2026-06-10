@@ -62,7 +62,8 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-solution** | Solution lifecycle (`.uipx`) — author SDD from PDD, then `uip solution init/pack/publish/deploy/activate`. |
+| **uipath-design** | PDD → SDD authoring — turn a Process Design Document into an implementation-ready Solution Design Document. |
+| **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-planner** | Multi-skill task planner — reads SDDs or non-PDD requests and derives an executable task list across the other skills. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
 
@@ -80,6 +81,42 @@ The repository ships skills covering authoring, platform operations, and diagnos
 |-------|-------------|
 | **uipath-troubleshoot** | Root-cause investigation across any UiPath product — errors, failures, regressions, stuck jobs, traces, incidents. |
 | **uipath-feedback** | Submit bug reports and improvement suggestions via `uip feedback send`. |
+
+### Lifecycle Status
+
+Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-status.json) — the source of truth. The table below is generated; refresh it with `python3 scripts/check-skill-status.py --write-readme`.
+
+<!-- BEGIN GENERATED SKILL STATUS -->
+| Skill | Status |
+|-------|--------|
+| `uipath-admin` | In-development |
+| `uipath-agents` | In-development |
+| `uipath-api-workflow` | In-development |
+| `uipath-coded-apps` | Preview |
+| `uipath-data-fabric` | In-development |
+| `uipath-design` | Preview |
+| `uipath-feedback` | Stable |
+| `uipath-governance` | In-development |
+| `uipath-human-in-the-loop` | In-development |
+| `uipath-ixp` | In-development |
+| `uipath-maestro-bpmn` | In-development |
+| `uipath-maestro-case` | In-development |
+| `uipath-maestro-flow` | In-development |
+| `uipath-mcp-servers` | In-development |
+| `uipath-planner` | Preview |
+| `uipath-platform` | Preview |
+| `uipath-review` | Preview |
+| `uipath-rpa` | Preview |
+| `uipath-solution` | Preview |
+| `uipath-tasks` | Preview |
+| `uipath-test` | In-development |
+| `uipath-troubleshoot` | Preview |
+
+**Status legend:**
+- **Stable** — Stable, production-ready surface; safe for production.
+- **Preview** — Not yet stable; may be broadly available or gated/allowlisted, and surface and behavior may change.
+- **In-development** — Skill itself is incomplete or unstable; coverage is partial.
+<!-- END GENERATED SKILL STATUS -->
 
 ## Agents
 

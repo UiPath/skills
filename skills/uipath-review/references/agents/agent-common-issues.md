@@ -92,6 +92,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Overpermissioned Tools
 
+> *Rule catalog: `LC_TOOL_MINIMALITY_SUFFICIENCY`, `LC_FAILURE_AUTHORITY_ESCALATION`, `LC_TOOL_DANGEROUS_COMBINATION` cover this at Step 2.5.*
+
 **Symptom:** Agent has access to tools that are not needed for its stated purpose.
 
 **Example:** A customer support agent with tools for deleting database records, modifying system configuration, or accessing internal admin APIs.
@@ -104,6 +106,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Missing Escalation Paths
 
+> *Rule catalog: `LC_FAILURE_IRREVERSIBLE_ACTION` covers this at Step 2.5.*
+
 **Symptom:** Agent makes irreversible decisions (approvals, deletions, financial transactions) without any human escalation path.
 
 **Impact:** Agent errors have no safety net. Incorrect decisions cannot be caught before execution.
@@ -114,6 +118,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Missing Guardrails
 
+> *Rule catalog: `LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_INJECTION_MISSING`, `LOWCODE_TOOL_GUARDRAIL_FIELD_MISSING`, `LOWCODE_GUARDRAIL_TOOL_REF_NONEXISTENT` cover this at Step 2.5.*
+
 **Symptom:** User-facing agent with no input validation, PII detection, or prompt injection defense.
 
 **Impact:** Agent vulnerable to manipulation, data leakage, and unintended behavior.
@@ -123,6 +129,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 **Fix:** Enable out-of-the-box guardrails (PII detection, prompt injection). Add custom tool guardrails for destructive operations.
 
 ### Poor System Prompt Design
+
+> *Rule catalog: `LC_PROMPT_ROLE_DEFINITION`, `LC_PROMPT_SCOPE_BOUNDARIES`, `LC_PROMPT_WHEN_GUIDANCE`, `LC_PROMPT_STOPPING_CRITERIA`, `LC_PROMPT_OUTPUT_FORMAT`, `LC_PROMPT_INSTRUCTION_CONFLICTS` cover the prompt-quality deficiencies at Step 2.5; missing/empty/over-long system prompts are caught by the review CLI.*
 
 **Symptom:** System prompt is vague, overly broad, or missing key elements.
 
@@ -139,6 +147,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Framework Mismatch
 
+> *Rule catalog: `CODED_FRAMEWORK_FIT` covers this at Step 2.5 (fires only on real mismatch, not as a "looks fine" commentary slot).*
+
 **Symptom:** Simple function agent built with LangGraph, or complex multi-step agent built as a simple function.
 
 **Examples of mismatches:**
@@ -154,6 +164,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### No Evaluation Sets
 
+> *Rule catalog: `NO_EVALS`, `MISSING_EVAL_DIR`, `TOO_FEW_EVALS`, `FEW_EVALS` cover this at Step 2.5.*
+
 **Symptom:** Agent has no evaluation sets at all. No `evaluations/` directory or empty eval sets.
 
 **Impact:** No way to verify agent quality. No regression testing. No confidence in deployment.
@@ -164,6 +176,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Single Evaluator Type
 
+> *Rule catalog: `EVAL_LLM_JUDGE_ONLY`, `EVAL_NO_LLM_JUDGE`, `CODED_EVAL_ARCHETYPE_FIT`, `LC_EVAL_JUDGE_FOR_CLOSED_CLASS` cover this at Step 2.5.*
+
 **Symptom:** All evaluations use only `ExactMatchEvaluator` for a natural-language agent, or only `LLMJudgeOutputEvaluator` for a deterministic agent.
 
 **Impact:** ExactMatch is too strict for natural language (high false-negative rate). LLMJudge is overkill for deterministic outputs (unnecessary cost and non-determinism in tests).
@@ -173,6 +187,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 **Fix:** Use multiple evaluator types. Combine trajectory + output evaluators for multi-step agents. Use ExactMatch for deterministic outputs, LLMJudge for natural language.
 
 ### Missing Edge Case Tests
+
+> *Rule catalog: `EVAL_DUPLICATE_EXPECTED_OUTPUTS`, `EVAL_LOW_DIVERSITY`, `EVAL_MODERATE_DIVERSITY`, `EVAL_UNIFORM_EXPECTED_BEHAVIOR` partially cover this at Step 2.5 by flagging low-diversity datasets.*
 
 **Symptom:** Eval sets only cover the happy path. No tests for empty input, malformed input, missing data, or error scenarios.
 
@@ -196,6 +212,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Context Loss in Handoffs
 
+> *Rule catalog: `CODED_MULTI_AGENT_CROSS_SCHEMA`, `CODED_MULTI_AGENT_HUMANMESSAGE_NAME`, `CODED_MULTI_AGENT_ROUTING_COHERENCE` cover the structural aspects at Step 2.5.*
+
 **Symptom:** Information is lost when tasks are passed between agents. The receiving agent starts reasoning from a partial snapshot.
 
 **Impact:** Downstream agents make incorrect decisions based on incomplete context. Per UC Berkeley's MAST taxonomy, inter-agent misalignment accounts for 36.9% of all multi-agent failures.
@@ -206,6 +224,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Infinite Delegation Loops
 
+> *Rule catalog: `CODED_SUB_AGENT_PROMPT_DUPLICATION`, `LC_TOOL_DELEGATION_DEPTH` partially cover the routing-confusion root cause. The runtime-loop detection itself remains manual.*
+
 **Symptom:** Agents with slightly conflicting instructions bounce tasks back and forth without resolution (Agent A → Agent B → Agent A → ...).
 
 **Impact:** Consumes tokens indefinitely, stalls workflows. No task completion.
@@ -215,6 +235,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 **Fix:** Add explicit guard conditions preventing circular delegation. Implement a maximum handoff count (circuit breaker). Ensure every agent knows when a task is complete.
 
 ### Reasoning-Action Mismatch
+
+> *Rule catalog: `CODED_LLM_OUTPUT_UNVALIDATED` covers the output-validation gap that lets the mismatch slip through. The runtime mismatch detection itself remains manual.*
 
 **Symptom:** Agent's stated reasoning doesn't match its actual actions. The agent says it will do X but does Y. Per MAST taxonomy, this is the second most common failure (13.2% of all failures).
 
@@ -238,6 +260,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### No Observability
 
+> *Rule catalog: `NO_TRACING`, `CODED_HELPER_TRACING`, `EVAL_TRAJECTORY_NEEDS_TRACE_SPANS` cover the tracing-decorator absence at Step 2.5. Dashboard / monitoring setup remains manual.*
+
 **Symptom:** Agent deployed without tracing, logging, or monitoring.
 
 **Impact:** No visibility into production behavior. Cannot diagnose failures or performance issues. Cannot identify drift.
@@ -249,6 +273,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 ## Tool and Guardrail Antipatterns
 
 ### Agent Deployed Without Tool Guardrails
+
+> *Rule catalog: `LOWCODE_TOOL_GUARDRAIL_FIELD_MISSING`, `LC_FAILURE_IRREVERSIBLE_ACTION`, `LC_TOOL_DANGEROUS_COMBINATION` cover this at Step 2.5.*
 
 **Symptom:** Agent deployed to production with write/delete/send tools but no guardrails configured.
 
@@ -262,6 +288,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Vague Tool Descriptions
 
+> *Rule catalog: `VAGUE_TOOL_DESCRIPTION` (≥20 chars required), `LC_TOOL_DESCRIPTION_MISLEADING` (description contradicts schema), `CODED_TOOL_DOCSTRING_QUALITY` (coded) cover this at Step 2.5.*
+
 **Symptom:** Tool descriptions are generic ("Process invoice", "Update record") without specifying side effects, destructiveness, input/output format, or repeat-call behavior.
 
 **Impact:** Agents select tools based on description matching. Vague = wrong-tool selection or wrong argument format.
@@ -273,6 +301,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 **Severity:** Warning
 
 ### Destructive Tools Without Explicit Flags
+
+> *Rule catalog: `LC_FAILURE_IRREVERSIBLE_ACTION`, `LC_TOOL_DANGEROUS_COMBINATION` cover the missing-confirmation aspect at Step 2.5.*
 
 **Symptom:** Tools performing irreversible operations (delete, send email, approve, modify config) without explicit `destructive`/`write`/`irreversible` markers in the description.
 
@@ -286,6 +316,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Context Grounding Missing for Domain-Specific Agents
 
+> *Rule catalog: `LC_TOOL_RESPONSE_NOT_GROUNDED`, `LOWCODE_CONTEXT_NO_DESCRIPTION`, `LOWCODE_CONTEXT_INDEX_NAME_PLACEHOLDER` cover this at Step 2.5.*
+
 **Symptom:** Agent handles domain-specific tasks (company procedures, product catalogs, policy documents) without Context Grounding / RAG configured.
 
 **Impact:** Agent hallucinates — plausible but incorrect answers about company-specific processes. Context Grounding, when properly configured, returns "An answer could not be found" instead of hallucinating.
@@ -297,6 +329,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 **Severity:** Warning
 
 ### Missing Output Interpretation Examples
+
+> *Rule catalog: `LC_PROMPT_FEW_SHOT_MISSING`, `LC_PROMPT_OUTPUT_FORMAT` cover this at Step 2.5.*
 
 **Symptom:** Agent has tools configured but system prompt has no examples showing how to interpret tool output (success/failure states, partial results, edge cases).
 
@@ -312,6 +346,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Agent Output Missing Reasoning / Explanation Fields
 
+> *Rule catalog: `LC_PROMPT_OUTPUT_FORMAT`, `LC_OUTPUT_CLASSIFIER_NO_ENUM`, `CODED_OUTPUT_ENUM_MISSING_ON_CLASSIFIER`, `CODED_SCHEMA_COMPLETENESS` partially cover the schema-design root cause.*
+
 **Symptom:** Agent JSON output schema includes only the decision/result (e.g., `{"classification": "X"}`) with no `reasoning` / `explanation` / `why` field.
 
 **Impact:** Production debugging becomes impossible. When the agent classifies wrong, there's no trace of what it considered. Audit reviewers cannot assess whether the agent's logic was sound. Hallucinations are invisible until they cause downstream damage.
@@ -323,6 +359,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 **Severity:** Warning
 
 ### Agent with Both Read and Write Side-Effects (Should Be Separated)
+
+> *Rule catalog: `LC_TOOL_DANGEROUS_COMBINATION` covers this at Step 2.5 (assesses pairwise tool combinations).*
 
 **Symptom:** Single agent has tools spanning both read/query operations and write/delete/send/modify operations. Design coupling: a misclassification can cause both wrong reads AND unintended writes.
 
@@ -336,6 +374,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### No Trust Score Threshold for Autonomous Actions
 
+> *Rule catalog: `CODED_LLM_OUTPUT_UNVALIDATED`, `LC_OUTPUT_CLASSIFIER_NO_ENUM`, `LC_ESCALATION_OVERBROAD` partially cover the schema / escalation aspect. Threshold-based gating logic in the consuming workflow remains manual.*
+
 **Symptom:** Agent output is consumed directly by downstream actions without a confidence / trust score check.
 
 **Impact:** Low-confidence outputs trigger autonomous actions. Examples: "80% confidence this is fraud" → account automatically suspended. "60% confidence this invoice is approved" → auto-paid.
@@ -347,6 +387,8 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 **Severity:** Warning (Critical for financial / regulated / irreversible actions)
 
 ### No Escalation Path for UNCLEAR / Low-Confidence Results
+
+> *Rule catalog: `LC_ESCALATION_OVERBROAD`, `LC_OUTPUT_CLASSIFIER_NO_ENUM`, `LC_FAILURE_IRREVERSIBLE_ACTION` partially cover the schema / escalation aspect. The consuming-workflow handling itself remains manual (lives outside the agent project).*
 
 **Symptom:** Agent returns `"status": "UNCLEAR"` or low-confidence output, but the consuming workflow has no branch for this — falls through to error handling or default path.
 

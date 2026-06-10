@@ -9,8 +9,6 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
     assert_count,
-    edge_labels_from,
-    find_edges,
     find_node_by_label,
     find_stages,
     first_rule_of_condition,
@@ -49,27 +47,10 @@ def main():
     rejected = find_node_by_label(plan, "Rejected Path")
     pending = find_node_by_label(plan, "Pending Path")
 
-    if not find_edges(plan, source=triage["id"], target=approved["id"]):
-        sys.exit("FAIL: no edge Triage → Approved Path")
-    if not find_edges(plan, source=triage["id"], target=rejected["id"]):
-        sys.exit("FAIL: no edge Triage → Rejected Path")
-    if not find_edges(plan, source=triage["id"], target=pending["id"]):
-        sys.exit("FAIL: no edge Triage → Pending Path")
-
-    outbound_from_triage = find_edges(plan, source=triage["id"])
-    if len(outbound_from_triage) < 3:
-        sys.exit(
-            f"FAIL: Triage wide fan-out should have ≥3 outbound edges; "
-            f"got {len(outbound_from_triage)}"
-        )
-
-    labels = {lbl.lower() for lbl in edge_labels_from(plan, triage["id"])}
-    if not {"approved", "rejected", "pending"}.issubset(labels):
-        sys.exit(
-            f"FAIL: outbound edges from Triage missing Approved/Rejected/Pending labels; "
-            f"got {sorted(labels)}"
-        )
-
+    # Reachability is condition-driven (edges retired): Triage's three stage-exit
+    # conditions route to the three branches via exitToStageId (asserted below),
+    # and each exit rule's conditionExpression on vars.decision discriminates the
+    # branch. There are no edges, no edge labels, and no edge handles to check.
     exit_conds = list(iter_stage_exit_conditions(triage))
     if len(exit_conds) < 3:
         sys.exit(
@@ -202,20 +183,8 @@ def main():
             f"got {sorted(rule_types)}"
         )
 
-    rejected_edges = find_edges(plan, source=triage["id"], target=rejected["id"])
-    rejected_edge = rejected_edges[0]
-    src_handle = rejected_edge.get("sourceHandle") or ""
-    tgt_handle = rejected_edge.get("targetHandle") or ""
-    if not src_handle.endswith("____bottom"):
-        sys.exit(
-            f"FAIL: Triage→Rejected Path edge sourceHandle should end with "
-            f"'____bottom' (custom override); got {src_handle!r}"
-        )
-    if not tgt_handle.endswith("____top"):
-        sys.exit(
-            f"FAIL: Triage→Rejected Path edge targetHandle should end with "
-            f"'____top' (custom override); got {tgt_handle!r}"
-        )
+    # (Edge handle overrides — sourceHandle/targetHandle — were an edge-display
+    # concern and are retired along with edges; nothing to assert here.)
 
     # Structural checks only — no runtime debug. Every task is a process
     # skeleton placeholder (taskTypeId <UNRESOLVED>), so a required/selected
@@ -225,13 +194,14 @@ def main():
     # completed (marks-complete:true) exit rules, which `validate` + the
     # assertions above confirm.
     print(
-        "OK: Triage WIDE fan-outs to Approved/Rejected/Pending (3 branches); exits "
+        "OK: Triage WIDE fan-outs to Approved/Rejected/Pending (3 branches) via "
+        "three stage-exit conditions routing through exitToStageId; exits "
         "cover wait-for-user + exit-only(marks-complete:false) + exit-only(marks-"
         "complete:TRUE on Pending); Approved/Rejected gate on selected-tasks-"
         "completed referencing the Triage Review placeholder, Pending on required-"
-        "tasks-completed; every stage carries a process-typed skeleton placeholder "
-        "task; Approved Path has user-selected-stage entry; all three edge labels "
-        "present; Triage→Rejected uses custom handles (bottom→top)"
+        "tasks-completed; branch discrimination via conditionExpression on "
+        "vars.decision; every stage carries a process-typed skeleton placeholder "
+        "task; Approved Path has user-selected-stage entry (edges retired)"
     )
 
 

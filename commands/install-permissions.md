@@ -67,7 +67,47 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
 
       // RPA skill — build, get-errors, find-activities, create-project, inspect-package, etc.
       // All local; no cloud side effects (publish goes through `uip solution upload/publish`).
-      "Bash(uip rpa *)"
+      "Bash(uip rpa *)",
+
+      // uipath-troubleshoot — read-only diagnostics. Scoped PER VERB on purpose:
+      // a bare `uip or jobs *` would also allow stop/start/restart/resume;
+      // `uip resource *` would allow delete/upload/add; `uip maestro bpmn instance *`
+      // would allow cancel/retry/goto/variables-set. Mutating verbs are left out so
+      // they keep prompting (fails closed — a new CLI verb is never auto-allowed).
+      "Bash(uip or jobs get *)",
+      "Bash(uip or jobs list *)",
+      "Bash(uip or jobs logs *)",
+      "Bash(uip or jobs history *)",
+      "Bash(uip or jobs traces *)",
+      "Bash(uip or jobs healing-data *)",
+      "Bash(uip or assets get *)",
+      "Bash(uip or assets list *)",
+      "Bash(uip or licenses info *)",
+      "Bash(uip or licenses list *)",
+      "Bash(uip or users get *)",
+      "Bash(uip or users list *)",
+      "Bash(uip resource assets get *)",
+      "Bash(uip resource assets list *)",
+      "Bash(uip resource queue-items get *)",
+      "Bash(uip resource queue-items get-history *)",
+      "Bash(uip resource queue-items get-last-retry *)",
+      "Bash(uip resource queue-items list *)",
+      "Bash(uip resource queues get *)",
+      "Bash(uip resource queues list *)",
+      "Bash(uip docsai ask *)",
+      "Bash(uip traces spans get *)",
+      "Bash(uip maestro bpmn instance get *)",
+      "Bash(uip maestro bpmn instance list *)",
+      "Bash(uip maestro bpmn instance incidents *)",
+      "Bash(uip maestro bpmn instance element-executions *)",
+
+      // uipath-troubleshoot — investigation workspace (local, throwaway) + bundled playbooks.
+      // Write/Edit prompt by default; the Read rules are insurance (file reads are not gated
+      // by Claude Code, but they document intent and survive stricter permission modes).
+      "Read(.local/investigations/**)",
+      "Write(.local/investigations/**)",
+      "Edit(.local/investigations/**)",
+      "Read(//**/uipath-troubleshoot/references/**)"
     ],
     "ask": [
       "Bash(uip login)",
@@ -95,3 +135,7 @@ Split by risk. `allow` = read-only or local-only commands; `ask` = commands with
 - The full variant's `ask` block intentionally guards `uip solution upload`, `uip flow debug`, `uip flow pack`, `uip solution publish`, and `uip login` — these produce real cloud side effects (publishing, executing flows, tenant auth). The `uipath-maestro-flow` skill's rules explicitly require user consent before cloud-executing a flow.
 - `uip agent init` is in `allow` (scaffolding — same as `uip flow init`). It does not publish to the cloud; it creates local agent project files.
 - `uip rpa *` covers the full RPA subcommand tree (`build`, `get-errors`, `create-project`, `find-activities`, `inspect-package`, `focus-activity`, etc.). None of these publish to the cloud — RPA deployment flows through `uip solution upload` / `publish` (already guarded in `ask`).
+- The `uipath-troubleshoot` skill is read-only — it inspects jobs, assets, queue-items, traces, and Maestro instances but never mutates them. Its verbs are allowlisted **per read verb** (e.g. `uip or jobs get *`, not `uip or jobs *`) so mutating siblings keep prompting: `or jobs stop/start/restart/resume`, `or assets create/delete/update/share`, `or licenses toggle`, `resource … delete/upload/add/update`, and `maestro bpmn instance cancel/retry/goto/pause/resume/migrate/message send/variables-set`. This fails closed — a newly shipped CLI verb is never auto-allowed.
+- The troubleshoot rules cover the canonical short form `uip or …`. If the agent uses the long-form alias `uip orchestrator …`, it will still prompt; the fix is to keep the skill on the short form, not to widen the allowlist.
+- `Read/Write/Edit(.local/investigations/**)` cover the throwaway investigation workspace the troubleshoot sub-agents write to (`state.json`, `hypotheses.json`, `evidence/`, `raw/`, `depth-check.json`, etc.). Without the `Write`/`Edit` rules every investigation step prompts.
+- `Read(//**/uipath-troubleshoot/references/**)` matches the skill's bundled playbooks wherever the plugin is installed (`//` anchors to the filesystem root; `**/` matches arbitrary intermediate dirs). Per the Claude Code docs, file reads are never gated, so this rule is insurance rather than load-bearing.

@@ -1,0 +1,179 @@
+task_id: skill-troubleshoot-excel-rr-sheet-bytes
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (UiPath.Excel.BusinessException) where the configured SheetName and
+  the actual workbook sheet are visually identical but differ in byte
+  content (non-breaking space U+00A0 vs regular space U+0020). The
+  agent must match the activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md
+  playbook, recognize that the names visually match but the BusinessException
+  still fires, conclude that a look-alike-character / whitespace
+  branch is the most likely cause, and recommend the host-side
+  PowerShell byte-compare snippet from the playbook to confirm —
+  rather than guess.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, sheet-not-found, byte-inspection, look-alike]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 7200
+max_turns: 50
+turn_timeout: 5400
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `UiPath.Excel.BusinessException: The sheet with the name 'Quarterly Data' does not exist.`
+  Pinned job key: cc333333-7777-8888-9999-000011112222. The sheet
+  IS there — I just opened the workbook in Excel and 'Quarterly Data'
+  is right at the top of the tab list. The workflow's Get Workbook
+  Sheets activity even logged it. I checked the casing, the spelling,
+  the spaces — everything looks identical between what the workflow
+  says and what the workbook has. What am I missing?
+
+  I'm not on the Robot host right now and have no shell access to
+  MOCK-HOST — only Orchestrator. PowerShell, byte-dump tools, and
+  any host-side analysis are unavailable to you too; do not attempt
+  to run them — any such call will be rejected. This is a
+  diagnose-from-evidence task.
+
+  If you can identify the root cause directly from the workflow
+  source and the job's Orchestrator evidence (especially the Get
+  Workbook Sheets output in the job logs), name it. Otherwise give
+  me the exact host-side commands as a plain text list and stop —
+  I will run them on the host and come back with the output. Do not
+  loop on tool failures; if a Bash/PowerShell call is rejected once,
+  treat that as a hard signal to switch to writing recommendations
+  for me.
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-range-sheet-not-found playbook AND identified the visually-identical-but-byte-different sheet name as the root cause — EITHER by detecting the specific differing character (NBSP / U+00A0, look-alike Unicode, whitespace) from the fixture content directly, OR by recommending a host-side byte-compare for the user to confirm. Both approaches are correct; what the test penalizes is guessing the wrong branch (typo, case, rename) without supporting evidence."
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `UiPath.Excel.BusinessException: The sheet with the name
+         'Quarterly Data' does not exist.` Pinned job key:
+         cc333333-7777-8888-9999-000011112222. The sheet IS there —
+         the workbook clearly has 'Quarterly Data' at the top of the
+         tab list and the Get Workbook Sheets activity logged it.
+         Casing, spelling, spaces all look identical. I'm remote;
+         give me commands to run on the host."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md
+        because the runtime error is the BusinessException sheet-resolution
+        failure signature.
+
+      DIMENSION B -- Correct identification of visually-identical mismatch
+        The reference root cause is:
+          - The configured `SheetName: "Quarterly Data"` (regular
+            space U+0020) and the workbook's actual sheet name
+            `"Quarterly Data"` (non-breaking space U+00A0) are
+            VISUALLY IDENTICAL but differ at the byte level. The
+            two strings render the same in most UI surfaces but
+            have different byte representations (U+0020 = 0x20,
+            U+00A0 in UTF-8 = 0xC2 0xA0).
+          - The CLI evidence chain (jobs get, jobs logs, workflow
+            source) confirms the playbook match and rules out typo,
+            case-mismatch, rename, deletion, and dynamic-expression
+            branches. The remaining candidates are branch 5
+            (whitespace) and branch 6 (look-alike Unicode).
+
+        There are TWO acceptable paths to a correct answer:
+
+        PATH A -- Agent detects the differing character directly.
+          The fixture's job-logs response embeds the actual NBSP
+          byte (0xC2 0xA0) in the Get Workbook Sheets log message.
+          An agent that reads the fixture content via Read/Grep
+          and identifies the specific code point (e.g., U+00A0
+          NBSP, or "non-breaking space") has solved the problem.
+          The agent may also recommend the fix directly (rename
+          the sheet in Excel to use a regular space, or trim/
+          normalize in the workflow).
+
+        PATH B -- Agent recommends host-side byte-compare.
+          The agent acknowledges visual identity but does not
+          identify the specific code point. It recommends the
+          host-side PowerShell byte-compare from the playbook
+          (`[System.Text.Encoding]::UTF8.GetBytes` or equivalent)
+          so the user can confirm which character differs.
+
+        Both paths arrive at the same root cause (branches 5 or
+        6 of the playbook). Reward either.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-sheet-not-found playbook AND
+             reached one of the two correct paths above:
+               (A) named the specific differing character (NBSP /
+                   U+00A0 / non-breaking space), OR
+               (B) recommended a host-side byte-compare via the
+                   PowerShell snippet from the playbook.
+             Did NOT claim a different branch (typo / case / rename)
+             without evidence.
+        0.8  Both dimensions partially correct: matched the playbook
+             and recognized the look-alike / whitespace candidates
+             but did not commit to a specific finding (vague "check
+             the bytes" without either naming the code point or
+             giving the byte-compare commands); OR named the right
+             commands or character but also speculated about another
+             branch.
+        0.5  Only one dimension correct: matched the playbook but
+             confidently guessed a wrong branch (e.g., "probably
+             typo") without evidence; OR identified the look-alike /
+             whitespace possibility without matching the specific
+             playbook.
+        0.2  Agent recognized the BusinessException as a sheet-name
+             issue but produced neither the playbook match nor a
+             byte-level finding or recommendation.
+        0.0  Agent confidently picked a wrong branch (typo, case,
+             rename) without supporting evidence; concluded a
+             different root cause; got blocked; or failed.
+
+      Be substance-focused. The test grades whether the agent
+      converged on the visually-identical-but-byte-different
+      pattern, not whether it preferred a specific tool path to
+      get there. An agent that detects NBSP directly from the
+      fixture content is just as correct as one that recommends
+      the user run a byte-compare. Penalize confident guessing
+      that ignores the visual-identity clue.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and handling of look-alike mismatch>"}

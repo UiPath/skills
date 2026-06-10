@@ -1,0 +1,93 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the watchdog-account-kill variant of the 0x40010004 playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs history → admin audit tenant events --search <job-key>. The audit event surfaces the actor (watchdog-svc@acme.com) as an automation/service account that issued Kill via the REST API.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f1e2d3c4-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f1e2d3c4-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\" --output json",
+      "file": "or-jobs-list-folder-key-f1e2d3c4-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --output json",
+      "file": "or-jobs-list-folder-key-f1e2d3c4-output-json.json"
+    },
+    {
+      "match": "or jobs get \"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\" --output json",
+      "file": "or-jobs-get-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs get b2c0b2c3-d4e5-4678-9012-3456789bbbbb --output json",
+      "file": "or-jobs-get-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs history \"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\" --output json",
+      "file": "or-jobs-history-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs history b2c0b2c3-d4e5-4678-9012-3456789bbbbb --output json",
+      "file": "or-jobs-history-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\" --level Error --output json",
+      "file": "or-jobs-logs-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs logs b2c0b2c3-d4e5-4678-9012-3456789bbbbb --level Error --output json",
+      "file": "or-jobs-logs-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"b2c0b2c3-d4e5-4678-9012-3456789bbbbb\" --output json",
+      "file": "or-jobs-logs-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "or jobs logs b2c0b2c3-d4e5-4678-9012-3456789bbbbb --output json",
+      "file": "or-jobs-logs-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "admin audit tenant events",
+      "file": "admin-audit-tenant-events-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "admin audit org events",
+      "file": "admin-audit-tenant-events-b2c0b2c3-output-json.json"
+    },
+    {
+      "match": "admin audit tenant sources",
+      "file": "admin-audit-tenant-sources-output-json.json"
+    },
+    {
+      "match": "admin audit org sources",
+      "file": "admin-audit-tenant-sources-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy any docsai query to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    { "pattern": "or jobs get b2c0b2c3", "min": 1, "description": "Agent must inspect the failing job to confirm the exit code" },
+    { "pattern": "or jobs history b2c0b2c3", "min": 1, "description": "Agent must inspect state history to distinguish operator-initiated Stop from host-side termination" },
+    { "pattern": "admin audit", "min": 1, "description": "Agent must query the audit log to identify the actor" }
+  ]
+}

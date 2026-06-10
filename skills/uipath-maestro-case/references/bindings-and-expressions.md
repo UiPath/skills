@@ -57,12 +57,16 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 | **Connector body field — dot-notation** (curated connectors) | (no plain branch) | `=js:(<expr>)` — uniform wrap, parens always |
 | **Connector trigger filter expression** (`body.filters.expression`) with variable refs | n/a | `` =js:`<JMESPath with ${vars.X} interpolations>` `` |
 | **Connector trigger filter expression** plain literal (no variables) | Unwrapped CEQL/JMESPath text | n/a |
-| **`conditionExpression`** (stage entry/exit, task entry, case exit, trigger rules, edge transitions) | (no plain branch) | `=js:<expr>` — no outer parens; sub-clauses get manual parens when combining via `&&` / `\|\|` |
+| **`conditionExpression`** (stage entry/exit, task entry, case exit, trigger rules) | (no plain branch) | `=js:<expr>` — no outer parens; sub-clauses get manual parens when combining via `&&` / `\|\|` |
 | **SLA rule `expression`** | (no plain branch) | `=js:<expr>` (default: `=js:true`) |
 | **Task output `source` / `target`** | `=vars.<varId>` / `=<rawFieldName>` | n/a (always plain) |
 | **Binding refs in `data.context`, `caseShape.context`** | `=bindings.<id>` | n/a |
 
 > **JIT object mode (out of scope for this version).** When an activity's `inputMetadata.inputMode === "jitObject"` (synthetic HTTP request bodies, generic body-passthrough activities), the whole connector body becomes one `=js:({...})` expression with bare JS variable references inline. The skill currently routes synthetic HTTP through `queryParameters` instead. JIT-mode authoring is not documented in this version.
+
+### Equality operators
+
+In any `=js:` expression use **strict** `===` / `!==`, never loose `==` / `!=`. JS eval coerces types on loose equality (`vars.flag == "true"` is truthy for the string `"true"`), which silently breaks boolean/number routing. Canonical: `=js:vars.approved === true`.
 
 ### Conservative rule for `=metadata.X`
 

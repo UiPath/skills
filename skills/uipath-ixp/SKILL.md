@@ -1,6 +1,6 @@
 ---
 name: uipath-ixp
-description: "[PREVIEW] UiPath IXP (Document Understanding) — review IXP predictions with Claude, confirm valid fields, improve prompts, publish models."
+description: "UiPath IXP (Document Understanding) — review IXP predictions with Claude, confirm valid fields, improve prompts, publish models."
 ---
 
 # UiPath IXP Document Extraction Assistant
@@ -16,9 +16,19 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 - User provides a taxonomy file to import into a project
 - User asks for the project taxonomy at a specific trained model version — what the schema looked like when version N was published (use `deployments get-taxonomy <project-name> --version <N>`)
 
+## When NOT to Use This Skill — defer to uipath-maestro-flow
+
+This skill covers standalone IXP-project work. STOP and invoke the `uipath-maestro-flow` skill instead when any of these hold:
+
+- The user asks which IxP / document-extraction models, extractors, or nodes are available **to a `.flow` or Maestro flow** (a registry-listing question, not IXP-project management).
+- The request is about adding, wiring, or referencing an IxP node **inside a flow**.
+- The working context is a `.flow` file or a Maestro flow rather than a standalone IXP project.
+
+Do not answer these from this skill. Re-activate `uipath-maestro-flow` and follow the commands it documents. This overrides Critical Rule 1.
+
 ## Critical Rules
 
-1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase.
+1. **ONLY use `uip ixp` CLI commands as documented in this skill** — do NOT use curl, do NOT call REST APIs directly, do NOT grep/read source code, do NOT explore the codebase. (Exception: defer flow/Maestro registry questions to `uipath-maestro-flow` — see *When NOT to Use This Skill* above.)
 2. **Run workflows end-to-end automatically** — do NOT ask the user to do individual steps.
 3. **Always use `--output json`** when parsing CLI output programmatically.
 4. **Use `/tmp/ixp/<project-name>/` as the working directory with this structure:**
@@ -56,9 +66,11 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "Label documents" / "Review predictions" | [Label Documents Guide](references/label-documents-guide.md) |
 | "Improve scores" / "Fix prompts" / "Improve F1" | [Improve Prompts Guide](references/improve-prompts-guide.md) |
 | "Publish the model" / "Tag as live" | `uip ixp projects publish <project-name> --output json` |
+| "Roll back to a previous version" / "Restore version N" | `uip ixp projects publish <project-name> --model-version <N> --output json` — re-publishes an earlier version. Get available versions from `uip ixp projects list-models <project-name> --output json`. |
 | "Show metrics" / "What are the scores?" | `uip ixp projects get-metrics <project-name> --output json` |
 | "List projects" | `uip ixp projects list --output json` |
 | "Configure the model" | `uip ixp projects configure-model <project-name> [options] --output json` |
+| "Delete a project" / "Remove this project" | `uip ixp projects delete <project-name> --confirm-data-loss --output json` — **permanent and irreversible**; removes the project's documents, taxonomy, and trained models. Requires `--confirm-data-loss`. |
 | "Upload a document" / "Add documents to an existing project" | `uip ixp documents upload <project-name> <file> --output json` — see [CLI Reference § Uploading documents](references/cli-reference.md#uploading-documents-to-an-existing-project). One file per call; loop for multiple. For brand-new projects use `projects create` instead. |
 | "Delete a document" / "Remove a document" | `uip ixp documents delete <project-name> <document-id> --output json` — irreversible, triggers retrain. To delete by filename, look up the `DocumentId` via `documents list` (the `Filename` column shows the original upload name). |
 | "Add / delete / rename a field group" | `uip ixp groups {add,delete,rename} <project-name> --name <name> ... --output json` — see [CLI Reference § Groups](references/cli-reference.md#groups). `groups add` requires `--instructions` and `--fields '<json>'` with at least one field. `delete` requires `--confirm-data-loss`. |
@@ -67,6 +79,8 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "Mark a field as missing for a document" | Include the field's id in `uip ixp labellings confirm <project-name> <document-id> --fields <ids> --output json` alongside any content fields you're confirming. When IXP's prediction for that field is empty, the explicit listing writes a missing marker; when it has content, the content is confirmed. **Only list a field for the missing case if IXP also predicted nothing for it.** See Critical Rule 12. Use `labellings mark-missing` only as a fallback when `confirm --fields` is a no-op for a field you expected it to handle — typically a field with a prior annotation that the current prediction no longer includes (model or taxonomy changed between iterations). |
 | "Undo / unconfirm a wrong confirmation" | `uip ixp labellings unconfirm <project-name> <document-id> --fields <ids> --output json` — rolls back an earlier `confirm` or `mark-missing` for the listed fields. Every other annotation on the document is carried forward. |
 | "Set overall extraction instructions" / "Update project prompt" | `uip ixp projects update-prompt <project-name> --prompt "<text>" --output json` — replaces the taxonomy-wide prompt (the "Overall extraction instructions" field in the IXP UI). Distinct from `fields update-prompts` (per-field) and `groups update-prompts` (per-field-group). |
+| "How is this project performing?" / "What's the F1?" | `uip ixp projects get-metrics <project-name> --output json` (+ `list-models` for the live version). Report in order: (1) published version — live/pinned + `TrainedTime` (`Tags[]` Name=`live`, `Models[]` Pinned); (2) per-group scores from `FieldGroups[]` (F1/Precision/Recall); (3) per-field scores from `Fields[]`, sorted lowest-F1 first. State numbers plainly; no "good enough" judgement unless asked; route low scores to [Improve Prompts Guide](references/improve-prompts-guide.md). Answer from these two calls only — no ad-hoc discovery (Critical Rule #1). |
+| "Describe this project" / "What's in it?" | Three calls, reported in order: (1) identity — `Title`/`Name` from `uip ixp projects get <project-name> --output json`; (2) current model — live/pinned + `TrainedTime` from `list-models`; (3) taxonomy — label-group/field counts from `uip ixp projects get-taxonomy <project-name> --output json`. Fold in performance (above) only if asked. Do NOT page `documents list` (paginated, no total) or read deployment bindings. Answer from these calls only (Critical Rule #1). |
 
 ## Common Pitfalls
 
@@ -75,6 +89,20 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | Metrics don't change after a prompt update | Re-evaluation hasn't completed | Wait ~2 minutes for retrain. |
 | ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Wait ~2 min then retry. |
 | Field instructions conflict with label_def instructions | `fields update-prompts` only edits per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and update them with `groups update-prompts` if they contradict the per-field prompts. |
+
+## Unsupported Capabilities
+
+These requests fall outside the skill. Recognise the request, reply with the standard response, route the user. Do NOT enter discovery (`uip --help`, grep, source reading) — see Critical Rule #1.
+
+| User request | Standard response |
+|--------------|-------------------|
+| "Create a model" / "create a project" | **Documents or a taxonomy supplied →** use the [Project Setup Guide](references/project-setup-guide.md) (this skill creates the project from them). **Otherwise →** "I work on existing IXP projects rather than creating them from scratch. Create one in-product: https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/managing-projects — then I can label, review, and improve it." |
+| "Upload these files" / "add documents" | **Project named / already in context →** supported; upload it (see the "Upload a document" row in Task Navigation). **Otherwise →** "Name an existing project and I'll upload it — or upload in-product (e.g. for a new project): https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-deploying-models." |
+| "Deploy this model" / "push to staging / production / folder / environment / tenant" | "I don't drive deployment to folders, environments, or tenants — that's a product-side flow: https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-deploying-models. I can publish a model version with `uip ixp projects publish <project-name> --output json`, but binding it to a folder/environment is done in-product." |
+| "Give X access" / "share this project" / "change roles or permissions" | "Access, roles, and permissions are managed in-product, not through this skill: https://docs.uipath.com/ixp/automation-cloud/latest/overview/managing-access." |
+| "Use this model in my automation / workflow / agent" / "call the extractor from a process" | "Consuming a published model inside an automation is an authoring task outside this skill. See https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-consuming-a-workflow." |
+| "Mine these emails / communications" / "set up Communications Mining" | "Communications Mining is a separate IXP capability this skill doesn't cover (this skill is document extraction). See https://docs.uipath.com/ixp/automation-cloud/latest/cm-user-guide/introduction-to-uipath-communication-mining." |
+| "Monitor the deployed model" / "how many docs did it process?" / "runtime throughput or incidents" | "Runtime/operational monitoring of a deployed model lives in Orchestrator, not this skill: https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/about-monitoring. For design-time scores use `get-metrics` (see 'Show metrics')." |
 
 ## Reference Navigation
 

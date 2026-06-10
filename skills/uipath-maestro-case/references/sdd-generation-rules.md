@@ -8,11 +8,11 @@ Phase 1 trusts `sdd.md` as written (SKILL.md Rule 2). These rules make that trus
 
 Reason the case shape from the process the user describes — **do not reach for the template first.** The template renders a shape you already decided; it does not decide it for you. Build the model in this order: stages → tasks → types → pull exceptions out. Each concept below is a question to ask of the user's process, not a slot to fill.
 
-**Stage** — a phase the case works through: a bounded milestone with an *entry* (when it starts), *tasks* (the work done inside it), and a *completion/exit* (when it's done and where the case goes next). Stages are the backbone; they run in sequence (or parallel) wired by **edges**. Derive one stage per milestone the user names ("intake", "underwriting", "funding"). Ask: *what is the case working toward right now, and what makes that done?* A stage that "marks the case complete" is on the main flow (`isRequired: true`).
+**Stage** — a phase the case works through: a bounded milestone with an *entry* (when it starts), *tasks* (the work done inside it), and a *completion/exit* (when it's done and where the case goes next). Stages are the backbone; they run in sequence (or parallel), wired by **entry/exit conditions** (the case has no edges — transitions are condition-driven). Derive one stage per milestone the user names ("intake", "underwriting", "funding"). Ask: *what is the case working toward right now, and what makes that done?* A stage that "marks the case complete" is on the main flow (`isRequired: true`).
 
 **Secondary stage** (a.k.a. exception stage — `case-management:ExceptionStage`) — work that is **not a fixed step on the line**: it can fire at many points and only under a condition. Errors, escalations, rejections, rework loops, cancellations. Three rules define it, all CLI-enforced:
 
-- **No edges** — never wired in or out by an edge (validator: `CASE_MGMT_SECONDARY_STAGE_EDGES`). It is detached from the flow graph.
+- **No edges** — reached and exited purely by conditions, never wired by an edge. (True of every stage now that edges are retired; the legacy `CASE_MGMT_SECONDARY_STAGE_EDGES` validator that flagged secondary-stage edges is moot.) It is detached from any flow graph.
 - **Entered by its own condition**, evaluated continuously against case state — often *interrupting* (pauses active stages when it fires). It is reached because a condition became true, not because the case traversed an edge.
 - **Exits via `return-to-origin`** — routes the case back to the stage it interrupted, through the exit rule, not a new edge.
 
@@ -40,7 +40,7 @@ The case, each stage, and each task move through a lifecycle gated by **rules** 
 How to reason with these:
 
 - **`required-*` vs `selected-*`.** `required-tasks-completed` / `required-stages-completed` = "all items flagged required are done" (the `isRequired` flow). `selected-tasks-completed` / `selected-stage-completed` / `selected-stage-exited` = "these *specific named* items." Pairing rule (Key Rule 4): `Marks Complete: Yes` pairs only with `required-*`; `selected-*` is for `No` (routing / early exit / alternate disposition). A `Yes` + `selected-*` pair is a schema error.
-- **Secondary (exception) stage** uses **stage-entry + stage-exit rules only, never edges.** Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left.
+- **Secondary (exception) stage** uses **stage-entry + stage-exit rules only, never edges** (true of every stage now — edges are retired). Its entry rule is typically *interrupting* (`isInterrupting: true`); its exit uses `return-to-origin` to rejoin the flow it left.
 - **First task in a stage** must carry `current-stage-entered` (emit it explicitly). `wait-for-connector` makes a gate pause for an inbound connector callback — its `conditionExpression` gates on **case state** only (no `event` payload; in-rule extract-then-gate is unsupported at runtime — gate a downstream condition instead); `adhoc` lets a *task* fire manually from the case app (task-entry only — never a stage-entry rule); `runs-sequentially` chains tasks in a lane.
 - **`user-selected-stage`** (stage entry) starts a stage on demand by a user rather than by flow. The CLI validator requires it to pair with a `wait-for-user` stage exit elsewhere: a `wait-for-user` exit with no `user-selected-stage` entry — or a `user-selected-stage` entry with no `wait-for-user` exit — fails `validate`.
 
@@ -72,7 +72,7 @@ A task Output *produces* a variable (`-> =vars.<id>`); a task Input *consumes* o
 Reason the shape; do not template it:
 
 - **Milestones → stages:** Intake → Screening → Compliance → Finance Setup → Activation — regular stages on the main flow.
-- **"goes back for remediation" → secondary stage.** Remediation fires only on a condition (compliance failed) and routes back — model it as an exception stage (condition-entered, `return-to-origin`), **not** a sixth inline stage with edges.
+- **"goes back for remediation" → secondary stage.** Remediation fires only on a condition (compliance failed) and routes back — model it as an exception stage (condition-entered, `return-to-origin`), **not** a sixth inline primary stage.
 - **"sign up through portal" → trigger.** A portal signup is an inbound event, not Manual — Always-Ask the trigger type.
 - **Tasks + types** (read verb + actor, ask the [§ Choosing](#choosing-the-task-type) question):
   - *screen them* → AI judges unstructured docs → `agent`
@@ -534,7 +534,7 @@ Every Inputs `Binding` cell carries one of (case-sensitive):
 | Form | Meaning |
 |---|---|
 | `<literal>` | Plain string / number / boolean (`"50"`, `0`, `true`) |
-| `=vars.<id>` | Case variable from §1.5 (`<id>` must match a §1.5 row's `Name` cell) |
+| `=vars.<id>` | Case variable from §1.5 (`<id>` matches a §1.5 row's `Name`), or an upstream task's auto-emitted output field referenced directly (see §Variable lineage closure) |
 | `=vars.<id>.<subfield>` | Sub-field of a structured case variable (dot-path) |
 | `=bindings.<id>` | Registered resource (action app, process, connection) |
 | `=metadata.<key>` | Case metadata |
@@ -603,6 +603,8 @@ The new SDD shape carries producer / consumer signal across three places (NOT a 
 
 Otherwise the variable is open-lineage and Phase 0 cannot Approve.
 
+**Task-output direct reference.** A `=vars.<name>` where `<name>` is an upstream task's auto-emitted output field is NOT a §1.5 variable — exempt from closure. The emitting task self-declares it (resolver matches any `task.data.outputs[].id`) and is its own producer; only ordering applies (emitting task before consumer). Declare a §1.5 row only to rename, set custom `Default` / `Type`, or expose case-level state. Unresolvable refs (typo, or a field the task does not emit) are caught later by the io-binding validator (Check 1), not here. See [sdd-template-examples.md § Task-local-only variables](../assets/templates/sdd-template-examples.md).
+
 **Self-binding rule.** An Outputs row of the form `caseVar = =vars.caseVar` or `caseVar = =js:vars.caseVar` (LHS and only-referenced-RHS variable are the same `caseVar`) is FORBIDDEN — it's a no-op that masks a missing producer. Phase 0 strips such rows from the draft, narrates the strip, and emits a `high`-severity review item asking the user whether they meant to (a) wire a different producer, (b) drop the row entirely, or (c) initialize via §1.5 `Default`. Computed self-references like `caseVar = =js:(vars.caseVar + 1)` are allowed (incrementers / accumulators) — the RHS expression mutates the value.
 
 **Output-naming consistency rule.** An Outputs `-> <caseVar>` row whose `Field` leaf name (the produced datum's natural name, e.g. `complianceStatus`) has NO matching §1.5 variable AND is mapped into a differently-named existing variable (e.g. `titleReviewStatus`) → emit a `medium` review item (`rev_aliased_output_<task>`): "task output `<field>` aliased into unrelated variable `<caseVar>`; declare a dedicated §1.5 variable for the datum or confirm the reuse is intentional." Aliasing a produced datum into an unrelated variable closes lineage mechanically while corrupting meaning — a variable named for one thing silently carries another, and a multi-stage variable ends up double-purposed.
@@ -628,7 +630,7 @@ Pattern X1 is preferred unless an actual connector emits the close event. When t
 
 **Audit checklist** (run before Approve renames the draft):
 
-1. Every variable referenced by any `=vars.<name>` (or `=vars.<name>.<sub>`) anywhere in `sdd.md` (task Inputs, IF columns, exit rules, button `Maps To`, SLA expressions) has a matching §1.5 row whose `Name` equals `<name>`.
+1. Every variable referenced by any `=vars.<name>` (or `=vars.<name>.<sub>`) anywhere in `sdd.md` (task Inputs, IF columns, exit rules, button `Maps To`, SLA expressions) has a matching §1.5 row whose `Name` equals `<name>` — OR `<name>` is an upstream task's auto-emitted output field (see §Variable lineage closure → Task-output direct reference; never add a §1.5 row to back such a ref).
 2. Every §1.5 row's `Category` is exactly one of `In` / `Out` / `Variable` — never blank, never `—`.
 3. **`In` row consistency:** `sourceTriggers` and `sourceFields` are BOTH empty.
 4. **`Out` row consistency:** `sourceTriggers` is empty. Closure requires either (a) non-empty `Default`, OR (b) a task Outputs row in the case plan targeting this Name via `-> {name}` or `{name} = {expr}`. (PR 860 added a Phase 2 validator: `Out` + non-empty `sourceTriggers` → reject.)
@@ -689,9 +691,9 @@ Phase 0's narrative cells (Description, persona names, stage names, task names, 
 
 ## Logical integrity — stage graph
 
-Beyond schema-pairing checks (§Finalization step 1), the case must be a connected graph:
+Beyond schema-pairing checks (§Finalization step 1), the case must be a connected graph. **Edges are retired — these condition-based checks are the SOLE reachability guard; there is no edge graph to fall back on.** A malformed or missing entry condition is the only thing that can orphan a stage, so this walk is load-bearing.
 
-1. **Every stage reachable from a trigger.** Walk forward from each trigger row through Stage Entry Conditions (`case-entered` from root, `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`). Every primary stage's id must be reached. Unreachable stage → blocking error (orphan stage).
+1. **Every stage reachable from a trigger.** Walk forward from each trigger row through Stage Entry Conditions (`case-entered` from root, `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`) — condition-only, no edges. Every primary stage's id must be reached. Unreachable stage → blocking error (orphan stage).
 2. **Every stage exits.** Every primary stage must have either (a) a completion row (`Marks Stage Complete: Yes`) whose completion is consumed by a downstream stage's Entry Condition or a case-exit, OR (b) another primary stage whose Entry Condition references it (`selected-stage-completed`/`selected-stage-exited`), OR (c) feed an ExceptionStage. A stage no other stage (or case-exit) keys off → blocking error (terminal-loop stage).
 3. **Every case-exit row references a stage that exists.** No dangling `Required Stages` references.
 4. **Every `Required Stages` cell in §1.4 names ≥ 1 primary stage with `Required for case completion: Yes`.** Otherwise the case can never complete.
@@ -789,7 +791,7 @@ On fail: list specific errors, return to AskUserQuestion `Re-edit` / `Restart` /
 - **Do NOT emit a decision `action` task with fewer than 2 buttons.** `is_decision: Yes` requires ≥ 2 buttons; downgrade to `is_decision: No` if the task does not fork the case path.
 - **Do NOT emit a `wait-for-timer` task with `<UNRESOLVED>` duration.** Timer cannot fire — block Approve.
 - **Do NOT emit SLA cells on `process` / `agent` / `rpa` / `api-workflow` / timer / connector / `case-management` tasks.** SLA supports case, stage, and `action` tasks ONLY (sdd-template Key Rule 1).
-- **Do NOT emit `external-agent`, `connector-activity`, `connector-trigger`, or `wait-for-event` as task types.** This skill generates 9 of the CLI's 10 types (Rule 16); `external-agent` is a real CLI type but has no generation plugin here (model as `api-workflow` / `execute-connector-activity`), and the rest are not CLI task types at all.
+- **Do NOT emit `external-agent`, `external-workflow`, `document-extraction`, `flow-process`, `connector-activity`, `connector-trigger`, or `wait-for-event` as task types.** This skill generates 9 of the CLI's 10 types (Rule 16). `external-agent`, `external-workflow`, `document-extraction`, and `flow-process` are **not supported yet**. The rest are not CLI task types at all.
 - **Do NOT author task inputs as bare field-name lists** (`**Inputs:** a, b, c`). Use the `Field | Type | Binding` table — bare lists force Phase 1 into name-match inference.
 - **Do NOT close variable lineage by guessing producers.** If no producer fires before a consumer AND the §1.5 row has no `Default`, that is an open-lineage error — surface it. Never silently retag the row's `Category` to `In` or invent a `Default` to suppress the failure.
 - **Do NOT populate `sourceTriggers` on `In` or `Out` rows.** PR 860 added a Phase 2 validator that rejects `Out` + non-empty `sourceTriggers`. For trigger-payload extraction, use `Category: Variable` (see §1.5 and [sdd-template-examples.md](../assets/templates/sdd-template-examples.md) Use Case 2).

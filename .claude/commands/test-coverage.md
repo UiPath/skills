@@ -51,7 +51,8 @@ Components are the specific, testable units the skill teaches. What counts as a 
 | Flow orchestration (`uipath-maestro-flow`) | Node types: `core.action.script`, `core.logic.decision`, `uipath.connector.*`, etc. Find these in SKILL.md Plugin Index tables and `references/plugins/*/planning.md` files. |
 | RPA workflows (`uipath-rpa`) | Workflow modes (Coded C#, XAML), activity types, project types. Found in section headings like "Coded Workflows Quick Reference", "XAML Workflows Quick Reference". |
 | Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
-| Solution lifecycle (`uipath-solution`) | `uip solution` lifecycle (init, pack, publish, deploy, activate) and PDD → SDD authoring. Found in the Operate half and Design half of the SKILL.md. |
+| Solution lifecycle (`uipath-solution`) | `uip solution` lifecycle (init, pack, publish, deploy, activate). Found in the CLI Surface Probe, Critical Rules, and Workflow sections of the SKILL.md. |
+| Solution design (`uipath-design`) | PDD → SDD authoring. Phased workflow (PDD analysis, architecture review, SDD generation), product/scope selection, SDD templates. Found in the Critical Rules, Workflow, and Reference Navigation sections. |
 | Agent development (`uipath-agents`) | Lifecycle stages (Auth, Setup, Build, Bindings, Run, Deploy), framework types (LangGraph, LlamaIndex, etc.). Found in "Lifecycle Stages" section. |
 | Coded apps (`uipath-coded-apps`) | Pipeline stages (Push, Pull, Pack, Publish, Deploy), app configuration concepts. Found in lifecycle and "Ship It" sections. |
 
@@ -167,6 +168,14 @@ For each test, produce a coverage list using three tiers:
 
 Count: `(Direct + Indirect) / Total`. Report Direct and Indirect separately in the table.
 
+**Canonical figure for scoring: direct-only.** Report both Direct and Direct+Indirect, but the **overall score and the Score Contribution table use the direct-only % `Direct / Total`** (this is what the SUMMARY's `Components (direct)` column shows). Direct+Indirect is informational context, never the scored number. Use the same direct-only % everywhere it feeds a calculation so the Score Contribution total reconciles to the Overall.
+
+**Top untested buckets (roll-up signal).** After scoring components, record the **2–3 categories with the most `None` components** as a compact, comma-separated string — this is what makes the penalty legible from the SUMMARY without opening the per-skill file. Format each as `<category> <none>/<total>`, e.g. `triggers 0/3, IS connectors 0/2, run/publish 2/8`. Pick the categories that drag the score most (largest absolute `None` count; break ties by lowest coverage %). Rules:
+- Derive these from the **same `None` rows** already in the Component Coverage tables — do not invent new groupings.
+- **Planning skills (Components N/A)** and **catalog skills with no categories**: fall back to the largest-gap **workflow-step groups** or **rule groups** instead (e.g. `Lane A 0/10, entry-guard 0/1, rules 0/5`), so the column is never empty for a scored skill.
+- **Skills with no tests / planned skills:** use `all (no tests)` / `— (planned)` respectively.
+- Keep it under ~60 chars; it rides in one Overview cell. The full enumeration stays in the per-skill report's **Untested Features** section — this is just the headline.
+
 ### 4b. Workflow step coverage
 
 A step is "tested" if at least one test exercises the CLI commands or file operations it describes.
@@ -213,12 +222,14 @@ Weights reflect what tests actually catch:
 | Workflow-heavy, multi-path (e.g. `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`) | — | Comp 45% / Steps 25% / Rules 15% / Path 15% |
 | Workflow-heavy, single-path (e.g. `uipath-maestro-case`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
 | Command-catalog skills (e.g. `uipath-platform`, `uipath-servo`, `uipath-test`, `uipath-feedback`, `uipath-data-fabric`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
-| Planning skills (e.g. `uipath-planner`, `uipath-solution`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
+| Planning skills (e.g. `uipath-planner`, `uipath-design`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
 | Agent-orchestration skills (e.g. `uipath-troubleshoot`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
 
 Formula: `overall = sum(applicable_weight_i * dimension_pct_i) / sum(applicable_weight_i)`
 
-For skills with **no tests**: overall = 0%.
+**Per-dimension contribution.** Define `renorm_weight_i = applicable_weight_i / sum(applicable_weight_i)` (so the renormalized weights sum to 1) and `contribution_i = renorm_weight_i * dimension_pct_i`. By construction `sum(contribution_i) = overall`. Render this decomposition in each per-skill report's **Score Contribution** table (see the with-tests template) so the headline number is traceable to the dimensions that earned or forfeited it. Also report `lost_i = renorm_weight_i*100 − contribution_i` — the largest `lost_i` is the highest-leverage dimension to test next, and should align with that skill's top-ranked gaps.
+
+For skills with **no tests**: overall = 0% (skip the Score Contribution table — every dimension contributes 0).
 
 ### 4g. Test-density troubleshooting (sidecar, not scored)
 
@@ -258,13 +269,43 @@ Whenever a signal fires, the corresponding recommendation in the Recommendations
 
 Create `tests/reports/` if needed.
 
+**Pre-write consistency check (run before writing each per-skill report).** The same numbers now appear in several places; verify they agree, then fix the source of any mismatch before writing — never publish inconsistent figures:
+1. **Score Contribution total == Summary Overall %.** `Σ contribution_i` must equal the Overall (within rounding). If not, the weights and dimension %s disagree — recheck which figures feed the overall (components = direct-only, Phase 4a).
+2. **Header weights == Score Contribution weights.** The `W% weight` in each scored section header is the renormalized weight from the contribution table; N/A dimensions carry no weight in either place, and the weights sum to 100%.
+3. **Top untested buckets are real `None` groups.** Every bucket in the SUMMARY row traces to actual `None` rows / category gaps in this report's Component Coverage (or step/rule groups for planning skills) — no invented groupings.
+4. **Largest `Lost` aligns with the top gap.** The dimension with the biggest `Lost (pts)` should be the one the #1 High-priority gap / top Recommendation addresses; if they diverge, re-rank or explain why.
+
+**Emit the machine-readable sidecar.** In `all` mode, also write `tests/reports/coverage.json` — a structured mirror of the Overview so downstream consumers (e.g. `/generate-confluence-scorecard`) read data instead of scraping markdown. One object per skill keyed by skill name:
+
+```json
+{
+  "generated": "YYYY-MM-DD",
+  "skills": {
+    "uipath-rpa": {
+      "overall_pct": 42, "planned": false, "tests": {"smoke": 4, "integration": 1, "e2e": 1},
+      "components": {"direct": 11, "direct_indirect": 17, "total": 39, "direct_pct": 28},
+      "workflow": {"covered": 4, "total": 6, "pct": 67},
+      "rules": {"covered": 6, "total": 28, "pct": 21},
+      "paths": {"covered": 3, "total": 3, "pct": 100},
+      "weights": {"components": 45, "workflow": 25, "rules": 15, "paths": 15},
+      "contribution": {"components": 12.6, "workflow": 16.8, "rules": 3.2, "paths": 15.0},
+      "top_untested": ["triggers 0/3", "IS connectors 0/2", "run/publish 2/8"],
+      "infra": "Requires Windows + Studio"
+    },
+    "uipath-document-understanding": {"overall_pct": 0, "planned": true}
+  }
+}
+```
+
+Use `null` for N/A dimensions (e.g. `"rules": null` for a catalog skill, `"paths": null` for single-path). The `contribution` values must match the per-skill Score Contribution tables and sum to `overall_pct`. Single-skill runs may write/refresh just that skill's entry; do not blank the others.
+
 **Output rules:**
 
 | Invocation | Files written |
 |---|---|
 | Single skill (e.g. `uipath-maestro-flow`) | `tests/reports/<skill-name>.md` only. |
 | Single planned skill (folder missing, name in registry) | `tests/reports/<skill-name>.md` using the **planned-skill template** below. |
-| `all` (or empty) | One per-skill report **and** the roll-up: `tests/reports/<skill-name>.md` for every existing skill, `tests/reports/<skill-name>.md` for every planned-but-missing skill (planned template), plus `tests/reports/SUMMARY.md`. |
+| `all` (or empty) | One per-skill report **and** the roll-up: `tests/reports/<skill-name>.md` for every existing skill, `tests/reports/<skill-name>.md` for every planned-but-missing skill (planned template), `tests/reports/SUMMARY.md`, **and** `tests/reports/coverage.json` (the machine-readable sidecar). |
 | User-specified custom path | Use that path instead. |
 
 Overwrite any existing report at the same path. The summary file name is `SUMMARY.md` (uppercase), matching the directory structure documented in `tests/README.md`.
@@ -288,6 +329,8 @@ Use this template when the skill has at least one test task.
 
 *Generated: YYYY-MM-DD*
 
+> **How to read this report.** Coverage counts `Direct + Indirect` as covered; only `None` rows (`—/—/—`) forfeit score points. **Direct** = a test asserts this by name. **Indirect** = a test would fail without it but never asserts it (not a gap). **None** = untested even indirectly — this is what the score penalizes and what the gaps/recommendations target. The headline **Overall %** uses **direct-only** component coverage; each scored section header shows its renormalized weight, and the Score Contribution table decomposes the Overall into per-dimension points. Test Coverage is *capability* coverage, **not** a pass-rate.
+
 ## Summary
 
 | Metric | Value |
@@ -305,6 +348,20 @@ Use this template when the skill has at least one test task.
 
 Anti-patterns are inventoried in the Anti-Patterns section below but are **not** part of the overall score (see Phase 4e).
 
+### Score Contribution
+
+Decomposes the overall % into per-dimension points so the penalty is legible — each row is `renormalized weight × that dimension's coverage %`, and the **Contribution column sums to the Overall %**. "Lost" = the points that dimension forfeits vs a perfect 100% (`weight − contribution`); the biggest "Lost" value is where adding tests moves the number most. Use the **same dimension % that feeds the overall** (per Phase 4f) — for Components that is the direct-only %.
+
+| Dimension | Coverage % | Weight (renorm.) | Contribution (pts) | Lost (pts) |
+|-----------|-----------|------------------|--------------------|------------|
+| Components | 28% | 45% | 12.6 | 32.4 |
+| Workflow steps | 67% | 25% | 16.8 | 8.2 |
+| Critical rules | 21% | 15% | 3.2 | 11.8 |
+| Path | 100% | 15% | 15.0 | 0.0 |
+| **Overall** | — | **100%** | **≈48%** | **52** |
+
+(Example is illustrative — use the skill's real numbers; N/A dimensions are dropped and their weight redistributed before computing, so the weight column always sums to 100%. The Contribution total MUST equal the Overall % in the Summary table — if it doesn't, the Summary weights and the dimension %s are inconsistent; fix that before publishing.)
+
 ### Test-density troubleshooting
 
 - Total test tasks: N
@@ -320,7 +377,9 @@ Anti-patterns are inventoried in the Anti-Patterns section below but are **not**
 |---------|------|------|-------------|---------------------|
 | skill-flow-calculator | e2e | mode:build, shape:multi-node | Multiply two inputs via script node | `core.action.script`, input vars, output vars, validate, debug |
 
-## Component Coverage
+## Component Coverage (X/Y direct, W% weight)
+
+Each scored dimension's header carries its **renormalized weight** (the same one in the Score Contribution table) so readers see each section's contribution in place — e.g. `## Component Coverage (11/39 direct, 45% weight)`, `### Workflow Steps (3/7 covered, 25% weight)`. The weight is the *effective* weight after N/A dimensions are dropped; it must match the Score Contribution table. The per-category sub-headers below stay weightless (the weight applies to the Components dimension as a whole).
 
 ### <Category> (X/Y covered)
 
@@ -331,14 +390,14 @@ Anti-patterns are inventoried in the Anti-Patterns section below but are **not**
 
 (One subsection per component category.)
 
-### Workflow Steps (X/Y covered)
+### Workflow Steps (X/Y covered, W% weight)
 
 | # | Step | Covered | Test(s) | Notes |
 |---|------|---------|---------|-------|
 | 0 | Resolve uip binary | Indirect | all (implicit) | All tests require it but none assert it |
 | 4 | Plan the flow | No | — | No test checks for .uipath.flow.arch.plan.md or .uipath.flow.impl.plan.md |
 
-### Critical Rules (X/Y covered)
+### Critical Rules (X/Y covered, W% weight)
 
 | # | Rule | Direct | Indirect | Test(s) |
 |---|------|--------|----------|---------|
@@ -346,9 +405,9 @@ Anti-patterns are inventoried in the Anti-Patterns section below but are **not**
 | 7 | Every node needs definitions | — | Yes | all e2e (validation would fail without them) |
 | 5 | Edit .flow ONLY | — | — | — |
 
-### Path Coverage (X/Y paths exercised)
+### Path Coverage (X/Y paths exercised, W% weight)
 
-Applicable only when the skill documents ≥2 implementation paths. Otherwise write "N/A — single-path skill" and skip the table.
+Applicable only when the skill documents ≥2 implementation paths. Otherwise write "N/A — single-path skill" and skip the table (drop its weight from the header — it is not a scored dimension for this skill).
 
 | Path | Exercised | Test(s) |
 |------|-----------|---------|
@@ -530,14 +589,14 @@ Produce this whenever more than one skill is analyzed (including `all` mode).
 
 ## Overview
 
-| Skill | Tests | Components (direct) | Workflow | Rules | Paths | Overall | Tests/Comp (med) | Infra |
-|-------|-------|---------------------|----------|-------|-------|---------|------------------|-------|
-| uipath-maestro-flow | 49 | 6/24 (25%) | 6/9 (67%) | 1/16 (6%) | 1/2 (50%) | 33% | 2 | Requires cloud auth |
-| uipath-rpa | 2 | 0/39 (0%) | 0/8 (0%) | 0/21 (0%) | 1/2 (50%) | 8% | 0 | Requires Windows + Studio |
-| uipath-platform | 5 | 2/12 (17%) | N/A | N/A | N/A | 17% | 0 | Requires cloud auth |
-| uipath-document-understanding | 0 | — / — (0%) | — | — | — | **0%** (planned) | — | Skill folder not yet created |
+| Skill | Tests | Components (direct) | Workflow | Rules | Paths | Overall | Tests/Comp (med) | Top untested buckets | Infra |
+|-------|-------|---------------------|----------|-------|-------|---------|------------------|----------------------|-------|
+| uipath-maestro-flow | 49 | 6/24 (25%) | 6/9 (67%) | 1/16 (6%) | 1/2 (50%) | 33% | 2 | control-flow 5/7, queue 0/2, resource 0/3 | Requires cloud auth |
+| uipath-rpa | 2 | 0/39 (0%) | 0/8 (0%) | 0/21 (0%) | 1/2 (50%) | 8% | 0 | triggers 0/3, IS connectors 0/2, run/publish 2/8 | Requires Windows + Studio |
+| uipath-platform | 5 | 2/12 (17%) | N/A | N/A | N/A | 17% | 0 | orchestrator-admin 7/15, jobs-adv 0/4 | Requires cloud auth |
+| uipath-document-understanding | 0 | — / — (0%) | — | — | — | **0%** (planned) | — | — (planned) | Skill folder not yet created |
 
-Overall is weighted and renormalized across applicable dimensions (see Phase 4e). N/A cells mean the skill is missing that dimension (e.g. no Critical Rules section, single-path skill, catalog skill with no workflow steps) — weights redistribute proportionally. Planned-but-missing skills (no `skills/<name>/` folder yet) are scored at 0% and tagged "(planned)" in the Overall column; they appear in the same table — do not split them out, so the gap is impossible to overlook.
+Overall is weighted and renormalized across applicable dimensions (see Phase 4e). N/A cells mean the skill is missing that dimension (e.g. no Critical Rules section, single-path skill, catalog skill with no workflow steps) — weights redistribute proportionally. Planned-but-missing skills (no `skills/<name>/` folder yet) are scored at 0% and tagged "(planned)" in the Overall column; they appear in the same table — do not split them out, so the gap is impossible to overlook. **Top untested buckets** (Phase 4a) names the 2–3 largest `None` groups dragging each skill's score, so a reader can see *why* the coverage number is low without opening the per-skill report; full detail lives in each report's Untested Features section.
 
 **Totals:** N tests across M skills (P planned, not yet authored). X components inventoried, Y directly tested (Z%). A workflow steps, B covered. C critical rules, D directly tested. E multi-path skills, F with full path coverage. Anti-patterns are inventoried per skill but intentionally excluded from the overall score.
 

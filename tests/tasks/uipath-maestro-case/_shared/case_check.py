@@ -141,16 +141,19 @@ def task_is_skeleton(task: dict) -> bool:
 # ── Schema-aware structural helpers ─────────────────────────────────────────
 #
 # v19 wraps case-level metadata under a `root` node; v20 hoists it to the
-# top-level + a `metadata` block. Node and edge internals are identical.
+# top-level + a `metadata` block, and v21–v23 inherit that flat shape unchanged.
+# Node internals are identical across all of them. "flat schema" below = v20+.
 
 
-def _is_v20(plan: dict) -> bool:
-    """Return True if ``plan`` is v20 schema (top-level metadata)."""
+def _is_flat_schema(plan: dict) -> bool:
+    """Return True if ``plan`` is the flat top-level-metadata schema (v20+, incl. v23)."""
     if not isinstance(plan, dict):
         return False
     version = plan.get("version") or ""
-    if isinstance(version, str) and version.startswith("20"):
-        return True
+    if isinstance(version, str):
+        major = version.split(".", 1)[0]
+        if major.isdigit() and int(major) >= 20:
+            return True
     return "metadata" in plan and isinstance(plan.get("metadata"), dict)
 
 
@@ -184,24 +187,57 @@ def find_node_by_label(plan: dict, label: str) -> dict:
     _fail(f"no node with data.label={label!r}; available labels: {labels}")
 
 
-def find_edges(
+def stage_transitions(plan: dict) -> list[dict]:
+    """Stage→stage transitions derived from entry/exit conditions.
+
+    Edges are retired — ``plan["edges"]`` always stays ``[]`` — so reachability
+    lives entirely in the conditions. A transition ``{"source": X, "target": Y}``
+    exists when EITHER:
+
+    - ``Y``'s ``entryConditions`` carries a ``selected-stage-completed`` /
+      ``selected-stage-exited`` rule with ``selectedStageId == X``, OR
+    - ``X``'s ``exitConditions`` carries ``exitToStageId == Y``.
+
+    ``case-entered`` entries are NOT transitions — their source is the case
+    start, not a stage. Both encodings are unioned so a caller need not know
+    which convention an SDD used to wire a given hop. Mirrors the connector
+    graph the frontend now derives from conditions.
+    """
+    stage_types = {"case-management:Stage", "case-management:ExceptionStage"}
+    pairs: set[tuple[str, str]] = set()
+    for node in plan.get("nodes") or []:
+        if node.get("type") not in stage_types:
+            continue
+        nid = node.get("id")
+        for cond in iter_stage_entry_conditions(node):
+            for group in cond.get("rules") or []:
+                for rule in group or []:
+                    src = (rule or {}).get("selectedStageId")
+                    if src:
+                        pairs.add((src, nid))
+        for cond in iter_stage_exit_conditions(node):
+            dst = cond.get("exitToStageId")
+            if dst:
+                pairs.add((nid, dst))
+    return [{"source": s, "target": t} for s, t in sorted(pairs)]
+
+
+def find_transitions(
     plan: dict, *, source: str | None = None, target: str | None = None
 ) -> list[dict]:
+    """Condition-derived stage transitions, filterable by ``source``/``target``.
+
+    Replaces the retired ``find_edges``. Returns ``{"source", "target"}`` dicts
+    so existing graph walks that read ``.get("target")`` keep working unchanged.
+    """
     out: list[dict] = []
-    for edge in plan.get("edges") or []:
-        if source is not None and edge.get("source") != source:
+    for tr in stage_transitions(plan):
+        if source is not None and tr["source"] != source:
             continue
-        if target is not None and edge.get("target") != target:
+        if target is not None and tr["target"] != target:
             continue
-        out.append(edge)
+        out.append(tr)
     return out
-
-
-def edge_labels_from(plan: dict, source_id: str) -> list[str]:
-    return [
-        (e.get("data") or {}).get("label") or ""
-        for e in find_edges(plan, source=source_id)
-    ]
 
 
 def first_rule_of_condition(cond: dict | None) -> dict | None:
@@ -229,14 +265,14 @@ def iter_stage_exit_conditions(node: dict):
 
 def get_variables(plan: dict) -> dict:
     """Return ``{inputs, outputs, inputOutputs}`` — top-level in v20, ``root.data.uipath.variables`` in v19."""
-    if _is_v20(plan):
+    if _is_flat_schema(plan):
         return plan.get("variables") or {}
     root = get_root(plan)
     return ((root.get("data") or {}).get("uipath") or {}).get("variables") or {}
 
 
 def get_bindings(plan: dict) -> list[dict]:
-    if _is_v20(plan):
+    if _is_flat_schema(plan):
         return plan.get("bindings") or []
     root = get_root(plan)
     return ((root.get("data") or {}).get("uipath") or {}).get("bindings") or []
@@ -244,7 +280,7 @@ def get_bindings(plan: dict) -> list[dict]:
 
 def get_case_exit_conditions(plan: dict) -> list[dict]:
     """v19 ``root.caseExitConditions`` / v20 ``metadata.caseExitRules`` — field rename, identical shape."""
-    if _is_v20(plan):
+    if _is_flat_schema(plan):
         return (plan.get("metadata") or {}).get("caseExitRules") or []
     root = get_root(plan)
     return root.get("caseExitConditions") or []
@@ -258,7 +294,7 @@ def get_sla_rules(target: dict) -> list[dict]:
     in both schemas.
     """
     if "nodes" in target and isinstance(target.get("nodes"), list):
-        if _is_v20(target):
+        if _is_flat_schema(target):
             return (target.get("metadata") or {}).get("slaRules") or []
         root = get_root(target)
         return ((root.get("data") or {}).get("slaRules")) or []
@@ -280,7 +316,7 @@ def get_root(plan: dict) -> dict:
     (or ``plan.nodes`` if embedded). v20: synthesizes a v19-shaped dict so
     legacy paths like ``root.data.uipath.variables`` still resolve.
     """
-    if _is_v20(plan):
+    if _is_flat_schema(plan):
         metadata = plan.get("metadata") or {}
         synthesized: dict = {
             "id": plan.get("id"),

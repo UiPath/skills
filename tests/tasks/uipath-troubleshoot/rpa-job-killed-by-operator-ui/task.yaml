@@ -1,0 +1,187 @@
+task_id: skill-troubleshoot-rpa-job-killed-by-operator-ui
+description: >
+  UiPath diagnostic agent must diagnose a faulted LongRunningProcess job that
+  ended with System.Exception: "Job stopped with an unexpected exit code:
+  0x40010004". The job was force-killed from the Orchestrator UI by a named
+  human operator. The agent must match the orchestrator/job-stopped-exit-code-0x40010004
+  playbook, query the audit log to identify the actor, and recommend the
+  Operator-Initiated-Kill resolution path.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, faulted-jobs, orchestrator, job-killed, exit-code-0x40010004]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My LongRunningProcess job in Orchestrator just ended Faulted with
+  "Job stopped with an unexpected exit code: 0x40010004". I didn't
+  touch it — what killed it and who did it? Tell me the root cause
+  and stop there.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the orchestrator/job-stopped-exit-code-0x40010004 playbook AND identified an operator-initiated Kill as the cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My LongRunningProcess job in Orchestrator just ended Faulted
+         with 'Job stopped with an unexpected exit code: 0x40010004'.
+         I didn't touch it — can you figure out what happened?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/products/orchestrator/playbooks/job-stopped-exit-code-0x40010004.md
+        because the runtime error
+          "System.Exception: Job stopped with an unexpected exit code: 0x40010004"
+        is the verbatim signature of that playbook.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` — the
+             orchestrator/job-stopped-exit-code-0x40010004 playbook
+             should appear (absolute or relative path).
+          2. The agent's tool-call summary — a Read on
+             references/products/orchestrator/playbooks/job-stopped-exit-code-0x40010004.md.
+          3. state.json's `scope.domain` — should include the
+             orchestrator domain.
+
+        Acceptable / non-penalized: the agent may also Read the
+        sibling foreground-already-running playbook (which cross-
+        references 0x40010004) while ruling it out. Exploration is
+        normal.
+
+        PENALIZED: matching ONLY the foreground-already-running
+        playbook (different exception class — InvalidOperationException
+        about a foreground guard, not the abrupt 0x40010004 termination),
+        or generic runtime-exceptions playbooks (this is not user code).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The job's executor was force-killed via Orchestrator's
+            Stop → Kill action.
+          - State history shows `Running → Stopping → Faulted` —
+            Stopping is the operator-initiated transition that
+            distinguishes this from a host-side kill.
+          - The audit log entry for this job key names the actor:
+            `Jane Doe` (`jane.doe@acme.com`) issued the Stop with
+            strategy Kill, via the Orchestrator UI, from IP
+            10.50.12.34.
+
+        The reference fix (any of the following is acceptable):
+          - Train operators to use `SoftStop` before `Kill`
+            (`uip or jobs stop <key> --strategy SoftStop`).
+          - Restrict who holds the `Jobs.Edit` permission on the
+            folder so casual users cannot kill running jobs.
+          - If the kill was intentional, no fix is required —
+            confirm intent with the actor.
+
+        NOT acceptable as the sole conclusion:
+          - "Out of memory" (state history shows operator-initiated
+            Stopping; this is not an OOM kill).
+          - "Session logoff / RDP disconnect" (no security log
+            evidence; state history shows Stopping, not abrupt Faulted).
+          - "Robot service restart" (no System log evidence; the kill
+            originated in Orchestrator, not on the host).
+          - "Restart the Robot" / "Clear the queue" (recovery actions,
+            not root-cause fixes).
+
+        Evidence sources (in priority order):
+          1. state.json — `requirements.error_code`,
+             `requirements.error_message`, `triage_summary`,
+             scope/domain.
+          2. hypotheses.json — the hypothesis flagged
+             `is_root_cause: true` should describe operator-initiated
+             Kill from Orchestrator and name the actor.
+          3. The agent's tool-call summary — should include a
+             `uip admin audit tenant events --search` call against
+             the job key, and a `uip or jobs history` call showing
+             the Stopping/Killing transition.
+          4. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched orchestrator/job-stopped-exit-code-0x40010004
+             AND named operator-initiated Kill via Orchestrator (with
+             the audit-identified actor — Jane Doe, jane.doe@acme.com,
+             or equivalent attribution) as the root cause, with at
+             least one actionable fix from the acceptable list.
+        0.8  Both partial: correct playbook but conclusion identifies
+             "operator killed the job" without naming the actor from
+             the audit log; OR conclusion names the audit actor but
+             matched the broader 0x40010004 page without confirming
+             the Operator Kill branch specifically.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (job faulted with 0x40010004) but
+             neither matched the playbook nor identified the operator-
+             initiated Kill.
+        0.0  Misdiagnosed (concluded host-side cause — OOM, session
+             logoff, service restart — when state history clearly
+             showed operator-initiated Stopping).
+
+      Be substance-focused, not schema-focused. Intermediate file
+      shapes may vary between runs — look at the meaning of what the
+      agent recorded.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing job. You did NOT
+    kill it yourself — you are surprised to see it Faulted. You only
+    have the information you wrote in your initial report.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion the agent requests so
+    the investigation reaches the audit log and identifies the actor.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, audit, system-activities), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know who killed the job."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -25,6 +25,7 @@ What to look for:
 - Check if the target application changed recently (version update, UI redesign)
 - Check selector attributes — fragile selectors use title/name, robust selectors use automationId/className
 - If HA data exists but no fix was produced: check eligibility and confidence threshold
+- If the job ended `Successful` yet the action never happened, this is a silent no-op — not a thrown selector failure. Check **Verify Execution**; an absent or target-less Verify is the usual reason no exception surfaced (see [scope-container-wrong-page.md](./scope-container-wrong-page.md))
 
 ## Investigation
 
@@ -42,3 +43,4 @@ What to look for:
 - Update the selector to use more stable attributes (aaname, automationid, role) instead of volatile ones (idx, tableCol, tableRow)
 - Add wildcard matching for dynamic portions: `name='Invoice*'` instead of `name='Invoice_20250319'`
 - Consider adding a Check App State activity before the failing activity to wait for the element
+- If the activity completed `Successful` but never acted (no exception), configure **Verify Execution** on it with a real expected-outcome target so the silent no-op faults and becomes diagnosable — see [scope-container-wrong-page.md](./scope-container-wrong-page.md). Configure/enable Verify; never remove it. Interactive — confirm before editing the workflow.

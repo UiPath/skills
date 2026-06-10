@@ -4,7 +4,7 @@ description: >
   user asks to add LLM-filled columns to a CSV from a Studio Web Agent
   Builder / `agent.json` (lowCode) project. Verifies the skill fires
   for the low-code + CSV signal pair.
-tags: [uipath-agents, smoke, low-code, lifecycle:discover, context-grounding]
+tags: [uipath-agents, smoke, mode:build, low-code, lifecycle:discover, context-grounding]
 
 run_limits:
   expected_turns: 5
