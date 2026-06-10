@@ -87,7 +87,7 @@ uip or libraries download "UiPath.System.Activities:24.10.0" \
   --destination ./system-activities.nupkg --output json
 
 # Delete an old version
-uip or libraries delete "UiPath.System.Activities:24.4.0" --output json
+uip or libraries delete "UiPath.System.Activities:24.4.0" --yes --output json
 ```
 
 ---

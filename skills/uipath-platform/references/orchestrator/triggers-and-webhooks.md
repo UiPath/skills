@@ -148,7 +148,7 @@ trigger types (time, queue, api).
 ```bash
 uip or triggers update <trigger-key> --type time --folder-path "Finance" --disabled --output json
 uip or triggers update <trigger-key> --type time --folder-path "Finance" --enabled --output json
-uip or triggers delete <trigger-key> --type time --folder-path "Finance" --output json
+uip or triggers delete <trigger-key> --type time --folder-path "Finance" --yes --output json
 ```
 
 ---
@@ -213,7 +213,7 @@ uip or webhooks update <webhook-key> --disabled --output json
 uip or webhooks update <webhook-key> --enabled --output json
 
 uip or webhooks ping <webhook-key> --output json     # test connectivity
-uip or webhooks delete <webhook-key> --output json
+uip or webhooks delete <webhook-key> --yes --output json
 ```
 
 ---

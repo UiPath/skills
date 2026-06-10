@@ -73,7 +73,7 @@ uip or queues update <queue-key> --max-retries 5 --no-auto-retry --output json
 
 # Delete queue (cross-folder). Refuses if the queue still has items;
 # pass --force to delete it and its items anyway.
-uip or queues delete <queue-key> --output json
+uip or queues delete <queue-key> --yes --output json
 uip or queues delete <queue-key> --force --output json
 ```
 
@@ -166,10 +166,10 @@ uip or queue-items update <item-unique-key> --folder-path "Finance" \
   --priority High --output json
 
 # Delete a single item by key
-uip or queue-items delete <item-unique-key> --folder-path "Finance" --output json
+uip or queue-items delete <item-unique-key> --folder-path "Finance" --yes --output json
 
 # Delete several items in one call
-uip or queue-items delete-bulk <key1> <key2> --folder-path "Finance" --output json
+uip or queue-items delete-bulk <key1> <key2> --folder-path "Finance" --yes --output json
 ```
 
 `update` changes `--priority`, `--due-date`, `--defer-date`, and `--specific-content`. Progress is a work-in-progress message a running robot reports, so the CLI does not let you set it.

@@ -19,6 +19,7 @@ All `uip or` commands share a set of cross-cutting options:
 | `--sort-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
 | `--all-fields` | Most get/list commands | Return the full API DTO instead of the curated summary. Use when you need a field the curated view drops. Note: curated keys are PascalCase, raw DTO keys are camelCase — the shapes do not share casing. |
 | `--output-filter <expr>` | All commands | JMESPath expression to filter/reshape JSON output (e.g., `--output-filter "Data[].Key"`). |
+| `-y, --yes` | Delete commands | Confirm the irreversible operation. Required — the CLI never prompts; without it the command fails with "Confirmation required". Where a command also has `--force` (e.g. non-empty `queues`/`buckets` delete), `--force` implies `--yes`. |
 
 **Pagination pattern.** List responses include a `Pagination` block with `Returned`, `Limit`, `Offset`, and `HasMore`. When `HasMore` is `true`, increment `--offset` by `--limit` and fetch again. Continue until `HasMore` is `false` or `Returned < Limit`.
 

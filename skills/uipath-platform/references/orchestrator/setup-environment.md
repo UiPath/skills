@@ -284,10 +284,10 @@ uip or machines edit <machine-key-guid> \
 uip or machines unassign <machine-key-guid> --folder-path "Finance" --output json
 
 # Delete the machine template entirely (tenant-level)
-uip or machines delete <machine-key-guid> --output json
+uip or machines delete <machine-key-guid> --yes --output json
 
 # Bulk delete
-uip or machines delete <key1> <key2> --output json
+uip or machines delete <key1> <key2> --yes --output json
 ```
 
 Notes:

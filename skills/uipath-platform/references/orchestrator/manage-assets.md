@@ -160,7 +160,7 @@ uip or assets unshare <asset-key> --folder-path "Production" --output json
 Delete the asset entirely. Cross-folder -- no `--folder-path` needed.
 
 ```bash
-uip or assets delete <asset-key> --output json
+uip or assets delete <asset-key> --yes --output json
 ```
 
 ---
@@ -187,7 +187,7 @@ uip or assets get-asset-value <asset-key> \
   --folder-path "Finance" --output json
 
 # 5. Delete the old version (if you created a new asset instead of updating)
-uip or assets delete <old-key> --output json
+uip or assets delete <old-key> --yes --output json
 ```
 
 ---
