@@ -7,12 +7,6 @@ description: >
   and the agent's final summary reports at least one bundle using the
   `<Friendly Name> (<CODE>)` format from the docs page.
 tags: [uipath-platform, e2e, licensing]
-skip: true
-# Blocked: depends on `uip platform users licenses available`,
-# `groups rules get/details`, and `licenses consumables get` — none of
-# which are in the public @uipath/platform-tool (v1.0.0, which ships only
-# `tenants licenses get|set`). Re-enable when the CLI publishes these
-# subcommands. See PLT-103133.
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "WebFetch"]
