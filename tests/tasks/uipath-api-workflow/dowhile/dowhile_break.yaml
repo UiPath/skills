@@ -1,0 +1,71 @@
+task_id: skill-api-workflow-dowhile-break
+description: >
+  Skill-guided evaluation: agent authors a DoWhile loop with a conditional
+  Break that counts up to a target. Tests whether the skill teaches the DoWhile
+  shape (rule 9 — for.in is always "${ [1] }", body must update the condition),
+  the Break value as the string "true" wrapped in an If (rule 12), and exiting
+  the innermost loop.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, node:loop]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Takes a `stopAt` integer input
+  - Uses a DoWhile loop that increments a counter starting at 0
+  - Breaks out of the loop once the counter reaches `stopAt`
+  - Returns { "final": <counter> }
+
+  Test locally:
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"stopAt":3}' --output json
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"stopAt":6}' --output json
+
+  Confirm both runs return Result: "Success" with final = 3 and 6.
+
+  Important:
+  - The `uip` CLI is already available.
+  - StudioWeb-roundtrip-safe: DoWhile needs a #Body and must update its
+    condition variable; Break is wrapped in an If, its value is the STRING
+    "true" (not boolean), with then:"exit".
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Uses a DoWhile loop and a Break with string \"true\" (rules 9, 12)"
+    path: "Workflow.json"
+    includes:
+      - "DoWhile"
+      - '"break": "true"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts to 3 (stopAt=3)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"stopAt":3}'' --output json | grep -qE ''"final"[ :]+3'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts to 6 (proves the Break tracks the input, not a constant)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"stopAt":6}'' --output json | grep -qE ''"final"[ :]+6'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 11
+  max_turns: 35

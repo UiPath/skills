@@ -1,0 +1,56 @@
+task_id: skill-api-workflow-wait
+description: >
+  Skill-guided smoke: agent authors a workflow with a Wait activity that pauses
+  briefly, then returns. Tests whether the skill teaches the Wait activity shape
+  (wait.seconds / milliseconds) and that a paused workflow still completes.
+tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Waits for 1 second using a Wait activity
+  - Then returns { "done": true }
+
+  Test locally:
+    uip api-workflow run ./Workflow.json --no-auth --output json
+
+  Confirm the run returns Result: "Success" and done = true.
+
+  Important:
+  - The `uip` CLI is already available.
+  - StudioWeb-roundtrip-safe: Response with then:"end".
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Uses a Wait activity"
+    path: "Workflow.json"
+    includes:
+      - "Wait"
+      - "wait"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow completes after the wait and returns done"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -q ''done'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 7
+  max_turns: 25

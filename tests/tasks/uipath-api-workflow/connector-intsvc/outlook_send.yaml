@@ -1,0 +1,83 @@
+task_id: skill-api-workflow-intsvc-outlook-send
+description: >
+  Skill-guided e2e: agent authors an Integration Service vendor activity
+  (Outlook send email, IntSvc kind) via the full connector flow — registry
+  resolve, REQUIRED connection ping, stub with --connection-id. Tests the
+  IntSvc authoring path: call:"UiPath.IntSvc", a real pinged connection UUID
+  (NOT a placeholder), and the resolve+ping+stub discipline (rule 16).
+  AUTHORING ONLY — the agent must NOT run with auth, so no real email is sent.
+  REQUIRES cloud auth AND a working Outlook connection in the runner's tenant;
+  runs under the authed (nightly) experiment, never the no-auth smoke gate.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, feature:registry]
+
+initial_prompt: |
+  Author (do NOT execute) a UiPath API Workflow at Workflow.json that sends an
+  email via the Outlook Integration Service connector. Build the activity using
+  the connector discovery flow: resolve the activity, verify a working Outlook
+  connection, and stub the activity against that connection. Then validate the
+  workflow offline.
+
+  Do NOT run the workflow with auth and do NOT send a real email — stop after
+  the workflow validates.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Before starting, load the uipath-api-workflow skill and follow its
+  connector-activity discovery flow.
+
+  Important:
+  - The `uip` CLI is available and authenticated, and an Outlook connection
+    exists in the tenant.
+  - The activity must be produced by the registry (resolve + stub with a real,
+    pinged connection UUID), not hand-authored, and must contain NO
+    <REPLACE_WITH_*> placeholders.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the connection with a ping (rule 16 — REQUIRED)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+ping'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent stubbed the activity from the registry"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+api-workflow\s+registry\s+stub'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Uses the IntSvc kind (call: UiPath.IntSvc)"
+    path: "Workflow.json"
+    includes:
+      - "UiPath.IntSvc"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No unresolved connection placeholder survived (rule 16 — sentinel must be replaced)"
+    command: "! grep -q 'REPLACE_WITH' Workflow.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow passes offline validation"
+    command: 'uip api-workflow validate ./Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40
