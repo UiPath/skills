@@ -6,7 +6,7 @@ description: >
   format is authored correctly, that `settings.retrievalMode` is a
   valid value, and that `uip agent validate` accepts the resource and
   regenerates derived files.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
   expected_turns: 25

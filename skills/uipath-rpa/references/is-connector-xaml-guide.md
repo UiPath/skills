@@ -109,10 +109,10 @@ The response contains the complete `ConnectorActivity` element with:
 For each field you want to bind, you need its declared `name` and `dataType`. Read the schema from Integration Service:
 
 ```bash
-uip is resources describe <connector-key> <operation-name> --operation Create --output json
+uip is resources describe <connector-key> <object-name> --operation Create --output json
 ```
 
-Note: it's `resources describe` (not `activities describe`). `activities` only has `list`.
+The second positional is the **object/resource name** (from `uip is resources list`), not the operation; the operation goes in `--operation`. Note: it's `resources describe` (not `activities describe`). `activities` only has `list`.
 
 The response includes a `metadataFile` path like:
 ```

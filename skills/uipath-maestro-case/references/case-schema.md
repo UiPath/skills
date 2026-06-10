@@ -444,12 +444,14 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `displayName` | string? | Human-readable label shown in the UI |
 | `type` | string | Task type — see task plugins under `plugins/tasks/` |
 | `data` | object | Type-specific configuration — see corresponding plugin's `impl-json.md`. For connector tasks, `data.bindings` references the root-level bindings array. |
-| `skipCondition` | string? | Expression — skip the task when truthy |
+| `skipCondition` | string? | `=js:` expression — skip the task when truthy. Use strict equality ([`bindings-and-expressions.md`](bindings-and-expressions.md#equality-operators)). |
 | `entryConditions` | TaskEntryCondition[]? | See §3. Written by the task-entry-conditions plugin from the SDD's authored Entry Condition rows — applied uniformly across task types (no auto-injection by task type). |
 | `shouldRunOnlyOnce` | boolean? | Run the task at most once per case, even if the stage is re-entered |
 | `shouldRunOnReEntry` | boolean? | *(deprecated — use `shouldRunOnlyOnce`)* Re-run when stage is re-entered |
 | `isRequired` | boolean? | Whether the task must complete for the stage to complete |
 | `description` | string? | Task description |
+
+> **Envelope fields are top-level, not `data`.** Every field above except `data` lives directly on the task object — `skipCondition`, `entryConditions`, `shouldRunOnlyOnce`, `isRequired`, etc. are siblings of `data`, never nested inside it. `data` holds only the type-specific config defined by the task's plugin.
 
 **Positioning:** tasks have no `x`/`y`. They live in `stageNode.data.tasks[laneIndex][]` — a 2D array where the outer index is the lane (rendering column) and the inner index is the order within the lane. Default convention: one task per lane. Exception: within a `runs-sequentially` group, tasks that should run in parallel share the same lane (shared lane = parallel siblings, carries execution semantics).
 

@@ -26,8 +26,9 @@ uip is activities list <connector-key> --output json
 # What data objects/resources does it expose?
 uip is resources list <connector-key> --output json
 
-# Describe a specific operation's schema (fields, types, required flags, enum values):
-uip is resources describe <connector-key> <operation-name> --operation Create --output json
+# Describe an object's schema for an operation (fields, types, required flags, enum values).
+# Second positional is the object/resource name (from `resources list`); the operation goes in --operation:
+uip is resources describe <connector-key> <object-name> --operation Create --output json
 ```
 
 `resources describe` is the authoritative field schema — **never guess field names**. The response includes a `metadataFile` path like `~/.uipath/cache/integrationservice/<connector>/_static/<operation>.Create.json`. Read that JSON directly for the full `parameters` / `requestFields` / `responseFields` list.

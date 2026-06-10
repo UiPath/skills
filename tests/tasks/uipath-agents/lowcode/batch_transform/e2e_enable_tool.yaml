@@ -5,7 +5,7 @@ description: >
   flow (uip solution init, uip agent init, uip agent refresh, uip
   agent validate) and that resource.json uses the exact built-in shape
   (type=internal, referenceKey=null, properties.toolType=batch-transform).
-tags: [uipath-agents, e2e, low-code, lifecycle:generate, context-grounding]
+tags: [uipath-agents, e2e, mode:build, low-code, lifecycle:generate, context-grounding]
 
 run_limits:
   expected_turns: 21

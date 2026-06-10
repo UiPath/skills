@@ -64,6 +64,10 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 
 > **JIT object mode (out of scope for this version).** When an activity's `inputMetadata.inputMode === "jitObject"` (synthetic HTTP request bodies, generic body-passthrough activities), the whole connector body becomes one `=js:({...})` expression with bare JS variable references inline. The skill currently routes synthetic HTTP through `queryParameters` instead. JIT-mode authoring is not documented in this version.
 
+### Equality operators
+
+In any `=js:` expression use **strict** `===` / `!==`, never loose `==` / `!=`. JS eval coerces types on loose equality (`vars.flag == "true"` is truthy for the string `"true"`), which silently breaks boolean/number routing. Canonical: `=js:vars.approved === true`.
+
 ### Conservative rule for `=metadata.X`
 
 The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is NOT resolved at runtime. **Always wrap as `=js:metadata.X`** (or `=js:(metadata.X)` if the sink requires parens). The FE design-time picker may classify `=metadata.X` as "variable" type, but that's a UI hint, not a runtime contract.

@@ -18,17 +18,17 @@
   },
   "skills": {
     "uipath-admin": {
-      "status": "preview",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-agents": {
-      "status": "stable",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-api-workflow": {
-      "status": "preview",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -38,7 +38,7 @@
       "last_synced": null
     },
     "uipath-data-fabric": {
-      "status": "preview",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -53,12 +53,12 @@
       "last_synced": null
     },
     "uipath-governance": {
-      "status": "preview",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-human-in-the-loop": {
-      "status": "preview",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -68,32 +68,32 @@
       "last_synced": null
     },
     "uipath-maestro-bpmn": {
-      "status": "stable",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-maestro-case": {
-      "status": "preview",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-maestro-flow": {
-      "status": "stable",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-mcp-servers": {
-      "status": "preview",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-planner": {
-      "status": "stable",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-platform": {
-      "status": "stable",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -103,12 +103,12 @@
       "last_synced": null
     },
     "uipath-rpa": {
-      "status": "stable",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-solution": {
-      "status": "stable",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
@@ -118,12 +118,12 @@
       "last_synced": null
     },
     "uipath-test": {
-      "status": "preview",
+      "status": "in-development",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
     "uipath-troubleshoot": {
-      "status": "stable",
+      "status": "preview",
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     }
