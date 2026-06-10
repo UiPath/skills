@@ -5,7 +5,7 @@ description: >
   Tests whether the skill teaches: WorkflowStart, the If wrapper pattern
   (#Wrapper / #Then / #Else / then:exit), single-key Assigns, wrapped string
   literals (${'PASS'} for StudioWeb roundtrip), and Response with then:end.
-tags: [uipath-api-workflow, smoke, lifecycle:generate, feature:if-else]
+tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate, feature:if-else]
 
 initial_prompt: |
   Make a UiPath API Workflow JSON file at Workflow.json that:

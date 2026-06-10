@@ -1,0 +1,63 @@
+task_id: skill-api-workflow-validate-smoke
+description: >
+  Skill-guided smoke: agent authors a minimal API workflow (single Assign +
+  Response) and runs `uip api-workflow validate` as the offline closure step.
+  Tests whether the skill teaches the validate-before-run discipline (rule 20)
+  and the JSON workflow skeleton (WorkflowStart, root sequence, Response).
+tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Sets a variable `message` to the string "ready"
+  - Returns { "status": "ready" }
+
+  Then validate it (offline, no run needed) and confirm it reports valid.
+
+  Important:
+  - The `uip` CLI is already available.
+  - StudioWeb-roundtrip-safe: single-key Assign, string literals wrapped as
+    ${'literal'}, Response with then:"end".
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Has WorkflowStart system activity (rule 2)"
+    path: "Workflow.json"
+    includes:
+      - "WorkflowStart"
+      - "isTransparent"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the offline validator with JSON output (rule 20 + rule 18)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+api-workflow\s+validate\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Static validation passes (Status: Valid)"
+    command: 'uip api-workflow validate ./Workflow.json --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 7
+  max_turns: 25
