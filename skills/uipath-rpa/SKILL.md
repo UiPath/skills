@@ -122,7 +122,7 @@ When the request is "automate this dialog/form" or "build a UI test from these m
 3. **Capture all targets** screen by screen via `uia-configure-target` and screen advancement ([§ Multi-Step UI Flows](references/uia-configure-target-workflows.md)).
 4. **Then enter authoring phase:** project-context discovery (the precondition above), analyzer rules (Critical Rule 3 — Authoring-phase start), write code, validate.
 
-Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use the § Placeholder-Selector Stub Pattern above instead.
+Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use the § Placeholder-Selector Stub Pattern above instead. The Window Baseline does not tell you if the app is installed and has a GUI — validate that separately (e.g. look for the executable on disk) or ask the user.
 
 ## Session Pre-warm
 
@@ -187,7 +187,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 ### Destination Preflight (Both Modes)
 
-**Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution new <NAME>` → `uip solution project import --source <PROJECT_DIR> --solutionFile <SOLUTION>.uipx` → `uip solution upload <SOLUTION_DIR>`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and Orchestrator publish (`uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
+**Studio Web destination → Solution-wrapped deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Treat these phrases as SW signals in the request: "Studio Web", "SW", "upload to web", "browser editor", "cloud workspace edit". On match, build the RPA project normally per the rest of this skill, then hand off to `uipath-solution` to wrap and ship it: `uip solution init <NAME>` → `uip solution project import "<PROJECT_DIR>" --solutionFile <SOLUTION>.uipx` → `uip solution upload "<SOLUTION_DIR>"`. The final deliverable is the Solution, not the bare project folder. Local execution (`uip rpa run`) and the Orchestrator package flow (`uip rpa pack` → `uip or packages upload` — there is no `uip rpa publish`) are fine with a bare project — only an SW destination changes the deliverable shape.
 
 ### Execution Discipline (Both Modes)
 

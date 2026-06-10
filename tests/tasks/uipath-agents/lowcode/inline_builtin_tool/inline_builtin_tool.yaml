@@ -8,7 +8,7 @@ description: >
   `properties.toolType` set to one of the four documented built-in
   tool keys. Verifies a `uipath.agent.resource.tool.*` flow node is
   wired to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e, low-code, inline-flow]
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
 
 run_limits:
   expected_turns: 45

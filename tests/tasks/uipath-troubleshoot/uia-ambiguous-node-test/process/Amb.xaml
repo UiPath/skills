@@ -1,0 +1,116 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Amb" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="Amb_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing.Common" xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives" xmlns:uix="http://schemas.uipath.com/workflow/activities/uix" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Text</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.UIAutomationCore.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+      <x:String>UiPath.Shared.Activities</x:String>
+      <x:String>UiPath.Platform.ObjectLibrary</x:String>
+      <x:String>UiPath.Platform.SyncObjects</x:String>
+      <x:String>UiPath.UIAutomationNext.Contracts</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>UiPath.UIAutomationNext.Models</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>Microsoft.CSharp</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization</AssemblyReference>
+      <AssemblyReference>System.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.ServiceModel.Activities</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Constants</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.OCR.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+      <AssemblyReference>System.Private.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.Private.DataContractSerialization</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Formatters</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Primitives</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Amb" sap:VirtualizedContainerService.HintSize="998,742.6566666666666" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <uix:NApplicationCard AttachMode="ByInstance" DisplayName="Edge DataTables  Javascript table library" HealingAgentBehavior="Job" sap:VirtualizedContainerService.HintSize="452,440.5" sap2010:WorkflowViewState.IdRef="NApplicationCard_1" InteractionMode="DebuggerApi" ScopeGuid="c9abbea0-fc1b-4aa6-8b39-ce7374298cb1" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Do" sap:VirtualizedContainerService.HintSize="450,245.5" sap2010:WorkflowViewState.IdRef="Sequence_5">
+            <sap:WorkflowViewStateService.ViewState>
+              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+              </scg:Dictionary>
+            </sap:WorkflowViewStateService.ViewState>
+            <uix:NClick ActivateBefore="True" ClickType="Single" DisplayName="Click 'Airi Satou'" HealingAgentBehavior="SameAsCard" sap:VirtualizedContainerService.HintSize="416,185.5" sap2010:WorkflowViewState.IdRef="NClick_1" InteractionMode="Simulate" KeyModifiers="None" MouseButton="Left" ScopeIdentifier="c9abbea0-fc1b-4aa6-8b39-ce7374298cb1" Version="V5">
+              <uix:NClick.Target>
+                <uix:TargetAnchorable BrowserURL="datatables.net" ContentHash="ypge_inVekqOWMDf1rXGTA" DesignTimeRectangle="1610, 1061, 345, 84" ElementType="Text" ElementVisibilityArgument="Interactive" FuzzySelectorArgument="&lt;webctrl id='example' matching:id='fuzzy' fuzzylevel:id='0.0' tag='TABLE' /&gt;&lt;webctrl tag='TD' /&gt;" Guid="44947ff5-e45c-4680-b8e6-eb87682426be" InformativeScreenshot="3402dfceb6aec6cbd2400dbf2fb4dce9.jpg" Reference="z7XKmoN6VE-q9t8QvMUhDw/qMKDcBcHK0WUGrfnQoDObA" ScopeSelectorArgument="&lt;html app='msedge.exe' title='DataTables | Javascript table library' /&gt;" SearchSteps="FuzzySelector" Version="V6" WaitForReadyArgument="Interactive" />
+              </uix:NClick.Target>
+            </uix:NClick>
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.OCREngine>
+        <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+          <ActivityFunc.Argument>
+            <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+          </ActivityFunc.Argument>
+        </ActivityFunc>
+      </uix:NApplicationCard.OCREngine>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="-13, -13, 3866, 2330" BrowserType="Edge" ContentHash="TRFPyf5PfES2JfcR8Nw-iA" IconBase64="iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAZdEVYdFNvZnR3YXJlAEFkb2JlIEltYWdlUmVhZHlxyWU8AAADR0lEQVQ4T22SXUxTBxiGv56etijpQLndHIwNUeZPZmK24UCLVSjOVGSVbFKrqKWjBQrSqqVWClMGFmEqbUHXuDn/UPxJFDbZREEx2O2ctoesiCs/0wuvjMmy6YV7lxo1se65ft/34vk+ohhEIqK4OHZB/HRJVfz0OPe0aVKPVCKyiBlaHJt9jTgZOzspaUZX2pycJ9lKB/LWdCBX3YklinqkpCqfSqWyy0T0QWzvGfHx0hWz3s54sFrjhXH7CMptf8C4PYwyyyhKqyIoMd1BnvoYZiSlPyIizStlmYx9981Z6Q+0+kuw1k/A4vSj/YgfZy/w6L7Iwev7FRZHAHrzFIp0g0icmfYXES16OZCQID+pLmqHrXESdc3D6B8M4+qNSRw7cxdHfhjF6XNh9F4JYK+Lh6HqT6wqOAkxK+uLKiMJK5o9d57yH6tzFPZGDtcGw7jw4xQa2oJoaA2hziVg554RNB8Q0HuFg71hBF+a7yMtXf0vEWWSTMqUrcivhaNpCm4fDz93D01uAS2dApraQ3C2hLDzqxCMVgGuA8PwfuvHZuM95KxsBRHtJqmEaSn8wg2naxJffyNg6PYE2g6PwN7MwdbIocbJocLGY6s5CFPNLbg7rqOweAzZylNgGNFREotF+ws/96Bu3xS2OYLwHQ/g1PnfUb37N1jqOVQ7eJh28NhSGYLBPIRDnn6sXT+GrOVdYFnmu6jDcsXKWphtE9BXB1C9y4/ePgG2PTwqanmU7+Bh2BZAsUFAja0P+1oHsOqzcXz4yUGIROSMDrz/VnL2k41lYWypDKKkgkeHbxgHO3lsrgxiqzkErUGArnQQns5LKK3goCqYQHqGNupg6bMzMoy4e1luB0pM49hgCMJYcxsnTt9Ele0m9JUDsNr74Pb2wGofhqogguWqHsjlM68TkfjFK8yVv5H8cLXmF2hLx1G0KYS6vUM47LuGdu/PcLUNQG/ikVcQgWoNj+SUrMdE9PHLR3qOOiHxvYc5qhNYp7uLQm0E63R3oNGO4VNNBPlrx6HM/wnvpC77m4h0seUXLBSL2Z6U1Hx8lNUKRW4XFLndyFzqQcb8Ysjlif1EtCS29H9kEtEulmWOSiTs989tK2JDUf4DzMO8ghSkkyQAAAAASUVORK5CYII=" InformativeScreenshot="c38a73b91ce50e376cd31c1df43731f7.jpg" Reference="z7XKmoN6VE-q9t8QvMUhDw/w44TXGc1EkC_T3691YsB1A" Selector="&lt;html app='msedge.exe' title='DataTables | Javascript table library' /&gt;" Url="https://datatables.net/" Version="V3" />
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+  </Sequence>
+</Activity>

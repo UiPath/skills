@@ -1,0 +1,133 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Scroll" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="Scroll_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing.Common" xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives" xmlns:uix="http://schemas.uipath.com/workflow/activities/uix" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Text</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.UIAutomationCore.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Models</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+      <x:String>UiPath.Shared.Activities</x:String>
+      <x:String>UiPath.Platform.ObjectLibrary</x:String>
+      <x:String>UiPath.Platform.SyncObjects</x:String>
+      <x:String>UiPath.UIAutomationNext.Contracts</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>Microsoft.CSharp</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization</AssemblyReference>
+      <AssemblyReference>System.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.ServiceModel.Activities</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Constants</AssemblyReference>
+      <AssemblyReference>System.Private.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.Private.DataContractSerialization</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Formatters</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Primitives</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.OCR.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Scroll" sap:VirtualizedContainerService.HintSize="1640,983.6566666666666" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <uix:NApplicationCard AttachMode="ByInstance" DisplayName="Demo(1)" HealingAgentBehavior="Job" sap:VirtualizedContainerService.HintSize="452,565.3333333333334" sap2010:WorkflowViewState.IdRef="NApplicationCard_1" ScopeGuid="1e17c02c-d2f4-4093-8df1-c8936bf10c8c" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Do" sap:VirtualizedContainerService.HintSize="450,318" sap2010:WorkflowViewState.IdRef="Sequence_5">
+            <sap:WorkflowViewStateService.ViewState>
+              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+              </scg:Dictionary>
+            </sap:WorkflowViewStateService.ViewState>
+            <uix:NClick ActivateBefore="True" ClickType="Single" DisplayName="Click '18-Strawberry'" HealingAgentBehavior="SameAsCard" sap:VirtualizedContainerService.HintSize="416,258" sap2010:WorkflowViewState.IdRef="NClick_1" InteractionMode="SameAsCard" KeyModifiers="None" MouseButton="Left" ScopeIdentifier="1e17c02c-d2f4-4093-8df1-c8936bf10c8c" Version="V5">
+              <uix:NClick.Target>
+                <uix:TargetAnchorable DesignTimeRectangle="28, 264, 420, 29" ElementType="ListItem" ElementVisibilityArgument="Interactive" FullSelectorArgument="&lt;wnd cls='SysListView32' /&gt;&lt;ctrl name='0000040-Apple' role='list item' /&gt;" Guid="48520efd-a398-4737-9b93-f8f950d11007" InformativeScreenshot="35a7253ffba4416bf4cbbc9f87f7be18.jpg" ScopeSelectorArgument="&lt;wnd app='scrollapp.exe' cls='ScrollAppMain' title='Demo (virtual list, 1M rows)' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Interactive" />
+              </uix:NClick.Target>
+              <uix:NClick.VerifyOptions>
+                <uix:VerifyExecutionOptions Mode="Appears">
+                  <uix:VerifyExecutionOptions.Retry>
+                    <InArgument x:TypeArguments="x:Boolean" />
+                  </uix:VerifyExecutionOptions.Retry>
+                  <uix:VerifyExecutionOptions.Target>
+                    <uix:TargetAnchorable ContentHash="GuYyhskXgkaMXaGQ_bz-Bg" DesignTimeRectangle="26, 462, 488, 30" ElementType="Text" ElementVisibilityArgument="Interactive" FullSelectorArgument="&lt;wnd cls='Static' title='Selected: 0000040-Apple' /&gt;" Guid="0b3f014d-091b-4e92-873a-e106a1e18e78" InformativeScreenshot="1588448b30fbd922091e7aa818fb3a12.jpg" Reference="z7XKmoN6VE-q9t8QvMUhDw/CJfBYlXVsE-qSXaUt46dnQ" ScopeSelectorArgument="&lt;wnd app='scrollapp.exe' cls='ScrollAppMain' title='Demo (virtual list, 1M rows)' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Interactive" />
+                  </uix:VerifyExecutionOptions.Target>
+                  <uix:VerifyExecutionOptions.Timeout>
+                    <InArgument x:TypeArguments="x:Double" />
+                  </uix:VerifyExecutionOptions.Timeout>
+                </uix:VerifyExecutionOptions>
+              </uix:NClick.VerifyOptions>
+            </uix:NClick>
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.OCREngine>
+        <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+          <ActivityFunc.Argument>
+            <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+          </ActivityFunc.Argument>
+        </ActivityFunc>
+      </uix:NApplicationCard.OCREngine>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="100, 100, 640, 840" ContentHash="HfcyNMoQSU69K14u9H4HDQ" FilePath="C:\\Work\\scroll_CSharp\\bin\\Debug\\net8.0-windows\\scrollapp.exe" IconBase64="iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAHYcAAB2HAY/l8WUAAASbSURBVHhe7ZrLblRHEIa9wnfsGecB8nrBcQjxZMZ2wsUO4BBCyEXyA/gFIkWRIiRgiJlgLobECbdgIGsWbLz0pqOq7upTXX1OWyo1UuLplj4dS2Or5qu/urw5IyPllFNOOeWUU87Qnl7v5PvL3U5/udcxw8RSr/MjuI/AD/LDo8RgMKh9It1Of0T+wbCBDTg4OBhKSgNKA0oDSgMaG7C5uWk2NjZqgc/k7wPr22/Nez/8U/H9a8/cd68qvgVeWq7umbmrL037mz3LlRemfYWeL0z76789rcvPzcWtN1Fd7fdNNkBDLM3EUfoVylr2zJyXZsJMunXZSnu+eobIulryN4ALR9I2aZBG8UCYS3PhSrp16ZmZvfTUzH75NKqrJXsDgvH2SdvxjqX5aDtxIWyx0p71J1FdLfkbQNIkzMTnhHQbpFGYpJ8H0i0njM/1J5aLwOOorpZkAzRLpVpkfIlZcX6fQb4dCDtIOJK24jMX/kJkXe33TTZAg5QO7nTdeLPRDpJG8cdOuhKfOW+RdbXkb4Dc3CQtk4aFhsJx0l6WCSNf/OnYjepqyd4A/q+Ki8slBrRYyrOUMoh6cRK20sfXds3M2q45vvpHVFdL/gYIaX+nG0abi8/KpEEYxFcrceTc71FdLckGaJZKXdIpaUyZJQ0pe0gYpa04Ietqv2+yARpC6XBzh3faCUvpNS5tZaeBs8Ajy5mHUV0t+RtAd5qLi6RD4ThpEEZxEkZpx+mHiKyrJXsDmjd3arxJGNIWwmesMDB1esfy+U5UV0v+BjRJrzZIw5PGm4SZ9DSTnvrsgUfW1ZJsgGap0PZOJn2INMoSTHpq5T4yuXI/qqv9vskGaJD3mW/uptFulF6ppFF8+Z5H1tXybhrgNzfcZ0i7XrxutIOkl4l7ZnLJ0buLyLpasjcg2tpsc4dJc+EGaRS/a+ltm4nutn/KulryN4Dus096xy4yLg3CLOkpLkzSLmkCpD2f3onqakk2QLNUGu8zSxuWWCCN410lTSlb7qCwp/MbIutqSTZAw7RLGp9yvEmc7jO70yQ+6RKWwsT44gCRdbVkb0Aw2jJpMd4TQdJMPBC20hMg/glwG5F1tWRvAKSMBOMdJh0Jc/HFMGkrPTDjp24ztqK6WvI3gEv7O82WmBQWSVcpu6eTHju1ZcY/3jJjwMlfo7pakg3QLEEa7ShpepKwSztI2Y03pYyyTBr56BYi62pJNkBDMmkUrpHmKXtxJ+zFnfzCLTO60I/qasnfACHthcUS4/eZUsYRD6Rt2iCMfEjcjOpqyd4AEMZF5gDpiWiR8dGOx3t0oUrait+0zFfIulreQQPqkhb3mYuTNE/ap10JH5u/YUZP3DDHkOtRXS3JBmiWoLzT0RI7TJqlPDpvhVH8g+sBsq6WZAM04F0m8WCBWXGSHatJGZNmKSNC/L/fgJrNHaXMR9sLO2pk65B1tWRvwOrPr/0ia5JGYLTdiEu5wzj3015UV0v2BvzfKA0oDXAN2N/fjz4cBmwDup3+tWu/RB8eZSBwcIYXxfF1+aXe4pF+Y7yWbqePr8uXU0455ZRTTjlDe/4Fr4EjoP42+M0AAAAASUVORK5CYII=" InformativeScreenshot="8e993c53243abc22283c3d11936486c7.jpg" Reference="z7XKmoN6VE-q9t8QvMUhDw/5yGiMPNqHkKkYoDR7PkX1w" Selector="&lt;wnd app='scrollapp.exe' cls='ScrollAppMain' title='Demo' /&gt;" Version="V3">
+          <uix:TargetApp.Arguments>
+            <InArgument x:TypeArguments="x:String" />
+          </uix:TargetApp.Arguments>
+        </uix:TargetApp>
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+  </Sequence>
+</Activity>

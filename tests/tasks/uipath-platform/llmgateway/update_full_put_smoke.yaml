@@ -1,0 +1,58 @@
+task_id: skill-platform-llmgateway-update-full-put
+description: >
+  Smoke test: agent uses the uipath-platform skill to change one mapping in a
+  multi-mapping BYO LLM configuration. Verifies the agent understands `update`
+  is full-PUT — every mapping the customer wants in the resulting record must
+  be supplied on the call, not just the one being changed.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 12
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Configuration `c1d2e3f4-1111-2222-3333-444455556666` is a multi-mapping BYO
+  LLM record for product=uipath-ecs feature=uipath-ecs-batch-transform-web-search.
+  Today it contains two mappings:
+
+  - llm-name=gemini-2.5-flash, llm-identifier=gemini-2.5-flash,
+    connector-type=GoogleVertex, api-flavor=GeminiGenerateContent,
+    connection-id=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+  - llm-name=gemini-2.5-flash-lite, llm-identifier=gemini-2.5-flash,
+    connector-type=GoogleVertex, api-flavor=GeminiGenerateContent,
+    connection-id=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+
+  Upgrade the second mapping's llm-identifier from `gemini-2.5-flash` to
+  `gemini-2.5-flash-002`. Leave the first mapping exactly as it is.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. The update WILL fail with an auth error — that is expected.
+    Do NOT retry or attempt to login.
+  - Use `--output json`.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent re-supplied the unchanged first mapping in the update call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+update\s+c1d2e3f4-1111-2222-3333-444455556666(?=[\s\S]*--mapping\s+[''"][^''"]*llm-name=gemini-2\.5-flash,[^''"]*llm-identifier=gemini-2\.5-flash,)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent supplied the updated second mapping with the new llm-identifier"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+update\s+c1d2e3f4-1111-2222-3333-444455556666(?=[\s\S]*--mapping\s+[''"][^''"]*llm-name=gemini-2\.5-flash-lite,[^''"]*llm-identifier=gemini-2\.5-flash-002,)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on the update call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+update\s+\S+(?=[\s\S]*--output\s+json)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

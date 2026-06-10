@@ -7,8 +7,6 @@ user-invocable: true
 
 # UiPath Tasks (Action Center) — Agent Skill
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Action Center is UiPath's human-in-the-loop platform. Tasks represent work items
 that require human input — form approvals, document validation, data labeling, and more.
 

@@ -6,8 +6,6 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 # UiPath Admin
 
-> **Preview** — Under active development. Command coverage will expand.
-
 Administrative operations on UiPath via `uip admin` — Identity Server, Authorization, OMS, IP Restriction, Audit. Per-area workflows, command references, and procedures are in the linked files below — this file is the entry contract.
 
 ## When to Use This Skill

@@ -534,7 +534,7 @@ Every Inputs `Binding` cell carries one of (case-sensitive):
 | Form | Meaning |
 |---|---|
 | `<literal>` | Plain string / number / boolean (`"50"`, `0`, `true`) |
-| `=vars.<id>` | Case variable from §1.5 (`<id>` must match a §1.5 row's `Name` cell) |
+| `=vars.<id>` | Case variable from §1.5 (`<id>` matches a §1.5 row's `Name`), or an upstream task's auto-emitted output field referenced directly (see §Variable lineage closure) |
 | `=vars.<id>.<subfield>` | Sub-field of a structured case variable (dot-path) |
 | `=bindings.<id>` | Registered resource (action app, process, connection) |
 | `=metadata.<key>` | Case metadata |
@@ -603,6 +603,8 @@ The new SDD shape carries producer / consumer signal across three places (NOT a 
 
 Otherwise the variable is open-lineage and Phase 0 cannot Approve.
 
+**Task-output direct reference.** A `=vars.<name>` where `<name>` is an upstream task's auto-emitted output field is NOT a §1.5 variable — exempt from closure. The emitting task self-declares it (resolver matches any `task.data.outputs[].id`) and is its own producer; only ordering applies (emitting task before consumer). Declare a §1.5 row only to rename, set custom `Default` / `Type`, or expose case-level state. Unresolvable refs (typo, or a field the task does not emit) are caught later by the io-binding validator (Check 1), not here. See [sdd-template-examples.md § Task-local-only variables](../assets/templates/sdd-template-examples.md).
+
 **Self-binding rule.** An Outputs row of the form `caseVar = =vars.caseVar` or `caseVar = =js:vars.caseVar` (LHS and only-referenced-RHS variable are the same `caseVar`) is FORBIDDEN — it's a no-op that masks a missing producer. Phase 0 strips such rows from the draft, narrates the strip, and emits a `high`-severity review item asking the user whether they meant to (a) wire a different producer, (b) drop the row entirely, or (c) initialize via §1.5 `Default`. Computed self-references like `caseVar = =js:(vars.caseVar + 1)` are allowed (incrementers / accumulators) — the RHS expression mutates the value.
 
 **Output-naming consistency rule.** An Outputs `-> <caseVar>` row whose `Field` leaf name (the produced datum's natural name, e.g. `complianceStatus`) has NO matching §1.5 variable AND is mapped into a differently-named existing variable (e.g. `titleReviewStatus`) → emit a `medium` review item (`rev_aliased_output_<task>`): "task output `<field>` aliased into unrelated variable `<caseVar>`; declare a dedicated §1.5 variable for the datum or confirm the reuse is intentional." Aliasing a produced datum into an unrelated variable closes lineage mechanically while corrupting meaning — a variable named for one thing silently carries another, and a multi-stage variable ends up double-purposed.
@@ -628,7 +630,7 @@ Pattern X1 is preferred unless an actual connector emits the close event. When t
 
 **Audit checklist** (run before Approve renames the draft):
 
-1. Every variable referenced by any `=vars.<name>` (or `=vars.<name>.<sub>`) anywhere in `sdd.md` (task Inputs, IF columns, exit rules, button `Maps To`, SLA expressions) has a matching §1.5 row whose `Name` equals `<name>`.
+1. Every variable referenced by any `=vars.<name>` (or `=vars.<name>.<sub>`) anywhere in `sdd.md` (task Inputs, IF columns, exit rules, button `Maps To`, SLA expressions) has a matching §1.5 row whose `Name` equals `<name>` — OR `<name>` is an upstream task's auto-emitted output field (see §Variable lineage closure → Task-output direct reference; never add a §1.5 row to back such a ref).
 2. Every §1.5 row's `Category` is exactly one of `In` / `Out` / `Variable` — never blank, never `—`.
 3. **`In` row consistency:** `sourceTriggers` and `sourceFields` are BOTH empty.
 4. **`Out` row consistency:** `sourceTriggers` is empty. Closure requires either (a) non-empty `Default`, OR (b) a task Outputs row in the case plan targeting this Name via `-> {name}` or `{name} = {expr}`. (PR 860 added a Phase 2 validator: `Out` + non-empty `sourceTriggers` → reject.)

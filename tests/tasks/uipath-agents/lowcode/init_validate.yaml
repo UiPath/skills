@@ -3,7 +3,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-agents skill to scaffold
   a new low-code agent inside a solution and validate it. Tests whether
   the skill teaches the correct solution-first workflow and CLI usage.
-tags: [uipath-agents, smoke, low-code, mode:build, lifecycle:generate]
+tags: [uipath-agents, smoke, mode:build, low-code, lifecycle:generate]
 
 run_limits:
   expected_turns: 12

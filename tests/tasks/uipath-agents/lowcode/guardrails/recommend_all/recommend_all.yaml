@@ -6,7 +6,7 @@ description: >
   that catalog and guardrails list are fetched, at least 2 guardrails are added, and the
   added guardrails include Llm-scoped protection (prompt injection or user prompt attacks)
   and post-execution content protection (harmful content or intellectual property).
-tags: [uipath-agents, e2e, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, low-code, guardrail]
 max_iterations: 1
 
 sandbox:

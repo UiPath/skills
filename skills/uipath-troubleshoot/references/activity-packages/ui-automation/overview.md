@@ -31,11 +31,24 @@ When a robot executes a UI activity (Click, Type Into, Get Text, etc.), it uses 
 - **UiNodeDisabledElementException** — element was found but is disabled and the activity's `AlterIfDisabled` property is not `True`. Driver HRESULT `E_UINODE_CANNOT_ALTER_DISABLED_ELEM` (0x8004027D). Raised by interaction activities `NClick`, `NTypeInto`, `NSetText`, `NCheck`, `NSelectItem`, `NSAPClickPictureOnScreen`.
 - **VerifyActivityExecutionException** — activity's primary action succeeded but its `VerifyOptions` post-condition assertion did not hold within the verify retry window. Thrown by `VerifyExecutionService`, not COM-friendlied. Raised by `NClick`, `NHover`, `NKeyboardShortcuts`, `NTypeInto`. Multiple friendly messages route to distinct cause branches (`ExceptionCheckActivity`, `ExceptionVerificationTargetNotFoundOrInvalid`, `ExceptionVerificationTextNotSupported`, `ExceptionVerificationImageCouldNotBeRetrieved`, `ExceptionRecoveredButValidationFailed`, plus NTypeInto-specific text-match keys).
 - **NodeNotFoundException** — DOM or UI tree node missing
+- **NodeAmbiguousException** — selector matched more than one element. Distinct from `NodeNotFoundException` (zero matches): ambiguous = multiple matches.
 - **TimeoutException** — activity exceeded its wait time (ambiguous — could be UI or non-UI)
 - **ImageOperationException** — image-based UI automation failure
 - **ScreenScrapingException** — screen scraping activity failure
 - **ApplicationNotFoundException** — scope-level failure from `NApplicationCard` (Use Application / Use Browser) when the target application can't be located **and** the scope's `OpenMode=Never`. Distinct from `ApplicationOpenException` (which fires when `OpenMode != Never` and launch failed) and `WrongTargetApplicationException` (selector matched the wrong process).
 - **UiAutomationException — "Cannot send input to UI element because it is outside of screen bounds."** — input activity (`NClick`, `NTypeInto`, ...) located the element but the destination coordinate is outside the runtime host's virtual screen. Wraps `COMException 0x800402bd` at `UiPath.UiNodeClass.Click`. Distinct from the selector-failure family — element was resolved, coordinate was rejected. See [click-coordinate-off-screen.md](./playbooks/click-coordinate-off-screen.md).
+
+UIAutomationNext (`N*`) activities also raise these more specific exceptions:
+
+- **RuntimeTimeoutException** — modern activity timeout ("Activity execution exceeded the set timeout."). A UI timeout can also surface as **NodeNotFoundException** when the element never appeared within the timeout window.
+- **ApplicationOpenException** — a `Use Application/Browser` scope with `Open` ≠ `Never` tried to launch the app and the launch failed ("Could not open target application.")
+- **WrongTargetApplicationException** — the identified element belongs to a different application/browser than the scope's target
+- **BrowserFailedToNavigateToUrlException** / **BrowserInvalidURLException** — `Go To URL` could not navigate (failed navigation, invalid/empty URL, or a local `file://` blocked on Chromium)
+- **InvalidNodeException** / **UiNodeUninitializedElementException** — the element went invalid/stale between being found and acted on
+- **TargetFoundButNotVisibleException** — element found but its visibility did not match what the target expected
+- **TargetNotFoundBrowserBlockedException** — element could not be reached because a dialog is blocking the browser
+- **UiNodeHasNoItemsException** — Select Item's target container had no items
+- **UiAutomationException (activity configuration)** — an activity rejected an invalid property value (e.g. Mouse Scroll `Movement units` < 1, Keyboard Shortcuts empty/invalid sequence, Take Screenshot missing `File name`/`Saved image`, Go To URL / Inject Js Script missing required input)
 
 ## Features
 
