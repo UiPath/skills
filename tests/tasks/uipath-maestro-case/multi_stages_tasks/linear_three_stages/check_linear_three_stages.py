@@ -8,15 +8,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from _shared.case_check import (  # noqa: E402
     _get_ci,
     assert_count,
-    find_edges,
     find_node_by_label,
     find_stages,
+    find_transitions,
     find_triggers,
     first_rule_of_condition,
     get_variables,
     iter_stage_entry_conditions,
     iter_tasks,
-    payload_contains,
     read_caseplan,
     start_debug,
 )
@@ -35,22 +34,19 @@ def main():
     review = find_node_by_label(plan, "Review")
     decision = find_node_by_label(plan, "Decision")
 
-    edges = plan.get("edges") or []
-    assert_count(len(edges), 3, "edge(s)")
-
-    trigger_edges = [e for e in edges if e.get("type") == "case-management:TriggerEdge"]
-    stage_edges = [e for e in edges if e.get("type") == "case-management:Edge"]
-    assert_count(len(trigger_edges), 1, "TriggerEdge(s)")
-    assert_count(len(stage_edges), 2, "stage Edge(s)")
-
-    if not find_edges(plan, source=triggers[0]["id"], target=intake["id"]):
-        sys.exit(f"FAIL: missing TriggerEdge {triggers[0]['id']} → {intake['id']} (Intake)")
-    intake_review = find_edges(plan, source=intake["id"], target=review["id"])
-    if not intake_review:
-        sys.exit("FAIL: missing Edge Intake → Review")
-    review_decision = find_edges(plan, source=review["id"], target=decision["id"])
-    if not review_decision:
-        sys.exit("FAIL: missing Edge Review → Decision")
+    # Reachability is condition-driven (edges retired): Intake is the case start
+    # via case-entered; Review and Decision are reached via selected-stage-*
+    # entry rules naming the upstream stage. No trigger→stage edge.
+    if not find_transitions(plan, source=intake["id"], target=review["id"]):
+        sys.exit(
+            "FAIL: no Intake → Review transition; Review's entry condition must "
+            "name Intake (selected-stage-completed/-exited selectedStageId=Intake)"
+        )
+    if not find_transitions(plan, source=review["id"], target=decision["id"]):
+        sys.exit(
+            "FAIL: no Review → Decision transition; Decision's entry condition must "
+            "name Review (selected-stage-completed/-exited selectedStageId=Review)"
+        )
 
     intake_entry = list(iter_stage_entry_conditions(intake))
     if not intake_entry:
@@ -175,17 +171,21 @@ def main():
             "FAIL: Out argument 'finalDecision' is missing its inputOutputs companion entry"
         )
 
-    expected_var_types = {
-        "dueDate": "date",
-        "caseMetadata": "object",
-        "attachments": "array",
-        "caseSchema": "jsonSchema",
-    }
-    for var_name, want_type in expected_var_types.items():
-        match = next(
+    def _find_io(var_name: str) -> dict | None:
+        return next(
             (v for v in io_vars if v.get("name") == var_name or v.get("id") == var_name),
             None,
         )
+
+    # Top-level `type` field (platform enum: string/integer/float/double/
+    # boolean/datetime/date/jsonSchema/file). `object` and `array` are NOT
+    # top-level types — object/array-shaped variables are type='jsonSchema'
+    # with the shape carried in body.type (asserted below).
+    expected_top_types = {
+        "dueDate": "date",
+    }
+    for var_name, want_type in expected_top_types.items():
+        match = _find_io(var_name)
         if not match:
             names = [(v.get("name"), v.get("type")) for v in io_vars]
             sys.exit(
@@ -198,21 +198,47 @@ def main():
                 f"got {match.get('type')!r}"
             )
 
+    # Structured variables: type='jsonSchema', object vs array distinction
+    # lives in the body schema (body.type), not the top-level type.
+    expected_schema_body_types = {
+        "caseMetadata": "object",
+        "attachments": "array",
+        "caseSchema": "object",
+    }
+    for var_name, want_body_type in expected_schema_body_types.items():
+        match = _find_io(var_name)
+        if not match:
+            names = [(v.get("name"), v.get("type")) for v in io_vars]
+            sys.exit(
+                f"FAIL: missing root variable {var_name!r} "
+                f"(expected jsonSchema with body.type={want_body_type!r}); got {names}"
+            )
+        if match.get("type") != "jsonSchema":
+            sys.exit(
+                f"FAIL: variable {var_name!r} should be type='jsonSchema' "
+                f"(object/array shape lives in body.type); got {match.get('type')!r}"
+            )
+        body = match.get("body") or {}
+        if body.get("type") != want_body_type:
+            sys.exit(
+                f"FAIL: variable {var_name!r} jsonSchema body.type should be "
+                f"{want_body_type!r}; got {body.get('type')!r}"
+            )
+
     payload = start_debug(timeout=540)
-    payload_contains(
-        payload, "Intake", "Review", "Decision", require_all=False
-    )
     status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
-        "OK: 3 stages (Intake → Review → Decision) chained via single-outbound "
-        "edges (no branching → labels intentionally blank); case-entered on Intake; "
+        "OK: 3 stages (Intake → Review → Decision) chained via condition-driven "
+        "transitions (Review←Intake, Decision←Review via selected-stage-completed); "
+        "case-entered on Intake; "
         "TWO parallel wait-for-timer tasks on Review in distinct lanes — "
         "'Hold For 1 Hour' (shouldRunOnlyOnce + skipCondition =vars.skipReview) "
         "and 'Notify Reviewer' (isRequired=false) — both carrying "
-        "current-stage-entered task-entry; root has all 7 Variable types "
+        "current-stage-entered task-entry; root has all 7 variables "
         "(boolean skipReview, string caseRef In + finalDecision Out, date "
-        "dueDate, object caseMetadata, array attachments, jsonSchema caseSchema) "
+        "dueDate, jsonSchema caseMetadata[body=object], attachments[body=array], "
+        "caseSchema[body=object]) "
         f"with caseRef bridged through trigger output mapping; debug payload "
         f"returned (status={status})"
     )

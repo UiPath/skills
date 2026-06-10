@@ -1,0 +1,169 @@
+task_id: skill-troubleshoot-excel-rr-unmapped-drive
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (System.IO.DirectoryNotFoundException) where the workflow's
+  WorkbookPath uses a mapped drive letter that exists in the
+  developer's interactive session but is not mapped in the Robot's
+  unattended session. CLI cannot enumerate drive mappings on the
+  host. Agent must match the activity-packages/excel-activities/playbooks/read-range-file-not-found.md
+  playbook, identify the mapped-drive-not-in-Robot-session branch
+  from the workflow source's Z:\ prefix + the drive-root
+  DirectoryNotFoundException, and recommend either switching to UNC
+  or persisting the drive mapping for the Robot user. No host-side
+  byte-dump or tool execution is attempted by the agent.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, file-not-found, unmapped-drive]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 50
+turn_timeout: 5400
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.IO.DirectoryNotFoundException: Could not find a part of the path 'Z:\Data\sales-2026-05.xlsx'.`
+  Pinned job key: ee555555-aaaa-bbbb-cccc-dddddddddddd. The Z:\
+  drive is set up correctly — I can see Z:\Data\sales-2026-05.xlsx
+  fine when I RDP into the host with my own account. Why does the
+  Robot say the drive isn't there?
+
+  I'm not on the Robot host right now and have no shell access
+  to MOCK-HOST — only Orchestrator. Don't try to run anything
+  on the host yourself; just tell me what to run and I'll come
+  back with the output. If a local Bash call gets rejected,
+  treat that as a hard signal to switch to writing
+  recommendations for me rather than retrying.
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-range-file-not-found playbook AND identified the mapped-drive-not-in-Robot-session branch (workflow source has Z:\\ prefix; error is DirectoryNotFoundException on the drive root; agent reasons about per-session drive mappings on Windows) — recommending either switching to UNC or persisting the drive mapping for the Robot user. Either path is acceptable: (A) confident diagnosis directly from CLI evidence + reasoning, or (B) recommending host-side `net use` verification before committing."
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.IO.DirectoryNotFoundException: Could not find a part of
+         the path 'Z:\Data\sales-2026-05.xlsx'.` Pinned job key:
+         ee555555-aaaa-bbbb-cccc-dddddddddddd. The Z:\ drive is set
+         up correctly -- I can see Z:\Data\sales-2026-05.xlsx fine
+         when I RDP into the host with my own account. Why does the
+         Robot say the drive isn't there? I'm remote; give me
+         commands to run on the host."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-not-found.md
+        because the runtime error is a DirectoryNotFoundException --
+        the file-resolution-failure signature of that playbook.
+
+      DIMENSION B -- Mapped-drive-not-in-Robot-session branch
+        The reference root cause is:
+          - The workflow's configured `WorkbookPath` is the absolute
+            literal `Z:\Data\sales-2026-05.xlsx` -- uses a mapped
+            drive letter (Z:), not C:, not UNC.
+          - The exception class is `DirectoryNotFoundException`, and
+            the missing segment is the drive root `Z:\` (the entire
+            drive doesn't exist from the Robot's point of view).
+          - Windows mapped drives are per-session. Drive letters
+            mapped in an interactive RDP session (the user's account)
+            are NOT inherited by the Robot service's unattended
+            session, even on the same host. The user can see
+            `Z:\Data\sales-2026-05.xlsx` from RDP because their
+            session has the mapping; the Robot's session does not.
+          - CLI evidence (jobs get, jobs logs, workflow source)
+            confirms the playbook match and rules out other
+            branches but cannot directly enumerate drive mappings
+            on the Robot host. That requires either (A) a
+            confident inference from the symptoms, or (B) host-
+            side `net use` verification under the Robot's session.
+
+        TWO acceptable paths to a 1.0 score:
+
+        PATH A -- Confident diagnosis from CLI evidence + reasoning.
+          The agent reads the workflow source (Z:\ prefix), notes
+          that the error is DirectoryNotFoundException on the drive
+          root, and recognizes the per-session-drive-mapping pattern
+          on Windows. It names branch 4 explicitly and recommends
+          the fixes (switch to UNC OR persist mapping for Robot
+          user).
+
+        PATH B -- Recommend host-side verification before committing.
+          The agent identifies the same evidence but defers the
+          confident branch call until the user runs `net use` from
+          the Robot's session. It hands the user a short command
+          list: `net use` to enumerate mappings, plus a sanity
+          check.
+
+        Both arrive at branch 4. Reward either; what's penalized
+        is confidently guessing a DIFFERENT branch (file deleted,
+        relative path, UNC) without supporting evidence, or
+        recommending the wrong fix.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-file-not-found playbook AND
+             reached one of the two paths above (confident branch 4
+             diagnosis OR host-side `net use` recommendation). Named
+             the recommended fix (UNC path, or persisting the
+             mapping under the Robot user).
+        0.8  Both dimensions partially correct: matched the playbook
+             and recognized the mapped-drive issue but produced a
+             vague recommendation (e.g., "check the drive" without
+             naming the per-session concept or the `net use` command)
+             OR named the right fix without explaining why.
+        0.5  Only one dimension correct: matched the playbook but
+             confidently guessed a wrong branch (deletion, relative
+             path, UNC) without supporting evidence; OR identified
+             the mapped-drive issue without matching the specific
+             playbook.
+        0.2  Agent recognized the path-resolution failure but
+             neither matched the playbook nor identified the
+             per-session-drive pattern.
+        0.0  Agent confidently picked a wrong branch without
+             evidence; concluded a different root cause; got
+             blocked; or failed.
+
+      Be substance-focused. The Z:\ prefix in workflow source +
+      DirectoryNotFoundException on the drive root is the
+      definitive signal for branch 4; the "works in my RDP session"
+      clue is independently strong. Penalize agents that ignore
+      either.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

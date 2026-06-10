@@ -5,7 +5,7 @@ description: >
   `byo-connections create` invocation. Verifies the agent constructs the right
   CLI shape (single-mapping for AnyModelWithOwnAdditions) and runs prerequisite
   discovery before the create. Auth errors are expected in CI.
-tags: [uipath-platform, smoke, llmgateway, byo-connections, lifecycle:create]
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 14
@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent discovered feature shape via list-product-configs"
     tool_name: "Bash"
-    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+list-product-configs.*--product\s+agenthub.*--feature\s+agenthub-llm-call'
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+list-product-configs(?=[\s\S]*--product\s+agenthub)(?=[\s\S]*--feature\s+agenthub-llm-call)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -72,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked byo-connections create with the required flags"
     tool_name: "Bash"
-    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+create.*--product\s+agenthub.*--feature\s+agenthub-llm-call.*--connector-type\s+OpenAi.*--api-flavor\s+OpenAiResponses.*--llm-name\s+gpt-4o-2024-08-06'
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+create(?=[\s\S]*--product\s+agenthub)(?=[\s\S]*--feature\s+agenthub-llm-call)(?=[\s\S]*--connector-type\s+OpenAi)(?=[\s\S]*--api-flavor\s+OpenAiResponses)(?=[\s\S]*--llm-name\s+gpt-4o-2024-08-06)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -80,7 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json on the create call"
     tool_name: "Bash"
-    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+create.*--output\s+json'
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+create(?=[\s\S]*--output\s+json)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

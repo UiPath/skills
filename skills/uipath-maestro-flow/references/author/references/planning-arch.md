@@ -49,8 +49,9 @@ uip maestro flow registry get core.action.script --output json  # script node in
 **In-solution discovery (no login required):**
 ```bash
 uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
+uip maestro flow registry search "<keyword>" --local --output json  # keyword search across in-solution nodes only
 ```
-Run from inside the flow project directory. If the resource (RPA, agent, flow, API workflow) exists as a sibling project in the same solution, it appears here without needing to be published. Prefer in-solution resources over mock placeholders.
+Run from inside the flow project directory. If the resource (RPA, agent, flow, API workflow) exists as a sibling project in the same solution, it appears here without needing to be published. Prefer in-solution resources over mock placeholders. `--local` results omit `AvailableOnTenant` (no tenant lookup). Empty `search --local` is not authoritative — confirm with `list --local` before treating a resource as absent.
 
 ### Check Connector Connections
 
@@ -71,7 +72,7 @@ uip is connections list "<connector-key>" --all-folders --output json
 
 **What to record from discovery:**
 - **Connectors:** Whether a connector exists for each external service, available operations (from node type names), and whether a healthy connection exists. Field details require `registry get --connection-id` in Phase 2.
-- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
+- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`, or `registry search "<keyword>" --local` for keyword match), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
 - **Gaps:** Services with no connector -> fall back to `core.action.http.v2` (manual mode). Resources in the same solution but unpublished -> use `--local` discovery (no mock needed). Resources not in the solution and not yet published -> use `core.logic.mock` placeholder. Connectors with no connection -> flag in Open Questions for the user to create.
 
 Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn't exist, fall back to `core.action.http.v2` (manual mode) or note it as a gap in Open Questions.
@@ -238,7 +239,7 @@ Apply these when defining edges in the topology:
 9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
 10. Do not create cycles except through Loop's `loopBack` mechanism
 11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
-12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
+12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. The source node must also have `inputs.errorHandlingEnabled: true`; CLI edge-add/format commands set it automatically, but direct JSON edits must include it. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ---
 

@@ -9,6 +9,7 @@ tags: [uipath-maestro-bpmn, integration, lifecycle:generate, contract:xml, node:
 run_limits:
   expected_turns: 20
   max_turns: 90
+  turn_timeout: 1200
 initial_prompt: |
   Load and follow the uipath-maestro-bpmn skill.
 

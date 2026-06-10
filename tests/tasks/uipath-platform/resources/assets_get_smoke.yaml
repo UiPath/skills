@@ -1,7 +1,7 @@
 task_id: skill-platform-resources-assets-get
 description: >
   Smoke test: real user asks for an asset by name. The agent's job is to
-  realize `uip resource assets get` takes a GUID, so it must first run
+  realize `uip or assets get` takes a GUID, so it must first run
   `assets list` to find the key. Verifies the agent does the resolve step
   with `assets list --name` in the provided folder.
   If the named asset doesn't exist, the agent reporting "not found" after
@@ -22,7 +22,7 @@ success_criteria:
   - type: command_executed
     description: "Agent did the resolve step with the --name filter (server-side, by name)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+list.*(-n|--name)\s+["\047]?ApiBaseUrl'
+    command_pattern: 'uip\s+or\s+assets\s+list.*(-n|--name)\s+["\047]?ApiBaseUrl'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -30,7 +30,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scoped the asset lookup to the provided folder"
     tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+list.*--folder-(key|path)'
+    command_pattern: 'uip\s+or\s+assets\s+list.*--folder-(key|path)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

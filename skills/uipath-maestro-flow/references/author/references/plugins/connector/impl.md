@@ -118,8 +118,12 @@ uip is resources list "<connector-key>" --connection-id "<connection-id>" --outp
 
 Run `is resources describe` to fetch and cache the full operation metadata, then **read the cached metadata file** for complete field details including descriptions, types, references, and query/path parameters. The describe summary omits some of this.
 
+**Read `<objectName>` from the node definition in `definitions[]` (written by `node add`) — do not guess it from the node-type suffix.**
+
 ```bash
-# 1. Describe to trigger fetch + cache (extract the objectName from the connector node type)
+# 1. Describe to trigger fetch + cache (objectName = the activity's API object, NOT the node-type suffix)
+#    Read <objectName> from the node definition FIRST (see note below) — do not batch this
+#    call with `node add` / `registry get`; those calls PRODUCE the objectName this one consumes.
 uip is resources describe "<connector-key>" "<objectName>" \
   --connection-id "<id>" --operation Create --output json
 # -> response includes metadataFile path
@@ -127,6 +131,10 @@ uip is resources describe "<connector-key>" "<objectName>" \
 # 2. Read the full cached metadata
 cat <metadataFile path from response>
 ```
+
+> **`<objectName>` is the activity's API object name, not the node-type's trailing segment — and NOT a case-conversion of it.** Read it from the node definition copied into `definitions[]` by `node add`: `model.context[]` entry `{name:"objectName", value:"…"}` (or the `objectName` field inside the `configuration` `=jsonString:` blob). Never derive it by transforming the node-type suffix — kebab→snake (`send-email` → `send_email`) and kebab→Pascal are both guesses and both 404. Example: node type `…google-gmail.send-email` has objectName `SendEmail` (not `send_email`); `…teams.send-bot-direct-message` has objectName `bot_direct_messages` (not `send-bot-direct-message`). A 404 means wrong objectName — re-read it from the definition and retry; do NOT treat the 404 as "describe unavailable" and skip the step. Skipping describe loses `requestFields[].reference.filterPattern` and other IS-level metadata that `registry get` does not carry (see Step 4).
+>
+> **Sequence, don't parallelize, the objectName-dependent calls.** `<objectName>` is an OUTPUT of `node add` (it lands in `definitions[]`). Read that value before calling `is resources describe` — do not place `describe` in the same parallel Bash batch as `node add` or `registry get`, or you'll have nothing to pass but a guess. This is the failure mode behind the snake-case 404 above.
 
 The full metadata contains:
 - **`availableOperations[].method`** and **`availableOperations[].path`** — HTTP method and API endpoint path. Same value as `connectorMethodInfo.method` / `.path` from `registry get`.
@@ -159,7 +167,9 @@ uip is resources run list "uipath-salesforce-slack" "curated_channels?types=publ
 
 The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** flow (the one picked in Step 1), not any other connection you've used in another flow. Use the resolved IDs (not display names) — from this very `run list` call — in the flow's node `inputs`. When multiple matches exist, present them via `AskUserQuestion` with one option per match plus **"Something else"** as the last option (see the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md)).
 
-> **Paginate when looking up by name.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../../uipath-platform/references/integration-service/resources.md#pagination).
+> **Filter server-side before paginating.** If the field's `reference` carries a `filterPattern` (e.g. Teams `userId`: `"$filter=startswith(userPrincipalName,'{filter}')"`), substitute the search term for `{filter}` and pass the result as `--query` — one targeted call instead of walking a large directory. `filterPattern` appears only in `is resources describe` output; the flow `registry get` reference object strips it (keeps only `objectName`/`lookupValue`/`lookupNames`/`path`/`childPath`), so read it from the Step 3 describe metadata. Guessed params (`searchTerm=`/`where=`/`filter=`) are silently ignored. See [reference-resolution.md — Search References (filterPattern)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#search-references-filterpattern).
+
+> **Paginate only when there is no `filterPattern`.** Use `Data.Pagination.HasMore` / `NextPageToken` with `--query "nextPage=<token>"`. Short-circuit on match. Do NOT conclude "not found" until `HasMore` is `"false"`. See [resources.md#pagination](../../../../../../uipath-platform/references/integration-service/resources.md#pagination).
 
 **Read [/uipath:uipath-platform — Integration Service — resources.md](../../../../../../uipath-platform/references/integration-service/resources.md) for the full reference-resolution workflow** (pagination, describe failures, fallbacks).
 

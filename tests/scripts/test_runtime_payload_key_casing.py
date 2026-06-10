@@ -84,3 +84,49 @@ def test_guard_matches_raw_reads_in_either_casing():
     # The sanctioned form passes the key as a _get_ci positional arg, not via
     # `.get("…")` / `[...]`, so it must NOT be flagged.
     assert not _RAW_READ.search('_get_ci(payload, "finalStatus", "FinalStatus")')
+
+
+# --- build-uip-catalog.py: `uip tools` payload keys (#1203) -----------------
+# The catalog builder reads `uip tools list/search --output json` payloads.
+# The CLI PascalCases those keys (Name/CommandPrefix), so a raw *lowercase*
+# `.get("name")` / `.get("commandPrefix")` silently skipped every tool and
+# collapsed the catalog to 31 base verbs (#1203). Those reads must route
+# through the builder's `_ci` case-insensitive accessor.
+#
+# Case-SENSITIVE (no IGNORECASE) on purpose: a direct PascalCase read like
+# `sub.get("Name")` (used for `uip --help` Subcommands) works fine against the
+# current CLI and must NOT be flagged. Only the lowercase form — the exact
+# #1203 regression — is an error.
+_CATALOG_BUILDER = REPO_ROOT / "scripts" / "build-uip-catalog.py"
+_TOOL_PAYLOAD_KEYS = ("name", "commandPrefix")
+_CATALOG_RAW_READ = re.compile(
+    r"""\.get\(\s*['"](?:%s)['"]\s*[,)]|\[\s*['"](?:%s)['"]\s*\]"""
+    % ("|".join(_TOOL_PAYLOAD_KEYS), "|".join(_TOOL_PAYLOAD_KEYS)),
+)
+
+
+def test_catalog_builder_reads_tool_payload_keys_case_insensitively():
+    offenders = []
+    for lineno, line in enumerate(_CATALOG_BUILDER.read_text().splitlines(), 1):
+        if line.lstrip().startswith("#"):
+            continue
+        if _CATALOG_RAW_READ.search(line):
+            offenders.append(f"build-uip-catalog.py:{lineno}: {line.strip()}")
+    assert not offenders, (
+        "uip tools payload keys must be read via _ci (case-insensitive) so a "
+        "PascalCasing CLI cannot silently skip every tool (#1203). Offenders:\n  "
+        + "\n  ".join(offenders)
+    )
+
+
+def test_catalog_guard_flags_lowercase_but_not_pascalcase():
+    """Catches the #1203 regression (lowercase) without flagging the working
+    PascalCase `--help` reads or the sanctioned `_ci` accessor."""
+    assert _CATALOG_RAW_READ.search('tool.get("name")')
+    assert _CATALOG_RAW_READ.search("tool.get('commandPrefix')")
+    assert _CATALOG_RAW_READ.search('tool["name"]')
+    # Working PascalCase reads (uip --help Subcommands) must NOT be flagged.
+    assert not _CATALOG_RAW_READ.search('sub.get("Name", "")')
+    assert not _CATALOG_RAW_READ.search('tool.get("CommandPrefix")')
+    # The sanctioned accessor form must NOT be flagged.
+    assert not _CATALOG_RAW_READ.search('_ci(tool, "name")')

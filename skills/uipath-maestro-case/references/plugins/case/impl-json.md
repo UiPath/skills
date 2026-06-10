@@ -139,35 +139,10 @@ If any check fails, halt and report.
 1. **Scaffold has run.** The 5 files listed in § Scaffold must exist in `<SolutionDir>/<ProjectName>/`. They were written earlier in this same plugin invocation; if missing, halt (bug — re-run the plugin from the start).
 2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `tasks.md` from scratch per SKILL.md Rule 6, so a collision here means a genuine re-run and overwriting is correct.
 
-## Schema branch — v19 vs v20 (Rule 18)
-
-Read the `Schema:` header from `tasks.md` (first non-comment line, written at planning Step 2.2). One of:
-
-- `Schema: v19` → use § Recipe (v19) below — DEFAULT.
-- `Schema: v20` → use § Recipe (v20) below.
-
-If header missing or malformed, halt with explicit error — never default silently.
-
 ## ID generation
 
-### v19
-
-- `root.id` is the literal string `"root"` — **not** a generated shortId. Divergent from every other plugin.
-- **No trigger ID emitted at T01.** The triggers plugin owns primary-trigger creation at T02.
-
-Record in `id-map.json`:
-
-```json
-{
-  "T01": { "kind": "case", "id": "root" }
-}
-```
-
-### v20
-
 - Top-level `id` is generated: prefix `case-` + 10 chars from `[A-Za-z0-9]` (per `case-editing-operations.md` § ID Generation algorithm). Example: `case-aBcDeFgHiJ`.
-- No `"root"` literal anywhere on disk in v20.
-- **No trigger ID emitted at T01.** Same as v19.
+- **No trigger ID emitted at T01.** The triggers plugin owns primary-trigger creation at T02.
 
 Record in `id-map.json`:
 
@@ -179,73 +154,7 @@ Record in `id-map.json`:
 
 The `id` value mirrors the actual top-level `id` written into `caseplan.json` — debug breadcrumb of reality.
 
-## Recipe (v19) — Skeleton (no trigger)
-
-Pure skeleton: `root` definition, empty `nodes: []`, empty `edges: []`. The primary trigger is the triggers plugin's responsibility at T02.
-
-### Minimal variant (no description)
-
-When `description` is absent in the T01 input, emit `description: ""` (always-emit so downstream consumers read a consistent shape).
-
-```json
-{
-    "root": {
-        "id": "root",
-        "name": "<name>",
-        "type": "case-management:root",
-        "caseIdentifier": "<case-identifier — defaults to <name>>",
-        "caseAppEnabled": <true|false — defaults to false>,
-        "caseIdentifierType": "<constant|external — defaults to constant>",
-        "version": "v19",
-        "publishVersion": 2,
-        "data": {
-            "intsvcActivityConfig": "v2",
-            "uipath": {
-                "variables": {
-                    "inputOutputs": []
-                },
-                "bindings": []
-            }
-        },
-        "description": ""
-    },
-    "nodes": [],
-    "edges": []
-}
-```
-
-### With description
-
-Same as above with `description` value populated from sdd.md:
-
-```json
-{
-    "root": {
-        "id": "root",
-        "name": "<name>",
-        "type": "case-management:root",
-        "caseIdentifier": "<case-identifier>",
-        "caseAppEnabled": <true|false>,
-        "caseIdentifierType": "<constant|external>",
-        "version": "v19",
-        "publishVersion": 2,
-        "data": {
-            "intsvcActivityConfig": "v2",
-            "uipath": {
-                "variables": {
-                    "inputOutputs": []
-                },
-                "bindings": []
-            }
-        },
-        "description": "<description>"
-    },
-    "nodes": [],
-    "edges": []
-}
-```
-
-## Recipe (v20) — Skeleton (no trigger)
+## Recipe — Skeleton (no trigger)
 
 Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empty `variables` + empty `nodes: []` + empty `edges: []` + empty `layout: {}`. Primary trigger is the triggers plugin's responsibility at T02.
 
@@ -306,11 +215,11 @@ Adds top-level `description` field (NOT inside `metadata`):
 }
 ```
 
-> **`intsvcActivityConfig` always emitted in v20** — set `metadata.intsvcActivityConfig: "v2"` on every v20 caseplan. Mirrors the v19 `root.data.intsvcActivityConfig` field, relocated under `metadata`.
+> **`intsvcActivityConfig` always emitted** — set `metadata.intsvcActivityConfig: "v2"` on every caseplan.
 
 ## caseIdentifier — constant vs external
 
-Set `caseIdentifierType` from the T01 `identifier-type` (default `constant`); same field in v19 (`root.*`) and v20 (`metadata.*`).
+Set `caseIdentifierType` from the T01 `identifier-type` (default `constant`); lives under `metadata.*`.
 
 - **`constant`** — write the literal prefix from sdd.md (`"caseIdentifier": "LOAN"`).
 - **`external`** — copy the T01 `case-identifier` expression **verbatim** into `caseIdentifier` (e.g. `"=vars.poNumber"` or `` "=js:`${metadata.InstanceId}-${vars.region}`" ``). Do NOT transform or `=js:`-wrap it — unlike task-input sinks ([bindings-and-expressions.md](../../bindings-and-expressions.md)), this value is written as authored. Valid forms + variable eligibility: [planning.md § External identifier value](planning.md).
@@ -319,31 +228,13 @@ Set `caseIdentifierType` from the T01 `identifier-type` (default `constant`); sa
 
 - Indent: 4 spaces.
 - Trailing newline: single `\n` at end of file.
-- Key order (v19 root): `id, name, type, caseIdentifier, caseAppEnabled, caseIdentifierType, version, publishVersion, data, description`.
-- Key order (v20 top-level): `id, version, name, description, metadata, bindings, variables, nodes, edges, layout`.
+- Key order: `id, version, name, description, metadata, bindings, variables, nodes, edges, layout`.
 
 Use the Write tool. File did not exist before — Edit does not apply.
 
 ## Post-write validation
 
 Cheap sanity checks only — full validation runs after all plugins are done, per SKILL.md Anti-patterns ("Do NOT validate after each command").
-
-### v19
-
-1. **File parses.** `JSON.parse(readFile('caseplan.json'))` succeeds.
-2. **Root shape.**
-   - `root.id === "root"`
-   - `root.type === "case-management:root"`
-   - `root.version === "v19"`
-   - `root.publishVersion === 2`
-   - `root.data.intsvcActivityConfig === "v2"`
-   - `root.data.uipath.variables.inputOutputs` is an array (empty at T01)
-   - `root.data.uipath.bindings` is an array (empty at T01)
-3. **Empty node/edge arrays.**
-   - `nodes` is an array of length 0
-   - `edges` is an array of length 0
-
-### v20
 
 1. **File parses.** `JSON.parse(readFile('caseplan.json'))` succeeds.
 2. **Top-level shape.**
@@ -358,12 +249,8 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
    - `nodes` is an array of length 0
    - `edges` is an array of length 0
    - `layout` is an object (may be `{}`)
-4. **No v19 leakage.**
-   - No `root` key at top level
-   - No `version === "v19"` anywhere
-   - No `data.intsvcActivityConfig` (v20 emits it under `metadata`, not `data`)
 
 If any check fails, halt and report — do not proceed to downstream plugins.
 
-**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, trigger has no outgoing edges). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). In v20 mode, even the post-build validate may reject (Rule 18 softening) — Pre-build validate is informational only.
+**Do NOT run `uip maestro case validate` here.** A case-only caseplan will fail validation by design (no stage nodes, so the case cannot be entered). Validation runs once after the full build (SKILL.md Anti-patterns — "Do NOT validate after each command"). Pre-build validate is informational only, regardless of schema.
 

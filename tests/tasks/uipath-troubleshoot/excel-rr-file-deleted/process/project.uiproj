@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Read Range process with absolute literal WorkbookPath that has worked for prior runs but fails now because the workbook was deleted upstream. Exercises the file-deleted-upstream branch of the file-not-found playbook.",
+  "MainFile": "Main.xaml"
+}

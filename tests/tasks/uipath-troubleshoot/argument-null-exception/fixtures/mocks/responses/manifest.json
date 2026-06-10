@@ -31,7 +31,7 @@
       "file": "or-processes-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379.json"
     },
     {
-      "match": "resource libraries list --output json",
+      "match": "or libraries list --output json",
       "file": "or-libraries-list-output-json.json",
       "exit_code": 1
     },

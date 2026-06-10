@@ -1,0 +1,57 @@
+task_id: skill-flow-devcon-billing-dispute-analyst
+description: >
+  Build a Maestro Flow whose single work node is an inline low-code agent
+  (uipath.agent.autonomous, scaffolded with `uip agent init --inline-in-flow`)
+  grounded on the existing "Billing Dispute SOP Index" semantic index via its
+  context handle (a uipath.agent.resource.context.index node). Graded by flow
+  validate plus one flow debug run: both nodes must be present and the agent
+  must return a non-empty determination.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:execute, shape:multi-node, node:inline-agent]
+
+run_limits:
+  max_turns: 120
+  turn_timeout: 1200
+  task_timeout: 2400
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 90
+
+initial_prompt: |
+  Build a Maestro Flow "BillingDisputeAnalyst" (in a solution of the same name)
+  whose single work node is an inline low-code agent embedded in the flow
+  project that analyzes a billing dispute, grounded on tenant knowledge.
+
+  - Trigger inputs: `disputeDescription` (string), `invoiceNumber` (string).
+  - The inline agent must ground its analysis on the existing semantic index
+    named "Billing Dispute SOP Index" already deployed in the tenant (indexes
+    live outside the solution). Use the real folder and index name from the
+    tenant — do not hard-code or guess them.
+  - The agent returns two strings: `determination` and `rationale`. Map them to
+    flow outputs of the same names.
+  - The agent must be embedded in the flow project (inline), not a separate
+    published agent, and its context handle must be wired to the index.
+
+  Validate the final flow file — the task is not complete until `uip maestro
+  flow validate` passes. Grading then runs the flow under debug, so build it to
+  actually run, not merely validate. Do not run debug yourself.
+
+  Use the `uipath-maestro-flow` skill workflow, and build the complete flow
+  without stopping to ask me.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate BillingDisputeAnalyst/BillingDisputeAnalyst/BillingDisputeAnalyst.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Check debugs the flow: an inline uipath.agent.autonomous node is wired to a context.index node, the flow completes, and the agent returns a non-empty determination"
+    command: "python3 $TASK_DIR/check_billing_dispute_analyst.py"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

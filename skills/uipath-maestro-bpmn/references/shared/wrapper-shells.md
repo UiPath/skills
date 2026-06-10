@@ -56,9 +56,8 @@ commands before execution; keep examples placeholder-safe.
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.StartJob" version="v1" />
       <uipath:context>
-        <uipath:input name="ReleaseKey" type="string" value="<PROCESS_KEY_GUID>" />
-        <uipath:input name="FolderKey" type="string" value="<FOLDER_KEY_GUID>" />
-        <uipath:input name="folderId" type="string" value="<FOLDER_ID_INTEGER>" />
+        <uipath:input name="ReleaseKey" type="string" value="PROCESS_KEY_GUID" />
+        <uipath:input name="FolderKey" type="string" value="FOLDER_KEY_GUID" />
         <uipath:input name="FolderPath" type="string" value="Shared/Synthetic" />
         <uipath:input name="Name" type="string" value="Synthetic Process" />
       </uipath:context>
@@ -89,8 +88,8 @@ bindings, schemas, and authorized debug/run have been verified.
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.StartAgentJob" version="v1" />
       <uipath:context>
-        <uipath:input name="ReleaseKey" type="string" value="<AGENT_PROCESS_KEY_GUID>" />
-        <uipath:input name="FolderKey" type="string" value="<FOLDER_KEY_GUID>" />
+        <uipath:input name="ReleaseKey" type="string" value="AGENT_PROCESS_KEY_GUID" />
+        <uipath:input name="FolderKey" type="string" value="FOLDER_KEY_GUID" />
         <uipath:input name="FolderPath" type="string" value="Shared/SyntheticAgentSolution" />
         <uipath:input name="Name" type="string" value="Synthetic Agent" />
       </uipath:context>
@@ -190,8 +189,8 @@ resolved process/folder identifiers before execution.
     <uipath:activity version="v1">
       <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1" />
       <uipath:context>
-        <uipath:input name="ReleaseKey" type="string" value="<API_WORKFLOW_PROCESS_KEY_GUID>" />
-        <uipath:input name="FolderKey" type="string" value="<FOLDER_KEY_GUID>" />
+        <uipath:input name="ReleaseKey" type="string" value="API_WORKFLOW_PROCESS_KEY_GUID" />
+        <uipath:input name="FolderKey" type="string" value="FOLDER_KEY_GUID" />
         <uipath:input name="FolderPath" type="string" value="Shared/Synthetic" />
         <uipath:input name="Name" type="string" value="Synthetic API Workflow" />
       </uipath:context>

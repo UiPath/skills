@@ -1,0 +1,146 @@
+task_id: skill-troubleshoot-classic-movefile-source-not-found
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay, rpa, classic-activities]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My last job from folder Shared failed. The failing project source is in
+  the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the file-operation-failed playbook AND identified the hardcoded non-existent Move File source path on the robot as root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The attached Reference (RESOLUTION.md) is the
+      authoritative ground truth.
+
+      The user's request was:
+        "My last job from folder Shared failed. The failing project source
+         is in the current working directory."
+
+      Grade what the agent PRESENTED to the user (its final response is the
+      contract). Use the attached state.json / hypotheses.json only as soft
+      corroboration — do NOT require any particular field, status, or path
+      shape inside them. Pending sibling hypotheses and early-stop are
+      normal and must not be penalized.
+
+      Score BOTH dimensions in a single number.
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/classic-activities/playbooks/file-operation-failed.md
+        Signature: a classic file activity (here Move File) throws
+        System.IO.FileNotFoundException ("Could not find file ...") at
+        UiPath.Core.Activities.MoveFile.ExecuteAsync -> System.IO.File.Move.
+        Evidence (any one suffices): the agent names/reads this playbook,
+        state.json.matched_playbooks references it, or the agent's narrative
+        clearly identifies the classic file-operation failure family.
+        NOT penalized: reading neighbouring classic playbooks while ruling
+        them out.
+
+      DIMENSION B -- Same root cause + fix as RESOLUTION.md
+        Correct root cause (REQUIRED for a high score): the classic Move
+        File activity in move.xaml uses a HARDCODED LITERAL source path
+        (`C:\UiPathDemo\DoesNotExist\source.txt`) that does NOT exist on the
+        robot machine, so System.IO.File.Move raised FileNotFoundException
+        and faulted the job immediately. The path is a literal (no variable
+        resolves it) and the workflow has NO upstream activity that creates
+        or downloads the source file — so the source is simply missing /
+        the path is wrong, not a transient lock, a permission error, or a
+        destination-only problem.
+        Correct fix (at least one): point the Move File source at a path
+        that exists on the robot (and ensure the destination folder
+        exists), OR create/place the source file before the move runs;
+        preventively, parameterize the hardcoded path.
+
+        Do NOT penalize the agent for also noting the destination folder is
+        absent, or for briefly considering and rejecting a "deployed on dev
+        but not on robot" environment-gap explanation (it collapses into the
+        wrong/non-existent-path cause).
+
+      SCORING RUBRIC (single score reflecting both dimensions). Judge on
+      MEANING, not wording — do NOT require the agent to match RESOLUTION.md
+      phrasing or quote the path verbatim:
+        1.0  Matched the file-operation-failed playbook AND identified the
+             root cause as the Move File's hardcoded source path being
+             absent on the robot machine AND gave a correct fix (correct the
+             path / create the source).
+        0.8  Root cause + fix correct but playbook match weak/implicit; OR
+             playbook + cause correct but the fix is vague.
+        0.5  Stopped at the surface ("a file was not found" / generic Move
+             File error) without identifying the hardcoded-wrong-source-path
+             cause; OR only one dimension correct.
+        0.2  Recognized a file-operation failure but neither matched the
+             playbook nor reached the missing-source-path cause.
+        0.0  Wrong conclusion (e.g. permission denied, destination error,
+             transient lock, network/mapped-drive) or got blocked.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and root cause>"}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

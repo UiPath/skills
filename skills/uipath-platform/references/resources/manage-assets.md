@@ -2,7 +2,7 @@
 
 Create configuration assets, share them across folders, and manage credential rotation.
 
-> For full option details on any command, use `--help` (e.g., `uip resource assets create --help`).
+> For full option details on any command, use `--help` (e.g., `uip or assets create --help`).
 
 ## When to Use
 
@@ -38,13 +38,13 @@ graph LR
 Create a named configuration value in a folder. Type defaults to Text.
 
 ```bash
-uip resource assets create "ApiBaseUrl" "https://api.example.com" \
+uip or assets create "ApiBaseUrl" "https://api.example.com" \
   --folder-path "Finance" --type Text --output json
 
-uip resource assets create "MaxRetries" "3" \
+uip or assets create "MaxRetries" "3" \
   --folder-path "Finance" --type Integer --output json
 
-uip resource assets create "FeatureEnabled" "true" \
+uip or assets create "FeatureEnabled" "true" \
   --folder-path "Finance" --type Bool --output json
 ```
 
@@ -62,11 +62,11 @@ Key options:
 For Credential and Secret types, you must provide `--credential-store-key`:
 
 ```bash
-uip resource assets create "DbPassword" "s3cret-value" \
+uip or assets create "DbPassword" "s3cret-value" \
   --folder-path "Finance" --type Secret \
   --credential-store-key <store-key> --output json
 
-uip resource assets create "ServiceAccount" "svc-user:p@ssw0rd" \
+uip or assets create "ServiceAccount" "svc-user:p@ssw0rd" \
   --folder-path "Finance" --type Credential \
   --credential-store-key <store-key> --output json
 ```
@@ -76,13 +76,13 @@ uip resource assets create "ServiceAccount" "svc-user:p@ssw0rd" \
 List assets in a folder. Requires `--folder-path` or `--folder-key`.
 
 ```bash
-uip resource assets list --folder-path "Finance" --output json
+uip or assets list --folder-path "Finance" --output json
 
 # Filter by name (contains match)
-uip resource assets list --folder-path "Finance" --name "Api" --output json
+uip or assets list --folder-path "Finance" --name "Api" --output json
 
 # Filter by type
-uip resource assets list --folder-path "Finance" --type Secret --output json
+uip or assets list --folder-path "Finance" --type Secret --output json
 ```
 
 If the user already gives a folder name or path, pass it directly as
@@ -95,7 +95,7 @@ the asset is not present.
 Get full asset metadata by key. Cross-folder -- no `--folder-path` needed.
 
 ```bash
-uip resource assets get <asset-key> --output json
+uip or assets get <asset-key> --output json
 ```
 
 **Note:** Credential and secret values are NOT returned by `get`. Use `get-asset-value` to retrieve decrypted values.
@@ -105,7 +105,7 @@ uip resource assets get <asset-key> --output json
 Returns the decrypted asset value for the current user. Requires `--folder-path` or `--folder-key`.
 
 ```bash
-uip resource assets get-asset-value <asset-key> \
+uip or assets get-asset-value <asset-key> \
   --folder-path "Finance" --output json
 ```
 
@@ -117,14 +117,14 @@ Update an existing asset's value, type, scope, or metadata. Cross-folder -- no `
 
 ```bash
 # Update value
-uip resource assets update <asset-key> "https://api-v2.example.com" --output json
+uip or assets update <asset-key> "https://api-v2.example.com" --output json
 
 # Update description and tags
-uip resource assets update <asset-key> --description "Updated endpoint" \
+uip or assets update <asset-key> --description "Updated endpoint" \
   --tags "production,api" --output json
 
 # Change scope
-uip resource assets update <asset-key> --scope PerRobot --output json
+uip or assets update <asset-key> --scope PerRobot --output json
 ```
 
 Only provided fields are changed -- omitted fields keep their current values.
@@ -134,7 +134,7 @@ Only provided fields are changed -- omitted fields keep their current values.
 Make an asset accessible in an additional folder:
 
 ```bash
-uip resource assets share <asset-key> --folder-path "Production" --output json
+uip or assets share <asset-key> --folder-path "Production" --output json
 ```
 
 ## Step 7: Check Where Shared
@@ -142,7 +142,7 @@ uip resource assets share <asset-key> --folder-path "Production" --output json
 List all folders where the asset is currently accessible:
 
 ```bash
-uip resource assets get-folders <asset-key> --output json
+uip or assets get-folders <asset-key> --output json
 ```
 
 Returns `accessibleFolders` (array of folders you can see) and `totalFoldersCount` (total, including folders you lack permission to view).
@@ -152,7 +152,7 @@ Returns `accessibleFolders` (array of folders you can see) and `totalFoldersCoun
 Remove the asset from a folder:
 
 ```bash
-uip resource assets unshare <asset-key> --folder-path "Production" --output json
+uip or assets unshare <asset-key> --folder-path "Production" --output json
 ```
 
 ## Step 9: Delete
@@ -160,7 +160,7 @@ uip resource assets unshare <asset-key> --folder-path "Production" --output json
 Delete the asset entirely. Cross-folder -- no `--folder-path` needed.
 
 ```bash
-uip resource assets delete <asset-key> --output json
+uip or assets delete <asset-key> --output json
 ```
 
 ---
@@ -171,23 +171,23 @@ Rotate a secret without downtime:
 
 ```bash
 # 1. Create the replacement secret
-uip resource assets create "DbPassword-v2" "new-s3cret" \
+uip or assets create "DbPassword-v2" "new-s3cret" \
   --folder-path "Finance" --type Secret \
   --credential-store-key <store-key> --output json
 
 # 2. Share with all folders that use it
-uip resource assets share <new-key> --folder-path "Production" --output json
+uip or assets share <new-key> --folder-path "Production" --output json
 
 # 3. Update consuming processes to reference the new asset name
 #    (or update the original asset in-place if the name must stay the same)
-uip resource assets update <original-key> "new-s3cret" --output json
+uip or assets update <original-key> "new-s3cret" --output json
 
 # 4. Verify the new value resolves correctly
-uip resource assets get-asset-value <asset-key> \
+uip or assets get-asset-value <asset-key> \
   --folder-path "Finance" --output json
 
 # 5. Delete the old version (if you created a new asset instead of updating)
-uip resource assets delete <old-key> --output json
+uip or assets delete <old-key> --output json
 ```
 
 ---
@@ -198,30 +198,30 @@ Set up environment configuration for a Finance folder with text, integer, and se
 
 ```bash
 # Create text asset
-uip resource assets create "ApiBaseUrl" "https://api.example.com" \
+uip or assets create "ApiBaseUrl" "https://api.example.com" \
   --folder-path "Finance" --type Text \
   --description "Production API endpoint" --output json
 
 # Create integer asset
-uip resource assets create "MaxRetries" "5" \
+uip or assets create "MaxRetries" "5" \
   --folder-path "Finance" --type Integer \
   --description "Maximum retry attempts" --output json
 
 # Create secret asset (requires credential store)
-uip resource assets create "ApiKey" "sk-prod-abc123" \
+uip or assets create "ApiKey" "sk-prod-abc123" \
   --folder-path "Finance" --type Secret \
   --credential-store-key <store-key> \
   --description "Production API key" --output json
 
 # Share secret with Production folder
-uip resource assets share <api-key-asset-key> \
+uip or assets share <api-key-asset-key> \
   --folder-path "Production" --output json
 
 # Verify sharing
-uip resource assets get-folders <api-key-asset-key> --output json
+uip or assets get-folders <api-key-asset-key> --output json
 
 # Confirm value is accessible from Production
-uip resource assets get-asset-value <api-key-asset-key> \
+uip or assets get-asset-value <api-key-asset-key> \
   --folder-path "Production" --output json
 ```
 
@@ -234,7 +234,7 @@ uip resource assets get-asset-value <api-key-asset-key> \
 Credential type assets require `username:password` format. The colon separates the username from the password:
 
 ```bash
-uip resource assets create "WinCred" "DOMAIN\\user:p@ssw0rd" \
+uip or assets create "WinCred" "DOMAIN\\user:p@ssw0rd" \
   --folder-path "Finance" --type Credential \
   --credential-store-key <store-key> --output json
 ```

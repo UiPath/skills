@@ -28,6 +28,8 @@ If unclear which file to edit, **ask the user** rather than guessing.
 
 **Goal:** Understand project context, leverage installed activity documentation, study existing patterns, identify reusable components, and discover activities before writing any XAML.
 
+> **Batch discovery across activities.** When the workflow needs several activities, do NOT run the find → read-doc → `get-default-xaml` triple one activity at a time. Emit all `activities find` calls in parallel, then all `<Activity>.md` `Read`s in parallel, then all `get-default-xaml` calls in parallel (SKILL.md § Call Batching). Only the per-activity *authoring + validate* loop (Phase 2 / Phase 3) stays sequential — discovery fans out.
+
 ### Step 1.1: Project Structure
 
 ```

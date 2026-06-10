@@ -15,7 +15,7 @@ Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are c
   "value": "=vars.customerId" }
 ```
 
-Inputs are populated with empty `value` from the `tasks describe` schema when `data.context.taskTypeId` is set during the task plugin's impl-json write. Input IDs are random (`v` + 8 chars).
+Inputs are populated with empty `value` from the `tasks describe` schema when the task's `data.inputs[]` are written during the task plugin's impl-json write. Input IDs are random (`v` + 8 chars).
 
 ## Task Output Shape
 
@@ -36,13 +36,14 @@ Each task plugin emits `data.outputs[]` entries by combining its Step 0 schema (
 
 For each entry in the Step 0 schema, check whether the SDD's `outputs:` row in tasks.md references it (matched by schema field name on the left side of `->`, or as a bare name).
 
-- **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape: `{name: <Step 0 displayName>, id: <camelCase(leaf segment)>, var: "<sdd-name>", originalVar: <camelCase(leaf segment)>, value: "<sdd-name>", source: "=<sdd-field-path>", target: "=<id>", elementId: "<stage-task>"}`. **`source` is the SDD's left-side string with `=` prefix, verbatim.** The SDD writes the full runtime path (e.g., `response.status`, `Error`, `response.message.ts`, `Action`); skill never adds, removes, or infers envelope prefixes. Consult the Step 0 schema only for type / displayName lookup — top-level entries match by their `source` field (with `=` stripped); nested fields are found by navigating the parent entry's `body` schema. **`originalVar` is load-bearing** — tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits.
-- **Bare `<name>`** (no operator) → auto-mint shape: `{name, id: <camelCase(name)>, var: <id>, value: <id>, source: <Step 0 entry's source verbatim>, target: "=<id>", elementId}`. No `originalVar`. Used for top-level Step 0 entries the SDD doesn't alias.
+- **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape: `{name: <Step 0 displayName>, type: <Step 0 schema entry's type>, id: <camelCase(leaf segment)>, var: "<sdd-name>", originalVar: <camelCase(leaf segment)>, value: "<sdd-name>", source: "=<sdd-field-path>", target: "=<id>", elementId: "<stage-task>"}`. **`source` is the SDD's left-side string with `=` prefix, verbatim.** The SDD writes the full runtime path (e.g., `response.status`, `Error`, `response.message.ts`, `Action`); skill never adds, removes, or infers envelope prefixes. Consult the Step 0 schema for `type` / `displayName` / `options` — top-level entries match by their `source` field (with `=` stripped); nested fields are found by navigating the parent entry's `body` schema. **`type` is required on every emitted output — FE rejects entries without it.** **`originalVar` is load-bearing** — tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits.
+- **Bare `<name>`** (no operator) → auto-mint shape: `{name, type: <Step 0 entry's type>, id: <camelCase(name)>, var: <id>, value: <id>, source: <Step 0 entry's source verbatim>, target: "=<id>", elementId}`. No `originalVar`. Used for top-level Step 0 entries the SDD doesn't alias.
 - **`<sdd-name> = <expression>`** (set / compute / copy) → Scenario E shape: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <case var's type>, elementId: "root"}`. **No `id`**, no `originalVar`. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it.
 - **Schema fields with no SDD reference** → fall back to auto-mint shape (`var` = camelCased schema name). Connector plugins additionally apply the [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule) dedup-suffix on collision (e.g., `response` → `response2`).
 
 Cross-cutting rules:
 
+- **Preserve type-refining schema attributes.** The shapes above list the *minimum* fields. Carry over any extra attributes the Step 0 schema entry defines — most importantly `options` (the enum / picklist value set on choice and decision outputs, e.g. `Action`'s `[{value:"approve",label:"approve"},{value:"reject",label:"reject"}]`) — **verbatim** onto the emitted output entry, alongside the named fields. Applies to reassign (`->`), auto-mint (bare / no-SDD-reference), and connector-rule outputs alike. Dropping `options` strips the decision / choice enum the FE picker and decision widget depend on. (The `=` Scenario E shape is a literal / computed assignment and carries no schema `options`.)
 - Expression values for `=`: literal (`"InReview"`, `5`, `true`), computed (`=js:vars.x + 1`), or variable reference (`=vars.X.Y.Z`).
 - Dot-paths in `->` paths are supported (e.g., `response.message.ts`, `Error.code`). Array indexing not supported in v1.
 - Target case variable on both `->` and `=` MUST exist in Case Variables table (validated at planning time).
@@ -64,7 +65,7 @@ The Output Binding Shapes above are operator-driven, not task-specific. The SAME
 
 **When invoked.** Each condition plugin's `impl-json.md` invokes this dispatch as the LAST step of its `wait-for-connector` recipe — after writing `rule.uipath` (Step 5 of [connector-trigger-common.md § Procedure](../../../connector-trigger-common.md#procedure-phase-3)) and BEFORE running root bindings (Step 6). Iterate the rule's SDD `Outputs:` rows against the already-minted `rule.uipath.outputs[]` entries; rewrite each matched entry per the operator (`->` / `=` / bare). See the 4 condition `impl-json.md` files for the invocation site.
 
-**Skip guard.** Rules with no `rule.uipath` (connector configuration unresolved — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) — log `SKIPPED` and move on, same pattern as placeholder tasks (`data:{}`). Nothing to bind against until the connector resolves.
+**Skip guard.** Rules with no `rule.uipath.outputs[]` (stub placeholder — connector configuration unresolved, see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) — log `SKIPPED` and move on, same pattern as placeholder tasks (`data:{}`). The stub always carries a `uipath` block, but with empty `outputs[]`, so there is nothing to bind against until the connector resolves.
 
 **Runtime order (KNOWN ISSUE).** The case-backend currently evaluates the gateway BEFORE the rule's output extract populates `vars.caseVar` — gate-first / extract-after, opposite of the intended design contract. Extract-then-gate on a SINGLE rule does NOT work for in-rule event-payload conditioning; the gate sees the pre-extract value of the case var. **Workaround** at the case-design level: place the case-state gate on the DOWNSTREAM stage-entry / task-entry condition that follows the connector rule — by then the extract has populated the case var. Backend disposition pending; treat the in-rule gate against extracted values as undefined behavior until verified.
 
@@ -98,13 +99,13 @@ Verify every bound input has a non-empty `value`, and every `=vars.X` reference 
 - Variables `inputOutputs[].id`
 - Variables `inputs[].id`
 
-Variables array path is schema-dependent — `root.data.uipath.variables.{inputOutputs,inputs}[].id` in v19, top-level `variables.{inputOutputs,inputs}[].id` in v20 (Rule 18).
+Variables array path is top-level `variables.{inputOutputs,inputs}[].id`.
 
 > **Scan key:** match by `.id`, NOT `.var`. The runtime resolver matches on `Variable.id` (`VariablesService.findVariableByVariableId`). Under the skill convention `id === var` on self-declaring outputs, scanning by `.var` is harmless in practice, but `.id` is symmetric with the resolver.
 
 Also scan `=vars.X` references in:
-- Edge guard expressions (`edges[].data.conditionExpression`)
 - Entry / exit condition expressions (stage and task)
+- Case-exit and trigger rule expressions
 - SLA expressions
 - `=js:` expressions anywhere they appear
 
@@ -112,7 +113,7 @@ Same resolution rule applies — these are read-side consumers of the variable n
 
 ### Check 2 — Out-arg producer presence
 
-For every entry in `root.data.uipath.variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end. Per the always-emit-companion rule, the companion in `root.inputOutputs[]` is always present; its `default` field is empty when SDD didn't declare a Default.
+For every entry in top-level `variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end. Per the always-emit-companion rule, the companion in `variables.inputOutputs[]` is always present; its `default` field is empty when SDD didn't declare a Default.
 
 **The check:** can the Out-arg's slot be populated at runtime? Three populating mechanisms exist:
 
@@ -238,7 +239,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Check | Severity | Action |
 |---|---|---|
 | Placeholder task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
-| Placeholder connector rule (no `rule.uipath`) | `SKIPPED` | Skip rule output bindings (nothing minted) |
+| Placeholder connector rule (no `rule.uipath.outputs[]`) | `SKIPPED` | Skip rule output bindings (nothing minted) |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
 | `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |

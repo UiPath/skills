@@ -26,6 +26,27 @@ DEFAULT_OUTPUT = REPO_ROOT / "assets" / "uip-catalog-snapshot.json"
 ARG_SIG = re.compile(r"\s*[<\[].*")
 
 
+def verb_count_error(new_count, prev_count, min_verbs, max_drop_frac):
+    """Return an error string if the new catalog looks collapsed, else None.
+
+    Cause-agnostic backstop against a bad build (#1203: 1115 -> 31 verbs):
+    - absolute floor: fewer than `min_verbs` total, and
+    - relative drop: more than `max_drop_frac` smaller than the prior snapshot.
+    `prev_count` is None/0 when there is no existing snapshot to compare.
+    Pure function — no I/O — so it is unit-testable without the CLI.
+    """
+    if min_verbs and new_count < min_verbs:
+        return f"only {new_count} verbs collected (< floor {min_verbs})"
+    if max_drop_frac is not None and prev_count:
+        floor = prev_count * (1 - max_drop_frac)
+        if new_count < floor:
+            return (
+                f"verb count dropped {prev_count} -> {new_count}, exceeding the "
+                f"{max_drop_frac:.0%} max drop (floor {floor:.0f})"
+            )
+    return None
+
+
 _DECODER = json.JSONDecoder()
 
 # Top-level groups whose JSON help could not be enumerated. Populated by
@@ -42,6 +63,23 @@ UNWALKABLE = set()
 # top-level subcommand in the current catalog build — that way a catalog
 # built on Windows still resolves `uip rpa …` verbs concretely.
 PLATFORM_SPECIFIC_PREFIXES = {"rpa"}
+
+
+def _ci(d, key):
+    """Case-insensitive dict lookup for `uip --output json` payloads.
+
+    The CLI PascalCases every key of a `--output json` `Data` payload (cli
+    PR #2266), so a tool's name arrives as `Name`, not `name`. Reading the
+    documented lowercase key yields None — which made install_all_tools skip
+    every tool and collapse the catalog to the 31 base verbs (#1203). Same
+    break class guarded by tests/scripts/test_runtime_payload_key_casing.py.
+    """
+    if not isinstance(d, dict):
+        return None
+    for k, v in d.items():
+        if isinstance(k, str) and k.lower() == key.lower():
+            return v
+    return None
 
 
 def run_uip(args):
@@ -69,7 +107,14 @@ def run_uip(args):
 
 
 def strip_args(name):
-    return ARG_SIG.sub("", name).strip()
+    # Drop the trailing "[options]" / "<arg>" signature, then any alias suffix.
+    # `uip --help --output json` bakes aliases into a subcommand's Name with a
+    # pipe — orchestrator renders as "or|orchestrator" (it's the only aliased
+    # tool). Keep the canonical first token ("or") so the group matches its
+    # CommandPrefix and walks as `uip or …`; otherwise the whole orchestrator
+    # group is dropped (#1203 follow-up). Harmless once cli #2331 emits a bare
+    # Name + separate Aliases — the split is then a no-op.
+    return ARG_SIG.sub("", name).strip().split("|", 1)[0].strip()
 
 
 def install_all_tools():
@@ -78,12 +123,14 @@ def install_all_tools():
     search`. Plugin groups (solution, maestro, tm, df, ...) only contribute
     verbs to the catalog when installed.
 
-    The @uipath/* packages live on public npm. The internal GitHub Packages
-    feed carries divergent 1.0.0-alpha.* prereleases under the same scope, so
-    if npm's @uipath scope is mapped there the catalog will pick up alpha
-    surface. The nightly workflow pins the scope to public npm before this
-    runs (`npm config set @uipath:registry https://registry.npmjs.org/`);
-    set the same locally if you hit auth errors.
+    Tools must be installed from the SAME feed as the CLI. The nightly tracks
+    cli/main, so it installs the CLI and the tools from GitHub Packages under
+    the `@alpha` dist-tag (`npm config set @uipath:registry
+    https://npm.pkg.github.com/` + auth token, done by the workflow). Stable
+    public-npm tools install but fail to register their command tree against
+    an alpha CLI (e.g. the `rpa` group never loads), collapsing coverage.
+    Locally, install the CLI and tools from whichever feed you intend the
+    catalog to reflect — keep both on the same one.
     """
     listed = run_uip(["tools", "list"]) or {}
     # `uip tools list` returns short names like "solution-tool".
@@ -92,13 +139,17 @@ def install_all_tools():
     def short(name):
         return name.rsplit("/", 1)[-1] if name else ""
 
-    installed = {short(t.get("name", "")) for t in listed.get("Data", []) or []}
+    # Read tool names case-insensitively — the CLI returns `Name`, not `name`
+    # (see _ci). A raw `.get("name")` silently skips every tool (#1203).
+    installed = {short(_ci(t, "name") or "") for t in (_ci(listed, "data") or [])}
 
     search_results = run_uip(["tools", "search"]) or {}
-    for tool in search_results.get("Data", []) or []:
-        name = tool.get("name") or ""
+    attempted = succeeded = 0
+    for tool in (_ci(search_results, "data") or []):
+        name = _ci(tool, "name") or ""
         if not name or short(name) in installed:
             continue
+        attempted += 1
         print(f"installing missing tool {name}", file=sys.stderr)
         proc = subprocess.run(
             ["uip", "tools", "install", name, "--output", "json"],
@@ -109,6 +160,20 @@ def install_all_tools():
             # usually empty on failure.
             err = (proc.stderr or proc.stdout or "").strip()[:200]
             print(f"  failed: {err}", file=sys.stderr)
+        else:
+            succeeded += 1
+
+    # Fail loud if we tried to install tools and every one failed. The plugins
+    # contribute the bulk of the catalog; a silent all-fail collapses it to the
+    # ~31 base-CLI verbs (see #1203). Usual cause: the `@uipath` npm scope is
+    # mapped to GitHub Packages (CLI alpha feed) instead of public npm, where
+    # the tool packages live.
+    if attempted and succeeded == 0:
+        sys.exit(
+            f"All {attempted} tool installs failed — refusing to build a "
+            "base-CLI-only catalog. Is the @uipath npm scope pointed at public "
+            "npm (https://registry.npmjs.org/)?"
+        )
 
 
 def collect_top_level():
@@ -141,11 +206,14 @@ def collect_top_level():
     # 1:1 to the prefix (`integrationservice-tool` → `is`, etc.) — so we
     # cannot infer prefixes for uninstalled tools without false positives.
     tools = run_uip(["tools", "list"]) or {}
-    for tool in tools.get("Data", []) or []:
-        prefix = tool.get("commandPrefix")
+    for tool in (_ci(tools, "data") or []):
+        # Case-insensitive: the CLI returns `CommandPrefix`/`Name`, not the
+        # lowercase forms (see _ci). A raw lowercase read yields None and
+        # silently disables broken-tool detection.
+        prefix = _ci(tool, "commandPrefix")
         if prefix and prefix not in groups:
             UNWALKABLE.add(prefix)
-            print(f"tool {tool.get('name')!r}: installed but {prefix!r} is "
+            print(f"tool {_ci(tool, 'name')!r}: installed but {prefix!r} is "
                   f"not exposed as top-level subcommand — marking unwalkable",
                   file=sys.stderr)
     # Platform-specific tools that simply aren't installed on this runner —
@@ -223,12 +291,42 @@ def main():
              "Required for full coverage of plugin groups (admin, platform, ...). "
              "Slow; intended for CI.",
     )
+    parser.add_argument(
+        "--min-verbs",
+        type=int,
+        default=0,
+        help="Refuse to write if fewer than N verbs were collected (absolute floor).",
+    )
+    parser.add_argument(
+        "--max-drop-frac",
+        type=float,
+        default=None,
+        help="Refuse to write if the verb count drops more than this fraction "
+             "(0-1) vs the existing --output snapshot. E.g. 0.2 = abort on a >20%% drop.",
+    )
     args = parser.parse_args()
+
+    # Validate before any work: a fraction outside [0, 1] silently breaks the
+    # relative guard (>1 yields a negative floor that never trips — a collapse
+    # would slip through; <0 over-inflates it). Fail fast on misconfiguration.
+    if args.max_drop_frac is not None and not 0 <= args.max_drop_frac <= 1:
+        sys.exit(f"--max-drop-frac must be between 0 and 1 (inclusive), got {args.max_drop_frac}")
 
     if args.install_tools:
         install_all_tools()
     verbs, groups = collect_top_level()
     verbs = expand(verbs, groups)
+
+    # Integrity guards — never overwrite a good snapshot with a collapsed one.
+    prev_count = None
+    if not args.stdout and args.output.exists():
+        try:
+            prev_count = len(json.loads(args.output.read_text()).get("verbs", []))
+        except (json.JSONDecodeError, OSError):
+            prev_count = None
+    err = verb_count_error(len(verbs), prev_count, args.min_verbs, args.max_drop_frac)
+    if err:
+        sys.exit(f"Refusing to write catalog: {err}. Aborting suspected bad build.")
 
     snapshot = {
         "generated_at": dt.datetime.now(dt.timezone.utc)

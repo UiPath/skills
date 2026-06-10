@@ -31,7 +31,7 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 
 | Exit `type` | When to pick |
 |-------------|--------------|
-| `exit-only` | **Default.** Stage exits normally along configured edges. |
+| `exit-only` | **Default.** Stage exits normally; the next stage is whichever one's entry condition matches (or `exit-to-stage-id` when set). No edges — routing is condition-driven. |
 | `wait-for-user` | Exit requires manual user decision or approval. |
 | `return-to-origin` | Rework / exception loop — sends the case back to the previous stage. |
 

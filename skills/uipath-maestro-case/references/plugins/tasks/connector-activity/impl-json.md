@@ -90,14 +90,16 @@ The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` 
 
 Save the response. The interesting parts:
 
+> **`case spec --output json` returns PascalCase keys.** The `.Data.*` read paths below reflect that (`.Data.CaseShape.Context`, not `.Data.caseShape.context`). A camelCase jq path returns `null`. The spliced subtree is re-cased to camelCase on the way to disk — see Step 6.
+
 | Variable | Source |
 |---|---|
-| `spec.identity` | `.Data.identity` — connectorKey, connectorName, connectorVersion, objectName, objectDisplayName, full TypeCache entry |
-| `spec.connection.folderKey` | `.Data.connection.folderKey` — needed for the FolderKey binding |
-| `spec.caseShape.inputs[]` | `.Data.caseShape.inputs` — pre-filled body / queryParameters / pathParameters / file inputs |
-| `spec.caseShape.outputs[]` | `.Data.caseShape.outputs` — response (JSON Schema body) / curated / Error |
-| `spec.caseShape.context[]` | `.Data.caseShape.context` — 8-entry FE-canonical array, with `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders |
-| `spec.diagnostics.fallbacks[]` | `.Data.diagnostics.fallbacks` — surface to `build-issues.md` when non-empty. |
+| `spec.identity` | `.Data.Identity` — connectorKey, connectorName, connectorVersion, objectName, objectDisplayName, full TypeCache entry |
+| `spec.connection.folderKey` | `.Data.Connection.FolderKey` — needed for the FolderKey binding |
+| `spec.caseShape.inputs[]` | `.Data.CaseShape.Inputs` — pre-filled body / queryParameters / pathParameters / file inputs |
+| `spec.caseShape.outputs[]` | `.Data.CaseShape.Outputs` — response (JSON Schema body) / curated / Error |
+| `spec.caseShape.context[]` | `.Data.CaseShape.Context` — 8-entry FE-canonical array, with `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` placeholders |
+| `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty. |
 
 > **Each connector task runs its own `case spec`.** Even when two tasks share the same `connection-id`, `caseShape` is task-shape-specific (different `objectName`, `httpMethod`, `inputs`, `outputs`). Never reuse another task's spec output.
 
@@ -152,9 +154,11 @@ Replace the two placeholders with the minted ids:
 - `{{CONN_BINDING_ID}}` → `<connBindingId>` (Step 5)
 - `{{FOLDER_BINDING_ID}}` → `<folderBindingId>` (Step 5; entry only present when folderKey was non-null)
 
-The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above. **Every other key — current or future, top-level or nested — must be copied byte-for-byte from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
+The **entire** `caseShape.context[]` array, and every nested subtree under it, is CLI-authoritative. The ONLY permitted modifications are the placeholder substitutions in the table above and the key-casing normalization below. **Every other key — current or future, top-level or nested — must be copied from the spec output, regardless of what those keys are or how many there are.** The doc cannot enumerate them all; the CLI's emitted shape is the contract. Composing or reconstructing any subtree of `caseShape.context` from agent memory is FORBIDDEN.
 
-> **Mechanical contract.** At gather time (Step 2), persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task). At write time, **Read that file and splice `Data.caseShape.context` verbatim** into `data.context`. The skill is a substituter, not a composer — the only edit between Read and Write is the placeholder substitutions above. **Never retype `context` content from agent reasoning.**
+> **Mechanical contract.** At gather time (Step 2), persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` (one file per task). At write time, **Read that file and splice `Data.caseShape.context` verbatim** into `data.context`, then re-case keys (next paragraph). The skill is a substituter, not a composer — the only edits between Read and Write are the placeholder substitutions above and that keys-only re-casing. **Never retype `context` content from agent reasoning.**
+
+> **Normalize key casing (PascalCase → camelCase).** `case spec --output json` emits PascalCase keys (`Name`/`Type`/`Value`/`Target`/`Body`/`DisplayName`/`Source`; nested `ActivityPropertyConfiguration`/`UiPathActivityTypeId`/…; response-schema `Properties`/`Definitions`/`Title`/`Items`); the caseplan disk schema is camelCase. After splicing `context` / `inputs` / `outputs` (and their nested `body`), lower-case the first character of every object **key**, preserving the rest (`DisplayName`→`displayName`, `UiPathActivityTypeId`→`uiPathActivityTypeId`). **Keys only — never values:** `"name": "Subject"`, `"source": "=response.Subject"`, and `=jsonString:` / `=js:` blobs are case-sensitive identifiers and stay verbatim. Full rule + rationale: [connector-trigger-common.md § Normalize key casing](../../../connector-trigger-common.md#normalize-key-casing-pascalcase--camelcase).
 
 ### Step 7 — Mint `var` / `id` / `elementId` on inputs and outputs
 
@@ -243,7 +247,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 7. Root bindings exist for ConnectionId + folderKey with the minted ids
 8. `data.bindings[]` is empty `[]`
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` minted (uniqueness rule applied for outputs)
-10. `bindings_v2.json` `resources` array matches the schema-appropriate bindings array (v19: `root.data.uipath.bindings[]`; v20: top-level `bindings[]`) after the deferred sync
+10. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 11. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
 
 ## What NOT to Do
@@ -253,6 +257,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only — that's already the shape in `caseShape.context`.
 - **Do NOT copy root bindings into `data.bindings[]`.** Leave it as `[]`. The FE crashes if activity tasks have task-level binding copies.
 - **Do NOT reconstruct `caseShape.context` (or any nested subtree) from agent memory.** Printing the keys of `context` and later re-emitting from memory drops any subtree not fully expanded in context. Persist the full `case spec` response to `tasks/spec-cache.<elementId>.json` at gather time; at Write time, Read it and splice `Data.caseShape.context` verbatim. See Step 6.
+- **Do NOT write the spec's PascalCase keys to disk verbatim.** `case spec` emits PascalCase; the caseplan disk schema is camelCase. After splicing, lower-case the first character of every object key in the spec subtree — keys only, never values. See Step 6 and [connector-trigger-common.md § Normalize key casing](../../../connector-trigger-common.md#normalize-key-casing-pascalcase--camelcase).
 - **Do NOT pass a raw CEQL string under `queryParameters.where`** (or whichever connector-specific name) when authoring a filter. Pass the structured tree under `filter:` in tasks.md and let the CLI compile both halves.
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
 - **Do NOT pass `bodyParameters` for synthetic HTTP request activities.** Use `queryParameters` instead, or omit.
@@ -263,4 +268,4 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 
 ## Known Limitations
 
-- The CLI-produced `essentialConfiguration` uses `essentialConfiguration` only (not `optionalConfiguration`). Tasks work at runtime (debug/publish) but the FE editor may not render certain fields until the user re-configures the task in the UI. DAP repopulates these on form open. Documented in `~/Documents/knowledge/Skill_CLI/connector/case-spec-fe-discrepancies.md` (CLI-side).
+- The CLI-produced `essentialConfiguration` uses `essentialConfiguration` only (not `optionalConfiguration`). Tasks work at runtime (debug/publish) but the FE editor may not render certain fields until the user re-configures the task in the UI. DAP repopulates these on form open.

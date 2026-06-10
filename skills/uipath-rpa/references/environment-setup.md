@@ -4,13 +4,15 @@
 
 ## Studio Desktop vs headless Studio
 
-`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, `indicate-application`/`indicate-element`, the `uia` group, etc. all work headless.
+`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, the `uia` group (indication, capture, interaction), etc. all work headless.
 
 Studio Desktop is only required for two interactive UI tools:
 - `uip rpa files diff` — opens an interactive diff window in Studio's UI.
 - `uip rpa focus-activity` — selects an activity in Studio's active workflow designer.
 
 For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
+
+> **Coded UI automation caveat.** One non-interactive task also needs Studio Desktop: regenerating `ObjectRepository.cs` — the `Descriptors.*` class consumed by coded `uiAutomation.*` workflows. `uip rpa build` alone does NOT produce it; Studio Desktop reconciles the coded workflow against the Object Repository to generate it. A headless flow can author and validate coded UIA, but populating `Descriptors.*` requires a Studio Desktop pass. See [ui-automation-guide.md](ui-automation-guide.md) § Finding Descriptors.
 
 > **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it's still working. Bump the per-call timeout to ≥ 180s for the first invocation.
 
@@ -171,13 +173,15 @@ Pass `--target-framework` and `--expression-language` here too (Rule 2a) — a t
 2. **Read the scaffolded files** — the command generates starter files. Read them before making changes so you build on valid defaults
 3. Proceed with the skill workflow using the new project root
 
+> **Batch the post-`init` prerequisites.** Step 2 here, the analyzer-rules list (SKILL.md Rule 3), `packages install` for known-needed packages, and the first `activities find` all depend only on the project existing — emit them as parallel tool calls in one message, not one per turn. They share the warmed Studio host. See SKILL.md § Call Batching.
+
 ## Edge case: requiring Studio Desktop
 
 Two `uip rpa` commands need a running Studio Desktop instance — they have UI side effects that Helm cannot render:
 
 | Command | Why it needs Studio |
 |---------|---------------------|
-| `uip rpa diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
+| `uip rpa files diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
 | `uip rpa focus-activity` | Selects/highlights an activity in Studio's active workflow designer. |
 
 When (and only when) you need to run one of these, ensure Studio Desktop is up:

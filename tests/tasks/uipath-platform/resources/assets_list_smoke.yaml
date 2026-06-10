@@ -1,7 +1,7 @@
 task_id: skill-platform-resources-assets-list
 description: >
   Smoke test: agent uses the uipath-platform skill to list Orchestrator assets
-  in a folder via `uip resource assets list --folder-(key|path) ...`. Prompt
+  in a folder via `uip or assets list --folder-(key|path) ...`. Prompt
   passes a placeholder folder key — CLI returning Auth/404 is acceptable; the
   goal is correct command shape, not tenant state.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
@@ -15,9 +15,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent listed assets via uip resource assets list"
+    description: "Agent listed assets via uip or assets list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+list'
+    command_pattern: 'uip\s+or\s+assets\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -25,7 +25,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scoped the list to a folder via --folder-key or --folder-path"
     tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+assets\s+list.*--folder-(key|path)'
+    command_pattern: 'uip\s+or\s+assets\s+list.*--folder-(key|path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

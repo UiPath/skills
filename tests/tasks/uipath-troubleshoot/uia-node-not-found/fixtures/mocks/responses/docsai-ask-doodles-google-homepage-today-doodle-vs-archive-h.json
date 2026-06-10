@@ -1,0 +1,15 @@
+{
+  "Result": "Success",
+  "Code": "DocsAIAsk",
+  "Data": {
+    "query_id": "2cab01fc-65d2-4469-b98f-47b7c0dff85e",
+    "text": "The behavior of `doodles.google.com` (or the Google Doodles homepage) is not covered in the provided UiPath documentation.\n\nBased on general web behavior (not UiPath\u2011specific docs):\n\n- The **main Doodles homepage** typically shows:\n  - The **current/featured doodle** for your region/date.\n  - Plus navigation or tiles to browse **recent and past doodles** (an archive-style list).\n\n- The **archive views** (for example, URLs with date filters, categories, or search parameters) usually render:\n  - A **list/grid of multiple doodles** matching that filter (e.g., all doodles from a given year or for a specific country/event).\n  - Clicking a specific doodle in the archive opens a **detail page** for that single doodle.\n\nSo:\n- A generic homepage URL tends to emphasize **one main doodle plus some list navigation**.\n- Archive\u2011style URLs tend to show a **list/grid of doodles**.\n- Individual doodle URLs show **one doodle** with its description.\n\nThere is no UiPath document in the provided set that describes Google Doodles URL behavior, so none can be cited as a source for this answer.\n\n```json\n\n```\n\n```json```",
+    "sources": [],
+    "disclaimers": [],
+    "followups": [
+      "Can you explain how to automate interaction with a website like Google Doodles using UiPath Studio or Studio Web?",
+      "How can I configure network or firewall rules so UiPath robots can access external sites like Google?",
+      "What UiPath documentation URLs do I need to allow so I can read docs from a restricted network?"
+    ]
+  }
+}

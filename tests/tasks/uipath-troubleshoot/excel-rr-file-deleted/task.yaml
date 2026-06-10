@@ -1,0 +1,147 @@
+task_id: skill-troubleshoot-excel-rr-file-deleted
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (System.IO.FileNotFoundException) where the configured WorkbookPath
+  is a stable absolute path, the file existed for earlier successful
+  runs (visible in recent-jobs history), and the most recent run fails
+  because the file was deleted or moved upstream between runs. The
+  agent must match the activity-packages/excel-activities/playbooks/read-range-file-not-found.md
+  playbook, identify the file-deleted branch from the recent-jobs
+  pattern (prior success + current failure on same workflow / same
+  path), and recommend restore / coordinated relocation.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, file-not-found, file-deleted]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.IO.FileNotFoundException: Could not find file 'C:\Robot\Data\sales-2026-05.xlsx'.`
+  Pinned job key: aa111111-8888-9999-aaaa-bbbbccccdddd. The path is
+  correct — the workflow has been reading that file every hour for
+  weeks without a problem. What changed?
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-range-file-not-found playbook AND identified that the file was deleted or moved upstream between runs (using the recent-jobs pattern showing prior successful runs against the same path)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.IO.FileNotFoundException: Could not find file
+         'C:\Robot\Data\sales-2026-05.xlsx'.` Pinned job key:
+         aa111111-8888-9999-aaaa-bbbbccccdddd. The path is correct —
+         the workflow has been reading that file every hour for weeks
+         without a problem. What changed?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-not-found.md
+        because the runtime error
+          "System.IO.FileNotFoundException: Could not find file '<path>'"
+        is the verbatim file-resolution-failure signature of that
+        playbook.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workflow's configured `WorkbookPath` is an absolute
+            literal `C:\Robot\Data\sales-2026-05.xlsx` (no relative
+            path, no drive letter, no UNC). The path itself is well-
+            formed and was valid until recently.
+          - `or jobs list` for the same process shows a clear pattern:
+            the immediately-prior run (`bb222222-8888-...`) succeeded
+            with a normal duration, AND multiple older runs were also
+            Successful. The current run is the first FileNotFoundException
+            in the recent history.
+          - The exception class is `FileNotFoundException` (parent
+            directory exists, file missing) -- NOT `DirectoryNotFoundException`,
+            which would point at a drive letter or UNC issue.
+          - The workflow source has an absolute literal path -- not a
+            relative path or a mapped drive letter -- ruling out
+            branches 3, 4, and most of 2.
+          - Together these point at branch 1 (file moved or deleted
+            upstream between runs). Someone or something removed
+            sales-2026-05.xlsx from C:\Robot\Data\ between the prior
+            run and this one.
+
+        The reference fix:
+          - Determine where the file went: was it deliberately moved
+            (archived to a different folder), accidentally deleted,
+            or replaced by a different naming scheme?
+          - If unintentional deletion, restore from backup or shadow
+            copies. If the file was archived, update the workflow's
+            WorkbookPath to the new location.
+          - Add a File.Exists check at job start with a clear failure
+            message naming both the configured path and a directory
+            listing of the parent.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-file-not-found playbook AND
+             converged on the file-deleted-upstream branch (used the
+             recent-jobs pattern -- prior successful runs against the
+             same path -- to rule out a stable configuration issue
+             and conclude the file went missing between runs).
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified the file as missing but did not surface
+             the recent-jobs evidence; OR identified the deletion
+             pattern without matching the specific playbook.
+        0.5  Only one dimension correct: matched the playbook but
+             confidently guessed a different branch (relative path,
+             unmapped drive, UNC) without supporting evidence;
+             OR identified the deletion without matching the
+             playbook.
+        0.2  Agent recognized the FileNotFoundException as a path-
+             resolution problem but neither matched the playbook
+             nor surfaced the deletion conclusion.
+        0.0  Agent confidently picked a wrong branch (relative
+             path / unmapped drive / UNC) without evidence;
+             concluded a different root cause; got blocked; or
+             failed.
+
+      Be substance-focused. The recent-jobs pattern (prior success
+      against the same path) is the decisive signal for branch 1 vs.
+      the other branches.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

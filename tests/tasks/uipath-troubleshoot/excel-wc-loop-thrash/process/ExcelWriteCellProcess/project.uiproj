@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelWriteCellProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Write Cell inside For Each Row loop. Cell-by-cell write thrashes Excel COM after N iterations. Exercises branch 3 of the write-cell-failures playbook.",
+  "MainFile": "Main.xaml"
+}

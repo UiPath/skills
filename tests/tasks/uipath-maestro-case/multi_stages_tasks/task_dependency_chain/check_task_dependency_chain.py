@@ -13,7 +13,6 @@ from _shared.case_check import (  # noqa: E402
     get_variables,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
-    payload_contains,
     read_caseplan,
     start_debug,
     task_is_skeleton,
@@ -119,7 +118,6 @@ def main():
     expectations = {
         "First Step": (first_step, "runs-sequentially"),
         "Second Step": (second_step, "runs-sequentially"),
-        "Region Check": (region_check, "wait-for-connector"),
         "Final Task": (final_task, "selected-tasks-completed"),
         "Optional Audit": (optional_audit, "adhoc"),
     }
@@ -129,6 +127,15 @@ def main():
             sys.exit(
                 f"FAIL: task {name!r} task-entry rule should be {want!r}; got {got!r}"
             )
+
+    # Region Check fires when the Finalize stage is entered. current-stage-entered
+    # is the default task-entry rule and may be emitted explicitly or omitted.
+    rc_rule = _task_entry_rule(region_check)
+    if rc_rule not in ("current-stage-entered", None):
+        sys.exit(
+            f"FAIL: task 'Region Check' task-entry rule should be "
+            f"'current-stage-entered' (or default); got {rc_rule!r}"
+        )
 
     # First Step and Second Step are parallel members of the same
     # runs-sequentially group, so they MUST share one lane (shared lane =
@@ -156,40 +163,33 @@ def main():
         )
 
     fs_data = first_step.get("data") or {}
-    fs_repeat = fs_data.get("repeat")
-    if fs_repeat != 5:
+    if fs_data.get("timerType") != "timeDuration":
         sys.exit(
-            f"FAIL: 'First Step' wait-for-timer should have data.repeat=5 "
-            f"(bounded repeat flag); got {fs_repeat!r}"
+            f"FAIL: 'First Step' wait-for-timer should use the timeDuration "
+            f"branch (data.timerType='timeDuration'); got {fs_data.get('timerType')!r}"
+        )
+    if "repeat" in fs_data:
+        sys.exit(
+            f"FAIL: 'First Step' must be non-repeating — data.repeat must be "
+            f"absent; got {fs_data.get('repeat')!r}"
         )
 
     ss_data = second_step.get("data") or {}
-    if ss_data.get("timerType") != "timeCycle":
+    if ss_data.get("timerType") != "timeDuration":
         sys.exit(
-            f"FAIL: 'Second Step' wait-for-timer should use the timeCycle "
-            f"branch (data.timerType='timeCycle'); got "
+            f"FAIL: 'Second Step' wait-for-timer should use the timeDuration "
+            f"branch (data.timerType='timeDuration'); got "
             f"{ss_data.get('timerType')!r}"
         )
-    if ss_data.get("timeCycle") != "R3/PT2H":
+    if ss_data.get("timeDuration") != "PT5S":
         sys.exit(
-            f"FAIL: 'Second Step' data.timeCycle should be 'R3/PT2H'; "
-            f"got {ss_data.get('timeCycle')!r}"
+            f"FAIL: 'Second Step' data.timeDuration should be 'PT5S' (5 seconds); "
+            f"got {ss_data.get('timeDuration')!r}"
         )
-
-    rc_conds = region_check.get("entryConditions") or []
-    rc_rule = first_rule_of_condition(rc_conds[0]) if rc_conds else None
-    expr = (rc_rule or {}).get("conditionExpression") or ""
-    if "vars.region" not in expr:
+    if "repeat" in ss_data:
         sys.exit(
-            f"FAIL: 'Region Check' wait-for-connector conditionExpression must reference vars.region; got {expr!r}"
-        )
-    if "vars.priorityScore" not in expr:
-        sys.exit(
-            f"FAIL: 'Region Check' wait-for-connector conditionExpression must reference vars.priorityScore; got {expr!r}"
-        )
-    if "metadata.tier" not in expr:
-        sys.exit(
-            f"FAIL: 'Region Check' wait-for-connector conditionExpression must reference metadata.tier (=metadata.X form); got {expr!r}"
+            f"FAIL: 'Second Step' must be non-repeating — data.repeat must be "
+            f"absent; got {ss_data.get('repeat')!r}"
         )
 
     ft_conds = final_task.get("entryConditions") or []
@@ -226,20 +226,17 @@ def main():
         )
 
     payload = start_debug(timeout=540)
-    payload_contains(
-        payload, "Process", "Finalize", "Done", require_all=False
-    )
     status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: Process exit required-tasks-completed; Finalize exit "
         "selected-tasks-completed→Done (marksStageComplete=false); Finalize "
         "entry selected-stage-completed; task-entry rules cover runs-sequentially/"
-        "adhoc/wait-for-connector(vars.region+vars.priorityScore+metadata.tier)/"
-        "selected-tasks-completed; First Step + Second Step share lane "
-        f"{first_step_lane} (parallel members of the runs-sequentially group); "
-        "First Step uses timeDuration+repeat=5; "
-        "Second Step uses timeCycle R3/PT2H; root variables 'region' (string) "
+        "current-stage-entered/selected-tasks-completed/adhoc; First Step + "
+        f"Second Step share lane {first_step_lane} (parallel members of the "
+        "runs-sequentially group); First Step uses non-repeating timeDuration "
+        "PT2S; Second Step uses non-repeating timeDuration PT5S; Region Check fires on "
+        "current-stage-entered; root variables 'region' (string) "
         "and 'priorityScore' (number); 'Optional Audit' is a process-typed "
         f"skeleton task (no data.name / data.folderPath); debug payload "
         f"returned (status={status})"

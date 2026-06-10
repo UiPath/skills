@@ -8,10 +8,10 @@ confidence: low
 
 A UI automation activity exceeded its timeout waiting for an element or application state. The default timeout is typically 30 seconds.
 
-TimeoutException is ambiguous — it could be a UI timeout (Check App State, element wait) or a non-UI timeout (HTTP request, queue transaction). Confirm the faulted activity is a UI automation type before following this playbook.
+In modern UIAutomationNext (`N*`) activities a timeout most often surfaces as `RuntimeTimeoutException` ("Activity execution exceeded the set timeout."), or as `NodeNotFoundException` when the element simply never appeared within the wait. Classic activities throw `TimeoutException`, which is ambiguous — it could be a UI timeout (Check App State, element wait) or a non-UI timeout (HTTP request, queue transaction). Confirm the faulted activity is a UI automation type before following this playbook.
 
 What this looks like:
-- Activity waited the full timeout duration and threw TimeoutException
+- The activity waited the full timeout duration and then faulted — modern (`N*`) activities throw `RuntimeTimeoutException`, or `NodeNotFoundException` when the element never appeared within the wait; classic activities throw `TimeoutException`
 - The target element either never appeared or took too long to become interactable
 
 What can cause it:

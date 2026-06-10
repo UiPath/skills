@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Read Range process with a one-character typo in the configured SheetName ('Datab' instead of 'Data'). Used to exercise the activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md playbook (typo branch).",
+  "MainFile": "Main.xaml"
+}

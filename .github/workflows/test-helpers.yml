@@ -6,6 +6,7 @@ on:
       - 'tests/tasks/uipath-maestro-flow/**'
       - 'tests/tasks/uipath-maestro-case/**'
       - 'tests/scripts/**'
+      - 'scripts/**'  # guarded scripts (e.g. build-uip-catalog.py) must trigger their tests
       - '.github/workflows/test-helpers.yml'
   workflow_dispatch:
 
@@ -60,3 +61,22 @@ jobs:
       # case-insensitive _get_ci accessor — the CLI #2266 PascalCase break.
       - name: Run contract guard
         run: pytest tests/scripts/test_runtime_payload_key_casing.py -v
+
+  catalog-build-guards:
+    runs-on: ubuntu-latest
+    name: catalog build integrity guards
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Guards the verb-count floor / max-drop logic that stops a broken
+      # refresh from overwriting the catalog with a base-CLI-only snapshot
+      # (see #1203).
+      - name: Run catalog guard tests
+        run: pytest tests/scripts/test_catalog_build_guards.py -v

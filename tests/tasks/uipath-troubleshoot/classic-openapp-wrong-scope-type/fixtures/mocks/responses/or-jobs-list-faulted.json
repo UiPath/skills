@@ -1,0 +1,40 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "35c669cb-7f46-4282-b90d-ca7abd52c59f",
+      "State": "Faulted",
+      "ProcessName": "Legacy",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-04T10:50:06.750Z",
+      "EndTime": "2026-06-04T10:50:12.563Z",
+      "CreationTime": "2026-06-04T10:50:06.750Z"
+    },
+    {
+      "Key": "b1cab28d-5ab7-42f1-98f3-1920b637ea06",
+      "State": "Faulted",
+      "ProcessName": "Legacy",
+      "ReleaseKey": "",
+      "Source": "Agent",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-04T10:42:10.817Z",
+      "EndTime": "2026-06-04T10:42:43.897Z",
+      "CreationTime": "2026-06-04T10:42:10.817Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

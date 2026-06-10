@@ -21,7 +21,7 @@ If the change feels too tangled for a sequence of `Edit` calls, use `Write` for 
 
 ## Required Strategy
 
-> **Use Edit / Write for all non-carve-out `.flow` edits.** Flow CLI is not an opt-in alternative for OOTB structural edits. Use CLI only for connector activity, connector-trigger, and managed HTTP carve-outs. Inline-agent project lifecycle commands (`uip agent init --inline-in-flow`, `uip agent validate --inline-in-flow`, `uip agent migrate --inline-in-flow`) are allowed for the agent project, but the `uipath.agent.autonomous` flow node and edges are authored directly in `.flow` JSON.
+> **Use Edit / Write for all non-carve-out `.flow` edits.** Flow CLI is not an opt-in alternative for OOTB structural edits. Use CLI only for connector activity, connector-trigger, and managed HTTP carve-outs. Inline-agent project lifecycle commands (`uip agent init --inline-in-flow`, `uip agent refresh --inline-in-flow`, `uip agent validate --inline-in-flow`) are allowed for the agent project, but the `uipath.agent.autonomous` flow node and edges are authored directly in `.flow` JSON.
 
 | Strategy | Guide | When to use |
 |----------|-------|-------------|
@@ -92,6 +92,17 @@ These apply regardless of which strategy you use.
 - Do not validate after each individual edit — intermediate states are expected to be invalid
 - Validation checks: JSON schema, definitions coverage, edge references, unique IDs
 - Validation does NOT check: connector configuration, connection health, expression correctness, required field completeness
+
+### Parallel same-file Edits
+
+Applies to any turn that issues more than one `Edit` against the same `.flow` (greenfield T2 and brownfield alike):
+
+- **Same-file Edits serialize in execution order** — they do not race, but each later Edit runs against the text the earlier ones already changed. An `old_string` that overlaps text a prior Edit removed or shifted fails with "string not found."
+- **Anchor each Edit on its target array's OWN opening key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`), located in the text you just `Read` — never on "the key that follows X." Top-level key order and presence are not guaranteed (see [file-format.md](../../shared/file-format.md#top-level-structure)).
+- **`"nodes": [` and `"edges": [` are NOT unique** — they recur inside inline `definitions[]` and inside any `subflows.<id>` block. Anchor on the 2-space-indented (top-level) occurrence and extend until the match is unique.
+- Insert at the array's head (right after `[`) so the `old_string` never spans the array's closing `]`.
+
+Full per-array anchor table and worked example: [greenfield.md — Anchoring parallel `.flow` Edits](greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
 
 ### Expression prefix rules
 

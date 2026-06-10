@@ -5,7 +5,7 @@ description: >
   `uip llm-configuration byo-connections list-product-configs`. Verifies the
   agent knows to query the discovery endpoint before attempting a create, and
   that it filters with --product / --feature when given a specific feature.
-tags: [uipath-platform, smoke, llmgateway, byo-connections, discovery]
+tags: [uipath-platform, smoke, mode:build, lifecycle:discover]
 
 run_limits:
   expected_turns: 10

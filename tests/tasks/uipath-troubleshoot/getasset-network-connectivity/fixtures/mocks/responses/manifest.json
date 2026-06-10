@@ -47,11 +47,11 @@
       "file": "or-jobs-logs-8e3f4d5c-level-error-output-json.json"
     },
     {
-      "match": "resource assets list --folder-key 6b9d2c5e-3a4f-4b8c-9d1e-2f3a4b5c6d7e --output json",
+      "match": "or assets list --folder-key 6b9d2c5e-3a4f-4b8c-9d1e-2f3a4b5c6d7e --output json",
       "file": "or-assets-list-folder-key-6b9d2c5e-output-json.json"
     },
     {
-      "match": "resource assets list --folder-key \"6b9d2c5e-3a4f-4b8c-9d1e-2f3a4b5c6d7e\" --output json",
+      "match": "or assets list --folder-key \"6b9d2c5e-3a4f-4b8c-9d1e-2f3a4b5c6d7e\" --output json",
       "file": "or-assets-list-folder-key-6b9d2c5e-output-json.json"
     },
     {

@@ -14,6 +14,8 @@ initial_prompt: |
   Onboard john.doe@example.com (John Doe) and add them to the
   "Automation Developer" group once provisioned.
 
+  If this user already exists, remove them first, then re-invite.
+
   Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

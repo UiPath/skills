@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelWriteCellProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Write Cell — formula uses semicolon parameter separators (=SUM(A1;A10)) but Excel COM requires commas. Exercises branch 2 of the write-cell-failures playbook.",
+  "MainFile": "Main.xaml"
+}

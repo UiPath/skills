@@ -1,0 +1,160 @@
+task_id: skill-troubleshoot-excel-rr-host-evidence
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (System.IO.IOException: ... used by another process) where the
+  available `uip` CLI evidence does NOT determine which cause-branch
+  applies. The agent must match the activity-packages/excel-activities/playbooks/read-range-file-locked.md
+  playbook, recognize that the CLI evidence chain is exhausted (no
+  concurrent siblings, no prior faulted runs, no overlapping triggers,
+  clean workflow source), and surface a host-side investigation
+  recommendation (`Get-Process EXCEL`, `handle.exe -a <path>`,
+  `Get-SmbOpenFile`) to the user instead of guessing a branch.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, file-locked, needs-host-evidence]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 50
+turn_timeout: 5400
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.IO.IOException: The process cannot access the file 'C:\Robot\Data\sales-2026-05.xlsx' because it is being used by another process.`
+  Pinned job key: ee555555-6666-7777-8888-99990000aaaa. There are no
+  other jobs running, no recent failures, and only one trigger is
+  configured. The workflow looks fine.
+
+  I'm not on the Robot host right now and have no shell access
+  to MOCK-HOST — only Orchestrator. Don't try to run anything
+  on the host yourself; just tell me what to run and I'll come
+  back with the output. If a local Bash call gets rejected,
+  treat that as a hard signal to switch to writing
+  recommendations for me rather than retrying.
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-range-file-locked playbook AND recognized CLI evidence is insufficient — recommended host-side investigation (Get-Process EXCEL / handle.exe / Get-SmbOpenFile) instead of guessing a branch"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.IO.IOException: ... used by another process.` Pinned
+         job key: ee555555-6666-7777-8888-99990000aaaa. There are no
+         other jobs running, no recent failures, and only one trigger
+         is configured. The workflow looks fine. I'm not on the Robot
+         host right now and have no shell access to MOCK-HOST — only
+         Orchestrator. Diagnose what you can from Orchestrator. If the
+         answer needs evidence from the host itself, give me the exact
+         commands to run there next time; I'll run them on the host
+         and come back with the output. Do not stall waiting for host
+         data — hand me the command list and stop."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-locked.md
+        because the runtime error
+          "System.IO.IOException: The process cannot access the file
+          '<path>' because it is being used by another process."
+        is the verbatim file-acquisition signature of that playbook.
+
+      DIMENSION B -- Correct handling of insufficient evidence
+        The reference conclusion is:
+          - The CLI evidence chain identifies the FINGERPRINT
+            (IOException, file path, activity) but does NOT pinpoint
+            WHICH cause-branch applies. The agent must NOT guess
+            (concurrent / orphan / network-share / AV / cross-session)
+            without supporting evidence.
+          - `or jobs list` shows no concurrent sibling and no recent
+            failed runs of the same process. The lock cannot be
+            attributed to another job.
+          - `or triggers list` shows a single trigger with non-
+            overlapping schedules. The lock is not from concurrent
+            firings.
+          - Workflow source has no `ContinueOnError` on the Excel
+            scope and no swallowing TryCatch. The lock is not from a
+            prior-run orphan caused by this workflow's structure.
+          - The CLI cannot enumerate host-side processes, AV/EDR
+            handles, network-share locks, or RDP sessions on
+            MOCK-HOST. The CORRECT action is to surface a host-side
+            investigation recommendation to the user.
+
+        The reference fix is to ask the user to capture (on
+        MOCK-HOST, at the next failure):
+          1. `Get-Process EXCEL` to see if any EXCEL.EXE is running
+             on the host (user / session / orphan).
+          2. `handle.exe -a 'C:\Robot\Data\sales-2026-05.xlsx'`
+             (Sysinternals) to name the exact PID and process
+             holding the lock — including AV scanners, sync clients,
+             backup agents.
+          3. If the workbook is on a UNC path,
+             `Get-SmbOpenFile` on the file server to identify a
+             remote lock holder.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-file-locked playbook AND
+             explicitly recommended host-side investigation (named
+             at least `Get-Process EXCEL` and `handle.exe -a <path>`,
+             or equivalent host-side tooling), without falsely
+             claiming a specific cause-branch.
+        0.8  Both dimensions partially correct: e.g., matched the
+             playbook and surfaced the need for host-side evidence
+             but in vague terms (e.g., "check the host" without
+             naming the specific commands); OR named the right
+             commands but also speculated about a specific branch
+             without evidence.
+        0.5  Only one dimension correct: e.g., matched the playbook
+             but guessed at a branch (e.g., "probably AV") without
+             evidence and without asking for host-side data; OR
+             correctly identified evidence-insufficiency but did
+             not match the specific playbook.
+        0.2  Agent recognized the IOException as a lock problem
+             but produced neither the playbook match nor a
+             host-side investigation recommendation.
+        0.0  Agent confidently picked a cause-branch (concurrent
+             jobs, orphan, AV, etc.) without evidence; concluded
+             a different root cause; got blocked; or failed.
+
+      Be substance-focused. Penalize confident guessing without
+      evidence — the test is specifically about the agent's
+      awareness of evidence boundaries.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering playbook + handling of insufficient evidence>"}

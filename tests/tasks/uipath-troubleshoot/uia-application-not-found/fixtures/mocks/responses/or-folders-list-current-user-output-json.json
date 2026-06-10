@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "f3e8d4b1-9c2a-4f5e-b8d7-c1a0e6f9b3d2",
+      "Name": "Finance Automations",
+      "Path": "Finance Automations",
+      "Description": "Folder containing finance-team unattended jobs (expense imports, GL postings, month-end close).",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

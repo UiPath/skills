@@ -17,6 +17,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 | `uip ixp projects configure-model <project-name> [options] --output json` | Configure extraction model. Options: `--model` (gemini_2_5_flash/gemini_2_5_pro/gpt_4o_2024_05_13) and `--preprocessing` (none/table_mini/table). |
 | `uip ixp projects list-models <project-name> --output json` | List all model versions and tags. Returns `Models[]` (Version, Pinned, TrainedTime) and `Tags[]` (Name, Version). |
 | `uip ixp projects publish <project-name> --output json` | Publish (pin) the latest model version. Options: `--model-version <N>` (specific version, default: latest), `--description "<text>"` (set description), `--tag <name>` (assign tag: "live", "staging", or custom). |
+| `uip ixp projects delete <project-name> --confirm-data-loss --output json` | **Permanently** delete a project — its documents, taxonomy, and trained models. **Irreversible.** Requires `--confirm-data-loss`; the command refuses to run without it. |
 
 ## Documents
 
@@ -110,4 +111,4 @@ For working with runtime (deployed) IXP models — separate from the training wo
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp deployments get-taxonomy <model-name> --folder-key <key> --output json` | Get the taxonomy (field names) of a deployed model. Pairs with `uip maestro flow registry get` — use `inputDefaults.modelName` and `inputDefaults.folderKey` from that output. |
+| `uip ixp deployments get-taxonomy <project-name> --version <N> --output json` | Get the project taxonomy (data types + field groups) at a specific trained model version. `--version` is the model version number from `projects list-models`. Output mirrors `projects get-taxonomy` — `EntityDefs[]` + `LabelGroups[]` — pinned to the snapshot the version was trained on. |

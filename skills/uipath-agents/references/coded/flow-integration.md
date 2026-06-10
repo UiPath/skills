@@ -9,6 +9,7 @@ Coded agents in flows use the `uipath.core.agent.{key}` node with `Orchestrator.
 The coded agent lives as a sibling folder inside the same solution as the flow. The flow references it with `section: "In this solution"`; the runtime resolves the node via the Studio Web projects API.
 
 - **Agent-side scaffolding:** [embedding-in-flows.md](embedding-in-flows.md)
+- **Wiring the agent's inputs (literal vs. `$vars.<id>` — and why `=js:` is wrong for these slots):** [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs)
 - **Flow node JSON shape + top-level `bindings[]` + `definitions[]` entry:** [agent/impl.md § In-solution variant](../../../uipath-maestro-flow/references/plugins/agent/impl.md#node-instance-inside-nodes--in-solution-variant)
 
 The node-type's `{key}` is the local `resource.key` minted by `uip solution project add` (written to `resources/solution_folder/process/agent/<name>.json`) and surfaced by `uip maestro flow registry list --local`.

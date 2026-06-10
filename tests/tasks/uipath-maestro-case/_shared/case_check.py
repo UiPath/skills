@@ -44,15 +44,52 @@ def read_caseplan(path: str | None = None) -> dict:
 
 
 def iter_tasks(plan: dict):
-    """Yield every task dict from every Stage / ExceptionStage node."""
+    """Yield every task dict from every Stage / ExceptionStage node.
+
+    Tolerates a mis-nested FLAT ``data.tasks`` (``Task[]`` instead of the schema's
+    ``Task[][]`` lanes) so callers don't crash on it — use ``assert_tasks_nested``
+    to reject that shape explicitly.
+    """
     for node in plan.get("nodes") or []:
         node_type = node.get("type") or ""
         if not node_type.endswith("Stage") and "Stage" not in node_type:
             continue
         lanes = ((node.get("data") or {}).get("tasks")) or []
         for lane in lanes:
-            for task in lane or []:
-                yield task
+            if isinstance(lane, dict):  # flat (mis-nested) task — yield directly
+                yield lane
+            elif isinstance(lane, list):
+                for task in lane:
+                    if isinstance(task, dict):
+                        yield task
+
+
+def assert_tasks_nested(plan: dict) -> None:
+    """Fail unless every stage's ``data.tasks`` is a 2D ``Task[][]`` (lanes).
+
+    A FLAT ``Task[]`` (a task object where a lane array is expected) silently
+    passes ``uip maestro case validate`` — the CLI reads each task dict as an
+    empty lane, so it reports 0 tasks / 0 warnings — yet it is not a buildable
+    case plan. Reject it explicitly so the test can't false-pass.
+    """
+    bad = []
+    for node in plan.get("nodes") or []:
+        if "Stage" not in (node.get("type") or ""):
+            continue
+        tasks = (node.get("data") or {}).get("tasks") or []
+        for i, lane in enumerate(tasks):
+            if not isinstance(lane, list):
+                label = (node.get("data") or {}).get("label") or node.get("id")
+                bad.append(f"{label} (tasks[{i}] is {type(lane).__name__}, not a lane)")
+                break
+    if bad:
+        sys.exit(
+            "FAIL: data.tasks must be a 2D array Task[][] (outer=lanes, "
+            "inner=tasks); these stages have a FLAT tasks array: "
+            + "; ".join(bad)
+            + ". A flat tasks array silently passes `validate` with 0 tasks "
+            "detected and is not a buildable case plan."
+        )
 
 
 def find_tasks_of_type(plan: dict, task_type: str) -> list[dict]:
@@ -104,7 +141,7 @@ def task_is_skeleton(task: dict) -> bool:
 # ── Schema-aware structural helpers ─────────────────────────────────────────
 #
 # v19 wraps case-level metadata under a `root` node; v20 hoists it to the
-# top-level + a `metadata` block. Node and edge internals are identical.
+# top-level + a `metadata` block. Node internals are identical across both.
 
 
 def _is_v20(plan: dict) -> bool:
@@ -147,24 +184,57 @@ def find_node_by_label(plan: dict, label: str) -> dict:
     _fail(f"no node with data.label={label!r}; available labels: {labels}")
 
 
-def find_edges(
+def stage_transitions(plan: dict) -> list[dict]:
+    """Stage→stage transitions derived from entry/exit conditions.
+
+    Edges are retired — ``plan["edges"]`` always stays ``[]`` — so reachability
+    lives entirely in the conditions. A transition ``{"source": X, "target": Y}``
+    exists when EITHER:
+
+    - ``Y``'s ``entryConditions`` carries a ``selected-stage-completed`` /
+      ``selected-stage-exited`` rule with ``selectedStageId == X``, OR
+    - ``X``'s ``exitConditions`` carries ``exitToStageId == Y``.
+
+    ``case-entered`` entries are NOT transitions — their source is the case
+    start, not a stage. Both encodings are unioned so a caller need not know
+    which convention an SDD used to wire a given hop. Mirrors the connector
+    graph the frontend now derives from conditions.
+    """
+    stage_types = {"case-management:Stage", "case-management:ExceptionStage"}
+    pairs: set[tuple[str, str]] = set()
+    for node in plan.get("nodes") or []:
+        if node.get("type") not in stage_types:
+            continue
+        nid = node.get("id")
+        for cond in iter_stage_entry_conditions(node):
+            for group in cond.get("rules") or []:
+                for rule in group or []:
+                    src = (rule or {}).get("selectedStageId")
+                    if src:
+                        pairs.add((src, nid))
+        for cond in iter_stage_exit_conditions(node):
+            dst = cond.get("exitToStageId")
+            if dst:
+                pairs.add((nid, dst))
+    return [{"source": s, "target": t} for s, t in sorted(pairs)]
+
+
+def find_transitions(
     plan: dict, *, source: str | None = None, target: str | None = None
 ) -> list[dict]:
+    """Condition-derived stage transitions, filterable by ``source``/``target``.
+
+    Replaces the retired ``find_edges``. Returns ``{"source", "target"}`` dicts
+    so existing graph walks that read ``.get("target")`` keep working unchanged.
+    """
     out: list[dict] = []
-    for edge in plan.get("edges") or []:
-        if source is not None and edge.get("source") != source:
+    for tr in stage_transitions(plan):
+        if source is not None and tr["source"] != source:
             continue
-        if target is not None and edge.get("target") != target:
+        if target is not None and tr["target"] != target:
             continue
-        out.append(edge)
+        out.append(tr)
     return out
-
-
-def edge_labels_from(plan: dict, source_id: str) -> list[str]:
-    return [
-        (e.get("data") or {}).get("label") or ""
-        for e in find_edges(plan, source=source_id)
-    ]
 
 
 def first_rule_of_condition(cond: dict | None) -> dict | None:

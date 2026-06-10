@@ -1,53 +1,104 @@
 task_id: skill-agent-solution-agent-tool
 description: >
-  Add agent tool (solution resource). End-to-end test: scaffold a
-  standalone low-code agent that calls another agent living inside
-  the same solution as a separate project. Verifies the tool
-  resource.json uses `type: "agent"`, `location: "solution"`, and
-  `folderPath: "solution_folder"`. Exercises the resource.json tool
-  format, location/folderPath conventions, referenceKey resolution,
+  Add an agent-as-tool inside an existing solution (brownfield). The
+  fixture ships an `OrchestratorSol` solution that already contains a
+  registered low-code `ToolAgent` project. The agent must add a NEW
+  `ParentAgent` project and wire the pre-existing `ToolAgent` in as a
+  tool — reusing it, NOT re-creating it and NOT re-initializing the
+  solution. Verifies the tool resource.json uses `type: "agent"`,
+  `location: "solution"`, and `folderPath: "solution_folder"`. Exercises
+  in-solution resource discovery, the resource.json tool format,
+  referenceKey resolution, schema equivalence with ToolAgent/agent.json,
   and distinct projectId UUIDs across agents.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
-  expected_turns: 31
+  expected_turns: 30
   turn_timeout: 1200
 
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/solution_agent_tool/_fixtures/OrchestratorSol ."
+    timeout: 10
+
 initial_prompt: |
-  Create a UiPath solution "OrchestratorSol" with two low-code
-  agents, "ParentAgent" and "ToolAgent". ToolAgent echoes back the
-  string it receives. ParentAgent should use ToolAgent as a tool.
+  Create a new UiPath low-code agent named "ParentAgent" inside the
+  existing "OrchestratorSol" solution (in the current directory), and wire
+  the existing "ToolAgent" agent already in that solution in as a tool that
+  ParentAgent can call.
+
+  Reuse ToolAgent as-is — do NOT re-create it, and do NOT re-initialize
+  the solution.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created the solution with uip solution init"
+  # Brownfield: the solution already exists in the fixture. Re-running
+  # `uip solution init` would clobber it — the agent must NOT. The
+  # exclude_pattern lets a read-only `uip solution init --help` verb-probe
+  # through (agents commonly confirm the post-rename verb exists).
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+init'
-    min_count: 1
-    weight: 1.5
+    exclude_pattern: '--help'
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent scaffolded the agent project with uip agent init"
+    description: "Agent scaffolded the new ParentAgent project with uip agent init"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
-  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
-  # `uip solution project add` both populate Projects[] in the .uipx).
+  # Brownfield: ToolAgent ships in the fixture. The agent must reuse it,
+  # not scaffold a fresh copy over it.
+  - type: command_not_executed
+    description: "Agent did NOT re-create the existing ToolAgent project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\s+["'']?ToolAgent'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Discover the existing ToolAgent as an in-solution resource rather than
+  # hand-guessing its referenceKey.
+  - type: command_executed
+    description: "Agent discovered the existing ToolAgent via solution resource list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--source\s+local'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the ToolAgent configuration with uip solution resource get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check: the fixture .uipx starts with ToolAgent registered;
+  # auto-registration via `uip agent init` (or the `uip solution project add`
+  # fallback) must add ParentAgent, bringing Projects[] to 2.
   - type: json_check
-    description: "Project is registered in the parent solution .uipx"
+    description: "ParentAgent is registered alongside ToolAgent in the parent solution .uipx"
     path: "OrchestratorSol/OrchestratorSol.uipx"
     assertions:
       - expression: "length(Projects)"
         operator: "gte"
-        expected: 1
+        expected: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
@@ -74,22 +125,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "ToolAgent/agent.json was created"
-    path: "OrchestratorSol/ToolAgent/agent.json"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
     description: "ToolAgent solution agent tool resource.json was created"
     path: "OrchestratorSol/ParentAgent/resources/ToolAgent/resource.json"
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: ".agent-builder/agent.json was regenerated by validate"
-    path: "OrchestratorSol/ParentAgent/.agent-builder/agent.json"
-    weight: 1.5
-    pass_threshold: 1.0
 
   - type: run_command
     description: "resource.json wires ToolAgent correctly (type, location, properties, schemas) and UUIDs are distinct"

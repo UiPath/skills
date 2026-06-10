@@ -6,8 +6,6 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 
 # UiPath Governance
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Uber skill for UiPath governance authoring. Two backing CLI surfaces:
 
 | Surface | Governs | CLI |

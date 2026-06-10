@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Read Range process with intentionally orphan-prone scope (ContinueOnError=True + swallowing TryCatch). Used to exercise the activity-packages/excel-activities/playbooks/read-range-file-locked.md playbook (orphan-process branch).",
+  "MainFile": "Main.xaml"
+}

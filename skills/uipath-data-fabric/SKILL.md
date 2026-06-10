@@ -5,8 +5,6 @@ description: "UiPath Data Fabric entity/record CRUD via `uip df`. Create entitie
 
 # UiPath Data Fabric — Agent Skill
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Data Fabric is UiPath's structured data store. Entities are typed schemas;
 records are rows; file fields store binary attachments.
 
@@ -44,12 +42,11 @@ Respond that the operation is not supported. Do not try to work around it.
 
 | Operation | Response |
 |-----------|----------|
-| Delete an entity | No `entities delete` command exists |
-| Delete / remove a field | Field removal is not supported — the CLI will error |
 | Change a field's data type | Not supported; type is fixed at creation |
 | Create a federated entity | Not supported via CLI or UiPath portal |
 | Write records to a federated entity | Federated entities are read-only |
-| Create / update / delete a choice set | Choice sets are authored in the Data Fabric web UI; the CLI exposes only `choice-sets list` / `choice-sets get` for browsing |
+| Name a field with a SQL / language reserved keyword | API rejects with `RESERVED_LANGUAGE_KEYWORDS` — pick a domain-specific name (see Rule 4) |
+| **Upload a file to a `FILE` field via `uip df files upload`** | The CLI insists on `referenceEntityId` / `referenceFieldId` on `FILE` field create and then uploads fail with *"Relationship violation"* against arbitrary or placeholder targets. No public attachment-storage entity is documented for FILE fields. **FILE field upload is currently unusable via CLI** — surface this gap to the user; do not attempt without a confirmed target-entity contract. |
 
 ---
 
@@ -61,7 +58,7 @@ Respond that the operation is not supported. Do not try to work around it.
 
 3. **Always resolve entity ID first.** Use `entities list` before any operation. Never assume an entity ID.
 
-4. **Entity and field names must pass validation**: start with a letter, contain only letters/digits/underscores (`[a-zA-Z0-9_]`), 3–100 characters. No hyphens or spaces. Reserved field names that will error: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`.
+4. **Entity and field names must pass validation**: start with a letter, contain only letters/digits/underscores (`[a-zA-Z0-9_]`), 3–100 characters. No hyphens or spaces. Reserved field names that will error: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`. Also never use **SQL, C#, or VB reserved keywords** — common rejections: `Case`, `Class`, `If`, `Then`, `Else`, `New`, `Object`, `Public`, `Return`, `Select`, `From`, `Where`, `Table`, `Order`, `Group`, `Index`, `Key`, `User`, `Role`, `Type`, `Status`. The API surfaces these as *"cannot be a reserved word in C# or VB"* (or `RESERVED_LANGUAGE_KEYWORDS`). Pick domain-specific names: `Case` → `WorkItem`; `Status` → `OrderStatus`; `Order` → `PurchaseOrder`; `Key` → `ItemKey`.
 
 5. **All updates require `Id` in the body.** The CLI routes single vs batch by whether the body is a JSON object (1 record) or array (multiple). Both require `"Id"` in the record. Use `records list` or `records query` to retrieve record IDs before updating.
 
@@ -73,22 +70,24 @@ Respond that the operation is not supported. Do not try to work around it.
 
 9. **Only work with native entities.** When listing entities before a write, use `entities list --native-only` to filter out federated entities. Never write to federated entities.
 
-10. **Never attempt entity delete.** No command exists. Respond: *"Deleting entities is not supported via the CLI."*
+10. **Entity delete is irreversible — surface dependents first.** `entities delete <id> --confirm --reason "<why>"` deletes the entity and every record in it. Before invoking, scan for dependents and list them to the user one by one: (a) other entities that reference this one (run `entities list --output json` and pull every entry whose `Fields[].ReferenceEntity.Id == <id>` — these will have broken FKs after the delete); (b) choice sets used by this entity's fields (`Fields[].ChoiceSetId` from `entities get`) — those choice sets are shared and may still be in use elsewhere. Ask the user explicitly for each dependent: delete it too, leave it, or stop. Apply only the choices the user confirms — never cascade silently.
 
-11. **Never attempt field delete.** Do not pass `removeFields` in `entities update`. Respond: *"Removing fields is not supported via the CLI."*
+11. **Field delete is irreversible — surface impact first.** `entities update <id> --body '{"removeFields":[{"fieldName":"<name>"}]}' --confirm --reason "<why>"` drops the field and every record's value in it. Note `removeFields` takes `{"fieldName": "..."}` (NOT `{"id": "..."}` like `updateFields`). Before invoking: (a) if it's a RELATIONSHIP / FILE field, identify any code or flows that read its value; (b) if it's a CHOICE_SET field, note the choice set itself is unaffected (still shared). Ask the user explicitly: confirm the field name, confirm the loss is intentional, supply a reason for the audit log. Apply only after explicit confirmation.
 
-12. **Complex field types need extra config and lookups, just like `DECIMAL` needs `decimalPrecision`.** `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` require `choiceSetId` (from `choice-sets list`); `RELATIONSHIP` requires `referenceEntityName` (target's technical `Name`) + `referenceFieldName` (usually `Id`), and the target entity must exist first. Full shape in [`references/entity-schema.md`](references/entity-schema.md).
+12. **Complex field types need extra config and lookups, just like `DECIMAL` needs `decimalPrecision`.** `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` require `choiceSetId` (UUID, from `choice-sets list`); `RELATIONSHIP` and `FILE` require `referenceEntityId` (target entity UUID — from `entities list`) + `referenceFieldId` (target field UUID — from `entities get <target-id>`). The target entity must exist first. When the user describes a link to another row ("each order has a Customer", "each report has a Supplier"), the field type is `RELATIONSHIP` — never substitute `STRING` or `UUID` for it. Full shape in [`references/entity-schema.md`](references/entity-schema.md).
 
-13. **`choice-sets` is read-only.** CLI has only `list` / `get` — author choice sets in the Data Fabric web UI. If a needed choice set is missing, stop and ask; do not fall back to `STRING`.
+13. **Pick-or-create flow for choice sets and relationship targets.** When the user's request needs a choice set or a relationship target entity that they didn't name (or the name they gave doesn't exist), do NOT auto-create and do NOT fall back to `STRING`. Run `choice-sets list` / `entities list --native-only`, present the matching candidates by `Name` / `DisplayName`, and ask: *pick from these, or create new?* Create only with explicit user approval, using their chosen name and values. Choice-set authoring uses `choice-sets create` / `update` / `delete` + `choice-set-values create` / `update` / `delete`; surface in [`references/choice-sets.md`](references/choice-sets.md).
 
-14. **Choice / relationship record values use lookup tokens, not labels.** Choice value → integer `NumberId` (single) or array of `NumberId`s (multi), from `choice-sets get`. Relationship value → target record's UUID `Id` regardless of `referenceFieldName`. Filter / `groupBy` use the same tokens; `CHOICE_SET_MULTIPLE` filtering has special operator semantics — see [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields).
+14. **Preview the proposed schema and get explicit approval before any create or schema-altering update.** Applies to `entities create`, `entities update` with `addFields` / `updateFields` / `removeFields`, `choice-sets create`, and `choice-set-values create`. Sequence: (1) compose the full proposal — entity / choice-set name, `displayName`, `description`, and every field with its `fieldName`, normalized UPPERCASE `type`, and all extras (`isRequired`, `isUnique`, `lengthLimit`, `maxValue` / `minValue`, `decimalPrecision`, `defaultValue`, `choiceSetId`, `referenceEntityId` / `referenceFieldId`); (2) render it as a readable table or formatted JSON block (NOT a raw CLI command); (3) ask the user to confirm or revise — wait for an explicit *yes / approved / proceed* before invoking the CLI; (4) apply revisions exactly as requested — never silently add, drop, rename, or retype fields the user didn't approve; re-show the revised proposal and ask again. Show the proposal **once per round** — don't re-show an unchanged schema after every minor question.
 
-15. **Answer with `records query`, not from memory.** Counts, sums, filters, lookups — issue a fresh `records query` (or `records list`) and use the server's response. Do not reuse cached insert responses, IDs you generated earlier, or values from previous tool results. Exception: the `Id` returned by the same `records insert` you just made.
+15. **Choice / relationship record values use lookup tokens, not labels.** Choice value → integer `NumberId` (single) or array of `NumberId`s (multi), from `choice-sets list-values`. Relationship value → target record's UUID `Id` regardless of which field was bound as `referenceFieldId`. Filter / `groupBy` use the same tokens; `CHOICE_SET_MULTIPLE` filtering has special operator semantics — see [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields).
 
-16. **`records query` filters.** Body shape, operators, per-type support, response, and unsupported-operator handling are in the [filter contract](references/filter-platform-contract.md). Symbol-form operators only (`==`/`Equals`/`like` → 400). On an unsupported operator/type or a missing value, don't run it — ask the user (Rule 17). **Return all fields by default** — omit `selectedFields` unless a subset is requested.
+16. **Answer with `records query`, not from memory.** Counts, sums, filters, lookups — issue a fresh `records query` (or `records list`) and use the server's response. Do not reuse cached insert responses, IDs you generated earlier, or values from previous tool results. Exception: the `Id` returned by the same `records insert` you just made.
 
-17. **When a request isn't supported, stop and confirm an alternative — never silently substitute.** Triggers (not exhaustive): a filter operator unsupported for the field type / not in the symbol list / missing a value (see [filter contract → Unsupported operator](references/filter-platform-contract.md#unsupported-operator-or-missing-value)); an unknown `fieldName`; a nonexistent or federated entity; a missing CLI verb (`removeFields`, choice-set authoring, … — see *Not Supported*); cross-entity joins or value forms the API can't serve.
-    Sequence: (1) state precisely what isn't supported (cite the rule / schema / *Not Supported* table); (2) propose a concrete alternative and name it — e.g. for an unknown `fieldName`, list the entity's real same-type fields from `entities get` and ask which; (3) apply **only** what the user approves, never your own fallback. If nothing works, recommend the right sibling skill (`uipath-maestro-flow` / `uipath-platform` / `uipath-rpa` / `uipath-agents` / `uipath-test`) — don't fabricate or return a degraded result.
+17. **`records query` filters.** Body shape, operators, per-type support, response, and unsupported-operator handling are in the [filter contract](references/filter-platform-contract.md). Symbol-form operators only (`==`/`Equals`/`like` → 400). On an unsupported operator/type or a missing value, don't run it — ask the user (Rule 18). **Return all fields by default** — omit `selectedFields` unless a subset is requested.
+
+18. **When a request isn't supported OR the upstream system returns an error, stop and confirm with the user — never silently substitute.** Triggers (not exhaustive): a filter operator unsupported for the field type / not in the symbol list / missing a value (see [filter contract → Unsupported operator](references/filter-platform-contract.md#unsupported-operator-or-missing-value)); an unknown `fieldName`; a nonexistent or federated entity; a missing CLI verb (`removeFields`, … — see *Not Supported*); cross-entity joins or value forms the API can't serve; ANY 4xx/5xx, validation error, `RESERVED_LANGUAGE_KEYWORDS`, constraint-violation, or quota response from the API.
+    Sequence: (1) surface the full upstream message verbatim — never swallow it; (2) state precisely what isn't supported or what failed (cite the rule / schema / error code); (3) propose a concrete next step keyed to the error — e.g. unknown `fieldName` → list the entity's real same-type fields from `entities get` and ask which; `RESERVED_LANGUAGE_KEYWORDS` → suggest a domain-specific rename; constraint violation → show the allowed range; missing dependency → list candidates via `entities list` / `choice-sets list` and offer pick-or-create (Rule 13); (4) apply **only** what the user approves, never your own fallback. If nothing works, error out and recommend the right sibling skill (`uipath-maestro-flow` / `uipath-platform` / `uipath-rpa` / `uipath-agents` / `uipath-test`) — don't fabricate or return a degraded result.
 
 ---
 
@@ -139,11 +138,13 @@ For Complex types  field shapes and value formats, see [`references/entity-schem
 |------|----------------|
 | Explore what entities exist | `entities list` → `entities get <id>` |
 | Explore only native entities | `entities list --native-only` |
-| Browse / inspect choice sets (read-only) | `choice-sets list`, `choice-sets get <choice-set-id>` |
+| Manage choice sets | `choice-sets list` / `list-values <id>` / `create` / `update` / `delete`; values via `choice-set-values create` / `update` / `delete` — full surface in [`references/choice-sets.md`](references/choice-sets.md) |
 | Create a new entity | `entities create <name> --body '{"fields":[{"fieldName":"Title","type":"STRING"}]}'` — for complex field types (`CHOICE_SET_*`, `RELATIONSHIP`) and their required extras, see [`references/entity-schema.md`](references/entity-schema.md#supported-field-types) |
 | Update entity / add fields | `entities update <id> --body '{"addFields":[{"fieldName":"NewField","type":"STRING"}]}'` |
 | Update existing field metadata | `entities update <id> --body '{"updateFields":[{"id":"<field-uuid>","displayName":"New Label","isRequired":true}]}'` — `id` is the field UUID from `entities get Fields[].ID` |
 | Update entity metadata | `entities update <id> --body '{"displayName":"New Name","description":"desc"}'` |
+| Delete an entity (irreversible — list dependents first) | `entities delete <id> --confirm --reason "<why>"` — see Rule 10 for the dependent-discovery flow |
+| Delete a field (irreversible — confirm impact first) | `entities update <id> --body '{"removeFields":[{"fieldName":"<name>"}]}' --confirm --reason "<why>"` — note `removeFields` uses `fieldName`, NOT `id` like `updateFields`. See Rule 11 |
 | Read records (first page) | `records list <entity-id> --limit 50` |
 | Read records (next page) | `records list <entity-id> --cursor <NextCursor>` |
 | Get one record | `records get <entity-id> <record-id>` |
@@ -164,7 +165,9 @@ For Complex types  field shapes and value formats, see [`references/entity-schem
 
 ## Field Types
 
-Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`, `FILE`. Complex types that require extra config: `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` (need `choiceSetId`), `RELATIONSHIP` (needs `referenceEntityName` + `referenceFieldName`), `AUTO_NUMBER`. Full table with SQL backing types, required extras, and value semantics in [`references/entity-schema.md`](references/entity-schema.md).
+Pass the exact `EntityFieldDataType` string — the CLI is case-sensitive. Common types: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `UUID`, `FILE`, plus `AUTO_NUMBER` and the complex types (`CHOICE_SET_*` / `RELATIONSHIP` / `FILE`) whose required extras are covered in Rule 12. Full table with SQL backing types and value semantics in [`references/entity-schema.md`](references/entity-schema.md).
+
+**Normalize user input to UPPERCASE before invoking.** Users typically say `boolean`, `string`, `decimal`, `datetime` in their prompts. The CLI rejects lowercase / mixed-case variants with `Cannot read properties of undefined (reading 'sqlTypeName')`. Case-fold to the enum value: `boolean` → `BOOLEAN`, `String` → `STRING`, `Decimal` → `DECIMAL`, etc. Synonyms that don't map 1:1 (e.g. `number` → `INTEGER` or `DECIMAL`; `text` → `STRING` or `MULTILINE_TEXT`) need disambiguation — see [`references/entity-schema.md` → Normalizing user-facing type names](references/entity-schema.md#normalizing-user-facing-type-names).
 
 ### Advanced Field Constraints
 
@@ -201,6 +204,8 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 
 ## Troubleshooting
 
+> **Any error not in this table → Rule 18.** (Surface verbatim, propose options keyed to the error, apply only what the user confirms.)
+
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `unknown command: df` | Tool not installed | `uip tools install @uipath/data-fabric-tool` |
@@ -214,13 +219,20 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 | Import errors in CSV | Header mismatch | Run `entities get` and check exact field names (case-sensitive) |
 | `records import` succeeded but choice / relationship / file column is `null` on every row | `records import` silently drops complex field types (Basic only) | Re-seed via `records insert` with a JSON body — see [`references/bulk-import.md`](references/bulk-import.md) |
 | Write to federated entity | Entity is read-only | Use `--native-only`; federated entities cannot be written to |
+| `cannot be a reserved word in C# or VB` (alias: `RESERVED_LANGUAGE_KEYWORDS`) | Entity or field name collides with a C# / VB / SQL reserved keyword (e.g. `Case`, `Class`, `Status`, `Order`) | Surface the rejected name + the error to the user. Offer concrete renames: `Case` → `WorkItem` / `Matter`; `Status` → `OrderStatus` / `ItemStatus`; `Order` → `RecordOrder` / `PurchaseOrder`; `Key` → `ItemKey`. Apply only the user-confirmed rename. See Rule 4. |
+| `Choiceset member name must only contain alphanumeric characters, start with alphabetic characters and not be C# keyword` | Choice-set value `Name` violates the keyword rule that also gates entity / field names (Rule 4) | Namespace the system `Name` and keep `DisplayName` unchanged. Full rule + the related `NumberId`-ordering caveat for batch creates: [`references/choice-sets.md` → Value `Name` validation](references/choice-sets.md#value-name-validation). |
+| Constraint violation (`"outside of allowed range"`, `"exceeds lengthLimit"`, etc.) | Write value broke `minValue` / `maxValue` / `lengthLimit` / `decimalPrecision` | Surface the full error to the user, show the allowed range from `entities get`, and ask what value to use — never silently clamp. See Rule 18. |
+| `referenceEntityId` missing on RELATIONSHIP/FILE field | Field defined with names instead of UUIDs | Pass `referenceEntityId` + `referenceFieldId` (UUIDs from `entities list` / `entities get`). See Rule 12. |
+| `Cannot read properties of undefined (reading 'sqlTypeName')` | Field `type` value didn't match a known `EntityFieldDataType` enum — almost always lowercase / mixed-case (e.g. `"boolean"` instead of `"BOOLEAN"`) | Case-fold to the UPPERCASE enum from the type table — see [`references/entity-schema.md` → Normalizing user-facing type names](references/entity-schema.md#normalizing-user-facing-type-names) |
+| `Update entity data failed. Relationship violation` (on `files upload`) | The `FILE` field was created with `referenceEntityId`/`referenceFieldId` pointing at an unrelated entity; the server enforces it as a real FK and the file's UUID isn't a record of that entity | FILE upload via CLI is currently unusable for general targets — see Not Supported table. Tell the user: the FILE field exists, but uploads fail until the right target-entity contract is known. |
+| `Each field in removeFields must include a non-empty 'fieldName' string` | `removeFields` was called with `{"id": "..."}` (the shape `updateFields` uses) instead of `{"fieldName": "..."}` | Re-emit with `{"fieldName": "<exact field name>"}` — see Rule 11 |
 
 ---
 
 ## References
 
 - `references/entity-schema.md` — Field definitions, supported types, schema update patterns, choice-set + relationship field shapes
-- `references/choice-sets.md` — Browse choice sets, look up `NumberId`s, add CHOICE_SET fields to entities, write choice values on records
+- `references/choice-sets.md` — Full choice-set CRUD (`list`/`list-values`/`create`/`update`/`delete` plus `choice-set-values create`/`update`/`delete`), look up `NumberId`s, add CHOICE_SET fields to entities, write choice values on records
 - `references/records-query.md` — Query filter syntax, pagination, sorting, choice/relationship semantics on read & write
 - `references/filter-platform-contract.md` — Filter body structure, per-type operator support matrix, and what to do when a request needs an unsupported operator
 - `references/file-attachments.md` — File field upload/download/delete file

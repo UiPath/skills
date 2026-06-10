@@ -1,0 +1,51 @@
+task_id: skill-platform-llmgateway-get-force-refresh
+description: >
+  Smoke test: agent uses the uipath-platform skill to diagnose a failing BYO
+  LLM configuration by re-resolving the underlying Integration Service
+  connection state via `byo-connections get <id> --force-refresh`. Verifies the
+  agent reaches for the diagnostic verb instead of immediately re-creating the
+  config or trying to re-authenticate.
+tags: [uipath-platform, smoke, mode:diagnose, mode:troubleshoot, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  My BYO LLM configuration `f7c93a8d-2b14-49e7-a013-08dc7f6e1234` was working
+  yesterday but agent calls started failing this morning with auth errors from
+  OpenAI. Help me figure out whether the underlying Integration Service
+  connection is still healthy.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands WILL fail with auth errors — that is expected. You
+    MUST still run the diagnostic commands. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - Do NOT delete or re-create the configuration — this is a read-only
+    diagnosis.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the BYO config with --force-refresh to re-resolve connection state"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+get\s+\S+(?=[\s\S]*--force-refresh)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on the get call"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+get\s+\S+(?=[\s\S]*--output\s+json)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT attempt to delete or re-create the configuration"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+llm-configuration\s+byo-connections\s+(delete|create)\b'
+    weight: 1.5
+    pass_threshold: 1.0

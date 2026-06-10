@@ -41,6 +41,10 @@ RUN set -euo pipefail && \
     uip tools install "@uipath/orchestrator-tool@${CLI_VERSION}" && \
     uip tools install @uipath/integrationservice-tool && \
     uip tools install @uipath/maestro-tool && \
+    # AgentHub command group ships as a separate plugin (CLI fetches it lazily).
+    # Pre-install from the same @alpha feed so live `uip agenthub …` MCP e2e
+    # tasks don't hit a missing-plugin 401.
+    uip tools install @uipath/agenthub-tool && \
     uip tools list
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
@@ -48,6 +52,7 @@ RUN set -euo pipefail && \
 # with `spawn dotnet ENOENT`. libicu is a runtime dependency of the SDK.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libicu-dev \
+        jq \
     && rm -rf /var/lib/apt/lists/* \
     && curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh \
     && bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/share/dotnet \

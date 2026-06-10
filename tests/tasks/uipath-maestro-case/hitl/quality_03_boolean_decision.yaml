@@ -86,10 +86,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `context.setVendorContext` | Set Vendor Context | process | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `context.setVendorContext` | Set Vendor Context | process | Yes | No | system | — |
 
   ##### Task 1.1: Set Vendor Context (`context.setVendorContext`)
 
@@ -124,10 +124,10 @@ initial_prompt: |
   | selected-tasks-completed("Compliance Review") | approved == true | exit-only | Yes |
   | selected-tasks-completed("Compliance Review") | approved == false | exit-only | No |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `compliance.complianceReview` | Compliance Review | action | Compliance Officer |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `compliance.complianceReview` | Compliance Review | action | Yes | No | Compliance Officer | — |
 
   ##### Task 2.1: Compliance Review (`compliance.complianceReview`)
 
@@ -172,10 +172,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `onboarded.logOnboarded` | Log Onboarded | process | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `onboarded.logOnboarded` | Log Onboarded | process | Yes | No | system | — |
 
   ##### Task 3.1: Log Onboarded (`onboarded.logOnboarded`)
 
@@ -203,10 +203,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `rejected.logRejected` | Log Rejected | process | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `rejected.logRejected` | Log Rejected | process | Yes | No | system | — |
 
   ##### Task 4.1: Log Rejected (`rejected.logRejected`)
 
@@ -261,8 +261,8 @@ success_criteria:
     description: "Both branch expressions reference the approved boolean"
     path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
     includes:
-      - "approved == true"
-      - "approved == false"
+      - "vars.approved === true"
+      - "vars.approved === false"
     weight: 3.0
     pass_threshold: 1.0
 
@@ -306,4 +306,6 @@ post_run:
 
 run_limits:
   expected_turns: 56
+  task_timeout: 900
   max_turns: 130
+  turn_timeout: 900

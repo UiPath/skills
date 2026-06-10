@@ -17,7 +17,7 @@ initial_prompt: |
     - to:        "baishali13@gmail.com"
     - subject:   "weather today"
     - body:      "Weather update for today."
-    - importance: "medium"   (this is the enum field under test)
+    - importance: "high"   (this is the enum field under test)
   Add a Decision node to check whether the call succeeded.
   Route failure to a Terminate node with error message "Enum test failed".
   Route success to a final action that logs "Enum test passed".

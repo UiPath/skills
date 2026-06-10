@@ -6,7 +6,7 @@ Start here. Find the product or package that matches the user's issue, then foll
 
 Manages automation resources, robots, processes, and execution. Handles job scheduling, queue management, asset storage, triggers, storage buckets, and folder-based access control. Issues here involve failed jobs, stuck jobs, queue item failures, trigger problems, robot connectivity, permissions, and platform availability.
 
-CLI: `uip or --help`, `uip resource --help`
+CLI: `uip or --help`
 
 - [products/orchestrator/overview.md](./products/orchestrator/overview.md) — Product overview, features, and dependencies
 - [products/orchestrator/summary.md](./products/orchestrator/summary.md) — All playbooks for Orchestrator issues
@@ -36,6 +36,14 @@ CLI: `uip is --help`
 - [products/integration-service/overview.md](./products/integration-service/overview.md) — Product overview, connectors, connections, and CLI commands
 - [products/integration-service/summary.md](./products/integration-service/summary.md) — All playbooks for Integration Service issues
 
+## Agents
+
+Low-code agents built with `uip agent`. Issues here involve LLM call failures, context grounding index misconfigurations, and input schema validation errors. Primary investigation surface: `uip traces spans get <traceId> --output json` — spans carry the full error text including error codes and field-level detail.
+
+CLI: `uip agent run status`, `uip traces spans get`, `uip agent context`, `uip context-grounding`, `uip agent validate`, `uip agent publish`
+
+- [products/agents/summary.md](./products/agents/summary.md) — All playbooks for Agents issues
+
 ## LLM Gateway
 
 Service that routes agent / product LLM calls to a model — platform default or tenant-owned (BYO) provider key. Issues here involve BYO LLM product configurations failing at runtime, server-side validation probes failing on `create` / `update`, and routing being bypassed (call hits the platform default despite an active BYO record). LLM Gateway failures often surface through the consuming agent / product (agents, agenthub, jarvis, IXP) or as auth-shaped errors referencing the vendor directly (OpenAI, Azure OpenAI, Bedrock, Vertex, Anthropic). The gateway does **not** expose per-request invocation logs via CLI — diagnosis is current-state + trace-evidence only.
@@ -62,6 +70,15 @@ Namespaces: `UiPath.Core.Activities`
 
 - [activity-packages/system-activities/overview.md](./activity-packages/system-activities/overview.md) — Package overview, activity types, and common failure patterns
 - [activity-packages/system-activities/summary.md](./activity-packages/system-activities/summary.md) — All playbooks for System Activities issues
+
+## Classic Activities
+
+The classic (non-"modern"/non-"Next") activities under `UiPath.Core.Activities`. Two groups: classic UI Automation — `Click`, `Type Into`, `Send Hotkey`, `Open Browser`, `Close Tab`, `Open Application`, `Attach Browser`/`Window`, `Take Screenshot`, `Wait Image Vanish`, `Wait UI Element Appear` (selector/image based, `SelectorNotFoundException` / `ActivityTimeoutException` / `ElementOperationException` / `BrowserOperationException`); and System/Core — `Invoke Workflow File`, `Invoke Code`, `Add Queue Item`, `Rename File`, `Move File`, `Append Line`, `Log Message`, `Kill Process`, `Start Triggers`, `For Each Row` (file/process/code/queue/workflow failures). Use this package when the faulted activity is one of the classic types above. For the modern UI "Next" activities (`NClick`, `Use Application/Browser`, Healing Agent) use **UI Automation**; for `Get Asset`/`Get Credential`/`Get Robot Asset` use **System Activities**.
+
+Namespaces: `UiPath.Core.Activities`, `UiPath.UIAutomation.Activities`, `UiPath.System.Activities`
+
+- [activity-packages/classic-activities/overview.md](./activity-packages/classic-activities/overview.md) — Package overview, classic activity groups, and failure families
+- [activity-packages/classic-activities/summary.md](./activity-packages/classic-activities/summary.md) — All playbooks for classic activity issues
 
 ## Google Workspace Activities
 

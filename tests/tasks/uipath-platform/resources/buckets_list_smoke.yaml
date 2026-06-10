@@ -1,12 +1,12 @@
 task_id: skill-platform-resources-buckets-list
 description: >
   Smoke test: agent uses the uipath-platform skill to list storage buckets in
-  an Orchestrator folder via `uip resource buckets list --folder-(key|path)
+  an Orchestrator folder via `uip or buckets list --folder-(key|path)
   ...`. Prompt passes a placeholder folder key — CLI returning Auth/404 is
   acceptable; the goal is correct command shape, not tenant state.
 
-  Note: locally requires the `@uipath/resource-tool` plugin installed once via
-  `GH_NPM_REGISTRY_TOKEN=$(gh auth token) uip tools install resource-tool`.
+  Note: locally requires the `@uipath/orchestrator-tool` plugin installed once via
+  `GH_NPM_REGISTRY_TOKEN=$(gh auth token) uip tools install @uipath/orchestrator-tool`.
   In CI the plugin auth is provisioned, so this is environment-transparent.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
@@ -19,9 +19,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent listed buckets via uip resource buckets list"
+    description: "Agent listed buckets via uip or buckets list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+buckets\s+list'
+    command_pattern: 'uip\s+or\s+buckets\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -29,7 +29,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scoped the list to a folder via --folder-key or --folder-path"
     tool_name: "Bash"
-    command_pattern: 'uip\s+resource\s+buckets\s+list.*--folder-(key|path)'
+    command_pattern: 'uip\s+or\s+buckets\s+list.*--folder-(key|path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

@@ -5,7 +5,7 @@ description: >
   has an extra key "Sexual" not in harmfulContentEntities), then use the skill to validate
   and fix all issues. Verifies that the catalog is fetched, the misconfiguration is detected
   and corrected, and the agent validates successfully after the fix.
-tags: [uipath-agents, e2e, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, low-code, guardrail]
 max_iterations: 1
 
 sandbox:
@@ -65,6 +65,14 @@ success_criteria:
     command_pattern: 'uip\s+agent\s+guardrails\s+list'
     min_count: 1
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
