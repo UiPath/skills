@@ -1,0 +1,6 @@
+{
+  "Name": "NightlyReportMailer",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Send Outlook Mail Message timeout/hang caused by a hidden Outlook Object Model Guard security prompt awaiting input on an unattended Robot session, blocking the COM send until TimeoutMS elapses.",
+  "MainFile": "Main.xaml"
+}

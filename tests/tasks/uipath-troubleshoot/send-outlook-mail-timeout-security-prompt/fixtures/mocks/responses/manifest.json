@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the send-outlook-mail-failures playbook Branch 2 (activity times out / hangs) signature.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a3c4d5e6-7f80-4b9c-8d0e-2f3a4b5c6d7e\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-a3c4d5e6-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key a3c4d5e6-7f80-4b9c-8d0e-2f3a4b5c6d7e --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-a3c4d5e6-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"b4d5e6f7-8091-4c0d-9e1f-3a4b5c6d7e8f\" --output json",
+      "file": "or-jobs-get-b4d5e6f7-output-json.json"
+    },
+    {
+      "match": "or jobs get b4d5e6f7-8091-4c0d-9e1f-3a4b5c6d7e8f --output json",
+      "file": "or-jobs-get-b4d5e6f7-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"b4d5e6f7-8091-4c0d-9e1f-3a4b5c6d7e8f\" --level Error --output json",
+      "file": "or-jobs-logs-b4d5e6f7-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs b4d5e6f7-8091-4c0d-9e1f-3a4b5c6d7e8f --level Error --output json",
+      "file": "or-jobs-logs-b4d5e6f7-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"b4d5e6f7-8091-4c0d-9e1f-3a4b5c6d7e8f\" --output json",
+      "file": "or-jobs-logs-b4d5e6f7-output-json.json"
+    },
+    {
+      "match": "or jobs logs b4d5e6f7-8091-4c0d-9e1f-3a4b5c6d7e8f --output json",
+      "file": "or-jobs-logs-b4d5e6f7-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}
