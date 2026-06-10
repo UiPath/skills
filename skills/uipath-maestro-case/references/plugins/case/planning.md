@@ -15,6 +15,7 @@ Always. This plugin is invoked for the very first T-entry (`T01`) in every `task
 | `case-identifier` | sdd.md (optional; defaults to `name`) | The runtime identifier. |
 | `identifier-type` | sdd.md (optional; default `constant`) | `constant` \| `external`. Use `external` when sdd.md says the identifier comes from an upstream system. |
 | `case-app-enabled` | sdd.md (default `false`) | `true` if the sdd.md says the case is exposed via the Case App UI. |
+| `directly-pass-task-outputs` | sdd.md (default `true`) | Passes task outputs through messages instead of shared variables, avoiding parallel-task race conditions. `false` only if sdd.md explicitly requests shared-variable passing. |
 | `description` | sdd.md case description |  |
 
 ## identifier-type Guidance
@@ -49,9 +50,10 @@ The case plugin writes a pure skeleton at T01 — no trigger node. The primary t
 - case-identifier: "<identifier>"
 - identifier-type: constant
 - case-app-enabled: false
+- directly-pass-task-outputs: true
 - description: "<one-sentence description>"
 - order: first
-- verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "20.0.0", nodes == [], edges == []
+- verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "23.0.0", nodes == [], edges == []
 ```
 
 > **External variant.** Replace the two identifier lines with `identifier-type: external` + `case-identifier: "=vars.<varId>"` (or a `=js:` expression). See § External identifier value.

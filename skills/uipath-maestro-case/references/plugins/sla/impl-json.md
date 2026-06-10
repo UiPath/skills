@@ -61,7 +61,7 @@ After grouping T-entries by target, compose the `slaRules` array and write it in
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "20.0.0",
+  "version": "23.0.0",
   "metadata": {
     "caseIdentifier": "<...>",
     "caseUnifiedSchemaEnabled": true,
