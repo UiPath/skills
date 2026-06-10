@@ -240,36 +240,6 @@ Every `uip` command accepts:
 - **For `uip solution` pack / publish / deploy / activate flows, load [`uipath-solution`](/uipath:uipath-solution).** This skill owns the auth and Orchestrator surface those flows depend on; the solution skill owns the lifecycle commands.
 - **Fallback: direct REST API.** When CLI tools don't support an operation, use the Orchestrator REST API with the access token from `~/.uipath/.auth`. See [references/orchestrator/orchestrator.md - REST API](references/orchestrator/orchestrator.md).
 
-## Orchestrator REST API (Fallback)
-
-When CLI commands are insufficient, use the Orchestrator REST API directly with the stored access token:
-
-```bash
-source ~/.uipath/.auth
-
-# Upload a .nupkg package
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.UploadPackage" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -F "file=@./MyProject.1.0.0.nupkg"
-
-# Create a process (release) from an uploaded package
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Releases" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -d '{"Name":"MyProcess","ProcessKey":"MyProject","ProcessVersion":"1.0.0"}'
-
-# Start a job
-curl -X POST "${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/Jobs/UiPath.Server.Configuration.OData.StartJobs" \
-  -H "Authorization: Bearer ${UIPATH_ACCESS_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" \
-  -d '{"startInfo":{"ReleaseKey":"<RELEASE_KEY>","Strategy":"ModernJobsCount","JobsCount":1,"RuntimeType":"Unattended","InputArguments":"{}"}}'
-```
-
-The `X-UIPATH-OrganizationUnitId` header is the **folder ID** (get it from `uip or folders list`).
-
 ## References
 
 - **[CLI Command Reference](references/uip-commands.md)** — Every `uip` command with workflow links
