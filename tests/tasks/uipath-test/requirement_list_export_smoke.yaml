@@ -1,0 +1,74 @@
+task_id: skill-test-requirement-list-export-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to query requirements by
+  label and export them for offline reporting. The task is self-seeding
+  and deterministic: it creates one requirement with a fixed name, tags it
+  with a fixed label ("eval-export"), then lists requirements narrowed
+  server-side by that exact label and exports the project's requirements
+  to a fixed .xlsx path. Every assertion validates the complete command
+  (project key, the exact label, the exact output file, `--output json`)
+  rather than a fragment. Uses the HEALTH project.
+tags: [uipath-test, smoke, mode:operate, lifecycle:report, feature:requirement]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 50
+
+initial_prompt: |
+  I'm in the HEALTH project in Test Manager and need to pull together a
+  small coverage report. First, create a requirement named "Eval Export
+  Marker - HIPAA retention". Tag it with the label "eval-export", then list
+  the HEALTH requirements carrying that "eval-export" label so I can
+  confirm the tag stuck. Finally, export the HEALTH requirements to an
+  Excel file at ./health-requirements.xlsx so I can share it with the audit
+  team.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create command: `uip tm requirements create --project-key HEALTH --name \"Eval Export Marker - HIPAA retention\" --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Export Marker - HIPAA retention)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete tag command: `uip tm objectlabel add --project-key HEALTH --object-type Requirement --object-ids <uuid> --labels eval-export --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+Requirement)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-export)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+add\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete list command: `uip tm requirements list --project-key HEALTH --labels eval-export --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--labels\s+["\x27]?eval-export)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+list\s'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete export command: `uip tm requirements export --project-key HEALTH --output-file ./health-requirements.xlsx --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output-file\s+\S*health-requirements\.xlsx)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+export\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Export produced the .xlsx file on disk"
+    command: |
+      ls health-requirements.xlsx >/dev/null 2>&1
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
