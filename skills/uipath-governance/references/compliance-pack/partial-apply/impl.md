@@ -58,12 +58,29 @@ node -e "
 "
 ```
 
-## Step 2: Bootstrap template defaults (one call, all products)
+## Step 2: Bootstrap template defaults (one call per targetProduct)
 
 Use `products/` as the output dir — this matches the AOps plugin's `$SESSION_DIR/products/` layout so `$SESSION_TEMP` doubles as `SESSION_DIR` for the handoff in Step 4.
 
+Fetch only the products being configured — **do NOT use `template list`** (that fetches all 14 products; partial apply touches 1–2).
+
 ```bash
-uip gov aops-policy template list --output-dir "$SESSION_TEMP/products" --output json
+# Bash — one call per product
+for product in "${targetProducts[@]}"; do
+  mkdir -p "$SESSION_TEMP/products/$product"
+  uip gov aops-policy template get "$product" \
+    --output-form-data "$SESSION_TEMP/products/$product/form-data.json" \
+    --output json
+done
+```
+```powershell
+# Windows PowerShell
+foreach ($product in $targetProducts) {
+  New-Item -ItemType Directory -Force "$tmpDir\products\$product" | Out-Null
+  uip gov aops-policy template get $product `
+    --output-form-data "$tmpDir\products\$product\form-data.json" `
+    --output json
+}
 ```
 
 ## Step 3: Merge overrides onto template defaults
@@ -144,14 +161,17 @@ Build the new assignments array using Node.js to handle PascalCase CLI output an
 ```js
 import fs from 'node:fs';
 const tmpDir = process.argv[2];
-const policyEntries = JSON.parse(process.argv[3]); // [{ product, licenseType, policyId }]
+// Read from file — avoids PowerShell inline-JSON quoting issues (see Fix 2 below)
+const policyEntries = JSON.parse(fs.readFileSync(`${tmpDir}/policy-entries.json`, 'utf8'));
 const raw = JSON.parse(fs.readFileSync(`${tmpDir}/current-assignments-raw.json`, 'utf8'));
 // Data.tenantPolicies contains the assignments — NOT Data itself
 const existing = (raw.Data?.tenantPolicies ?? [])
   .map(p => ({
     productIdentifier:     p.ProductIdentifier,
     licenseTypeIdentifier: p.LicenseTypeIdentifier,
-    policyIdentifier:      p.PolicyIdentifier,
+    // Explicit presence check preserves null ("No Policy" pin) — avoids null??undefined→undefined
+    // which causes JSON.stringify to drop the key and the API to reject with "must be string or null"
+    policyIdentifier: 'PolicyIdentifier' in p ? p.PolicyIdentifier : (p.policyIdentifier ?? null),
   }))
   .filter(p => !policyEntries.some(e => e.product === p.productIdentifier));
 for (const e of policyEntries) {
@@ -161,10 +181,32 @@ fs.writeFileSync(`${tmpDir}/new-assignments.json`, JSON.stringify(existing, null
 console.log(`Written ${existing.length} entries`);
 ```
 
-Run it:
+**Fix 2 — Write policy entries to a file instead of passing inline JSON.** PowerShell mangles single-quoted JSON arguments passed to Node — routing through a file avoids all quoting issues on both platforms.
+
+Write `policy-entries.json` first:
 ```bash
-node "$SESSION_TEMP/merge-assignments.mjs" "$SESSION_TEMP" \
-  '[{"product":"AITrustLayer","licenseType":"NoLicense","policyId":"<uuid>"}]'
+# Bash
+printf '%s' '[{"product":"AITrustLayer","licenseType":"NoLicense","policyId":"<uuid>"}]' \
+  > "$SESSION_TEMP/policy-entries.json"
+```
+```powershell
+# Windows PowerShell
+'[{"product":"AITrustLayer","licenseType":"NoLicense","policyId":"<uuid>"}]' |
+  Set-Content "$tmpDir\policy-entries.json" -NoNewline
+```
+
+Update the script to read from file instead of argv[3] — change the line `const policyEntries = JSON.parse(process.argv[3]);` to:
+```js
+const policyEntries = JSON.parse(fs.readFileSync(`${tmpDir}/policy-entries.json`, 'utf8'));
+```
+
+Then run:
+```bash
+node "$SESSION_TEMP/merge-assignments.mjs" "$SESSION_TEMP"
+```
+```powershell
+# Windows PowerShell
+node "$tmpDir\merge-assignments.mjs" $tmpDir
 ```
 
 licenseType per product: `AITrustLayer→NoLicense`, `Development→Development`, `StudioWeb→Development`, `Robot→Attended`, `Assistant→NoLicense`, `Integration Service→NoLicense`
