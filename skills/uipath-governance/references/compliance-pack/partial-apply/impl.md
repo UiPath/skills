@@ -90,11 +90,39 @@ The compliance pack is the source of what values to set. The AOps plugin is the 
 1. **Skip bootstrap** (already done). Set `SESSION_DIR = $SESSION_TEMP`.
 2. **Case A** — product already known. Skip intent inference.
 3. **Skip form.io traversal** — policy data is already composed. Copy `$SESSION_TEMP/merged/<product>.json` to `$SESSION_TEMP/aops-policy-data.json`.
-4. **Policy name:** `iso-42001-2023-<scopeToken>-<product-kebab>`  
-   scopeToken per product: `aitl` (AITrustLayer), `dev` (Development), `robot` (Robot), `asst` (Assistant), `stw` (StudioWeb), `is` (IntegrationService); per clause subset: `a628` (A.6.2.8), `a92` (A.9.2); per impact subset: `high`.
+4. **Policy name:** `iso-42001-2023-<scopeToken>-<product-kebab>` — see Internal policy naming note below.
 5. **Proceed to review gate** (AOps Critical Rules #15/#16):
-   - AOps compares `aops-policy-data.json` against `products/<product>/form-data.json` defaults — the diff is exactly the compliance pack-recommended settings for the targeted clauses, nothing more.
-   - Show the priority landscape, policy data link, and confirmation gate as normal.
+   - AOps compares `aops-policy-data.json` against `products/<product>/form-data.json` defaults — the diff is exactly the compliance pack-recommended controls for the targeted clauses, nothing more.
+   - Show the confirmation gate using this template:
+
+```
+Configure ISO 42001 controls on <tenantName>?
+
+<clauseName>  (<clauseId>)
+┌───────────────────────────────────┬─────────────────────┬────────┐
+│ Control                           │ Recommendation      │ Impact │
+├───────────────────────────────────┼─────────────────────┼────────┤
+│ <controlDisplayName>              │ <recommendedSetting>│ High   │
+│ <controlDisplayName>              │ <recommendedSetting>│ Medium │
+└───────────────────────────────────┴─────────────────────┴────────┘
+[repeat table per clause if multiple clauses matched]
+
+<N> controls  ·  <productDisplayName> only
+Other products will NOT be affected.
+
+⚠ Some controls need manual configuration after apply:
+  • <controlDisplayName>  →  <configLocation from catalog>
+(omit ⚠ block if no SKIPped controls)
+
+These controls improve your posture towards ISO 42001 requirements.
+Proceed? (y/n)
+```
+
+Build control rows from: `catalog.clauses[].editorialPolicies[].controls[]` filtered to `targetClauseIds` and `targetProducts`. Use `controls[].displayName` as control name, `controls[].recommendedSetting` as recommendation, `controls[].impact` as impact.
+
+Require y. Halt on anything else.
+
+> **Internal policy naming:** `iso-42001-2023-<scopeToken>-<product-kebab>` — scopeToken per product: `aitl` (AITrustLayer), `dev` (Development), `robot` (Robot), `asst` (Assistant), `stw` (StudioWeb), `is` (IntegrationService); per clause subset: `a628` (A.6.2.8), `a92` (A.9.2); per impact subset: `high`.
 6. On `yes` → AOps runs `aops-policy create` → **return the policy UUID to partial apply**.
 7. On failure or skip → log product as `skipped`, continue to next product.
 
@@ -178,18 +206,25 @@ File: `$HOME/uipath-governance/audit/deploy-records/deploy-record-iso-42001-2023
 ## Report (after successful apply)
 
 ```
-ISO 42001 recommended settings configured on <tenantName>.
+ISO 42001 controls configured on <tenantName>.
 
-Configured:
-  <product display name> — <N> settings applied
-  [repeat per product]
+┌───────────────────────────────────┬───────────┐
+│ Controls configured               │ <N>       │
+│ Clauses addressed                 │ <N>       │
+│ High impact controls              │ <N>       │
+└───────────────────────────────────┴───────────┘
 
-⚠ Settings that need manual configuration:
-  [list any SKIPped controls with their configLocation — omit section if none]
+⚠ Manual configuration needed:
+┌──────────────────────┬──────────────────────────────────────────────┐
+│ Control              │ Where                                        │
+├──────────────────────┼──────────────────────────────────────────────┤
+│ <controlDisplayName> │ <configLocation>                             │
+└──────────────────────┴──────────────────────────────────────────────┘
+(omit ⚠ table if no SKIPped controls)
 
-These settings improve your posture towards ISO 42001 requirements.
+Applied by: <UIPATH_USER from ~/.uipath/.auth>  ·  <tenantName>  ·  <date>
 
-To configure all ISO 42001 recommended settings: "Apply the full ISO 42001 pack"
+To configure all ISO 42001 controls: 'Apply the full ISO 42001 pack'
 ```
 
 ## Error handling

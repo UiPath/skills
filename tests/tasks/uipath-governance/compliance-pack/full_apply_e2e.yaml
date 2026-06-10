@@ -30,7 +30,8 @@ initial_prompt: |
     {
       "pack_id": "iso-42001-2023",
       "posture_analysis_run": true,
-      "products_to_configure": ["<list from coverage>"],
+      "clauses_with_gaps": <number of clauses needing controls from coverage>,
+      "controls_to_configure": <number of controls not yet configured from coverage>,
       "enable_called": true,
       "verify_called": true,
       "commands_attempted": ["<all commands in sequence>"]
@@ -102,6 +103,9 @@ success_criteria:
       - expression: "enable_called"
         operator: equals
         expected: true
+      - expression: "controls_to_configure"
+        operator: gte
+        expected: 1
       - expression: "length(commands_attempted)"
         operator: gte
         expected: 4

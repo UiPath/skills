@@ -1,6 +1,6 @@
 ---
 name: uipath-governance
-description: "UiPath governance via `uip gov` — policies on three layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case). Compliance packs (ISO 42001, ISO 27001, HIPAA, SOC 2): check posture and configure recommended settings across products in one operation. For platform ops→uipath-platform."
+description: "UiPath governance via `uip gov` — policies on three layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case). Compliance packs (ISO 42001, ISO 27001, HIPAA, SOC 2): check posture and configure recommended controls across products in one operation. For platform ops→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
@@ -41,7 +41,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 2. **Classification lives at the top.** Mechanic libraries assume the branch is chosen. Do not let those flows ask "did you mean the other branch?" — that question belongs here.
 3. **One branch per mutation.** A single user request produces a policy on one branch only. If the user wants both, run two sequential flows with two confirmation gates.
 4. **Each mechanic owns its own Critical Rules.** Once routed, follow the branch's rules — do not relax them from this top level.
-5. **Never apply a compliance pack without gap scan + user confirmation.** Run gap scan first, show the plan, require `y` before any policy is created.
+5. **Never apply compliance controls without posture analysis + user confirmation.** Run posture analysis first, show the plan (summary + detail), require `y` before any controls are configured.
 6. **Never skip the deploy record.** Write it unconditionally after any apply — even if some clauses failed.
 7. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
 8. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
@@ -89,10 +89,10 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 | **Resolve a name to a UUID for Access** | [`references/access-policy/resource-lookup-guide.md`](./references/access-policy/resource-lookup-guide.md) |
 | **Discover available compliance packs** | [`references/compliance-pack/catalog/impl.md`](./references/compliance-pack/catalog/impl.md) |
 | **List which compliance packs are currently configured** | [`references/compliance-pack/catalog/impl.md`](./references/compliance-pack/catalog/impl.md) — use `state list tenant <id>` |
-| **Posture analysis** — what settings are configured vs recommended | [`references/compliance-pack/coverage/impl.md`](./references/compliance-pack/coverage/impl.md) |
+| **Posture analysis** — what controls are configured vs recommended | [`references/compliance-pack/coverage/impl.md`](./references/compliance-pack/coverage/impl.md) |
 | **Apply full compliance pack** | Run coverage first, then [`references/compliance-pack/full-apply/impl.md`](./references/compliance-pack/full-apply/impl.md) |
 | **Apply specific controls / clauses** | [`references/compliance-pack/partial-apply/planning.md`](./references/compliance-pack/partial-apply/planning.md) |
-| **Remove compliance pack settings** | [`references/compliance-pack/disable/impl.md`](./references/compliance-pack/disable/impl.md) |
+| **Remove compliance pack controls** | [`references/compliance-pack/disable/impl.md`](./references/compliance-pack/disable/impl.md) |
 | **Query — what does a clause / control recommend?** | [`references/compliance-pack/query/impl.md`](./references/compliance-pack/query/impl.md) |
 
 ## Anti-patterns
@@ -106,4 +106,6 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 - Do NOT skip writing the deploy record even if apply partially fails.
 - For compliance pack posture analysis, use `uip gov compliance-packs state coverage` — do NOT use `aops-policy deployed-policy` commands; those are for AOps policy debugging (Branch A), not compliance pack flows.
 - For full pack configuration, use `state enable` — do NOT manually call `aops-policy create` for each product; that path is only for partial/scoped configuration.
-- NEVER claim a tenant is "compliant" with a standard — only that recommended settings are configured. Compliance status is determined by the customer's auditor.
+- NEVER claim a tenant is "compliant" with a standard — only that recommended controls are configured. Compliance status is determined by the customer's auditor.
+- Do NOT surface policy names, product identifiers (AITrustLayer, Robot, Development), or clause IDs (A.6.2.8) as the main response unit — lead with plain-English control names and clause descriptions. Policy is an internal implementation detail. Clause IDs appear only as secondary reference in parentheses.
+- Do NOT use the word "settings" in user-facing output — use "controls". "Settings" is not the UI vocabulary.
