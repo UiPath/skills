@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:03.560Z",
+      "Message": "[Connect to Database] The 'Microsoft.ACE.OLEDB.12.0' provider is not registered on the local machine."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:03.588Z",
+      "Message": "System.InvalidOperationException: The 'Microsoft.ACE.OLEDB.12.0' provider is not registered on the local machine.\r\nin Main.xaml\r\n    at DatabaseConnect \"Connect to Database\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

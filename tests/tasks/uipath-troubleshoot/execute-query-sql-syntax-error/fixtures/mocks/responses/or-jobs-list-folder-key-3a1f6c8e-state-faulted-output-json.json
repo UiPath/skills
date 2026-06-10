@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "8b4d2f1a-6c3e-4a7b-9d8e-1f2a3b4c5d6e",
+      "State": "Faulted",
+      "ProcessName": "CustomerLookup",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-21T09:14:02.118Z",
+      "EndTime": "2026-05-21T09:14:03.642Z",
+      "CreationTime": "2026-05-21T09:14:01.905Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

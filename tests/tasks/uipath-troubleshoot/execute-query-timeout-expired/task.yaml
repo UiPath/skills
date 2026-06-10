@@ -1,0 +1,191 @@
+task_id: skill-troubleshoot-execute-query-timeout-expired
+description: >
+  UiPath diagnostic agent must diagnose an Execute Query failure that
+  faults on every Orchestrator run because the query exceeds the
+  activity's TimeoutMS. The Execute Query runs an expensive, un-indexed
+  statement
+  ("SELECT * FROM Orders WHERE UPPER(Notes) LIKE '%...%'") whose
+  TimeoutMS is left at the default 30000 ms (30 s). The provider performs
+  a full-table scan, runs past the timeout, aborts, and UiPath surfaces
+  "Execute Query: Timeout expired. The timeout period elapsed prior to
+  completion of the operation or the server is not responding." The agent
+  must identify the query exceeding TimeoutMS as the root cause AND
+  recognize this is a runaway un-indexed query, so the real fix is adding
+  an index / narrowing the query — with raising TimeoutMS (in
+  milliseconds) only a stopgap. It must NOT blame a null connection, SQL
+  syntax, provider mismatch, a CLR crash, the wrong activity, or "the
+  database is down".
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-query, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My OrderNotesSearch process is faulting in Orchestrator on every run.
+  Can you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-query-failures playbook (Branch 5) AND identified the runaway un-indexed query exceeding TimeoutMS as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My OrderNotesSearch process is faulting in Orchestrator on every
+         run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/execute-query-failures.md
+        specifically BRANCH 5 (command timeout exceeded), because the
+        runtime exception
+          "Execute Query: Timeout expired. The timeout period elapsed
+           prior to completion of the operation or the server is not
+           responding." (Microsoft.Data.SqlClient)
+        is the verbatim Branch 5 signature.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should name the
+             execute-query-failures playbook / Branch 5.
+          2. The agent's tool-call summary -- a Read on the file under
+             references/activity-packages/database-activities/playbooks/.
+        Grade only what the agent presented (final response + tool
+        calls); do NOT inspect internal investigation state.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        execute-query branches (null connection, provider mismatch, SQL
+        syntax, CLR crash, wrong activity) while ruling them out.
+        Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Execute Query activity in Main.xaml runs an expensive,
+            un-indexed query
+            ("SELECT * FROM Orders WHERE UPPER(Notes) LIKE '%...%'").
+            UPPER(Notes) with a leading-wildcard LIKE is not sargable and
+            Orders has no index on Notes, so the provider does a
+            full-table scan.
+          - The activity's TimeoutMS is left at the default 30000 (30 s,
+            MILLISECONDS). The scan runs past 30 s, the provider aborts,
+            and the run faults with "Timeout expired ...".
+          - The failing layer is the query DURATION exceeding TimeoutMS --
+            the connection opened fine, the SQL is syntactically valid,
+            the provider is correct. This is a RUNAWAY query, not a
+            legitimately long one.
+        The reference fix:
+          - REAL fix: fix the query / index on the DB side -- add an
+            index supporting the predicate, make the predicate sargable,
+            and/or narrow the WHERE and select fewer columns/rows -- so
+            the query completes well within the timeout.
+          - STOPGAP: raising TimeoutMS (the property is in MILLISECONDS,
+            e.g. 60000 = 60 s) only delays the same failure on a runaway
+            query and ties up the Robot longer; it is acceptable only as
+            a temporary measure, not the primary fix.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should reference the
+             Timeout-expired message and describe the query exceeding
+             TimeoutMS due to a runaway un-indexed full-table scan (NOT a
+             null connection, NOT a SQL syntax error, NOT a
+             driver/provider mismatch, NOT a CLR crash, NOT a wrong
+             activity, NOT a database outage).
+          2. The agent's tool-call summary and any evidence it cites
+             from the job logs / Main.xaml (the un-indexed query,
+             TimeoutMS).
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
+      concludes any of these as the root cause):
+        - "The connection was null / out of scope / expired."
+        - "SQL syntax error / unsafe string concatenation."
+        - "Driver / provider mismatch."
+        - "CLR-level crash (0xE0434352)."
+        - "Wrong activity type (should be Execute Non Query)."
+        - "The database is down / unreachable / not responding."
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched execute-query-failures Branch 5 AND identified
+             the query exceeding TimeoutMS as the root cause. Conclusion
+             must (a) name the "Timeout expired" failure at Execute Query,
+             (b) attribute it to the query running longer than TimeoutMS
+             because it is a runaway un-indexed full-table scan, and
+             (c) recommend the real fix = add an index / narrow the query
+             (make it sargable), while noting raising TimeoutMS (in
+             milliseconds) is only a stopgap.
+        0.8  Agent matched the timeout branch and correctly says "the
+             query exceeded the timeout -- raise TimeoutMS" but does NOT
+             recognize the runaway / un-indexed angle (treats it as a
+             legitimately long query and recommends only enlarging the
+             timeout).
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Execute Query / timeout) but neither
+             matched the branch nor explained the TimeoutMS / runaway
+             cause; OR concluded one of the WRONG ANSWERS above.
+        0.0  Misdiagnosed beyond the listed wrong answers, or got
+             blocked.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

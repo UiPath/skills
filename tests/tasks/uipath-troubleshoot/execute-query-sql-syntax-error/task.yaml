@@ -1,0 +1,183 @@
+task_id: skill-troubleshoot-execute-query-sql-syntax-error
+description: >
+  UiPath diagnostic agent must diagnose an Execute Query failure that
+  faults on every Orchestrator run. The activity builds its SQL by
+  concatenating a UiPath variable into the statement
+  ("SELECT * FROM Customers WHERE LastName = '" + in_LastName + "'").
+  At runtime in_LastName contains an apostrophe (O'Brien), so the
+  resolved SQL is malformed and the provider rejects it. Orchestrator
+  surfaces "Execute Query: A database error occurred" wrapping a
+  Microsoft.Data.SqlClient SqlException "Incorrect syntax near 'Brien'."
+  The agent must identify unsafe string concatenation as the root cause
+  and recommend parameterizing the query with a named @parameter — NOT
+  blame the database, a wrong table name, a timeout, or a connection
+  problem.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-query, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My CustomerLookup process is faulting in Orchestrator on every run.
+  Can you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-query-failures playbook (branch 3) AND identified unsafe SQL string concatenation as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My CustomerLookup process is faulting in Orchestrator on every
+         run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/execute-query-failures.md
+        specifically BRANCH 3 (SQL syntax error / unsafe string
+        concatenation). The runtime signature
+          "Execute Query: A database error occurred" wrapping
+          "Incorrect syntax near 'Brien'." (Microsoft.Data.SqlClient)
+        is the verbatim branch-3 signature.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             execute-query-failures playbook should appear (absolute or
+             relative path).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             database-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        execute-query branches (null connection, provider mismatch,
+        timeout, etc.) while ruling them out. Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Execute Query activity in Main.xaml builds its Sql by
+            string concatenation:
+            "SELECT * FROM Customers WHERE LastName = '" + in_LastName + "'".
+          - At runtime in_LastName is "O'Brien"; the embedded apostrophe
+            closes the SQL string literal early, so the resolved
+            statement is malformed:
+            SELECT * FROM Customers WHERE LastName = 'O'Brien'.
+          - The SQL Server provider rejects it with
+            "Incorrect syntax near 'Brien'." / "Unclosed quotation mark";
+            UiPath wraps it as "A database error occurred".
+        The reference fix:
+          - Do NOT concatenate. Use the Execute Query activity's
+            Parameters collection with a named parameter
+            (SELECT * FROM Customers WHERE LastName = @lastName) and map
+            the in_LastName variable to @lastName. The provider then
+            handles quoting/typing, which also closes the SQL-injection
+            risk.
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements.error_message`,
+             `triage_summary`, scope/domain; should reference the
+             malformed/concatenated SQL and the provider syntax error.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe unsafe string
+             concatenation producing malformed SQL (the apostrophe in
+             the value), NOT a database outage, NOT a wrong table name,
+             NOT a timeout, NOT a connection problem.
+          3. The agent's last text response.
+
+      WRONG ANSWERS TO REJECT (score 0.0 if the agent concludes any of
+      these as the root cause):
+        - "The database is down / unreachable."
+        - "Wrong table name" / "the Customers table does not exist."
+        - "Query timeout" / "the query is too slow."
+        - "Connection problem" / "the connection was null or expired."
+        - "Driver / provider mismatch."
+        - "Wrong activity type (should be Execute Non Query)."
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched execute-query-failures branch 3 AND
+             identified unsafe SQL string concatenation as the root
+             cause. Conclusion must (a) recognize the SQL is built by
+             concatenating in_LastName into the statement, (b) explain
+             the apostrophe in "O'Brien" breaks the string literal /
+             produces malformed SQL, and (c) recommend parameterizing
+             with a named @parameter via the Parameters collection
+             (not just escaping the quote).
+        0.8  Both partial: e.g., correct playbook and names "malformed
+             SQL / syntax error" but does not connect it to the
+             concatenated variable + apostrophe; or identifies the
+             concatenation but recommends only escaping quotes rather
+             than parameterizing.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Execute Query / SQL error) but
+             neither matched the branch nor identified concatenation as
+             the cause.
+        0.0  Misdiagnosed as any of the WRONG ANSWERS above, or got
+             blocked.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
