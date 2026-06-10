@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "a5e6f7b8-9c0d-4e1f-8a2b-4c5d6e7f8091",
+      "Name": "Finance Operations",
+      "Path": "Finance Operations",
+      "Description": "Production folder for finance operations processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "c7d8e9fa-0b1c-4d2e-8f3a-6b7c8d9e0f12",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

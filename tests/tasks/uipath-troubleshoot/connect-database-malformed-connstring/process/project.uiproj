@@ -1,0 +1,6 @@
+{
+  "Name": "MonthlyReconImport",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Connect to Database failure caused by a malformed ACE OLE DB connection string (unquoted Extended Properties).",
+  "MainFile": "Main.xaml"
+}

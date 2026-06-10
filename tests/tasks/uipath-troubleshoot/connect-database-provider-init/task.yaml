@@ -1,0 +1,180 @@
+task_id: skill-troubleshoot-connect-database-provider-init
+description: >
+  UiPath diagnostic agent must diagnose a Connect to Database failure that began
+  right after a Windows-Legacy -> Windows migration. The LedgerExportXlsx process
+  reads an Excel workbook as a database through an ACE OLE DB connection string,
+  but the Connect to Database activity's ProviderName was left empty. On the
+  modern Windows (.NET) runtime an empty ProviderName resolves to SqlClient, so
+  the activity initializes Microsoft.Data.SqlClient and faults with
+  "System.TypeInitializationException: The type initializer for
+  'Microsoft.Data.SqlClient.SqlConnection' threw an exception." even though the
+  intended target is Excel. The agent must recognize this as the Connect to
+  Database failures playbook branch 4 and recommend setting ProviderName
+  explicitly to System.Data.OleDb (NOT switching to Microsoft.Data.SqlClient —
+  the source is Excel/Access).
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My LedgerExportXlsx process started faulting in Orchestrator on every run
+  right after we migrated it to the new Windows compatibility. Can you
+  investigate why? The project source is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the connect-to-database-failures playbook (branch 4) AND identified the empty ProviderName resolving to SqlClient on the migrated Windows project as the root cause, recommending ProviderName=System.Data.OleDb for the Excel/OLE DB target"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md for this scenario. Treat it as the authoritative ground
+      truth.
+
+      The user's request was:
+        "My LedgerExportXlsx process started faulting in Orchestrator on every
+         run right after we migrated it to the new Windows compatibility. Can
+         you investigate why?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/connect-to-database-failures.md
+        specifically BRANCH 4 (provider init failure after migration / wrong
+        ProviderName), because the runtime error
+          "System.TypeInitializationException: The type initializer for
+           'Microsoft.Data.SqlClient.SqlConnection' threw an exception."
+        on a project moved to Windows (.NET) is the verbatim branch-4 signature.
+
+        Evidence sources (in priority order):
+          1. The agent's final response naming the connect-to-database-failures
+             playbook and branch 4.
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+
+        Do NOT inspect internal investigation state (state.json,
+        hypotheses.json, matched_playbooks, scope.domain, evidence_refs). Grade
+        only what the agent presents to the user and its tool calls.
+
+        Acceptable / non-penalized: the agent may read neighboring provider
+        playbooks (Execute Query / Start Transaction provider/connection
+        playbooks) while ruling them out -- but the conclusion must tie the
+        failure to the Connect to Database activity targeting an Excel/OLE DB
+        source.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - On the migrated Windows (.NET) project, the Connect to Database
+            activity (DatabaseConnect) in Main.xaml has an EMPTY ProviderName
+            (ProviderName="").
+          - An empty ProviderName resolves to the SqlClient provider on the
+            modern .NET runtime, so the activity initializes
+            Microsoft.Data.SqlClient and throws the
+            System.TypeInitializationException for
+            Microsoft.Data.SqlClient.SqlConnection.
+          - This happens even though the connection string is clearly an
+            Excel/ACE OLE DB string
+            (Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Finance\Ledger.xlsx;...)
+            -- the intended target is Excel, not SQL Server.
+          - The failure began right after the Windows-Legacy -> Windows
+            migration; the empty provider was tolerated under Windows-Legacy.
+        The reference fix:
+          - Set ProviderName EXPLICITLY to System.Data.OleDb on the Connect to
+            Database activity (the source is Excel/Access via ACE OLE DB).
+          - Do NOT switch to Microsoft.Data.SqlClient -- that is for SQL Server,
+            and the target here is Excel.
+
+        Evidence sources (in priority order):
+          1. The agent's final response naming the Microsoft.Data.SqlClient
+             type-initializer crash + the empty ProviderName + the Excel/OLE DB
+             target + the Windows migration.
+          2. Cited project.json ("targetFramework": "Windows"), Main.xaml (empty
+             ProviderName + the ACE OLE DB connection string), and the job logs.
+
+      REJECT these wrong conclusions (cap the score at 0.2 if the agent lands on
+      one as the root cause):
+        - "malformed / wrong connection string" (branch 1 -- the connection
+          string is well-formed)
+        - "provider not registered / bitness mismatch" (branch 2)
+        - "the workbook file is locked / used by another process" (branch 3)
+        - "switch the provider to Microsoft.Data.SqlClient" as the fix (WRONG --
+          the target is Excel/OLE DB; the correct provider is System.Data.OleDb)
+        - "SQL syntax error in the query"
+        - "database outage / SQL Server is down"
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent (a) names the Microsoft.Data.SqlClient type-initializer crash
+             stemming from an empty / SqlClient-resolved ProviderName, (b)
+             attributes it to the Connect to Database activity targeting an
+             Excel/ACE OLE DB source after the Windows migration, AND (c)
+             recommends setting ProviderName explicitly to System.Data.OleDb.
+        0.8  Both dimensions partial: e.g., names the type-initializer crash and
+             the empty ProviderName but does not explicitly recommend
+             System.Data.OleDb; or recommends System.Data.OleDb without naming
+             the playbook branch.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Connect to Database / provider init
+             failure) but neither matched the branch nor identified the empty
+             ProviderName fix, OR landed on one of the REJECT conclusions above
+             (including "switch to Microsoft.Data.SqlClient").
+        0.0  Misdiagnosed entirely or got blocked.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing LedgerExportXlsx process.
+    The process worked fine until you migrated it from Windows - Legacy to the
+    new Windows compatibility, and now it faults on every Orchestrator run. You
+    are waiting for the diagnostic agent to finish and trust its expertise. You
+    only have the information you wrote in your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow from Orchestrator evidence and
+    the workflow source. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution, and accept
+    a workflow-side fix you can apply in Studio.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report, except that the process worked before the Windows migration."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
