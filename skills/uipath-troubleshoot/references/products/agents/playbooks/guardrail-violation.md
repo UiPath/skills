@@ -34,8 +34,6 @@ What can cause it:
 
 > **Distinct error shape — governance policy:** If the error is `"User is forbidden by governance policy to use: <model>"` (`StatusCode 403`, `ErrorCode 3000`), this is an Automation Ops model-restriction policy, not a guardrail rule. Check via: `uip gov aops-policy deployed-policy get <license-type> AITrustLayer <tenant-id> --output json`
 
-> **Trace UI async note:** Guardrail evaluation spans may show loading in the trace UI after output is rendered — evaluation runs asynchronously. Use CLI to read span attributes directly.
-
 ## Investigation
 
 1. Get trace ID:
@@ -108,7 +106,6 @@ What can cause it:
 Validate and republish after any rule or agent change:
 
 ```bash
-uip agent refresh --output json
 uip agent validate --output json
 uip solution publish --output json
 ```
