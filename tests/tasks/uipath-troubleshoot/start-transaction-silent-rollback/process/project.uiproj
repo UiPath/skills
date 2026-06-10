@@ -1,0 +1,6 @@
+{
+  "Name": "BatchLedgerPost",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Start Transaction silent-success failure; a child Execute Non Query inside the scope faults on a FK violation but an in-scope Try Catch logs and continues with no Throw, so the transaction commits partial work and the job reports Success.",
+  "MainFile": "Main.xaml"
+}

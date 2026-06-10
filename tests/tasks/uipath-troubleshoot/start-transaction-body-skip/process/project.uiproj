@@ -1,0 +1,6 @@
+{
+  "Name": "NightlyReconcileTxn",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Start Transaction body-skip failure; the project pins UiPath.Database.Activities v1.5.0, a defective build where the Start Transaction scope skips its body entirely, so no child activity runs, no error is raised, and the job reports Success having read or written nothing.",
+  "MainFile": "Main.xaml"
+}

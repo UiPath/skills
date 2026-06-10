@@ -1,0 +1,186 @@
+task_id: skill-troubleshoot-start-transaction-silent-rollback
+description: >
+  UiPath diagnostic agent must diagnose a BatchLedgerPost process that
+  reports Success in Orchestrator on every run, yet the ledger entries it
+  should post are missing or incomplete. A child Execute Non Query inside
+  a Start Transaction scope faults on a FOREIGN KEY violation, but an
+  in-scope Try Catch catches System.Exception and only logs a Warn message
+  (no Throw). The fault never propagates out of the scope, so the
+  transaction does not roll back: the scope exits normally and commits the
+  partial work (the header insert), and the job reports Successful on
+  incomplete data. The agent must identify the swallowed child error and
+  the missing rollback as the root cause and recommend re-raising (Throw)
+  in the catch so the fault propagates and the transaction rolls back —
+  NOT a data problem, a timeout, a null/unpropagated connection, a
+  provider mismatch, a package-version bug, or a database outage.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My BatchLedgerPost process reports Success in Orchestrator on every run,
+  but the ledger entries it should post are missing or incomplete. Can you
+  investigate why?
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the start-transaction-failures playbook (Branch 1) AND identified the swallowed child error / missing rollback as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My BatchLedgerPost process reports Success in Orchestrator on
+         every run, but the ledger entries it should post are missing or
+         incomplete."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/start-transaction-failures.md
+        specifically BRANCH 1 (silent success / no rollback -- a failing
+        child activity inside the Start Transaction scope is swallowed by
+        an in-scope Try Catch that logs and continues with no Throw, so the
+        transaction neither rolls back nor re-raises; the scope commits and
+        the job reports Success on incomplete/uncommitted data).
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should name the
+             start-transaction-failures playbook / Branch 1.
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+        Grade only what the agent presented (final response + tool calls);
+        do NOT inspect internal investigation state.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - A child Execute Non Query inside the Start Transaction scope
+            failed (a FOREIGN KEY constraint violation on the detail
+            insert).
+          - An in-scope Try Catch caught System.Exception and ONLY logged a
+            Warn message ("caught and continuing") with NO Throw, so the
+            child fault never propagated out of the scope.
+          - Because nothing left the scope as an exception, the Start
+            Transaction scope exited normally and COMMITTED the partial
+            work (the header insert), the detail rows were never written,
+            and the job reported Successful on incomplete data.
+        The reference fix:
+          - Re-raise in the catch (add a Throw) so the fault propagates out
+            of the Start Transaction scope and the transaction ROLLS BACK
+            (and the job faults instead of reporting a false Success). Do
+            NOT log-and-continue. A Global Exception Handler is a
+            broad-coverage preventive measure.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should identify the swallowed
+             child error and the missing rollback, and explain the
+             job-reports-Success-despite-failure on incomplete data (NOT a
+             plain data problem, NOT a timeout, NOT a null/unpropagated
+             connection, NOT a provider mismatch, NOT a package-version
+             bug, NOT a database outage).
+          2. The agent's tool-call summary and any evidence it cites from
+             the job logs (the FK-violation Error immediately followed by
+             the "caught and continuing" Info line, then the job ending
+             Successful) and Main.xaml (the in-scope catch with only a Log
+             Message and no Throw).
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
+      any of these as the root cause):
+        - "The data simply didn't match / it's a data problem." (No -- a
+          child activity explicitly errored and the error was swallowed.)
+        - "Increase the timeout / the query is too slow."
+        - "The connection was null / was not propagated to the child."
+          (That is Branch 4, not this scenario.)
+        - "Provider mismatch / wrong provider after migration." (Branch 3.)
+        - "Package-version bug / the transaction body was skipped."
+          (Branch 2.)
+        - "The database is down / unreachable."
+      Also cap at 0.2 if the agent's PRIMARY fix is merely "add another Try
+      Catch" or "just log the error" -- the fix is to RE-RAISE (Throw) so
+      the transaction rolls back.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched start-transaction-failures Branch 1 AND its
+             conclusion (a) identifies that a child activity inside the
+             Start Transaction scope failed and the error was swallowed by
+             an in-scope catch with no Throw, (b) explains that the
+             transaction committed / did not roll back so the job reports
+             Success on incomplete data, and (c) recommends re-raising
+             (Throw) in the catch so the transaction rolls back.
+        0.8  Both partial: e.g., correct playbook and names the swallowed
+             error but does not connect it to the missing rollback / the
+             false Success; or identifies the no-Throw catch but recommends
+             only logging differently without re-raising.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Start Transaction / job Success but
+             data missing) but neither matched the branch nor identified
+             the swallowed-error/no-rollback cause -- OR concluded one of
+             the WRONG ANSWERS above.
+        0.0  Got blocked, or produced no usable conclusion.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the problem. Your
+    BatchLedgerPost process reports Success in Orchestrator on every run,
+    but the ledger entries it should post are missing or incomplete. You
+    are waiting for the diagnostic agent to finish its investigation and
+    trust its expertise. You only have the information you wrote in your
+    initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
