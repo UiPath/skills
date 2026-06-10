@@ -90,16 +90,15 @@ success_criteria:
     weight: 0.5
     pass_threshold: 0.0
 
-  # Local-registry discovery: accept either `search --local` or `list --local`.
-  # Both enumerate the in-solution flow registry; the agent may use either to
-  # find the agent-as-tool node before `registry get ...--local` below.
+  # Local-registry discovery: informational. The agent may discover node types
+  # via file reads or resources list output instead of registry search/list.
   - type: command_executed
-    description: "Agent searched or listed the local flow registry for the agent-as-tool manifest"
+    description: "Agent searched or listed the local flow registry for the agent-as-tool manifest (informational)"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b.*--local'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent fetched the solution (local) agent-as-tool node manifest from the flow registry"

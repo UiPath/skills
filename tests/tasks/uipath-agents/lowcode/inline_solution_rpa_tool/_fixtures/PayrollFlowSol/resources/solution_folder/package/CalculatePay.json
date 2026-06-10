@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CalculatePay",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "69c61e6f-cd8b-41a4-bbcb-cfa5019b7e9a",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": null,
+      "fileReference": null,
+      "name": "CalculatePay",
+      "description": null
+    },
+    "locks": [],
+    "key": "6f772df0-7a75-4eee-b66b-e70e43f27493"
+  }
+}

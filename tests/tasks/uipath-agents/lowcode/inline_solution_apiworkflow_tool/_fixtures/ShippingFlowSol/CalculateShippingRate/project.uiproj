@@ -1,0 +1,6 @@
+{
+  "ProjectType": "Api",
+  "Name": "CalculateShippingRate",
+  "Description": null,
+  "MainFile": "Workflow.json"
+}

@@ -1,0 +1,13 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.04.0",
+  "SolutionId": "30f1eca5-43e4-41e9-9e9b-08dec6631570",
+  "Projects": [
+    {
+      "Type": "ProcessOrchestration",
+      "ProjectRelativePath": "EmployeeOnboarding/project.uiproj",
+      "Id": "c907a6e7-9780-4719-89e4-31ab175a7356"
+    }
+  ],
+  "AutomationHubIdeaUrl": null
+}
