@@ -44,6 +44,8 @@ uip or packages upload ./MyProcess.1.0.0.nupkg --feed-id <feed-key> --output jso
 
 Verify the upload and discover entry points before creating a process.
 
+> **Feeds:** `packages get`, `packages versions`, and `processes create` look in the **tenant** feed by default. If the package lives in a folder-hierarchy feed (a standard folder with its own feed), pass `--feed-id <feed-key>` — otherwise these return empty / 404 even though the package exists. (`processes create` itself no longer pre-checks the feed, so it succeeds in a folder feed regardless.)
+
 ```bash
 # Search for the uploaded package
 uip or packages list --search "MyProcess" --output json

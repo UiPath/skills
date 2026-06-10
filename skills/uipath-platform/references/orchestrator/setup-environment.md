@@ -400,6 +400,8 @@ The role-resolver utility fetches all roles to map GUIDs to numeric IDs. For ten
 
 Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
 
+`folders list --all` rows also include `FeedType` (e.g. `FolderHierarchy`, `Processes`); the plain `folders list` does not (the current-user folders API doesn't return it). Use `--all` or `folders get` when you need `FeedType`.
+
 ### Personal workspaces are flat
 
 `uip or folders list --all --type personal` returns personal workspaces with a different shape (`Key`, `Name`, `OwnerName`, `OwnerKey`, `LastLogin`). The `--path` and `--top-level` flags are not supported because personal workspaces have no hierarchy.
