@@ -42,7 +42,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 3. **One branch per mutation.** A single user request produces a policy on one branch only. If the user wants both, run two sequential flows with two confirmation gates.
 4. **Each mechanic owns its own Critical Rules.** Once routed, follow the branch's rules — do not relax them from this top level.
 5. **Never apply compliance controls without posture analysis + user confirmation.** Run posture analysis first, show the plan (summary + detail), require `y` before any controls are configured.
-6. **Never skip the deploy record.** Write it unconditionally after any apply — even if some clauses failed.
+6. **Always show a receipt after any apply.** Present the post-apply report (controls configured, manual steps needed, Applied by / date) so the user has a record. No local file write is needed — the CLI and UiPath platform are the source of truth.
 7. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
 8. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
 
@@ -103,7 +103,7 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 - Do NOT activate this skill for platform ops. Route to `uipath-platform`.
 - Do NOT propose skill edits when intent doesn't map to either branch. Ask the user to clarify.
 - Do NOT use `deployed-policy list` for gap detection — it returns all rules in priority order, not the merged effective value. Use `deployed-policy get <licenseType> <productName> <tenantId>` to get the single effective merged policy.
-- Do NOT skip writing the deploy record even if apply partially fails.
+- Do NOT skip the post-apply report even if apply partially fails — show what succeeded and what needs manual attention.
 - For compliance pack posture analysis, use `uip gov compliance-packs state coverage` — do NOT use `aops-policy deployed-policy` commands; those are for AOps policy debugging (Branch A), not compliance pack flows.
 - For full pack configuration, use `state enable` — do NOT manually call `aops-policy create` for each product; that path is only for partial/scoped configuration.
 - NEVER claim a tenant is "compliant" with a standard — only that recommended controls are configured. Compliance status is determined by the customer's auditor.

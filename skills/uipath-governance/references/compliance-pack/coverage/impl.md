@@ -24,23 +24,25 @@ uip gov compliance-packs state coverage tenant $tenantId <packId> --output json 
 
 ## Parse the response
 
-`Data.deploymentPolicies[].status`:
-- `"new"` — this product's settings are not yet configured per standard recommendations; `state enable` will configure them
-- `"in-place"` — settings already deployed; no change needed
+CLI output is **PascalCase**. Field names below are exactly as returned by `state coverage`.
 
-`Data.clauses[].status`:
+`Data.DeploymentPolicies[].Status`:
+- `"new"` — this product's controls are not yet configured; `state enable` will configure them
+- `"in-place"` — controls already deployed; no change needed
+
+`Data.Clauses[].Status`:
 - `"needs-policies"` — at least one contributing policy is `"new"`
 - `"in-place"` — all contributing policies already deployed
 
-`Data.summary.newCount` — if 0, all recommended settings are already configured.
+`Data.Summary.NewCount` — if 0, all recommended controls are already configured.
 
 ## Posture plan presentation
 
 Join coverage API data with catalog data to resolve control names and clause names:
-- `coverage.deploymentPolicies[].status` — `"new"` or `"in-place"` per product
-- `catalog.clauses[].editorialPolicies[].productIdentifier` — maps controls to products
-- Control is ✓ if its product's `deploymentPolicy.status == "in-place"`
-- Control is ✗ if its product's `deploymentPolicy.status == "new"`
+- `coverage.Data.DeploymentPolicies[].Status` — `"new"` or `"in-place"` per product
+- `catalog.Data.Clauses[].EditorialPolicies[].ProductIdentifier` — maps controls to products
+- Control is ✓ if its product's `Status == "in-place"`
+- Control is ✗ if its product's `Status == "new"`
 
 Progress bar: `▓` per configured control, `░` per gap, max 5 chars (e.g. 2/5 = `▓▓░░░`, 4/4 = `▓▓▓▓▓`).
 
