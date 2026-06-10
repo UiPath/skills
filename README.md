@@ -89,28 +89,28 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 <!-- BEGIN GENERATED SKILL STATUS -->
 | Skill | Status |
 |-------|--------|
-| `uipath-admin` | Preview |
-| `uipath-agents` | Stable |
-| `uipath-api-workflow` | Preview |
+| `uipath-admin` | In-development |
+| `uipath-agents` | In-development |
+| `uipath-api-workflow` | In-development |
 | `uipath-coded-apps` | Preview |
-| `uipath-data-fabric` | Preview |
+| `uipath-data-fabric` | In-development |
 | `uipath-design` | Preview |
 | `uipath-feedback` | Stable |
-| `uipath-governance` | Preview |
-| `uipath-human-in-the-loop` | Preview |
-| `uipath-ixp` | Preview |
-| `uipath-maestro-bpmn` | Stable |
-| `uipath-maestro-case` | Preview |
-| `uipath-maestro-flow` | Stable |
-| `uipath-mcp-servers` | Preview |
-| `uipath-planner` | Stable |
-| `uipath-platform` | Stable |
+| `uipath-governance` | In-development |
+| `uipath-human-in-the-loop` | In-development |
+| `uipath-ixp` | In-development |
+| `uipath-maestro-bpmn` | In-development |
+| `uipath-maestro-case` | In-development |
+| `uipath-maestro-flow` | In-development |
+| `uipath-mcp-servers` | In-development |
+| `uipath-planner` | Preview |
+| `uipath-platform` | Preview |
 | `uipath-review` | Preview |
-| `uipath-rpa` | Stable |
-| `uipath-solution` | Stable |
+| `uipath-rpa` | Preview |
+| `uipath-solution` | Preview |
 | `uipath-tasks` | Preview |
-| `uipath-test` | Preview |
-| `uipath-troubleshoot` | Stable |
+| `uipath-test` | In-development |
+| `uipath-troubleshoot` | Preview |
 
 **Status legend:**
 - **Stable** — Stable, production-ready surface; safe for production.

@@ -2,7 +2,7 @@
 
 Manage Orchestrator resources -- assets, queues, queue items, buckets, files, triggers, libraries, and webhooks.
 
-> **Important:** These commands live under `uip or` (the former standalone `uip resource` tool was retired and folded into `uip or`). The old `storage-buckets`/`storage-bucket-files` names are now `buckets`/`bucket-files`.
+> **Important:** These commands live under `uip or` (the former standalone resource tool was retired and folded into `uip or`). The old `storage-buckets`/`storage-bucket-files` names are now `buckets`/`bucket-files`.
 
 > For full option details on any command, use `--help` (e.g., `uip or assets list --help`).
 
