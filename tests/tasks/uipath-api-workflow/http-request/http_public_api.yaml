@@ -1,0 +1,83 @@
+task_id: skill-api-workflow-http-public-api
+description: >
+  Skill-guided e2e: agent authors a unified HTTP Request (Http kind) activity
+  against a public REST API via `uip api-workflow registry resolve` + `stub`,
+  then runs it locally. Tests the connector-discovery flow and the single most
+  common connector regression — emitting `call: "http"` (deprecated, renders as
+  a block icon) instead of `call: "UiPath.Http"`.
+  REQUIRES cloud auth: `registry resolve`/`stub` query the tenant-scoped
+  StudioWeb TypeCache + IS Elements, so this runs under a cloud-auth experiment,
+  NOT the no-auth smoke gate. The final `run --no-auth` works because Http kind
+  uses connectionId "ImplicitConnection".
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:http, feature:registry]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that calls the public
+  Cat Facts API (GET https://catfact.ninja/fact) and returns the fact text as
+  { "fact": "<fact>" }.
+
+  Test locally:
+    uip api-workflow run ./Workflow.json --no-auth --output json
+
+  Confirm the run returns Result: "Success" and a non-empty fact.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-api-workflow skill and follow its
+  connector-activity discovery flow.
+
+  Important:
+  - The `uip` CLI is already available and authenticated.
+  - The HTTP Request activity must be produced by the registry (resolve + stub),
+    not hand-authored. It must render in StudioWeb's designer.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used the registry discovery flow (resolve / stub)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+api-workflow\s+registry\s+(resolve|stub)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Uses the unified HTTP kind (call: UiPath.Http)"
+    path: "Workflow.json"
+    includes:
+      - "UiPath.Http"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Does NOT use the deprecated simple form call:\"http\" (anti-pattern)"
+    command: "! grep -q '\"call\": \"http\"' Workflow.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow runs locally (--no-auth, ImplicitConnection) and returns a fact"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -q ''fact'''
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40

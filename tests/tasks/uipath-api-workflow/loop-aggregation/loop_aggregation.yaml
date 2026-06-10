@@ -1,0 +1,68 @@
+task_id: skill-api-workflow-loop-aggregation
+description: >
+  Skill-guided evaluation: agent authors a ForEach loop that sums a list of
+  numbers and returns the total. Tests whether the skill teaches the loop
+  body pattern (#Body, index-aware accumulation), $-prefixed iterators
+  (rule 11), and reading a list input via $workflow.input.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, node:loop]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Takes a `numbers` input (an array of integers)
+  - Iterates the array with a ForEach loop, accumulating a running sum
+  - Returns { "total": <sum> }
+
+  Test locally:
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"numbers":[10,20,30]}' --output json
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"numbers":[5,5]}' --output json
+
+  Confirm both runs return Result: "Success" with totals 60 and 10.
+
+  Important:
+  - The `uip` CLI is already available.
+  - StudioWeb-roundtrip-safe: ForEach needs a #Body element; the loop iterator
+    is referenced with a $ prefix (e.g. $currentItem); single-key Assigns.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Uses a ForEach loop with a #Body element (rule 8)"
+    path: "Workflow.json"
+    includes:
+      - "ForEach"
+      - "#Body"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Sums [10,20,30] to 60 via the loop (field-qualified, not a bare number match)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[10,20,30]}'' --output json | grep -qE ''"total"[ :]+60'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Sums [5,5] to 10 (proves generality, not a hardcoded total)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"numbers":[5,5]}'' --output json | grep -qE ''"total"[ :]+10'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 11
+  max_turns: 30

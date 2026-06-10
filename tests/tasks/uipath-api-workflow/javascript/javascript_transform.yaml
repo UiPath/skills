@@ -1,0 +1,67 @@
+task_id: skill-api-workflow-javascript-transform
+description: >
+  Skill-guided evaluation: agent authors a JavaScript (JsInvoke) activity that
+  transforms a string input and returns the result. Tests whether the skill
+  teaches that scripts read $context/$workflow/$input as globals (NOT
+  arguments[0]) and MUST return a value (rule 14).
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature:transform]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Takes a `name` string input
+  - Uses a JavaScript activity to upper-case it
+  - Returns { "shout": "<UPPERCASED NAME>" }
+
+  Test locally:
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"name":"bob"}' --output json
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"name":"ada"}' --output json
+
+  Confirm both runs return Result: "Success" with "BOB" and "ADA".
+
+  Important:
+  - The `uip` CLI is already available.
+  - The JavaScript reads inputs via the $workflow / $context globals (NOT
+    arguments[0]) and MUST return a value.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Uses a JavaScript activity that returns a value"
+    path: "Workflow.json"
+    includes:
+      - "return"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Transforms 'bob' -> 'BOB'"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"bob"}'' --output json | grep -q ''BOB'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Transforms 'ada' -> 'ADA' (proves it reads the input, not a constant)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"ada"}'' --output json | grep -q ''ADA'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 9
+  max_turns: 30

@@ -1,0 +1,77 @@
+task_id: skill-api-workflow-nested-control-flow
+description: >
+  Skill-guided e2e: agent composes nested control flow — a ForEach loop with a
+  per-iteration If, wrapped in a TryCatch — to classify a list of scores and
+  count passes. Tests whether the skill teaches hierarchical composition,
+  globally-unique keys across nested scopes (rule 3), and the If wrapper inside
+  a loop body.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, shape:multi-node, node:loop, node:decision]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Takes a `scores` input (an array of integers)
+  - Iterates the array; for each score, if it is >= 50 it counts as a pass
+  - Wraps the whole loop in a TryCatch so a bad element cannot abort the batch
+  - Returns { "passes": <count of scores >= 50> }
+
+  Test locally:
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"scores":[40,60,90,10]}' --output json
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"scores":[10,30]}' --output json
+
+  Confirm both runs return Result: "Success" with passes = 2 and 0.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Build the complete
+  workflow end-to-end in a single pass.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
+
+  Important:
+  - StudioWeb-roundtrip-safe: ForEach #Body, If #Wrapper/#Then/#Else with
+    then:"exit", loop iterator referenced as $currentItem, activity keys
+    globally unique across the nested scopes, Response with then:"end".
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Composes ForEach + If wrapper + TryCatch"
+    path: "Workflow.json"
+    includes:
+      - "ForEach"
+      - "#Body"
+      - "#Wrapper"
+      - "TryCatch"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts passes in [40,60,90,10] as 2 (field-qualified to avoid spurious '2' matches)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"scores":[40,60,90,10]}'' --output json | grep -qE ''"passes"[ :]+2'''
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts passes in [10,30] as 0 (proves real classification, not a constant 2)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"scores":[10,30]}'' --output json | grep -qE ''"passes"[ :]+0'''
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40
