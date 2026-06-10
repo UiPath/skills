@@ -502,11 +502,20 @@ def get_arg_expression(activity: ET.Element, prop_name: str) -> str | None:
     Handles both forms:
       1. Inline attribute: `RecordId="[createdRecord.Id]"`
       2. Verbose child: `<uda:Activity.RecordId><InArgument…>[createdRecord.Id]</…></>`
-    Returns `None` if the property is absent or carries no expression.
+
+    Returns `None` if the property is absent OR explicitly null-marked.
+    Studio serializes unused nullable properties as `{x:Null}` (per skill
+    ref, e.g. UploadFileToRecordField.md:62 — "Studio explicitly serializes
+    unused nullable properties as `{x:Null}`"). Semantically that's null,
+    so callers checking "is this property meaningfully bound" should get
+    `None` back for both absent and `{x:Null}` cases.
     """
     raw = _local_attr(activity, prop_name)
     if raw is not None:
-        return _strip_vb_brackets(raw)
+        stripped = _strip_vb_brackets(raw)
+        if stripped and stripped.strip() == "{x:Null}":
+            return None
+        return stripped
 
     suffix = f".{prop_name}"
     for child in activity:
@@ -514,7 +523,10 @@ def get_arg_expression(activity: ET.Element, prop_name: str) -> str | None:
             for desc in child.iter():
                 text = (desc.text or "").strip()
                 if text:
-                    return _strip_vb_brackets(text)
+                    stripped = _strip_vb_brackets(text)
+                    if stripped and stripped.strip() == "{x:Null}":
+                        return None
+                    return stripped
     return None
 
 
