@@ -71,13 +71,13 @@ These tasks track SDD generation. Implementation tasks are owned by Lane A (task
    - **10-50 pages:** read the ToC first, then read sections in priority order (overview → steps → exceptions → applications → credentials).
    - **Over 50 pages:** read ToC, then read high-priority sections (overview, process steps, exceptions) first, extract as you go, then read remaining sections.
 3. For pasted text over 3000 words, ask the user to paste in sections.
-4. **Docx handling:** if the .docx file renders as raw XML or binary content, do NOT attempt to extract data from garbled output. Convert it first:
+4. **Docx handling:** .docx is a binary format — do NOT Read it directly or attempt to extract data from garbled output. Convert first. Run from the directory where the markdown should land (output defaults to the current working directory):
 
    ```bash
-   bash <SKILL_DIR>/scripts/docx-extract.sh "<PDD_PATH>.docx"
+   bash <SKILL_DIR>/scripts/docx-extract.sh "<PDD_FILE_PATH>"
    ```
 
-   `<SKILL_DIR>` is the folder containing this skill's SKILL.md. The script produces a UTF-8 markdown file plus a `-media/` folder with embedded screenshots — Read both (screenshots feed the canonical-example extraction). If the script reports pandoc missing, relay its install command to the user; only if the user cannot install pandoc, fall back to: "Please export the Word document as PDF or paste the content directly." Never drive Word via COM automation.
+   `<SKILL_DIR>` is the folder containing this skill's SKILL.md; `<PDD_FILE_PATH>` is the full path to the .docx. The script produces a UTF-8 markdown file plus a `-media/` folder with embedded screenshots — Read both (screenshots feed the canonical-example extraction). Complex multi-paragraph tables may come out as raw HTML `<table>` blocks — parse them, they carry the same data. If the script reports pandoc missing, relay its install command to the user; only if the user cannot install pandoc, fall back to: "Please export the Word document as PDF or paste the content directly." Never drive Word via COM automation.
 5. **Error cases:** if the document cannot be read (corrupt PDF, password-protected, unsupported format), tell the user and ask them to provide it in a different format. If the document does not appear to be a PDD (no process steps, no application details, no exception handling), tell the user and stop.
 6. **Language handling:** if the PDD is not in English, use `AskUserQuestion` with the numbered-choice format:
 

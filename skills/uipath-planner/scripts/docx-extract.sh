@@ -44,6 +44,11 @@ fi
 echo "Markdown: $output"
 if [ -d "$media_dir" ]; then
   echo "Media:    $media_dir/ ($(find "$media_dir" -type f | wc -l | tr -d ' ') file(s))"
+  unreadable="$(find "$media_dir" -type f \( -iname '*.emf' -o -iname '*.wmf' \) | tr '\n' ' ')"
+  if [ -n "${unreadable% }" ]; then
+    echo "WARNING: EMF/WMF media cannot be rendered by the Read tool: $unreadable" >&2
+    echo "Ask the user for PNG exports of those figures, or mark dependent extractions [SME REVIEW]." >&2
+  fi
 else
   echo "Media:    none embedded"
 fi

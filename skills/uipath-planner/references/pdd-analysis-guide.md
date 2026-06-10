@@ -7,7 +7,7 @@ How to extract structured information from Process Design Documents in any forma
 | Format | How to Read | Notes |
 |---|---|---|
 | PDF | Use the Read tool with `pages` parameter. Read in chunks of up to 20 pages. | Screenshots are visible as images — see "Handling Screenshots" below. |
-| Word (.docx) | Read the file directly. If it renders garbled, convert with `scripts/docx-extract.sh` (see sdd-generation-guide.md Step 1) and read the markdown + extracted media instead. | Tables may render differently — verify structure. |
+| Word (.docx) | Do NOT Read directly — convert first with `scripts/docx-extract.sh` (see sdd-generation-guide.md Step 1), then read the markdown + extracted media. | Complex tables may extract as raw HTML `<table>` blocks — parse them; verify structure. |
 | Markdown | Read the file directly. | Easiest format — structure is already parseable. |
 | Pasted text | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
 
@@ -20,6 +20,7 @@ When you encounter screenshots in the PDD:
 3. **Do NOT extract** selectors, XPath, CSS, coordinates, colors, or visual layout details — these are determined at development time, not from static images.
 4. **Reference** the screenshot content in the relevant process step's "Remarks" field if useful.
 5. **DO extract concrete data values** shown in the screenshot — sample IDs, names, dates, expected outputs, error messages. These are oracles for the test strategy, not selectors. See "Extract Canonical Examples" below.
+6. **Unreadable media formats (.emf, .wmf):** the Read tool cannot render these (common in Word-extracted media). Do not guess their content — ask the user for a PNG export of the figure, or mark every extraction that depended on it as `[SME REVIEW]` naming the file.
 
 ## Extract Canonical Examples
 
