@@ -150,10 +150,10 @@ uip solution init "<SOLUTION_NAME>" --output json
 
 ### Register Project with Solution
 
-`uip agent init` **auto-registers** the project with the parent `.uipx` when run from inside a solution directory (pass `--no-solution-add` to skip auto-registration). Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
+`uip agent init` **auto-registers** the project with the parent `.uipx` when run from inside a solution directory (pass `--skip-solution-registration` to skip auto-registration). Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
 
 - `Registered` / `AlreadyRegistered` — registered (added now / already present). **You are done.**
-- `OptedOut` — `--no-solution-add` was passed; registration was intentionally skipped. No action needed (register later with the fallback if you change your mind).
+- `OptedOut` — `--skip-solution-registration` was passed; registration was intentionally skipped. No action needed (register later with the fallback if you change your mind).
 - `NotInSolution` — no parent `.uipx` was found (`init` ran outside a solution). Use the fallback if you want it in a solution.
 - `Skipped` — a candidate solution was found but registration wasn't safe (e.g. multiple `.uipx`, or project outside the solution dir). Resolve, then use the fallback.
 - `Failed` — registration was attempted but errored (`.uipx` read/parse/write). Use the fallback.
@@ -306,7 +306,7 @@ uip solution init "<SOLUTION_NAME>" --output json
 # `AlreadyRegistered`).
 uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 # (fallback only — run if Data.SolutionRegistration.Status is `NotInSolution` / `Skipped` / `Failed`;
-#  `OptedOut` means `--no-solution-add` was passed and registration was skipped on purpose)
+#  `OptedOut` means `--skip-solution-registration` was passed and registration was skipped on purpose)
 # uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 ```
 
@@ -395,7 +395,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Create solution | `uip solution init "<NAME>" --output json` | Any directory | — |
 | Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory | — |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
-| Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done; `OptedOut` = `--no-solution-add` passed) | Solution directory | — |
+| Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done; `OptedOut` = `--skip-solution-registration` passed) | Solution directory | — |
 | Register project (fallback) | `uip solution project add "<PATH>" --output json` — when `agent init` returned `NotInSolution` / `Skipped` / `Failed` | Solution directory | — |
 | Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |
 | Validate (strict read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
