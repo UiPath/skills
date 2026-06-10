@@ -105,6 +105,7 @@ uip traces feedback update <feedback-id> \
 ```bash
 uip traces feedback delete <feedback-id> \
   --folder-key <folder-key> \
+  --yes \
   --output json
 ```
 

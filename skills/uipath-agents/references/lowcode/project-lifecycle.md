@@ -208,7 +208,7 @@ uip solution deploy activate "<DEPLOYMENT_NAME>" --output json
 ### Uninstall Deployment
 
 ```bash
-uip solution deploy uninstall "<DEPLOYMENT_NAME>" --output json
+uip solution deploy uninstall "<DEPLOYMENT_NAME>" --yes --output json
 ```
 
 ### Bundle for Upload
@@ -405,6 +405,6 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |
 | Deploy | `uip solution deploy run --name ... --output json` | Any directory | `DeploymentSucceeded`, `DeploymentFailed`, `ValidationFailed` |
 | Activate | `uip solution deploy activate "<NAME>" --output json` | Any directory | `SuccessfulActivate`, `FailedActivate` |
-| Uninstall | `uip solution deploy uninstall "<NAME>" --output json` | Any directory | `SuccessfulUninstall`, `FailedUninstall` |
+| Uninstall | `uip solution deploy uninstall "<NAME>" --yes --output json` | Any directory | `SuccessfulUninstall`, `FailedUninstall` |
 | Deploy status | `uip solution deploy status <pipeline-deployment-id> --output json` | Any directory | — |
 | List deployments | `uip solution deploy list --output json` | Any directory | — |

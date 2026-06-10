@@ -127,7 +127,7 @@ Repeat steps 2a–2d for all documents in the list.
 If a document is unusable (wrong document type, corrupted, duplicate), delete it instead of confirming or skipping:
 
 ```bash
-uip ixp documents delete <project-name> <document-id> --output json
+uip ixp documents delete <project-name> <document-id> --yes --output json
 ```
 
 `<document-id>` is the `DocumentId` from `documents list` (e.g., `3453547f3538febd.1fc885607f2aac621f8f2d3ef1847f22`). Pass it whole. Do NOT pass the AttachmentRef or the Filename.

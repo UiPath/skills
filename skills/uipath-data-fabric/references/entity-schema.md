@@ -235,7 +235,7 @@ uip df entities create "Expense" --body '{
 ## Deleting an Entity
 
 ```bash
-uip df entities delete <entity-id> --confirm --reason "<why>" --output json
+uip df entities delete <entity-id> --yes --reason "<why>" --output json
 ```
 
 Irreversible — deletes the entity and every record in it. **Before invoking, discover and surface every dependent to the user:**

@@ -26,7 +26,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 | `uip ixp documents list <project-name> [-l <limit>] [--offset <n>] --output json` | List documents — returns `[{ DocumentId, AttachmentRef, Filename }]`. `Filename` is the original upload filename. Paginated: defaults to 50 items per page (max 10000). Pass `-l` for larger pages or `--offset` to skip ahead. |
 | `uip ixp documents download <project-name> <document-id> -o <path> --output json` | Download the original document file (PDF/PNG/JPG/etc.). The CLI auto-corrects the file extension to match the actual content; use the response `Path` field as the resolved location. |
 | `uip ixp documents upload <project-name> <file> --output json` | Upload a single document file to an existing project. See [Uploading documents](#uploading-documents-to-an-existing-project) below for validation, output shape, and the multi-file loop pattern. |
-| `uip ixp documents delete <project-name> <document-id> --output json` | Delete a document (and its labellings) from a project. Irreversible — triggers a retrain. |
+| `uip ixp documents delete <project-name> <document-id> --yes --output json` | Delete a document (and its labellings) from a project. Irreversible — triggers a retrain. |
 
 ### Supported document files
 
@@ -70,7 +70,7 @@ Manage the reusable type definitions (entity_defs) that fields reference via `fi
 | `uip ixp data-types add <project-name> --name <name> --kind <text\|date\|money\|number\|boolean\|choice> --instructions <text> [--input-value <exact-match\|inferred>] [--choices <json>] --output json` | Create a new data type. `--kind` selects the underlying data shape; `text` is the default Text type. `--input-value` is **required for `--kind text` and `--kind choice`, forbidden for `date`, `money`, `number`, and `boolean`** — those kinds don't expose the "Exact match" / "Inferred" radio in the IXP UI, so the CLI rejects the flag when the kind doesn't support it. `exact-match` marks the value as appearing verbatim in the document; `inferred` is for computed/derived values that don't have a visible location. `--choices` is **required when `--kind choice`** and forbidden otherwise. JSON array of `{"value":"<canonical>","alternates":["<alt1>",...]}`; `value` is the canonical display name (model output); `alternates` is optional (defaults to `[]`) and lists alternate spellings the model maps to `value`. |
 | `uip ixp data-types update-instructions <project-name> --name <name> --instructions <text> --output json` | Replace the instructions on an existing data type. Name, kind, and input-value stay the same. |
 | `uip ixp data-types rename <project-name> --name <name> --new-name <name> --output json` | Rename a data type. Existing field references (via `field_type_id`) stay intact. |
-| `uip ixp data-types delete <project-name> --name <name> --confirm-data-loss --output json` | Delete a data type. **IRREVERSIBLE** — any field referencing it via `field_type_id` will break. `--confirm-data-loss` is required. |
+| `uip ixp data-types delete <project-name> --name <name> --confirm-data-loss --yes --output json` | Delete a data type. **IRREVERSIBLE** — any field referencing it via `field_type_id` will break. `--confirm-data-loss` is required. |
 
 ## Groups
 
@@ -79,7 +79,7 @@ Manage field groups (label_defs) — the document type containers for fields. To
 | Command | Description |
 |---------|-------------|
 | `uip ixp groups add <project-name> --name <group-name> --instructions <text> --fields <json> --output json` | Create a new field group with instructions and at least one field. `--instructions` describes what document/section the group covers (the model sees it during extraction). `--fields` is a JSON array `[{"name":"...","type":"<type-name>","instructions":"..."}]` (1-32 entries); every entry must include `name`, `type`, and a non-empty `instructions`. `type` resolves against the project's `entity_defs`. |
-| `uip ixp groups delete <project-name> --name <group-name> --confirm-data-loss --output json` | Delete a field group. **IRREVERSIBLE** — deletes all annotations on all fields in the group. `--confirm-data-loss` is required. |
+| `uip ixp groups delete <project-name> --name <group-name> --confirm-data-loss --yes --output json` | Delete a field group. **IRREVERSIBLE** — deletes all annotations on all fields in the group. `--confirm-data-loss` is required. |
 | `uip ixp groups rename <project-name> --name <group-name> --new-name <name> --output json` | Rename a field group. Preserves all fields and annotations. |
 | `uip ixp groups update-prompts <project-name> --updates <json> --output json` | Bulk-update field group (label_def) instructions. `--updates` is a JSON array `[{"name":"<group>","instructions":"..."}]` matched by group name. Existing fields are preserved. Unmatched names are reported in the response without failing the command. |
 
@@ -90,7 +90,7 @@ Structural edits to a field within an existing field group. For instruction-only
 | Command | Description |
 |---------|-------------|
 | `uip ixp fields add <project-name> --group <field-group-name> --field <name> --type <type-name> --instructions <text> --output json` | Add a new field to an **existing** field group. `--type` is the name of an entity_def in the project's taxonomy (see `projects get-taxonomy`). `--instructions` is required — describe what to extract and where it appears. |
-| `uip ixp fields delete <project-name> --group <field-group-name> --field <name> --output json` | Remove a field from a field group. |
+| `uip ixp fields delete <project-name> --group <field-group-name> --field <name> --yes --output json` | Remove a field from a field group. |
 | `uip ixp fields rename <project-name> --group <field-group-name> --field <name> --new-name <name> --output json` | Rename a field. Preserves `field_id` and existing annotations. |
 | `uip ixp fields change-type <project-name> --group <field-group-name> --field <name> --type <type-name> --confirm-data-loss --output json` | Change a field's type. **IRREVERSIBLE** — the server creates a new field under the hood, so all existing annotations for that field are deleted. `--confirm-data-loss` is required. |
 | `uip ixp fields update-prompts <project-name> --updates <json> --output json` | Bulk-update per-field extraction instructions. `--updates` is a JSON array `[{"name":"<field>","instructions":"..."}]` matched by `moon_form` field name (across all field groups). Existing field definitions are preserved. Unmatched names are reported in the response without failing the command. |

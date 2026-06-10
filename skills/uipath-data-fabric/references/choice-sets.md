@@ -12,10 +12,10 @@ Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entit
 | `uip df choice-sets list-values <choice-set-id> --output json` | Page through values; pagination `{ Items, TotalCount, HasNextPage, … }` (use `--limit` / `--cursor` / `--offset`) |
 | `uip df choice-sets create <name> [--display-name <…>] [--description <…>] --output json` | Create a choice set; response `Code: ChoiceSetCreated`, `Data.Id` |
 | `uip df choice-sets update <choice-set-id> [--display-name <…>] [--description <…>] --output json` | Rename / re-describe the set |
-| `uip df choice-sets delete <choice-set-id> --confirm --reason "<why>" --output json` | Irreversible — `--confirm` and `--reason` are required |
+| `uip df choice-sets delete <choice-set-id> --yes --reason "<why>" --output json` | Irreversible — `--yes` and `--reason` are required |
 | `uip df choice-set-values create <choice-set-id> <name> [--display-name <…>] --output json` | Add a value; server assigns `NumberId` (0-based, monotonic by creation order) |
 | `uip df choice-set-values update <choice-set-id> <value-id> "<new display name>" --output json` | Display-name only — `Name` and `NumberId` are immutable |
-| `uip df choice-set-values delete <choice-set-id> --ids <value-id>[,<value-id>…] --confirm --reason "<why>" --output json` | Irreversible — same gating as `choice-sets delete` |
+| `uip df choice-set-values delete <choice-set-id> --ids <value-id>[,<value-id>…] --yes --reason "<why>" --output json` | Irreversible — same gating as `choice-sets delete` |
 
 ## Use the IDs
 
@@ -132,7 +132,7 @@ Never fall back to `STRING`. Never auto-create without confirming the values.
 ## Deleting a choice set
 
 ```bash
-uip df choice-sets delete <choice-set-id> --confirm --reason "<why>" --output json
+uip df choice-sets delete <choice-set-id> --yes --reason "<why>" --output json
 ```
 
 Irreversible. Before invoking, run `entities list --output json` and find every entity whose `Fields[].ChoiceSetId == <choice-set-id>`. Surface those entities to the user and ask: *"This choice set is used by `<entity>.<field>` — delete it anyway (those fields will break), pick a replacement choice set, or stop?"* Apply only what the user confirms.

@@ -88,7 +88,16 @@ def delete_batches(entity_id: str, ids: list[str], batch_size: int) -> tuple[int
     for i in range(0, len(ids), batch_size):
         batch_num = i // batch_size + 1
         batch = ids[i : i + batch_size]
-        resp = uip("df", "records", "delete", entity_id, *batch)
+        resp = uip(
+            "df",
+            "records",
+            "delete",
+            entity_id,
+            *batch,
+            "--yes",
+            "--reason",
+            "automated test cleanup",
+        )
         if resp.get("Result") != "Success":
             print(
                 f"FAIL: batch {batch_num} returned Result={resp.get('Result')!r} "

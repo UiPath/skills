@@ -62,7 +62,7 @@ Libraries are tenant-scoped -- no folder context needed.
 | `uip or libraries versions <package-id>` | List all versions of a library by package ID (the `Title` from `list` output). |
 | `uip or libraries upload --file <path>` | Upload a `.nupkg` library package to the tenant feed. |
 | `uip or libraries download <key> --destination <path>` | Download a `.nupkg` to local disk. |
-| `uip or libraries delete <key>` | Delete a specific library version. |
+| `uip or libraries delete <key> --yes` | Delete a specific library version. |
 
 ```bash
 # List libraries (first 500). Default --limit is 50; bump it for tenants with many libraries.
@@ -87,7 +87,7 @@ uip or libraries download "UiPath.System.Activities:24.10.0" \
   --destination ./system-activities.nupkg --output json
 
 # Delete an old version
-uip or libraries delete "UiPath.System.Activities:24.4.0" --output json
+uip or libraries delete "UiPath.System.Activities:24.4.0" --yes --output json
 ```
 
 ---

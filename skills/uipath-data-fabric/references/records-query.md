@@ -240,7 +240,7 @@ Batch update response: `{ Code: "RecordsBatchUpdated", Data: { SuccessCount, Fai
 ## Delete Records
 
 ```bash
-uip df records delete <entity-id> <id1> <id2> <id3> --output json
+uip df records delete <entity-id> <id1> <id2> <id3> --yes --reason "<why>" --output json
 ```
 
 Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`

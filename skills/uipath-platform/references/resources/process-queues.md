@@ -72,7 +72,7 @@ uip or queues get <queue-key> --output json
 uip or queues update <queue-key> --max-retries 5 --no-auto-retry --output json
 
 # Delete queue (cross-folder)
-uip or queues delete <queue-key> --output json
+uip or queues delete <queue-key> --yes --output json
 ```
 
 ### Share a Queue Across Folders
@@ -166,7 +166,7 @@ uip or queue-items set-progress <item-unique-key> "Validating invoice data" \
   --folder-path "Finance" --output json
 
 # Delete single / bulk
-uip or queue-items delete <item-unique-key> --folder-path "Finance" --output json
+uip or queue-items delete <item-unique-key> --folder-path "Finance" --yes --output json
 uip or queue-items delete-bulk <key1> <key2> --folder-path "Finance" --output json
 ```
 
