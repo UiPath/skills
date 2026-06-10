@@ -165,13 +165,16 @@ Filter with `--queue-name` (exact match), `--queue-definition-key` (GUID), or `-
 uip or queue-items update <item-unique-key> --folder-path "Finance" \
   --priority High --output json
 
-# Delete one or more items in a single call (takes a list of keys)
-uip or queue-items delete <key1> <key2> --folder-path "Finance" --output json
+# Delete a single item by key
+uip or queue-items delete <item-unique-key> --folder-path "Finance" --output json
+
+# Delete several items in one call
+uip or queue-items delete-bulk <key1> <key2> --folder-path "Finance" --output json
 ```
 
-`--progress` can only be set while the item is `InProgress` (it's the work-in-progress message a running robot reports). Updating progress on a `New` item is rejected.
+`update` changes `--priority`, `--due-date`, `--defer-date`, and `--specific-content`. Progress is a work-in-progress message a running robot reports, so the CLI does not let you set it.
 
-`delete` is a **soft-delete**: items are marked `Deleted` and hidden from the default `list`, not permanently removed. The response includes a `DeletedCount`. Pass several keys to delete them in one call.
+`delete` (one key) and `delete-bulk` (a list of keys) are a **soft-delete**: the item's status changes to `Deleted`; it is not permanently removed.
 
 ### Get History and Retry Info
 
