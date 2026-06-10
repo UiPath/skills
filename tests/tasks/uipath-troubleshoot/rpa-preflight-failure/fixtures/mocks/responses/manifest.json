@@ -35,7 +35,7 @@
       "file": "or-jobs-logs-3ecaa4ef-a1ab-4376-ae06-d3b942362e6f-level-erro.json"
     },
     {
-      "match": "resource assets list --folder-key 7f984a6b-1138-40fb-b48e-2c3ddf02b8f0 --output json",
+      "match": "or assets list --folder-key 7f984a6b-1138-40fb-b48e-2c3ddf02b8f0 --output json",
       "file": "or-assets-list-folder-key-7f984a6b-1138-40fb-b48e-2c3ddf02b8.json"
     },
     {
