@@ -1,0 +1,6 @@
+{
+  "Name": "LedgerExportXlsx",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Connect to Database failure where an empty ProviderName on a migrated Windows project resolves to SqlClient and throws a Microsoft.Data.SqlClient type-initializer exception, even though the target is an Excel/ACE OLE DB source.",
+  "MainFile": "Main.xaml"
+}

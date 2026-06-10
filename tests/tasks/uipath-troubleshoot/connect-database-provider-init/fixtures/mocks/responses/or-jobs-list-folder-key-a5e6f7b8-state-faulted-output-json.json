@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "b6f7a8c9-0d1e-4f2a-9b3c-5d6e7f809102",
+      "State": "Faulted",
+      "ProcessName": "LedgerExportXlsx",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-01T09:50:00.214Z",
+      "EndTime": "2026-06-01T09:50:01.331Z",
+      "CreationTime": "2026-06-01T09:49:59.902Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

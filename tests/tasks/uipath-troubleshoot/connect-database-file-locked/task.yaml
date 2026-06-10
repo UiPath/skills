@@ -1,0 +1,178 @@
+task_id: skill-troubleshoot-connect-database-file-locked
+description: >
+  UiPath diagnostic agent must diagnose a Connect to Database failure where a
+  Windows process reads an Excel workbook as a database through a well-formed
+  ACE OLE DB connection string, but faults on every Orchestrator run with
+  "System.IO.IOException: The process cannot access the file
+  'C:\Finance\Invoices.xlsx' because it is being used by another process." The
+  root cause is a file lock / sharing violation: the target workbook is held
+  open by another process (Excel UI, an orphaned EXCEL.EXE, a concurrent job, or
+  a sync client), so the file-based ACE provider cannot acquire it. The
+  connection string and provider are fine. The agent must recommend ensuring the
+  workbook is closed before the run (kill orphan processes) and, for read-only
+  SELECTs, opening the connection read-only (Mode=Read), and recognize this as
+  the Connect to Database failures playbook, branch 3.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My DailyInvoiceLoad process faults in Orchestrator on every run. Can you
+  investigate why? The project source is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the connect-to-database-failures playbook (branch 3) AND identified the workbook being held open by another process (file lock / sharing violation) as the root cause, recommending closing/releasing the file (and/or a read-only open)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md for this scenario. Treat it as the authoritative ground
+      truth.
+
+      The user's request was:
+        "My DailyInvoiceLoad process faults in Orchestrator on every run. Can
+         you investigate why? The project source is in the current working
+         directory."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/connect-to-database-failures.md
+        specifically BRANCH 3 (file lock / sharing violation), because the
+        runtime error
+          "System.IO.IOException: The process cannot access the file
+           'C:\Finance\Invoices.xlsx' because it is being used by another
+           process."
+        is the verbatim branch-3 signature.
+
+        Evidence sources (in priority order):
+          1. The agent's final response naming the connect-to-database-failures
+             playbook and branch 3 (file lock / sharing violation).
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+
+        Grade DIMENSION A only on the agent's final response and tool-call
+        summary. Do NOT inspect or require any internal investigation state
+        (e.g. files under .local/investigations/) -- what the agent presents to
+        the user is the contract.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Connect to Database activity (DatabaseConnect) in Main.xaml uses
+            ProviderName="System.Data.OleDb" and a WELL-FORMED ACE OLE DB
+            connection string
+            "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Finance\Invoices.xlsx;Extended Properties=..."
+            — the "Excel-as-a-database" pattern. The connection string and
+            provider are CORRECT.
+          - The target workbook C:\Finance\Invoices.xlsx is held open by another
+            process at run time — the Excel UI, an orphaned EXCEL.EXE from a
+            prior run, a concurrent job touching the same file, or a OneDrive /
+            sync / AV client. File-based providers request a write lock by
+            default, so the file-based ACE provider cannot acquire the file and
+            the connect throws "The process cannot access the file ... because
+            it is being used by another process" (a sharing violation).
+        The reference fix:
+          - Ensure the workbook is closed and no orphaned process holds it
+            before the robot runs (kill stray EXCEL.EXE processes as a hygiene
+            step at job start if a prior run can leak a handle).
+          - For read-only SELECTs, open the connection read-only so the engine
+            does not take a write lock — for ACE OLE DB add Mode=Read to the
+            connection string.
+
+        Evidence sources (in priority order):
+          1. The agent's final response naming the file-lock / sharing
+             violation and the held workbook (Invoices.xlsx).
+          2. The agent citing Main.xaml (well-formed connection string and
+             provider) and the job logs.
+
+      REJECT these wrong conclusions (cap the score at 0.2 if the agent lands on
+      one as the root cause):
+        - "malformed / wrong connection string" (branch 1 — the connection
+          string is well-formed here)
+        - "provider not registered / bitness mismatch / install the 64-bit ACE
+          engine" (branch 2)
+        - "provider init failure / wrong or empty ProviderName / SqlClient type
+          initializer" (branch 4)
+        - "SQL syntax error in the query"
+        - "file not found / wrong path / the sheet doesn't exist" (the file
+          EXISTS — it is locked, not missing)
+        - "the database is down / outage"
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched connect-to-database-failures branch 3 AND
+             (a) named the "used by another process" file-lock / sharing
+             violation, (b) attributed it to the workbook being held open by
+             another process (NOT a connection-string, provider, or SQL issue),
+             and (c) recommended closing/releasing the file (kill orphan
+             process) and/or opening the connection read-only (Mode=Read).
+        0.8  Both partial: e.g., correct playbook and names the "used by another
+             process" file lock but does not recommend a concrete release/
+             read-only fix; or recommends closing the file without naming the
+             playbook branch.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Connect to Database / OLE DB failure) but
+             neither matched the branch nor identified the file lock, OR landed
+             on one of the REJECT conclusions above.
+        0.0  Misdiagnosed entirely or got blocked.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing DailyInvoiceLoad process.
+    You only have Orchestrator access and the project source in your working
+    directory. You are waiting for the diagnostic agent to finish and trust its
+    expertise. You only have the information you wrote in your initial report —
+    no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow from Orchestrator evidence and
+    the workflow source. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution, and accept
+    a fix you can pass to whoever administers the Robot machine.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks you to run something on the Robot host or check what is holding the file, remind it you only have Orchestrator access and ask it to diagnose from the evidence and give you an instruction to hand off."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

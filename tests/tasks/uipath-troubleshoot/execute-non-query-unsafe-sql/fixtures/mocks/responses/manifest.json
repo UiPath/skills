@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the execute-non-query-failures playbook (Branch 2: unsafe SQL construction / parameter mapping). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"c7a8b9d0-1e2f-4a3b-8c4d-6e7f80910203\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-c7a8b9d0-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key c7a8b9d0-1e2f-4a3b-8c4d-6e7f80910203 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-c7a8b9d0-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"d8b9c0e1-2f3a-4b4c-9d5e-7f8091020304\" --output json",
+      "file": "or-jobs-get-d8b9c0e1-output-json.json"
+    },
+    {
+      "match": "or jobs get d8b9c0e1-2f3a-4b4c-9d5e-7f8091020304 --output json",
+      "file": "or-jobs-get-d8b9c0e1-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"d8b9c0e1-2f3a-4b4c-9d5e-7f8091020304\" --level Error --output json",
+      "file": "or-jobs-logs-d8b9c0e1-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs d8b9c0e1-2f3a-4b4c-9d5e-7f8091020304 --level Error --output json",
+      "file": "or-jobs-logs-d8b9c0e1-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"d8b9c0e1-2f3a-4b4c-9d5e-7f8091020304\" --output json",
+      "file": "or-jobs-logs-d8b9c0e1-output-json.json"
+    },
+    {
+      "match": "or jobs logs d8b9c0e1-2f3a-4b4c-9d5e-7f8091020304 --output json",
+      "file": "or-jobs-logs-d8b9c0e1-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}
