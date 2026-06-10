@@ -92,35 +92,7 @@ The CLI uses GUID keys for all entity references. Numeric IDs are never exposed 
 
 ## REST API Fallback
 
-When the CLI does not cover an operation, use the Orchestrator REST API directly with a stored token from `~/.uipath/.auth`.
-
-**Base URL pattern:**
-
-```
-${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/
-```
-
-**Auth header:**
-
-```
-Authorization: Bearer <UIPATH_ACCESS_TOKEN>
-X-UIPATH-OrganizationUnitId: <FOLDER_ID>
-```
-
-Always check `uip or --help` first -- most operations are covered by the CLI. Only fall back to REST when there is no CLI command for the operation you need.
-
-**Example -- raw OData query (for triggers prefer `uip or triggers list`; shown here only to illustrate the REST mechanics):**
-
-```bash
-ACCESS_TOKEN=$(cat ~/.uipath/.auth | jq -r '.access_token')
-BASE_URL="https://cloud.uipath.com/myorg/mytenant/orchestrator_/odata"
-
-curl -s -G "${BASE_URL}/ProcessSchedules" \
-  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" | jq .
-```
-
-Token expiry: re-run `uip login` if you get a 401.
+When the CLI does not cover an operation, you can fall back to the Orchestrator REST API using the access token stored in `~/.uipath/.auth`. Always check `uip or --help` first — most operations are covered by the CLI, and a command is safer and more consistent than hand-rolled REST. Only reach for REST when there is genuinely no command for what you need (and consider reporting the gap so the CLI can cover it).
 
 ---
 
