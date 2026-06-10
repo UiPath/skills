@@ -14,7 +14,7 @@ npm -g install @uipath/cli
 uip skills install
 ```
 
-Select the skills you need from the wizard. Skills are installed into your coding agent's directory and ready to use.
+`uip skills install` finds the AI coding agents installed on your machine and installs the skills for all of them, into each agent's directory, ready to use. If it can't find any agent, it asks which one to target. To install for just one agent, pass `--agent <name>` (e.g. `--agent claude`).
 
 <details>
 <summary>Don't have Node.js installed?</summary>
@@ -148,7 +148,7 @@ The command prints the recommended JSON and offers to merge it into your setting
 
 ### Google Gemini CLI
 
-Gemini CLI is supported by `uip skills install` — pick **Gemini CLI** when the wizard prompts for a target and skills are wired up automatically.
+Gemini CLI is supported by `uip skills install`. If the Gemini CLI is on your PATH, it's detected automatically and skills are wired up. If no agent is detected, pick **Gemini CLI** when prompted.
 
 ### OpenAI Codex CLI
 
