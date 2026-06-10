@@ -170,14 +170,16 @@ const tmpDir = process.argv[2];
 // Read from file — avoids PowerShell inline-JSON quoting issues (see Fix 2 below)
 const policyEntries = JSON.parse(fs.readFileSync(`${tmpDir}/policy-entries.json`, 'utf8'));
 const raw = JSON.parse(fs.readFileSync(`${tmpDir}/current-assignments-raw.json`, 'utf8'));
-// Data.tenantPolicies contains the assignments — NOT Data itself
-const existing = (raw.Data?.tenantPolicies ?? [])
+// CLI returns PascalCase — dual-case handles both PascalCase and camelCase variants.
+// TenantPolicies must be resolved before mapping, otherwise existing resolves to []
+// and deployment configure silently wipes all current tenant pins (full replace!).
+const policies = raw.Data?.TenantPolicies ?? raw.Data?.tenantPolicies ?? [];
+const existing = policies
   .map(p => ({
-    productIdentifier:     p.ProductIdentifier,
-    licenseTypeIdentifier: p.LicenseTypeIdentifier,
-    // Explicit presence check preserves null ("No Policy" pin) — avoids null??undefined→undefined
-    // which causes JSON.stringify to drop the key and the API to reject with "must be string or null"
-    policyIdentifier: 'PolicyIdentifier' in p ? p.PolicyIdentifier : (p.policyIdentifier ?? null),
+    productIdentifier:     p.ProductIdentifier     ?? p.productIdentifier,
+    licenseTypeIdentifier: p.LicenseTypeIdentifier ?? p.licenseTypeIdentifier,
+    // Preserve null ("No Policy" pin) — dropping the key causes the API to reject with "must be string or null"
+    policyIdentifier: p.PolicyIdentifier !== undefined ? p.PolicyIdentifier : (p.policyIdentifier ?? null),
   }))
   .filter(p => !policyEntries.some(e => e.product === p.productIdentifier));
 for (const e of policyEntries) {
@@ -187,9 +189,7 @@ fs.writeFileSync(`${tmpDir}/new-assignments.json`, JSON.stringify(existing, null
 console.log(`Written ${existing.length} entries`);
 ```
 
-**Fix 2 — Write policy entries to a file instead of passing inline JSON.** PowerShell mangles single-quoted JSON arguments passed to Node — routing through a file avoids all quoting issues on both platforms.
-
-Write `policy-entries.json` first:
+Write `policy-entries.json` first (avoids PowerShell inline-JSON quoting issues):
 ```bash
 # Bash
 printf '%s' '[{"product":"AITrustLayer","licenseType":"NoLicense","policyId":"<uuid>"}]' \
@@ -199,11 +199,6 @@ printf '%s' '[{"product":"AITrustLayer","licenseType":"NoLicense","policyId":"<u
 # Windows PowerShell
 '[{"product":"AITrustLayer","licenseType":"NoLicense","policyId":"<uuid>"}]' |
   Set-Content "$tmpDir\policy-entries.json" -NoNewline
-```
-
-Update the script to read from file instead of argv[3] — change the line `const policyEntries = JSON.parse(process.argv[3]);` to:
-```js
-const policyEntries = JSON.parse(fs.readFileSync(`${tmpDir}/policy-entries.json`, 'utf8'));
 ```
 
 Then run:
@@ -230,26 +225,6 @@ uip gov aops-policy deployment tenant configure $TENANT_ID \
   --input       "$SESSION_TEMP/new-assignments.json" \
   --output json
 ```
-
-## Step 6: Write local deploy record
-
-```json
-{
-  "packId":      "iso-42001-2023",
-  "applyMode":   "partial",
-  "scopeToken":  "<scopeToken>",
-  "clauseIds":   ["<matched clauseIds>"],
-  "products":    ["<productIdentifiers>"],
-  "appliedAt":   "<ISO timestamp>",
-  "tenantId":    "<UIPATH_TENANT_ID>",
-  "tenantName":  "<UIPATH_TENANT_NAME>",
-  "policies": [
-    { "product": "AITrustLayer", "policyId": "<uuid>", "policyName": "<name>" }
-  ]
-}
-```
-
-File: `$HOME/uipath-governance/audit/deploy-records/deploy-record-iso-42001-2023-<scopeToken>-<timestamp>.json`
 
 ## Report (after successful apply)
 
@@ -280,5 +255,5 @@ To configure all ISO 42001 controls: 'Apply the full ISO 42001 pack'
 | Error | Action |
 |---|---|
 | `synthesize-formdata.mjs` exit 3 | Skip that product. Log: "No recommended settings found for <product> in selected clauses." Continue. |
-| `aops-policy create` → 4xx | Halt. Record remaining as `status: "skipped"`. Write deploy record. |
-| `deployment tenant configure` → 4xx | Halt. Write deploy record with `status: "failed"`. Report error. |
+| `aops-policy create` → 4xx | Halt. Report error verbatim. Do NOT retry. |
+| `deployment tenant configure` → 4xx | Halt. Report error verbatim. |

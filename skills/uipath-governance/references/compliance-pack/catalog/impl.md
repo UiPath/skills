@@ -33,20 +33,22 @@ Save to `$SESSION_TEMP/catalog.json` (Bash) or `$tmpDir\catalog.json` (Windows).
 
 Key fields in `Data`:
 
+CLI output is **PascalCase**. Field names below are exactly as returned by `catalog get`.
+
 | Field | Used by |
 |---|---|
-| `packId` | All state commands |
-| `deploymentPolicies[].productIdentifier` | Coverage + apply: which products are covered |
-| `deploymentPolicies[].productDisplayName` | User-facing product name |
-| `clauses[].clauseId` | Partial apply: clause filtering |
-| `clauses[].clauseName` | User-facing clause name |
-| `clauses[].editorialPolicies[].productIdentifier` | Maps clause to product |
-| `clauses[].editorialPolicies[].controls[].displayName` | NLP matching + query display |
-| `clauses[].editorialPolicies[].controls[].impact` | `"High"` / `"Medium"` / `"Low"` |
-| `clauses[].editorialPolicies[].controls[].recommendedSetting` | What value will be configured |
-| `clauses[].editorialPolicies[].controls[].configLocation` | Where to find it in the UI |
-| `clauses[].editorialPolicies[].contributions[].key` | formData property key (dotted path) |
-| `clauses[].editorialPolicies[].contributions[].required` | Operator → synthesize-formdata.mjs |
+| `Data.PackId` | All state commands |
+| `Data.DeploymentPolicies[].ProductIdentifier` | Coverage + apply: which products are covered |
+| `Data.DeploymentPolicies[].ProductDisplayName` | User-facing product name |
+| `Data.Clauses[].ClauseId` | Partial apply: clause filtering |
+| `Data.Clauses[].ClauseName` | User-facing clause name |
+| `Data.Clauses[].EditorialPolicies[].ProductIdentifier` | Maps clause to product |
+| `Data.Clauses[].EditorialPolicies[].Controls[].DisplayName` | NLP matching + query display |
+| `Data.Clauses[].EditorialPolicies[].Controls[].Impact` | `"High"` / `"Medium"` / `"Low"` |
+| `Data.Clauses[].EditorialPolicies[].Controls[].RecommendedSetting` | What value will be configured |
+| `Data.Clauses[].EditorialPolicies[].Controls[].ConfigLocation` | Where to find it in the UI |
+| `Data.Clauses[].EditorialPolicies[].Contributions[].Key` | formData property key (dotted path) |
+| `Data.Clauses[].EditorialPolicies[].Contributions[].Required` | Operator → synthesize-formdata.mjs |
 
 ## List currently configured packs
 
