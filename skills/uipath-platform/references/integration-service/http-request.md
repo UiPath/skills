@@ -21,7 +21,7 @@ A built-in way to make an HTTP call from a UiPath automation. Runs in two modes 
 - `url` must be **relative**. Wrong: `"url": "https://example.atlassian.net/rest/api/2/issue"`. Right: `"url": "/issue"`.
 - The connection's base URL is prepended automatically.
 - The auth header is applied automatically - do not set `Authorization`.
-- **`application/json` only - request and response.** No other content type is supported. If the operation requires or returns a non-JSON body, connector mode cannot call it - use a curated connector activity.
+- **`application/json` only - request and response.** No other content type is supported. File upload/download operations are the most common violation (`multipart/form-data`, `application/octet-stream`, binary/stream responses) - check the operation's request and response content types before authoring. If non-JSON, connector mode cannot call it - use a curated connector activity; if none exists, surface to the user.
 - Get the exact vendor base URL for a connection via (so you can compose the relative `url` correctly):
 
 ```bash
