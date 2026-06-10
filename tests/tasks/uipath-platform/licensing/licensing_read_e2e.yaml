@@ -14,27 +14,22 @@ agent:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  Produce a read-only licensing snapshot of this account. Do NOT run any
-  command that mutates state — only `get`, `available`, `details`, and
-  `consumables get`. Specifically:
+  Produce a read-only licensing snapshot of this account. This is read-only:
+  do NOT run anything that mutates licensing state.
 
-  1. Run `uip platform users licenses available --output json` and save the
-     full CLI output (the entire envelope, not just `Data`) to
-     `available.json`.
-  2. Fetch the UiPath docs license-codes page so you can translate bundle
-     codes to friendly names.
-  3. Run `uip platform groups rules get --output json` and save the full
-     output to `rules.json`.
-  4. If `rules.json` contains at least one group, pick the first group's
-     `groupName` and run
-     `uip platform groups rules details "<that-group>" --output json`,
-     saving the full output to `details.json`. If `rules.json` is empty,
-     skip this step (the validator will skip the corresponding check).
-  5. Run `uip platform licenses consumables get --mode summary --output json`
-     and save the full output to `consumables.json`.
-  6. Print a final summary that references at least one bundle code from
-     `available.json` using the `<Friendly Name> (<CODE>)` format — e.g.,
-     `Automation Developer Named User (RPADEVPRONU)`.
+  Cover these four areas, saving the full CLI output (the entire response
+  envelope, not just its `Data`) to the named file for each:
+
+  - Account-level user-bundle seat availability → `available.json`
+  - The account's group license-allocation rules → `rules.json`
+  - Per-group rule details for one group (the first group from `rules.json`)
+    → `details.json`. If `rules.json` lists no groups, skip this one.
+  - A consumables summary → `consumables.json`
+
+  Then translate bundle codes to friendly names from the UiPath docs
+  license-codes page, and finish with a human-readable summary that
+  references at least one bundle in the `<Friendly Name> (<CODE>)` format —
+  e.g., `Automation Developer Named User (RPADEVPRONU)`.
 
   Use `--output json` on every uip command.
 
