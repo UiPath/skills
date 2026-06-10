@@ -1,0 +1,70 @@
+task_id: skill-api-workflow-nested-loops
+description: >
+  Skill-guided evaluation: agent authors a ForEach inside a ForEach to count
+  every element of a list-of-lists. Tests whether the skill teaches that nested
+  loops MUST use distinct iterator names (rule 10) — reusing the same iterator
+  shadows the outer loop and produces a wrong count.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, node:loop]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Takes a `matrix` input (an array of arrays of integers)
+  - Iterates the outer array, and for each row iterates the inner array,
+    counting every cell
+  - Returns { "cells": <total number of inner elements> }
+
+  Test locally:
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"matrix":[[1,2],[3,4,5]]}' --output json
+    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"matrix":[[9]]}' --output json
+
+  Confirm both runs return Result: "Success" with cells = 5 and 1.
+
+  Important:
+  - The `uip` CLI is already available.
+  - StudioWeb-roundtrip-safe: each ForEach needs a #Body; the outer and inner
+    loops MUST use DISTINCT iterator names (reusing one shadows the outer);
+    iterators are referenced with a $ prefix.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Contains two ForEach loops (nested)"
+    path: "Workflow.json"
+    includes:
+      - "ForEach"
+      - "#Body"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts 5 cells in [[1,2],[3,4,5]] (wrong iterator names would shadow and miscount)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"matrix":[[1,2],[3,4,5]]}'' --output json | grep -qE ''"cells"[ :]+5'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts 1 cell in [[9]] (proves real nested iteration)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"matrix":[[9]]}'' --output json | grep -qE ''"cells"[ :]+1'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 12
+  max_turns: 35
