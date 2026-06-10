@@ -82,6 +82,9 @@ uip or buckets get <bucket-key> --folder-path "Finance" --output json
 uip or buckets update <bucket-key> --folder-path "Finance" \
   --name "invoices-2026" --description "Updated invoice store" --output json
 uip or buckets delete <bucket-key> --folder-path "Finance" --output json
+# A bucket that still has files is refused; pass --force to delete it and
+# its files anyway.
+uip or buckets delete <bucket-key> --folder-path "Finance" --force --output json
 ```
 
 ### Share Buckets Across Folders
