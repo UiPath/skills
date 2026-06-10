@@ -26,6 +26,8 @@ Before reading the PDD, ask **one `AskUserQuestion` call containing two question
 
 **Skip Question 2** when the delivery model is already resolved — the user's request states it, or the PDD carries a delivery-model signal (see [PDD Analysis Guide → Environment & Constraint Signals](pdd-analysis-guide.md#environment--constraint-signals)). Record the detected value instead of asking. If the answer is Automation Suite and the version is unknown, do not ask a follow-up — gate against the latest matrix column and add an `[SME REVIEW]` row for the version in §16 Deployment Environment.
 
+**Skip Question 1 symmetrically** when the request already states the execution mode ("autonomous", "don't pause for checkpoints", "interactive review"). When both questions are resolved from context, skip the `AskUserQuestion` call entirely and record both values.
+
 Record both choices — they go into the SDD's `## Planner Handoff` header (Phase 3 Step 2) and propagate to Lane A (task derivation): execution mode drives task review behavior; delivery model is passed to specialists as a platform constraint.
 
 In **Autonomous** mode:

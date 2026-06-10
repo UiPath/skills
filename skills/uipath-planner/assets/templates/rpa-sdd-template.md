@@ -595,6 +595,10 @@ Implementation tasks **do not live in this SDD** — they live in the planner's 
 
 ### Terminal artefact — a packed `.uipx` solution
 
+<!-- CONSTRAINT GATE: if the platform-availability-guide blocks Solutions (.uipx needs AS 2.2510+)
+     for this SDD's Delivery model, REWRITE this subsection: per-package Orchestrator publish,
+     deploy tasks route to uipath-platform instead of uipath-solution. -->
+
 The build is not finished when the project folder compiles. **The terminal artefact of an SDD-driven build is a packed `.uipx` solution**, not a bare project folder. After the implementation specialist (`uipath-rpa`, `uipath-agents`, etc.) reports its tasks complete, load the **`uipath-solution`** skill and run:
 
 ```bash

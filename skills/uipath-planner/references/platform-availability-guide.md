@@ -7,11 +7,12 @@ Product × delivery-model availability matrix. Consulted by the [Constraint Gate
 
 ## Gating Rules
 
-1. **Gate against the customer's column.** `cloud` → everything below marked Cloud-available. `automation-suite` → the AS column **at the customer's version**: customer AS older than a product's "AS since" version → treat as **Not available**. `standalone` → see the Standalone note below.
+1. **Gate against the customer's column.** `cloud` → everything below marked Cloud-available. `automation-suite` → the AS column **at the customer's version**: customer AS older than a product's "AS since" version → treat as **Not available**. `standalone` → see the Standalone note below. Version ordering across the renamed scheme: `2021.10 < 2022.4 < 2023.4 < 2024.10 < 2.2510 < 2.2510.2` — the `[Major].[YYMM]` scheme (2.2510 = 2025.10) sorts AFTER every `YYYY.MM` version.
 2. **AS version unknown →** gate against the latest AS column, add an `[SME REVIEW]` row for the version in §16 Deployment Environment, and attach a warning to every product whose "AS since" is 2.2510 or newer (the customer may be on an older Suite).
 3. **Install profile matters for the agentic stack.** Maestro and Agents on AS require the **EKS/AKS or OpenShift** profile (not the classic Linux/k3s profile) plus Temporal-as-a-Service and an AI Trust Layer LLM connection. When the SDD includes them on AS, add a profile-prerequisite warning + `[SME REVIEW]` row.
-4. **Verification rule.** Web-search the authoritative page above before finalizing the SDD when ANY of: a needed cell is marked ⚠ Verify; the customer's AS version is unknown; this file's "As of" stamp is more than ~6 months old. Record what was verified in the `Decisions Made` row 1 reason.
+4. **Verification rule.** Web-search the authoritative page above before finalizing the SDD when ANY of: a needed cell is marked ⚠ Verify; the customer's AS version is unknown; this file's "As of" stamp is more than ~6 months old. A cell is *needed* only when its product remains a candidate after blocking — blocked products require no verification. Record what was verified (or why verification was skipped) in the `Decisions Made` row 1 reason.
 5. **Even an ✅ AS cell can differ from cloud** in feature depth (per UiPath's own matrix page). Limitations called out in the Notes column go into the SDD as constraints, not footnotes.
+6. **"No cloud connectivity" is ambiguous — classify before gating.** (a) The *install* is offline/air-gapped → treat every "unsupported on offline installs" note (DU modern, Integration Service) as **BLOCK**, and exclude SaaS dependencies (e.g., Microsoft 365 mailboxes) from the architecture. (b) Only the UiPath-cloud link is absent but the network has internet egress → **WARN** + `[SME REVIEW]`. When the statement cannot be classified from context, apply (b) and add an `[SME REVIEW]` row naming the stricter reading's consequences.
 
 ## Availability Matrix
 
