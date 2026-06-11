@@ -5,8 +5,6 @@ description: "UiPath automation discovery — mines Slack/email/wikis/CRM/HRIS/E
 
 # Automation Discovery
 
-> **Preview** — this skill is in preview and may change.
-
 Investigate how employees actually work, then identify and prioritize internal
 automation opportunities backed by real behavioral evidence. Produces a
 UiPath-ready backlog with recommended implementation paths.
