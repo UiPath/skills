@@ -410,7 +410,7 @@ Check `project.json` → `dependencies` for the required package.
 
 ```bash
 uip rpa packages versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json
-uip rpa packages install --packages '[{"id":"<PackageId>","version":"<LATEST_VERSION>"}]' --project-dir "<PROJECT_DIR>" --output json
+uip rpa packages install --packages 'id=<PackageId>,version=<LATEST_VERSION>' --project-dir "<PROJECT_DIR>" --output json
 ```
 
 ### Step 2 — Find activity docs (priority order)

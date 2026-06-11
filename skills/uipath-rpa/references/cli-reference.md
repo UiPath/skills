@@ -91,7 +91,7 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 
 ## Reading run / debug results
 
-`uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Discover flags (input arguments, log level, skip-build, profiling) via `--help`.
+`uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Pass workflow inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags (log level, skip-build, profiling) via `--help`.
 
 Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {runResult: "<json-string>"}, ...}`. `Data.runResult` is a **JSON string** — parse it separately. It has three fields (plus optional `Profiling`):
 
@@ -103,6 +103,38 @@ Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {ru
 Workflow log output (`Log Message`, system traces) does **not** appear in `runResult` — logs stream in real time on a separate channel; the envelope carries only the verdict and output data.
 
 > **Single source of truth for success/failure: outer `Result` (equivalently `HasErrors` inside `runResult`).** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled exceptions — the CLI propagates them. **DO NOT infer failure from a streamed log entry's `Level`.** A successful workflow may emit `Log Message` at `Error`/`Warning` level as observability — that is workflow data, not a CLI failure. Treating log levels as a verdict flips green runs to "failed" and burns retries.
+
+---
+
+## Passing structured inputs
+
+`--input-arguments`, `--input-variables`, and `--packages` carry structured (JSON) payloads. **Never pass them as one inline-JSON string** — Windows PowerShell 5.1 (the shell agent commands run through on Studio Desktop) strips embedded double quotes from arguments, so `--input-arguments '{"k":"v"}'` arrives mangled and fails. Use the quote-free repeatable grammar instead; it works identically on PowerShell 5.1/7, bash, and zsh:
+
+```bash
+# One key per occurrence. = keeps the value a string; := passes raw JSON (numbers, true/false, null):
+uip rpa run --file-path Main.xaml --input-arguments name=John --input-arguments retries:=3
+
+# Single-quote any token containing spaces or commas:
+uip rpa run --file-path Main.xaml --input-arguments 'message=Hello, world!'
+
+# Values containing double quotes (e.g. VB/C# string-literal expressions) cannot survive
+# PowerShell 5.1 inline — read the value from a file (key=@file is safe unquoted):
+uip rpa debug test-activity --input-variables greeting=@expression.txt
+
+# Whole payload from a JSON file — single-quote the @ token (bare @ is PowerShell splatting),
+# or use the equivalent --<flag>-file spelling which needs no quoting at all:
+uip rpa run --file-path Main.xaml --input-arguments '@args.json'
+uip rpa run --file-path Main.xaml --input-arguments-file args.json
+
+# Packages: one item per occurrence, fields comma-joined (single-quote when a comma is present):
+uip rpa packages install --packages 'id=UiPath.System.Activities,version=23.10.1' --packages id=UiPath.Excel.Activities
+```
+
+Rules of thumb:
+
+- **`=` vs `:=`**: `count=42` sends the string `"42"`; `count:=42` sends the number `42`. For `debug test-activity` / `debug start-from-here`, values are VB/C# expression **strings** — always use `=` there.
+- **Quoting**: single-quote any token containing spaces, commas, or starting with `@`; plain identifiers and numbers need no quotes. Never rely on embedded double quotes inline — write those values to a UTF-8 file (`Set-Content -Encoding UTF8` in PowerShell 5.1) and use `key=@file`, `'@file'`, or `--<flag>-file`.
+- **Legacy form**: a single inline-JSON blob is still accepted for backward compatibility, but on PowerShell 5.1 it is structurally unreliable — do not use it there.
 
 ---
 
@@ -132,7 +164,7 @@ Workflow log output (`Log Message`, system traces) does **not** appear in `runRe
 
 ## packages install
 
-`uip rpa packages install` installs or updates NuGet packages (canonical way to add dependencies — **do not hand-edit `project.json`**; there is no `add-dependency` verb). Discover the `--packages` shape and version flags via `uip rpa packages install --help`.
+`uip rpa packages install` installs or updates NuGet packages (canonical way to add dependencies — **do not hand-edit `project.json`**; there is no `add-dependency` verb). Repeat `--packages` once per package with comma-joined `key=value` fields — `--packages 'id=<PackageId>,version=<Version>'` or just `--packages id=<PackageId>` (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags via `uip rpa packages install --help`.
 
 - **Omit the version** to resolve the latest compatible automatically (preferred). Pin only for a known compatibility constraint.
 - **Discover available versions** with `uip rpa packages versions --package-id <Id> --include-prerelease`. **Default to `--include-prerelease`** — activity packages frequently ship `-preview` between stable releases, carrying the freshest activity surface and `.local/docs`. When a newer stable or preview exists over the installed version, inform the user and offer the upgrade — never force.
