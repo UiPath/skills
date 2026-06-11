@@ -40,7 +40,7 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent reached the same root cause as RESOLUTION.md"
+    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
