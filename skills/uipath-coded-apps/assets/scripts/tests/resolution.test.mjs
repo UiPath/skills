@@ -358,19 +358,37 @@ test('parseEvent: returns null for non-event lines', () => {
 
 // ── classifyEditIntent tests ──────────────────────────────────────────────────
 
-test('classifyEditIntent: identifies ADD', () => {
+test('classifyEditIntent: normalizes legacy single op to a one-element batch', () => {
   const result = classifyEditIntent({ op: 'ADD', projectDir: '/tmp/x', metric: { name: 'agent-health', tier: 'T1' } })
-  assert.equal(result.op, 'ADD')
+  assert.equal(result.ops.length, 1)
+  assert.equal(result.ops[0].op, 'ADD')
+  assert.equal(result.ops[0].metric.name, 'agent-health')
+  assert.equal(result.projectDir, '/tmp/x')
 })
 
-test('classifyEditIntent: identifies REMOVE', () => {
-  const result = classifyEditIntent({ op: 'REMOVE', projectDir: '/tmp/x', target: 'ErrorRateTrend' })
-  assert.equal(result.op, 'REMOVE')
-  assert.equal(result.target, 'ErrorRateTrend')
+test('classifyEditIntent: accepts an ops batch and preserves order', () => {
+  const result = classifyEditIntent({
+    projectDir: '/tmp/x',
+    ops: [
+      { op: 'CHANGE', target: 'A', delta: { timeRange: '7d' } },
+      { op: 'REMOVE', target: 'B' },
+      { op: 'ADD', metric: { name: 'agent-health', tier: 'T1' } },
+    ],
+  })
+  assert.deepEqual(result.ops.map(o => o.op), ['CHANGE', 'REMOVE', 'ADD'])
+  assert.equal(result.ops[1].target, 'B')
 })
 
-test('classifyEditIntent: throws on invalid op', () => {
-  assert.throws(() => classifyEditIntent({ op: 'DELETE', projectDir: '/tmp/x' }), /invalid op/)
+test('classifyEditIntent: throws on invalid op with its batch index', () => {
+  assert.throws(() => classifyEditIntent({ op: 'DELETE', projectDir: '/tmp/x' }), /invalid op "DELETE" \(ops\[0\]\)/)
+  assert.throws(
+    () => classifyEditIntent({ projectDir: '/tmp/x', ops: [{ op: 'ADD', metric: { name: 'x' } }, { op: 'RENAME' }] }),
+    /invalid op "RENAME" \(ops\[1\]\)/
+  )
+})
+
+test('classifyEditIntent: throws on empty ops array', () => {
+  assert.throws(() => classifyEditIntent({ projectDir: '/tmp/x', ops: [] }), /empty/)
 })
 
 test('parseEvent: recognizes AUTH_MISSING event', () => {

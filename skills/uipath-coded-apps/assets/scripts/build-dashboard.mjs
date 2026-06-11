@@ -174,6 +174,29 @@ export const VALID_DELTA_POLARITIES = ['up-good', 'up-bad', 'neutral']
 /** Column value formatters supported in table column defs. */
 export const VALID_COLUMN_FORMATS = ['number', 'percent', 'duration', 'timeAgo', 'text']
 
+/**
+ * Minimum SDK version the catalog metrics require — the agent-memory and
+ * governance subpaths ship in 1.4.0. A stale lockfile/registry otherwise
+ * surfaces as cryptic tsc "module not found" failures mid-build.
+ */
+export const MIN_SDK_VERSION = '1.4.0'
+
+/**
+ * Check the installed @uipath/uipath-typescript version in a project.
+ * @param {string} projectPath
+ * @returns {{ ok: boolean, version: string|null }}
+ */
+export function checkSdkVersion(projectPath) {
+  const pkgPath = join(projectPath, 'node_modules', '@uipath', 'uipath-typescript', 'package.json')
+  if (!existsSync(pkgPath)) return { ok: false, version: null }
+  let version
+  try { version = JSON.parse(readFileSync(pkgPath, 'utf8')).version } catch { return { ok: false, version: null } }
+  const [maj = 0, min = 0, pat = 0] = String(version).split('.').map(Number)
+  const [rMaj, rMin, rPat] = MIN_SDK_VERSION.split('.').map(Number)
+  const ok = maj > rMaj || (maj === rMaj && (min > rMin || (min === rMin && pat >= rPat)))
+  return { ok, version }
+}
+
 /** Map a time range to a human subtitle fragment. */
 function timeRangeLabel(timeRange) {
   return { '1d': 'last 24 hours', '7d': 'last 7 days', '30d': 'last 30 days', '90d': 'last 90 days' }[timeRange] ?? timeRange
@@ -1011,6 +1034,16 @@ async function runDashboardBuild(intent, intentPath) {
       emit('PREWARM_DONE')
     }
 
+    // Step 3.5 — SDK version floor (agent-memory/governance subpaths need ≥ MIN_SDK_VERSION)
+    const sdkCheck = checkSdkVersion(P)
+    if (!sdkCheck.ok) {
+      fail(
+        `Installed @uipath/uipath-typescript ${sdkCheck.version ?? '(not found)'} is below the required ${MIN_SDK_VERSION} ` +
+        `(agent/governance metrics need the agent-memory and governance subpaths). ` +
+        `Fix: delete ${join(P, 'package-lock.json')} and ${join(P, 'node_modules')}, then re-run the pre-warm.`
+      )
+    }
+
     // Step 4 — Resolve + generate widgets
     const t3Metrics = metrics.filter(m => m.tier === 'T3')
     const widgetHashes = {}
@@ -1140,16 +1173,23 @@ async function runDashboardBuild(intent, intentPath) {
 }
 
 /**
- * Validate an edit-intent.json operation and return it unchanged.
- * Throws for unknown operation types.
- * @param {{ op: string, projectDir: string, target?: string, metric?: IntentMetric, delta?: object }} editIntent
- * @returns {typeof editIntent}
+ * Validate an edit-intent.json and normalize it to a batch.
+ * Accepts either a single operation ({ op, ... } — legacy shape) or a batch
+ * ({ ops: [{ op, ... }, ...] }). Throws for unknown operation types.
+ * @param {{ projectDir: string, op?: string, ops?: Array<object>, target?: string, metric?: IntentMetric, delta?: object }} editIntent
+ * @returns {{ projectDir: string, ops: Array<{ op: string, target?: string, metric?: IntentMetric, delta?: object }> }}
  */
 export function classifyEditIntent(editIntent) {
-  if (!VALID_EDIT_OPS.includes(editIntent.op)) {
-    throw new Error(`classifyEditIntent: invalid op "${editIntent.op}". Must be one of: ${VALID_EDIT_OPS.join(', ')}`)
-  }
-  return editIntent
+  const ops = Array.isArray(editIntent.ops)
+    ? editIntent.ops
+    : [{ op: editIntent.op, target: editIntent.target, metric: editIntent.metric, delta: editIntent.delta }]
+  if (ops.length === 0) throw new Error('classifyEditIntent: ops array is empty')
+  ops.forEach((o, i) => {
+    if (!VALID_EDIT_OPS.includes(o.op)) {
+      throw new Error(`classifyEditIntent: invalid op "${o.op}" (ops[${i}]). Must be one of: ${VALID_EDIT_OPS.join(', ')}`)
+    }
+  })
+  return { projectDir: editIntent.projectDir, ops }
 }
 
 /**
@@ -1168,8 +1208,11 @@ export function resolveChangeMetric(stored, target, delta) {
 }
 
 /**
- * Apply an incremental edit (ADD / REMOVE / CHANGE / REBUILD) to an existing project.
- * @param {{ op: string, projectDir: string, target?: string, metric?: IntentMetric, delta?: object }} editIntent
+ * Apply one or more incremental edits (ADD / REMOVE / CHANGE / REBUILD) to an
+ * existing project in a single pass: every op is validated up front (nothing is
+ * written if any op would fail), then all ops apply, then Dashboard.tsx/index.ts
+ * regenerate ONCE and tsc runs ONCE.
+ * @param {{ projectDir: string, op?: string, ops?: Array<object> }} editIntent
  * @param {string} intentPath
  * @returns {Promise<void>}
  */
@@ -1183,8 +1226,40 @@ async function runIncrementalEdit(editIntent, intentPath) {
   if (state.buildStatus === 'in-progress') {
     log('⚠ Warning: Previous build did not complete — widgets may be missing. Consider running a full build first.')
   }
-  const { op, target, metric, delta } = classifyEditIntent(editIntent)
+  const { ops } = classifyEditIntent(editIntent)
   const timeRange = state.timeRange ?? '30d'
+
+  // ── Pre-validate the whole batch — fail BEFORE any write ────────────────────
+  const violations = []
+  for (const [i, o] of ops.entries()) {
+    if (o.op === 'REMOVE' || o.op === 'CHANGE') {
+      if (!o.target) { violations.push(`ops[${i}] ${o.op}: missing target`); continue }
+      const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${o.target}.tsx`)
+      const currentContent = existsSync(widgetPath) ? readFileSync(widgetPath, 'utf8') : null
+      const stored = state.widgets?.[o.target]
+      if (currentContent && stored && hashContent(currentContent) !== stored.hash) {
+        emit('HAND_EDIT_DETECTED', { widget: o.target })
+        violations.push(`ops[${i}] ${o.op} "${o.target}": hand-edited — overwriting would lose changes`)
+      }
+      if (o.op === 'CHANGE') {
+        const metricRef = resolveChangeMetric(stored, o.target, o.delta)
+        if (!metricRef.fnBody) {
+          violations.push(`ops[${i}] CHANGE "${o.target}": no fnBody available — include the full metric (fnBody, title) in the delta, or re-run a fresh build`)
+        }
+      }
+    }
+    if (o.op === 'ADD') {
+      if (!o.metric?.name) { violations.push(`ops[${i}] ADD: missing metric`); continue }
+      try { resolveMetric(o.metric) } catch (e) { violations.push(`ops[${i}] ADD "${o.metric.name}": ${e.message}`) }
+    }
+  }
+  if (violations.length > 0) {
+    fail(`Batch rejected — nothing was changed:\n${violations.map(v => '  • ' + v).join('\n')}`)
+  }
+
+  // ── Apply every op ───────────────────────────────────────────────────────────
+  const applied = []
+  for (const { op, target, metric, delta } of ops) {
 
   if (op === 'ADD') {
     const { tier, entry } = resolveMetric(metric)
@@ -1203,12 +1278,6 @@ async function runIncrementalEdit(editIntent, intentPath) {
 
   } else if (op === 'REMOVE') {
     const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${target}.tsx`)
-    const currentContent = existsSync(widgetPath) ? readFileSync(widgetPath, 'utf8') : null
-    const stored = state.widgets?.[target]
-    if (currentContent && stored && hashContent(currentContent) !== stored.hash) {
-      emit('HAND_EDIT_DETECTED', { widget: target })
-      fail(`Widget "${target}" has been hand-edited. Overwriting would lose your changes.`)
-    }
     if (existsSync(widgetPath)) unlinkSync(widgetPath)
     const viewPath = join(P, 'src', 'dashboard', 'views', `${target}View.tsx`)
     if (existsSync(viewPath)) unlinkSync(viewPath)
@@ -1216,16 +1285,8 @@ async function runIncrementalEdit(editIntent, intentPath) {
 
   } else if (op === 'CHANGE') {
     const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${target}.tsx`)
-    const currentContent = existsSync(widgetPath) ? readFileSync(widgetPath, 'utf8') : null
     const stored = state.widgets?.[target]
-    if (currentContent && stored && hashContent(currentContent) !== stored.hash) {
-      emit('HAND_EDIT_DETECTED', { widget: target })
-      fail(`Widget "${target}" has been hand-edited. Overwriting would lose your changes.`)
-    }
     const metricRef = resolveChangeMetric(stored, target, delta)
-    if (!metricRef.fnBody) {
-      fail(`CHANGE "${target}": no fnBody available. This dashboard was built before intent persistence — include the full metric (fnBody, title) in the delta, or re-run a fresh build.`)
-    }
     const tier = metricRef.tier ?? stored?.tier ?? 'T1'
     const { entry } = resolveMetric(metricRef)
     const widgetContent = buildWidgetFile(metricRef, entry, delta?.timeRange ?? timeRange)
@@ -1263,7 +1324,10 @@ async function runIncrementalEdit(editIntent, intentPath) {
     }
   }
 
-  // Regenerate Dashboard.tsx + index.ts
+  applied.push({ op, widget: target ?? (metric ? (metric.componentName ?? toPascalCase(metric.name)) : undefined) })
+  } // end apply loop
+
+  // Regenerate Dashboard.tsx + index.ts — ONCE for the whole batch
   const widgetMeta = Object.entries(state.widgets ?? {}).map(([name, info]) => ({
     componentName: name,
     template: info.template ?? 'ranked-table',
@@ -1287,7 +1351,7 @@ async function runIncrementalEdit(editIntent, intentPath) {
   }
 
   writeAtomic(statePath, JSON.stringify(state, null, 2))
-  emit('INCREMENTAL_READY', { op, widget: target ?? toPascalCase(metric?.name ?? '') })
+  emit('INCREMENTAL_READY', { count: applied.length, ops: applied })
 }
 
 // ── Entry point ────────────────────────────────────────────────────────────────
@@ -1326,7 +1390,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const intentErrors = validateIntent(plan)
     if (intentErrors.length > 0) fail(`Invalid intent.json:\n${intentErrors.map(e => '  • ' + e).join('\n')}`)
     await runDashboardBuild(plan, planArg)
-  } else if (plan.op) {
+  } else if (plan.op || plan.ops) {
     classifyEditIntent(plan)
     await runIncrementalEdit(plan, planArg)
   } else {
