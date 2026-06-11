@@ -52,7 +52,9 @@ for name, (typ, field, expected) in EXPECTED.items():
     val_type = _pick(asset, "ValueType")
     if val_type != typ:
         sys.exit(f"FAIL: {name} ValueType={val_type!r}, expected {typ!r}")
-    actual = _pick(asset, field)
+    # Curated list rows expose the unified `Value`; the per-type raw field
+    # (stringValue/intValue/boolValue) only appears with --all-fields.
+    actual = _pick(asset, "Value", field)
     if str(actual).lower() != str(expected).lower():
         sys.exit(f"FAIL: {name} {field}={actual!r}, expected {expected!r}")
 
