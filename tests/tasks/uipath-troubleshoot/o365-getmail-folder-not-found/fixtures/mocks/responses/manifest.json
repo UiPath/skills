@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "_doc": "Canned responses extracted from the original investigation's raw/ CLI outputs (scrubbed). Substring dispatch, first match wins — specific rules precede generic ones.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
+      "file": "or-jobs-get-e893a4d4-e061-4cba-a799-6ed4de6ee4e2-output-json.json"
+    },
+    {
+      "match": "or jobs logs e893a4d4-e061-4cba-a799-6ed4de6ee4e2 --level Error",
+      "file": "or-jobs-logs-e893a4d4-e061-4cba-a799-6ed4de6ee4e2-level-error.json",
+      "_doc": "Recorded verbatim. The session captured only the Error-level log query; the single row is the job's one Error entry."
+    },
+    {
+      "match": "or jobs logs e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
+      "file": "or-jobs-logs-e893a4d4-e061-4cba-a799-6ed4de6ee4e2-level-error.json",
+      "_doc": "No unfiltered-logs raw was recorded; the Error-level set answers any logs variant — the exception row is the only diagnostic content."
+    },
+    {
+      "match": "or jobs history e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
+      "file": "or-jobs-history-e893a4d4-e061-4cba-a799-6ed4de6ee4e2-output-json.json",
+      "_doc": "No history raw was captured this session; fixture is the Pending -> Running -> Faulted transition set derived from the recorded job row's CreationTime/StartTime/EndTime and Id. Confirms a clean single execution — carries no diagnostic signal beyond jobs get."
+    },
+    {
+      "match": "or jobs traces e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
+      "file": "or-jobs-traces-e893a4d4-e061-4cba-a799-6ed4de6ee4e2-output-json.json",
+      "_doc": "Three recorded spans: RobotJob (full System.ArgumentNullException stack with the GetMailFolder faulting frame in Attributes), the Microsoft 365 Scope span (AuthenticationType=InteractiveToken, no Account/shared-mailbox override — Private.Account holds the designer placeholder 'Please select an account.'), and the faulting 'Get Mail from nonexistent folder' GetMail span with Private.MailFolder='NoSuchFolder-Repro-123' and Public.AuthScopesInvalid='False'. The MailFolder literal + AuthScopesInvalid=False + no account override are the cause-disambiguation evidence (folder absent vs insufficient-scope vs wrong-mailbox)."
+    },
+    {
+      "match": "traces spans get --job-key e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
+      "file": "or-jobs-traces-e893a4d4-e061-4cba-a799-6ed4de6ee4e2-output-json.json",
+      "_doc": "Alternate trace-retrieval form (platform traces command). In the original session this form returned 'Error retrieving trace ID for job' and the agent re-fetched by TraceId; the replay serves the genuine spans for every retrieval form so the investigation does not depend on reproducing that transient lookup failure."
+    },
+    {
+      "match": "traces spans get e893a4d4e0614cbaa7996ed4de6ee4e2",
+      "file": "or-jobs-traces-e893a4d4-e061-4cba-a799-6ed4de6ee4e2-output-json.json",
+      "_doc": "The form actually recorded in the session: positional TraceId (32-char hex from the job record) after the --job-key form failed. Same span payload."
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "No --state Faulted raw was recorded in this session, so there is no Faulted-only fixture; substring dispatch routes `--state Faulted` variants here too, returning the full recorded list — the failing job is the most recent row."
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "Fallback for flag-order variations. The tenant has one folder of interest (Shared); the recorded folder-scoped job list is the correct answer for any jobs-list variant the agent tries."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the unwrapped System.ArgumentNullException — \"Value cannot be null. (Parameter 'Folder named 'NoSuchFolder-Repro-123' could not be found on this account.')\" — thrown from GraphServiceClientExtensions.GetMailFolder during legacy GetMail execution."
+    },
+    {
+      "pattern": "traces",
+      "min": 1,
+      "description": "Cause disambiguation: the GetMail span carries Private.MailFolder='NoSuchFolder-Repro-123' and Public.AuthScopesInvalid='False', and the scope span shows InteractiveToken auth with no Account/shared-mailbox override — together pinning 'folder does not exist in the resolved (authenticated user's own) mailbox' over the insufficient-scope and wrong-mailbox branches."
+    },
+    {
+      "pattern": "or jobs logs e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
+      "min": 0,
+      "description": "OPTIONAL — state transitions (Pending -> Running -> Faulted) confirm a clean single execution."
+    }
+  ]
+}
