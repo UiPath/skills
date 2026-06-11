@@ -1,0 +1,68 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the start-transaction-failures playbook (Branch 2: transaction scope skips its body on the defective UiPath.Database.Activities v1.5.0 build — the Start Transaction scope enters and exits cleanly with NO error, but every child activity is skipped, so nothing is read or written and the job reports Success having done nothing). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-c4a7e2f9-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-c4a7e2f9-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c\" --state Successful --output json",
+      "file": "or-jobs-list-folder-key-c4a7e2f9-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c --state Successful --output json",
+      "file": "or-jobs-list-folder-key-c4a7e2f9-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c\" --output json",
+      "file": "or-jobs-list-folder-key-c4a7e2f9-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key c4a7e2f9-1b3d-4e5a-8c6f-9d0e1f2a3b4c --output json",
+      "file": "or-jobs-list-folder-key-c4a7e2f9-output-json.json"
+    },
+    {
+      "match": "or jobs get \"d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d\" --output json",
+      "file": "or-jobs-get-d5b8f3a0-output-json.json"
+    },
+    {
+      "match": "or jobs get d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d --output json",
+      "file": "or-jobs-get-d5b8f3a0-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d\" --level Error --output json",
+      "file": "or-jobs-logs-d5b8f3a0-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d --level Error --output json",
+      "file": "or-jobs-logs-d5b8f3a0-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d\" --output json",
+      "file": "or-jobs-logs-d5b8f3a0-output-json.json"
+    },
+    {
+      "match": "or jobs logs d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d --output json",
+      "file": "or-jobs-logs-d5b8f3a0-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}
