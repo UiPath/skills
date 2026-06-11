@@ -17,8 +17,8 @@
       "DisplayName": "Robot User 1",
       "Type": "Robot",
       "Roles": ["Robot", "Asset Administrator"],
-      "IsLicensed": false,
-      "LicenseType": null,
+      "IsLicensed": true,
+      "LicenseType": "Unattended",
       "RobotProvision": {
         "MachineName": "MOCK-HOST",
         "ConnectionState": "Connected"

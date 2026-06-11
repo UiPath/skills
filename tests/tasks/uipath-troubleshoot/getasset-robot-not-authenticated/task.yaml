@@ -1,14 +1,18 @@
 task_id: skill-troubleshoot-getasset-robot-not-authenticated
 description: >
   UiPath diagnostic agent must diagnose a Get Credential failure where
-  the target asset and folder are correctly configured and the robot
-  has the right permissions assigned, but the robot account has no
-  license assigned (Connected, Unlicensed in Orchestrator).
-  Orchestrator returns HTTP 401 / "You are not authenticated! Error
-  code: 0." The agent must rule out asset-not-found,
+  the target asset and folder are correctly configured, the robot has
+  the right permissions assigned, AND the robot is licensed and
+  connected — yet the activity's Orchestrator API call is rejected with
+  HTTP 401 / "You are not authenticated! Error code: 0." The job
+  actually started and ran (~1s) before faulting inside Main.xaml,
+  which proves the robot could acquire a runtime — so this is NOT a
+  licensing failure. The agent must rule out asset-not-found,
   folder-scope-mismatch, permission-denied (which is "not authorized",
-  NOT "not authenticated"), wrong-activity-type, and per-robot-no-value
-  before converging on the missing robot license.
+  NOT "not authenticated"), wrong-activity-type, per-robot-no-value,
+  AND the missing-license red herring, then converge on the robot
+  identity / API-token layer (machine-key mismatch, robot-key auth
+  disabled, or a System.Activities auth regression).
 
 tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, system-activities, get-asset, robot-not-authenticated, rpa]
 
@@ -37,7 +41,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My AssetRobotUnlicensed process is faulting in Orchestrator on every
+  My AssetRobotAuthFailure process is faulting in Orchestrator on every
   run. Can you investigate?
 
   The project source for the failing process is in the current working
@@ -51,7 +55,7 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the get-asset-robot-not-authenticated playbook AND identified the unlicensed robot"
+    description: "Agent matched the get-asset-robot-not-authenticated playbook AND identified the robot API-token authentication failure (not licensing)"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
@@ -67,7 +71,7 @@ success_criteria:
       authoritative ground truth.
 
       The user's request was:
-        "My AssetRobotUnlicensed process is faulting in Orchestrator
+        "My AssetRobotAuthFailure process is faulting in Orchestrator
          on every run."
 
       You must grade BOTH dimensions in a single score:
@@ -100,53 +104,76 @@ success_criteria:
           - The Get Credential activity (GetRobotCredential) in
             Main.xaml targets `AssetName="myHiddenAsset"` in folder
             "Remote Debugging".
-          - Both the asset and the folder are correctly configured;
-            the asset is the right type (Credential); the robot has
-            the necessary roles.
-          - The robot account running the job (`RobotUser1`) is
-            shown as `Connected, Unlicensed` in Orchestrator —
-            `IsLicensed: false`, `LicenseType: null`.
-          - Orchestrator therefore returns HTTP 401 / "You are not
-            authenticated! Error code: 0" before any asset call can
-            execute.
-        The reference fix:
-          - Assign a license to `RobotUser1` in Orchestrator (Tenant
-            -> Licenses -> Robot Services -> assign an available
-            seat to the robot account). Alternatively, free up a
-            seat by unassigning an idle robot, or contact the admin
-            to purchase additional capacity.
+          - The asset and folder are correctly configured; the asset
+            is the right type (Credential); the robot holds the
+            necessary roles; AND the robot account running the job
+            (`RobotUser1`) is licensed and connected
+            (`IsLicensed: true`, `LicenseType: Unattended`,
+            `ConnectionState: Connected`).
+          - The job STARTED and ran ~1 second before faulting inside
+            Main.xaml at the Get Credential activity. A running job
+            proves the robot could acquire a runtime, so this is NOT
+            a licensing failure (an unlicensed robot never starts).
+          - The activity's Orchestrator REST call is rejected with
+            HTTP 401 / "You are not authenticated! Error code: 0".
+            With asset, folder, type, permissions, AND license all
+            correct, the fault is at the robot identity / API-token
+            layer.
+        The reference fix (a ranked checklist — the evidence does not
+        single out one sub-cause, so any of these is acceptable as the
+        primary recommendation):
+          - Reconnect `RobotUser1` with the current machine key from
+            Orchestrator -> Tenant -> Machines (machine-key mismatch),
+            AND/OR
+          - Enable "Allow both user authentication and robot key
+            authentication" in Tenant -> Settings -> Security
+            (robot-key auth disabled), AND/OR
+          - Roll back / update `UiPath.System.Activities` if the
+            failure began after a package upgrade (auth regression).
 
         Evidence sources (in priority order):
           1. state.json -- `requirements.error_code`,
              `requirements.error_message`, `triage_summary`,
              scope/domain.
           2. hypotheses.json -- the hypothesis flagged
-             `is_root_cause: true` should describe the missing
-             license on the robot account (NOT a missing asset, NOT
-             a folder issue, NOT a permission gap, NOT a per-robot
-             value gap, NOT a type mismatch).
+             `is_root_cause: true` should describe a robot
+             authentication / API-token failure (NOT a missing
+             license, NOT a missing asset, NOT a folder issue, NOT a
+             permission gap, NOT a per-robot value gap, NOT a type
+             mismatch).
           3. The agent's last text response.
 
       SCORING RUBRIC (single score reflecting both dimensions):
 
         1.0  Agent matched get-asset-robot-not-authenticated AND
-             identified the unlicensed robot account explicitly.
-             Conclusion must (a) name the robot (`RobotUser1`),
-             (b) recognize it lacks a license (`IsLicensed: false`
-             or "Connected, Unlicensed"), and (c) recommend
-             assigning a license.
-        0.8  Both partial: e.g., correct playbook but conclusion
-             says "robot auth issue" without naming the licensing
-             gap; or conclusion names the licensing gap but matched
-             the system-activities investigation_guide rather than
-             the specific robot-not-authenticated playbook.
+             concluded the robot's Orchestrator authentication /
+             API-token is failing. Conclusion must (a) name the robot
+             (`RobotUser1`), (b) recognize the failure is at the
+             authentication / identity / token layer -- explicitly
+             distinct from "not authorized"/permission AND explicitly
+             NOT a licensing problem (the robot is licensed; the job
+             ran), and (c) recommend at least one of: reconnect with
+             the correct machine key, enable robot-key authentication,
+             or check System.Activities for the auth regression.
+        0.8  Both partial: e.g., correct playbook and "robot auth
+             issue" but the conclusion still attributes it to a
+             missing license, or omits the robot name / a concrete
+             fix; or names the auth/token layer correctly but matched
+             the system-activities investigation_guide rather than the
+             specific robot-not-authenticated playbook.
         0.5  Only one dimension correct.
-        0.2  Recognized the surface (asset / auth failure) but
-             neither matched the playbook nor identified the
-             licensing issue.
+        0.2  Recognized the surface (asset / auth failure) but neither
+             matched the playbook nor localized the failure to the
+             robot authentication / token layer.
         0.0  Misdiagnosed (e.g., concluded permission-denied,
              asset-not-found, folder-scope-mismatch, wrong-activity-
-             type, or per-robot-no-value) or got blocked.
+             type, per-robot-no-value, or a missing robot license) or
+             got blocked.
+
+      Note: concluding the robot is UNLICENSED is a misdiagnosis here
+      (score 0.0 on dimension B) -- the fixtures show the robot
+      licensed and the job running. The licensing angle is a
+      deliberate red herring the agent must rule out.
 
       Be substance-focused, not schema-focused.
 
