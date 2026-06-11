@@ -52,6 +52,11 @@
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
+    "uipath-functions": {
+      "status": "preview",
+      "confluence": { "page_id": null, "url": null },
+      "last_synced": null
+    },
     "uipath-governance": {
       "status": "in-development",
       "confluence": { "page_id": null, "url": null },
