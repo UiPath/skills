@@ -1,0 +1,177 @@
+task_id: skill-troubleshoot-get-outlook-mail-cached-mode-desync
+description: >
+  UiPath troubleshooting agent must diagnose a Get Outlook Mail Messages
+  silent shortfall (Branch 5 of get-outlook-mail-failures): the
+  ComplianceMailExport job ends Successful with NO error, but the activity
+  returns only the locally cached subset of the Inbox because the account
+  uses Cached Exchange Mode with a restricted Offline Settings window
+  (out-of-window mail is not in the local .ost cache). The workflow is
+  correct (Top=500, no Filter, folder resolved). Success = agent matches
+  Branch 5, rules out Top/Filter/folder, attributes the miss to Cached
+  Exchange Mode / Offline Settings, and hands a host-side check to widen
+  the Offline Settings slider to All / disable Cached Exchange Mode and
+  re-run, without fabricating host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ComplianceMailExport process reports Success in Orchestrator on every
+  run, but it only exports a fraction of the Inbox - recent emails I can
+  clearly see in Outlook are missing from its output, with no error. The
+  folder is "RPA Production".
+
+  I'm not on the Robot host (MOCK-HOST), only Orchestrator. Diagnose what
+  you can; if the fix needs the host, hand me the exact things to check
+  next time I'm there and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched get-outlook-mail-failures Branch 5 (Cached Exchange Mode desync) and handed a host-side check, ruling out Top/Filter/folder, without fabricating host actions"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My ComplianceMailExport process reports Success in Orchestrator on
+         every run, but it only exports a fraction of the Inbox - recent
+         emails I can clearly see in Outlook are missing from its output,
+         with no error. The folder is 'RPA Production'. I'm not on the Robot
+         host (MOCK-HOST), only Orchestrator. Diagnose what you can; if the
+         fix needs the host, hand me the exact things to check next time
+         I'm there and stop."
+
+      DIMENSION A -- Correct playbook (Branch 5)
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/get-outlook-mail-failures.md
+        specifically Branch 5 (Cached Exchange Mode desync): no exception,
+        but the activity silently misses recent/older messages that are
+        visible in the Outlook desktop client.
+        Evidence to look for:
+          (1) the agent's final response names the get-outlook-mail-failures
+              playbook and/or Branch 5 (Cached Exchange Mode desync);
+          (2) a tool call shows the agent Read a file under
+              references/activity-packages/mail-activities/playbooks/.
+        Do NOT inspect internal investigation state (state.json,
+        hypotheses.json, matched_playbooks, scope/requirements fields).
+        Grade only the agent's presented final response and its tool calls.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference conclusion: the job succeeds with NO error, but the
+        Get Outlook Mail Messages activity returns only the locally cached
+        subset of the Inbox because the account uses Cached Exchange Mode
+        with a restricted Offline Settings window, so out-of-window mail is
+        never synced into the local .ost cache and the activity cannot see
+        it. The workflow is correct -- the right folder ('Inbox') resolved,
+        Top=500 is high enough that it is NOT the limiter, and there is no
+        Filter -- so those workflow-side causes are ruled out.
+        The fix is host-side and hypothesis-driven (it can only be confirmed
+        on the host): hand the user a check to widen the Offline Settings
+        "Mail to keep offline" slider to All (or temporarily disable Cached
+        Exchange Mode) and re-run to confirm the missing mail now passes
+        through. Acceptable: also suggesting a move to the modern Graph
+        o365-activities reads (server-side, not cache-bound).
+        The agent must NOT fabricate host actions (must not claim it changed
+        the Cached Exchange Mode / Offline Settings on the host itself).
+        Evidence to look for:
+          (1) the agent's final response identifies the silent shortfall
+              (Successful, no error, fewer messages than exist), rules out
+              Top / Filter / folder, and points to Cached Exchange Mode /
+              the Offline Settings window;
+          (2) the agent cited Main.xaml (Top high, no Filter) and the
+              shortfall / oldest-item-at-cache-cutoff line from the job logs.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent's primary
+      conclusion is any of these):
+        - "folder not resolved" (Branch 1) -- the folder 'Inbox' resolved.
+        - "the operation timed out" (Branch 2) -- the job ended Successful.
+        - "Outlook not running / COM session broken" (Branch 3).
+        - "malformed Filter / DASL syntax" (Branch 4) -- there is no Filter.
+        - "the Top is too low" -- Top=500 is high and is NOT the limiter.
+        - "add or fix a Filter" -- there is no filter and none is needed.
+        - "the mailbox is just small / those emails do not exist" -- they
+          exist in the desktop client.
+        - claiming to have changed the host setting itself (fabricated host
+          action).
+
+      SCORING RUBRIC:
+        1.0  Agent (a) recognizes the silent miss (Successful, no error,
+             fewer messages than exist), (b) rules out the workflow-side
+             causes (Top high, no Filter, correct folder) and attributes the
+             miss to Cached Exchange Mode / a restricted Offline Settings
+             cache window, AND (c) hands a host check to widen Offline
+             Settings to All / disable Cached Exchange Mode and re-run
+             (and/or move to Graph o365 reads), without fabricating host
+             actions.
+        0.8  Identifies the cache/sync cause (Cached Exchange Mode / Offline
+             Settings) and hands a host check, but does not explicitly rule
+             out Top / Filter.
+        0.5  Recognizes the silent shortfall (no error, missing mail) but
+             names only a vague sync/cache idea without the Offline Settings
+             check, or hands no host check list.
+        0.2  Matches one of the WRONG ANSWERS above, or surfaces the
+             shortfall without any diagnosis.
+        0.0  Wrong cause unrelated to the mail read, or the agent fabricated
+             a host action it could not perform.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the ComplianceMailExport process.
+    Every run reports Success in Orchestrator, but the export is missing
+    recent emails you can clearly see in the Outlook desktop client. You
+    are away from the Robot host (MOCK-HOST) and only have Orchestrator
+    access. You trust the agent's expertise and are waiting for either a
+    diagnosis or a list of host-side things to check next time you are in
+    front of the machine.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when host data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report (you can confirm the missing emails are visible in your Outlook client)."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

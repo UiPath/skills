@@ -1,0 +1,179 @@
+task_id: skill-troubleshoot-get-outlook-mail-outlook-not-running
+description: >
+  UiPath troubleshooting agent must diagnose a Get Outlook Mail Messages
+  failure where the QueueMailIntake process faults on every unattended run
+  with "The Outlook application is not running." The desktop Outlook COM
+  session is not available on the unattended Robot -- no running OUTLOOK.EXE
+  for the Robot's Windows user (and/or a UiPath-vs-Outlook privilege
+  mismatch). The MailFolder="Inbox" and Filter are fine; this is the COM
+  session, NOT folder resolution, a timeout, a malformed filter, a Cached
+  Exchange Mode desync, or a library-not-registered install error. The fix
+  is host-side. Success = agent matches get-outlook-mail-failures Branch 3
+  AND hands the user a host checklist (ensure Outlook running / Start
+  Process outlook.exe / same privilege level / Graph o365 for unattended)
+  without fabricating host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My QueueMailIntake process runs unattended and is faulting in
+  Orchestrator on every run. The folder is "RPA Production".
+
+  I'm not on the Robot host (MOCK-HOST), only Orchestrator. Diagnose what
+  you can; if the fix needs the host, hand me the exact things to check
+  next time I'm there and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched get-outlook-mail-failures Branch 3 (Outlook not running / COM session / privilege) AND handed the user a host checklist without fabricating host actions"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      Grade only what the agent PRESENTED: its final response to the user
+      plus its tool calls. Do NOT inspect internal investigation state
+      (.local/investigations/, state.json, hypotheses.json, etc.). What the
+      agent presents IS the contract.
+
+      The user's request was:
+        "My QueueMailIntake process runs unattended and is faulting in
+         Orchestrator on every run. The folder is 'RPA Production'. I'm not
+         on the Robot host (MOCK-HOST), only Orchestrator. Diagnose what you
+         can; if the fix needs the host, hand me the exact things to check
+         next time I'm there and stop."
+
+      DIMENSION A -- Correct playbook (Branch 3)
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/get-outlook-mail-failures.md
+        specifically Branch 3 (Outlook not running / COM session broken /
+        privilege mismatch), because the runtime error is the verbatim
+        signature "The Outlook application is not running." (with an inner
+        COMException "The RPC server is unavailable. (0x800706BA)") raised
+        by a Get Outlook Mail Messages activity on an unattended Robot.
+        Evidence the agent should present:
+          (1) its final response names the get-outlook-mail-failures
+              playbook / Branch 3; and/or
+          (2) a tool call reading a file under
+              references/.../mail-activities/playbooks/.
+        Grade only what the agent presented (final response + tool calls);
+        do NOT inspect internal investigation state.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is that the Get Outlook Mail Messages
+        activity failed because the desktop Outlook COM session is not
+        available on the unattended Robot -- there is no running OUTLOOK.EXE
+        instance for the Robot's Windows user (UIPATH\ROBOTUSER1), and/or a
+        UiPath-vs-Outlook privilege mismatch blocks the cross-process COM
+        call. The MailFolder="Inbox" and the Filter are fine -- this is the
+        COM session, not folder resolution.
+        Because the fix needs the host and the user is off-host, the agent
+        must hand a host-side checklist:
+          - Ensure a desktop Outlook is running and initialized in the
+            Robot's session before the activity (e.g. a Start Process on
+            outlook.exe immediately before the mail activity).
+          - Run UiPath (Studio/Robot) and Outlook at the SAME privilege
+            level -- both elevated or both normal.
+          - And/or migrate the unattended read to the modern Graph
+            o365-activities, which have no desktop dependency.
+        The agent must NOT claim to have started Outlook, killed processes,
+        changed privilege levels, or run host-side commands itself.
+        Evidence the agent should present:
+          (1) its final response names the Outlook-not-running / broken COM
+              session failure AND hands the host fix/checklist; and
+          (2) it cited Main.xaml (the Get Outlook Mail Messages node) and
+              the no-running-Outlook job-log line.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
+      any of these):
+        - folder not resolved / "specified folder does not exist" (Branch 1);
+        - a timeout / large folder (Branch 2);
+        - a malformed Filter (Branch 4);
+        - Cached Exchange Mode desync (Branch 5);
+        - a COM library-not-registered / bitness cast error attributed to
+          the Outlook INSTALL (that is the Send Outlook Mail surface -- here
+          Outlook is installed but not running / blocked, not unregistered);
+        - a generic SMTP / network / connectivity error;
+        - the agent FABRICATES host actions (claims it started Outlook,
+          killed a process, or ran a host command it could not perform).
+
+      SCORING RUBRIC:
+        1.0  Agent (a) names the "Outlook is not running" / broken COM
+             session failure, (b) attributes it to no running Outlook for
+             the unattended Robot user and/or a privilege mismatch (NOT a
+             folder/filter/timeout/registration issue), AND (c) hands a
+             host checklist (ensure Outlook running / Start Process
+             outlook.exe / same privilege level / Graph o365 for
+             unattended) without fabricating host actions.
+        0.8  Correct playbook AND Outlook-session conclusion, but the host
+             checklist is partial (e.g. names Start Process but omits the
+             privilege-level check or the Graph alternative).
+        0.5  Recognized Branch 3 / the COM-session class but did not
+             attribute it to no-running-Outlook / privilege, or offered no
+             actionable host checklist.
+        0.2  Surfaced the error to the user without diagnosis, OR matched a
+             wrong branch (folder, timeout, Filter, Cached Exchange Mode, or
+             a library-not-registered install error), OR a generic
+             SMTP/network error.
+        0.0  Wrong cause entirely, or the agent fabricated a host action it
+             could not perform.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are away from the Robot host (MOCK-HOST) and only have Orchestrator
+    access. You trust the agent's expertise and are waiting for either a
+    diagnosis or a list of host-side things to check next time you are in
+    front of the machine.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

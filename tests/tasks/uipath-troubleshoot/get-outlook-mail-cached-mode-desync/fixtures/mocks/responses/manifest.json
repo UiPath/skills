@@ -1,0 +1,68 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the get-outlook-mail-failures playbook Branch 5 (Cached Exchange Mode desync). SUCCESS-state scenario: the job ended Successful with no error; the signal is the message shortfall + oldest-item cache cutoff in the full job logs. The Faulted job-list rule returns an EMPTY list; the no-state and Successful rules return the one Successful job.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-a5b6c7d8-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-a5b6c7d8-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d\" --state Successful --output json",
+      "file": "or-jobs-list-folder-key-a5b6c7d8-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d --state Successful --output json",
+      "file": "or-jobs-list-folder-key-a5b6c7d8-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d\" --output json",
+      "file": "or-jobs-list-folder-key-a5b6c7d8-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key a5b6c7d8-9e0f-4a1b-8c2d-3e4f5a6b7c8d --output json",
+      "file": "or-jobs-list-folder-key-a5b6c7d8-output-json.json"
+    },
+    {
+      "match": "or jobs get \"b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e\" --output json",
+      "file": "or-jobs-get-b6c7d8e9-output-json.json"
+    },
+    {
+      "match": "or jobs get b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e --output json",
+      "file": "or-jobs-get-b6c7d8e9-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e\" --level Error --output json",
+      "file": "or-jobs-logs-b6c7d8e9-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e --level Error --output json",
+      "file": "or-jobs-logs-b6c7d8e9-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e\" --output json",
+      "file": "or-jobs-logs-b6c7d8e9-output-json.json"
+    },
+    {
+      "match": "or jobs logs b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e --output json",
+      "file": "or-jobs-logs-b6c7d8e9-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}
