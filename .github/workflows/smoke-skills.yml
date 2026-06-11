@@ -29,6 +29,8 @@ jobs:
 
       - name: Detect changed skills and map to test tasks
         id: detect
+        env:
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
         run: |
           BASE_REF="${{ github.base_ref }}"
           BASE_REF="${BASE_REF:-main}"
@@ -74,7 +76,10 @@ jobs:
           # experiment files (e2e.yaml, activation.yaml, ...) drive their
           # own jobs/dashboards and don't change smoke behavior, so editing
           # them shouldn't trigger a 30-min full-suite run on every PR.
-          if echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
+          SKIP_INFRA_TRIGGER=false
+          echo "$PR_LABELS" | grep -qw 'ci:skip-infra-trigger' && SKIP_INFRA_TRIGGER=true
+
+          if [ "$SKIP_INFRA_TRIGGER" = "false" ] && echo "$CHANGED" | grep -qE '^tests/experiments/smoke\.yaml$|^tests/_shared/|^tests/[^/]+\.(py|yaml|toml)$|^\.github/workflows/smoke-skills\.yml$'; then
             shopt -s globstar nullglob
             GLOBS=""
             for f in tests/tasks/**/*.yaml; do
