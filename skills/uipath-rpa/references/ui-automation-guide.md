@@ -223,13 +223,14 @@ Procedure: [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-config
 ## Running UI Automation Workflows
 
 **Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection.
+**Read [debugging.md](debugging.md)** before trying to use `uip rpa debug start` — it contains the full reference and is needed to prevent unexpected execution stalls.
 
 **Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
 1. **Record the window baseline** — list top-level windows via the UIA snapshot CLI and note which w-refs and titles are already present. Subcommand and flags: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
-2. **Run the workflow:**
+2. **Run the workflow** (via the background+poll helper — see [debugging.md](debugging.md)):
    ```bash
-   uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
+   bash debug-run.sh "<FILE>" --project-dir "<PROJECT_DIR>"
    ```
    If the run fails, [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) spawns the `uia-improve-selector` subagent — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
 3. **When done** (success or failure) — **cancel the debug session:**

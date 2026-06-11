@@ -4,6 +4,8 @@ The `uip rpa debug` group (plus `uip rpa run` and `uip rpa execution cancel`) pr
 
 This is a powerful complement to `validate` (static validation). While `validate` catches structural and type issues at design time, the debugger catches runtime problems: wrong API responses, null references, logic errors, failed deserialization, and more. Use both together for comprehensive workflow validation.
 
+On a breakpoint or unhandled exception `uip rpa debug` pauses and the CLI call stays alive until you `continue` / `continue-ignore` / `execution cancel` — a foreground call blocks to timeout and a backgrounded one never sends a completion notification. See [§ Common Debugging Workflows](#common-debugging-workflows) for the required background+poll helper.
+
 ## Studio Desktop vs headless
 
 Most debugging works on **headless Studio** with no Studio Desktop install: `run`, `debug start` (with workflow-level breakpoint), all stepping verbs (`debug step-over`, `debug step-into`, `debug step-out`), `debug continue`, `debug break`, `debug resume`, `debug continue-retry`, `debug continue-ignore`, `execution cancel`, `debug restart-from-top`.
@@ -53,7 +55,7 @@ All other `debug` verbs (`break`, `continue`, `resume`, `continue-retry`, `conti
 | Verb | When to Use | What It Does |
 |------|-------------|--------------|
 | `run` | Run without debugging | Executes the workflow to completion. The default authoring loop verb |
-| `debug start` | Begin a debug session | Starts execution in debug mode. Pauses at the first breakpoint (or at the first activity if a breakpoint is set on the workflow itself). Returns current execution state |
+| `debug start` | Begin a debug session | Starts execution in debug mode. Pauses at the first breakpoint or unhandled exception (or at the first activity if a breakpoint is set on the workflow itself). Run it in the background. On completion it returns the execution-state envelope (`HasErrors`/`ErrorMessage`) and exits; at a breakpoint/exception it streams the state instead. |
 | `debug test-activity` | Test one activity in isolation | Isolates the currently focused activity and executes it in a temporary test workflow. **Requires `focus-activity` first → Studio Desktop required** (see [Studio Desktop vs headless](#studio-desktop-vs-headless)). Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
 | `debug start-from-here` | Debug from a specific activity | Starts a debugging session from the currently focused activity, skipping all preceding activities. **Requires `focus-activity` first → Studio Desktop required** (see [Studio Desktop vs headless](#studio-desktop-vs-headless)). Use `--input-variables` to set variable values and `--input-arguments` to set argument values |
 | `debug toggle-breakpoint` | Set/remove breakpoints | Toggles a breakpoint on the currently focused activity (XAML) or line (.cs). Use `uip rpa focus-activity` to focus beforehand — **activity-targeted toggling requires Studio Desktop**. For XAML, cycles through 3 states: **enabled → disabled → no breakpoint**. For .cs, cycles through 2 states: **breakpoint → no breakpoint**. If no activity/line is focused, toggles on the entire workflow (works on Helm) |
@@ -186,6 +188,22 @@ Examples:
 
 ## Common Debugging Workflows
 
+**Launch debug sessions with the `debug-run` helper.** Because `debug start` suspends and won't return (see the note at the top of this file), launch it via this helper — it backgrounds `debug start`, polls until the session suspends or finishes, and leaves it active to drive (`debug continue*` / `step-*` / `execution cancel`). Read `debug.out` for the streamed state.
+
+The helper ships with this skill under `scripts/`. **Copy just the script for your platform into the project directory** (it is not on `PATH` and the project has no `scripts/` dir), then run it from there:
+
+```bash
+cp <SKILL_DIR>/scripts/debug-run.sh .    # macOS / Linux / git-bash — copy once
+bash debug-run.sh "MyWorkflow.xaml"
+```
+
+```powershell
+Copy-Item <SKILL_DIR>\scripts\debug-run.ps1 .   # Windows — copy once
+powershell -ExecutionPolicy Bypass -File debug-run.ps1 "MyWorkflow.xaml"
+```
+
+The examples below use the `bash` form; on Windows substitute the `.ps1`.
+
 ### 1. Quick Breakpoint Debug Session
 
 The most common pattern: set a breakpoint on the focused activity, start debugging, inspect state, then continue or step through.
@@ -199,8 +217,8 @@ uip rpa focus-activity --activity-id "Assign_1"
 # 2. Toggle a breakpoint on the focused activity
 uip rpa debug toggle-breakpoint --output json
 
-# 3. Start debugging — execution pauses at the breakpoint
-uip rpa debug start --file-path "GetStockPrices.xaml" --output json
+# 3. Start debugging (background+poll helper; pauses at the breakpoint)
+bash debug-run.sh "GetStockPrices.xaml"
 
 # 4. Inspect the response: HasErrors / ErrorMessage / Output (workflow output args).
 #    Variable values seen during the run are observed via streamed log entries.
@@ -227,7 +245,7 @@ uip rpa debug test-activity \
   --output json
 
 # 3. Check the output:
-#    - HasErrors / ErrorMessage → compile/validation issues, unhandled exceptions
+#    - HasErrors / ErrorMessage → compile/validation issues
 #    - Streamed log entries → runtime messages from the activity (observability, not a verdict)
 #    - Output → workflow's serialized output args on success
 ```
@@ -259,15 +277,11 @@ uip rpa execution cancel --output json
 When `debug continue` or a step verb hits an exception, the debugger pauses and returns the exception details. You can inspect the state, then decide how to proceed.
 
 ```bash
-# Start debugging and continue to let it run
-uip rpa debug start --file-path "MyWorkflow.xaml" --output json
-uip rpa debug continue --output json
+# Launch + wait (backgrounds debug start, polls until it suspends or finishes):
+bash debug-run.sh "MyWorkflow.xaml"
 
-# If an unhandled exception occurs, HasErrors flips to true and ErrorMessage carries
-# the formatted exception chain (source activity, type, message, stack trace).
-# - Read ErrorMessage for the canonical failure diagnostic
-# - Cross-reference streamed log entries for variable state and trace context
-#   leading up to the failure
+# Inspect debug.out — the streamed log shows the exception and the variable/trace state
+# leading up to the failure.
 
 # Then choose how to proceed:
 # Option A: Retry the failed activity (e.g., transient network error)
@@ -289,7 +303,7 @@ Use debugging to verify that a fix actually works at runtime, beyond what `valid
 uip rpa validate --file-path "MyWorkflow.xaml" --output json
 
 # 2. If 0 static errors, start a debug session to validate runtime behavior
-uip rpa debug start --file-path "MyWorkflow.xaml" --output json
+bash debug-run.sh "MyWorkflow.xaml"
 
 # 3. Continue past the fixed area and inspect variable state
 uip rpa debug continue --output json
@@ -309,10 +323,9 @@ uip rpa execution cancel --output json
 Pass input arguments when the workflow has In arguments that need values:
 
 ```bash
-# Start debugging with input arguments (plain JSON values)
-uip rpa debug start --file-path "ProcessOrder.xaml" \
-  --input-arguments '{"orderId": "ORD-12345", "customerEmail": "test@example.com"}' \
-  --output json
+# Start debugging with input arguments (plain JSON values) — forwarded to the helper:
+bash debug-run.sh "ProcessOrder.xaml" \
+  --input-arguments '{"orderId": "ORD-12345", "customerEmail": "test@example.com"}'
 ```
 
 `--input-arguments` is valid with `run`, `debug start`, `debug test-activity`, and `debug start-from-here`. For `run` / `debug start`, values are plain JSON. For `debug test-activity` / `debug start-from-here`, values must be VB/C# expressions.
