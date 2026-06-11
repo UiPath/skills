@@ -12,14 +12,14 @@ Engage narration + todos when **any** of these hold:
 - User expresses a standing preference for verbosity (in-session, or via a recalled memory / preference).
 - User asks a question that only makes sense with running commentary ("what are you doing right now?", "where are we?").
 
-**Default — silent mode.** When none of the above hold, do the work quietly. Surface only: decisions (user questions), failures, consent gates (`flow debug`), and the final result. No per-step narration line; no user-facing `TodoWrite` list. The agent MAY still keep todos privately on large journeys for its own tracking, but it is not required and is not a user-facing contract.
+**Default — silent mode.** When none of the above hold, do the work quietly. Surface only: decisions (user questions), failures, consent gates (`flow debug`), and the final result. No per-step narration line; no user-facing todo list. The agent MAY still keep todos privately on large journeys for its own tracking, but it is not required and is not a user-facing contract.
 
 ## The two rules
 
 These apply **only once engaged** (see When to engage):
 
 1. **Narrate every logical step in plain English** — one short line before each step explaining what the agent is doing and why, in terms of the user's request. The user should never need to know `bash`, `uip` flags, or `.flow` JSON internals to follow along.
-2. **Maintain a granular `TodoWrite` list** for any journey above the trivial threshold — one todo per logical step, kept current as work proceeds. Standard journeys typically land at 10+ items; complex flows go higher. The count emerges from the journey's actual logical steps — do not target a number.
+2. **Maintain a granular progress list** for any journey above the trivial threshold — one todo per logical step, kept current as work proceeds. Standard journeys typically land at 10+ items; complex flows go higher. The count emerges from the journey's actual logical steps — do not target a number.
 
 ## What is a "logical step"
 
@@ -91,11 +91,11 @@ Reference table — adapt to context. Add subject (what's being acted on) when s
 | Flow correlation | "Mapping the faulting element ID back to a node in your `.flow` file…" |
 | Traces (last resort) | "Pulling traces. Last resort — the previous steps weren't enough." |
 
-## Threshold for `TodoWrite`
+## Threshold for the progress list
 
 This table applies only once narration/todos are engaged (see [When to engage](#when-to-engage)). In silent mode there is no user-facing narration or todo list regardless of journey size.
 
-| Journey size | Narration | TodoWrite |
+| Journey size | Narration | Progress list |
 | --- | --- | --- |
 | Single edit (1–2 actions, no decisions) | Yes — 1 line | No |
 | Small edit (3–5 actions or 1 decision) | Yes — line per logical step | Optional, agent's call |
@@ -131,7 +131,7 @@ A todo is a **state-changing outcome the user cares about**. One logical step �
 If the user redirects scope mid-journey ("skip the connector — use HTTP instead"):
 
 1. Narrate the pivot — "Switching from connector to HTTP node. Updating todos."
-2. Update `TodoWrite`:
+2. Update the progress list:
    - Mark obsolete in-flight todos as cancelled and drop them from the list.
    - Insert new todos for the new direction at the right spot.
    - Leave completed todos in place — they're history, not work.
@@ -145,6 +145,6 @@ If the user redirects scope mid-journey ("skip the connector — use HTTP instea
 - **Never narrate or spin up a user-facing todo list when the user hasn't asked for verbosity.** Silent by default. Surfacing every step unprompted is noise.
 - **When engaged, never skip narration on a step transition.** Silent transitions leave the user lost.
 - **Never create a todo per bash call.** Todos are user-meaningful outcomes, not the agent's internal action log.
-- **When engaged, never skip `TodoWrite` on a standard journey.** Above the trivial threshold, the granular list is mandatory.
+- **When engaged, never skip the progress list on a standard journey.** Above the trivial threshold, the granular list is mandatory.
 - **Never use first-person filler.** "Let me…", "I'll go ahead and…", "I'm going to…" — drop. Lead with the verb.
 - **Never repeat the prior line's content.** If the previous narration said "Adding the Slack node and wiring its inputs", the next line is *not* "Adding the Slack node now" — it's the next step.

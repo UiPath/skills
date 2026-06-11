@@ -4,7 +4,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 
 > **Where you came from / where to go next.** Operate is downstream of Author (build the flow → ship it) and upstream of Diagnose (run faults → diagnose). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); fault triage lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >
-> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular `TodoWrite` (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are operate-scoped and apply on top.
+> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, solution layout, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are operate-scoped and apply on top.
 
 ## When to use this capability
 
