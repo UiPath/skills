@@ -59,6 +59,11 @@
 /tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
+# Functions skill (Python Coded Functions — Phase 1; JS HTTP/background Phase 2/3)
+/skills/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
+/tests/tasks/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
+/tests/tasks/activation/uipath-functions.jsonl @AlexBizon @UiPath/team-coded-agents
+
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
 /tests/tasks/uipath-planner/ @RaduAna-Maria

@@ -1,3 +1,9 @@
+---
+name: uipath-functions
+description: "Always invoke for UiPath Coded Functions. Coded functions are python projects that are not using LLMs or agentic frameworks like Langchain or Llamaindex."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+---
+
 # UiPath Python Coded Functions
 
 ## What Python Coded Functions Are
@@ -68,18 +74,15 @@ uip functions new <name> --language js       # JavaScript Function (JS/TS, no jo
 
 ### Step 2: Define Function Schema
 
-Schemas are Python `@dataclass` types (not Pydantic BaseModel):
+Use typed I/O. The SDK accepts pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, a stdlib `@dataclass`, or a thin class with typed annotations. The shipped samples favor **pydantic** (`BaseModel` in csv-processor, `pydantic.dataclasses.dataclass` in calculator/greeter):
 
 ```python
-from dataclasses import dataclass, field
-from typing import Any
+from pydantic import BaseModel
 
-@dataclass
-class Input:
+class Input(BaseModel):
     document_id: str = ""
 
-@dataclass
-class Output:
+class Output(BaseModel):
     vendor_name: str = ""
     total_amount: float = 0.0
     error_type: str = ""     # populated on failure, empty on success
@@ -95,16 +98,14 @@ class Output:
 ```python
 from __future__ import annotations
 
-from dataclasses import dataclass
-from uipath.core.tracing import traced
+from pydantic import BaseModel
+from uipath.tracing import traced
 from uipath.platform import UiPath
 
-@dataclass
-class Input:
+class Input(BaseModel):
     document_id: str = ""
 
-@dataclass
-class Output:
+class Output(BaseModel):
     result: str = ""
     error_type: str = ""
     error_message: str = ""
@@ -132,8 +133,8 @@ def my_function(input: Input) -> Output:
 ```
 
 Key rules:
-- **`@dataclass`** for Input/Output — not `BaseModel`
-- **Sync function** — `def`, not `async def`; the function name is arbitrary
+- **Typed I/O** — pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, stdlib `@dataclass`, or a thin class with typed annotations; samples favor pydantic
+- **`def` or `async def`** — both supported (csv-processor uses `async def main`); the function name is arbitrary
 - **Lazy SDK init** — instantiate `UiPath()` inside a getter, never at module level
 - **Errors returned, not raised** — populate `error_type`/`error_message` output fields and return; never let exceptions bubble out of the entrypoint
 - **`@traced(name=..., run_type="uipath")`** — apply to the entrypoint and any sub-functions you want visible in LLM Ops Traces
@@ -151,26 +152,24 @@ Key rules:
 
 The key is the entrypoint name — it can be any string and marks this as the callable entrypoint. The value is `"<file>:<function_name>"`. Both the key and the function name are arbitrary.
 
-### Step 5: Mark project type in `pyproject.toml`
+**This `functions` map is what identifies the project as a Coded Function** — the runtime's `determine_project_type()` reads the entrypoint type from `uipath.json`.
+
+### Step 5: Declare dependencies in `pyproject.toml`
 
 ```toml
 [project]
 name = "my-function"
 version = "0.1.0"
 description = "..."
-authors = [{ name = "..." }]
 requires-python = ">=3.11"
 dependencies = [
-    "uipath>=2.10",
+    "uipath",
     "httpx>=0.28",          # if making HTTP calls
     "pydantic-settings>=2", # if using Settings for env/asset config
 ]
-
-[tool.uipath]
-type = "function"           # required — identifies this as a Python Coded Function
 ```
 
-**`[tool.uipath] type = "function"` is required.** Without it the project is treated as a coded agent. No `[build-system]` section.
+No `[build-system]` section. The project is identified as a Coded Function by the `functions` map in `uipath.json` (Step 4).
 
 ### Step 6: Generate Entry Points
 
@@ -232,7 +231,7 @@ uip functions push
 ## Important Notes
 
 - `UiPath()` must never be instantiated at module level — always inside a function body
-- `[tool.uipath] type = "function"` in `pyproject.toml` is required
+- The `functions` map in `uipath.json` marks the project as a Coded Function (`determine_project_type()` reads the entrypoint type from `uipath.json`)
 - `uip functions init` must run before `pack` or `push` — it generates `entry-points.json`
 - Python Functions have full job semantics: Orchestrator job ID, audit trail, retry, scheduling
 - JS Functions have no job semantics and cannot be started as Orchestrator jobs — use Python when the caller is Maestro, a Flow, or an agent
