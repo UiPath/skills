@@ -6,7 +6,7 @@ description: >
   test must discover the connector via `uip is`, author a
   `type: "integration"` resource.json inside the inline agent's UUID
   subdirectory, create a `bindings_v2.json`, run
-  `uip solution resource refresh`, and wire a
+  `uip solution resources refresh`, and wire a
   `uipath.agent.resource.tool.connector` flow node to the
   `uipath.agent.autonomous` node's `tool` handle. Verifies design-time
   artifacts only (no runtime connector invocation). Cloud auth
@@ -74,7 +74,7 @@ success_criteria:
   - type: command_executed
     description: "Agent refreshed solution resources"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+refresh'
+    command_pattern: 'uip\s+solution\s+resources\s+refresh'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

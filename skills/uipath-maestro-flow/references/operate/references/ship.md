@@ -13,14 +13,14 @@ Before either publish path, ensure:
 3. **Solution resources are refreshed.** Always run this before `solution upload` or `solution publish` so that connection and process resource declarations are in sync with the project bindings:
 
    ```bash
-   uip solution resource refresh --solution-folder <SolutionDir> --output json
+   uip solution resources refresh --solution-folder <SolutionDir> --output json
    ```
 
    `<SolutionDir>` is the solution directory (containing the `.uipx` file). The command has no positional solution argument; omit `--solution-folder` only when the current directory is already the solution root.
 
 ## Path 1 — Studio Web upload (default)
 
-After `solution resource refresh`, upload the solution to Studio Web:
+After `solution resources refresh`, upload the solution to Studio Web:
 
 ```bash
 uip solution upload <SolutionDir> --output json
@@ -38,7 +38,7 @@ Pack the flow project into a `.nupkg` then publish via the platform skill:
 
 ```bash
 # 1. Refresh solution resources
-uip solution resource refresh --solution-folder <SolutionDir> --output json
+uip solution resources refresh --solution-folder <SolutionDir> --output json
 
 # 2. Pack
 uip maestro flow pack <project-path> <OutputDir>
@@ -48,7 +48,7 @@ For `uip solution publish` and the rest of the deployment workflow, see [/uipath
 
 ## Anti-patterns
 
-- **Never run `solution upload` without `solution resource refresh` first.** Stale resource declarations cause runtime binding failures (the deployed flow can't find its connections).
+- **Never run `solution upload` without `solution resources refresh` first.** Stale resource declarations cause runtime binding failures (the deployed flow can't find its connections).
 - **Never default to Orchestrator deploy when the user said "publish".** "Publish" without specifier means Studio Web. When the target is ambiguous, confirm via `AskUserQuestion` with **Studio Web upload** / **Orchestrator deploy** / **Something else** as options before running `flow pack` + `solution publish`. See the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md).
 - **Never publish a flow that hasn't been validated and formatted.** `flow validate` catches schema errors; `flow format` ensures Studio Web renders nodes correctly. Both are author-side gates — see [author/CAPABILITY.md](../../author/CAPABILITY.md).
 

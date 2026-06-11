@@ -1,6 +1,6 @@
 # Solution Resources Internals
 
-Solution architecture, UUID cross-references, bindings, debug_overwrites, and `uip solution resource refresh` mechanics. Capability-agnostic — every capability that produces solution-level files relies on the patterns documented here.
+Solution architecture, UUID cross-references, bindings, debug_overwrites, and `uip solution resources refresh` mechanics. Capability-agnostic — every capability that produces solution-level files relies on the patterns documented here.
 
 ## Solution Architecture
 
@@ -134,7 +134,7 @@ bucket/orchestratorBucket/...        │
 
 | Binding kind | `name` source | `folderPath` source | Notes |
 |---|---|---|---|
-| `process` (local or external) | `properties.processName` | `properties.folderPath` (literal `Folder` from `uip solution resource list` — typically `"solution_folder"` for local, Orchestrator path for external) | One per process tool |
+| `process` (local or external) | `properties.processName` | `properties.folderPath` (literal `Folder` from `uip solution resources list` — typically `"solution_folder"` for local, Orchestrator path for external) | One per process tool |
 | `index` | `indexName` | top-level `folderPath` (literal `Folder`) | StorageBucket-backed only |
 | `app` (escalation) | `channel.properties.appName` | `channel.properties.folderName` (literal `Folder`, translated to binding `folderPath`) | One per Action Center channel |
 | `app` (guardrail escalation) | `action.app.name` | `action.app.folderName` (literal `Folder`, translated to binding `folderPath`) | One per `$actionType: "escalate"` guardrail action |
@@ -155,7 +155,7 @@ bucket/orchestratorBucket/...        │
 ```
 
 ```jsonc
-// External tool — literal Folder from `uip solution resource list`
+// External tool — literal Folder from `uip solution resources list`
 {
   "resource": "process",
   "key": "TestRPA",
@@ -220,7 +220,7 @@ bucket/orchestratorBucket/...        │
 
 The `solutionsSupport: "true"` metadata flag signals to the deployment engine that this resource participates in the solution deployment.
 
-> **Note 1: `solutionsSupport` is a stringified boolean** (`"true"`, not `true`). `uip agent refresh` and `uip solution resource refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
+> **Note 1: `solutionsSupport` is a stringified boolean** (`"true"`, not `true`). `uip agent refresh` and `uip solution resources refresh` emit the string form — preserve it verbatim when round-tripping. Re-typing it as a JSON boolean breaks downstream parsing.
 >
 > **Note 2: do not hand-edit `bindings_v2.json`.** The binding's `folderPath` is generated from the agent-level `resource.json` or memory feature file. Edit the resource.json, or use `uip agent memory` for memory features, then re-run `uip agent refresh`; never patch the binding directly. See [critical-rules.md](critical-rules.md) Anti-pattern 20 and 24.
 
@@ -263,7 +263,7 @@ For capability-specific debug_overwrites entries (process / connection / index /
 ## Refresh Mechanics
 
 ```bash
-uip solution resource refresh [solutionPath] --output json
+uip solution resources refresh [solutionPath] --output json
 ```
 
 Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. For each external binding, refresh uses the **joint key `(name, kind, folderPath)`** read from the binding to look up the matching resource in the appropriate catalog — Resource Catalog Service for `Process`, `App`, and `MemorySpace` bindings, ECS for `Index` bindings, the local IS connection cache for `Connection` bindings. The folder dimension disambiguates resources that share a name across folders. If no match is found, refresh creates a virtual placeholder in the solution and warns.

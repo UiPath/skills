@@ -52,7 +52,7 @@ initial_prompt: |
      evaluator, eval set, and data point are on disk, compute the absolute
      path to the solution root directory (the directory containing
      `EvalRunDemo.uipx`) and reuse it for both commands. Run
-     `uip solution resource refresh --solution-folder "$SOLUTION_DIR" --output json`,
+     `uip solution resources refresh --solution-folder "$SOLUTION_DIR" --output json`,
      then `uip solution upload "$SOLUTION_DIR" --output json`. Do not pass
      `EvalRunDemo` as a relative upload path while the shell is inside
      `EvalRunDemo/EvalRunDemo`; that resolves to a nonexistent nested path.
@@ -114,7 +114,7 @@ success_criteria:
   - type: command_executed
     description: "Agent refreshed solution resources before upload"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+resource\s+refresh'
+    command_pattern: '(uip|\$UIP)\s+solution\s+resources\s+refresh'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

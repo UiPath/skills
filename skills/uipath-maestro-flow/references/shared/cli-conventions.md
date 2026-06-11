@@ -119,7 +119,7 @@ Always check `Result` first. On failure, `Message` and `Instructions` carry the 
 | Capability | Login required? |
 |---|---|
 | **Author** | No — `flow init`, `validate`, `format`, registry (OOTB nodes), `Edit` / `Write` edits, planning all work offline |
-| **Operate** | **Yes** — `solution upload`, `solution resource refresh`, `flow debug`, `flow pack`, `process run`, `job status`, `job traces` all require `uip login` |
+| **Operate** | **Yes** — `solution upload`, `solution resources refresh`, `flow debug`, `flow pack`, `process run`, `job status`, `job traces` all require `uip login` |
 | **Diagnose** | **Yes** — `instance incidents`, `instance variables`, `instance asset`, `incident get`, `incident summary` all require `uip login` |
 
 Tenant-specific connector and resource nodes in the registry also require login. Without login, registry shows OOTB nodes only. **In-solution sibling projects** are always available via `--local` without login.

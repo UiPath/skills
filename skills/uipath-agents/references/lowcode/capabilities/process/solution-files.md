@@ -1,10 +1,10 @@
 # Solution-Level Files for External Process Tools — Hand-Authoring Reference
 
-When `uip solution resource refresh` cannot produce solution-level files (offline, missing RCS match, custom deployment), hand-author them using the templates below. For the standard auto-generated path, see [process.md](process.md).
+When `uip solution resources refresh` cannot produce solution-level files (offline, missing RCS match, custom deployment), hand-author them using the templates below. For the standard auto-generated path, see [process.md](process.md).
 
-It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding extraction path — used when `uip solution resource get` is unavailable (older `uip` builds, RCS unreachable, custom deployments). For the standard CLI-driven extraction, see [process.md § Discovery](process.md#discovery).
+It also documents the Releases API + `GetPackageEntryPointsV2` + JWT decoding extraction path — used when `uip solution resources get` is unavailable (older `uip` builds, RCS unreachable, custom deployments). For the standard CLI-driven extraction, see [process.md § Discovery](process.md#discovery).
 
-> **`folders[].fullyQualifiedName` carries the literal `Folder`** (e.g., `"Shared"`, `"Shared/Sales"`) returned by `uip solution resource list` — the same value the agent-level `resource.json` writes into `properties.folderPath` and that `bindings_v2.json` propagates. Templates show `<Folder>` as the placeholder; examples show `"Shared"` as a concrete value. Auto-generated declarations for **solution-internal projects** (created when the agent project is registered with the solution — by `uip agent init` auto-registration or by the `uip solution project add` fallback) keep `"solution_folder"` instead — they have no fixed Orchestrator folder until deploy. See [../../critical-rules.md](../../critical-rules.md) Rule 11.
+> **`folders[].fullyQualifiedName` carries the literal `Folder`** (e.g., `"Shared"`, `"Shared/Sales"`) returned by `uip solution resources list` — the same value the agent-level `resource.json` writes into `properties.folderPath` and that `bindings_v2.json` propagates. Templates show `<Folder>` as the placeholder; examples show `"Shared"` as a concrete value. Auto-generated declarations for **solution-internal projects** (created when the agent project is registered with the solution — by `uip agent init` auto-registration or by the `uip solution project add` fallback) keep `"solution_folder"` instead — they have no fixed Orchestrator folder until deploy. See [../../critical-rules.md](../../critical-rules.md) Rule 11.
 
 ## Directory Structure
 
@@ -445,7 +445,7 @@ Maps `solution_folder` to the actual Orchestrator folder so Studio Web can resol
           "overwrite": {
             "resourceKey": "<release-key-guid>",
             "resourceName": "<ToolName>",
-            "folderKey": "<folder-key-guid>",            // FolderKey from `uip solution resource list --kind Process`
+            "folderKey": "<folder-key-guid>",            // FolderKey from `uip solution resources list --kind Process`
             "folderFullyQualifiedName": "<folder-path>", // Folder from the same (e.g., "Shared/MyFolder")
             "folderPath": "<parent-key>.<folder-key>",   // If folder has parent: "parentKey.folderKey". If no parent: just "folderKey"
             "type": "Reference",
@@ -464,14 +464,14 @@ For the generic debug_overwrites shape (capability-agnostic), see [../../solutio
 
 ## How to Get the Values
 
-> **Fallback path.** When `uip solution resource get` is available, use it instead — see [process.md § Discovery](process.md#discovery). The steps below are for older `uip` builds, RCS-unreachable environments, or custom deployments where the CLI cannot supply the full configuration.
+> **Fallback path.** When `uip solution resources get` is available, use it instead — see [process.md § Discovery](process.md#discovery). The steps below are for older `uip` builds, RCS-unreachable environments, or custom deployments where the CLI cannot supply the full configuration.
 
 > **SECURITY: Never read `~/.uipath/.auth` directly** — the access token must not appear in Claude's context. Always use a `bash -c` wrapper that sources the auth file and makes the API call in a single shell invocation, so Claude only sees the API response.
 
 ### Step 1: Discover the process and its folder
 
 ```bash
-uip solution resource list --kind Process --source remote --search "<NAME>" --output json
+uip solution resources list --kind Process --source remote --search "<NAME>" --output json
 ```
 
 Returns, for each match:

@@ -131,13 +131,13 @@ JSON schema variables use their CDATA body as the property schema. Strip `$schem
 Generated `bindings_v2.json` must be a top-level object with
 `"version": "2.0"` and a `resources` array. Do not use a bare resource array, a
 single resource object, or an unversioned `{ "resources": [] }` object; those
-shapes are not the package contract consumed by solution resource refresh.
+shapes are not the package contract consumed by solution resources refresh.
 
 The resource array has two consumers with different tolerance:
 
 - Local/package binding expressions may need id-addressable entries that mirror
   root `uipath:binding` IDs.
-- `uip solution resource refresh` reads the same `resources` array and imports
+- `uip solution resources refresh` reads the same `resources` array and imports
   concrete dependencies only when it contains parseable resource entries.
   Process resources should come from CLI generation or fixture-backed binding
   entries with `id`, `kind`, `name`, `resourceKey`, `metadata`, `resource`,
