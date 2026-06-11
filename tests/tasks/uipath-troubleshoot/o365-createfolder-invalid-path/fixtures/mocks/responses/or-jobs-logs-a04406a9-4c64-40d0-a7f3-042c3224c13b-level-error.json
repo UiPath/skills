@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-10T18:59:39.115Z",
+      "Message": "Create Folder with whitespace path segment (expect invalid path): Folder path segment ' Quarterly' cannot have leading or trailing whitespace. (Parameter 'FolderPath')\r\nin O365_CreateFolderInvalidPath.xaml\r\n    at CreateFolderConnections \"Create Folder with whitespace path segment (expect invalid path)\"\r\n    at Sequence \"Do\"\r\n    at Office365ApplicationScope \"Microsoft 365 Scope\"\r\n    at Sequence \"O365 Create Folder invalid path repro\"\r\n    at O365_CreateFolderInvalidPath \"O365_CreateFolderInvalidPath\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.MicrosoftOffice365.Office365Exception\r\n   at UiPath.MicrosoftOffice365.Activities.BaseLeafConnectionServiceActivityWithoutBindings.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.ContinuableAsyncCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.MicrosoftOffice365.Activities.Office365BaseClientActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}
