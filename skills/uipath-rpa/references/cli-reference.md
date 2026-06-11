@@ -108,33 +108,21 @@ Workflow log output (`Log Message`, system traces) does **not** appear in `runRe
 
 ## Passing structured inputs
 
-`--input-arguments`, `--input-variables`, and `--packages` carry structured (JSON) payloads. **Never pass them as one inline-JSON string** — Windows PowerShell 5.1 (the shell agent commands run through on Studio Desktop) strips embedded double quotes from arguments, so `--input-arguments '{"k":"v"}'` arrives mangled and fails. Use the quote-free repeatable grammar instead; it works identically on PowerShell 5.1/7, bash, and zsh:
+`--input-arguments` and `--input-variables` may be supplied as repeatable `key=value` pairs (`key:=value` for raw JSON, `key=@file` to read a value from a file), as an inline JSON string, or from a JSON file using `'@file'` or `--<flag>-file`. `--packages` takes one item per occurrence as comma-joined fields. The exact flag names are `--input-arguments` / `--input-variables` / `--packages` — there is no `--input` flag.
 
 ```bash
-# One key per occurrence. = keeps the value a string; := passes raw JSON (numbers, true/false, null):
 uip rpa run --file-path Main.xaml --input-arguments name=John --input-arguments retries:=3
-
-# Single-quote any token containing spaces or commas:
 uip rpa run --file-path Main.xaml --input-arguments 'message=Hello, world!'
-
-# Values containing double quotes (e.g. VB/C# string-literal expressions) cannot survive
-# PowerShell 5.1 inline — read the value from a file (key=@file is safe unquoted):
 uip rpa debug test-activity --input-variables greeting=@expression.txt
-
-# Whole payload from a JSON file — single-quote the @ token (bare @ is PowerShell splatting),
-# or use the equivalent --<flag>-file spelling which needs no quoting at all:
-uip rpa run --file-path Main.xaml --input-arguments '@args.json'
-uip rpa run --file-path Main.xaml --input-arguments-file args.json
-
-# Packages: one item per occurrence, fields comma-joined (single-quote when a comma is present):
+uip rpa run --file-path Main.xaml --input-arguments '@args.json'      # or: --input-arguments-file args.json
 uip rpa packages install --packages 'id=UiPath.System.Activities,version=23.10.1' --packages id=UiPath.Excel.Activities
 ```
 
-Rules of thumb:
+Rules:
 
-- **`=` vs `:=`**: `count=42` sends the string `"42"`; `count:=42` sends the number `42`. For `debug test-activity` / `debug start-from-here`, values are VB/C# expression **strings** — always use `=` there.
-- **Quoting**: single-quote any token containing spaces, commas, or starting with `@`; plain identifiers and numbers need no quotes. Never rely on embedded double quotes inline — write those values to a UTF-8 file (`Set-Content -Encoding UTF8` in PowerShell 5.1) and use `key=@file`, `'@file'`, or `--<flag>-file`.
-- **Legacy form**: a single inline-JSON blob is still accepted for backward compatibility, but on PowerShell 5.1 it is structurally unreliable — do not use it there.
+- **`=` vs `:=`**: `count=42` sends the string `"42"`; `count:=42` sends the number `42`. For `debug test-activity` / `debug start-from-here`, values are VB/C# expression **strings** — always `=`.
+- **Quoting**: single-quote any token containing spaces, commas, or a leading `@`; bare identifiers and numbers need no quotes. Values containing double quotes cannot be passed inline on Windows PowerShell 5.1 (it strips them) — write them to a UTF-8 file (`Set-Content -Encoding UTF8`) and use `key=@file`, `'@file'`, or `--<flag>-file`.
+- **Inline JSON**: a single JSON blob (`--input-arguments '{"k":"v"}'`) remains accepted for backward compatibility, but is unreliable on PowerShell 5.1 — prefer pairs or files.
 
 ---
 
