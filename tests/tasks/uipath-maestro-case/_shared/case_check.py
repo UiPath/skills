@@ -410,7 +410,7 @@ def start_debug(
     solution_dir = find_solution_dir(solution_glob)
 
     refresh_cmd = [
-        "uip", "solution", "resource", "refresh",
+        "uip", "solution", "resources", "refresh",
         "--solution-folder", solution_dir,
         "--output", "json",
     ]
