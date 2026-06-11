@@ -27,15 +27,15 @@ uip gov custom-policy list --output json
 
 ## uip gov custom-policy get
 
-Fetch the YAML source for a custom policy.
+Fetch the Rego source for a custom policy.
 
 ```bash
 uip gov custom-policy get <POLICY_ID> --output json
 ```
 
-Returns `403` for UiPath default policies. Always run before `update` to retrieve the current YAML.
+Returns `403` for UiPath default policies. Always run before `update` to retrieve the current Rego.
 
-**Output:** `Data` contains the YAML source string. Save it to a file to use as the update base.
+**Output:** `Data` contains the Rego source string. Save it to a file to use as the update base.
 
 ---
 
@@ -53,7 +53,9 @@ uip gov custom-policy create \
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--file <PATH>` | yes | Path to the policy YAML file |
+| `--file <PATH>` | yes | Path to the policy JSON file |
+
+> `--file` must be a JSON file with `rego` (string) and `metadata` (object) fields — see [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) for the full envelope format. `metadata.rules[].id` must follow `{policyId}/RULE-N` format; use `__POLICY_ID__/RULE-1` as a placeholder at authoring time — the server assigns the real `policyId` on create.
 
 **Output:** `Data` contains the new `policyId` (GUID) and `policyName`. Policies are created with `active: true` by default — they take effect at the next agent poll.
 
@@ -69,7 +71,7 @@ uip gov custom-policy update <POLICY_ID> \
   --output json
 ```
 
-Returns `403` for UiPath default policies. Always run `get` first to retrieve the current YAML before editing.
+Returns `403` for UiPath default policies. Always run `get` first to retrieve the current Rego before editing.
 
 **Output:** `Data` contains `policyId` and updated metadata.
 
@@ -126,5 +128,5 @@ Running agents are not interrupted mid-run. The change takes effect at the next 
 |-------|-------|-----|
 | `401 Unauthorized` | Token expired or missing | Run `uip login --tenant <TENANT_NAME>` and retry |
 | `command not found: uip` | CLI not installed | `npm install -g @uipath/uipcli` |
-| `YAML compilation failed` | Invalid policy YAML | Fix the YAML against the schema in [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) and retry |
+| `Regal lint failed` | Rego violates lint rules | Fix the Rego against lint rules in [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) and resubmit |
 | Policy active but audit trail empty | Agent has not polled yet | Wait for the background refresh interval, or restart the agent |
