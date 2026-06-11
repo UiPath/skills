@@ -203,26 +203,44 @@ def get_activities(
     return matches
 
 
-def assert_attr(el: ET.Element, name: str, expected: str) -> None:
-    """Attribute (by local name) must equal `expected`, with VB-expression brackets tolerated.
+def _norm_const_attr(v: str | None) -> str | None:
+    """Normalize a XAML attribute value for constant comparison.
 
-    `ExpansionDepth="1"` and `ExpansionDepth="[1]"` are both valid XAML;
-    the bracketed form is a VB expression literal and the agent's choice
-    between them is stylistic. Strip brackets from both sides before
-    comparison. For booleans (where `True` vs `true` might also vary), use
-    `assert_attr_bool` which adds case-insensitivity.
+    Handles three equivalent forms an agent may emit for the same value:
+      1. Bare literal:                 `SortByField="Score"`
+      2. VB expression of variable/expr: `ExpansionDepth="[1]"` → `1`
+      3. VB expression of string literal: `SortByField="[&quot;Score&quot;]"`
+         → after XML decode → `["Score"]` → unwrap brackets → `"Score"` →
+         unwrap VB string-literal quotes → `Score`
+
+    The package-shipped activity docs (e.g. QueryEntityRecords.md) teach
+    form (3) for `InArgument<string>` examples; bare literal is what Studio
+    emits for hardcoded values. Both compile to the same runtime string, so
+    checks must treat them as equivalent.
+
+    Only unwraps VB string quotes when the body is a *simple* `"..."`
+    constant (no embedded `"`) — multi-part expressions like
+    `[someFunc("arg")]` are left alone after bracket strip.
+    """
+    if v is None:
+        return None
+    s = v.strip()
+    if len(s) >= 2 and s.startswith("[") and s.endswith("]"):
+        s = s[1:-1].strip()
+    if len(s) >= 2 and s.startswith('"') and s.endswith('"') and '"' not in s[1:-1]:
+        s = s[1:-1]
+    return s
+
+
+def assert_attr(el: ET.Element, name: str, expected: str) -> None:
+    """Attribute (by local name) must equal `expected`, tolerating VB-expression forms.
+
+    Accepts bare literal, `[expr]` brackets, and `["literal"]` (VB string-
+    literal wrapped in expression brackets) — see `_norm_const_attr`. For
+    booleans use `assert_attr_bool` which adds case-insensitivity.
     """
     actual = _local_attr(el, name)
-
-    def _strip(v: str | None) -> str | None:
-        if v is None:
-            return None
-        s = v.strip()
-        if len(s) >= 2 and s.startswith("[") and s.endswith("]"):
-            return s[1:-1].strip()
-        return s
-
-    if _strip(actual) != _strip(expected):
+    if _norm_const_attr(actual) != _norm_const_attr(expected):
         print(
             f"FAIL: {_local(el)}.{name} expected {expected!r}, got {actual!r}",
             file=sys.stderr,
@@ -266,12 +284,13 @@ def assert_attr_or_default(el: ET.Element, name: str, default: str) -> None:
     Use for baseline properties whose default value matches the expected
     config — e.g. `ScopeValue="Tenant"` on activities where Tenant is the
     XAML default. The agent legitimately omits the attribute and the runtime
-    still gets the desired value.
+    still gets the desired value. VB-expression forms are normalized via
+    `_norm_const_attr`.
     """
     actual = _local_attr(el, name)
     if actual is None:
         return
-    if actual != default:
+    if _norm_const_attr(actual) != _norm_const_attr(default):
         print(
             f"FAIL: {_local(el)}.{name} expected absent or {default!r}, got {actual!r}",
             file=sys.stderr,
