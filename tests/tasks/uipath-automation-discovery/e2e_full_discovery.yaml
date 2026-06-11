@@ -4,7 +4,7 @@ description: >
   the full discovery workflow (intake through report) for a fictional company
   with pre-seeded data. Tests the complete Phases 0-4 loop and validates
   the output report structure, tier classification, and evidence quality.
-tags: [uipath-automation-discovery, e2e, lifecycle:generate]
+tags: [uipath-automation-discovery, e2e, mode:build, lifecycle:generate]
 
 agent:
   type: claude-code

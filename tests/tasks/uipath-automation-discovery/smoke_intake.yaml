@@ -4,7 +4,7 @@ description: >
   Phase 0 (intake) for a fictional company. Tests that the skill triggers
   correctly and the agent follows the structured intake workflow — gathering
   company context, tool inventory, org structure, and scope agreement.
-tags: [uipath-automation-discovery, smoke, lifecycle:discover]
+tags: [uipath-automation-discovery, smoke, mode:build, lifecycle:discover]
 
 sandbox:
   driver: tempdir
