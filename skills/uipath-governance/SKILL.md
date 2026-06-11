@@ -86,7 +86,7 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 | **Resolve a name to a UUID for Access** | [`references/access-policy/resource-lookup-guide.md`](./references/access-policy/resource-lookup-guide.md) |
 | **Manage or author an agent runtime policy** | [`references/custom-policy/custom-policy-overview-guide.md`](./references/custom-policy/custom-policy-overview-guide.md) |
 | **Look up CLI flags / output shapes** (custom policy) | [`references/custom-policy/custom-policy-commands.md`](./references/custom-policy/custom-policy-commands.md) |
-| **Custom policy YAML schema and check types** | [`references/custom-policy/custom-policy-schema-guide.md`](./references/custom-policy/custom-policy-schema-guide.md) |
+| **Custom policy — Rego authoring reference (JSON envelope, hook inputs, patterns)** | [`references/custom-policy/custom-policy-schema-guide.md`](./references/custom-policy/custom-policy-schema-guide.md) |
 
 ## Anti-patterns
 

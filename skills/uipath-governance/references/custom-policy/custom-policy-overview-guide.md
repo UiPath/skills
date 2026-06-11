@@ -20,7 +20,7 @@ Two modes inside this branch:
 1. **Tenant-scoped login is required.** Run `uip login --tenant <TENANT_NAME>` before any command. A user-scoped login returns `401` or silently hits the wrong tenant.
 2. **Classify operate vs author before acting.** Do not run any CLI command until the mode is determined.
 3. **Never fabricate policy IDs.** Always resolve policy names to IDs via `list` — never guess a GUID.
-4. **For delete: always confirm.** Run `get`, show the policy summary, and ask for explicit user confirmation before running `delete`.
+4. **For delete: always confirm.** Run `list` to confirm the policy's `policyName` and `active` status, then ask for explicit user confirmation before running `delete`.
 5. **For update: always get first.** Retrieve the current Rego via `get` and use it as the edit base — never start from scratch when updating.
 6. **Author mode produces a file, then offers to create.** Write the JSON envelope to a session file, show it to the user, and ask before running `create`.
 
