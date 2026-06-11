@@ -108,7 +108,7 @@ Workflow log output (`Log Message`, system traces) does **not** appear in `runRe
 
 ## Passing structured inputs
 
-`--input-arguments` and `--input-variables` may be supplied as repeatable `key=value` pairs (`key:=value` for raw JSON, `key=@file` to read a value from a file), as an inline JSON string, or from a JSON file using `'@file'` or `--<flag>-file`. `--packages` takes one item per occurrence as comma-joined fields. The exact flag names are `--input-arguments` / `--input-variables` / `--packages` — there is no `--input` flag.
+`--input-arguments` and `--input-variables` may be supplied as repeatable `key=value` pairs (`key:=value` for raw JSON, `key=@file` to read a value from a file), as an inline JSON string, or from a JSON file using `'@file'` or `--<flag>-file`. `--packages` takes one item per occurrence as comma-joined fields.
 
 ```bash
 uip rpa run --file-path Main.xaml --input-arguments name=John --input-arguments retries:=3
