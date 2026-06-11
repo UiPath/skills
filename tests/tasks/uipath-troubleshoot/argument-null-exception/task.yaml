@@ -40,21 +40,17 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent reached the same root cause as RESOLUTION.md and recorded it in investigation state"
+    description: "Agent reached the same root cause as RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
     include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
       You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md). The conclusion in the
-      agent's final response is what you grade (Dimensions A and B); the
-      attached investigation state files contribute only the bounded
-      deductions in Dimension C.
+      reference outcome (the attached RESOLUTION.md). Grade ONLY the agent's
+      final response to the user — NOT which playbook it routed through and
+      NOT what it wrote into internal investigation state files.
 
       DIMENSION A -- Required findings
         The agent's final response must cover ALL of the following. Each
@@ -80,16 +76,7 @@ success_criteria:
           - Asserts a root cause without citing the Main.xaml content
             or the job log.
 
-      DIMENSION C -- Investigation state (bounded deductions)
-        Check the attached state files; deduct exactly 0.1 per miss
-        (max total deduction 0.2):
-          1. `state.json.matched_playbooks` contains a path ending in
-             `runtime-exceptions/playbooks/argument-null-exception.md`.
-             Neighboring-playbook reads during exploration are fine.
-          2. `hypotheses.json` has an entry with `is_root_cause: true`
-             corresponding to the Assign-null finding.
-
-      SCORING RUBRIC (base score from Dimensions A and B):
+      SCORING RUBRIC (single score):
         1.0  Correct root cause, all required findings, no fabrication.
         0.8  Correct root cause + all required findings, minor
              fabrication or one finding only implicit.
@@ -99,11 +86,10 @@ success_criteria:
         0.2  Recognized the surface (exception/activity) but wrong or
              missing root cause.
         0.0  Misdiagnosed or got blocked.
-      Final score = base score minus Dimension C deductions (floor 0.0).
 
       Return JSON:
         {"score": <float>, "rationale": "<one sentence>",
-         "findings": ["dim A item 1: ...", "dim B: ...", "dim C: ..."]}
+         "findings": ["dim A item 1: ...", "dim B: ...", ...]}
 
 # Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
 # end-to-end without a human. The simulator always picks the recommended /
