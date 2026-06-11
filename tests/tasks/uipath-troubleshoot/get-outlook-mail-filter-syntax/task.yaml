@@ -1,0 +1,147 @@
+task_id: skill-troubleshoot-get-outlook-mail-filter-syntax
+description: >
+  UiPath troubleshooting agent must diagnose a Get Outlook Mail Messages
+  failure caused by a malformed DASL/Jet Filter: the Filter property holds
+  [Subject] = VarSubject - the right-hand value is unquoted, so Outlook
+  cannot parse the restriction and the job faults with
+  "Cannot parse condition. Error at \"VarSubject\".". The folder resolved
+  and the COM session is fine. Success = agent matches Branch 4 of the
+  get-outlook-mail-failures playbook, attributes the fault to the unquoted
+  Filter value, and recommends single-quoting it ([Subject] = 'Text' / with
+  a variable "[Subject] = '" + var + "'").
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My SupportTriageReader process is faulting in Orchestrator on every run.
+  The folder is "RPA Production". Can you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched Branch 4 of get-outlook-mail-failures (malformed unquoted Filter) and recommended single-quoting the DASL value"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My SupportTriageReader process is faulting in Orchestrator on every
+         run. The folder is 'RPA Production'. Can you investigate why? The
+         project source for the failing process is in the current working
+         directory."
+
+      DIMENSION A -- Correct playbook (Branch 4)
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/get-outlook-mail-failures.md
+        and specifically Branch 4 (Malformed Filter - DASL/Jet syntax).
+        Evidence the agent matched it:
+          (1) the agent's final response names the get-outlook-mail-failures
+              playbook and/or Branch 4 (malformed Filter); and
+          (2) a tool call reading a file under
+              references/activity-packages/mail-activities/playbooks/.
+        Do NOT inspect internal investigation state (state.json,
+        hypotheses.json, matched_playbooks, scope.domain, requirements) to
+        decide this -- grade only the agent's presented response and its
+        tool calls.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause: the `Filter` property on the Get Outlook
+        Mail Messages activity is malformed DASL/Jet -- the value
+        `VarSubject` is unquoted (`[Subject] = VarSubject`), so Outlook
+        cannot parse the condition and raises
+        `Cannot parse condition. Error at "VarSubject"`. The folder resolved
+        and the COM session is fine. The reference fix is to single-quote the
+        value: `[Subject] = 'Text to find'`, or with a variable
+        `"[Subject] = '" + mySubjectVariable + "'"`.
+        Evidence the agent reached the same conclusion:
+          (1) the agent's final response names the filter parse error, the
+              unquoted-value cause, and the single-quote fix; and
+          (2) the agent cited `Main.xaml` (the `Filter` property) and the
+              job-log applied-filter line
+              (`[Get Outlook Mail Messages] applying Filter: [Subject] = VarSubject`).
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
+      any of these):
+        - The folder could not be resolved (Branch 1).
+        - A timeout on a large folder (Branch 2).
+        - Outlook not running / a COM cast failure / a privilege mismatch
+          (Branch 3).
+        - Cached Exchange Mode desync (Branch 5).
+        - "The subject variable is empty / uninitialized" -- the bug is the
+          MISSING QUOTES (DASL syntax), not a null variable.
+        - A generic connectivity / "couldn't read mail" error.
+
+      SCORING RUBRIC:
+        1.0  Agent (a) names the Filter / DASL parse failure, (b) attributes
+             it to the unquoted value in the `Filter` expression, AND (c)
+             recommends single-quoting the value
+             (`[Subject] = 'Text'` / `"[Subject] = '" + var + "'"`).
+        0.8  Correct cause (unquoted DASL Filter) and matched Branch 4, but
+             the single-quote fix is vague or missing the with-a-variable
+             form.
+        0.5  Recognized the Filter as the problem but did not pin it to the
+             unquoted value / DASL syntax, or recommended only removing the
+             filter without the quoting fix.
+        0.2  Matched a sibling branch (folder, timeout, COM, cache),
+             concluded a null/empty subject variable, or surfaced the error
+             to the user without a diagnosis.
+        0.0  Wrong cause unrelated to the Filter, or fabricated evidence.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You have Orchestrator access and the failing project's source in the
+    current working directory. You trust the agent's expertise and are
+    waiting for a diagnosis of why the process faults.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

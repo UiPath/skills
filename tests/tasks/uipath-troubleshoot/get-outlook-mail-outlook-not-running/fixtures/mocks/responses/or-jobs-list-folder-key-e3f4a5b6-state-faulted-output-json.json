@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "f4a5b6c7-8d9e-4f0a-9b1c-2d3e4f5a6b7c",
+      "State": "Faulted",
+      "ProcessName": "QueueMailIntake",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-03T04:00:00.090Z",
+      "EndTime": "2026-06-03T04:00:04.220Z",
+      "CreationTime": "2026-06-03T03:59:59.870Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
