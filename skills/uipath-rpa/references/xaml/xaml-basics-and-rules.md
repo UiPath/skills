@@ -150,6 +150,8 @@ xmlns:upa="clr-namespace:UiPath.Process.Activities;assembly=UiPath.Process.Activ
 xmlns:upas="clr-namespace:UiPath.Process.Activities.Shared;assembly=UiPath.Process.Activities"
 ```
 
+These types ship in the **`UiPath.FlowchartBuilder.Activities`** package (runtime assembly `UiPath.Process.Activities`) — install before authoring (Common Rule 6). Not supported on `targetFramework: "Legacy"`. Package install, full node vocabulary, gateway patterns, suspend/resume: [long-running-workflow-guide.md](long-running-workflow-guide.md).
+
 ```xml
 <upa:ProcessDiagram DisplayName="Long Running Workflow" sap2010:WorkflowViewState.IdRef="ProcessDiagram_1">
   <upa:ProcessDiagram.StartNode>
@@ -188,6 +190,7 @@ xmlns:upas="clr-namespace:UiPath.Process.Activities.Shared;assembly=UiPath.Proce
 - `EventNode` = start/end circles, `TaskNode` = activity rectangles, `DecisionNode` = diamond (True/False branches), `EndNode` = end circle
 - `BoundaryNode` attaches to `TaskNode.BoundaryNodes` for error handling
 - Same `<x:Reference>` node registration rules as Flowchart — inline nodes need trailing registration
+- Gateway nodes (`SplitNode`/`MergeNode`/`SwitchNode<T>`), subprocesses, intermediate events, and persistence-based waits: [long-running-workflow-guide.md](long-running-workflow-guide.md)
 
 **ViewState is needed.** See [canvas-layout-guide.md § Long Running Workflow](canvas-layout-guide.md#5-long-running-workflow-processdiagram-layout) for horizontal layout recipes.
 
