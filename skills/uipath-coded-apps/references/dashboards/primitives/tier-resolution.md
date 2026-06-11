@@ -52,6 +52,12 @@ The agent reads the SDK service reference (this file, loaded in the parallel bla
 - Use constructor injection: `new ServiceClass(sdk as never)`
 - The build script passes the returned array directly to the chart/table
 - **Read methods ONLY.** Dashboards display data; they never mutate. Allowed: `getAll`, `getById`, `getAllRecords`, `queryRecordsById`, `getIncidents`. Never call `create`, `complete`, `assign`, `start`, `stop`, `resume`, `restart`, `insert*`, `update*`, `delete*`, `upload*` — even though the shared `sdk/*.md` references document them for the app-building modes.
+- **Full listings: use the scaffold's `fetchAll` helper — never hand-write the cursor loop.** Every list call returns one server-capped page; to list everything:
+  ```typescript
+  const { fetchAll } = await import('@/lib/paginate')
+  return await fetchAll(cursor => svc.getAll({ pageSize: 200, cursor }))
+  ```
+  Never write `let page: any` or copy a `hasNextPage`/`nextCursor` while-loop into a fnBody.
 
 **Presentation matters as much as the query.** A chart with the wrong headline or an empty subtitle reads as broken. For every chart metric set `headlineMode` + `deltaPolarity` + `subtitle`, and give it a record-grain `detailFnBody` + `detailColumns` so the drill-down shows real records, not the chart's buckets. For ratios (error rate, success rate) use `displayAs: "rate-chart"` with `rateNum`/`rateDen`. See `plugins/build/impl.md § Presentation fields` for the full schema and an example.
 
