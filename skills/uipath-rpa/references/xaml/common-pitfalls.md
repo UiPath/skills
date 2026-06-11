@@ -914,7 +914,7 @@ All nodes in a Flowchart/ProcessDiagram must be registered as children of the co
 </Flowchart>
 ```
 
-The same registration rules apply to `<upa:ProcessDiagram>` and its node types (`EventNode`, `TaskNode`, `DecisionNode`, `EndNode`, `BoundaryNode`).
+The same registration rules apply to `<upa:ProcessDiagram>` and its node types (`EventNode`, `TaskNode`, `DecisionNode`, `SwitchNode<T>`, `SplitNode`, `MergeNode`, `SubProcessNode`, `EndNode`, `BoundaryNode`).
 
 ### Other Gotchas
 
