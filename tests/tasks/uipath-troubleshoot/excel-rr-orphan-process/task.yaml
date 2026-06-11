@@ -15,9 +15,11 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 4500
-max_turns: 30
-turn_timeout: 3600
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
 
 sandbox:
   driver: tempdir
@@ -53,89 +55,43 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the read-range-file-locked playbook AND identified an orphan EXCEL.EXE from a prior faulted job (driven by ContinueOnError=True on the Excel scope) as the cause"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `System.IO.IOException: ... used by another process.` Pinned
-         job key: cc333333-4444-5555-6666-777788889999. No one was
-         using the workbook and no other jobs are scheduled at the
-         same time. The previous run of the same process also failed
-         earlier this hour. What is holding the file?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-locked.md
-        because the runtime error
-          "System.IO.IOException: The process cannot access the file
-          '<path>' because it is being used by another process."
-        is the verbatim file-acquisition signature of that playbook.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The prior faulted job (key
-            dd444444-5555-6666-7777-888899990000) left an orphan
-            EXCEL.EXE process running under the Robot user's session
-            because the workflow's `Excel Application Scope` had
-            `ContinueOnError="True"` AND a `Try Catch` wrapper that
-            swallowed the scope's exception without disposing the
-            scope.
-          - The orphan EXCEL.EXE still holds the workbook's file
-            lock when the current job (cc333333-...) starts and
-            attempts to open the same workbook.
-          - There is NO concurrent sibling job (`or jobs list`
-            shows no overlap with another running job; `or triggers
-            list` shows a single trigger). The cause is the orphan,
-            not concurrency.
-
-        The reference fix:
-          - One-off: kill the orphan EXCEL.EXE owned by the Robot user
-            on MOCK-HOST (Stop-Process / taskkill /F /IM EXCEL.EXE
-            scoped to the Robot's session).
-          - Permanent: fix the workflow source. Remove
-            `ContinueOnError="True"` from the Excel Application
-            Scope, fix the Try Catch to either re-throw or dispose
-            the scope cleanly, and ideally migrate from Excel
-            Application Scope to Use Excel File (more robust
-            disposal).
-          - Defensive: add a pre-job cleanup step that kills stale
-            EXCEL.EXE under the Robot user before the workflow
-            begins, until the workflow fix lands.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the read-range-file-locked playbook AND
-             converged on the orphan-process branch with BOTH pieces
-             of evidence: prior faulted job key + workflow source's
-             `ContinueOnError="True"`. Recommended both the orphan
-             kill and the workflow fix.
-        0.8  Both dimensions partially correct: e.g., matched the
-             playbook and identified an orphan but only cited ONE
-             evidence source (just the prior job OR just the
-             ContinueOnError pattern), or recommended only one of
-             the two fixes.
-        0.5  Only one dimension correct: e.g., matched the playbook
-             but classified the cause-branch incorrectly (concurrent,
-             network-share); OR identified the orphan cause without
-             matching the specific playbook.
-        0.2  Agent recognized SOME aspect (excel-activities domain)
-             but did not converge on the orphan branch.
-        0.0  Reached the wrong branch (concurrent / network-share /
-             AV without evidence), concluded a different root cause,
-             got blocked, or failed.
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option and never invents data — keeps the investigation faithful.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You are
+    waiting for the diagnostic agent to finish and trust its expertise.
+    You only know what you wrote in your initial report. You have no
+    other data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

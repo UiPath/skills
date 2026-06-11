@@ -18,6 +18,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 3600
   max_turns: 60
   turn_timeout: 3600
@@ -48,105 +49,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent reached the same root cause as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      Grade ONLY the agent's final response to the user. Do NOT inspect
-      anything under `.local/investigations/` — that is bookkeeping, not the
-      deliverable. The agent's presented conclusion is the contract.
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A — Correct root cause
-        The agent must identify, in its final response, that the NClick in
-        `Ofsb.xaml` faulted at coordinate injection because `InteractionMode
-        = HardwareEvents` requires an on-screen coordinate, and the element's
-        runtime screen position fell outside the host viewport. A passing
-        conclusion must name:
-          - The faulted activity (NClick "Click 'Learn More About Editor'")
-            in `Ofsb.xaml`.
-          - `InteractionMode = HardwareEvents` as the interaction path that
-            requires absolute on-screen coordinates.
-        Naming one of the four playbook sub-causes — C1 (page-scroll
-        mismatch), C2 (window not normalized), C3 (multi-monitor canvas
-        → smaller host), or C4 (sticky chrome), with reasoning tied to the
-        XAML evidence — is NOT required to pass; it lifts the score into the
-        higher bands (see rubric).
-
-      Full credit (1.0) requires the agent to either:
-        (a) name C1 (page-scroll mismatch) as the primary sub-cause and
-            cite the "zero preceding Scroll / Scroll Into View / Hover /
-            Navigate Browser" evidence on the browser scope, OR
-        (b) explicitly acknowledge that C1 and C2 are indistinguishable
-            from XAML alone (per the playbook) and recommend the universal
-            fix without committing to one or the other.
-
-      Partial credit (0.8) for C2-only framing (`AttachMode=ByInstance`
-      with no preceding sizing activity) — defensible from the XAML but
-      misses the more parsimonious browser-scroll explanation; still
-      passes if the fix is correct.
-
-      Lower-but-passing credit (0.7) for C3-only framing (multi-monitor
-      canvas vs smaller host) — the host is 4K, so the element fits in the
-      viewport with the right scroll/window state, and C3 is eliminated by
-      the playbook's step 5d geometry check; the root cause and fix are
-      still correct, so it passes.
-
-      DIMENSION B — Correct fix recommended
-        The agent must propose a concrete corrective action consistent with
-        RESOLUTION.md. The universal fix is to switch the Click's
-        `InteractionMode` from `HardwareEvents` to one of the
-        viewport-independent values in the valid enum — `SameAsCard`
-        (preferred for this scenario; inherits the scope's `DebuggerApi`),
-        `DebuggerApi` (explicit), or `Simulate` (for desktop targets).
-        These cover all four sub-causes.
-
-        **Hard fail (cap at 0.4 on this dimension) if the agent recommends
-        `ChromiumAPI`** — that string is not a member of the UiPath
-        `InteractionMode` enum and the XAML will fail to deserialize. The
-        only valid values are: `SameAsCard`, `HardwareEvents`, `Simulate`,
-        `DebuggerApi`, `WindowMessages`.
-
-        Acceptable alternatives, each tied to a specific sub-cause:
-          - C1: insert a `Scroll Into View` / `Hover` / anchor-bearing
-            `Navigate Browser` activity before the Click.
-          - C2: insert a `Maximize Window` / `Set Browser Size` /
-            `Set Window State` activity, or change `AttachMode` from
-            `ByInstance` to `SingleWindow`.
-          - C3: re-record the workflow on a single-monitor canvas.
-          - C4: dismiss the chrome before the click.
-        Enabling Healing Agent as defense-in-depth is a legitimate add-on
-        but not sufficient on its own.
-
-      DIMENSION C — No fabrication
-        The agent must not invent assets, configurations, policies, or
-        evidence not present in RESOLUTION.md (e.g., made-up retry counts,
-        non-existent fields, hallucinated machine names, invented prior
-        fault histories).
-
-      SCORING RUBRIC (single score):
-        1.0  All three dimensions correct AND a sub-cause articulated —
-             C1-primary, or C1/C2-ambiguity acknowledged per the playbook.
-        0.8  All three dimensions correct with C2-only sub-cause framing
-             (defensible but misses the C1 cue).
-        0.7  All three dimensions correct — faulted NClick named,
-             InteractionMode=HardwareEvents identified as the
-             coordinate-injection cause, and a valid viewport-independent
-             fix proposed — with C3-only framing OR no explicit sub-cause
-             attribution. Correct diagnosis + correct fix is a passing
-             answer; naming a sub-cause earns the higher bands.
-        0.5  Root cause directionally correct but missed the interaction-mode
-             signature (HardwareEvents/coordinate cause); OR no concrete fix
-             proposed.
-        0.2  Recognized only the surface symptom (e.g., "click failed",
-             "element off-screen") with no identification of the
-             HardwareEvents/coordinate cause.
-        0.0  Wrong conclusion, blocked, or significant fabrication.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

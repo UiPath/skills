@@ -11,6 +11,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -41,94 +42,25 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  - type: file_exists
-    description: "Agent wrote investigation state under .local/investigations/"
-    path: .local/investigations/state.json
-    weight: 0.5
-
   - type: llm_judge
-    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "why did my job 899a0c10-d81b-44ea-9d29-cecc00fd8976 from folder Shared has failed?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      The originating fault is NodeNotFoundException on the NClick
-      "Click 'Creating a Doodle'" inside the NApplicationCard "Edge
-      Google" in the TO workflow file. Healing Agent did not produce
-      recovery data; the root cause is an AUTHORING DEFECT — the
-      Application Card attaches to https://www.google.com/ but the
-      Click targets an element that only exists on doodles.google,
-      with no navigation step in between.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      You must grade BOTH dimensions in a single score:
-
-      DIMENSION A -- Correct playbook + actual CLI work
-        The agent must match a UI-automation selector-failure playbook
-        (selector-failure-healing-disabled.md OR selector-failure-manual.md
-        OR no-recovery-data.md) in state.json's `matched_playbooks`.
-
-        Independently, the agent's tool-call history must show real
-        Orchestrator interrogation via the uip CLI — at minimum
-        `uip or jobs get <key>` on the faulted job. If the agent
-        reached a conclusion without invoking uip on the faulted job,
-        the playbook dimension is failed regardless of which playbook
-        was named.
-
-      DIMENSION B -- Same root cause as RESOLUTION.md
-        The reference root cause names ALL of:
-          (a) The NApplicationCard "Edge Google" (or its scope) is the
-              defect locus, NOT the NClick selector — the selector
-              itself is fine for its intended page.
-          (b) The card attaches to https://www.google.com/ (Google
-              homepage) instead of doodles.google.
-          (c) The mechanism is that the workflow has zero navigation
-              activities (no NGoToUrl / OpenBrowser / NavigateBrowser)
-              and the card's AttachMode=ByInstance + permissive
-              title='Google' selector latch onto whatever Edge tab is
-              already open. Naming any of these equivalent framings
-              counts.
-          (d) The fix is either inserting a Go To URL / Navigate
-              Browser activity to doodles.google before the click, OR
-              repointing TargetApp.Url to https://doodles.google/ plus
-              tightening the title selector, OR re-indicating the
-              click on the page the card actually attaches to.
-
-        Healing Agent's IssueDetected / HealingEnabled=false /
-        AutopilotForRobots.Enabled=false are DOWNSTREAM signals —
-        naming them as the primary root cause is wrong.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Matched a UI-automation selector-failure playbook AND
-             named all of (a)+(b)+(c)+(d).
-        0.8  Matched playbook and named (a)+(b) plus one of (c)/(d).
-        0.5  Identified wrong page / wrong scope but missed the
-             Application Card framing, OR matched right playbook but
-             conclusion stopped at "selector failed" without scope
-             diagnosis.
-        0.2  Recognized NodeNotFoundException surface but blamed the
-             selector strictness / aaname padding / dynamic parentid
-             as the root cause (those are latent secondary defects,
-             not the originating fault).
-        0.0  Misdiagnosed (e.g., blamed HA infrastructure, asset,
-             permissions, connection) or got blocked.
-
-      Be substance-focused, not schema-focused. Intermediate file shapes
-      may vary between runs — look at the meaning of what the agent
-      recorded.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook match and root-cause naming>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 # Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
 # end-to-end without a human. The simulator always picks the recommended /

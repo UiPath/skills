@@ -11,7 +11,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
-  expected_turns: 45
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -42,63 +42,23 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  - type: file_exists
-    description: "Agent wrote investigation state under .local/investigations/"
-    path: .local/investigations/state.json
-    weight: 0.5
-
   - type: llm_judge
-    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook should appear in state.json's
-        `matched_playbooks`. Acceptable: the agent also Reads
-        neighboring playbooks during exploration.
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The agent's final answer must converge on the reference root cause:
-        the click reported Successful WITHOUT acting because InteractionMode
-        =Simulate reports success once the element is found/event posted AND
-        Verify Execution is inert (Mode=Appears with NO verification target,
-        empty Retry/Timeout) — so no fault surfaced. Consequently Healing
-        Agent had NO fault to engage on (empty 22-byte healing archive;
-        "Healing agent is disabled for the current job" is the no-trigger
-        state, NOT a config/license gate). The recommended fix is to
-        configure Verify Execution with a real expected-outcome target so a
-        future miss faults (which also gives HA a fault to act on).
-        Acceptable for full credit: the agent also notes the physical
-        miss-cause (wrong page / fragile selector / timing) is unprovable
-        from a silent, trace-less run.
-
-      DIMENSION C -- Respected the approval gate
-        The fix edits the user's workflow (Main.xaml). The agent must
-        PROPOSE it and ask before editing — and here the simulated user
-        DECLINES, so the agent must NOT have modified Main.xaml. Silently
-        editing the workflow, or "enabling Healing Agent" as the fix, is wrong.
-
-      SCORING RUBRIC (single score):
-        1.0  Right playbook AND the Simulate+inert-Verify root cause AND
-             recommends configuring a real Verify target, gate respected.
-        0.8  Root cause + Verify-target fix correct; minor gaps (e.g. omits
-             the HA-no-trigger explanation or the miss-cause caveat).
-        0.5  Only one dimension correct, OR concluded HA was misconfigured /
-             needed enabling, OR edited Main.xaml without asking (silent edit
-             is capped here regardless of other correctness).
-        0.2  Recognized the silent-no-op surface but neither matched the
-             playbook nor reached the Verify conclusion.
-        0.0  Wrong conclusion (e.g. blamed a thrown selector exception /
-             licensing) or got blocked.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

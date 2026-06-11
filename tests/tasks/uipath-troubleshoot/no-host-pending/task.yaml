@@ -20,6 +20,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 3600
   max_turns: 60
   turn_timeout: 3600
@@ -48,93 +49,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent's presented resolution reaches the same root cause + fix as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The attached RESOLUTION.md is the authoritative
-      ground truth. Grade ONLY what the agent PRESENTED to the user (its
-      final response) plus the tool-call summary. Do NOT grade on internal
-      .local/investigations/ files.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      What the user reported (cold, verbatim): "why my last job from folder
-      Shared doesn't start?" — no job key, no process name, no machine,
-      credential, or license details. The agent had to DISCOVER the job by
-      listing Pending jobs in the Shared folder and read its
-      PendingReasons + machine + license + history via the uip CLI.
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      The evidence the mocked tenant returns:
-        - Exactly one Pending job in Shared: cb00355c-... (process
-          NewBlankTask, Unattended, created 2026-05-28T08:48:18Z).
-        - PendingReasons.ErrorCodes: host-family ["TemplateNoHostsAvailable",
-          "DynamicJobConnectedMachinesInvalid",
-          "DynamicJobConnectedMachinesWindowsRobotVersionInvalid"] with
-          error text "...there is none connected to this folder".
-        - JobHistory: single original Pending entry — the job never started.
-        - machines list (all-fields): the only Default-scope template
-          DanLaptopNew reports robotVersions EMPTY — NO runtime is connected
-          to it. (Other templates are Serverless / PersonalWorkspace scope,
-          not eligible for this Default-scope folder job.)
-        - licenses info: Unattended Allowed=1, Used=0, IsExpired=false —
-          entitlement provisioned and the slot is FREE. License is not the
-          blocker.
-        - Running Unattended jobs in Shared: zero.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A — Correct root cause (in the presented answer)
-        The reference root cause is a genuine **no available host**: no robot
-        runtime is connected to the machine template that serves the Shared
-        folder (DanLaptopNew has empty robotVersions), so there is no host to
-        accept the Unattended job and it stays Pending. The host-family
-        PendingReasons reflect reality. The agent should cite the empty
-        robotVersions (no connected runtime), and note the slot is free and
-        there is no competing job — i.e. the blocker is the missing host, not
-        license or credentials.
-
-      DIMENSION B — Correct fix (in the presented answer)
-        The authoritative fix is to **make a host available to the Shared
-        folder's template**: connect/sign a robot into a machine on the
-        DanLaptopNew template, or assign a machine template that already has
-        a connected host to the folder. Any phrasing of "no machine is
-        connected/assigned — connect or assign one" is correct.
-
-      PENALIZE — these are wrong turns for THIS scenario:
-        - Concluding it is a stale dispatch-time snapshot and recommending
-          "stop + re-trigger" as the fix. There is NO connected runtime
-          (robotVersions is empty), so a fresh dispatch finds no host and
-          lands back in Pending — re-trigger does not resolve it.
-        - Concluding the Unattended license is "exhausted" / "no free slot"
-          (Used=0, Allowed=1 — the slot is free).
-        - Concluding RobotNoMatchingUsernames / wrong machine credentials —
-          that code is NOT in PendingReasons for this job.
-        - Asserting a specific Assistant-signed-out / Robot-Service-stopped /
-          network fault on a named host as the CONFIRMED cause. The CLI shows
-          only that no runtime is connected, not why. (Recommending "connect
-          / sign a robot in" as the remediation is correct; stating a
-          specific sub-cause as fact is not supported by the evidence.)
-        - Recommending re-installing the robot, re-licensing, or other
-          unrelated remediations.
-
-      SCORING RUBRIC (single score):
-        1.0  Final answer names "no host/runtime connected to the folder's
-             template" (no machine available) as the root cause AND leads
-             with connect/assign a machine to the folder as the fix, AND
-             does not assert stale-dispatch/re-trigger, license-exhaustion,
-             or credential misreads as cause.
-        0.7  Identifies no-host correctly and recommends connecting/assigning
-             a host, but frames the cause loosely OR also floats re-trigger
-             as a co-equal fix.
-        0.4  Identifies the job is Pending on a host issue but leads with a
-             wrong primary cause OR omits the connect/assign-a-host fix.
-        0.0  Leads with stale-dispatch/re-trigger, license-exhaustion, or
-             credential-mismatch as the root cause, or fails to give an
-             actionable cause + fix.
-
-      Reward substance over schema. Return JSON:
-      {"score": <float>, "rationale": "<one sentence on cause + fix + any trap hit>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

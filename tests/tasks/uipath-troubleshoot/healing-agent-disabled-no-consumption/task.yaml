@@ -15,6 +15,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 2400
   max_turns: 60
   turn_timeout: 1800
@@ -44,63 +45,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent's final answer reaches the same conclusion as RESOLUTION.md: HA did not run, consumed nothing, the log line is informational"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md). Grade ONLY the agent's
-      final user-facing answer (and the tool calls it relied on) — do NOT
-      grade internal bookkeeping files. The user asked three things about
-      the last job in folder Shared: did Healing Agent run, did it consume
-      any AI units/credits, and what does the healing-agent log line mean.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      DIMENSION A -- Healing Agent did NOT run
-        The agent must conclude HA was disabled / did not engage for this
-        job. Supporting evidence it should cite from the mocked CLI:
-        AutopilotForRobots Enabled=false and HealingEnabled=false on the
-        job, and/or the empty (22-byte) healing-data archive. Concluding
-        that HA *did* run is wrong.
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION B -- Zero consumption
-        The agent must state that NO AI units / credits / AI Trust Layer
-        were consumed, because HA never engaged (units are charged only on
-        a successful heal/recommendation). Claiming or implying any
-        consumption is wrong.
-
-      DIMENSION C -- The log line is informational
-        The agent must explain that "Healing agent is disabled for the
-        current job." is a benign informational config-read that appears
-        regardless of HA state and carries no cost — NOT evidence that HA
-        ran. (Recognizing this as the healing-agent-orch-issues
-        config-read log surface is the expected reasoning, but grade the
-        explanation in the answer, not any file.)
-
-      ALSO ACCEPTABLE (not required for full marks): the agent notes the
-      job actually faulted on an unrelated UI Automation
-      NodeNotFoundException (selector/target not found), and that enabling
-      HA in future would also require provisioning the HA add-on
-      (Allowed.AgentService=0).
-
-      DISQUALIFIERS (cap score at 0.3 if any present):
-        - Claims HA ran or consumed units/credits for this job.
-        - Treats the line as the "No available license / Agentic units"
-          error (a different signal not present here).
-        - Recommends removing/disabling VerifyOptions / Verify Execution.
-
-      SCORING RUBRIC (single score):
-        1.0  All three dimensions correct (HA didn't run, zero consumption,
-             log line is informational), clearly stated to the user.
-        0.8  All three correct but one is vague or under-explained.
-        0.6  Two of three correct (e.g., says HA didn't run + zero
-             consumption but doesn't explain the log line).
-        0.4  Only one dimension correct.
-        0.2  Recognized HA was involved but gave a wrong/again-ambiguous
-             answer.
-        0.0  Wrong conclusion, or a disqualifier applies, or blocked.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

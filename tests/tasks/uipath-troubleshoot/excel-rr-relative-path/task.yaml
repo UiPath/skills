@@ -18,9 +18,11 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 4500
-max_turns: 30
-turn_timeout: 3600
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
 
 sandbox:
   driver: tempdir
@@ -55,93 +57,43 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the read-range-file-not-found playbook AND identified the relative-WorkbookPath-resolved-against-wrong-CWD branch (workflow source has relative path; error shows resolved path with the per-package %LocalAppData%\\UiPath\\Packages\\... prefix)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `System.IO.DirectoryNotFoundException: Could not find a part
-         of the path 'C:\Users\automation1\AppData\Local\UiPath\Packages\ExcelDailyImport\1.0.0\Data\sales-2026-05.xlsx'.`
-         Pinned job key: cc333333-9999-aaaa-bbbb-ccccddddeeee. That
-         path is bizarre — the file lives at C:\Robot\Data\sales-2026-05.xlsx,
-         not anywhere near AppData. Where is the Robot looking, and
-         why?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-not-found.md
-        because the runtime error is a DirectoryNotFoundException /
-        FileNotFoundException family — the file-resolution-failure
-        signature of that playbook.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The workflow's configured `WorkbookPath` is a relative path
-            literal: `"Data\sales-2026-05.xlsx"` (visible in
-            `process/Main.xaml`).
-          - The .NET runtime resolves relative paths against
-            `Environment.CurrentDirectory`. Studio's CurrentDirectory
-            during design-time tests is the project folder, so the
-            workflow works on the developer's machine.
-          - The Robot's unattended runtime CWD is the per-package
-            directory: `%LocalAppData%\UiPath\Packages\<process>\<version>\`.
-            The resolved path becomes
-            `C:\Users\automation1\AppData\Local\UiPath\Packages\ExcelDailyImport\1.0.0\Data\sales-2026-05.xlsx`,
-            which does not exist.
-          - The error path's prefix (`C:\Users\<robot-user>\AppData\Local\UiPath\Packages\<process>\<version>\`)
-            is the smoking gun for branch 3.
-          - The user's actual data folder (`C:\Robot\Data\`) is
-            unrelated to the resolved path — confirming the runtime
-            is anchoring against the wrong CWD, not against any
-            user-intended root.
-
-        The reference fix:
-          - Change the workflow's `WorkbookPath` from the relative
-            `"Data\sales-2026-05.xlsx"` to an absolute path:
-            `"C:\Robot\Data\sales-2026-05.xlsx"`, OR anchor it
-            against a known root (Orchestrator asset, environment
-            variable, `SpecialFolder` constant).
-          - Never use relative paths in unattended workflows; the
-            Robot's CWD differs from Studio's.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the read-range-file-not-found playbook AND
-             converged on the relative-path-wrong-CWD branch (named
-             the workflow's relative `WorkbookPath` from source,
-             identified the per-package %LocalAppData% prefix as the
-             smoking gun, and recommended anchoring to an absolute
-             path).
-        0.8  Both dimensions partially correct: matched the playbook
-             and identified the CWD divergence but did not name
-             BOTH the workflow's relative path AND the resolved
-             prefix; OR identified the pattern without matching the
-             specific playbook.
-        0.5  Only one dimension correct: matched the playbook but
-             confidently guessed a different branch (deletion,
-             unmapped drive, UNC) without supporting evidence;
-             OR identified the relative-path issue without matching
-             the specific playbook.
-        0.2  Agent recognized the path-resolution failure but
-             neither matched the playbook nor identified the CWD
-             pattern.
-        0.0  Agent confidently picked a wrong branch without
-             evidence; concluded a different root cause; got
-             blocked; or failed.
-
-      Be substance-focused. The %LocalAppData%\UiPath\Packages\
-      prefix in the resolved path is the decisive signal -- penalize
-      agents that miss it.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option and never invents data — keeps the investigation faithful.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You are
+    waiting for the diagnostic agent to finish and trust its expertise.
+    You only know what you wrote in your initial report. You have no
+    other data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

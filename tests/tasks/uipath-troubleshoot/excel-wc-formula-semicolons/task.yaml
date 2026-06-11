@@ -18,9 +18,11 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 4500
-max_turns: 50
-turn_timeout: 3600
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 50
+  turn_timeout: 3600
 
 sandbox:
   driver: tempdir
@@ -55,106 +57,43 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the write-cell-failures playbook AND identified the formula-syntax cause (branch 2): the configured Value `=SUM(A1;A10)` uses semicolon separators; UiPath/Excel COM requires commas regardless of host regional setting. Agent distinguished branch 2 from branch 3 (loop-induced 'Excel is busy') by noting the activity is NOT inside a loop."
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `UiPath.Excel.BusinessException: The data you want to write
-         has a wrong format, or Excel is busy.` Pinned job key:
-         22bb2222-2222-3333-4444-555566667777. The activity is a single
-         Write Cell — no loop, no parallel work, no other Excel jobs.
-         Why does Excel think the data has the wrong format?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/write-cell-failures.md
-        because the failing activity is a Write Cell and the cause-
-        branch is the formula-syntax variant (branch 2) — NOT the
-        loop-induced Excel-is-busy variant (branch 3) that shares
-        the same error wording.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The workflow's `Write Cell` activity targets cell `D1`
-            with `Value = "=SUM(A1;A10)"`. The formula uses
-            SEMICOLON separators between parameters.
-          - UiPath passes the formula string to Excel COM verbatim,
-            and Excel COM requires COMMA separators in parameter
-            lists regardless of the host's Windows regional setting.
-            (The Excel UI displays semicolons in non-US locales,
-            but the COM API does not accept them.)
-          - Excel's formula parser rejects the malformed formula
-            with `UiPath.Excel.BusinessException: The data you
-            want to write has a wrong format, or Excel is busy.`
-            The "or Excel is busy" clause is misleading — Excel
-            is not busy, the formula syntax is invalid.
-
-        Critical disambiguation: the SAME error wording is produced
-        by branch 3 (loop-induced Excel COM thrash). The
-        distinguishing evidence is:
-          - The user's explicit statement: "no loop, no parallel
-            work, no other Excel jobs" — rules out branch 3.
-          - The workflow source shows a single Write Cell, NOT
-            inside a For Each / For Each Row / While loop.
-          - The job logs show ONE Write Cell invocation, not a
-            sequence of successful iterations preceding the
-            failure (which would indicate branch 3).
-          - The configured Value contains a formula with `;`
-            separators — the positive signal for branch 2.
-
-        The reference fix:
-          - Replace `=SUM(A1;A10)` with `=SUM(A1,A10)` in the
-            Write Cell's Value property. Use commas regardless of
-            the host's regional setting.
-          - For workflows that may run on hosts with different
-            regional settings, always build formula strings with
-            comma separators; the Excel UI's semicolon
-            convention is a display preference, not an API
-            contract.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the write-cell-failures playbook AND
-             identified the formula-syntax cause (branch 2). Named
-             `=SUM(A1;A10)` specifically, explained the comma-vs-
-             semicolon rule, distinguished branch 2 from branch 3
-             by noting absence of loop, and recommended replacing
-             semicolons with commas.
-        0.8  Both dimensions partially correct: matched the playbook
-             and identified the formula syntax issue but did not
-             explicitly contrast with branch 3 (loop thrash) or
-             explain the comma-vs-semicolon rule.
-        0.5  Only one dimension correct: matched the playbook but
-             concluded branch 3 (loop thrash) despite the user
-             explicitly excluding loops; OR identified the
-             formula-syntax issue without matching the specific
-             playbook.
-        0.2  Agent recognized the BusinessException as Excel-related
-             but neither matched the playbook nor identified the
-             formula-syntax cause.
-        0.0  Reached the wrong branch (loop thrash, file-locked,
-             sheet-not-found, etc.) without supporting evidence;
-             concluded a different root cause; got blocked; or
-             failed.
-
-      Be substance-focused. The combination of (a) the configured
-      Value `=SUM(A1;A10)` visible in the workflow source, (b) the
-      user's explicit exclusion of loops, and (c) the
-      comma-vs-semicolon rule documented in the playbook is the
-      decisive signal for branch 2 vs. branch 3. Penalize agents
-      that miss the semicolon detail and reflexively recommend
-      the loop-thrash investigation.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option and never invents data — keeps the investigation faithful.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You are
+    waiting for the diagnostic agent to finish and trust its expertise.
+    You only know what you wrote in your initial report. You have no
+    other data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

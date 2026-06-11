@@ -17,9 +17,11 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 7200
-max_turns: 50
-turn_timeout: 5400
+run_limits:
+  expected_turns: 300
+  task_timeout: 7200
+  max_turns: 50
+  turn_timeout: 5400
 
 sandbox:
   driver: tempdir
@@ -72,108 +74,43 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the read-range-sheet-not-found playbook AND identified the visually-identical-but-byte-different sheet name as the root cause — EITHER by detecting the specific differing character (NBSP / U+00A0, look-alike Unicode, whitespace) from the fixture content directly, OR by recommending a host-side byte-compare for the user to confirm. Both approaches are correct; what the test penalizes is guessing the wrong branch (typo, case, rename) without supporting evidence."
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `UiPath.Excel.BusinessException: The sheet with the name
-         'Quarterly Data' does not exist.` Pinned job key:
-         cc333333-7777-8888-9999-000011112222. The sheet IS there —
-         the workbook clearly has 'Quarterly Data' at the top of the
-         tab list and the Get Workbook Sheets activity logged it.
-         Casing, spelling, spaces all look identical. I'm remote;
-         give me commands to run on the host."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md
-        because the runtime error is the BusinessException sheet-resolution
-        failure signature.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Correct identification of visually-identical mismatch
-        The reference root cause is:
-          - The configured `SheetName: "Quarterly Data"` (regular
-            space U+0020) and the workbook's actual sheet name
-            `"Quarterly Data"` (non-breaking space U+00A0) are
-            VISUALLY IDENTICAL but differ at the byte level. The
-            two strings render the same in most UI surfaces but
-            have different byte representations (U+0020 = 0x20,
-            U+00A0 in UTF-8 = 0xC2 0xA0).
-          - The CLI evidence chain (jobs get, jobs logs, workflow
-            source) confirms the playbook match and rules out typo,
-            case-mismatch, rename, deletion, and dynamic-expression
-            branches. The remaining candidates are branch 5
-            (whitespace) and branch 6 (look-alike Unicode).
-
-        There are TWO acceptable paths to a correct answer:
-
-        PATH A -- Agent detects the differing character directly.
-          The fixture's job-logs response embeds the actual NBSP
-          byte (0xC2 0xA0) in the Get Workbook Sheets log message.
-          An agent that reads the fixture content via Read/Grep
-          and identifies the specific code point (e.g., U+00A0
-          NBSP, or "non-breaking space") has solved the problem.
-          The agent may also recommend the fix directly (rename
-          the sheet in Excel to use a regular space, or trim/
-          normalize in the workflow).
-
-        PATH B -- Agent recommends host-side byte-compare.
-          The agent acknowledges visual identity but does not
-          identify the specific code point. It recommends the
-          host-side PowerShell byte-compare from the playbook
-          (`[System.Text.Encoding]::UTF8.GetBytes` or equivalent)
-          so the user can confirm which character differs.
-
-        Both paths arrive at the same root cause (branches 5 or
-        6 of the playbook). Reward either.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the read-range-sheet-not-found playbook AND
-             reached one of the two correct paths above:
-               (A) named the specific differing character (NBSP /
-                   U+00A0 / non-breaking space), OR
-               (B) recommended a host-side byte-compare via the
-                   PowerShell snippet from the playbook.
-             Did NOT claim a different branch (typo / case / rename)
-             without evidence.
-        0.8  Both dimensions partially correct: matched the playbook
-             and recognized the look-alike / whitespace candidates
-             but did not commit to a specific finding (vague "check
-             the bytes" without either naming the code point or
-             giving the byte-compare commands); OR named the right
-             commands or character but also speculated about another
-             branch.
-        0.5  Only one dimension correct: matched the playbook but
-             confidently guessed a wrong branch (e.g., "probably
-             typo") without evidence; OR identified the look-alike /
-             whitespace possibility without matching the specific
-             playbook.
-        0.2  Agent recognized the BusinessException as a sheet-name
-             issue but produced neither the playbook match nor a
-             byte-level finding or recommendation.
-        0.0  Agent confidently picked a wrong branch (typo, case,
-             rename) without supporting evidence; concluded a
-             different root cause; got blocked; or failed.
-
-      Be substance-focused. The test grades whether the agent
-      converged on the visually-identical-but-byte-different
-      pattern, not whether it preferred a specific tool path to
-      get there. An agent that detects NBSP directly from the
-      fixture content is just as correct as one that recommends
-      the user run a byte-compare. Penalize confident guessing
-      that ignores the visual-identity clue.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and handling of look-alike mismatch>"}
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option and never invents data — keeps the investigation faithful.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You are
+    waiting for the diagnostic agent to finish and trust its expertise.
+    You only know what you wrote in your initial report. You have no
+    other data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

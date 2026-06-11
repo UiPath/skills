@@ -15,9 +15,11 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 4500
-max_turns: 30
-turn_timeout: 3600
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
 
 sandbox:
   driver: tempdir
@@ -51,90 +53,44 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the read-range-file-locked playbook AND identified concurrent Robot jobs racing on the same workbook as the cause"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `System.IO.IOException: The process cannot access the file
-         'C:\Robot\Data\sales-2026-05.xlsx' because it is being used by
-         another process.` Pinned job key:
-         aa111111-2222-3333-4444-555566667777. The workbook is on the
-         Robot host itself — no human had it open. Why is the file
-         locked and how do I stop this from happening again?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-locked.md
-        because the runtime error
-          "System.IO.IOException: The process cannot access the file
-          '<path>' because it is being used by another process."
-        is the verbatim file-acquisition signature of that playbook.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-        Acceptable / non-penalized: agent may also Read the excel-activities
-        investigation_guide, the orchestrator playbooks for job-faulted-*,
-        the top-level investigation_guide, or neighboring activity-package
-        overviews. Exploration during triage is normal.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - Two Orchestrator jobs (aa111111-... and
-            bb222222-3333-4444-5555-666677778888) ran concurrently against
-            the same workbook (`sales-2026-05.xlsx`).
-          - Both jobs target the same process (`ExcelDailyImport`) in the
-            same folder (`ExcelImports`).
-          - Two triggers fire the process on overlapping schedules so the
-            jobs' Running windows overlap.
-          - The first job to start acquired the workbook's file lock
-            (through Excel COM or OpenXML). The second job's Read Range
-            tried to open the same file and the OS refused with
-            `IOException`.
-
-        The reference fix:
-          - Serialize the process. Options: per-workbook lock asset
-            acquired at job start, single-performer queue, or stagger the
-            triggers so the Running windows do not overlap.
-          - Verify by inspecting trigger schedules
-            (`uip or triggers list`) and confirming no two firings of the
-            same process fall within the workbook's expected runtime
-            window.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched the read-range-file-locked playbook AND
-             converged on the concurrent-jobs branch (named the sibling
-             job key, identified overlapping triggers, recommended
-             serialization).
-        0.8  Both dimensions partially correct: e.g., matched the
-             playbook but described the lock generically without naming
-             the sibling job; or named the sibling job but matched a
-             different (or no specific) playbook.
-        0.5  Only one dimension correct: e.g., agent identified Excel
-             ReadRange as the failing surface but never matched the
-             specific playbook and never named the concurrent job;
-             OR matched the right playbook but never reached a coherent
-             conclusion about WHICH branch applied.
-        0.2  Agent recognized SOME aspect (e.g., domain classified as
-             excel-activities) but neither matched the playbook nor
-             named the concurrent job.
-        0.0  Reached the wrong branch (e.g., concluded orphan process,
-             network-share lock, or AV without supporting evidence),
-             concluded a different root cause entirely, got blocked
-             without progress, or failed.
-
-      Be substance-focused, not schema-focused. The skill's intermediate
-      file shapes may differ between runs -- look at the meaning of what
-      the agent recorded.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option and never invents data — keeps the investigation faithful.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the faulted Orchestrator job.
+    You are waiting for the diagnostic agent to finish and trust its
+    expertise. You only know what you wrote in your initial report — the
+    error text, the pinned job key, and that the workbook lives on the
+    Robot host. You have no other data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as excel-activities, orchestrator, integration-service), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

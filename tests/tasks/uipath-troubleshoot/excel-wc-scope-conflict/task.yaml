@@ -18,9 +18,11 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 4500
-max_turns: 50
-turn_timeout: 3600
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 50
+  turn_timeout: 3600
 
 sandbox:
   driver: tempdir
@@ -56,111 +58,43 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the write-cell-failures playbook AND identified the Classic-inside-Modern scope-conflict (NOT the external-locker variant of read-range-file-locked). Recommended either moving the Classic Workbook Write Cell out of the Use Excel File scope, OR replacing it with a Modern Write Cell nested inside the existing scope."
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `System.IO.IOException: The process cannot access the file
-         'C:\Robot\Data\sales-2026-05.xlsx' because it is being used by
-         another process.` Pinned job key:
-         11aa1111-2222-3333-4444-555566667777. The workbook is only used
-         by this one process — no human had it open, and there are no
-         other jobs running against it. Why is the file locked from
-         itself?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/write-cell-failures.md
-        because the failing activity is a Write Cell and the
-        cause-branch is the Classic/Modern scope conflict variant
-        (branch 1 scope-conflict variant) — NOT the external-locker
-        variant covered by read-range-file-locked.md.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The workflow uses a Modern `Use Excel File` scope on
-            `C:\Robot\Data\sales-2026-05.xlsx` that holds the file
-            open through its body.
-          - Inside the scope's body, the workflow calls a Classic
-            Workbook `Write Cell` activity with its OWN `WorkbookPath`
-            property pointing at the SAME file. The Classic Workbook
-            surface accesses the file's raw bytes directly and
-            refuses to write while another process — including
-            UiPath's own surrounding Modern scope — has the file
-            open.
-          - The IOException wording is identical to an external
-            locker (orphan EXCEL.EXE, user editing, etc.) but the
-            user has confirmed no external locker exists. The
-            workflow source is what makes the diagnosis: two
-            scopes on the same file inside the same job.
-
-        The reference fix:
-          - Replace the Classic Workbook `Write Cell` with a Modern
-            `Write Cell` activity NESTED inside the existing
-            `Use Excel File` scope (no separate `WorkbookPath` —
-            the scope owns the file).
-          - Alternative: move the Classic Workbook activity OUT of
-            the Modern scope's body so it runs after the scope
-            releases the file.
-          - Do NOT recommend `Kill Process` for EXCEL — there is
-            no EXCEL.EXE to kill; the locker is UiPath's own
-            scope, not an external process.
-          - Do NOT recommend pivoting to the read-range-file-locked
-            investigation chain (orphan check, network share,
-            AV scanner) — none of those apply.
-
-        Decisive signals the agent must surface:
-          - The workflow source contains BOTH a `UseExcelFile` (or
-            equivalent Modern scope) AND a Classic Workbook
-            `Write Cell` with a `WorkbookPath` property targeting
-            the same file.
-          - The user's explicit statement: "no human had it open,
-            and there are no other jobs running against it" — rules
-            out the read-range-file-locked external-locker
-            cause-branches.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the write-cell-failures playbook AND
-             identified the Classic/Modern scope conflict from the
-             workflow source. Named both scopes / activities and
-             recommended either nesting Modern Write Cell or
-             unnesting the Classic activity.
-        0.8  Both dimensions partially correct: matched the playbook
-             and identified the dual-scope pattern but recommended
-             only one of the two fix options without naming why.
-        0.5  Only one dimension correct: matched the playbook but
-             concluded an external-locker cause (orphan EXCEL.EXE,
-             network share, etc.) despite the user explicitly ruling
-             those out; OR identified the scope conflict but
-             matched read-range-file-locked.md instead of
-             write-cell-failures.md.
-        0.2  Agent recognized the IOException as Excel-related but
-             neither matched the write-cell-failures playbook nor
-             identified the dual-scope pattern.
-        0.0  Reached the wrong branch (recommended killing
-             EXCEL.EXE / checking for orphans / network-share
-             investigation despite the user's explicit exclusion);
-             concluded a different root cause; got blocked;
-             or failed.
-
-      Be substance-focused. The combination of (a) IOException
-      wording, (b) user's explicit exclusion of external lockers,
-      and (c) workflow source showing dual-scope pattern is the
-      decisive signal. Penalize agents that miss the workflow
-      source evidence and reflexively recommend the read-range
-      file-locked investigation chain.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option and never invents data — keeps the investigation faithful.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You are
+    waiting for the diagnostic agent to finish and trust its expertise.
+    You only know what you wrote in your initial report. You have no
+    other data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

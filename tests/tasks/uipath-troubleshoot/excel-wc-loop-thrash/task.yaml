@@ -21,9 +21,11 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 4500
-max_turns: 50
-turn_timeout: 3600
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 50
+  turn_timeout: 3600
 
 sandbox:
   driver: tempdir
@@ -60,121 +62,43 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the write-cell-failures playbook AND identified the loop-induced Excel COM thrash (branch 3): Write Cell called inside a For Each Row loop accumulates COM state corruption after N iterations; the 'wrong format, or Excel is busy' wording is misleading on branch 3 since the data is fine — the Excel instance is destabilized. Agent recommended the bulk Read Range → in-memory DataTable mutation → Write Range pattern instead of cell-by-cell writes."
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `UiPath.Excel.BusinessException: The data you want to write
-         has a wrong format, or Excel is busy.` Pinned job key:
-         33cc3333-2222-3333-4444-555566667777. The weird thing is
-         that 247 rows wrote fine before the failure — same workbook,
-         same workflow, same data shape, just one cell per row.
-         Restarting the job lets it process a different number of rows
-         before failing again. What's going wrong?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/write-cell-failures.md
-        because the failing activity is a Write Cell and the cause-
-        branch is the loop-induced Excel COM thrash (branch 3) — NOT
-        the formula-syntax variant (branch 2) that shares the same
-        error wording.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The workflow's `Write Cell` activity is nested inside a
-            `For Each Row` loop iterating a DataTable. Each iteration
-            opens the workbook, writes one cell, saves, and closes
-            the file. After N iterations (N varies — 247 in this job,
-            different on retry) Excel COM state becomes corrupt and
-            the activity fails.
-          - The "or Excel is busy" clause of the error is misleading
-            on branch 2 (formula syntax — nothing is busy) but
-            ACCURATE here on branch 3: Excel COM is in a degraded
-            state from the open/save/close churn, and the activity
-            cannot recover.
-          - Restart non-determinism (different N each run) is a
-            fingerprint of branch 3: COM state corruption depends on
-            timing of garbage collection, memory pressure, and other
-            host conditions that vary between runs. Branch 2 (formula
-            syntax) would fail deterministically on the first
-            iteration.
-
-        Critical disambiguation: branches 2 (formula syntax) and 3
-        share the same error wording. The distinguishing evidence is:
-          - The user's explicit statement: "247 rows wrote fine
-            before the failure" — partial success is impossible on
-            branch 2 since formula syntax fails immediately and
-            deterministically.
-          - The workflow source shows the Write Cell INSIDE a
-            For Each Row loop — branch 3 is structurally impossible
-            without a loop.
-          - The job logs show N successful Write Cell invocations
-            preceding the failure — diagnostic for branch 3.
-          - Restart non-determinism (different N each retry) — the
-            decisive fingerprint of state corruption vs. deterministic
-            data error.
-
-        The reference fix:
-          - Replace the cell-by-cell write pattern with bulk Write
-            Range. Read the workbook into a `DataTable` once via
-            `Read Range`, modify rows in memory inside the loop
-            (`row("Column") = newValue`), then `Write Range` the
-            modified table back to the workbook once AFTER the
-            loop. This collapses N file open/close cycles into 2.
-          - Do NOT recommend a Retry Scope — retrying after Excel
-            COM is corrupt produces the same failure.
-          - Do NOT recommend adding Delay activities inside the
-            loop — slowing the thrash does not fix it.
-          - Do NOT recommend the branch 2 fix (replace semicolons
-            with commas) — the formula syntax (if there is one)
-            is irrelevant; the loop pattern is the cause.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the write-cell-failures playbook AND
-             identified the loop-induced cause (branch 3). Named
-             the For Each Row loop, explained the open/save/close
-             thrash mechanism, distinguished from branch 2 using
-             the partial-success + restart-nondeterminism signals,
-             and recommended the bulk Read Range → DataTable →
-             Write Range pattern.
-        0.8  Both dimensions partially correct: matched the playbook
-             and identified the loop pattern but did not explicitly
-             explain the COM state-corruption mechanism OR did not
-             recommend the bulk pattern fix.
-        0.5  Only one dimension correct: matched the playbook but
-             concluded branch 2 (formula syntax) despite the
-             partial-success evidence; OR identified the loop
-             pattern as the cause without matching the specific
-             playbook; OR recommended Retry Scope / Delay (both
-             documented as anti-patterns in the playbook).
-        0.2  Agent recognized the BusinessException as Excel-
-             related but neither matched the playbook nor
-             identified the loop-induced cause.
-        0.0  Reached the wrong branch (file-locked, formula
-             syntax, sheet-not-found, etc.) without supporting
-             evidence; concluded a different root cause; got
-             blocked; or failed.
-
-      Be substance-focused. The combination of (a) partial success
-      (247 iterations before failure), (b) restart non-determinism
-      (different N each retry), and (c) workflow source showing
-      For Each Row + Write Cell is the decisive signal for branch 3
-      vs. branch 2. Penalize agents that recommend Retry Scope,
-      Delay, or formula-syntax fixes — all are documented
-      anti-patterns for this branch.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option and never invents data — keeps the investigation faithful.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You are
+    waiting for the diagnostic agent to finish and trust its expertise.
+    You only know what you wrote in your initial report. You have no
+    other data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

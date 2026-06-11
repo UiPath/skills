@@ -18,9 +18,11 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 4500
-max_turns: 30
-turn_timeout: 3600
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
 
 sandbox:
   driver: tempdir
@@ -57,95 +59,43 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the read-range-null-reference playbook AND identified the Microsoft Purview / AIP sensitivity-label branch as the cause (using the user's 'Confidential banner' clue + the job-log Trace entry naming the label)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `System.NullReferenceException: Object reference not set to an
-         instance of an object.` Pinned job key:
-         aa111111-bbbb-cccc-dddd-eeeeffffaaaa. There's no stack
-         pointing at a specific cell or sheet — just the bare NRE.
-         The workbook opens fine when I double-click it in Explorer,
-         but there's a 'Confidential' banner at the top. Could that
-         be the problem?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-null-reference.md
-        because the runtime error is a NullReferenceException without
-        cell pointer from inside the activity -- the parsing-failure
-        signature of that playbook (not file-locked, not sheet-not-
-        found, not file-not-found).
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The workbook is protected by a Microsoft Purview /
-            Azure Information Protection sensitivity label
-            (likely 'Confidential' based on the user's banner clue).
-          - The label policy grants permission to the workbook
-            owner's identity (interactive user via Explorer) but
-            NOT to the Robot user (UIPATH\AUTOMATION1).
-          - When the activity opens the file under the Robot
-            user's identity, the label's encryption / policy
-            engine refuses programmatic access; the activity's
-            parsing code receives a null reference where it
-            expected workbook content, and NullReferenceException
-            fires inside the activity.
-          - The job-log Trace entry from `Use Excel File` includes
-            the sensitivity-label name (e.g., 'Confidential' or
-            'Confidential\Limited Access') which is the smoking
-            gun.
-
-        The reference fix:
-          - Primary: grant the Robot user (or an automation group
-            it belongs to) permission for the label via Microsoft
-            Purview (Information Protection -> Labels -> the
-            specific policy -> add the Robot identity).
-          - Alternative: ask the workbook owner to remove the
-            label or apply a less-restrictive one.
-          - Long-term: do not classify automation-consumed
-            workbooks with labels that exclude the Robot
-            identity. Document an exemption for automation
-            identities.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the read-range-null-reference playbook AND
-             converged on the sensitivity-label branch (named
-             Purview / AIP / Information Protection, explained
-             the Robot-identity-lacks-permission pattern, and
-             recommended either the Purview fix OR removing the
-             label).
-        0.8  Both dimensions partially correct: matched the playbook
-             and recognized the label clue but didn't fully connect
-             it to Purview / Robot identity; OR identified the
-             label cause without matching the specific playbook.
-        0.5  Only one dimension correct: matched the playbook but
-             confidently guessed a different branch (corruption,
-             named-range, OpenXML feature) without supporting
-             evidence; OR identified the label issue without
-             matching the playbook.
-        0.2  Agent recognized the NRE as a parsing failure but
-             neither matched the playbook nor identified the
-             sensitivity-label pattern.
-        0.0  Agent confidently picked a wrong branch without
-             supporting evidence; concluded a different root
-             cause; got blocked; or failed.
-
-      Be substance-focused. The 'Confidential banner' user clue
-      and the job-log Trace entry naming the label are the
-      decisive signals -- penalize agents that ignore them.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+# Auto-answer the diagnostic skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option and never invents data — keeps the investigation faithful.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the faulted Orchestrator job.
+    You are waiting for the diagnostic agent to finish and trust its
+    expertise. You only know what you wrote in your initial report — the
+    error text and the pinned job key. You have no other data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as excel-activities, orchestrator, integration-service), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

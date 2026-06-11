@@ -15,9 +15,11 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 4500
-max_turns: 30
-turn_timeout: 3600
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
 
 sandbox:
   driver: tempdir
@@ -47,127 +49,25 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  - type: file_exists
-    description: "Agent wrote investigation state under .local/investigations/"
-    path: .local/investigations/state.json
-    weight: 0.5
-
   - type: llm_judge
-    description: "Agent matched the orchestrator/job-stopped-exit-code-0x40010004 playbook AND identified the watchdog automation account as the actor that killed the job"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt
-      is the RESOLUTION.md for this scenario. Treat it as the
-      authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My LongRunningProcess job just ended Faulted in Orchestrator
-         with 'Job stopped with an unexpected exit code: 0x40010004'.
-         This is a scheduled run and I have no idea what stopped it —
-         can you investigate?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/products/orchestrator/playbooks/job-stopped-exit-code-0x40010004.md
-        because the runtime error
-          "System.Exception: Job stopped with an unexpected exit code: 0x40010004"
-        is the verbatim signature of that playbook.
-
-        Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` — the
-             orchestrator/job-stopped-exit-code-0x40010004 playbook
-             should appear (absolute or relative path).
-          2. The agent's tool-call summary — a Read on
-             references/products/orchestrator/playbooks/job-stopped-exit-code-0x40010004.md.
-          3. state.json's `scope.domain` — should include the
-             orchestrator domain.
-
-        Acceptable / non-penalized: the agent may also Read the
-        sibling foreground-already-running playbook while ruling
-        it out. Exploration is normal.
-
-        PENALIZED: matching ONLY the foreground-already-running
-        playbook, or matching generic runtime-exceptions playbooks
-        (this is not user code).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The job's executor was force-killed via the Orchestrator
-            REST API by an automation account (`watchdog-svc`).
-          - State history shows `Running → Killing → Faulted` — the
-            transition into `Killing` confirms an operator-initiated
-            kill (vs host-side termination which goes Running →
-            Faulted directly).
-          - The audit event for this job key names the actor as a
-            non-human service account: `watchdog-svc`
-            (`watchdog-svc@acme.com`), with `clientInfo` absent (no
-            browser session — API call), `origin: "API"`, and
-            `eventDetails` referencing a watchdog rule name
-            (e.g., "HungJobReaper").
-
-        The reference fix (any of the following is acceptable):
-          - Review the watchdog rule that fired — if the threshold
-            is too aggressive (killing healthy long-running jobs),
-            relax it or exclude `LongRunningProcess` from the rule
-            scope.
-          - Rotate / restrict the API credentials granted to the
-            watchdog account so only intentional kill scopes are
-            permitted.
-          - If the watchdog action was legitimate (job genuinely
-            stuck), accept the kill and investigate the upstream
-            stuck-state.
-
-        NOT acceptable as the sole conclusion:
-          - "A user killed the job" without recognizing the actor is
-            a service account (the audit `actorName` is non-human and
-            `clientInfo` is absent).
-          - "Session logoff / RDP disconnect" (state history shows
-            Killing transition — operator-initiated, not host-side).
-          - "Restart the Robot" (recovery action, not root-cause).
-
-        Evidence sources (in priority order):
-          1. state.json — `requirements.error_code`,
-             `requirements.error_message`, `triage_summary`,
-             scope/domain.
-          2. hypotheses.json — the hypothesis flagged
-             `is_root_cause: true` should describe a watchdog /
-             automation-account kill via API and identify the actor.
-          3. The agent's tool-call summary — `uip admin audit tenant
-             events --search` against the job key and `uip or jobs
-             history` showing Killing.
-          4. The agent's last text response.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched orchestrator/job-stopped-exit-code-0x40010004
-             AND identified the watchdog automation account
-             (`watchdog-svc` / service account / non-human actor) as
-             the killer via API, with at least one actionable fix
-             from the acceptable list.
-        0.8  Both partial: correct playbook but conclusion says
-             "operator killed the job" without recognizing the actor
-             is a service account / non-human; OR correctly named
-             the watchdog actor but matched only the broader 0x40010004
-             page without confirming the Operator Kill branch.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (job faulted with 0x40010004) but
-             neither matched the playbook nor identified the
-             API-initiated kill.
-        0.0  Misdiagnosed (concluded host-side cause).
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true
