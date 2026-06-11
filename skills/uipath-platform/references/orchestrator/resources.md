@@ -57,9 +57,9 @@ Libraries are tenant-scoped -- no folder context needed.
 
 | Command | Description |
 |---------|-------------|
-| `uip or libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--sort-by "<field> <asc\|desc>"`. No native search — filter client-side via global `--output-filter "<JMESPath>"`. Returns `Key`, `Title`, `Version`, `Authors`. |
-| `uip or libraries get <key>` | Get library details. Key format is `PackageId:Version` (e.g., `MyLib:1.0.0`). Returns the full API DTO. |
-| `uip or libraries versions <package-id>` | List all versions of a library by package ID (the `Title` from `list` output). |
+| `uip or libraries list` | List libraries in the tenant feed. Options: `--limit <N>` (default 50), `--offset <N>`, `--sort-by "<field> <asc\|desc>"`, `--all-fields`. No native search — filter client-side via global `--output-filter "<JMESPath>"`. Returns curated rows: `Key`, `Title`, `Version`, `Authors`, `Published`, `IsLatestVersion`, `IsPrerelease`, `ProjectType`. Note: `Published` is often empty on list rows (the bare collection endpoint doesn't populate it server-side); `get`/`versions` return it. |
+| `uip or libraries get <key>` | Get library details. Key format is `PackageId:Version` (e.g., `MyLib:1.0.0`). Returns a curated detail view (adds `Description`, `PackageSize`, `Created`, `LastUpdated`, etc.); `--all-fields` for the raw DTO. Dates the feed doesn't track are returned as empty strings (the API serializes 0001-01-01 sentinels; the CLI strips them). |
+| `uip or libraries versions <package-id>` | List all versions of a library by package ID (the `Title` from `list` output). Curated rows like `list`; `--all-fields` for raw. Fails with `Library not found` when the package ID doesn't exist (instead of an empty success). |
 | `uip or libraries upload --file <path>` | Upload a `.nupkg` library package to the tenant feed. The file must exist (checked client-side). The default shared feed is read-only on many tenants — if upload fails with a read-only/feed-not-found error, enable Tenant Libraries in tenant settings or target a writable feed with `--feed-id` (`uip or feeds list`). |
 | `uip or libraries download <key> --destination <path>` | Download a `.nupkg` to local disk. `--destination` creates missing parent dirs and overwrites an existing file. |
 | `uip or libraries delete <key>` | Delete a specific library version. Key format is `PackageId:Version` (validated client-side). |
@@ -94,7 +94,7 @@ uip or libraries delete "UiPath.System.Activities:24.4.0" --yes --output json
 
 ## Output Behavior
 
-These commands return **full API responses** (all fields) by default. There is no `--all-fields` flag — they emit the raw camelCase DTO. (This is a transitional exception: the native Orchestrator commands curate by default and expose `--all-fields` for the raw view; see [orchestrator.md](orchestrator.md).)
+These commands return a **curated PascalCase view** by default — a focused projection of the most useful fields. Pass `--all-fields` on list/get-style commands to receive the raw API DTO instead (raw DTO keys are camelCase; the two shapes do not share casing). This matches the convention across all `uip or` commands; see [orchestrator.md](orchestrator.md).
 
 List responses include a `Pagination` block:
 

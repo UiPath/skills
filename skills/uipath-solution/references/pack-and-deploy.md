@@ -12,7 +12,7 @@ Pack a solution into a deployable package, publish to the feed, and deploy to Or
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Solution developed and ready to pack (see [develop-solution.md](develop-solution.md))
 - Solution state verified — `.uipx` and `resources/solution_folder/` agree on the project set (see [develop-solution.md - Always verify state after every mutation](develop-solution.md#always-verify-state-after-every-mutation))
 

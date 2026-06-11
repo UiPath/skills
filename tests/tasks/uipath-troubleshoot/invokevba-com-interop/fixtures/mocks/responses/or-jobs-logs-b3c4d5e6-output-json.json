@@ -14,13 +14,18 @@
     },
     {
       "Level": "Info",
+      "TimeStamp": "2026-05-16T07:00:12.901Z",
+      "Message": "[Excel Process Scope] Cleared 0 residual EXCEL.EXE processes before start (KillExcelProcessesEachIteration=True)"
+    },
+    {
+      "Level": "Info",
       "TimeStamp": "2026-05-16T07:00:18.014Z",
       "Message": "[Use Excel File] Workbook opened successfully"
     },
     {
       "Level": "Warn",
       "TimeStamp": "2026-05-16T07:00:21.502Z",
-      "Message": "[Invoke VBA] COM call to Workbook.VBProject is taking longer than expected"
+      "Message": "[Invoke VBA] COM call to Workbook.VBProject is not responding; the Excel session is not pumping window messages - behaviour consistent with a modal dialog awaiting input on a non-visible Excel instance"
     },
     {
       "Level": "Error",

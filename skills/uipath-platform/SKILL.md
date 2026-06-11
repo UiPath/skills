@@ -58,7 +58,14 @@ This token can be reused for direct Orchestrator REST API calls when CLI command
 
 Before interacting with Orchestrator, solutions, or Integration Service, the user must be logged in.
 
-**Interactive login (browser OAuth2):**
+**Always check first** — most sessions are already authenticated:
+```bash
+uip login status --output json
+```
+
+If it reports `Logged in`, skip the rest of this step. There is no `--check` flag — `status` is the verification subcommand.
+
+**Interactive login (browser OAuth2):** `uip login` opens a browser window on the user's machine and blocks until they complete it. In a non-interactive or automated session, do NOT run it yourself — tell the user to run it and wait.
 ```bash
 uip login --output json
 ```
@@ -71,11 +78,6 @@ uip login --authority "https://alpha.uipath.com/identity_" --it --output json
 For non-interactive (CI/CD) scenarios, use client credentials:
 ```bash
 uip login --client-id "<ID>" --client-secret "<SECRET>" --tenant "<TENANT>" --output json
-```
-
-Check login status:
-```bash
-uip login status --output json
 ```
 
 ### Step 2 — Select a Tenant

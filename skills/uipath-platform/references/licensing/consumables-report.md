@@ -16,7 +16,7 @@ Report consumption of consumable license units (`AIU`, `AGU`, `RU`, `PLTU`, `HEA
 
 ## Prerequisites
 
-1. Authenticated: `uip login`
+1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
 2. Org admin permissions to read account product allocations
 3. For `daily` / `folders` modes: know the target tenant name and consumable unit code
 
