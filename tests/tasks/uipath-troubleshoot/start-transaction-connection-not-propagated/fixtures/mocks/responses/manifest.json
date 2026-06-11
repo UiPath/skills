@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the start-transaction-failures playbook (Branch 4: output connection not propagated to a child activity). The Start Transaction scope opens its connection fine, but the child Execute Query's ExistingDbConnection is left empty, so the child runs with a null connection and throws NullReferenceException. Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f5c8e6ab-7b92-4eaf-90c1-5c6d7e8f9012\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f5c8e6ab-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f5c8e6ab-7b92-4eaf-90c1-5c6d7e8f9012 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f5c8e6ab-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"a6d9f7bc-8ca3-4fb0-91d2-6d7e8f901234\" --output json",
+      "file": "or-jobs-get-a6d9f7bc-output-json.json"
+    },
+    {
+      "match": "or jobs get a6d9f7bc-8ca3-4fb0-91d2-6d7e8f901234 --output json",
+      "file": "or-jobs-get-a6d9f7bc-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"a6d9f7bc-8ca3-4fb0-91d2-6d7e8f901234\" --level Error --output json",
+      "file": "or-jobs-logs-a6d9f7bc-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs a6d9f7bc-8ca3-4fb0-91d2-6d7e8f901234 --level Error --output json",
+      "file": "or-jobs-logs-a6d9f7bc-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"a6d9f7bc-8ca3-4fb0-91d2-6d7e8f901234\" --output json",
+      "file": "or-jobs-logs-a6d9f7bc-output-json.json"
+    },
+    {
+      "match": "or jobs logs a6d9f7bc-8ca3-4fb0-91d2-6d7e8f901234 --output json",
+      "file": "or-jobs-logs-a6d9f7bc-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

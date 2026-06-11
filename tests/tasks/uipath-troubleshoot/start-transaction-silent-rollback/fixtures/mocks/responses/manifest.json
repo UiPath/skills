@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the start-transaction-failures playbook (Branch 1: silent success / no rollback — a child Execute Non Query inside the Start Transaction scope faults on a FK violation, but an in-scope Try Catch catches System.Exception and only logs, so the transaction commits the partial work and the job reports Success). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-b1f4a2c7-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-b1f4a2c7-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d\" --state Successful --output json",
+      "file": "or-jobs-list-folder-key-b1f4a2c7-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d --state Successful --output json",
+      "file": "or-jobs-list-folder-key-b1f4a2c7-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d\" --output json",
+      "file": "or-jobs-list-folder-key-b1f4a2c7-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key b1f4a2c7-3d5e-4a6b-9c8d-1e2f3a4b5c6d --output json",
+      "file": "or-jobs-list-folder-key-b1f4a2c7-output-json.json"
+    },
+    {
+      "match": "or jobs get \"c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e\" --output json",
+      "file": "or-jobs-get-c2e5b3d8-output-json.json"
+    },
+    {
+      "match": "or jobs get c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e --output json",
+      "file": "or-jobs-get-c2e5b3d8-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e\" --output json",
+      "file": "or-jobs-logs-c2e5b3d8-output-json.json"
+    },
+    {
+      "match": "or jobs logs c2e5b3d8-4e6f-4b7c-8d9e-2f3a4b5c6d7e --output json",
+      "file": "or-jobs-logs-c2e5b3d8-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}
