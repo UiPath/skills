@@ -1,0 +1,6 @@
+{
+  "Name": "MailboxTriageMover",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Move Outlook Mail Message failure caused by COM session loss on an unattended robot: no live local Outlook instance is running for the robot's Windows profile, so the destination folder tree cannot be indexed and the move faults with The operation failed. The destination path Inbox\\Processed is valid.",
+  "MainFile": "Main.xaml"
+}

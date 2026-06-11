@@ -1,0 +1,6 @@
+{
+  "Name": "InboxAutoFiler",
+  "ProjectType": "Process",
+  "Description": "Files inbound Outlook mail into a Processed folder. After a mail-package update the workflow uses the modern Move Email activity (UiPath.MicrosoftOffice365.Activities) but a String message-ID variable is wired into the message input, which expects an Office365Message resource object.",
+  "MainFile": "Main.xaml"
+}

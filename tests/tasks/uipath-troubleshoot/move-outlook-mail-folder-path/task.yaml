@@ -1,0 +1,149 @@
+task_id: skill-troubleshoot-move-outlook-mail-folder-path
+description: >
+  UiPath troubleshooting agent must diagnose a Move Outlook Mail Message
+  failure that faults deterministically on every run with "The specified
+  folder does not exist". The destination MailFolder is a bare nested-folder
+  leaf name ("Processed") instead of a path ("Inbox\Processed"), so the
+  folder never resolves. The Outlook COM session is fine. Success = agent
+  matches the move-outlook-mail-failures playbook Branch 2 AND recommends
+  addressing the destination by path (Inbox\Processed) or setting Account
+  for a shared-mailbox destination. This is a workflow-fixable config bug.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My OrderMailFiler process is faulting in Orchestrator on every run.
+  The folder is "RPA Production". Can you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched move-outlook-mail-failures Branch 2 and reached the same conclusion as RESOLUTION.md (bare-leaf destination folder; fix with nested path Inbox\\Processed or Account)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My OrderMailFiler process is faulting in Orchestrator on every run.
+         The folder is 'RPA Production'. Can you investigate why? The project
+         source for the failing process is in the current working directory."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/move-outlook-mail-failures.md
+        specifically Branch 2 (destination folder path / Account), because
+        the runtime error "The specified folder does not exist" fails
+        deterministically on every run with a bare-leaf destination folder.
+        Evidence the agent matched it:
+          (1) the agent's final response names the move-outlook-mail-failures
+              playbook (or its Branch 2 / destination-folder-path branch); and
+          (2) a tool call that Read a file under
+              references/activity-packages/mail-activities/playbooks/.
+        Do NOT inspect internal investigation state (.local/investigations/,
+        state.json, hypotheses.json, matched_playbooks). Grade only the
+        agent's final response and its tool calls.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is that the Move Outlook Mail Message
+        activity's destination MailFolder is set to the bare leaf name
+        "Processed", a folder that actually lives under Inbox. Outlook
+        resolves "Processed" against the mailbox root, finds no top-level
+        folder by that name, and raises "The specified folder does not
+        exist" -- deterministically, every run. The Outlook COM session is
+        fine (it attached and resolved the source message). The fix is to
+        address the destination by its path -- MailFolder = "Inbox\Processed"
+        (or "Inbox/Processed"); for a shared-mailbox destination, set the
+        activity's Account field to the mailbox address.
+        Evidence the agent reached this conclusion:
+          (1) the agent's final response names the folder-resolution failure,
+              attributes it to the bare-leaf MailFolder="Processed" (the
+              nested path was not used), and recommends the nested-path fix
+              (Inbox\Processed) or Account for a shared mailbox; and
+          (2) the agent cited Main.xaml (the MailFolder value) and the
+              destination-not-found job-log line.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2):
+        - COM session loss / Outlook not running / not synced (Branch 1) --
+          Outlook is fine here and the failure is deterministic, not
+          intermittent.
+        - Modern-vs-classic type mismatch / String-to-IResource /
+          Office365Message cast error (Branch 3).
+        - New Outlook removed the desktop COM API (Branch 4).
+        - "The message / source is missing" or could not be found.
+        - A generic connectivity / authentication / network error.
+
+      SCORING RUBRIC:
+        1.0  Agent (a) names the "specified folder does not exist" /
+             destination-folder-resolution failure, (b) attributes it to the
+             bare leaf MailFolder="Processed" (the nested path was not used),
+             AND (c) recommends the nested-path fix "Inbox\Processed" (or
+             Account for a shared mailbox).
+        0.8  Correct playbook + folder-resolution cause + identifies the bare
+             leaf MailFolder, but the fix is vague (e.g. "use the correct
+             folder path") without naming Inbox\Processed or Account.
+        0.5  Recognizes the folder-resolution failure class but does not tie
+             it to the literal MailFolder="Processed" value, or offers no
+             actionable path fix.
+        0.2  Surfaces the error text to the user without diagnosis, OR matches
+             a wrong branch (COM session / type mismatch / New Outlook /
+             missing message / generic connectivity).
+        0.0  Wrong cause entirely, or the agent fabricated evidence/actions.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing OrderMailFiler process.
+    You have Orchestrator access and the failing project source in the
+    current working directory. You trust the agent's expertise and are
+    waiting for it to tell you why the process faults and how to fix it.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

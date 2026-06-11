@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T07:20:00.180Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T07:20:00.642Z",
+      "Message": "[Move Outlook Mail Message] Attached to the running Outlook desktop session for profile UIPATH\\ROBOTUSER1"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T07:20:01.118Z",
+      "Message": "[Move Outlook Mail Message] Source message resolved (Subject: 'Order #48217 confirmation') in Inbox"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T07:20:01.604Z",
+      "Message": "[Move Outlook Mail Message] Resolving destination folder 'Processed' against the default profile root"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T07:20:02.205Z",
+      "Message": "[Move Outlook Mail Message] destination folder 'Processed' not found at the mailbox root; no such top-level folder. The specified folder does not exist."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T07:20:02.241Z",
+      "Message": "Move Outlook Mail Message: The specified folder does not exist.\r\nin Main.xaml\r\n    at MoveOutlookMessage \"Move Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T07:20:02.255Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}
