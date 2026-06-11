@@ -10,18 +10,11 @@ initial_prompt: |
   Make a UiPath API Workflow JSON file at Workflow.json that:
   - Takes a `name` string input
   - Uses a JavaScript activity to upper-case it
-  - Returns { "shout": "<UPPERCASED NAME>" }
+  - Returns { "shout": "<UPPERCASED NAME>" }  (e.g. "bob" → "BOB", "ada" → "ADA")
 
-  Test locally:
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"name":"bob"}' --output json
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"name":"ada"}' --output json
-
-  Confirm both runs return Result: "Success" with "BOB" and "ADA".
-
-  Important:
-  - The `uip` CLI is already available.
-  - The JavaScript reads inputs via the $workflow / $context globals (NOT
-    arguments[0]) and MUST return a value.
+  Validate and run it locally to confirm it works; it must survive a StudioWeb
+  designer roundtrip.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

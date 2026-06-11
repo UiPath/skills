@@ -9,21 +9,12 @@ tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:m
 initial_prompt: |
   Make a UiPath API Workflow JSON file at Workflow.json that:
   - Takes a `matrix` input (an array of arrays of integers)
-  - Iterates the outer array, and for each row iterates the inner array,
-    counting every cell
-  - Returns { "cells": <total number of inner elements> }
+  - Uses a ForEach inside a ForEach to count every inner element
+  - Returns { "cells": <total inner elements> }  (e.g. [[1,2],[3,4,5]] → 5, [[9]] → 1)
 
-  Test locally:
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"matrix":[[1,2],[3,4,5]]}' --output json
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"matrix":[[9]]}' --output json
-
-  Confirm both runs return Result: "Success" with cells = 5 and 1.
-
-  Important:
-  - The `uip` CLI is already available.
-  - StudioWeb-roundtrip-safe: each ForEach needs a #Body; the outer and inner
-    loops MUST use DISTINCT iterator names (reusing one shadows the outer);
-    iterators are referenced with a $ prefix.
+  Validate and run it locally to confirm it works; it must survive a StudioWeb
+  designer roundtrip.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

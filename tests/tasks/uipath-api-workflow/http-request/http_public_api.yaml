@@ -16,20 +16,13 @@ initial_prompt: |
   Cat Facts API (GET https://catfact.ninja/fact) and returns the fact text as
   { "fact": "<fact>" }.
 
-  Test locally:
-    uip api-workflow run ./Workflow.json --no-auth --output json
-
-  Confirm the run returns Result: "Success" and a non-empty fact.
-
-  Do NOT ask for approval, confirmation, or feedback.
-  Do NOT pause between planning and implementation.
+  Build the HTTP Request activity through the skill's connector discovery flow
+  (not hand-authored) so it renders in StudioWeb's designer. Validate and run
+  it locally to confirm it returns a fact.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation.
   Before starting, load the uipath-api-workflow skill and follow its
   connector-activity discovery flow.
-
-  Important:
-  - The `uip` CLI is already available and authenticated.
-  - The HTTP Request activity must be produced by the registry (resolve + stub),
-    not hand-authored. It must render in StudioWeb's designer.
 
 success_criteria:
   - type: file_exists

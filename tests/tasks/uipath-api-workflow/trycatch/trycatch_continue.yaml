@@ -9,21 +9,12 @@ tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:m
 initial_prompt: |
   Make a UiPath API Workflow JSON file at Workflow.json that:
   - Runs a JavaScript activity that deliberately throws an error
-    (e.g. `throw new Error('boom')`)
-  - Wraps it in a TryCatch so the error is caught
+  - Catches it with a TryCatch
   - From the catch branch, returns { "status": "handled" }
 
-  Test locally:
-    uip api-workflow run ./Workflow.json --no-auth --output json
-
-  Confirm the run returns Result: "Success" (the error was caught, not fatal)
-  and the response status is "handled".
-
-  Important:
-  - The `uip` CLI is already available.
-  - StudioWeb-roundtrip-safe: the catch error variable is referenced with a $
-    prefix (e.g. $error); string literals wrapped as ${'literal'}; Response
-    with then:"end".
+  The run must succeed (the error is caught, not fatal). Validate and run it
+  locally to confirm; it must survive a StudioWeb designer roundtrip.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

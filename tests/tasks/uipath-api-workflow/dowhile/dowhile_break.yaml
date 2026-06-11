@@ -10,21 +10,13 @@ tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:m
 initial_prompt: |
   Make a UiPath API Workflow JSON file at Workflow.json that:
   - Takes a `stopAt` integer input
-  - Uses a DoWhile loop that increments a counter starting at 0
-  - Breaks out of the loop once the counter reaches `stopAt`
-  - Returns { "final": <counter> }
+  - Uses a DoWhile loop that increments a counter from 0 and Breaks once it
+    reaches `stopAt`
+  - Returns { "final": <counter> }  (e.g. stopAt 3 → 3, stopAt 6 → 6)
 
-  Test locally:
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"stopAt":3}' --output json
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"stopAt":6}' --output json
-
-  Confirm both runs return Result: "Success" with final = 3 and 6.
-
-  Important:
-  - The `uip` CLI is already available.
-  - StudioWeb-roundtrip-safe: DoWhile needs a #Body and must update its
-    condition variable; Break is wrapped in an If, its value is the STRING
-    "true" (not boolean), with then:"exit".
+  Validate and run it locally to confirm it works; it must survive a StudioWeb
+  designer roundtrip.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

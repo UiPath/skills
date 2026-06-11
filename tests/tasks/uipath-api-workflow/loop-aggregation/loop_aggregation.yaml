@@ -9,19 +9,12 @@ tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:m
 initial_prompt: |
   Make a UiPath API Workflow JSON file at Workflow.json that:
   - Takes a `numbers` input (an array of integers)
-  - Iterates the array with a ForEach loop, accumulating a running sum
-  - Returns { "total": <sum> }
+  - Sums them with a ForEach loop
+  - Returns { "total": <sum> }  (e.g. [10,20,30] → 60, [5,5] → 10)
 
-  Test locally:
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"numbers":[10,20,30]}' --output json
-    uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"numbers":[5,5]}' --output json
-
-  Confirm both runs return Result: "Success" with totals 60 and 10.
-
-  Important:
-  - The `uip` CLI is already available.
-  - StudioWeb-roundtrip-safe: ForEach needs a #Body element; the loop iterator
-    is referenced with a $ prefix (e.g. $currentItem); single-key Assigns.
+  Validate and run it locally to confirm it works; it must survive a StudioWeb
+  designer roundtrip.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

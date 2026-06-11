@@ -8,27 +8,22 @@ description: >
 tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, shape:multi-node]
 
 initial_prompt: |
-  Work in two steps against a single file Workflow.json.
+  Work against a single file Workflow.json, in two steps.
 
-  Step 1 — Create Workflow.json that:
-  - Takes a `name` string input
-  - Returns { "greeting": "hello <name>" }
-  Verify it: uip api-workflow run ./Workflow.json --no-auth --input-arguments '{"name":"ada","items":[1,2,3]}' --output json
+  Step 1 — Create Workflow.json that takes a `name` input and returns
+  { "greeting": "hello <name>" }.
 
-  Step 2 — EDIT the same Workflow.json (do not rewrite from scratch — read it,
-  then insert the new activity) so it ALSO:
-  - Takes an `items` input (an array)
-  - Computes `count` = the number of items
-  - Returns { "greeting": "hello <name>", "count": <count> }
-  Verify again with the same command and confirm both fields are present.
+  Step 2 — EDIT that same file (read it first, then insert the new activity —
+  do not rewrite from scratch) so it ALSO takes an `items` array input, computes
+  `count` = the number of items, and returns
+  { "greeting": "hello <name>", "count": <count> }.
 
-  Do NOT ask for approval, confirmation, or feedback.
-  Do NOT pause between planning and implementation.
+  For input {name:"ada", items:[1,2,3]} the result should contain "hello ada"
+  and count 3. Validate and run it to confirm both fields are present; it must
+  survive a StudioWeb designer roundtrip.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation.
   Before starting, load the uipath-api-workflow skill and follow its workflow.
-
-  Important:
-  - StudioWeb-roundtrip-safe: single-key Assigns, activity keys globally unique
-    across the whole file, every activity exports its output, Response then:"end".
 
 success_criteria:
   - type: file_exists
