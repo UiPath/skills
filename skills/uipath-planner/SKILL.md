@@ -42,7 +42,7 @@ The skill has three paths, decided by the **Entry Guard**:
 8. **Route — do not redescribe.** The plan says WHICH skill to load and IN WHAT ORDER. It does NOT describe specialist-internal flows (target configuration, OR registration, XAML pipelines, HITL field/outcome schema, auth, testing procedures). For a HITL step, pass business intent only ("manager approves or rejects an expense; can add a reason if rejected") — never a field-level spec; the HITL specialist chooses the schema shape.
 9. **Per-phase prompt budget.** Phase D runs under its own checkpoint model (see [sdd-generation-guide.md](references/sdd-generation-guide.md)) — no hard numeric cap. Lanes A and B each cap at **5 `AskUserQuestion` calls**. Ask **execution autonomy exactly once** (Phase D entry) and write it into the handoff header; Lane A reads it and never re-asks. Scope/UI answers resolved in Phase D flow forward via the SDD.
 10. **Fill gaps with `[DEFAULT]` or `[SME REVIEW]` — never silently invent business rules.** `[DEFAULT]` for industry-standard patterns (retry counts, timeouts); `[SME REVIEW]` for business-knowledge gaps. Resolve `[SME REVIEW]` items with the user before writing. For Agent/Coded App gaps, use `AskUserQuestion` (proceed-with-gap-filling vs different product) — never auto-fallback.
-11. **The terminal artefact of a Solution build is a packed `.uipx`.** The SDD's §18 Next Steps points the user at the `uipath-solution` skill (`uip solution init` → `project add` per project → `resource refresh` → `pack`). A bare project folder is not the deliverable.
+11. **The terminal artefact of a Solution build is a packed `.uipx`.** The SDD's §18 Next Steps points the user at the `uipath-solution` skill (`uip solution init` → `project add` per project → `resources refresh` → `pack`). A bare project folder is not the deliverable.
 12. **Never copy SDD architecture into the plan, and never invent selectors or UI targets.** The plan references SDD section paths in skill prompts; it does not duplicate architecture content. Selectors require application inspection at development time — leave them for the specialist.
 
 ## Entry Guard
@@ -141,7 +141,7 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | [Product Selection Guide](references/product-selection-guide.md) | **Level 1** (primary scope), **Level 1.75** (Solution composition), **Level 2.5 Part B** (cross-product project list merge), **Level 3** (capability add-ons), template mapping |
 | [RPA Product Guide](references/rpa-product-guide.md) | RPA **Level 1.5** (sub-type), **Level 2** (authoring mode), **Level 2.5 Part A** (RPA decomposition), R-07 naming, REFramework. Load when Level 1 = RPA or a Solution includes RPA. |
 | [Package Selection Guide](references/package-selection-guide.md) | NuGet package selection; Integration Service vs NuGet rules; per-product dependency manager. Load when filling §14 Packages or equivalent. |
-| [Tenant Library Search Guide](references/tenant-library-search-guide.md) | Step 2.5 procedure for discovering deployed libraries via `uip resource libraries list` + JMESPath filtering — auth preflight, ranking, zero-results branch, manual fallback. |
+| [Tenant Library Search Guide](references/tenant-library-search-guide.md) | Step 2.5 procedure for discovering deployed libraries via `uip or libraries list` + JMESPath filtering — auth preflight, ranking, zero-results branch, manual fallback. |
 
 ### SDD templates
 

@@ -5,10 +5,11 @@ Checks that the generated caseplan.json encodes a workable hiring process:
 
   - 7 primary stages exist with the expected names
   - Gating chain Application Received → Recruiter Screen → Technical Screen
-    → Onsite Loop → Debrief → Offer → Hired exists as an edge path
+    → Onsite Loop → Debrief → Offer → Hired exists as a condition-driven
+    transition path (edges retired)
   - At least 2 of the 3 named exception lanes (Rejected, Withdrawn, On Hold)
     exist as stages
-  - Hired is required and terminal (no edges back to a primary stage)
+  - Hired is required and terminal (no transitions back to a primary stage)
   - Rejected / Withdrawn terminal lanes do not leak back into the happy path
   - Case-exit conditions cover happy-path closure (required-stages-completed
     or selected-stage-completed on Hired) AND ≥1 terminal exception
@@ -27,7 +28,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 from _shared.case_check import (  # noqa: E402
-    find_edges,
+    find_transitions,
     find_stages,
     first_rule_of_condition,
     get_case_exit_conditions,
@@ -72,8 +73,8 @@ def _has_path(plan: dict, src_id: str, dst_id: str, max_hops: int = 8) -> bool:
     for _ in range(max_hops):
         nxt = set()
         for node_id in frontier:
-            for edge in find_edges(plan, source=node_id):
-                t = edge.get("target")
+            for tr in find_transitions(plan, source=node_id):
+                t = tr.get("target")
                 if t == dst_id:
                     return True
                 if t and t not in seen:
@@ -114,7 +115,7 @@ def main():
         d_id = primary_nodes[dst]["id"]
         if not _has_path(plan, s_id, d_id):
             _fail(
-                f"no edge path from {src!r} to {dst!r}; gating chain broken"
+                f"no transition path from {src!r} to {dst!r}; gating chain broken"
             )
 
     found_exceptions = [
@@ -133,13 +134,13 @@ def main():
             continue
         bad = [
             e.get("target")
-            for e in find_edges(plan, source=node["id"])
+            for e in find_transitions(plan, source=node["id"])
             if e.get("target") in primary_ids and e.get("target") != node["id"]
         ]
         if bad:
             _fail(
                 f"terminal exception {name!r} should not route back into the "
-                f"primary chain; edges to {bad}"
+                f"primary chain; transitions to {bad}"
             )
 
     hired = primary_nodes["Hired"]
@@ -147,11 +148,11 @@ def main():
         _fail("Hired should be required for case completion; got isRequired=false")
     leaks = [
         e.get("target")
-        for e in find_edges(plan, source=hired["id"])
+        for e in find_transitions(plan, source=hired["id"])
         if e.get("target") in primary_ids and e.get("target") != hired["id"]
     ]
     if leaks:
-        _fail(f"Hired should be terminal; outgoing edges to {leaks}")
+        _fail(f"Hired should be terminal; outgoing transitions to {leaks}")
 
     case_exits = get_case_exit_conditions(plan)
     if len(case_exits) < 2:

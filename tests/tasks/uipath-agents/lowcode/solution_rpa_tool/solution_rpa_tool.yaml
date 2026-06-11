@@ -5,7 +5,7 @@ description: >
   the same solution as a separate project. Verifies the tool
   resource.json uses `type: "process"`, `location: "solution"`, and
   `folderPath: "solution_folder"`.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
   expected_turns: 42

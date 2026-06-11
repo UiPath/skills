@@ -34,7 +34,7 @@ Standard workflow for any low-code agent task:
 3. **Add capabilities** — pick from the Capability Registry below. Most add `resources/{Name}/resource.json`; memory uses `uip agent memory` and writes `features/{Name}/feature.json`.
 4. **Refresh** — `uip agent refresh --output json`. Applies pending migrations and regenerates `entry-points.json` and `bindings_v2.json`. Confirm `MigrationApplied`, `StorageVersion`.
 5. **Validate** — `uip agent validate --output json`. Strict read-only. Confirm `Status: "Valid"`, `Validated` counts.
-6. **Refresh solution resources** — `uip solution resource refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, memory spaces, escalations).
+6. **Refresh solution resources** — `uip solution resources refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, memory spaces, escalations).
 7. **Upload** — `uip solution upload . --output json` (bundles and uploads in one pass; with user consent per Rule 6).
 
 Capabilities are **orthogonal**: there is no ordering requirement among them. Adding a tool and an escalation in parallel is safe — they do not interact at the file level. Validate and refresh once after all capability edits are complete, not after each one.
@@ -49,7 +49,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
 | Choosing the LLM (`settings.model`) — discover tenant models, override the scaffold default | [model-selection-guide.md](model-selection-guide.md) |
 | Writing a robust system/user prompt — skeleton, tool-call criteria, output contract, production checklist | [agent-prompting-guide.md](agent-prompting-guide.md) |
-| External tools / IS tools / index contexts / memory spaces / escalations behave unexpectedly after `uip solution resource refresh` | [solution-resources.md](solution-resources.md) |
+| External tools / IS tools / index contexts / memory spaces / escalations behave unexpectedly after `uip solution resources refresh` | [solution-resources.md](solution-resources.md) |
 | Running evaluations, adding test cases, managing evaluators | [evaluations/evaluate.md](evaluations/evaluate.md) |
 
 ### Capability Registry
@@ -86,7 +86,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 See [critical-rules.md](critical-rules.md) § What NOT to Do for the canonical list. Most expensive to get wrong:
 
 - Editing `content` without updating `contentTokens` (causes silent rendering failures)
-- Skipping `uip solution resource refresh` after adding external tools (`bindings_v2.json` never reaches the solution)
+- Skipping `uip solution resources refresh` after adding external tools (`bindings_v2.json` never reaches the solution)
 - Hand-editing memory feature JSON instead of using `uip agent memory`
 - camelCasing `contextType` / `retrievalMode` enum values (validate accepts it, Studio Web silently drops the resource)
 - Copy-pasting UUIDs across resources (every resource needs its own)

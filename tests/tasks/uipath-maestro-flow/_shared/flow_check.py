@@ -122,6 +122,82 @@ def assert_flow_has_node_type(
             )
 
 
+def assert_flow_has_any_node_type(
+    hints: Sequence[str], *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Require that AT LEAST ONE hint matches some ``.flow`` node ``type``
+    across the project (case-insensitive, substring — same semantics as
+    :func:`assert_flow_has_node_type`, but any-of instead of all-of).
+
+    Use this any-of matcher — rather than the AND-matcher
+    :func:`assert_flow_has_node_type` — when a task accepts more than one
+    legitimate node shape for the SAME step. The weather tasks are the
+    canonical case: the open-meteo API call may be built either as a raw
+    ``core.action.http`` node OR as the curated tenant connector
+    ``uipath.connector.custom-codereval-openmeteoapis.getcurrentweather``,
+    and the maestro-flow skill's node-selection ladder legitimately steers
+    the agent to the connector when one is present. Pinning the AND-matcher
+    to ``core.action.http`` rejects the connector shape even though it calls
+    the very API the test targets.
+
+    Pairs with a runtime output assertion: this file check confirms a node
+    of one acceptable *kind* was built; the output check confirms execution
+    produced the expected result.
+    """
+    if not hints:
+        return
+    types_seen: set[str] = set()
+    for node in _iter_flow_nodes(project_glob):
+        t = node.get("type")
+        if t:
+            types_seen.add(t)
+    for hint in hints:
+        needle = hint.lower()
+        if any(needle in t.lower() for t in types_seen):
+            return
+    _fail(
+        f"No node matches any type hint {list(hints)}. "
+        f"Node types seen: {sorted(types_seen)}"
+    )
+
+
+def assert_flow_has_api_node_targeting(
+    service_hints: Sequence[str], *, project_glob: str = "**/project.uiproj"
+) -> None:
+    """Require an API-capable node that actually targets one of the services.
+
+    An API-capable node is one whose ``type`` contains ``core.action.http`` or
+    ``uipath.connector``; it targets the service when ANY ``service_hints``
+    entry appears anywhere in the node's JSON (case-insensitive substring) —
+    the connector key in the node type, the URL of a manual HTTP node, or the
+    ``targetConnector`` in a connector-proxy HTTP node's detail.
+
+    Use this instead of a bare type hint when the flow legitimately contains
+    OTHER nodes of the same generic type: e.g. in the Slack weather pipeline a
+    Slack connector-proxy ``core.action.http.v2`` node would satisfy a plain
+    ``core.action.http`` hint, letting a flow with no weather node at all pass
+    the structural gate. Scoping the content match to API-capable node types
+    keeps a Script node that merely mentions the service from counting.
+    """
+    if not service_hints:
+        return
+    needles = [hint.lower() for hint in service_hints]
+    api_types_seen: set[str] = set()
+    for node in _iter_flow_nodes(project_glob):
+        t = str(node.get("type") or "")
+        t_lower = t.lower()
+        if "core.action.http" not in t_lower and "uipath.connector" not in t_lower:
+            continue
+        api_types_seen.add(t)
+        blob = json.dumps(node).lower()
+        if any(needle in blob for needle in needles):
+            return
+    _fail(
+        f"No core.action.http/uipath.connector node targets any of {list(service_hints)}. "
+        f"API-capable node types seen: {sorted(api_types_seen)}"
+    )
+
+
 def assert_flow_has_exact_node_type(
     types: Sequence[str], *, project_glob: str = "**/project.uiproj"
 ) -> None:

@@ -1,0 +1,76 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-dd444444-001",
+      "JobKey": "dd444444-5555-6666-7777-888899990000",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T07:50:00.510Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444444-002",
+      "JobKey": "dd444444-5555-6666-7777-888899990000",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T07:50:00.620Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444444-003",
+      "JobKey": "dd444444-5555-6666-7777-888899990000",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T07:50:00.812Z",
+      "Message": "Excel Application Scope: sales-2026-05.xlsx — executing (Visible=True, AutoSave=True, ContinueOnError=True)",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444444-004",
+      "JobKey": "dd444444-5555-6666-7777-888899990000",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T07:50:03.118Z",
+      "Message": "Read Range: Sheet1!A1 — executing",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444444-005",
+      "JobKey": "dd444444-5555-6666-7777-888899990000",
+      "Level": "Error",
+      "Timestamp": "2026-05-19T07:50:03.405Z",
+      "Message": "Read Range: Sheet1!A1 — System.NullReferenceException: Object reference not set to an instance of an object.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444444-006",
+      "JobKey": "dd444444-5555-6666-7777-888899990000",
+      "Level": "Warn",
+      "Timestamp": "2026-05-19T07:50:03.512Z",
+      "Message": "[ExcelDailyImport] Caught System.NullReferenceException: Object reference not set to an instance of an object — continuing",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444444-007",
+      "JobKey": "dd444444-5555-6666-7777-888899990000",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T07:50:04.118Z",
+      "Message": "[ExcelDailyImport] Import step finished (errors, if any, were logged).",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

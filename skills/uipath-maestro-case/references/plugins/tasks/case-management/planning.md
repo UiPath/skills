@@ -9,7 +9,7 @@ Pick this plugin when the sdd.md describes a task that spawns or delegates to an
 - Parent case orchestrates multiple sub-cases
 - Long-running sub-workflow packaged as its own case
 
-If sdd.md describes a simple stage-to-stage flow within the same case, do not use this — use regular stages and edges.
+If sdd.md describes a simple stage-to-stage flow within the same case, do not use this — use regular stages wired by entry/exit conditions.
 
 ## Required Fields from sdd.md
 
@@ -17,7 +17,7 @@ If sdd.md describes a simple stage-to-stage flow within the same case, do not us
 |-------|--------|-------|
 | `display-name` | Case Reference "Name" | |
 | `name` | Case Reference "Name" | |
-| `folder-path` | Case Reference "Folder" | |
+| `folder-path` | Resolved registry `folders[0].fullyQualifiedName` (NOT the sdd.md "Folder") | Binds to `data.folderPath`; Orchestrator starts the sub-case here at runtime. The sdd.md "Folder" only seeds the lookup and may be a parent/truncated path. See [§ Registry Resolution](#registry-resolution). |
 | `task-type-id` | Registry resolution (below) | `entityKey` in `caseManagement-index.json` |
 | `inputs` | sdd.md task data mapping | Passed as case-instance inputs to the sub-case |
 | `outputs` | Discovered via `tasks describe` | Returned when the sub-case completes |
@@ -29,7 +29,8 @@ If sdd.md describes a simple stage-to-stage flow within the same case, do not us
 1. **Primary cache file:** `caseManagement-index.json`.
 2. **Identifier field:** `entityKey`.
 3. Match by exact name + folder.
-4. Discover inputs/outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
+4. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder" — see the field table above). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
+5. Discover inputs/outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
 ## Unresolved Fallback
 

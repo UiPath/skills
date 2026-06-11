@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "AuditTenantEvents",
+  "_doc": "Audit query returns the single Job.Stop event matching the failing job key. The actor is a named human user — jane.doe@acme.com — who issued Kill via the Orchestrator UI from a known IP. This is the operator-initiated-Kill signature.",
+  "Data": {
+    "auditEvents": [
+      {
+        "id": "8d4f1e62-1234-4abc-9def-1a2b3c4d5e6f",
+        "createdOn": "2026-05-19T08:01:30.105Z",
+        "organizationId": "11111111-2222-3333-4444-555555555555",
+        "organizationName": "Acme Corp",
+        "tenantId": "22222222-3333-4444-5555-666666666666",
+        "tenantName": "Acme-Prod",
+        "actorId": "aaaa1111-bbbb-2222-cccc-3333dddd4444",
+        "actorName": "Jane Doe",
+        "actorEmail": "jane.doe@acme.com",
+        "eventType": "Job stopped",
+        "eventSource": "Orchestrator",
+        "eventTarget": "Job",
+        "eventDetails": "{\"jobKey\":\"a1c0b2c3-d4e5-4678-9012-3456789aaaaa\",\"processName\":\"LongRunningProcess\",\"strategy\":\"Kill\",\"origin\":\"OrchestratorUI\",\"folderKey\":\"f1e2d3c4-b5a6-7890-1234-56789abcdef0\",\"folderName\":\"KillScenarios\"}",
+        "eventSummary": "Job 'LongRunningProcess' (a1c0b2c3-d4e5-4678-9012-3456789aaaaa) was stopped (strategy Kill) by jane.doe@acme.com via Orchestrator UI",
+        "status": 0,
+        "clientInfo": {
+          "ipAddress": "10.50.12.34",
+          "ipCountry": "US"
+        }
+      }
+    ],
+    "next": null,
+    "previous": null
+  }
+}

@@ -5,7 +5,7 @@ description: >
   guardrail for prompt_injection. Verifies the agent correctly restricts
   scopes to ["Llm"] only (not Agent or Tool), uses $parameterType "number"
   for the threshold parameter, and does not add it to PostExecution stage.
-tags: [uipath-agents, e2e, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, low-code, guardrail]
 initial_prompt: |
   Create a UiPath low-code agent "InjSafeAgent" that answers user questions.
   Add a built-in prompt injection detection guardrail with a threshold

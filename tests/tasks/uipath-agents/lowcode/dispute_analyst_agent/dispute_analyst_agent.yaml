@@ -8,7 +8,7 @@ description: >
   rationale, customerFacingExplanation, and flags. Validates schema
   sync, field presence, contentTokens for every input, and uses an LLM
   judge to score the system prompt for dispute-domain coverage.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
   expected_turns: 15

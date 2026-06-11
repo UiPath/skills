@@ -4,18 +4,18 @@ Authoritative reference for the post-planning execution flow. Read before execut
 
 > **Relationship to other docs.** This document defines phase boundaries and hard-stop contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
-## v20 mode (Rule 18)
+## Downstream CLI compatibility
 
-When `Schema: v20` is set in `tasks.md`, the following phase modifications apply. v19 mode is unchanged.
+The skill emits the `23.0.0` top-level shape (`{ id, version, name, metadata, bindings, variables, nodes, edges, layout }`). Phase-specific downstream caveats:
 
-| Phase | v19 behavior | v20 behavior |
-|---|---|---|
-| 2 — Prototyping | Informational validate, no halt on errors | Identical (already informational) |
-| 4 — Validate | Authoritative validate, 3-retry cap, hard stop on 3rd failure | **Identical** — CLI now accepts the v20 top-level shape. Authoritative validate, retry-and-fix, same 3-retry cap and hard stop on 3rd failure. |
-| 5 — Debug | `Run debug session` runs `uip maestro case debug` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip maestro case debug may reject. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject v20 schema — failure may be schema-related not case-bug-related` in build-issues.md. |
-| 6 — Publish | `Publish to Studio Web` runs `uip solution upload` | Same prompt + behavior, BUT print plain-text warning BEFORE AskUserQuestion: `> v20 mode: uip solution upload may reject top-level shape until CLI catches up. Failure non-fatal — caseplan.json still valid v20.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
+| Phase | Behavior |
+|---|---|
+| 2 — Prototyping | Informational validate, no halt on errors. |
+| 4 — Validate | Authoritative — `uip maestro case validate` accepts the top-level shape. Retry-and-fix on failure, 3-retry cap, hard stop on 3rd failure. |
+| 5 — Debug | Before the AskUserQuestion, print plain-text warning: `> uip maestro case debug may reject the top-level shape. Failure does not invalidate caseplan.json.` On failure, note `caveat: CLI may reject schema — failure may be schema-related not case-bug-related` in build-issues.md. |
+| 6 — Publish | Before the AskUserQuestion, print plain-text warning: `> uip solution upload may reject the top-level shape until the CLI catches up. Failure non-fatal — caseplan.json still valid.` On failure, dump response to `tasks/upload-response.json`, re-show Phase 6 prompt. |
 
-Skill stays emit-honest in v20 mode: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope (Rule 18).
+Skill stays emit-honest: JSON-shape correctness is the skill's job, downstream CLI accept-correctness is outside scope.
 
 ## Why phased
 
@@ -27,7 +27,7 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 
 | Phase | What gets built | Output | Hard stop on exit |
 |---|---|---|---|
-| **2 — Prototyping** | Solution + project, root case, global variables, stages, edges, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
+| **2 — Prototyping** | Solution + project, root case, global variables, stages, triggers (full), tasks (name + type, no value binding), placeholder tasks for unresolved | `caseplan.json` emitted; placeholder-profile validate run (structural errors only) | `Publish for review` / `Skip publish and continue` / `Abort` |
 | **3 — Implementation** | Connector task schemas, task I/O value binding, conditions (all 4 scopes), SLA + escalation | `caseplan.json` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, dump `build-issues.md` | `caseplan.json` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Skip to Publish` |
@@ -38,10 +38,10 @@ Each hard stop gives user review checkpoint before agent commits to costly downs
 ### Structural nodes (full detail)
 
 - Solution + project scaffolding (`uip solution init`, `uip solution project add`, plus JSON scaffolding from `plugins/case/impl-json.md`).
-- Root case — `caseplan.json` with `root` block populated (name, caseIdentifier, empty `nodes[]`, empty `edges[]`, empty `caseExitConditions[]`).
-- Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared. Path is schema-dependent: `root.data.uipath.variables` in v19, top-level `variables` in v20 (Rule 18).
+- Root case — `caseplan.json` with top-level fields + `metadata` block populated (name, `metadata.caseIdentifier`, empty `nodes[]`, empty `edges[]`).
+- Global variables and arguments — variables block (`inputs`, `outputs`, `inputOutputs`) fully declared at top-level `variables`.
 - Stages — all StageIds generated and captured.
-- Edges — all edges written; sources and targets resolve.
+- Edges — none authored; `schema.edges` stays `[]`. Stage transitions are condition-driven (written in Phase 3).
 - Triggers — fully built. Trigger output mappings written (they reference global variables, which already exist).
 
 ### Tasks (shape depends on resolution state + task class)
@@ -69,7 +69,7 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 `--skeleton` runs structural checks only (nodes, edges, identity, types, topology). Skips tasks, SLAs, escalations, and entry/exit rules — all unbound at this gate, filled in Phase 3.
 
-**Informational — do NOT halt on errors or warnings.** Capture error and warning counts (and optionally first few messages); include in hard-stop summary. Errors that remain are structural (dangling edge, missing trigger, duplicate names) and meaningful — user inspects via the existing `Abort` option before continuing.
+**Informational — do NOT halt on errors or warnings.** Capture error and warning counts (and optionally first few messages); include in hard-stop summary. Errors that remain are structural (unreachable/orphan stage, missing trigger, duplicate names) and meaningful — user inspects via the existing `Abort` option before continuing.
 
 ### Phase 2 hard stop
 
@@ -79,8 +79,8 @@ uip maestro case validate "<caseplan.json path>" --skeleton --output json
 
 Print before prompt:
 
-1. Counts: stages / primary stages / exception stages / edges / triggers / tasks total / placeholder tasks / unresolved resources.
-2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (dangling edge, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
+1. Counts: stages / primary stages / exception stages / triggers / tasks total / placeholder tasks / unresolved resources.
+2. Validate result (placeholder-profile): `<N> errors, <M> warnings` — remaining errors are structural (unreachable/orphan stage, missing trigger, duplicate names) and actionable. Surfacing counts is enough; do not dump full error list unless user asks.
 3. Paths: `caseplan.json`, `tasks.md`, `registry-resolved.json`.
 
 Do not enumerate every task. Studio Web visualization fills that role after publish.
@@ -95,7 +95,7 @@ Use **AskUserQuestion** with three options:
 
 #### On `Publish for review`
 
-1. Run `uip solution resource refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Capture full upload response.
+1. Run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Capture full upload response.
 2. Parse `DesignerUrl` from response.
 3. **MUST emit DesignerUrl as plain-text output to user BEFORE invoking AskUserQuestion**, on its own line:
    `Skeleton published. Review at: <DesignerUrl>`
@@ -129,7 +129,7 @@ Phase 3 begins after user selects `Continue to phase 3` (or `Skip publish and co
    - Stage name → StageId (from `schema.nodes[]` where `type === "case-management:Stage"` or `"case-management:ExceptionStage"`, keyed on `data.label`).
    - Trigger ID (from `schema.nodes[]` where `type === "case-management:Trigger"`).
    - Task name → TaskId per stage (from `schema.nodes[<stage>].data.tasks[][]`).
-   - Variable name → `var` ID (path schema-dependent: v19 from `root.data.uipath.variables.{inputs,outputs,inputOutputs}`; v20 from top-level `variables.{inputs,outputs,inputOutputs}`).
+   - Variable name → `var` ID (from top-level `variables.{inputs,outputs,inputOutputs}`).
 3. Optionally cross-check against `id-map.json` if JSON-strategy plugins wrote one. `caseplan.json` is source of truth; `id-map.json` is speed-up.
 
 Never trust in-memory maps from Phase 2 without re-reading `caseplan.json` — context may be compacted across hard stop.
@@ -164,9 +164,7 @@ On failure: output lists `[error]` and `[warning]` entries with path and message
 
 ### Retry policy
 
-> **v20 mode.** When `tasks.md` carries `Schema: v20`, Phase 4 follows the same retry policy as v19 below — the CLI now accepts the v20 top-level shape, so validate authoritatively, retry-and-fix on failure, and hard-stop on the 3rd failure.
-
-**Retry policy (both schemas).** Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
+Up to **3 validation retries** per session. After 3rd failure, halt and ask user with **AskUserQuestion**: show remaining errors and options:
 
 - `Retry with fix` — agent attempts fix, re-runs validate (counter does not reset).
 - `Pause for manual edit` — exit skill mid-flight; user edits `caseplan.json` directly and re-runs skill.
@@ -182,7 +180,7 @@ On Phase 4 success → proceed to Phase 5.
 
 After Phase 4 success, report results then ask user via **AskUserQuestion**:
 
-- `Run debug session` — run `uip solution resource refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
+- `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
 - `Skip to Publish` — proceed to Phase 6 without debugging.
 
 > **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never auto-run** (Rule 12).
@@ -191,42 +189,30 @@ Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams resul
 
 After debug completes, return to Phase 5 prompt so user can re-run or move on. Proceed to Phase 6 only on `Skip to Publish`.
 
-> **v20 mode.** When `tasks.md` carries `Schema: v20`, print this plain-text warning line BEFORE the AskUserQuestion:
-> ```
-> > v20 mode: uip maestro case debug may reject top-level shape until CLI catches up. Failure does not invalidate caseplan.json.
-> ```
-> On debug failure in v20 mode, append `caveat: CLI may reject v20 schema — failure may be schema-related not case-bug-related` to the troubleshoot context in `build-issues.md` so the user does not chase a bogus root cause.
-
 ### Report fields (printed before prompt)
 
 1. File path of `caseplan.json`.
-2. What was built — summary of stages, edges, tasks, conditions, SLA.
+2. What was built — summary of stages, tasks, conditions, SLA.
 3. Validation status — `validate` pass / remaining warnings.
 4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + wiring-notes from `tasks.md`. See [placeholder-tasks.md](placeholder-tasks.md).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
 
 ### Debug notes
 
-- `uip solution resource refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
+- `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
 - Debug verifies the build actually runs end-to-end before the user commits to a publish. If debug surfaces a fixable issue, see [Step 13a — Troubleshoot failed case](implementation.md#step-13a--troubleshoot-failed-case) and re-run.
 
 ## Phase 6 — Publish
 
 After Phase 5 (whether debugged or skipped), prompt via **AskUserQuestion**:
 
-- `Publish to Studio Web` — run `uip solution resource refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Print returned `DesignerUrl` on its own line. Exit skill.
+- `Publish to Studio Web` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Print returned `DesignerUrl` on its own line. Exit skill.
 - `Done` — exit skill without publishing.
-
-> **v20 mode.** When `tasks.md` carries `Schema: v20`, print this plain-text warning line BEFORE the AskUserQuestion:
-> ```
-> > v20 mode: uip solution upload may reject top-level shape until CLI catches up. Failure non-fatal — caseplan.json still valid v20.
-> ```
-> If `Publish to Studio Web` is picked and upload fails, dump full response to `tasks/upload-response.json`, print the path, then re-show this Phase 6 AskUserQuestion. Do not auto-exit on upload failure — let user decide whether to retry or `Done`.
 
 ### Publish notes
 
 - `uip solution upload` accepts solution directory (folder containing `.uipx`) directly — no intermediate bundling step.
-- `uip solution resource refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
+- `uip solution resources refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
 - Do **NOT** run `uip maestro case pack` + `uip solution publish` unless user explicitly asks for Orchestrator deployment. That path puts case directly into Orchestrator, bypassing Studio Web. Default is always Studio Web.
 
 For further authoring changes (add task, tweak condition, etc.), user updates `sdd.md` and re-runs skill from Phase 1 — skill does not offer in-place incremental edits.

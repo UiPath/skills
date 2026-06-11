@@ -17,6 +17,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 | `uip ixp projects configure-model <project-name> [options] --output json` | Configure extraction model. Options: `--model` (gemini_2_5_flash/gemini_2_5_pro/gpt_4o_2024_05_13) and `--preprocessing` (none/table_mini/table). |
 | `uip ixp projects list-models <project-name> --output json` | List all model versions and tags. Returns `Models[]` (Version, Pinned, TrainedTime) and `Tags[]` (Name, Version). |
 | `uip ixp projects publish <project-name> --output json` | Publish (pin) the latest model version. Options: `--model-version <N>` (specific version, default: latest), `--description "<text>"` (set description), `--tag <name>` (assign tag: "live", "staging", or custom). |
+| `uip ixp projects delete <project-name> --confirm-data-loss --output json` | **Permanently** delete a project — its documents, taxonomy, and trained models. **Irreversible.** Requires `--confirm-data-loss`; the command refuses to run without it. |
 
 ## Documents
 

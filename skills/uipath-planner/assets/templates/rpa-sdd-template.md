@@ -598,7 +598,7 @@ The build is not finished when the project folder compiles. **The terminal artef
 ```bash
 uip solution init <SOLUTION_NAME>
 uip solution project add <PROJECT_PATH> [--solution-file <SOLUTION_FILE>]    # repeat per project in the unified list
-uip solution resource refresh
+uip solution resources refresh
 uip solution pack <SOLUTION_DIR> <OUTPUT_DIR>
 ```
 

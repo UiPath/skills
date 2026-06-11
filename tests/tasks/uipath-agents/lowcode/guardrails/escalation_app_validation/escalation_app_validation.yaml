@@ -6,7 +6,7 @@ description: >
   (missing 8 required inputs, 3 required outputs, wrong outcome names).
   The agent must validate the action schema and reject the app with the
   error message instead of writing the guardrail.
-tags: [uipath-agents, e2e, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, low-code, guardrail]
 initial_prompt: |
   Create a UiPath low-code agent "ReviewAgent" that handles compliance review
   requests. Add a built-in PII detection guardrail that escalates
@@ -26,7 +26,7 @@ initial_prompt: |
     uip agent init "ValidationSol/ReviewAgent" --output json
     uip agent refresh "ValidationSol/ReviewAgent" --output json
     uip agent guardrails list --output json
-    uip solution resource list --kind App --source remote --output json
+    uip solution resources list --kind App --source remote --output json
 
   You MUST validate the app's action schema before using it in the
   escalate action. If the app does not have the required schema,
@@ -57,7 +57,7 @@ success_criteria:
   - type: command_executed
     description: "Agent looked up the escalation app"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list'
+    command_pattern: 'uip\s+solution\s+resources\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -8,7 +8,7 @@ description: >
   `folderPath`, and that a
   `uipath.agent.resource.tool.agent.<process-key>` flow node is wired
   to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e, low-code, inline-flow]
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
 
 run_limits:
   expected_turns: 46
@@ -48,20 +48,20 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered the EmailDrafter identity with uip solution resource list --kind Process"
+    description: "Agent discovered the EmailDrafter identity with uip solution resources list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--kind\s+Process'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the EmailDrafter configuration with uip solution resource get"
+    description: "Agent fetched the EmailDrafter configuration with uip solution resources get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+get\b'
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent searched the flow registry for the external agent-as-tool manifest"

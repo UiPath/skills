@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Fixtures rebuilt verbatim from the real investigation raw/ captures (job 35c669cb, process Legacy, folder Shared). Scrubbed: real email->original_email@test.com, host->MOCK-HOST. Matching is plain substring (first match wins); patterns are quote-agnostic.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "or-jobs-logs-error.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "or-jobs-history.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "or-jobs-get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

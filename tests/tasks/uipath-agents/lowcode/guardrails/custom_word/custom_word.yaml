@@ -5,7 +5,7 @@ description: >
   blocks the word "CONFIDENTIAL" in agent and LLM output. Verifies the
   guardrail uses correct discriminator fields ($guardrailType, $ruleType,
   $selectorType, $actionType), PascalCase scope values, and a unique UUID.
-tags: [uipath-agents, e2e, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, low-code, guardrail]
 initial_prompt: |
   Create a UiPath low-code agent "SafeAgent" that answers user questions. Add
   a custom guardrail that blocks the word "CONFIDENTIAL" from appearing

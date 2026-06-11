@@ -193,7 +193,7 @@ Per-package conventions (read each package's bundled `overview.md` for canonical
 
 - **O365 Mail** (`umm:` prefix family): `FilterExpression` as a string attribute. OData-like: `(parentFolderId=='INBOX')`, `(hasAttachments==`true`)`. AND uses `&amp;&amp;`; booleans use backticks. See [activity-docs/UiPath.MicrosoftOffice365.Activities/3.8/activities/overview.md](activity-docs/UiPath.MicrosoftOffice365.Activities/3.8/activities/overview.md).
 - **GSuite Gmail**: `Filter` as a structured child element with `LogicalOperator` + `Criteria` leaves, not a string. See [activity-docs/UiPath.GSuite.Activities/3.8/activities/NewEmailReceived.md](activity-docs/UiPath.GSuite.Activities/3.8/activities/NewEmailReceived.md).
-- **IS connector triggers** (Salesforce, Jira, Slack, …): authored as a structured filter tree, not a string. Discover the filterable field names via `uip is triggers describe "<connector>" "<OPERATION>" "<object>" --output json` → read `filterFields.fields[*].name`. The CLI compiles the tree into the runtime expression; do not pass the compiled form directly.
+- **IS connector triggers** (Salesforce, Jira, Slack, …): authored as a structured filter tree, not a string. Discover the filterable field names via `uip is triggers describe "<connector>" "<OPERATION>" "<object>" --output json` → read `Data.FilterFields[*].Name`. The CLI compiles the tree into the runtime expression; do not pass the compiled form directly.
 
 ## Lifecycle and Verification
 

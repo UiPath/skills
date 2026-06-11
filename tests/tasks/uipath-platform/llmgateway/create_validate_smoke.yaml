@@ -5,7 +5,7 @@ description: >
   `byo-connections create` invocation. Verifies the agent constructs the right
   CLI shape (single-mapping for AnyModelWithOwnAdditions) and runs prerequisite
   discovery before the create. Auth errors are expected in CI.
-tags: [uipath-platform, smoke, llmgateway, byo-connections, lifecycle:create]
+tags: [uipath-platform, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 14

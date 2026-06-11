@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "f1e2d3c4-b5a6-7890-1234-56789abcdef0",
+      "Name": "UnattendedDemo",
+      "Path": "UnattendedDemo",
+      "Description": "Folder hosting the InvoiceIngestor background unattended process.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "e0772cbe-c19c-4d5f-926c-043c2d2d300a",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

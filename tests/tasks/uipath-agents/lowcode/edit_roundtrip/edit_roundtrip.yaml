@@ -7,7 +7,7 @@ description: >
   edits), 4 (schema sync), 5 (`{{input.X}}` syntax), and 6
   (contentTokens in sync) on incremental edits — none of which are
   covered by create-from-scratch tests.
-tags: [uipath-agents, smoke, mode:build]
+tags: [uipath-agents, smoke, mode:build, low-code]
 
 run_limits:
   expected_turns: 19

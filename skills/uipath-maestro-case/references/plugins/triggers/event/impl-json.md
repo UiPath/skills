@@ -4,7 +4,7 @@ Configure the case-level event trigger by writing directly into the trigger node
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-common.md](../../../connector-trigger-common.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **trigger-node-specific** parts.
 
-> **v20 layout-strip (Rule 19).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip the position-computation step entirely. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shape below shows v19 fields; v20 strips listed render fields and skips position math. Placeholder-fallback logic and `entry-points.json` shape are identical across schemas.
+> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`.
 
 ## Prerequisites from Planning
 
@@ -61,7 +61,7 @@ For each entry in `caseShape.inputs[]` (these are trigger configuration: `eventP
 
 For a **single-trigger case**, configure the existing `trigger_1` node. For **multi-trigger cases**, create a new node:
 - ID: `trigger_` + 6 alphanumeric chars
-- Position: `{ x: -100, y: 620 }` (auto-stack below existing triggers; v19 only)
+- No node-level layout fields (Rule 18 — `position`, `style`, `measured`, etc. omitted)
 
 Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx` in `id-map.json` so the variables plugin can resolve T-number references.
 
@@ -129,9 +129,6 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
 {
   "id": "<trigger_xxxxxx>",
   "type": "case-management:Trigger",
-  "position": { "x": -100, "y": <stateful per §7a> },
-  "style": { "width": 96, "height": 96 },
-  "measured": { "width": 96, "height": 96 },
   "data": {
     "parentElement": { "id": "root", "type": "case-management:root" },
     "label": "<display-name>",
@@ -143,7 +140,7 @@ When the T-entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `conne
 
 `data.uipath` carries **only** `serviceType` — no `context[]`, `inputs[]`, `outputs[]`, `bindings[]`, `metadata`. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
 
-**Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). Create the trigger-edge to the first stage normally — both endpoints exist, guardrails pass. No root bindings, no `inputOutputs[]` entries from this trigger.
+**Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). No trigger-edge is created (edges retired) — the first stage's `case-entered` entry condition starts the case. No root bindings, no `inputOutputs[]` entries from this trigger.
 
 **Log:** `[SKIPPED] Event trigger "<display-name>" written as placeholder — connector "<connector-key>" / connection unresolved.`
 
@@ -172,7 +169,7 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 5. **Placeholder:** all four `data.uipath` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
 6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
 7. When the trigger has event parameters: `data.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
-8. Trigger node wired as `--source` in an edge to the first stage.
+8. No edge from this trigger (edges retired) — the case starts via the first stage's `case-entered` entry condition. `schema.edges` stays `[]`.
 9. `entry-points.json` has a matching entry referencing the trigger node ID.
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added.

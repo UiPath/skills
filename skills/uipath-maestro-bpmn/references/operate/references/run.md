@@ -26,7 +26,7 @@ BPMN project, refresh resources, and run debug from the solution directory:
 ```bash
 uip solution init <SolutionName> --output json
 uip solution project import --source <ProjectDir> --solutionFile <SolutionName>/<SolutionName>.uipx --output json
-uip solution resource refresh --solution-folder <SolutionName> --output json
+uip solution resources refresh --solution-folder <SolutionName> --output json
 cd <SolutionName> && uip maestro bpmn debug <ProjectDirName> --output json
 ```
 

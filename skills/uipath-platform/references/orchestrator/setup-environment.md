@@ -284,17 +284,19 @@ uip or machines edit <machine-key-guid> \
 uip or machines unassign <machine-key-guid> --folder-path "Finance" --output json
 
 # Delete the machine template entirely (tenant-level)
-uip or machines delete <machine-key-guid> --output json
+uip or machines delete <machine-key-guid> --yes --output json
 
 # Bulk delete
-uip or machines delete <key1> <key2> --output json
+uip or machines delete <key1> <key2> --yes --output json
 ```
 
 Notes:
 
-- `machines edit` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed.
+- `machines edit` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed. `machines edit` echoes the new name when you rename.
+- Slot flags (`--unattended-slots`, `--headless-slots`, `--non-production-slots`, `--testing-slots`) must be whole numbers `>= 0` (validated client-side; `0` is allowed).
+- `machines delete` removes the machine **and** any folder assignments it has (the assignments are re-creatable config, so there is no `--force` gate). It does not require unassigning first.
 - Each folder accepts **one** Cloud Robots / Serverless machine. Trying to assign a second serverless to the same folder returns `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.`
-- `machines list` defaults to all machines visible to the user. With `--folder-path` it lists only machines assigned to that folder. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.).
+- `machines list` defaults to all machines visible to the user. With `--folder-path`/`--folder-key` it returns only machines assigned to that folder, each with `IsAssignedToFolder`. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.) — note `--all-fields` emits the raw camelCase DTO.
 
 ### Step 8: Configure Licenses
 
@@ -398,6 +400,8 @@ The role-resolver utility fetches all roles to map GUIDs to numeric IDs. For ten
 
 Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
 
+`folders list --all` rows also include `FeedType` (e.g. `FolderHierarchy`, `Processes`); the plain `folders list` does not (the current-user folders API doesn't return it). Use `--all` or `folders get` when you need `FeedType`.
+
 ### Personal workspaces are flat
 
 `uip or folders list --all --type personal` returns personal workspaces with a different shape (`Key`, `Name`, `OwnerName`, `OwnerKey`, `LastLogin`). The `--path` and `--top-level` flags are not supported because personal workspaces have no hierarchy.
@@ -407,4 +411,4 @@ Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) onl
 ## Related
 
 - [Run Jobs](run-jobs.md) — After setup, deploy packages and start jobs in the folder.
-- Create assets, queues, and buckets in the folder → [`uipath-resources`](../resources/resources.md)
+- Create assets, queues, and buckets in the folder → [resources.md](resources.md)

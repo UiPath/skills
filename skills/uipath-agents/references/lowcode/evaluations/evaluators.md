@@ -261,7 +261,7 @@ These errors surface only after `uip agent eval run start` — `uip agent valida
 | `Evaluator '<id>' is an LLM-based evaluator but 'model' is not set in its evaluatorConfig. Specify a valid model name (e.g. 'claude-haiku-4-5-20251001').` | Evaluator JSON has empty/missing `model` (and is not `same-as-agent`). The worker fail-fasts before calling the LLM gateway. | Set `model` in the evaluator JSON to a model available in your tenant, or set `"model": "same-as-agent"` and ensure `agent.json` has a model. |
 | `'same-as-agent' model option requires agent settings. Ensure agent.json contains valid model settings.` | Evaluator uses `"same-as-agent"` but `agent.json` has no resolvable model. | Set `model` in `agent.json`, or override the evaluator with an explicit model. |
 
-**Pre-empt locally:** before push, run
+**Pre-empt locally:** before upload, run
 
 ```bash
 uip agent eval evaluator list --path ./my-agent --output json --output-filter '[?model==`""` || model==null]'

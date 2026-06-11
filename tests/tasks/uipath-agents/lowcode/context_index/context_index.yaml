@@ -6,7 +6,7 @@ description: >
   format is authored correctly, that `settings.retrievalMode` is a
   valid value, and that `uip agent validate` accepts the resource and
   regenerates derived files.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
   expected_turns: 25
@@ -46,17 +46,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered the index identity with uip solution resource list --kind Index"
+    description: "Agent discovered the index identity with uip solution resources list --kind Index"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--kind\s+Index'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+Index'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the index configuration with uip solution resource get"
+    description: "Agent fetched the index configuration with uip solution resources get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+get\b'
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -90,9 +90,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent refreshed solution resources with uip solution resource refresh"
+    description: "Agent refreshed solution resources with uip solution resources refresh"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+refresh'
+    command_pattern: 'uip\s+solution\s+resources\s+refresh'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

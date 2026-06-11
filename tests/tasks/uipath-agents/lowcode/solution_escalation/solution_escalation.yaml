@@ -8,7 +8,7 @@ description: >
   `uip agent validate` accepts the escalation after refresh regenerates
   derived files. Distinct from `external_escalation` which targets
   an ActionCenter app that lives externally in Orchestrator.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
   expected_turns: 19

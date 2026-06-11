@@ -7,12 +7,12 @@ description: >
   "Shared/uipath-agents/EmailDrafter" folder. Verifies the tool
   resource.json uses `type: "agent"`, `location: "external"`, the
   deployed `folderPath`, and a UUID-shaped `referenceKey` fetched
-  via `uip solution resource list`. Also verifies that `uip agent
+  via `uip solution resources list`. Also verifies that `uip agent
   validate` emits a `resource: "process"` binding (agent tools
   share the process binding kind) pinned to the deployed name +
   folder. Distinct from `solution_agent_tool` which uses
   `location: "solution"`.
-tags: [uipath-agents, e2e, low-code]
+tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
   expected_turns: 22
@@ -51,17 +51,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered the EmailDrafter identity with uip solution resource list --kind Process"
+    description: "Agent discovered the EmailDrafter identity with uip solution resources list --kind Process"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--kind\s+Process'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+Process'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the EmailDrafter configuration with uip solution resource get"
+    description: "Agent fetched the EmailDrafter configuration with uip solution resources get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+get\b'
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -95,9 +95,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent refreshed solution resources with uip solution resource refresh"
+    description: "Agent refreshed solution resources with uip solution resources refresh"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+refresh'
+    command_pattern: 'uip\s+solution\s+resources\s+refresh'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

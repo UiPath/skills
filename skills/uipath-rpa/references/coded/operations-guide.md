@@ -392,7 +392,7 @@ namespace MyProjectName
 
 ## Add a Dependency
 
-Canonical CLI: `uip rpa packages install`. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command** — agents that try it get `Unknown command: add-dependency`. See [cli-reference.md § packages install](../cli-reference.md).
+Canonical CLI: `uip rpa packages install`. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command** — agents that try it get `error: unknown command 'add-dependency'`. See [cli-reference.md § packages install](../cli-reference.md).
 
 **Steps:**
 1. Read `project.json` to check existing dependencies — skip packages already at the desired version.

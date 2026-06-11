@@ -1,35 +1,51 @@
 task_id: skill-agent-inline-solution-agent-tool
 description: >
-  Add agent tool (inline agent, solution resource). End-to-end test:
-  scaffold a flow project with an inline low-code agent that calls
-  another agent living inside the same solution as a separate
-  project. Verifies the tool resource.json under the inline agent's
-  UUID subdirectory uses `type: "agent"`, `location: "solution"`,
-  `folderPath: "solution_folder"`, and that a
-  `uipath.agent.resource.tool.agent.<process-key>` flow node is wired
-  to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e, low-code, inline-flow]
+  Add an inline-agent agent-as-tool inside an existing solution
+  (brownfield). The fixture ships an `OrchestratorFlowSol` solution that
+  already contains a registered low-code `ToolAgent` project. The agent
+  must add a NEW `OrchestratorFlow` Flow project whose inline low-code
+  agent delegates to the pre-existing `ToolAgent` as a tool — reusing it,
+  NOT re-creating it and NOT re-initializing the solution. Verifies the
+  tool resource.json under the inline agent's UUID subdirectory uses
+  `type: "agent"`, `location: "solution"`, `folderPath: "solution_folder"`,
+  and that a `uipath.agent.resource.tool.agent.<process-key>` flow node is
+  wired to the autonomous agent node's `tool` handle.
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
 
 run_limits:
-  expected_turns: 89
+  expected_turns: 80
   turn_timeout: 1200
 
+pre_run:
+  # Brownfield fixture: an OrchestratorFlowSol solution that already
+  # contains a registered ToolAgent (mirrors solution_agent_tool's fixture).
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/inline_solution_agent_tool/_fixtures/OrchestratorFlowSol ."
+    timeout: 10
+
 initial_prompt: |
-  Create a UiPath Flow project "OrchestratorFlow" and a low-code agent
-  "ToolAgent" that echoes back any string it receives. The flow should
-  use an inline low-code agent that delegates to "ToolAgent" as a tool.
-  The solution should be named "OrchestratorFlowSol".
+  Create a new UiPath Flow project named "OrchestratorFlow" inside the
+  existing "OrchestratorFlowSol" solution (in the current directory). The
+  flow must use an inline low-code agent that delegates to the existing
+  "ToolAgent" agent already in that solution — wire ToolAgent in as a tool
+  the inline agent can call.
+
+  Reuse ToolAgent as-is — do NOT re-create it, and do NOT re-initialize
+  the solution.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created the solution with uip solution init"
+  # Brownfield: the solution already exists in the fixture. Re-running
+  # `uip solution init` would clobber it — the agent must NOT. The
+  # exclude_pattern lets a read-only `uip solution init --help` verb-probe
+  # through (agents commonly confirm the post-rename verb exists).
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+init'
-    min_count: 1
+    exclude_pattern: '--help'
     weight: 1.0
     pass_threshold: 1.0
 
@@ -41,15 +57,76 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
-  # `uip solution project add` both populate Projects[] in the .uipx).
+  # Brownfield: ToolAgent ships in the fixture. The agent must reuse it,
+  # not scaffold a fresh standalone copy over it.
+  - type: command_not_executed
+    description: "Agent did NOT re-create the existing ToolAgent project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\s+["'']?ToolAgent'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Discover the existing ToolAgent as an in-solution resource rather than
+  # hand-guessing its referenceKey.
+  - type: command_executed
+    description: "Agent discovered the existing ToolAgent via solution resources list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--source\s+local'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Informational, NOT enforced: pass_threshold:0 means score (0 when the
+  # agent skips `resource get`) always clears the bar, so this criterion can
+  # never fail the run — the task PASS/FAIL gate is all-criteria-pass. weight
+  # must be > 0 (schema forbids 0); kept at the 0.5 floor so it barely moves
+  # the reported weighted_score. The `resource list` discovery above is the
+  # enforced signal; `get` is an acceptable-but-optional follow-up.
+  - type: command_executed
+    description: "Agent fetched the ToolAgent configuration with uip solution resources get (informational)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Local-registry discovery: accept either `search --local` or `list --local`.
+  # Both enumerate the in-solution flow registry; the agent may use either to
+  # find the agent-as-tool node before `registry get ...--local` below.
+  - type: command_executed
+    description: "Agent searched or listed the local flow registry for the agent-as-tool manifest"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b.*--local'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the solution (local) agent-as-tool node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.resource\.tool\.agent\..*--local'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the inline autonomous agent node manifest from the flow registry"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+get\s+.*uipath\.agent\.autonomous'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check: the fixture .uipx starts with ToolAgent registered;
+  # auto-registration of the new Flow project (via init or the
+  # `uip solution project add` fallback) must bring Projects[] to 2.
   - type: json_check
-    description: "Project is registered in the parent solution .uipx"
+    description: "OrchestratorFlow is registered alongside ToolAgent in the parent solution .uipx"
     path: "OrchestratorFlowSol/OrchestratorFlowSol.uipx"
     assertions:
       - expression: "length(Projects)"
         operator: "gte"
-        expected: 1
+        expected: 2
     weight: 1.5
     pass_threshold: 1.0
 
@@ -80,12 +157,6 @@ success_criteria:
   - type: file_exists
     description: "Flow file was created"
     path: "OrchestratorFlowSol/OrchestratorFlow/OrchestratorFlow.flow"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "ToolAgent/agent.json was created"
-    path: "OrchestratorFlowSol/ToolAgent/agent.json"
     weight: 1.5
     pass_threshold: 1.0
 
