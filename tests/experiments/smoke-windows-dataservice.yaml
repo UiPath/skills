@@ -15,17 +15,24 @@ defaults:
     driver: tempdir
 
   # Warm the Data Fabric / Helm path once per task BEFORE the agent's turn
-  # budget starts. The first task pays the cold-start cost here (outside the
-  # agent's view); subsequent tasks reuse the warmed helm chart + auth state.
-  # `data-fabric-entities list` is read-only — zero impact on tenant or
-  # project state. fail_on_error: false so a warmup miss never blocks the
-  # actual task (the agent still runs its own install command).
+  # budget starts. The bun rpa-tool is what *starts* helm — `uip rpa` calls
+  # only work after helm is already running. Run 2026-06-11_15-52-54 proved
+  # the `uip rpa data-fabric-entities list` variant fails with
+  # HelmFeatureNotAvailableException on a cold sandbox; the install-style
+  # bun command below brings helm up properly.
+  #
+  # `--add SystemUser` is zero-impact: every DS task in this experiment
+  # installs SystemUser anyway as part of its own entity-install step, so
+  # the warmup neither adds nor removes tenant state. fail_on_error: false
+  # means a warmup miss never blocks the actual task (the agent still runs
+  # its own install command).
+  #
+  # coder_eval caps per-step timeout at 300s, so this is best-effort: it
+  # won't fully absorb a worst-case 16-min cold install, but it takes the
+  # bun startup + helm chart bootstrap + auth handshake off the agent's
+  # first turn budget.
   pre_run:
-    # coder_eval caps per-step timeout at 300s, so this is a best-effort warmup,
-    # not a full cold-start absorption. `list` is a fast tenant API call but
-    # still pays bun startup + auth handshake + chart load if cold — enough to
-    # take the worst-case spike off the agent's first turn.
-    - command: 'cmd /c "mkdir df-warmup 2>nul & uip rpa data-fabric-entities list --project-dir df-warmup --output json"'
+    - command: 'cmd /c "mkdir df-warmup 2>nul & bun C:\Users\suphalathlur\Studio\RpaTool\rpa-tool\src\index.ts install-data-fabric-entities --add SystemUser --project-dir df-warmup --format json"'
       timeout: 300
       fail_on_error: false
 
