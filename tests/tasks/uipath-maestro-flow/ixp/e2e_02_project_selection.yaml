@@ -111,11 +111,11 @@ success_criteria:
       case "$(pwd)" in
         *aviation*)
           model='aviation-investigation-final-report-demo-a42b1d4d-ixp'
-          nt='uipath\.ixp\.aviation-investigation-final-report-demo-a42b1d4d-ixp\.shared-aviation-investigation-final-report-demo-a42b1d4d-ixp'
+          nt='uipath\.ixp\.aviation-investigation-final-report-demo-a42b1d4d-ixp\.'
           ;;
         *birth*)
           model='birth_certificates_oob-6252526a-ixp'
-          nt='uipath\.ixp\.birth-certificates-oob-6252526a-ixp\.shared-birth-certificates-oob-6252526a-ixp'
+          nt='uipath\.ixp\.birth-certificates-oob-6252526a-ixp\.'
           ;;
         *)
           echo "Unknown row in pwd: $(pwd)" >&2
