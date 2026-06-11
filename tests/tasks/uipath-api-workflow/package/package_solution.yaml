@@ -5,7 +5,7 @@ description: >
   skill teaches the build/publish path (rule 19 — API workflows pack via
   `uip solution pack`, not a non-existent `uip api-workflow build`) and the
   Phase 4 packaging step. Local-only (pack does not publish, needs no auth).
-tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate]
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate]
 
 initial_prompt: |
   Make a simple UiPath API Workflow (it can just return a constant), then
@@ -44,6 +44,6 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-run_limits:
-  expected_turns: 11
-  max_turns: 35
+# Packaging is a multi-step lifecycle task (scaffold solution -> Type: Api -> pack);
+# it inherits the experiment's generous turn budget rather than a tight smoke cap.
+# Tiered integration (not smoke) so it runs on the nightly runner, not the PR gate.
