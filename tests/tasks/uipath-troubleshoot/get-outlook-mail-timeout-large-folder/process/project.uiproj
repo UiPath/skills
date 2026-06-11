@@ -1,0 +1,6 @@
+{
+  "Name": "ArchiveMailScanner",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Get Outlook Mail Messages timeout: the activity exceeds the default TimeoutMS=30000 while enumerating the 'Archive' folder (thousands of messages) with Top high and OnlyUnreadMessages off, faulting with System.TimeoutException.",
+  "MainFile": "Main.xaml"
+}

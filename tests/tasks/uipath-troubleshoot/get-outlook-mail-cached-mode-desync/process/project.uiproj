@@ -1,0 +1,6 @@
+{
+  "Name": "ComplianceMailExport",
+  "ProjectType": "Process",
+  "Description": "Reads the Inbox via Get Outlook Mail Messages and exports it. Reproduces a Cached Exchange Mode desync: the job ends Successful with no error, but the activity returns only the locally cached subset of the Inbox because the account's Offline Settings window is restricted.",
+  "MainFile": "Main.xaml"
+}
