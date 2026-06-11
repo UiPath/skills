@@ -2,6 +2,8 @@
 
 Single source of truth for the JSON policy file format, the Rego input shape at each hook, common Rego patterns, and what can't be expressed in the current runtime.
 
+> **Audit mode only.** All rule verdicts (allow/deny) are recorded in the audit trail. The runtime does not yet stop or interrupt agent actions when a deny verdict fires. Be explicit with users: an active policy means its verdicts appear in audit logs, not that matching actions are blocked.
+
 ---
 
 ## JSON Envelope (`--file` format)
@@ -28,6 +30,11 @@ Constraints:
 - `metadata.name` — must be unique within the tenant. Duplicate name returns an error.
 - `metadata.hooks` — controls which hook WASMs are recompiled. List only hooks the Rego actually fires on.
 - `metadata.rules[].id` — must follow `{policyId}/RULE-N` format. Use `__POLICY_ID__/RULE-1` as a placeholder at authoring time. Replace with the real `policyId` returned by `create` in any copy you keep locally.
+- `metadata.version` — free-form display string; does not affect compilation or evaluation order.
+
+**Conflict resolution:**
+- `metadata.rules[].priority` — higher number evaluated first within this policy.
+- Cross-policy: if any rule across any active custom or default policy returns `deny`, that verdict is recorded — `priority` does not override cross-policy deny semantics.
 
 ---
 
@@ -80,6 +87,8 @@ deny if {
 ```
 
 Metadata hooks: `["before_model"]`
+
+> `input.model_input` may be a string or a structured object. For structured inputs, serialize before matching: `regex.match(pattern, json.marshal(input.model_input))`.
 
 ---
 
@@ -138,11 +147,17 @@ Metadata hooks: `["tool_call"]`
 
 ---
 
-### 5. Scope to specific agent or ring
+### 5. Scope to a specific agent or ring
 
-Add conditions to any pattern to limit it to a specific agent name or deployment ring:
+Restrict any rule to a specific agent name or deployment ring by adding conditions:
 
 ```rego
+package policy.production_finance_model_guard
+
+default deny = false
+
+allowed_models := {"gpt-4o", "claude-sonnet-4-6"}
+
 deny if {
     input.hook == "before_model"
     input.ring == "production"
@@ -151,7 +166,9 @@ deny if {
 }
 ```
 
-Omit the filter to apply the rule to all agents on the tenant.
+Metadata hooks: `["before_model"]`
+
+Omit `input.ring` or `input.agent_name` conditions to apply the rule to all agents on the tenant.
 
 ---
 
@@ -178,5 +195,3 @@ The following rule types are outside the current `input.*` surface. Refuse these
 | Per-tool argument inspection | `tool_args` is available but no structured schema per tool | Use `tool_call` + regex on serialized args if pattern is known |
 
 When refusing: name the missing field or capability and suggest the correct governance layer if one exists.
-
-> **Audit mode only.** All rule verdicts (allow/deny) are recorded in the audit trail. The runtime does not yet stop or interrupt agent actions when a deny verdict fires. Be explicit with users: an active policy means its verdicts appear in audit logs, not that matching actions are blocked.
