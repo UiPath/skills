@@ -65,7 +65,7 @@ Use Grep to find calls matching these patterns across all project Python files. 
 
 First check the project's pinned `uipath` version (see **SubType Metadata → Version-detection rule**). If `uipath < 2.10.58`, **skip SubType entirely** — emit no `SubType` for any binding, including `retrieve_credential*`.
 
-If `uipath >= 2.10.58`, then for `retrieve_credential` / `retrieve_credential_async` calls always emit `"SubType": "credentialAsset"` — the method name is definitive. For all other calls, follow the full lookup procedure in the **SubType Metadata** section below: fetch metadata → filter by kind → disambiguate from code → fall back to user question → omit `SubType` if the user skips. Omitting `SubType` is always safe — `uipath push` still creates a virtual placeholder for supported kinds, just with the base `kind` only.
+If `uipath >= 2.10.58`, then for `retrieve_credential` / `retrieve_credential_async` calls always emit `"SubType": "credentialAsset"` — the method name is definitive. For all other calls, follow the full lookup procedure in the **SubType Metadata** section below: fetch metadata → filter by kind → disambiguate from code → fall back to asking the user → omit `SubType` if the user skips. Omitting `SubType` is always safe — `uipath push` still creates a virtual placeholder for supported kinds, just with the base `kind` only.
 
 ### Step 3: Compare with Existing Bindings
 
@@ -89,7 +89,7 @@ Each resource can optionally be linked to an entrypoint from `entry-points.json`
 
 **Workflow:**
 1. **Single entrypoint** — If `entry-points.json` contains exactly one entrypoint, automatically bind all resources to it. Add `EntryPointUniqueId` (preferred) or `EntryPointPath` (fallback). No need to ask the user.
-2. **Multiple entrypoints** — Call user question once with all detected resources and the entrypoint choices. Exact phrasing:
+2. **Multiple entrypoints** — Ask the user once, presenting all detected resources and the entrypoint choices. Exact phrasing:
 
    > Which entrypoint should each of these resources be bound to? Choose one per resource, or `None` to leave it unbound.
    > Resources: `<list: name + type>`
@@ -633,7 +633,7 @@ The `SubType` field in a resource's `metadata` block specifies a sub-classificat
 >
 > 1. Read the project's `pyproject.toml` (or `requirements.txt` / `uv.lock`) and extract the resolved `uipath` version.
 > 2. If the version is **`>= 2.10.58`**, follow the full lookup procedure.
-> 3. If the version is **`< 2.10.58`** (or unspecified / unresolvable), **ask the user** before falling back. Do **not** run the upgrade command yourself. Call user question with the warning prefix and two options:
+> 3. If the version is **`< 2.10.58`** (or unspecified / unresolvable), **ask the user** before falling back. Do **not** run the upgrade command yourself. Ask the user, with the warning prefix and two options:
 >
 >    - **Question:** `⚠️ uipath is pinned to <version>. SubType support requires uipath >= 2.10.58 — without it every binding will be written with no SubType. Do you want to upgrade?`
 >    - **Option A — Yes, upgrade `uipath`** — print the upgrade command for the user to run themselves and stop the workflow. Tell them to re-run the bindings task after the upgrade lands. Suggested commands (do **not** execute them):
@@ -702,7 +702,7 @@ For each binding, follow these steps:
    - **No candidates** (all entries lack `type`) → omit `SubType`.
    - **One candidate** → emit it as `SubType`.
    - **Multiple candidates** → try code-based disambiguation first (see rules below). If no rule matches, ask the user. Use the path that fits the candidate count:
-     - **≤ 3 candidates** → ask the user with each candidate as an `option` (`label` = the `type` string). user question tool's `options` array is capped at 4 entries, and one slot is reserved for the trailing `skip`. The harness presents a picker UI and returns the chosen `label` directly — no numbered list needed in the prompt body.
+     - **≤ 3 candidates** → ask the user with each candidate as a selectable option (`label` = the `type` string). The interactive options list is capped at 4 entries, and one slot is reserved for the trailing `skip`. The harness presents a picker UI and returns the chosen `label` directly — no numbered list needed in the prompt body.
      - **≥ 4 candidates** → emit a plain-text **numbered list** (one per line, `N. <type>`) ending with a final numbered `skip` line. The user replies with just the number; map it back to the `type` string. Do NOT use an interactive question prompt here — the list won't fit.
      Either way, include the resource name and folder in the prompt for context. If the user picks `skip` (or its number), omit `SubType`.
 

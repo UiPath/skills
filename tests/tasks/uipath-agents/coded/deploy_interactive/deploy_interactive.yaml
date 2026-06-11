@@ -53,7 +53,9 @@ simulation:
     - "If asked any other clarifying question, pick the recommended / first sensible option and keep moving."
     - "Keep replies short — one sentence or a single chosen option."
     - "Never tell the agent to skip validation, skip asking, or to not pause — let it ask its questions."
-  max_turns: 8
+  # Opener + Delivery answer + Deploy answer is the floor (~3); headroom for any
+  # clarifying follow-ups so the simulator never runs dry before the Deploy gate.
+  max_turns: 12
 
 success_criteria:
   # ── Primary: the mandatory greenfield gates fired ──────────────────────
