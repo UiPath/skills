@@ -13,14 +13,14 @@ Before reading the PDD, ask the user how they want the interaction to work. Use 
 > 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions, and generate the full SDD. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
 > 2. **Interactive** — I will pause at each phase checkpoint (summary, architecture, final SDD) for your review before proceeding.
 
-Record the choice — it goes into the SDD's `## Planner Handoff` header (Phase 3 Step 2) and propagates to `uipath-planner` for task review behavior.
+Record the choice — it goes into the SDD's `## Planner Handoff` header (Phase 3 Step 2) and propagates to Lane A (task derivation) for task review behavior.
 
 In **Autonomous** mode:
 - Skip Phase 1 summary presentation (generate internally, do not wait for confirmation)
 - Skip Phase 2 architecture review (generate, do not wait)
 - Still ask the SME Review resolution question before writing (Step 1.5) — this is a hard blocker
 - Still ask the Agent/Coded App gap-filling question if triggered — this is a hard blocker
-- **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the four highest-leverage architectural picks with one-sentence reasons. See Step 2 below for the exact block format. Do **NOT** use `AskUserQuestion` — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
+- **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the four highest-leverage architectural picks with one-sentence reasons. See Phase 3 Step 2 item 3 for the exact block format. Do **NOT** use `AskUserQuestion` — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
 
 In **Interactive** mode:
 - Present and wait at every checkpoint as described in the steps below
@@ -44,7 +44,7 @@ Mark each task `in_progress` when starting and `completed` when done.
 
 > If Step 0.5 `TaskCreate` failed, silently skip every subsequent `Mark "X" as in_progress / as completed` instruction in this guide — the tasks do not exist to update, and a second warning to the user is noise.
 
-These tasks track SDD generation. Implementation tasks are owned by `uipath-planner` and are created when the user loads the planner with this SDD — do NOT create implementation tasks here.
+These tasks track SDD generation. Implementation tasks are owned by Lane A (task derivation), which runs after Phase D writes the SDD — do NOT create implementation tasks here.
 
 ### Step 1: Read the PDD
 
@@ -146,21 +146,9 @@ Emit the summary block described in "Presenting the Recommendation" in the [Prod
 **System Errors:** <ERROR_COUNT> defined in PDD
 **Gaps Detected:** <DEFAULT_COUNT> [DEFAULT], <SME_REVIEW_COUNT> [SME REVIEW]
 
-## Recommended Scope
-**Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, <PRODUCT_2>, ...)>
-**Reasoning:**
-- <PDD_SIGNAL_1> → <PRODUCT_MAPPING>
-- <PDD_SIGNAL_2> → <PRODUCT_MAPPING>
-
-**Alternatives considered:**
-- <REJECTED_OPTION> — rejected because <REASON>
-
-## Project List
-<UNIFIED_PROJECT_LIST_FROM_LEVEL_2.5_PART_B>
-
-## Queue Architecture (RPA Master Project rows only)
-<QUEUE_TABLE_OR_N/A>
-**Decomposition signals matched:** <LIST_MATCHED_SIGNALS_PER_RPA_PROCESS_PROJECT_OR_N/A>
+<RECOMMENDED_SCOPE_SUMMARY_BLOCK — emit the "Summary block" from
+product-selection-guide.md → Presenting the Recommendation:
+Recommended Scope + Project List + Queue Architecture>
 
 ### Clarifying Questions
 <NUMBERED_QUESTIONS_IF_ANY>
@@ -193,7 +181,7 @@ The architectural core sections differ per template. For each product, generate 
 - §5 Data Definitions (C# records or dictionary tables per §13 Implementation Mode)
 - §9 Application Inventory (flag Integration Service connectors, specify email protocol)
 - §10 Master Project Architecture (apply Level 2.5 Part A from [rpa-product-guide.md](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) — Single vs Master Project, sub-projects, queue schema)
-- §11 Project Structure (per sub-project if Master Project: project type, framework, folder layout, workflow inventory)
+- §11 Project Structure (per sub-project if Master Project: project type, framework, folder layout, workflow inventory) — the most load-bearing SDD section: Lane A derives tasks from it
 - §12 Queue Architecture (Master Project only — queue definitions, item schemas, processing rules)
 - §13 Implementation Mode (XAML / Coded / Hybrid — apply Level 2 from [rpa-product-guide.md](rpa-product-guide.md#level-2--authoring-mode))
 - §14 Packages (infer NuGet packages from §9 Application Inventory and process steps)
@@ -299,9 +287,9 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 - Roles & RACI Matrix (Case)
 - Evaluation Criteria (Agents)
 - **Testing Strategy — always thorough.** Cover happy path, edge cases, error scenarios, and (for Master Projects) end-to-end pipeline tests. Do NOT ask the user about test depth — depth is non-negotiable here. Implementation specialists may scope tests down at execution time if the user wants a quick MVP.
-- **Next Steps — points at `uipath-planner`.** Replaces the legacy "Implementation Plan" section. The planner owns the implementation task list; this skill does not generate one.
+- **Next Steps — points at Lane A (task derivation).** Replaces the legacy "Implementation Plan" section. Lane A owns the implementation task list; Phase D does not generate one.
 
-> **What Phase 3 does NOT produce:** an Implementation Plan section, a task list, or `TaskCreate` calls for implementation work. Those are owned by `uipath-planner`. The SDD's `## Next Steps` section points the user at the planner, and that is the entire handoff surface.
+> **What Phase 3 does NOT produce:** an Implementation Plan section, a task list, or `TaskCreate` calls for implementation work. Those are owned by Lane A (task derivation). The SDD's `## Next Steps` section marks the boundary into Lane A, and that is the entire Phase D output surface.
 
 ### Step 1.5: Resolve SME Review Items
 
@@ -332,7 +320,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 > **Progress:** Mark "Resolve SME review items" as `completed`. Mark "Write SDD to disk" as `in_progress`.
 
 1. Assemble all sections in template order.
-2. **Fill the `## Planner Handoff` header** that appears in every template after `## Document History`. This is the load-bearing handoff to `uipath-planner`. The planner accepts **either** the heading OR the adjacent `<!-- planner-handoff:v1 -->` HTML marker as a detection signal — both ship in every template and both should survive into the generated file:
+2. **Fill the `## Planner Handoff` header** that appears in every template after `## Document History`. This is the load-bearing detection contract. The Entry Guard accepts **either** the heading OR the adjacent `<!-- planner-handoff:v1 -->` HTML marker as a detection signal — both ship in every template and both should survive into the generated file (so a later session, or a hand-written SDD, still routes to Lane A):
 
    ```markdown
    <!-- DO NOT RENAME: uipath-planner detects SDDs via this exact heading or the marker below. -->
@@ -343,15 +331,15 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    |---|---|
    | **Execution autonomy** | <autonomous | interactive>          ← from Phase 1 Step 0
    | **SDD scope** | <single-product | solution>                  ← from Phase 1 Step 4 (Level 1 / Level 1.75)
-   | **Project list section** | §10 / §3 / Project Inventory      ← template-specific (RPA: §10; Flow: §3 + §7; etc.)
+   | **Project list section** | §11 / §10 + §11 / Project Inventory ← template-specific (RPA single: §11; RPA Master: §10 + §11; Flow: §3 + §7; etc.)
    | **Tasks file** | `<PROCESS_NAME_KEBAB>-tasks.md`             ← planner writes here on first run
-   | **Generated by** | uipath-design v<VERSION>
+   | **Generated by** | uipath-planner
    | **Generation date** | <YYYY-MM-DD>
    ```
 
    Do NOT rename the heading or strip the marker. They are redundant on purpose — keeping both means a hand-edit of one signal does not silently break Lane A detection.
 
-3a. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or the Table of Contents. The block makes the four highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
+3. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or the Table of Contents. The block makes the four highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
 
    Format:
 
@@ -375,7 +363,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - For non-RPA scopes (e.g., Single-product Agent), rows 2-4 collapse to N/A with one row covering the product-specific Level-1.5-equivalent (framework choice, app type, etc.).
    - The block does NOT replace the per-section detail later in the SDD — §10 / §11 / §13 still carry the full justification. The block is the **scannable index** of those decisions.
 
-3. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` block if present) and before the Table of Contents:
+4. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` block if present) and before the Table of Contents:
 
 ```markdown
 ## Action Required — SME Review Items
@@ -387,22 +375,22 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 > These items are marked `[SME REVIEW]` in the document. The automation can be built with defaults, but these must be verified before production.
 ```
 
-4. **Target SDD length: 300-800 lines of markdown** for single-project SDDs. **Master Project SDDs may reach 600-1200 lines** due to per-sub-project structure sections — this is expected. For processes with more than 20 steps, group related steps and summarize at the parent level. For processes with more than 10 business rules, prioritize the 10 most impactful.
-5. **Re-run handling.** If `<PROCESS_NAME_KEBAB>-sdd.md` already exists, ask the user via `AskUserQuestion`:
+5. **Target SDD length: 300-800 lines of markdown** for single-project SDDs. **Master Project SDDs may reach 600-1200 lines** due to per-sub-project structure sections — this is expected. For processes with more than 20 steps, group related steps and summarize at the parent level. For processes with more than 10 business rules, prioritize the 10 most impactful.
+6. **Re-run handling.** If `<PROCESS_NAME_KEBAB>-sdd.md` already exists, ask the user via `AskUserQuestion`:
 
    > An SDD already exists at `<sdd-path>`. How should I proceed?
    >
-   > 1. **Keep the existing SDD and stop** *(recommended)* — load `uipath-planner` if you want to refresh the task list
+   > 1. **Keep the existing SDD and stop** *(recommended)* — proceed to Lane A if you want to refresh the task list
    > 2. **Regenerate from the PDD** — overwrites the existing SDD
    > 3. **Generate alongside as `<name>-v2-sdd.md`** — for diffing
 
    Default is "keep" — overwriting an SDD the user might have hand-edited is the more destructive action.
 
-6. Write the output file(s) to the current working directory:
+7. Write the output file(s) to the current working directory. If the user specified an output path for the SDD, use it instead of these defaults:
    - **Single-product scope:** one file at `<PROCESS_NAME_KEBAB>-sdd.md`.
    - **Solution scope:** the solution overview at `<SOLUTION_NAME_KEBAB>-solution-sdd.md` PLUS one per-project SDD at `<PROJECT_NAME_KEBAB>-sdd.md` for each project in the unified project list. Put the `[SME REVIEW]` warning block in the solution overview AND in any per-project file where a review item lives in that project. Each per-project SDD gets its own `## Planner Handoff` header.
 
-6a. **Template-superset check (mandatory final step before Step 7).** After writing each SDD file, re-read it and extract every H2 (`## `) and H3 (`### `) heading. Compare against the template's Table of Contents and required subsections. The generated SDD's heading set MUST be a superset — extra subsections are fine, missing template sections are an SDD defect.
+8. **Template-superset check (mandatory before the item 9 summary).** After writing each SDD file, re-read it and extract every H2 (`## `) and H3 (`### `) heading. Compare against the template's Table of Contents and required subsections. The generated SDD's heading set MUST be a superset — extra subsections are fine, missing template sections are an SDD defect.
 
    Minimum required H2 headings per template:
    - **RPA template:** §1 Process Overview, §2 Process Map, §3 Detailed Process Steps, §4 Business Rules, §5 Data Definitions, §6 Value Mappings, §7 Exception Handling, §8 Error Handling, §9 Application Inventory, §10 Master Project Architecture, §11 Project Structure, §12 Queue Architecture (Master Project only — may be omitted for Single Project), §13 Implementation Mode, §14 Packages, §15 Credentials & Assets, §16 Deployment Environment, §17 Testing Strategy, §18 Next Steps
@@ -415,7 +403,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
    Common slip-fail: skipping §4 Business Rules because the PDD has no dedicated "Business Rules" section. Rules are usually buried in "Remarks", step descriptions, or screenshots — the PDD analysis guide's "Embedded business rules" pointer applies. Treat zero rules in §4 as a regeneration trigger, not a finished section.
 
-7. Output a summary in the conversation:
+9. Output a summary in the conversation:
 
 ```markdown
 ## SDD Generated
@@ -426,17 +414,17 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 <SME_REVIEW_COUNT> unresolved SME review items (if any — list them).
 
-**Next:** load `uipath-planner` and pass it the SDD path. The planner will derive the task list and emit live `TaskCreate` calls.
+**Next:** Phase D is complete. Proceed into Lane A (task derivation) with this SDD path — Lane A derives the task list and emits live `TaskCreate` calls.
 ```
 
-### Step 3: Hand Off to the Planner
+### Step 3: Proceed to Lane A (Task Derivation)
 
 > **Progress:** Mark "Write SDD to disk" as `completed`. All progress tasks are now done.
 
-The SDD is the deliverable for this skill. **Do not generate an Implementation Plan section. Do not create implementation `TaskCreate` calls. Do not start executing.**
+The SDD is the deliverable of Phase D. **Do not generate an Implementation Plan section inside the SDD. Do not create implementation `TaskCreate` calls during Phase D. Do not start executing.**
 
-Tell the user the next step explicitly:
+Then transition based on the user's intent:
 
-> The SDD is written. Load `uipath-planner` and pass it `<sdd-path>` to generate the implementation task list. The planner will write `<process-kebab>-tasks.md` alongside the SDD and emit live tasks routing to specialist skills.
+> The SDD is written. **Fall through into Lane A** with `<sdd-path>` to generate the implementation task list. Lane A reads the `## Planner Handoff` header you just wrote, derives tasks, writes `<process-kebab>-tasks.md` alongside the SDD, and emits live tasks routing to specialist skills.
 
-If the user's intent implies implementation ("create / build / implement / set up / make"), the main agent will load `uipath-planner` automatically when this skill returns. If the user only asked to "design / architect / generate an SDD", stop here — the SDD is enough.
+If the user's intent implies implementation ("create / build / implement / set up / make"), continue directly into Lane A — see [pdd-driven-lane-guide.md](pdd-driven-lane-guide.md). If the user only asked to "design / architect / generate an SDD", stop here — the SDD is enough.

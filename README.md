@@ -62,9 +62,8 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-design** | PDD → SDD authoring — turn a Process Design Document into an implementation-ready Solution Design Document. |
+| **uipath-planner** | Solution planner & designer — turn a Process Design Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
 | **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
-| **uipath-planner** | Multi-skill task planner — reads SDDs or non-PDD requests and derives an executable task list across the other skills. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
 
 ### Platform & Operations
@@ -95,7 +94,6 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-automation-discovery` | Preview |
 | `uipath-coded-apps` | Preview |
 | `uipath-data-fabric` | In-development |
-| `uipath-design` | Preview |
 | `uipath-feedback` | Stable |
 | `uipath-governance` | In-development |
 | `uipath-human-in-the-loop` | In-development |
@@ -114,9 +112,9 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-troubleshoot` | Preview |
 
 **Status legend:**
-- **Stable** — Stable, production-ready surface; safe for production.
-- **Preview** — Not yet stable; may be broadly available or gated/allowlisted, and surface and behavior may change.
-- **In-development** — Skill itself is incomplete or unstable; coverage is partial.
+- **Stable** � Stable, production-ready surface; safe for production.
+- **Preview** � Not yet stable; may be broadly available or gated/allowlisted, and surface and behavior may change.
+- **In-development** � Skill itself is incomplete or unstable; coverage is partial.
 <!-- END GENERATED SKILL STATUS -->
 
 ## Agents

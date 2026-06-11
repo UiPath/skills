@@ -59,17 +59,13 @@
 /tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
-# Planner skill
+# Planner skill (PDD → SDD design + multi-skill task planning)
 /skills/uipath-planner/ @RaduAna-Maria
 /tests/tasks/uipath-planner/ @RaduAna-Maria
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
-
-# Design skill (PDD → SDD authoring)
-/skills/uipath-design/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
-/tests/tasks/uipath-design/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh

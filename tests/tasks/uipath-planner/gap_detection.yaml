@@ -1,10 +1,10 @@
 task_id: skill-sdd-integration-gap-detection
 description: >
-  Skill-guided evaluation: agent uses the uipath-design skill to
+  Skill-guided evaluation: agent uses the uipath-planner skill to
   analyze a deliberately incomplete PDD. Tests whether the skill correctly
   applies [DEFAULT] markers for standard gaps and [SME REVIEW] markers for
-  business-knowledge gaps, per Critical Rules 4 and the Gap Detection Checklist.
-tags: [uipath-design, integration, lifecycle:generate]
+  business-knowledge gaps, per Critical Rule 10 and the Gap Detection Checklist.
+tags: [uipath-planner, integration, lifecycle:generate]
 
 run_limits:
   expected_turns: 25
@@ -93,7 +93,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Autonomous-mode SDD carries the ## Decisions Made block (sdd-generation-guide.md Phase 3 Step 3a)"
+    description: "Autonomous-mode SDD carries the ## Decisions Made block (sdd-generation-guide.md Phase 3 Step 2 item 3)"
     path: "payment-reconciliation-sdd.md"
     includes:
       - "Decisions Made"
@@ -101,7 +101,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "SDD with unresolved [SME REVIEW] items carries the ## Action Required block (sdd-generation-guide.md Phase 3 Step 3)"
+    description: "SDD with unresolved [SME REVIEW] items carries the ## Action Required block (sdd-generation-guide.md Phase 3 Step 2 item 4)"
     path: "payment-reconciliation-sdd.md"
     includes:
       - "Action Required"
