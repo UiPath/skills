@@ -1,0 +1,158 @@
+task_id: skill-troubleshoot-delete-outlook-mail-collection-modified
+description: >
+  UiPath troubleshooting agent must diagnose a Delete Outlook Mail Message
+  failure caused by deleting inside a For Each over the live List<MailMessage>
+  returned by Get Outlook Mail Messages. Deleting the current item mutates the
+  collection being enumerated, so the second iteration throws
+  "Collection was modified; enumeration operation may not execute."
+  (System.InvalidOperationException). Success = agent matches the
+  delete-outlook-mail-failures playbook Branch 2 AND recommends iterating a
+  .ToList() copy / backwards by index, or Move-then-delete in a second pass -
+  NOT merely wrapping the loop in a Try Catch.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My BulkMailPurger process is faulting in Orchestrator on every run.
+  The folder is "RPA Production". Can you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched delete-outlook-mail-failures Branch 2 AND recommended iterating a copy/backwards or Move-then-delete (not a bare Try Catch)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My BulkMailPurger process is faulting in Orchestrator on every run.
+         The folder is 'RPA Production'. Can you investigate why? The project
+         source for the failing process is in the current working directory."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/delete-outlook-mail-failures.md
+        specifically Branch 2 (Collection modified inside the loop), because
+        the runtime error
+          "Collection was modified; enumeration operation may not execute."
+        raised from a Delete Outlook Mail Message inside a For Each over the
+        MailMessage list is the verbatim signature of that branch.
+        Evidence the agent matched it:
+          (1) the agent's final response names the delete-outlook-mail-failures
+              playbook or its Branch 2 (collection-modified-in-loop) explicitly;
+          (2) a tool call shows the agent Read a file under
+              references/activity-packages/mail-activities/playbooks/.
+        Grade DIMENSION A on the agent's PRESENTED conclusion and its tool
+        calls only. Do NOT inspect or require any internal investigation state
+        under .local/investigations/ (state.json, hypotheses.json,
+        matched_playbooks, scope, requirements, is_root_cause, etc.).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause: the Delete Outlook Mail Message activity runs
+        inside a For Each that iterates the live List<MailMessage> returned by
+        Get Outlook Mail Messages (variable mailList). Deleting the current
+        item removes it from the very collection being enumerated, so the
+        enumerator is invalidated and the next iteration throws
+        "Collection was modified; enumeration operation may not execute."
+        This is a workflow-STRUCTURE bug, not an Outlook / COM / mailbox
+        problem.
+        The reference fix: do NOT delete directly inside the For Each over the
+        live list. Instead iterate over a copy (mailList.ToList()), or loop
+        backwards by index, or use Move Outlook Mail Message inside the loop
+        and delete in a second pass after it.
+        Evidence the agent reached this:
+          (1) the agent's final response names the collection-modified-in-loop
+              cause AND recommends the iterate-a-copy / backwards / Move-then-
+              delete fix;
+          (2) the agent cited Main.xaml (Delete Outlook Mail Message nested
+              inside the For Each over mailList) and the job-log line showing
+              the first message was deleted and the next iteration raised the
+              collection-modified error.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes any
+      of these):
+        - stale message reference / "An object could not be found" (Branch 1)
+        - New Outlook removed the desktop COM API (Branch 3)
+        - COM session blocked / modal dialog / timeout / privilege mismatch
+          (Branch 4)
+        - mailbox permission / access denied / shared-mailbox rights (Branch 5)
+        - "wrap the loop in a Try Catch and continue" as the FIX -- the
+          enumeration is already broken and remaining items are skipped, so
+          swallowing the exception does not fix it (cap at 0.2)
+        - a generic "Outlook/COM fault" with no enumeration diagnosis
+
+      SCORING RUBRIC:
+        1.0  Agent (a) names the "Collection was modified" enumeration error,
+             (b) attributes it to deleting inside the For Each over the live
+             collection from Get, AND (c) recommends iterating a copy
+             (.ToList()) / backwards by index, or Move-then-delete in a second
+             pass -- NOT merely catching the error.
+        0.8  Correct playbook + collection-modified-in-loop cause, and
+             recommends restructuring the loop, but omits the specific
+             iterate-a-copy/backwards/Move-then-delete mechanics.
+        0.5  Recognizes the enumeration / collection-modified error but does
+             not tie it to deleting inside the For Each, or proposes a vague
+             restructure without a concrete safe-iteration fix.
+        0.2  Matches a wrong branch (1/3/4/5), proposes a bare Try Catch as the
+             fix, or surfaces the error to the user without diagnosis.
+        0.0  Wrong cause entirely (generic Outlook/COM fault), or the agent
+             fabricated configuration/evidence not present in the scenario.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You have Orchestrator access and the failing project source. You trust
+    the agent's expertise and are waiting for a diagnosis and a fix
+    recommendation.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

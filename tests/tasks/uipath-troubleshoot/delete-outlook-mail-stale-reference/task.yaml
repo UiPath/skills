@@ -1,0 +1,164 @@
+task_id: skill-troubleshoot-delete-outlook-mail-stale-reference
+description: >
+  UiPath troubleshooting agent must diagnose a Delete Outlook Mail Message
+  failure caused by a stale message reference (Branch 1 of the
+  delete-outlook-mail-failures playbook). The MailMessage retrieved by an
+  upstream Get Outlook Mail Messages is moved or deleted during a long
+  per-item processing loop, so by delete time the item no longer exists at
+  its original location and the activity faults with "The operation failed.
+  An object could not be found." Success = agent matches the
+  delete-outlook-mail-failures playbook / Branch 1 AND attributes the fault
+  to the fetch-then-delete gap AND recommends fetching-then-deleting
+  promptly plus a Try Catch tolerating the already-gone item (NOT adding a
+  Delay).
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My InboxCleanupBot process is faulting in Orchestrator on most runs.
+  The folder is "RPA Production". Can you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched delete-outlook-mail-failures Branch 1 (stale message reference) AND recommended fetch-then-delete promptly + Try Catch (NOT adding a Delay)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      Grade ONLY what the agent presented: its final response to the user
+      plus its tool calls. Do NOT inspect or require any internal
+      investigation state (no state.json, hypotheses.json, matched_playbooks,
+      scope.domain, requirements.error_message, or is_root_cause fields).
+
+      The user's request was:
+        "My InboxCleanupBot process is faulting in Orchestrator on most
+         runs. The folder is 'RPA Production'. Can you investigate why?
+         The project source is in the current working directory."
+
+      DIMENSION A -- Correct playbook (Branch 1)
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/delete-outlook-mail-failures.md
+        and the matching cause is Branch 1 (stale message reference).
+        Evidence the agent presented the right match:
+          (1) the agent's final response names the
+              delete-outlook-mail-failures playbook and/or Branch 1
+              (the "stale message reference" / "object could not be found"
+              cause); AND
+          (2) a tool call shows the agent Read a file under
+              references/.../mail-activities/playbooks/.
+        Grade only what the agent presented (final response + tool calls);
+        do NOT inspect internal investigation state.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause: the Delete Outlook Mail Message activity
+        failed because the MailMessage it was handed no longer exists at
+        that location -- it was moved or deleted (by a user, another
+        automation, or an Outlook rule) AFTER the upstream Get Outlook Mail
+        Messages retrieved it. There is a visible gap / concurrency window
+        between fetch (Get at ~11:00:03) and delete (~11:00:08, after a long
+        per-item processing loop), which is what lets the item move out from
+        under the deletion. The COM layer surfaces this as
+          "The operation failed. An object could not be found."
+        The reference fix: minimize the time and work between Get and Delete
+        (fetch-then-delete promptly), AND wrap the delete in a Try Catch that
+        tolerates an already-moved / already-deleted item; re-fetch and
+        re-confirm the item if another job or rule competes for the folder.
+        Evidence the agent reached this conclusion:
+          (1) the agent's final response names the stale-reference /
+              object-not-found cause AND recommends prompt fetch-then-delete
+              + a Try Catch around the delete; AND
+          (2) the agent cites Main.xaml (Get, then a delayed Delete after
+              the loop) and/or the moved-since-retrieval job-log line.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
+      any of these as the root cause / fix):
+        - "Collection was modified in a loop" (that is Branch 2 -- the delete
+          here runs AFTER the loop, not inside it).
+        - New Outlook / desktop COM API removed (Branch 3).
+        - COM session blocked / modal dialog / timeout / privilege
+          mismatch (Branch 4).
+        - Mailbox permission / access denied / shared-mailbox rights
+          (Branch 5) -- this error is "not found", not "access denied".
+        - "The folder doesn't exist" / a folder-path typo.
+        - "Add a Delay before the delete" -- this makes Branch 1 WORSE
+          (a longer gap means the item is MORE likely to have moved). Cap
+          at 0.2 if this is recommended as the fix.
+
+      SCORING RUBRIC:
+        1.0  Agent (a) names the "object could not be found" / stale-message
+             reference failure, (b) attributes it to the item being moved or
+             deleted between Get and Delete (a gap / concurrency window),
+             AND (c) recommends fetch-then-delete promptly + a Try Catch that
+             tolerates the already-gone item (and does NOT recommend adding a
+             Delay). Cites Main.xaml and/or the moved-since-retrieval log.
+        0.8  Correct playbook / Branch 1 and correct cause, but the fix is
+             incomplete (e.g., recommends Try Catch OR fetch-then-delete but
+             not both, or omits the citation).
+        0.5  Recognizes the "object could not be found" signature and the
+             stale-reference idea but is vague about the fetch-then-delete
+             gap or offers no concrete fix.
+        0.2  Surfaces the error to the user without a confident cause, OR
+             matches a wrong branch (2/3/4/5, folder typo), OR recommends
+             "add a Delay before the delete" as the fix.
+        0.0  Wrong cause entirely, or fabricates host actions / config it
+             could not verify.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing
+    InboxCleanupBot process. You only have Orchestrator access and the
+    project source in the working directory. You trust the agent's
+    expertise and are waiting for a diagnosis of why the process faults.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
