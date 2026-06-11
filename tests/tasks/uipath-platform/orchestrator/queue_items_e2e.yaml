@@ -18,8 +18,9 @@ post_run:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  I need a fresh queue spun up with some work in it. The folder path and
-  a unique prefix are in `seed.json`.
+  I need a fresh queue spun up with some work in it. The folder path
+  (the `folder_a_path` field) and a unique prefix (`uuid8`) are in
+  `seed.json`.
 
   Create a queue in that folder called `e2e-queue-` followed by the
   prefix, then push exactly 5 items into it. Leave all 5 in the New
