@@ -12,7 +12,7 @@ Engage narration + todos when **any** of these hold:
 - User expresses a standing preference for verbosity (in-session, or via a recalled memory / preference).
 - User asks a question that only makes sense with running commentary ("what are you doing right now?", "where are we?").
 
-**Default — silent mode.** When none of the above hold, do the work quietly. Surface only: decisions (`AskUserQuestion`), failures, consent gates (`flow debug`), and the final result. No per-step narration line; no user-facing `TodoWrite` list. The agent MAY still keep todos privately on large journeys for its own tracking, but it is not required and is not a user-facing contract.
+**Default — silent mode.** When none of the above hold, do the work quietly. Surface only: decisions (user questions), failures, consent gates (`flow debug`), and the final result. No per-step narration line; no user-facing `TodoWrite` list. The agent MAY still keep todos privately on large journeys for its own tracking, but it is not required and is not a user-facing contract.
 
 ## The two rules
 
@@ -42,7 +42,7 @@ Bash plumbing inside a step is invisible to the user — the step's narration li
 | Start of a logical step | **Narrate.** One short line, plain English, user terms. |
 | Multiple actions within the same step | No additional narration — the step's opening line covers them |
 | Step transitions (one outcome done, next starting) | Narrate the next step |
-| Decision point | Brief one-liner before `AskUserQuestion` ("This decision affects which connection binding I generate — choose one:") |
+| Decision point | Brief one-liner before asking the user ("This decision affects which connection binding I generate — choose one:") |
 | Failure / retry | Always narrate — explain what failed and what's being tried next. Failures surface even in silent mode. |
 | Trivial probe (`uip --version`, repeated `login status` in same minute) | Skip |
 | Non-`uip` shell commands (`ls`, `cat`, `mkdir`, `cd`) used as plumbing inside a step | Skip — covered by the step's opening narration |
