@@ -12,6 +12,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 - Design input/output schemas and sync with `entry-points.json`
 - Validate agent project structure
 - Publish agent to Studio Web, pack and deploy to Orchestrator
+- Debug / run a low-code agent end-to-end on Studio Web and inspect its output
 
 ## Critical Rules
 
@@ -37,6 +38,8 @@ Standard workflow for any low-code agent task:
 6. **Refresh solution resources** — `uip solution resources refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, memory spaces, escalations).
 7. **Upload** — `uip solution upload . --output json` (bundles and uploads in one pass; with user consent per Rule 6).
 
+To **run the agent end-to-end** (test it live, not just upload), use `uip agent debug <AGENT_PROJECT_DIR> --inputs '<json>' --output json` — it uploads the enclosing solution and runs it on Studio Web in one step, so it's an alternative to the Upload step, not an addition. Executes the agent for real — confirm with the user first (Rule 6). See [debug.md](debug.md).
+
 Capabilities are **orthogonal**: there is no ordering requirement among them. Adding a tool and an escalation in parallel is safe — they do not interact at the file level. Validate and refresh once after all capability edits are complete, not after each one.
 
 ## Reference Navigation
@@ -46,6 +49,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Read when... | File |
 |---|---|
 | Scaffolding, validating, or running solution lifecycle commands | [project-lifecycle.md](project-lifecycle.md) |
+| Debugging / running a low-code agent end-to-end to test it | [debug.md](debug.md) |
 | Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
 | Choosing the LLM (`settings.model`) — discover tenant models, override the scaffold default | [model-selection-guide.md](model-selection-guide.md) |
 | Writing a robust system/user prompt — skeleton, tool-call criteria, output contract, production checklist | [agent-prompting-guide.md](agent-prompting-guide.md) |
@@ -62,6 +66,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add/remove input or output fields | [agent-definition.md](agent-definition.md) § entry-points.json | |
 | Scaffold a new agent project | [project-lifecycle.md](project-lifecycle.md) § End-to-End Example | [agent-definition.md](agent-definition.md) |
 | Validate, upload, pack, publish, or deploy | [project-lifecycle.md](project-lifecycle.md) | |
+| Debug / run a low-code agent end-to-end | [debug.md](debug.md) | |
 | Discover solution resources (processes/apps/indexes/buckets/connections) | [project-lifecycle.md](project-lifecycle.md) § Resource Discovery | |
 | Add a tool — pick the right kind | [capabilities/process/process.md](capabilities/process/process.md) | applicable sibling |
 | Add a process tool (RPA / agent / API / agentic) — local or external | [capabilities/process/process.md](capabilities/process/process.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |

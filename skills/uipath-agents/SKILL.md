@@ -1,7 +1,7 @@
 ---
 name: uipath-agents
 description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), and deploy. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). Excludes coded functions / Functions SDK (separate skill)."
-when_to_use: "Must use when user mentions or implies any Agent lifecycle phase - e.g., auth, design, scaffold, Studio Web sync, flow integration, editing, pack/deploy/version bump, eval, tracing, guardrails, memory spaces, bindings, attachments. Example requests: 'create/build a UiPath agent', 'build a low-code / Agent Builder agent', 'add agent memory spaces', 'build a coded / Python agent (LangGraph / LlamaIndex / OpenAI Agents)', 'scaffold an agent project', 'run / evaluate / deploy my agent'."
+when_to_use: "Must use when user mentions or implies any Agent lifecycle phase - e.g., auth, design, scaffold, Studio Web sync, flow integration, editing, pack/deploy/version bump, eval, debug, tracing, guardrails, memory spaces, bindings, attachments. Example requests: 'create/build a UiPath agent', 'build a low-code / Agent Builder agent', 'add agent memory spaces', 'build a coded / Python agent (LangGraph / LlamaIndex / OpenAI Agents)', 'scaffold an agent project', 'run / debug / evaluate / deploy my agent'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
 ---
@@ -55,7 +55,7 @@ Determine the agent mode before proceeding:
 | Add an Action Center escalation (HITL) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/escalation/escalation.md` |
 | Add guardrails (PII, harmful content, custom rules) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/guardrails/guardrails.md` |
 | Add guardrails to a coded agent | Coded | [coded/capabilities/guardrails/guardrails.md](references/coded/capabilities/guardrails/guardrails.md) | fetch official docs via WebFetch, ask middleware vs decorator, read agent code, write Python |
-| Add escalation guardrail (escalate action / Action Center app) | Low-code | [lowcode/capabilities/guardrails/guardrails.md](references/lowcode/capabilities/guardrails/guardrails.md) § escalate — Hand Off to Action Center | Run `uip solution resources list --kind App` to confirm app exists |
+| Add escalation guardrail (escalate action / Action Center app) | Low-code | [lowcode/capabilities/guardrails/guardrails.md](references/lowcode/capabilities/guardrails/guardrails.md) § escalate — Hand Off to Action Center | Run `uip solution resources list --kind App --source remote --output json` to confirm app exists |
 | Recommend guardrails for a low-code agent based on its context | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) | fetch catalog + list, analyze agent context, apply + validate |
 | Recommend guardrails for a specific scope or tool | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) § Scoped or Tool-Specific Filtering | filter candidates by scope or tool name after catalog analysis |
 | Validate whether existing guardrails are correctly configured | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) § Validate Mode | check correctness, actionability, and relevance per guardrail |
@@ -66,6 +66,7 @@ Determine the agent mode before proceeding:
 | Run low-code evaluations | Low-code | [lowcode/evaluations/evaluate.md](references/lowcode/evaluations/evaluate.md) | `lowcode/evaluations/evaluators.md`, `lowcode/evaluations/evaluation-sets.md`, `lowcode/evaluations/running-evaluations.md` |
 | Run offline evals for a published Orchestrator package | Low-code | [lowcode/evaluations/orchestrator-eval-run.md](references/lowcode/evaluations/orchestrator-eval-run.md) | Use `uip or eval run-offline-evals` (requires package published to Orchestrator) |
 | Validate, pack, publish, upload, or deploy a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/solution-resources.md` |
+| Debug / run a low-code agent end-to-end and inspect its output | Low-code | [lowcode/debug.md](references/lowcode/debug.md) | `lowcode/project-lifecycle.md` § `uip agent debug` |
 | Embed coded agent in a flow (solution-level) | Coded | [coded/embedding-in-flows.md](references/coded/embedding-in-flows.md) | |
 | Use coded agent in a flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) | |
 | Use coded agent as tool for another agent in flow | Coded | [coded/flow-integration.md](references/coded/flow-integration.md) § Pattern 3 | |
