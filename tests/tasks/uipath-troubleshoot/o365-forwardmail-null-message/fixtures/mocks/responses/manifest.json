@@ -1,0 +1,88 @@
+{
+  "version": 2,
+  "_doc": "Canned responses extracted from the original investigation's raw/ CLI outputs (scrubbed). Substring dispatch, first match wins — specific rules precede generic ones.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
+      "file": "or-jobs-get-50bcdb33-f7a8-42d4-a52d-ebbeeb135e99-output-json.json"
+    },
+    {
+      "match": "or jobs logs 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
+      "file": "or-jobs-logs-50bcdb33-f7a8-42d4-a52d-ebbeeb135e99-output-json.json",
+      "_doc": "Full log set (Info + Error). Also serves --level Error queries — the Error entry carries the full exception stack either way."
+    },
+    {
+      "match": "or jobs history 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
+      "file": "or-jobs-history-50bcdb33-f7a8-42d4-a52d-ebbeeb135e99-output-json.json"
+    },
+    {
+      "match": "or jobs traces 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
+      "file": "or-jobs-traces-50bcdb33-f7a8-42d4-a52d-ebbeeb135e99-output-json.json"
+    },
+    {
+      "match": "traces spans get --job-key 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
+      "file": "or-jobs-traces-50bcdb33-f7a8-42d4-a52d-ebbeeb135e99-output-json.json",
+      "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call falls through to the empty unmocked_default and the agent concludes no upstream activity existed for the wrong reason (degraded replicate observed on a sibling scenario)."
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d-state-faulted.json",
+      "_doc": "Faulted-only job list recorded from the original session. Placed before the generic jobs-list rules; other flag orderings fall through to the full job list, whose newest entry is the same faulted job."
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "Fallback for flag-order variations. The tenant has one folder of interest (Shared); the recorded folder-scoped job list is the correct answer for any jobs-list variant the agent tries."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Per CLAUDE.md: docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the raw NullReferenceException from ForwardMail.ExecuteAsync."
+    },
+    {
+      "pattern": "traces",
+      "min": 1,
+      "description": "Trace spans carry the binding evidence (ForwardMail Message='originalEmail', To=non-null literal, only 3 spans / no producer activity); the agent may retrieve them via `or jobs traces <key>` or `traces spans get --job-key <key>`."
+    },
+    {
+      "pattern": "or jobs logs 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
+      "min": 0,
+      "description": "OPTIONAL — state transitions (Pending -> Running -> Faulted) confirm a clean single execution."
+    }
+  ]
+}

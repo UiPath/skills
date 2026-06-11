@@ -1,0 +1,90 @@
+{
+  "version": 2,
+  "_doc": "Canned responses extracted from the original investigation's raw/ CLI outputs (scrubbed). Substring dispatch, first match wins — specific rules precede generic ones.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get 74db8e32-8535-40b2-9b40-62540456adab",
+      "file": "or-jobs-get-74db8e32-8535-40b2-9b40-62540456adab-output-json.json"
+    },
+    {
+      "match": "or jobs logs 74db8e32-8535-40b2-9b40-62540456adab --level Error",
+      "file": "or-jobs-logs-74db8e32-8535-40b2-9b40-62540456adab-level-error.json"
+    },
+    {
+      "match": "or jobs logs 74db8e32-8535-40b2-9b40-62540456adab",
+      "file": "or-jobs-logs-74db8e32-8535-40b2-9b40-62540456adab-level-error.json"
+    },
+    {
+      "match": "or jobs history 74db8e32-8535-40b2-9b40-62540456adab",
+      "file": "or-jobs-history-74db8e32-8535-40b2-9b40-62540456adab-output-json.json"
+    },
+    {
+      "match": "or jobs traces 74db8e32-8535-40b2-9b40-62540456adab",
+      "file": "or-jobs-traces-74db8e32-8535-40b2-9b40-62540456adab-output-json.json"
+    },
+    {
+      "match": "traces spans get --job-key 74db8e32-8535-40b2-9b40-62540456adab",
+      "file": "or-jobs-traces-74db8e32-8535-40b2-9b40-62540456adab-output-json.json",
+      "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call falls through to the empty unmocked_default and the agent loses the scope-opened-cleanly / attachment-property evidence."
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d-state-faulted.json"
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "Fallback for flag-order variations. The tenant has one folder of interest (Shared); the recorded folder-scoped job list is the correct answer for any jobs-list variant the agent tries."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Per CLAUDE.md: docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get 74db8e32-8535-40b2-9b40-62540456adab",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the raw System.IO.FileNotFoundException (File does not exist: C:\\Temp\\missing-attachment-repro.pdf) from AttachmentsHelpers.EnsureFileExists."
+    },
+    {
+      "pattern": "traces",
+      "min": 0,
+      "description": "OPTIONAL — spans corroborate: Microsoft 365 Scope completed cleanly (auth OK) and the SendMail span's Private.Attachments carries the missing path. Root cause is already fully visible in jobs get."
+    },
+    {
+      "pattern": "or jobs logs 74db8e32-8535-40b2-9b40-62540456adab",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history 74db8e32-8535-40b2-9b40-62540456adab",
+      "min": 0,
+      "description": "OPTIONAL — state transitions (Pending -> Running -> Faulted) confirm a clean single execution."
+    }
+  ]
+}
