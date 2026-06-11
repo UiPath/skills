@@ -1,0 +1,199 @@
+task_id: skill-troubleshoot-execute-query-in-connection-string
+description: >
+  UiPath diagnostic agent must diagnose an Execute Query failure that
+  faults on every Orchestrator run because the activity fields were
+  crossed: the SQL SELECT was pasted into the Connect to Database
+  ConnectionString property, and the real connection string was pasted
+  into the Execute Query Sql property. When the connect step runs, the
+  Microsoft.Data.SqlClient connection-string parser reads the SELECT as a
+  connection string and throws
+  System.ArgumentException: Format of the initialization string does not
+  conform to specification starting at index 0, wrapped by UiPath as
+  "Connect to Database: A database error occurred". The agent must
+  identify the crossed-fields / query-in-connection-string mistake as the
+  root cause and recommend moving the SELECT to the Sql property and the
+  connection string to the ConnectionString property — NOT blame a SQL
+  syntax error, a null connection, a provider mismatch, a timeout, a CLR
+  crash, a wrong activity, or a database outage.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-query, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My CustomerLedgerSync process faults in Orchestrator on every run. Can
+  you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-query-failures playbook (Branch 4) AND identified the query-in-connection-string crossed-fields mistake as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My CustomerLedgerSync process faults in Orchestrator on every
+         run. Can you investigate why?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/execute-query-failures.md
+        specifically BRANCH 4 (query text pasted into the
+        connection-string property; the connection-string parser chokes
+        on the SQL text). The runtime signature
+          "Connect to Database: A database error occurred" wrapping
+          "System.ArgumentException: Format of the initialization string
+          does not conform to specification starting at index 0."
+          (from the Microsoft.Data.SqlClient connection-string parser),
+          where the offending value is clearly SQL text (a SELECT)
+        is the verbatim Branch 4 signature.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should name the
+             execute-query-failures playbook / Branch 4.
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+        Grade only what the agent presented (final response + tool
+        calls); do NOT inspect internal investigation state.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        execute-query branches (null connection, provider mismatch, SQL
+        syntax, timeout, CLR crash, wrong activity) while ruling them
+        out. Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The activity fields were crossed. The SQL SELECT
+            (`SELECT CustomerId, Balance, Region FROM CustomerLedger
+            WHERE Region = 'EU'`) was placed in the Connect to Database
+            `ConnectionString` property, and the real connection string
+            (`Server=sqlprod07;Database=Sales;Integrated Security=true;
+            Encrypt=true`) was placed in the Execute Query `Sql` property.
+          - When the connect step runs, the connection-string parser
+            (Microsoft.Data.SqlClient) reads the SELECT as a connection
+            string and throws
+            `System.ArgumentException: Format of the initialization
+            string does not conform to specification starting at index
+            0`, which UiPath wraps as "A database error occurred". The
+            fault is a connection-string PARSE failure at the connect
+            step, before any SQL ever executes.
+        The reference fix:
+          - Put the connection string in the `ConnectionString` property
+            and the SELECT in the `Sql` property (un-cross the fields).
+          - Balance the quotes in the connection string.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should reference the
+             connection-string PARSE error ("Format of the initialization
+             string does not conform to specification") and the
+             SELECT-in-connection-string mixup (the SELECT landed in the
+             ConnectionString field), ruling out the wrong causes (NOT a
+             SQL syntax error, NOT a null connection, NOT a provider
+             mismatch, NOT a timeout, NOT a CLR crash, NOT a wrong
+             activity, NOT a database/connectivity outage).
+          2. The agent's tool-call summary and any evidence it cites
+             from the job logs / Main.xaml.
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
+      concludes any of these as the root cause):
+        - "SQL syntax error / unsafe string concatenation." (branch 3 --
+          the message is "Format of the initialization string does not
+          conform to specification", NOT "Incorrect syntax near"; this is
+          a connection-string parse failure, not a SQL parse failure).
+        - "The connection was null / out of scope / expired." (branch 1)
+        - "Driver / provider mismatch." (branch 2)
+        - "Query timeout / the query is too slow." (branch 5)
+        - "CLR-level crash (0xE0434352)." (branch 6)
+        - "Wrong activity type (should be Execute Non Query)." (branch 7)
+        - "The database is down / unreachable / a network outage."
+        - "The database does not exist" taken at face value (the parser
+          fails before any database lookup; the value is SQL text, not a
+          database name).
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched execute-query-failures Branch 4 AND
+             identified the query-in-connection-string crossed-fields
+             mistake. Conclusion must (a) name the connection-string
+             PARSE failure ("Format of the initialization string does not
+             conform to specification"), (b) attribute it to the SQL
+             SELECT being placed in the `ConnectionString` field (the
+             fields are crossed), and (c) recommend moving the SELECT to
+             the `Sql` property and the real connection string to the
+             `ConnectionString` property (and balancing quotes).
+        0.8  Both partial: e.g., correct playbook and names the
+             connection-string parse error and the crossed fields but
+             does not give the precise field-swap fix; or identifies the
+             crossed fields but mislabels the error as a SQL syntax
+             problem.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Execute Query / Connect to Database
+             / connection-string error) but neither matched the branch
+             nor identified the crossed-fields mistake -- OR concluded
+             one of the WRONG ANSWERS above.
+        0.0  Got blocked, or produced no usable conclusion.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

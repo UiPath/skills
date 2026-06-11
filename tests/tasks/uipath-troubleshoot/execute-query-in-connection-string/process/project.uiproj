@@ -1,0 +1,6 @@
+{
+  "Name": "CustomerLedgerSync",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Execute Query failure caused by crossed fields; the SQL SELECT was pasted into the Connect to Database ConnectionString property and the connection string into the Execute Query Sql property.",
+  "MainFile": "Main.xaml"
+}
