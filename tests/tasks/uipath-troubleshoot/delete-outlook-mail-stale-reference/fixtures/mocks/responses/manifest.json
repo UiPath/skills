@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the delete-outlook-mail-failures playbook Branch 1 (stale message reference) signature.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"b3c4d5e6-7f80-4a1b-8c2d-3e4f5a6b7c8d\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-b3c4d5e6-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key b3c4d5e6-7f80-4a1b-8c2d-3e4f5a6b7c8d --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-b3c4d5e6-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e\" --output json",
+      "file": "or-jobs-get-c4d5e6f7-output-json.json"
+    },
+    {
+      "match": "or jobs get c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e --output json",
+      "file": "or-jobs-get-c4d5e6f7-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e\" --level Error --output json",
+      "file": "or-jobs-logs-c4d5e6f7-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e --level Error --output json",
+      "file": "or-jobs-logs-c4d5e6f7-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e\" --output json",
+      "file": "or-jobs-logs-c4d5e6f7-output-json.json"
+    },
+    {
+      "match": "or jobs logs c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e --output json",
+      "file": "or-jobs-logs-c4d5e6f7-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

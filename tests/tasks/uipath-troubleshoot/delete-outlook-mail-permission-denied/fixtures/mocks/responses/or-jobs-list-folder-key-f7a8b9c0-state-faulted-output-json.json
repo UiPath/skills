@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "a8b9c0d1-2345-4f6a-9b7c-8d9e0f102132",
+      "State": "Faulted",
+      "ProcessName": "SharedInboxArchiver",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-04T15:15:00.090Z",
+      "EndTime": "2026-06-04T15:15:03.140Z",
+      "CreationTime": "2026-06-04T15:14:59.870Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

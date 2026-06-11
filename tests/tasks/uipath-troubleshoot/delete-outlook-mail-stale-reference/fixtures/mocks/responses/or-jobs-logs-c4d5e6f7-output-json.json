@@ -1,0 +1,61 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T11:00:00.180Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T11:00:03.041Z",
+      "Message": "[Get Outlook Mail Messages] retrieved 24 messages from 'Inbox' at 11:00:03"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T11:00:03.120Z",
+      "Message": "[Pick oldest message] target for deletion selected: EntryID 0000004A8F2C1B9D7E3F4A5B6C7D8E9F00112233; Subject 'Daily export - region EMEA'; received 2026-06-04T06:12:00Z; current location 'Inbox'"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T11:00:03.260Z",
+      "Message": "[Process each message] Processing message: Daily export - region EMEA"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T11:00:04.910Z",
+      "Message": "[Process each message] Processing message: Daily export - region APAC"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T11:00:06.380Z",
+      "Message": "[Process each message] Processing message: Weekly reconciliation summary"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T11:00:07.840Z",
+      "Message": "[Process each message] processed 24 of 24 messages in 00:00:04.7 (downstream API + attachment save per item)"
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-06-04T11:00:08.060Z",
+      "Message": "[Delete Outlook Mail Message] target message (EntryID 0000004A8F2C1B9D7E3F4A5B6C7D8E9F00112233) not found in 'Inbox'; it appears to have been moved or deleted since retrieval at 11:00:03"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T11:00:08.150Z",
+      "Message": "[Delete Outlook Mail Message] The operation failed. An object could not be found."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T11:00:08.198Z",
+      "Message": "The operation failed. An object could not be found.\r\nin Main.xaml\r\n    at DeleteOutlookMailMessage \"Delete Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T11:00:08.210Z",
+      "Message": "Execution ended in: 00:00:08"
+    }
+  ]
+}
