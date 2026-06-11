@@ -436,7 +436,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   uip api-workflow bindings sync --workflow <path-to-Workflow.json> --output json
 
   # 2. Sync catalogue + debug overwrites via @uipath/resource-builder-sdk (requires uip login):
-  uip solution resource refresh --solution-folder <path-to-solution-root> --output json
+  uip solution resources refresh --solution-folder <path-to-solution-root> --output json
   ```
   Step 1 walks the workflow, extracts IntSvc connector activities, dedupes by connection UUID, and writes the canonical `bindings_v2.json` next to the workflow — what StudioWeb normally produces in-memory on workflow open. Step 2 reads that file, uses the SDK's `addOrUpdateResourceToSolutionAsync` to write the catalogue file, and `editOverwritesAsync` to write the per-user debug overwrites. Both commands are idempotent and safe to re-run.
 

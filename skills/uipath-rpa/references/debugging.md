@@ -25,15 +25,15 @@ Before invoking any of the above, run `uip rpa studio start --project-dir "<PROJ
 `run` and `debug start` take a file path and optional inputs:
 
 ```bash
-uip rpa run         --file-path <relative-path> [--input-arguments '<json>'] [--log-level <level>] [--skip-build] [--output json]
-uip rpa debug start --file-path <relative-path> [--input-arguments '<json>'] [--log-level <level>] [--skip-build] [--output json]
+uip rpa run         --file-path <relative-path> [--input-arguments key=value]... [--log-level <level>] [--skip-build] [--output json]
+uip rpa debug start --file-path <relative-path> [--input-arguments key=value]... [--log-level <level>] [--skip-build] [--output json]
 ```
 
 `debug test-activity` and `debug start-from-here` operate on the currently focused activity (no `--file-path`):
 
 ```bash
-uip rpa debug test-activity     [--input-arguments '<json>'] [--input-variables '<json>'] [--log-level <level>] [--output json]
-uip rpa debug start-from-here   [--input-arguments '<json>'] [--input-variables '<json>'] [--log-level <level>] [--output json]
+uip rpa debug test-activity     [--input-arguments key=value]... [--input-variables key=value]... [--log-level <level>] [--output json]
+uip rpa debug start-from-here   [--input-arguments key=value]... [--input-variables key=value]... [--log-level <level>] [--output json]
 ```
 
 All other `debug` verbs (`break`, `continue`, `resume`, `continue-retry`, `continue-ignore`, `step-into`, `step-over`, `step-out`, `toggle-breakpoint`, `restart-from-top`) take no parameters — they operate on the active debug session.
@@ -41,8 +41,8 @@ All other `debug` verbs (`break`, `continue`, `resume`, `continue-retry`, `conti
 | Parameter | Description |
 |-----------|-------------|
 | `--file-path` | Workflow file to run (relative to project root). Applies to `run` and `debug start` only |
-| `--input-arguments` | JSON object with project-level input arguments. Only for `run`, `debug start`, `debug test-activity`, and `debug start-from-here` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
-| `--input-variables` | JSON object with workflow-level variable values. Only for `debug test-activity` and `debug start-from-here` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
+| `--input-arguments` | Project-level input arguments as repeatable `key=value` pairs (`=` string, `:=` raw JSON; see [cli-reference.md § Passing structured inputs](cli-reference.md#passing-structured-inputs)). Only for `run`, `debug start`, `debug test-activity`, and `debug start-from-here` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
+| `--input-variables` | Workflow-level variable values as repeatable `key=value` pairs (values are VB/C# expressions — always `=`). Only for `debug test-activity` and `debug start-from-here` (see [Input Variables vs Input Arguments](#input-variables-vs-input-arguments)) |
 | `--log-level` | Minimum log level: `Verbose`, `Trace` (default), `Information`, `Warning`, `Error`, `Critical` |
 | `--skip-build` | Skip the pre-run build step (use only when you've just built) |
 | `--output` | Output format: `json` (recommended), `table`, `yaml`, `plain` |
@@ -83,50 +83,52 @@ These serve different purposes and apply to different scopes:
 | **What they are** | Project-level parameters (In/Out/InOut) | Workflow-internal variables scoped to activities |
 | **Where defined** | Project argument list (visible in Studio's Arguments panel) | Inside the workflow (visible in Studio's Variables panel) |
 | **Applicable verbs** | `run`, `debug start`, `debug test-activity`, `debug start-from-here` | `debug test-activity`, `debug start-from-here` only |
-| **Value format (`run` / `debug start`)** | Plain JSON values: `{"name":"John","age":30}` | N/A |
-| **Value format (`debug test-activity` / `debug start-from-here`)** | VB.NET or C# expressions | VB.NET or C# expressions |
+| **Value format (`run` / `debug start`)** | `key=value` pairs (`=` string, `:=` raw JSON): `name=John`, `age:=30` | N/A |
+| **Value format (`debug test-activity` / `debug start-from-here`)** | VB.NET or C# expressions — always `=` | VB.NET or C# expressions — always `=` |
 
 ### Expression Value Examples
 
-For `debug test-activity` and `debug start-from-here`, both `--input-arguments` and `--input-variables` values must be **VB.NET or C# expressions** matching the project language.
+For `debug test-activity` and `debug start-from-here`, both `--input-arguments` and `--input-variables` values must be **VB.NET or C# expressions** matching the project language. Always use `=` pairs (the expression is a string — `:=` would corrupt it), one variable per flag occurrence. Expressions containing double quotes (string literals) cannot be passed inline on Windows PowerShell 5.1 — write them to a UTF-8 file and use `key=@file`.
 
 **VB.NET projects:**
 ```bash
-# String variable — VB string literal with escaped quotes
---input-variables '{"greeting": "\"Hello World\""}'
-
-# Integer variable
---input-variables '{"count": "42"}'
+# Integer variable — the expression 42
+--input-variables count=42
 
 # Boolean variable (VB uses True/False, capitalized)
---input-variables '{"isActive": "True"}'
+--input-variables isActive=True
 
 # Null / unset (VB keyword)
---input-variables '{"result": "Nothing"}'
+--input-variables result=Nothing
 
-# New object
---input-variables '{"config": "New Dictionary(Of String, Object)"}'
+# New object — single-quote tokens containing spaces
+--input-variables 'config=New Dictionary(Of String, Object)'
 
-# Multiple variables at once
---input-variables '{"name": "\"John\"", "age": "30", "isActive": "True"}'
+# String variable — the expression needs quotes, so pass it from a file.
+#   PowerShell: Set-Content -Encoding UTF8 greeting.txt '"Hello World"'
+#   bash:       printf '"Hello World"' > greeting.txt
+--input-variables greeting=@greeting.txt
+
+# Multiple variables at once — repeat the flag
+--input-variables name=@name-expr.txt --input-variables age=30 --input-variables isActive=True
 ```
 
 **C# projects:**
 ```bash
-# String variable
---input-variables '{"greeting": "\"Hello World\""}'
-
 # Boolean variable (C# uses true/false, lowercase)
---input-variables '{"isActive": "true"}'
+--input-variables isActive=true
 
 # Null / unset (C# keyword)
---input-variables '{"result": "null"}'
+--input-variables result=null
 
-# New object
---input-variables '{"config": "new Dictionary<string, object>()"}'
+# New object — single-quote tokens containing spaces
+--input-variables 'config=new Dictionary<string, object>()'
+
+# String variable — quoted literal goes through a file
+--input-variables greeting=@greeting.txt
 ```
 
-> **Important:** String values require the VB/C# string literal quotes *inside* the JSON value. A JSON string `"200"` becomes the expression `200` (an integer literal), not the string `"200"`. To pass the string `"200"`, use `"\"200\""`.
+> **Important:** values are committed as expression text. `count=42` yields the expression `42` (an integer literal). To pass the *string* `"200"`, the expression must contain the quotes — `"200"` — which survives only via the file form: `temperature=@expr.txt` with the file containing `"200"`. Whole payloads can also be loaded from a JSON file: `--input-variables '@vars.json'` (single-quote the `@` token in PowerShell) or `--input-variables-file vars.json`.
 
 ---
 
@@ -221,9 +223,11 @@ Use `debug test-activity` to run just the currently focused activity without exe
 # 1. Focus the activity to test (Studio Desktop required)
 uip rpa focus-activity --activity-id "DeserializeJson_1"
 
-# 2. Run it in isolation, pre-setting any variables it reads from
+# 2. Run it in isolation, pre-setting any variables it reads from.
+#    temperature is a String — its expression needs quotes, so pass it from a file:
+#    PowerShell: Set-Content -Encoding UTF8 temp-expr.txt '"200"'   bash: printf '"200"' > temp-expr.txt
 uip rpa debug test-activity \
-  --input-variables '{"temperature": "\"200\""}' \
+  --input-variables temperature=@temp-expr.txt \
   --output json
 
 # 3. Check the output:
@@ -242,9 +246,11 @@ Use `debug start-from-here` to skip straight to the activity you care about, avo
 # 1. Focus the activity to start from (Studio Desktop required)
 uip rpa focus-activity --activity-id "HttpRequest_1"
 
-# 2. Start debugging from that point, pre-setting variables
+# 2. Start debugging from that point, pre-setting variables.
+#    apiUrl is a String — its expression needs quotes, so pass it from a file:
+#    PowerShell: Set-Content -Encoding UTF8 api-url.txt '"https://api.example.com/weather"'
 uip rpa debug start-from-here \
-  --input-variables '{"apiUrl": "\"https://api.example.com/weather\""}' \
+  --input-variables apiUrl=@api-url.txt \
   --output json
 
 # 3. The debugger runs from the focused activity — step through or continue
@@ -309,13 +315,14 @@ uip rpa execution cancel --output json
 Pass input arguments when the workflow has In arguments that need values:
 
 ```bash
-# Start debugging with input arguments (plain JSON values)
+# Start debugging with input arguments — one key=value pair per flag occurrence
 uip rpa debug start --file-path "ProcessOrder.xaml" \
-  --input-arguments '{"orderId": "ORD-12345", "customerEmail": "test@example.com"}' \
+  --input-arguments orderId=ORD-12345 \
+  --input-arguments customerEmail=test@example.com \
   --output json
 ```
 
-`--input-arguments` is valid with `run`, `debug start`, `debug test-activity`, and `debug start-from-here`. For `run` / `debug start`, values are plain JSON. For `debug test-activity` / `debug start-from-here`, values must be VB/C# expressions.
+`--input-arguments` is valid with `run`, `debug start`, `debug test-activity`, and `debug start-from-here`. For `run` / `debug start`, `=` keeps the value a string and `:=` passes raw JSON (`retries:=3`, `enabled:=true`). For `debug test-activity` / `debug start-from-here`, values must be VB/C# expressions — always `=`. Full grammar (file payloads, quoting rules): [cli-reference.md § Passing structured inputs](cli-reference.md#passing-structured-inputs).
 
 ---
 

@@ -96,13 +96,13 @@ Use when there is an existing deployed Action Center app that should serve as th
 **CLI (primary path):**
 
 ```bash
-uip solution resource list --kind App --output json
+uip solution resources list --kind App --output json
 ```
 
 Returns all Action Center app types (`vB Action`, `workflow Action`, `Coded Action`, `JS Action`). Filter by app name. Then retrieve the configuration:
 
 ```bash
-uip solution resource get <key> --output json
+uip solution resources get <key> --output json
 ```
 
 **Direct API fallback (if CLI unavailable):**

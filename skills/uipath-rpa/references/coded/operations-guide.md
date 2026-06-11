@@ -398,9 +398,9 @@ Canonical CLI: `uip rpa packages install`. Do NOT hand-edit `project.json` `depe
 1. Read `project.json` to check existing dependencies — skip packages already at the desired version.
 2. Run:
    ```bash
-   uip rpa packages install --project-dir "<PROJECT_DIR>" --packages '[{"id":"<PACKAGE_ID>","version":"<VERSION>"}]' --output json
+   uip rpa packages install --project-dir "<PROJECT_DIR>" --packages 'id=<PACKAGE_ID>,version=<VERSION>' --output json
    ```
-   Omit `version` to resolve the latest compatible. Pin a version only when there is a known compatibility constraint (see pinned versions below). The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
+   Omit `,version=<VERSION>` to resolve the latest compatible. Pin a version only when there is a known compatibility constraint (see pinned versions below). The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
 3. Only install packages the project actually needs.
 
 **Pinned versions for UiPath activity packages (current v25.x):**

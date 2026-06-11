@@ -1,0 +1,90 @@
+task_id: skill-automation-discovery-intake
+description: >
+  Smoke test: agent uses the uipath-automation-discovery skill to run
+  Phase 0 (intake) for a fictional company. Tests that the skill triggers
+  correctly and the agent follows the structured intake workflow — gathering
+  company context, tool inventory, org structure, and scope agreement.
+tags: [uipath-automation-discovery, smoke, lifecycle:discover]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I want to discover automation opportunities at my company using the
+  uipath-automation-discovery skill.
+
+  Here is the context for Phase 0 intake:
+
+  **Company**: Acme Corp, a 2,000-person B2B SaaS company in the fintech space.
+  **Automation today**: No dedicated COE, a few ad-hoc scripts.
+  **Pain points**: "Expense reporting takes forever", "Sales ops is drowning in manual CRM updates".
+
+  **Tools**:
+  - Messaging: Slack (no CLI access in this environment)
+  - Wiki: Confluence (no access in this environment)
+  - Issue Tracker: Jira (no access in this environment)
+  - CRM: Salesforce (no access in this environment)
+  - Email: Gmail (no access in this environment)
+
+  **Org structure**: Engineering, Sales, Marketing, Finance, HR, Legal, IT, Customer Success, Product.
+  **No departments off-limits.**
+
+  **Output**: Local markdown file.
+  **Audience**: VP of Operations.
+  **Scope**: Quick scan.
+
+  Since no tools are accessible in this sandbox, skip access verification
+  (Phase 0C — no live systems in test sandbox) and skip mining (Phase 1).
+  Instead, complete the intake (Phase 0) and produce a report.json summary
+  of what you gathered:
+
+  {
+    "company_name": "Acme Corp",
+    "industry": "<industry>",
+    "employee_count": <number>,
+    "departments": ["<list>"],
+    "tools_inventoried": ["<list of tools mentioned>"],
+    "scope": "<quick scan|standard|deep dive>",
+    "output_format": "<where the report goes>",
+    "hypotheses": ["<pain points captured as hypotheses>"]
+  }
+
+success_criteria:
+  - type: file_exists
+    description: "report.json was created with intake summary"
+    path: "report.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json captures company context correctly"
+    path: "report.json"
+    assertions:
+      - expression: "company_name"
+        operator: equals
+        expected: "Acme Corp"
+      - expression: "length(departments)"
+        operator: gte
+        expected: 5
+      - expression: "length(tools_inventoried)"
+        operator: gte
+        expected: 3
+      - expression: "length(hypotheses)"
+        operator: gte
+        expected: 1
+    weight: 3.0
+    pass_threshold: 0.75
+
+  - type: json_check
+    description: "report.json has correct scope and output format"
+    path: "report.json"
+    assertions:
+      - expression: "scope"
+        operator: contains
+        expected: "quick"
+      - expression: "output_format"
+        operator: contains
+        expected: "markdown"
+    weight: 1.5
+    pass_threshold: 1.0

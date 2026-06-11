@@ -5,11 +5,7 @@ description: >
   Verifies (1) the agent calls `uip platform groups rules get --output json`
   and (2) uses at least one pagination flag (`--limit`, `--sort-by`, or
   `--sort-order`). CLI auth failure is expected offline.
-tags: [uipath-platform, smoke-blocked, licensing, groups]
-skip: true
-# Blocked: `uip platform groups rules` is not in the public
-# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
-# Re-enable when the CLI ships the groups surface. See PLT-103133.
+tags: [uipath-platform, smoke, licensing, groups]
 
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.

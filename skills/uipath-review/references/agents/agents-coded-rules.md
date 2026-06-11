@@ -2,7 +2,7 @@
 
 Judgment rules for **coded** agents (Python — `main.py` + framework config). Each rule requires the agent to read source and reason — what a regex/AST-emulation/file-walk cannot decide reliably. Same row schema as elsewhere — see [`../rule-format.md`](../rule-format.md).
 
-> **This catalog is judgment-only.** Run `uip codedagent review --project-dir "<PROJECT_DIR>" --output json` **first** (SKILL.md Step 2.5) — it returns the deterministic coded findings (pyproject/dependency/python-version gates, import & secret regex, framework symbol existence, bare-except, eval-run analysis, `.venv` packaging, git-tracked secrets) in the same rule format. Then apply the rules below, which the CLI cannot do.
+> **This catalog is judgment-only.** Run `uip codedagent review "<PROJECT_DIR>" --output json` **first** (SKILL.md Step 2.5) — it returns the deterministic coded findings (pyproject/dependency/python-version gates, import & secret regex, framework symbol existence, bare-except, eval-run analysis, `.venv` packaging, git-tracked secrets) in the same rule format. Then apply the rules below, which the CLI cannot do.
 
 Read [`../rule-format.md`](../rule-format.md) and [`../rule-catalog-workflow.md`](../rule-catalog-workflow.md) first.
 

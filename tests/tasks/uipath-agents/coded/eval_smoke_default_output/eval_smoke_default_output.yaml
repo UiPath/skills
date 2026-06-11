@@ -1,0 +1,39 @@
+task_id: skill-agent-coded-eval-smoke-default-output
+description: >
+  Greenfield default-evaluator choice. A plain single-LLM-call agent with
+  NO @traced spans and NO tool calls asks only for "a smoke eval set".
+  Verifies the skill defaults the smoke evaluator to an OUTPUT-based type
+  (uipath-llm-judge-output-semantic-similarity, or a deterministic
+  uipath-exact-match / uipath-contains / uipath-json-similarity) and does
+  NOT scaffold a trajectory or tool-call evaluator — those score against
+  emitted trace spans / AgentRunHistory and return 0.0 on an agent with no
+  meaningful trajectory, which is the trap this default avoids.
+tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+
+run_limits:
+  expected_turns: 22
+  turn_timeout: 1200
+
+initial_prompt: |
+  I've got chunks of text I want boiled down to a short paragraph each. Can you
+  build me a small coded agent for that — call it `summarizer`, takes some text
+  in and hands back a one-paragraph summary. Once it's running, set up a quick
+  eval with a couple of test cases so I can sanity-check it locally. No need to
+  deploy it anywhere.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Smoke evaluator defaults to an output-based type, never a trajectory/tool-call evaluator"
+    command: "python3 $TASK_DIR/check_eval_smoke_default_output.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

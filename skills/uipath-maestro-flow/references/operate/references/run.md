@@ -8,7 +8,7 @@ Execute a flow on demand and monitor progress. Three modes: **debug** (controlle
 2. **For debug runs: solution resources refreshed.** Always run before `flow debug` so connection and process resource declarations are in sync with project bindings:
 
    ```bash
-   uip solution resource refresh --solution-folder <SolutionDir> --output json
+   uip solution resources refresh --solution-folder <SolutionDir> --output json
    ```
 
 ## Debug — controlled end-to-end run
@@ -95,5 +95,5 @@ uip maestro flow job traces <job-key> --output json   # stream the verbose execu
 ## Anti-patterns
 
 - **Never run `flow debug` as a validation step.** Use `uip maestro flow validate` for correctness checking; debug is for end-to-end execution.
-- **Never skip `solution resource refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
+- **Never skip `solution resources refresh` before debug.** Stale resource declarations cause runtime binding failures even when the local `.flow` is correct.
 - **Never start diagnosis from `job traces`.** Traces are last-resort — see [diagnose/CAPABILITY.md](../../diagnose/CAPABILITY.md) for the priority ladder.

@@ -26,14 +26,14 @@ Synced 1 resources (0 already in solution)
 ## Gotchas
 
 - **The skip is idempotent across refreshes** for cloud-imported resources. If you ever see two `OrdersQueue.json` entries (without distinct cloud keys), something else is wrong — most likely a binding's `folderPath` placeholder differs (`solution_folder` vs `Shared/Production`) and the second binding falls through the [virtual-creation path](virtual-resource.md) instead of the import path.
-- **Refresh does NOT update the resource's local config** if the cloud-side definition changed (e.g. queue retry count edited in OR after import). Refresh is import-only by design; mutations are reserved for explicit local edits via SW UI or a future `solution resource update` CLI command.
+- **Refresh does NOT update the resource's local config** if the cloud-side definition changed (e.g. queue retry count edited in OR after import). Refresh is import-only by design; mutations are reserved for explicit local edits via SW UI or a future `solution resources update` CLI command.
 - **At deploy, both projects' runtime dependencies point at the same `resourceKey`.** This is correct — they share the cloud resource. The deploy folder gets one queue (or one link to an existing one if you've used `deploy config link`).
 - **At publish/upload time you cannot have two solution-level entries with the same cloud key.** If you accidentally produce that state by hand-editing files, `pack` rejects with a duplicate-key error.
 
 ## Verify
 
 ```bash
-uip solution resource list --source local --kind Queue --output json | jq '.Data[] | select(.Name == "OrdersQueue")'
+uip solution resources list --source local --kind Queue --output json | jq '.Data[] | select(.Name == "OrdersQueue")'
 ```
 
 Exactly one entry, with a key that matches the cloud GUID (the `Key` field) returned by `uip or queues list --folder-path "Shared/Production" --name OrdersQueue`.

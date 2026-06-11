@@ -159,6 +159,7 @@ Do not edit this embedded table on the fly; report drift so a human updates the 
 | Integration Service (uip is) | `uipath-platform/integration-service` | 5 dedicated + cross-cutting connector tasks in flow/agents |
 | HITL (uip hitl) | `uipath-human-in-the-loop` | no `uip hitl` verb; +`uipath-maestro-flow/hitl` cross-cutting |
 | Low & Code Agents | `uipath-agents` | |
+| Agent Hub (uip agenthub) | `uipath-agenthub` | |
 | IXP | `uipath-ixp` | |
 | RPA / Studio / Computer Vision | `uipath-rpa` (incl. `legacy/`) | three product rows share one skill |
 | Data Fabric (df / entities) | `uipath-data-fabric` | |
@@ -235,7 +236,7 @@ import re, glob
 from collections import defaultdict
 RULES = [(r'^uip (maestro )?flow\b','Flow'),(r'^uip (maestro )?bpmn\b','BPMN'),
  (r'^uip (maestro )?case\b','Case Management'),(r'^uip is\b','Integration Service'),
- (r'^uip (agent|codedagent)\b','Low & Code Agents'),(r'^uip ixp\b','IXP'),
+ (r'^uip (agent|codedagent)\b','Low & Code Agents'),(r'^uip agenthub\b','Agent Hub'),(r'^uip ixp\b','IXP'),
  (r'^uip rpa(-uia)?\b','RPA / Studio / CV'),(r'^uip (df|entities)\b','Data Fabric'),
  (r'^uip api-workflow\b','API Workflow'),(r'^uip codedapp\b','Coded Apps'),
  (r'^uip (or|orchestrator|resource)\b','Orchestrator'),(r'^uip context-grounding\b','ECS'),

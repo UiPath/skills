@@ -97,8 +97,8 @@ After reaching 0 validation errors AND a clean project-level build (Phase 2), ru
 ```bash
 # Run with default arguments (post-build, skip the redundant rebuild):
 uip rpa run --file-path "<FILE>" --skip-build --output json
-# Run with input arguments:
-uip rpa run --file-path "<FILE>" --skip-build --input-arguments '{"key": "value"}' --output json
+# Run with input arguments (repeat --input-arguments per key; = string, := raw JSON):
+uip rpa run --file-path "<FILE>" --skip-build --input-arguments key=value --output json
 # Run with verbose logging for debugging:
 uip rpa run --file-path "<FILE>" --skip-build --log-level Verbose --output json
 ```
@@ -137,7 +137,7 @@ C) <user-driven approach>
 ```
 Read: file_path="{projectRoot}/project.json"     -> check current dependencies
 
-Bash: uip rpa packages install --packages '[{"id": "UiPath.Excel.Activities"}]'```
+Bash: uip rpa packages install --packages id=UiPath.Excel.Activities```
 
 Omit `version` to automatically resolve the latest compatible version (preferred — gets newest docs and features). Only pin a specific version when you have a reason to (e.g., known compatibility constraint).
 

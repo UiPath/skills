@@ -29,7 +29,7 @@ run_limits:
 initial_prompt: |
   Build a UiPath Case Management solution named "TaskDependencyChain"
   containing a project also named "TaskDependencyChain" from the sdd.md
-  below. Use v20 schema. Write the sdd.md to disk first, then build from it.
+  below. Write the sdd.md to disk first, then build from it.
 
   ```
   # SDD — TaskDependencyChain
