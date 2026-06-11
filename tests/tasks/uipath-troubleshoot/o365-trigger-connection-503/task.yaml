@@ -1,0 +1,153 @@
+task_id: skill-troubleshoot-o365-trigger-connection-503
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose responses
+  are the verbatim CLI outputs from the real session. The failing job's
+  New Email Received trigger activity could not reach the Integration
+  Service connection layer: the connection client exhausted internal
+  retries and threw UiPath.ConnectionClient.Contracts.ConnectionHttpException:
+  Service Unavailable (HTTP 503), surfaced as Office365Exception. Live
+  probes of `uip is connections list` returned HTTP 503 "no healthy
+  upstream" — a real IS outage, not a connection or auth problem. Success =
+  the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay, mode:diagnose, rpa, o365-activities, integration-service]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why did my last job from folder Shared has failed?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's final response reaches the same root cause and fix as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: false
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md).
+
+      Grade ONLY the agent's FINAL response to the user. Do not grade
+      intermediate reasoning, tool usage, or internal investigation files.
+      Do NOT require the agent to name any playbook or reference file —
+      the substance of the diagnosis is what matters.
+
+      The final response must identify ALL THREE of the following:
+
+      (a) FAULT — The New Email Received (NewEmailReceived) trigger activity
+          faulted the job with "Service Unavailable" at the UiPath
+          Integration Service connection layer, before any Microsoft
+          Graph / mailbox call was made. Citing the raw
+          UiPath.ConnectionClient.Contracts.ConnectionHttpException or its
+          wrapped form (Office365Exception / Office365InternalException:
+          Service Unavailable) both count. Crediting that the connection
+          client exhausted its internal retries
+          (HttpConnectionServiceClient.RequestWithRetryAsync) is a plus,
+          not a requirement.
+
+      (b) CAUSE — An Integration Service connection-service outage on the
+          service side: HTTP 503 / Service Unavailable / "no healthy
+          upstream" (equivalent 5xx phrasings count) as the operative
+          cause of THIS run's fault. The decisive evidence is that even a
+          bare `is connections list` probe (no connection ID involved)
+          returns 503 — the whole connection service is down, so the
+          fault is service-side regardless of the trigger's own
+          configuration. The response must NOT attribute the failure to
+          the mailbox or folder configuration, to Microsoft Graph /
+          Outlook, to the connection being deleted or not shared
+          (404-class), or to authorization being expired or revoked
+          (401/403-class).
+
+          NOTE — dual finding: the trigger's configured ConnectionId in
+          the trace spans is a placeholder (all-zeros UUID). That IS in
+          the evidence and is a REAL secondary configuration issue.
+          Mentioning it as an additional problem to fix is correct and
+          earns credit. BUT presenting the placeholder connection as the
+          root cause of this fault — with the 503 outage demoted to a
+          side note or "compounding factor" — counts as a WRONG cause:
+          a 503 from a bare list call cannot be produced by a bad
+          connection ID, so the outage is the operative cause.
+
+      (c) RESOLUTION — Retry the job once the Integration Service
+          recovers, verifying recovery via an IS connections probe (e.g.
+          `uip is connections list` returning data instead of 503), and
+          escalate as a service incident if the 503 persists. Also
+          recommending fixing/selecting a valid connection on the trigger
+          (because of the placeholder ID) is acceptable as an additional
+          step — but "recreate/reselect the connection and republish" as
+          the SOLE fix, with no wait-for-recovery/escalation path, counts
+          as a wrong resolution. Preventive framing (Retry Scope with
+          backoff) is acceptable as a supplement.
+
+      ANTI-FABRICATION — Penalize any of these:
+        - Names an asset, configuration key, connection, or activity that
+          does not appear in the evidence. (The all-zeros ConnectionId
+          DOES appear in the trace-span evidence — do not treat it as
+          fabricated.)
+        - Claims an Orchestrator retry policy or platform behavior that is
+          not in the evidence.
+        - Asserts a root cause without citing job-level evidence (the
+          exception text, job logs, trace spans, or the live 503 probe).
+
+      SCORING RUBRIC (single score):
+        1.0  (a), (b), and (c) all present and correct; no fabrication.
+        0.8  All three present; minor imprecision or minor fabrication.
+        0.6  (a) correct and exactly one of (b)/(c) missing or wrong.
+        0.4  Only (a) correct — surface fault identified, cause and
+             resolution missing or wrong.
+        0.2  Recognized the job faulted but misattributed the cause.
+        0.0  Misdiagnosed or got blocked.
+
+      Return JSON:
+        {"score": <float>, "rationale": "<one sentence>",
+         "findings": ["(a): ...", "(b): ...", "(c): ..."]}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing job.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, say you do not have the project source on this machine and ask it to proceed with the platform evidence (job details, logs, traces)."
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator, runtime-exceptions), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
