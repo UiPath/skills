@@ -92,27 +92,58 @@ jobs:
             exit 0
           fi
 
-          # Extract unique skill names from changed paths
-          SKILLS=$(echo "$CHANGED" | grep '^skills/' | sed 's|skills/\([^/]*\)/.*|\1|' | sort -u)
+          # Skill SOURCE changes → run that skill's FULL smoke suite. The
+          # skill's behavior may have changed, so broad coverage is warranted.
+          SRC_SKILLS=$(echo "$CHANGED" | grep '^skills/' | sed 's|skills/\([^/]*\)/.*|\1|' | sort -u | grep -v '^$' || true)
 
-          # Also include skills whose test tasks changed
-          TEST_SKILLS=$(echo "$CHANGED" | grep '^tests/tasks/' | sed 's|tests/tasks/\([^/]*\)/.*|\1|' | sort -u)
-          SKILLS=$(printf '%s\n%s' "$SKILLS" "$TEST_SKILLS" | sort -u | grep -v '^$' || true)
+          # Test-only changes → run just the affected task file(s), NOT the
+          # whole skill. Adding or editing a test must not re-run every other
+          # smoke task for that skill when the skill itself is unchanged.
+          # Resolve each changed path under tests/tasks/ to its owning task YAML:
+          #   - a changed *.yaml IS the task
+          #   - a changed fixture / check-script resolves to the nearest
+          #     ancestor directory that holds a *.yaml (the leaf task dir)
+          resolve_task_yaml() {
+            local path="$1"
+            if [[ "$path" == *.yaml ]]; then
+              echo "$path"
+              return
+            fi
+            local d
+            d=$(dirname "$path")
+            while [[ "$d" == tests/tasks/* ]]; do
+              local found
+              found=$(find "$d" -maxdepth 1 -name '*.yaml' 2>/dev/null)
+              if [ -n "$found" ]; then
+                echo "$found"
+                return
+              fi
+              d=$(dirname "$d")
+            done
+          }
 
-          if [ -z "$SKILLS" ]; then
+          CHANGED_TASKS=""
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
+            for y in $(resolve_task_yaml "$path"); do
+              CHANGED_TASKS="$CHANGED_TASKS"$'\n'"$y"
+            done
+          done < <(echo "$CHANGED" | grep '^tests/tasks/' || true)
+          CHANGED_TASKS=$(echo "$CHANGED_TASKS" | sort -u | grep -v '^$' || true)
+
+          if [ -z "$SRC_SKILLS" ] && [ -z "$CHANGED_TASKS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "No skill changes detected — skipping smoke tests"
+            echo "No skill or test changes detected — skipping smoke tests"
             exit 0
           fi
 
-          # Build task glob pattern for changed skills that have tests.
-          # Skip skills whose tasks are all `windows`-tagged (they run on
-          # smoke-rpa-skills.yml). If a skill ever mixes windows-tagged and
-          # non-windows tasks, switch this to per-task filtering against
-          # $WINDOWS_TASKS instead of skipping the whole skill.
           GLOBS=""
           UNTESTED=""
-          for skill in $SKILLS; do
+
+          # 1) Whole-skill globs for skills whose SOURCE changed.
+          #    Skip skills whose tasks are all `windows`-tagged (they run on
+          #    smoke-rpa-skills.yml) or are opt-in benchmarks.
+          for skill in $SRC_SKILLS; do
             if echo "$WINDOWS_SKILLS" | grep -qw "$skill"; then
               echo "Skipping $skill (runs on Windows — see smoke-rpa-skills.yml)"
               continue
@@ -122,12 +153,8 @@ jobs:
               continue
             fi
             if [ -d "tests/tasks/$skill" ]; then
-              if [ -n "$GLOBS" ]; then
-                GLOBS="$GLOBS tasks/$skill/**/*.yaml"
-              else
-                GLOBS="tasks/$skill/**/*.yaml"
-              fi
-              echo "Will test: $skill"
+              GLOBS="$GLOBS tasks/$skill/**/*.yaml"
+              echo "Will test (skill source changed): $skill"
             else
               if [ -n "$UNTESTED" ]; then
                 UNTESTED="$UNTESTED, $skill"
@@ -138,13 +165,38 @@ jobs:
             fi
           done
 
+          # 2) Individual task files for test-only changes. Skip any task whose
+          #    skill is already covered by a whole-skill glob above, and any
+          #    Windows-only / benchmark path (those run elsewhere).
+          for task in $CHANGED_TASKS; do
+            skill=$(echo "$task" | sed -nE 's|^tests/tasks/([^/]+)/.*|\1|p')
+            if echo "$SRC_SKILLS" | grep -qw "$skill"; then
+              continue  # already covered by the whole-skill glob
+            fi
+            # NOTE: is_excluded_path() internally loops `for t in $WINDOWS_TASKS`
+            # (non-local), so don't name this loop variable `t` — it would be
+            # clobbered by the call below.
+            if is_excluded_path "$task"; then
+              echo "Skipping $task (Windows-only or benchmark — not a Linux smoke task)"
+              continue
+            fi
+            GLOBS="$GLOBS ${task#tests/}"
+            echo "Will test (task changed): ${task#tests/}"
+          done
+
+          GLOBS=$(echo "$GLOBS" | xargs)
+
           if [ -n "$UNTESTED" ]; then
             echo "untested_skills=$UNTESTED" >> "$GITHUB_OUTPUT"
           fi
 
           if [ -z "$GLOBS" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::Changed skills have no smoke tests: $UNTESTED"
+            if [ -n "$UNTESTED" ]; then
+              echo "::warning::Changed skills have no smoke tests: $UNTESTED"
+            else
+              echo "No smoke-eligible tasks to run."
+            fi
           else
             echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
           fi
