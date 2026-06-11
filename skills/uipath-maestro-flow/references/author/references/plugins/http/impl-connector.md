@@ -17,6 +17,8 @@ The CLI copies the manifest into `definitions[]`, adds the node instance, regist
 
 ## Step 2 — Identify target connection
 
+**Connector mode only works if the connector supports the HTTP request activity** — verify by running `uip is connectors get "<target-connector-key>"` and checking the `HasHttpRequest` flag. If the flag is false, **STOP** — a connection cannot help. Use the recovery `AskUserQuestion` below (switch to manual mode / skip / something else; the create-a-connection option does not apply) and do not switch modes without confirmation.
+
 ```bash
 uip is connections list "<target-connector-key>" --all-folders --output json
 ```
@@ -52,6 +54,8 @@ uip maestro flow node configure <ProjectName>.flow <nodeId> \
     "query": {"param1": "value1"}
   }' --output json
 ```
+
+> **Connector mode supports `application/json` request and response bodies only.**
 
 The CLI:
 
