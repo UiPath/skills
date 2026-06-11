@@ -1,0 +1,98 @@
+task_id: skill-agent-coded-deploy-interactive
+description: >
+  Interactive-mode variant of the coded-agent deploy lifecycle. Greenfield
+  build of a minimal no-LLM echo agent where the skill's two mandatory
+  greenfield stops fire as real prompts: Delivery (quickstart Step 8) and
+  Deploy (Step 9) are documented as "always ask, even if the user only said
+  build." A simulated user skips the Studio Web delivery options and chooses to
+  publish to the personal workspace. Grades that the gates fired (the agent
+  asked instead of guessing) AND that the package was deployed end-to-end.
+  Complements deploy_my_workspace, which suppresses the gates with a
+  "do NOT pause / do NOT ask" prompt — this task exercises the path that one
+  never reaches. Runs against a real tenant; a "version already exists"
+  publish conflict does not fail the task.
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:deploy, feature:deploy]
+
+agent:
+  # AskUserQuestion is NOT in the experiment default tool set, so the mandatory
+  # Delivery/Deploy gates could not fire without it. allowed_tools uses replace
+  # strategy — restate the full default list plus AskUserQuestion.
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+
+run_limits:
+  # Greenfield build + eval lands ~43 turns (see deploy_my_workspace); the
+  # interleaved user-simulation turns push the visible count higher. Advisory —
+  # max_turns is the hard cap.
+  expected_turns: 55
+  task_timeout: 2400
+  turn_timeout: 1200
+  max_turns: 80
+
+# No initial_prompt — in simulation mode the simulator generates the opening
+# user message from the persona and goal below, then answers the skill's
+# Delivery (Step 8) and Deploy (Step 9) prompts so the run completes without a
+# human. The user fixes the agent name (echo-deploy-sim) to keep the build path
+# and check-script lookup deterministic.
+simulation:
+  enabled: true
+  persona: |
+    You are a UiPath developer who just wants a tiny, deterministic coded agent
+    built and published to your own personal workspace so you can try invoking
+    it. You have UiPath auth already configured on this machine and you trust
+    the agent to drive the `uip` CLI. You do not use Studio Web for this one and
+    you are not wiring it into a flow.
+  goal: |
+    Get a minimal no-LLM coded agent named `echo-deploy-sim` — it echoes
+    `input.message` back as `echoed` — built and deployed to your personal
+    workspace.
+  constraints:
+    - "Your opening message asks to build a minimal no-LLM coded agent named `echo-deploy-sim` that echoes `input.message` as `echoed`, then publish it to your personal workspace. Do not specify CLI commands — let the agent decide those."
+    - "If the agent asks how you want to use or deliver the agent next (Studio Web setup, package & upload, local dev server, or skip), choose the option that just finishes the local build — 'Skip — I'm done'. You are NOT using Studio Web and do NOT want a local dev web server."
+    - "If the agent asks whether or where to deploy, choose 'Personal workspace'."
+    - "If the deploy reports that the version already exists, that is expected — consider it deployed and do not ask to re-deploy or bump the version."
+    - "If asked any other clarifying question, pick the recommended / first sensible option and keep moving."
+    - "Keep replies short — one sentence or a single chosen option."
+    - "Never tell the agent to skip validation, skip asking, or to not pause — let it ask its questions."
+  max_turns: 8
+
+success_criteria:
+  # ── Primary: the mandatory greenfield gates fired ──────────────────────
+  - type: command_executed
+    description: "Agent surfaced the Delivery / Deploy choice via AskUserQuestion instead of guessing or auto-deploying"
+    tool_name: "AskUserQuestion"
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Deploy still completed end-to-end after the interaction ────────────
+  - type: command_executed
+    description: "Agent packed and published to my-workspace (deploy or pack+publish)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--my-workspace'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Deploy artifacts present and pyproject.toml is well-formed for packaging"
+    command: "python3 $TASK_DIR/check_deploy_interactive.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

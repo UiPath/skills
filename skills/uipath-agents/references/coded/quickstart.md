@@ -78,7 +78,7 @@ When the user asks to create and deploy an agent end-to-end, follow these steps 
 
 **IMPORTANT: Do NOT stop between steps to ask "would you like me to continue?" or list next steps. Execute the entire flow automatically.** Pause only when (a) you hit an **architectural fork** — a step with multiple valid implementations (framework choice, HITL pattern, evaluator type, deploy target, conversational vs not, etc.) — or (b) you need data only the user has (credentials, project ID). At a fork, apply **infer-or-ask**: if the prompt or context names the choice, infer it and continue; otherwise output ONLY the choice question as your entire response, then STOP and wait. For missing data, output ONLY the data request. After getting the answer, resume immediately. Forks for each step are documented in that step's referenced file — read the reference when you reach the step; do not guess.
 
-Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the user only said "build". Use `AskUserQuestion` (or platform equivalent); fall back to plain text only when no UI tool exists. They are **automatically resolved** for `local-workspace` (auto-sync) and for `existing-coded` with `has_project_id == true` (push) — see steps 8 and 9 for the branch logic.
+Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the user only said "build". Use user question (or platform equivalent); fall back to plain text only when no UI tool exists. They are **automatically resolved** for `local-workspace` (auto-sync) and for `existing-coded` with `has_project_id == true` (push) — see steps 8 and 9 for the branch logic.
 
 1. **Framework** — **Skip if `framework != none`** (already chosen — verify the right `<framework>.json` is present and continue). Else select per the [Framework Selection](#framework-selection) section below.
 2. **Setup** — Idempotent by `project_state` and `has_venv`:
@@ -165,7 +165,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
    **Finally**, run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report` (use the entrypoint name from `entry-points.json`).
 8. **Delivery target.** Single branch point. **Evaluate branches in order — Local Workspace projects also have `UIPATH_PROJECT_ID` set in `.env`, so the `local-workspace` check MUST come before the `has_project_id` check, or Local Workspace will incorrectly fall into the push branch:**
 
-   - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so options A and B (manual push / solution upload) are skipped — they would be redundant or break sync identity. The user may still want a local dev console. Stop and ask via `AskUserQuestion` (header `"Delivery"`, `multiSelect: false`):
+   - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so options A and B (manual push / solution upload) are skipped — they would be redundant or break sync identity. The user may still want a local dev console. Stop and ask interactively (header `"Delivery"`, `multiSelect: false`):
 
      **Question:** *Studio Web is auto-syncing this workspace. Do you want a local dev console too?*
 
@@ -180,7 +180,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
 
      Do **not** run `uip codedagent push` for this branch (that's recovery only — see [lifecycle/local-workspace.md](lifecycle/local-workspace.md) § Studio-Web-Auto-Sync). Do **not** present options A or B.
    - **(2) `has_project_id == true` (cloud workspace, project ID already set)** → Run `uip codedagent push` to upload local edits, then continue to step 9. No fork question — the delivery choice was made in a prior session.
-   - **(3) Else (greenfield / cloud workspace not yet wired)** → Stop and ask via `AskUserQuestion` (header `"Delivery"`, `multiSelect: false`).
+   - **(3) Else (greenfield / cloud workspace not yet wired)** → Stop and ask interactively (header `"Delivery"`, `multiSelect: false`).
 
      **Question:** *How do you want to use the agent next?*
 
@@ -206,7 +206,7 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
      - **C** → run `uip codedagent dev` in the background; surface the URL (default `http://localhost:8080`). Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice.
      - **Skip** → continue to step 9.
 
-9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after options **A** / **B** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask via `AskUserQuestion` (header `"Deploy target"`, `multiSelect: false`).
+9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after options **A** / **B** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask interactively (header `"Deploy target"`, `multiSelect: false`).
 
    **Question:** *Do you want to deploy the agent? If yes, which target?*
 

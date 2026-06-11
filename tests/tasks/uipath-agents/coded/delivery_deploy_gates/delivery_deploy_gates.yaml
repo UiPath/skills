@@ -1,0 +1,92 @@
+task_id: skill-agent-coded-delivery-deploy-gates
+description: >
+  Interactive build with no publish. Greenfield build of a minimal no-LLM echo
+  agent where a simulated user declines both mandatory greenfield stops:
+  Delivery (quickstart Step 8) and Deploy (Step 9). Tests the two load-bearing
+  guarantees of those gates — that the skill ALWAYS asks even when the user only
+  said "build", and that it does NOT auto-publish when the user picks Skip. No
+  tenant auth needed: the agent only scaffolds, runs locally, and stops at the
+  gates. Complements deploy_interactive (which answers the gates with a real
+  deploy) by exercising the skip path that must NOT touch the cloud.
+tags: [uipath-agents, integration, coded, mode:build, lifecycle:generate, lifecycle:execute]
+
+agent:
+  # AskUserQuestion is NOT in the experiment default tool set, so the mandatory
+  # Delivery/Deploy gates could not fire without it. allowed_tools uses replace
+  # strategy — restate the full default list plus AskUserQuestion.
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+
+run_limits:
+  # Scaffold -> init -> run loop is ~25 turns (see simple_echo); the interleaved
+  # user-simulation turns push the visible count higher. Advisory.
+  expected_turns: 35
+  task_timeout: 1800
+  turn_timeout: 1200
+
+# No initial_prompt — the simulator generates the opener from persona + goal,
+# then answers the Delivery (Step 8) and Deploy (Step 9) prompts by declining
+# both. The user fixes the agent name (echo-local) so the file checks are
+# deterministic.
+simulation:
+  enabled: true
+  persona: |
+    You are a UiPath developer prototyping locally. You want a tiny,
+    deterministic coded agent built and run on your own machine to confirm it
+    works. You are NOT ready to publish it anywhere yet — no Studio Web, no
+    deployment — you just want to see it run.
+  goal: |
+    Get a minimal no-LLM coded agent named `echo-local` — it echoes
+    `input.message` back as `echoed` — scaffolded, initialized, and run
+    locally. Do not publish or deploy it.
+  constraints:
+    - "Your opening message asks to build a minimal no-LLM coded agent named `echo-local` that echoes `input.message` as `echoed`, and to take it through scaffold, init, and a local run so you can see the output. Do not specify CLI commands — let the agent decide those."
+    - "If the agent asks how you want to use or deliver the agent next (Studio Web setup, package & upload, local dev server, or skip), choose 'Skip — I'm done'. You are not publishing yet."
+    - "If the agent asks whether or where to deploy, choose 'Skip deployment'. Not now."
+    - "Do NOT ask the agent to skip steps, skip asking, or avoid pausing — it is fine for it to ask its questions; just decline to publish."
+    - "If asked any other clarifying question, pick the recommended / first sensible option and keep moving."
+    - "Keep replies short — one sentence or a single chosen option."
+  max_turns: 8
+
+success_criteria:
+  # ── Primary: the mandatory gate fired even though the user only said build ─
+  - type: command_executed
+    description: "Agent asked about delivery/deploy via AskUserQuestion instead of finishing silently or auto-publishing"
+    tool_name: "AskUserQuestion"
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Load-bearing: Skip was honored — nothing was published ─────────────
+  - type: command_executed
+    description: "Agent did NOT deploy, publish, push, or upload after the user declined"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(codedagent\s+(deploy|publish|push)|solution\s+upload)\b'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── Local build still completed ────────────────────────────────────────
+  - type: command_executed
+    description: "Agent scaffolded the project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip codedagent init to generate entry-points.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent executed the agent locally with uip codedagent run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+run\s+main'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
