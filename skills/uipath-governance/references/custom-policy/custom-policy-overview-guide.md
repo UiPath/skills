@@ -21,7 +21,7 @@ Two modes inside this branch:
 2. **Classify operate vs author before acting.** Do not run any CLI command until the mode is determined.
 3. **Never fabricate policy IDs.** Always resolve policy names to IDs via `list` — never guess a GUID.
 4. **For delete: always confirm.** Run `get`, show the policy summary, and ask for explicit user confirmation before running `delete`.
-5. **For update: always get first.** Retrieve the current YAML via `get` and use it as the edit base — never start from scratch when updating.
+5. **For update: always get first.** Retrieve the current Rego via `get` and use it as the edit base — never start from scratch when updating.
 6. **Author mode produces a file, then offers to create.** Write the JSON envelope to a session file, show it to the user, and ask before running `create`.
 
 ---
@@ -47,10 +47,10 @@ Map the user's intent to a command from the table below. For commands that take 
 | Intent | Command |
 |--------|---------|
 | List custom policies | `uip gov custom-policy list --output json` |
-| Get a policy's YAML | `uip gov custom-policy get <POLICY_ID> --output json` |
+| Get a policy's Rego | `uip gov custom-policy get <POLICY_ID> --output json` |
 | Enable a custom policy | `uip gov custom-policy enable <POLICY_ID> --output json` |
 | Disable a custom policy | `uip gov custom-policy disable <POLICY_ID> --output json` |
-| Update a custom policy | Get current YAML → edit → `uip gov custom-policy update <POLICY_ID> --file <PATH> --output json` |
+| Update a custom policy | Get current Rego → edit → `uip gov custom-policy update <POLICY_ID> --file <PATH> --output json` |
 | Delete a custom policy | Get + confirm → `uip gov custom-policy delete <POLICY_ID> --output json` |
 | Create from an existing file | `uip gov custom-policy create --file <PATH> --output json` |
 
