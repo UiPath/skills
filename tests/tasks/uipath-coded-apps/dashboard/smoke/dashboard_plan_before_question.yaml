@@ -1,0 +1,62 @@
+task_id: uipath-coded-apps-dashboard-plan-before-question
+description: >
+  Regression test for the options UI replacing the plan (observed live four
+  times: a question fired with zero plan text rendered). Final contract
+  (plugins/build/impl.md Phases 2-3 + CAPABILITY.md): the plan response is
+  PURE TEXT — zero tool calls — ending with "Confirm to build, or tell me
+  what to change"; structured setup questions (OAuth) fire only AFTER the
+  user approves, and never for details the approval already provided. With
+  no user reply in this run, the agent must end on the plan text: no
+  question tool, no build activity. Plan-text quality is checked by the LLM
+  reviewer transcript pass (criteria cannot grep assistant messages).
+tags: [uipath-coded-apps, smoke, dashboard, feature:approval-gate, feature:structured-questions, mode:build]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+initial_prompt: |
+  Help me create uipath CoE dashboard: agents ranked by AGU consumption,
+  agent health worst-first, governance verdicts donut, and policy denials
+  this week.
+
+  Do NOT select an option or approve anything — wait for the user to respond.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected: "yes"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The plan response is pure text — no question tool before the user approves
+  - type: command_executed
+    description: "Agent did NOT ask any structured question on the plan turn"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Gate held: no dependency install before approval (pre-warm runs npm ci
+  # inside the build script process, not as a Bash command, so this stays 0)
+  - type: command_executed
+    description: "Agent did NOT run npm ci before approval"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+ci'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Gate held: intent.json is written only in Phase 4, after approval
+  - type: run_command
+    description: "No intent.json written anywhere before approval"
+    command: "sh -c '! find . -name intent.json 2>/dev/null | grep -q .'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

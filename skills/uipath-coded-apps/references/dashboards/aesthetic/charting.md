@@ -6,16 +6,18 @@ How to pick chart types, configure colors, and avoid common mistakes.
 
 ## Chart Type Selection
 
+Valid `displayAs` values (the build accepts only these): `kpi-card`, `ranked-table`, `data-table`, `area-chart`, `line-chart`, `bar-chart`, `donut-chart`, `multi-line-chart`, `rate-chart`.
+
 | User's metric | Use this | Why |
 |---|---|---|
 | Single number at a point in time | `kpi-card` | No trend needed |
-| Single number + recent trend | `kpi-with-sparkline` | Compact trend context |
 | One metric over time (count, sum) | `area-chart` | Shows volume and trend |
-| One metric over time (rate, %) | `line-chart` | Rates don't have fill area |
+| One metric over time (already a value series) | `line-chart` | Trend without fill weight |
+| Ratio/percentage over time (numerator ÷ denominator) | `rate-chart` | Computes per-bucket %, % axis, pp delta |
 | Comparing categories (bars) | `bar-chart` | Items to compare |
 | Ranked list with a score | `ranked-table` | 5+ items, sortable |
 | Part-of-whole proportions (≤5 categories) | `donut-chart` | Parts sum to 100% |
-| Part-of-whole proportions (5+ categories) | `progress-bar-list` | Donut with 5+ slices is unreadable |
+| Part-of-whole proportions (5+ categories) | `bar-chart` | Donut with 5+ slices is unreadable |
 | Two metrics on the same time axis | `multi-line-chart` | Comparison over time |
 | Raw records, drill-down detail | `data-table` | Operational view |
 
@@ -64,32 +66,21 @@ For multi-line charts (P50/P95):
 
 ---
 
-## DeltaBadge Direction Guide
+## Delta polarity guide
 
-The `direction` prop means: which direction is good for this metric?
+Deltas are **computed at runtime** — never hand-write delta text. You set one intent field per chart metric, `deltaPolarity`, which answers: is an increase good for this metric?
 
-| Metric | Direction when value goes UP |
+| Metric | `deltaPolarity` |
 |---|---|
 | Success rate, health score | `up-good` |
 | Error count, failure rate | `up-bad` |
-| Latency (lower is faster) | `up-bad` |
 | AGU consumed (cost) | `up-bad` |
-| Invocations (activity proxy) | `up-good` |
+| Run volume (activity proxy) | `up-good` |
 | Agent count (fleet growing) | `up-good` |
-| Incidents | `up-bad` |
-| Unknown / neutral | `neutral` |
+| Incidents, denials | `up-bad` |
+| Memory counts (no inherent good direction) | `neutral` |
 
-Examples:
-```tsx
-// Success rate went up → good
-<DeltaBadge direction="up-good" text="+3.2% vs last week" />
-
-// Error rate went up → bad
-<DeltaBadge direction="up-bad" text="+12 errors vs yesterday" />
-
-// Unknown trend
-<DeltaBadge direction="neutral" text="12.4s avg" />
-```
+The build computes the % change (or `pp` for `rate-chart`) between the last two buckets and colours the badge from the polarity. The badge is hidden automatically when there's not enough data.
 
 ---
 
@@ -115,7 +106,7 @@ Examples:
 
 ## Anti-patterns
 
-- Donut chart with >5 slices → use `progress-bar-list` instead
+- Donut chart with >5 slices → use `bar-chart` instead
 - Line chart with <4 data points → use `bar-chart` instead (clearer)
 - Stacked bar unless values are genuinely parts-of-whole
 - Sparkline without a primary number above it

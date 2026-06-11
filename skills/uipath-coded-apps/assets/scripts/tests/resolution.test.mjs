@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, compileColumns, emit, parseEvent, classifyEditIntent, VALID_DISPLAY_TYPES } from '../build-dashboard.mjs'
+import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, compileColumns, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, VALID_DISPLAY_TYPES } from '../build-dashboard.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REGISTRY_PATH = resolve(__dirname, '../capability-registry.json')
@@ -121,7 +121,7 @@ test('validateIntent: valid T1 intent passes', () => {
   const errors = validateIntent({
     dashboardName: 'My Dashboard',
     timeRange: '30d',
-    metrics: [{ name: 'agent-errors', tier: 'T1', title: 'Agent Errors', fnBody: 'return []' }]
+    metrics: [{ name: 'agent-memory-timeline', tier: 'T1', title: 'Agent Memory', fnBody: 'return []' }]
   })
   assert.deepEqual(errors, [])
 })
@@ -129,7 +129,7 @@ test('validateIntent: valid T1 intent passes', () => {
 test('validateIntent: rejects T1 metric without fnBody', () => {
   const errors = validateIntent({
     dashboardName: 'x', timeRange: '30d',
-    metrics: [{ name: 'agent-errors', tier: 'T1', title: 'Agent Errors' }]
+    metrics: [{ name: 'agent-memory-timeline', tier: 'T1', title: 'Agent Memory' }]
   })
   assert.ok(errors.some(e => e.includes('T1') && e.includes('fnBody')))
 })
@@ -137,7 +137,7 @@ test('validateIntent: rejects T1 metric without fnBody', () => {
 test('validateIntent: rejects T1 metric without title', () => {
   const errors = validateIntent({
     dashboardName: 'x', timeRange: '30d',
-    metrics: [{ name: 'agent-errors', tier: 'T1', fnBody: 'return []' }]
+    metrics: [{ name: 'agent-memory-timeline', tier: 'T1', fnBody: 'return []' }]
   })
   assert.ok(errors.some(e => e.includes('T1') && e.includes('title')))
 })
@@ -197,35 +197,35 @@ test('resolveMetric: unknown T1 name throws with "not found in registry"', () =>
 // ── buildWidgetFile tests (unified path for all tiers) ────────────────────────
 
 test('buildWidgetFile: T1 metric uses fnBody from agent (not hardcoded SDK)', () => {
-  const entry = registry.t1['agent-errors']
+  const entry = registry.t1['memory-calls-trend']
   const content = buildWidgetFile(
     {
-      name: 'agent-errors',
+      name: 'memory-calls-trend',
       tier: 'T1',
-      title: 'Agent Error Rate',
-      displayAs: 'line-chart',
-      xKey: 'date',
-      yKey: 'value',
-      fnBody: "const { Agents } = await import('@uipath/uipath-typescript/agents')\nconst svc = new Agents(sdk as never)\nreturn (await svc.getErrorsTimeline(THIRTY_DAYS_AGO, NOW))?.data ?? []"
+      title: 'Memory Calls',
+      displayAs: 'area-chart',
+      xKey: 'timeSlice',
+      yKey: 'memoryCallsCount',
+      fnBody: "const { AgentMemory } = await import('@uipath/uipath-typescript/agent-memory')\nreturn await new AgentMemory(sdk as never).getCallsTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })"
     },
     entry,
     '30d'
   )
   assert.ok(content.includes('customDataFn'))
-  assert.ok(content.includes('getErrorsTimeline'))
+  assert.ok(content.includes('getCallsTimeline'))
   // No hardcoded type params from registry
   assert.ok(!content.includes('useWidgetData<'))
 })
 
 test('buildWidgetFile: uses registry defaults for xKey/yKey when not in metric', () => {
-  const entry = registry.t1['agent-errors']
+  const entry = registry.t1['memory-calls-trend']
   const content = buildWidgetFile(
-    { name: 'agent-errors', tier: 'T1', title: 'Agent Errors', displayAs: 'line-chart', fnBody: 'return []' },
+    { name: 'memory-calls-trend', tier: 'T1', title: 'Memory Calls', displayAs: 'area-chart', fnBody: 'return []' },
     entry,
     '30d'
   )
   // xKey from registry defaults
-  assert.ok(content.includes('date'))
+  assert.ok(content.includes('timeSlice'))
 })
 
 test('buildWidgetFile: T2 metric with fnBody uses chart path', () => {
@@ -314,15 +314,13 @@ test('buildWidgetFile: no unresolved << >> placeholders remain', () => {
 })
 
 test('buildWidgetFile: uses registry defaults for icon when metric has none', () => {
-  // agent-errors lives in t1_unavailable (Insights SDK not yet shipped) but its
-  // defaults still flow through buildWidgetFile when passed as the registry entry.
-  const entry = registry.t1_unavailable['agent-errors']
+  const entry = registry.t1['agent-health']
   const content = buildWidgetFile(
-    { name: 'agent-errors', tier: 'T1', title: 'Errors', displayAs: 'line-chart', fnBody: 'return []' },
+    { name: 'agent-health', tier: 'T1', title: 'Agent Health', displayAs: 'ranked-table', fnBody: 'return []' },
     entry,
     '30d'
   )
-  assert.ok(content.includes('AlertTriangle'))
+  assert.ok(content.includes('HeartPulse'))
 })
 
 // ── emit + parseEvent tests ───────────────────────────────────────────────────
@@ -361,7 +359,7 @@ test('parseEvent: returns null for non-event lines', () => {
 // ── classifyEditIntent tests ──────────────────────────────────────────────────
 
 test('classifyEditIntent: identifies ADD', () => {
-  const result = classifyEditIntent({ op: 'ADD', projectDir: '/tmp/x', metric: { name: 'agent-errors', tier: 'T1' } })
+  const result = classifyEditIntent({ op: 'ADD', projectDir: '/tmp/x', metric: { name: 'agent-health', tier: 'T1' } })
   assert.equal(result.op, 'ADD')
 })
 
@@ -559,4 +557,121 @@ test('generateViewFile: falls back to autoColumns when no detailColumns', () => 
     detailFnBody: 'return []', detailColumns: null,
   })
   assert.ok(view.includes('const columns = autoColumns(rows)'))
+})
+
+// ── SDK 1.4.0: agent / memory / governance metrics ────────────────────────────
+
+test('1.4.0: previously-refused agent metrics now resolve as T1', () => {
+  for (const [text, expected] of [
+    ['show active agents', 'active-agents-kpi'],
+    ['agu consumption by agent', 'agent-consumption'],
+    ['agents by health', 'agent-health'],
+    ['memory calls over time', 'memory-calls-trend'],
+    ['top memory spaces', 'top-memory-spaces'],
+    ['policy denials this week', 'policy-denials'],
+    ['governance summary', 'governance-verdicts'],
+  ]) {
+    const result = resolveAlias(text)
+    assert.ok(result, `"${text}" did not resolve`)
+    assert.equal(result.key, expected, `"${text}" resolved to ${result.key}, expected ${expected}`)
+  }
+})
+
+test('1.4.0: timeline metrics the SDK lacks are still hard-refused', () => {
+  for (const text of ['invocation volume over time', 'consumption timeline', 'agent latency p95', 'agent error rate trend']) {
+    const refused = registry.hardRefuse.some(e => new RegExp(e.pattern).test(text))
+    assert.ok(refused, `"${text}" should be hard-refused (no SDK 1.4.0 endpoint)`)
+    assert.equal(resolveAlias(text)?.key?.startsWith('agent-memory') ?? false, false)
+  }
+})
+
+test('1.4.0: t1_unavailable section is gone (stale PR #438 entries removed)', () => {
+  assert.equal(registry.t1_unavailable, undefined)
+})
+
+test('1.4.0: agent-health shell build compiles formatted/colored columnDefs', () => {
+  const entry = registry.t1['agent-health']
+  const content = buildWidgetFile(
+    { name: 'agent-health', tier: 'T1', title: 'Agent Health', displayAs: 'ranked-table', fnBody: 'return []' },
+    entry,
+    '30d'
+  )
+  assert.ok(content.includes('toneClass(Number(v),"goodHigh")'), 'healthScore colour not compiled')
+  assert.ok(content.includes('fmtTimeAgo(String(v))'), 'lastRun timeAgo format not compiled')
+})
+
+// ── fnBody harness signature: SDK interface arrays must be accepted ───────────
+// SDK response types are interfaces (no implicit index signature) — NOT assignable
+// to Record<string, unknown>[]. The injected customDataFn must be Promise<any[]>
+// so `return result?.items ?? []` typechecks without casts. (Repro: TS2322.)
+
+test('harness: chart customDataFn signature accepts SDK-typed arrays (Promise<any[]>)', () => {
+  const content = buildWidgetFile(
+    { name: 'm', tier: 'T3', title: 'M', displayAs: 'line-chart', yKey: 'v', fnBody: 'return []' },
+    null, '7d'
+  )
+  assert.ok(content.includes('Promise<any[]>'), 'chart wrapper must be Promise<any[]>')
+  assert.ok(!content.includes('Promise<Record<string, unknown>[]>'), 'old index-signature-demanding wrapper must be gone')
+})
+
+test('harness: shell customDataFn signature accepts SDK-typed arrays', () => {
+  const content = buildWidgetFile(
+    { name: 'm', tier: 'T3', title: 'M', displayAs: 'data-table', fnBody: 'return []' },
+    null, '7d'
+  )
+  assert.ok(content.includes('customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<any[]>'))
+})
+
+test('harness: detail view customDataFn signature accepts SDK-typed arrays', () => {
+  const view = generateViewFile({
+    componentName: 'X', title: 'X', subtitle: '',
+    detailFnBody: 'return []', detailColumns: null,
+  })
+  assert.ok(view.includes('Promise<any[]>'))
+  assert.ok(!view.includes('Promise<Row[]>'))
+})
+
+// ── Incremental edit: change-merge + layout grouping ──────────────────────────
+
+test('resolveChangeMetric: timeRange-only delta keeps persisted fnBody/title', () => {
+  const stored = {
+    tier: 'T1', metric: 'memory-calls-trend', template: 'area-chart',
+    intentMetric: { name: 'memory-calls-trend', tier: 'T1', title: 'Memory Calls', fnBody: 'return await x()' },
+  }
+  const merged = resolveChangeMetric(stored, 'MemoryCallsTrend', { timeRange: '7d' })
+  assert.equal(merged.fnBody, 'return await x()')
+  assert.equal(merged.title, 'Memory Calls')
+  assert.equal(merged.timeRange, '7d')
+})
+
+test('resolveChangeMetric: delta fields override persisted intentMetric', () => {
+  const stored = { intentMetric: { name: 'm', tier: 'T3', title: 'Old', displayAs: 'area-chart', fnBody: 'old' } }
+  const merged = resolveChangeMetric(stored, 'M', { fnBody: 'new', displayAs: 'data-table' })
+  assert.equal(merged.fnBody, 'new')
+  assert.equal(merged.displayAs, 'data-table')
+  assert.equal(merged.title, 'Old')
+})
+
+test('resolveChangeMetric: legacy state without intentMetric yields no fnBody', () => {
+  const merged = resolveChangeMetric({ tier: 'T1', metric: 'job-failures' }, 'JobFailures', { timeRange: '7d' })
+  assert.equal(merged.fnBody, undefined)
+})
+
+test('widgetLayoutGroup: classifies only buildable types', () => {
+  assert.equal(widgetLayoutGroup('kpi-card'), 'kpi')
+  assert.equal(widgetLayoutGroup('data-table'), 'table')
+  assert.equal(widgetLayoutGroup('ranked-table'), 'table')
+  assert.equal(widgetLayoutGroup('rate-chart'), 'chart')
+  assert.equal(widgetLayoutGroup('area-chart'), 'chart')
+})
+
+test('1.4.0: governance-verdicts donut uses name/value keys from defaults', () => {
+  const entry = registry.t1['governance-verdicts']
+  const content = buildWidgetFile(
+    { name: 'governance-verdicts', tier: 'T1', title: 'Governance Verdicts', displayAs: 'donut-chart', fnBody: 'return []' },
+    entry,
+    '7d'
+  )
+  assert.ok(content.includes('dataKey="value"'))
+  assert.ok(content.includes('nameKey="name"'))
 })

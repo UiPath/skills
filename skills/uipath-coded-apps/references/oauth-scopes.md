@@ -209,6 +209,26 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 
 ---
 
+## Agents — Insights RTM (SDK ≥ 1.4.0)
+
+| Method | Required Scope |
+|--------|----------------|
+| `Agents.getAll()` | `Insights` and `Insights.RealTimeData` |
+
+## Agent Memory (SDK ≥ 1.4.0)
+
+| Method | Required Scope |
+|--------|----------------|
+| `AgentMemory.getTimeline()` / `getCallsTimeline()` / `getTopSpaces()` | `Insights` and `Insights.RealTimeData` |
+
+## Governance (SDK ≥ 1.4.0)
+
+| Method | Required Scope |
+|--------|----------------|
+| `Governance.getPolicyTraces()` / `getOperationSummary()` | `Insights` and `Insights.RealTimeData` — caller needs elevated (org-admin) access; `fullOrganization: true` returns 403 without org-admin |
+
+---
+
 ## Common Scope Bundles
 
 | App uses... | Minimum scopes needed |
@@ -220,3 +240,4 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 | Orchestrator Jobs (list + read output) | `OR.Jobs.Read OR.Folders.Read` (add `OR.Folders.Read` so `Jobs.getOutput()` can resolve file-type output arguments via Attachments) |
 | Maestro full access | `PIMS OR.Execution.Read` |
 | Conversational Agent | `OR.Execution OR.Folders OR.Jobs ConversationalAgents Traces.Api` |
+| Insights RTM (Agents, Agent Memory, Governance) | `Insights Insights.RealTimeData` |

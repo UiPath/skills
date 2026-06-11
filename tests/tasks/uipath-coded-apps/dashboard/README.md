@@ -260,6 +260,7 @@ the entire project, wiping user customizations and taking 2-5 minutes unnecessar
 | Capability | Test | Tier |
 |---|---|---|
 | Plan shown before scaffold | `dashboard_plan_gate` | smoke |
+| Plan rendered before confirmation question | `dashboard_plan_before_question` | smoke |
 | Scaffold creates correct structure | `dashboard_scaffold` | smoke |
 | Ambiguous prompt asks question | `dashboard_disambiguate` | smoke |
 | SDK signals → SDK endpoints | `dashboard_sdk_routing` | integration |
@@ -335,6 +336,23 @@ existing `routingName` is preserved, existing `folderKey` is reused.
 Reusing the routing name ensures the update lands on the correct existing deployment.
 
 ---
+
+## Validating interaction-flow changes (required before shipping)
+
+Any change to the skill's **interaction flow** — question wording/structure, plan
+format, approval gates, event-to-output mapping — must be validated BEFORE it ships:
+
+1. Add or update a smoke task in `smoke/` that pins the interaction invariant
+   (e.g. `dashboard_plan_before_question` pins "structured question asked, nothing
+   built before approval"). If the invariant is about assistant text ordering
+   (criteria can't assert that), state it in the task description so the LLM
+   reviewer checks the transcript for it.
+2. Run the smoke tier locally: `make tags TAGS="uipath-coded-apps smoke"`.
+3. Only then merge the doc/script change.
+
+This exists because a question-tool change shipped without a flow test and the
+confirmation question fired before the plan was rendered — the user was asked to
+approve a dashboard they had never seen.
 
 ## Known Limitations
 

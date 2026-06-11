@@ -5,10 +5,10 @@ By the time you read this you have already loaded all docs, run login, checked s
 ## Rules
 
 1. **Zero tool calls between user request and plan.** Everything internal runs in the parallel blast. The first thing the user sees is the plan.
-2. **Zero tool calls between plan and build confirmation.** Pure text HALT.
+2. **Zero tool calls between plan and build confirmation. Pure text HALT.** The build plan gate is deliberately text-only: do NOT use the question/option tool here — it reproducibly suppresses the plan rendering (the user gets options with no plan). The plan text ends with the confirm/change affordances; OAuth details are asked AFTER approval (Phase 3).
 3. **The build runs in a subagent (Phase 4).** After confirmation, the main thread prints one "Building…" line, spawns the build subagent via the `Task` tool, and relays its returned milestone block. The build command, events, tsc/npm output, and retries stay inside the subagent.
 4. Never read `build-dashboard.mjs` — this file documents everything.
-5. Never run `ls`, `find`, or directory exploration.
+5. Never run directory exploration via any shell — `ls`, `find`, `dir`, `Get-ChildItem`, `tree`.
 
 ---
 
@@ -31,22 +31,6 @@ Verify `Data.Status === "Logged in"` — if not, stop and tell the user to run `
 | `https://cloud.uipath.com` | `https://api.uipath.com` |
 
 Rule: insert `api.` before `uipath.com`. Exception: `cloud.uipath.com` → `api.uipath.com`.
-
-### Read tenantId from auth file
-
-```bash
-node -e "
-const fs   = require('fs')
-const path = require('path')
-const home     = process.env.HOME || process.env.USERPROFILE
-const authPath = path.join(home, '.uipath', '.auth')
-const content  = fs.readFileSync(authPath, 'utf8')
-const envMatch = content.match(/^UIPATH_TENANT_ID=(.+)$/m)
-if (envMatch) { console.log(envMatch[1].trim()); process.exit(0) }
-const parsed = JSON.parse(content)
-console.log(parsed.UIPATH_TENANT_ID || parsed.tenantId || '')
-"
-```
 
 Pre-warm is already running at `<PROJECT_DIR>`. Do not re-fire it.
 
@@ -80,19 +64,16 @@ Here's your **[Dashboard Name]** — [N] widgets ready to build.
 
 Confirm to build, or tell me what to change:
 → "make it 7 days"
-→ "add a KPI for total errors"
-→ "remove the latency widget"
-
-**One quick thing:** Do you have a UiPath OAuth app client ID for dashboards?
-Paste it here, or say **"create one"** and I'll set it up before building.
+→ "add a KPI for faulted jobs"
+→ "remove the consumption widget"
 ```
 
-The plan message always ends with the OAuth question unless `clientId` is already in intent.json from a prior session.
+The plan message ends there — no OAuth talk in the plan, no tool calls in the plan response. Setup details (client ID) are collected AFTER the user approves the plan, in Phase 3.
 
-If the user's confirmation includes a client ID or "create one", capture it and proceed. If they confirm without addressing it and `clientId` is already set in intent.json, skip silently.
+> **The plan response is text-only by design.** Never put a question/option tool call in the same response as the plan — live runs showed it reliably replaces the plan with a bare options list (the user approves widgets they never saw). Structured-choice questions fire only on later, short turns: the post-approval OAuth question (Phase 3), intent disambiguation, and the deploy pin choice.
 
 **Widget type icons:**
-- 🔢 KPI card or sparkline
+- 🔢 KPI card
 - 📈 Line or area chart
 - 📊 Bar or donut chart
 - 📋 Table or ranked list
@@ -101,33 +82,33 @@ If the user's confirmation includes a client ID or "create one", capture it and 
 **Example plan:**
 
 ```
-Here's your **Agent Health Dashboard** — 4 widgets ready to build.
+Here's your **Agent Operations Dashboard** — 4 widgets ready to build.
 
 🔢 **Active Agents** — count of agents that ran at least once in the last 30 days, so you can see fleet utilisation at a glance
-📈 **Error Rate Trend** (7 days) — daily error counts as a trend line so you can spot spikes before they become incidents
-🔷 **Latency P50 / P95** (30 days) — both percentiles on one chart to distinguish typical vs tail latency
-📋 **Top Failing Agents** (30 days) — agents ranked by error count so you know where to investigate first
+📋 **Agent Health** (30 days) — agents ranked by health score, worst first, so you know where to investigate
+📈 **Memory Calls** (7 days) — agent memory access volume as a trend, to spot unusual activity early
+📊 **Governance Verdicts** (7 days) — allow/deny breakdown of policy enforcement across your agents
 
 Confirm to build, or tell me what to change:
 → "make all charts 7 days"
-→ "add invocation volume"
-→ "remove the latency chart"
-→ "show as a table instead"
-
-**One quick thing:** Do you have a UiPath OAuth app client ID for dashboards?
-Paste it here, or say **"create one"** and I'll set it up before building.
+→ "add agent consumption"
+→ "remove the governance donut"
+→ "show memory calls as a table instead"
 ```
+
+> If the user asks for agent error/latency **trends**: those have no SDK endpoint — refuse inline per `tier-resolution.md § T0` and offer `agent-health` or a Jobs-based trend instead.
 
 ### intent.json schema (write to disk in Phase 4 after confirmation)
 
 ```json
 {
   "dashboardName": "Operations Health",
+  "dashboardDescription": "Job throughput, agent health, and governance posture at a glance.",
   "timeRange": "30d",
   "projectDir": "/absolute/path",
   "routingName": "operations-health-x7k2",
   "orgName": "...", "tenantName": "...", "cloudUrl": "...", "apiUrl": "...",
-  "tenantId": "<UUID>", "clientId": "",
+  "clientId": "",
   "metrics": [
     { "name": "job-failures", "tier": "T1" },
     { "name": "queue-failure-threshold", "tier": "T2", "params": { "threshold": 20, "direction": "gt" } },
@@ -160,6 +141,8 @@ Charts and tables render shallow without these. Set them on each metric (registr
 - `detailColumns` — array of `{ key, label, align?, format?, color? }`. `format`: `number` | `percent` | `duration` | `timeAgo` | `text`. `color`: `goodHigh` | `goodLow` (threshold colouring). The build compiles these into formatted/coloured cells.
 - `detailSortKey` — raw field to sort on (e.g. an ISO `startTime`), so chronological order is correct even when a column renders a friendly label.
 
+Full detail-view contract (record grain, toRows, anti-patterns): `references/dashboards/primitives/detail-views.md`.
+
 Example T3 chart with full presentation:
 
 ```json
@@ -180,17 +163,33 @@ Example T3 chart with full presentation:
 
 ---
 
-## Phase 3 — Approval gate (zero tool calls)
+## Phase 3 — Approval gate, then setup details
 
-**HALT.** Output only text. No tool calls.
+**HALT** after the plan (the Phase 2 response is pure text). Handle the user's reply in two stages:
 
-- User confirms + provides client ID → write clientId into intent.json, continue to Phase 4
-- User confirms + says "create one" → create OAuth app (see below), write clientId, continue to Phase 4
-- User confirms (clientId already in intent.json) → continue to Phase 4
-- User requests a change → update plan, re-render with OAuth question, HALT again
+**Stage 1 — plan approval (free text):**
+- Change request / feedback → update the plan, re-present it (pure text again), HALT
 - User cancels → discard
+- Confirmation → Stage 2
 
-**If user says "create one":** Run this single command:
+**Stage 2 — setup details (only what the confirmation didn't already answer):**
+- Confirmation already contains a client ID → write it into intent.json, continue to Phase 4
+- Confirmation already says to create one (e.g. "build it, create the app") → create the OAuth app (below), continue to Phase 4
+- `clientId` already in intent.json from a prior session → continue to Phase 4, ask nothing
+- Otherwise → ask ONE short structured-choice question (SKILL.md Rule 17 — this is a short turn, safe for the question tool):
+
+  *"How should I set up the OAuth app this dashboard signs in with?"*
+
+  | Option | Meaning |
+  |--------|---------|
+  | **Create one for me (Recommended)** | Run the external-app create command, then build |
+  | **I'll paste an existing client ID** | Wait for the ID, write it into intent.json, then build |
+
+  A free-text reply (including a pasted ID, or a late change request) always remains valid and takes precedence.
+
+Never re-ask for anything the user already provided. The same pattern applies to deploy (see `plugins/deploy/impl.md`): present the deploy plan as text → free-text confirm → then the pin question only if the confirmation didn't already settle it.
+
+**Creating the OAuth app:** Run this single command:
 
 ```bash
 uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \

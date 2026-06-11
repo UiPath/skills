@@ -34,7 +34,7 @@ Run the provisioning script (silent — no output to user until "AdminDashboards
 node "<SKILL_BASE_DIR>/assets/scripts/setup-admin-folder.mjs" "AdminDashboards" "<PROJECT_DIR>"
 ```
 
-`<PROJECT_DIR>` is the dashboard project directory (e.g. `~/dashboards/agent-health-x7k2`). The script reads `.dashboard/state.json` to check if already provisioned and exits immediately if so.
+`<PROJECT_DIR>` is the dashboard project directory (e.g. `<cwd>/agent-health-x7k2`). The script reads `.dashboard/state.json` to check if already provisioned and exits immediately if so.
 
 The script:
 1. Looks up the Folder Administrator role key, the Administrators group key, and the AdminDashboards folder in parallel.
@@ -42,7 +42,7 @@ The script:
 3. Reads existing role assignments before assigning — `roles assign` replaces all roles, so the script builds the full union to avoid removing existing access.
 4. Persists `folderKey` and `folderName` into `.dashboard/state.json`.
 
-> ⚠️ The script's role assignment step grants elevated folder permissions. Claude Code will ask for explicit approval — this is expected.
+> ⚠️ The script's role assignment step grants elevated folder permissions. The coding agent will ask for explicit approval — this is expected.
 
 If the script fails with "Administrators group not found": run `uip or users list --username "Administrators" --output json` and show the user the available groups.
 
@@ -79,19 +79,27 @@ Your **<APP_NAME>** is ready to be deployed.
 🔗  URL path:   <ROUTING_NAME>
 📁  Folder:     AdminDashboards
 🔄  Type:       Fresh deploy  OR  Updating existing deployment
-
-📌  Do you want to pin this dashboard to the Governance UI?
-   → "deploy and pin" — visible in the Governance section
-   → "deploy" — deploy without pinning
 ```
 
 If this is a fresh deploy, also show:
 ```
 ⚠️  I'll create the AdminDashboards folder and assign Administrators as Folder Administrators.
-    This requires elevated permissions — Claude Code will ask for your approval once.
+    This requires elevated permissions — the coding agent will ask for your approval once.
 ```
 
-**HALT.** Wait for user response. Capture whether they want governance pinning.
+End the deploy plan with: `Confirm to deploy, or tell me what to change.` — **pure text, no tool calls in this response. HALT.**
+
+**On the user's reply:**
+- Change request / cancel → handle it; re-present if changed
+- Confirmation that already settles pinning (e.g. "deploy and pin" / "deploy without pinning") → proceed with the matching tags, ask nothing
+- Bare confirmation → ask ONE short structured-choice question (SKILL.md Rule 17): *"Pin this dashboard to the Governance UI?"*
+
+  | Option | Meaning |
+  |--------|---------|
+  | **Deploy and pin** | Visible in the Governance section (`--tags "governance,dashboard"`) |
+  | **Deploy without pinning** | Deploy only (`--tags "governance"`) |
+
+  Free-text replies remain valid and take precedence.
 
 ---
 

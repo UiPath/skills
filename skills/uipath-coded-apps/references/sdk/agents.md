@@ -1,60 +1,105 @@
-# Agents (Insights RTM) Reference
+# Agents & Agent Memory (Insights RTM) Reference
 
-> **SDK availability:** The `agents` subpath ships with PR #438. If `node_modules/@uipath/uipath-typescript/dist/agents/` does not exist in the installed version, Phase 3.5 type verification will skip it — `tsc` catches any errors at build time.
+> Requires `@uipath/uipath-typescript` **≥ 1.4.0**. Scopes: `Insights Insights.RealTimeData`.
 
-## Import
+Two services, **two different calling conventions** — do not mix them up:
 
-```typescript
-import { Agents } from '@uipath/uipath-typescript/agents';
-```
+| Service | Subpath | Convention |
+|---------|---------|------------|
+| `Agents` | `@uipath/uipath-typescript/agents` | **Positional `Date` args**: `getAll(startTime, endTime, options?)` |
+| `AgentMemory` | `@uipath/uipath-typescript/agent-memory` | **Options object**: `getTimeline({ startTime?, endTime?, ... })` — dates inside the object |
 
-## Scopes
-
-`Insights` and `Insights.RealTimeData`
-
-## Constructor
+## Agents Service
 
 ```typescript
+import { Agents, AgentListSortColumn } from '@uipath/uipath-typescript/agents';
 const svc = new Agents(sdk as never)
 ```
 
-The `as never` cast is required until the SDK's constructor overload is updated.
+### getAll(startTime: Date, endTime: Date, options?: AgentListOptions)
 
-## Method signatures
+The agent list with consumption + health metadata aggregated over the window. Returns `NonPaginatedResponse<AgentListItem>` (or `PaginatedResponse` with pagination options). **Rows are on `.items`.**
 
-All Insights methods take **positional `Date` parameters** — not an options object.
+`AgentListOptions`: `folderKeys?: string[]`, `agentNames?: string[]`, `projectKeys?: string[]`, `agentId?: string`, `processVersion?: string`, `orderBy?: { column: AgentListSortColumn, desc?: boolean }` + pagination (`pageSize`, `cursor`, `jumpToPage`).
 
-```typescript
-// ✓ Correct
-svc.getErrorsTimeline(THIRTY_DAYS_AGO, NOW)
+`AgentListSortColumn`: `AgentName`, `ParentProcess`, `LastRun`, `HealthScore`, `LastIncident`, `FolderName`, `QuantityAGU`, `QuantityPLTU`, `FolderPath`.
 
-// ✗ Wrong — Insights methods do not accept an options object
-svc.getErrorsTimeline({ startTime: ..., endTime: ... })
+`AgentListItem` fields: `agentId`, `agentName`, `parentProcess`, `folderKey`, `folderName`, `folderPath`, `lastRun`, `processKey`, `processVersion`, `healthScore` (0–100), `lastIncidentType`, `unitsQuantity`, `unitsName`, `quantityAGU`, `quantityPLTU`. Nullable: `parentProcess`, `folderKey/Name/Path`, `processKey`, `processVersion`, `lastIncidentType`, `unitsName` (may be `null` or `""`).
+
+**Example response** (`.items` — field names exact, values illustrative):
+
+```json
+{
+  "items": [
+    {
+      "agentId": "ag-0001", "agentName": "InvoiceTriageAgent",
+      "parentProcess": "InvoiceFlow", "folderKey": "f-1001", "folderName": "Finance",
+      "folderPath": "Finance", "lastRun": "2026-06-10T18:22:00Z",
+      "processKey": "p-0088", "processVersion": "1.2.0",
+      "healthScore": 92, "lastIncidentType": null,
+      "unitsQuantity": 340, "unitsName": "AGU", "quantityAGU": 340, "quantityPLTU": 0
+    },
+    {
+      "agentId": "ag-0002", "agentName": "ContractReviewAgent",
+      "parentProcess": null, "folderKey": "f-1001", "folderName": "Finance",
+      "folderPath": "Finance", "lastRun": "2026-06-10T16:05:00Z",
+      "processKey": null, "processVersion": null,
+      "healthScore": 58, "lastIncidentType": "Error",
+      "unitsQuantity": 1210, "unitsName": "AGU", "quantityAGU": 1210, "quantityPLTU": 12
+    }
+  ],
+  "count": 2
+}
 ```
 
-| Method | Signature | Returns |
-|--------|-----------|---------|
-| `getAll` | `(startTime: Date, endTime: Date)` | `{ items: AgentListItem[] }` |
-| `getErrorsTimeline` | `(startTime: Date, endTime: Date)` | `{ data: Array<{ date: string, value: number }> }` |
-| `getConsumptionTimeline` | `(startTime: Date, endTime: Date)` | `{ data: Array<{ timeSlice: string, aguConsumption: number }> }` |
-| `getLatencyTimeline` | `(startTime: Date, endTime: Date)` | `{ data: Array<{ name: 'P50' \| 'P95', value: number, date: string }> }` |
-| `getTopErroredAgents` | `(startTime: Date, endTime: Date)` | `{ data: Array<{ name: string, count: number }> }` |
-| `getIncidentDistribution` | `(startTime: Date, endTime: Date)` | `{ data: Array<{ name: string, count: number }> }` |
+> **Semantics:** this is the ONLY Agents method in SDK 1.4.0. There is **no error timeline, latency timeline, consumption timeline, or top-errored endpoint** — do not invent `getErrorsTimeline` / `getConsumptionTimeline` / `getLatencyTimeline` / `getTopErroredAgents`. Per-agent totals (`quantityAGU`, `healthScore`) support KPIs and ranked tables, not time-series charts. For agent run/error *trends*, use the Jobs SDK with `ProcessType eq 'Agent'` (see `sdk/orchestrator.md § Job classification`).
 
-`AgentListItem` fields: `id`, `name`, `state`, `lastRunTime`
-
-## What cannot be derived from this service
-
-| Requested metric | Why not available | Alternative |
-|-----------------|-------------------|-------------|
-| Agent cost in dollars | Platform tracks AGU, not currency | `getConsumptionTimeline` for AGU |
-| CPU / memory per agent | Not exposed by any Insights endpoint | `getLatencyTimeline` for fleet latency |
-| Error messages / stack traces | No text aggregation endpoint | `getErrorsTimeline` for error counts |
-
-## Usage example (dashboard fnBody pattern)
+### fnBody patterns
 
 ```typescript
+// Count of active agents (kpi-card)
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-const svc = new Agents(sdk as never)
-return (await svc.getErrorsTimeline(THIRTY_DAYS_AGO, NOW))?.data ?? []
+const result = await new Agents(sdk as never).getAll(THIRTY_DAYS_AGO, NOW)
+return [{ count: result?.items?.length ?? 0 }]
+```
+
+```typescript
+// Agents ranked by AGU consumption (ranked-table)
+const { Agents, AgentListSortColumn } = await import('@uipath/uipath-typescript/agents')
+const result = await new Agents(sdk as never).getAll(THIRTY_DAYS_AGO, NOW, {
+  orderBy: { column: AgentListSortColumn.QuantityAGU, desc: true },
+})
+return result?.items ?? []
+```
+
+## AgentMemory Service
+
+```typescript
+import { AgentMemory, AgentMemoryExecutionType } from '@uipath/uipath-typescript/agent-memory';
+const svc = new AgentMemory(sdk as never)
+```
+
+All three methods take ONE optional options object — `{ startTime?: Date, endTime?: Date, agentId?, agentVersion?, folderKeys?, executionType? }` (`AgentMemoryExecutionType.Debug | Runtime`; omit for both). Window defaults to the **last 24 hours**. All three return a **bare array** — no `.items` / `.data` unwrapping needed.
+
+| Method | Returns (bare array of) | Use for |
+|--------|------------------------|---------|
+| `getTimeline(options?)` | `{ timeSlice, inMemoryCount, notInMemoryCount, totalCount, enabledMemoryCount, disabledMemoryCount }` | Memory state over time (line/area chart) |
+| `getCallsTimeline(options?)` | `{ timeSlice, memoryCallsCount }` | Memory access volume over time |
+| `getTopSpaces(options?)` | `{ memorySpaceId, memorySpaceName, memoryCount, enabledMemoryCount, disabledMemoryCount }` | Top memory spaces (ranked; `limit?` option, default 5) |
+
+**Example response** — `getTimeline()` (values from SDK test fixtures):
+
+```json
+[
+  { "timeSlice": "2026-06-10T00:00:00Z", "inMemoryCount": 3, "notInMemoryCount": 1, "totalCount": 4, "enabledMemoryCount": 2, "disabledMemoryCount": 2 },
+  { "timeSlice": "2026-06-10T01:00:00Z", "inMemoryCount": 5, "notInMemoryCount": 0, "totalCount": 5, "enabledMemoryCount": 5, "disabledMemoryCount": 0 }
+]
+```
+
+### fnBody pattern
+
+```typescript
+// Memory calls over the last 7 days (area-chart: xKey timeSlice, yKey memoryCallsCount)
+const { AgentMemory } = await import('@uipath/uipath-typescript/agent-memory')
+return await new AgentMemory(sdk as never).getCallsTimeline({ startTime: SEVEN_DAYS_AGO, endTime: NOW })
 ```

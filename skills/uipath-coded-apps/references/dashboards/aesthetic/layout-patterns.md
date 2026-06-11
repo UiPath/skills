@@ -37,7 +37,7 @@ Never put a chart in the KPI row.
 
 ### Rule 3 — Charts come second, in a 2-up grid
 
-Charts (area, line, bar, donut, multi-line, kpi-with-sparkline) go in a 2-column grid:
+Charts (area, line, bar, donut, multi-line, rate) go in a 2-column grid:
 ```tsx
 <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
   {/* Chart widgets */}
@@ -49,7 +49,7 @@ If there is only 1 chart, it takes full width: `grid-cols-1`.
 
 ### Rule 4 — Tables come last, full width
 
-Tables (data-table, ranked-table, progress-bar-list) always go at the bottom:
+Tables (data-table, ranked-table) always go at the bottom:
 ```tsx
 <div className="mt-6">
   <WidgetBoundary label="Top Agents">

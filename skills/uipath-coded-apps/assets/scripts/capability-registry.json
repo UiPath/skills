@@ -1,85 +1,117 @@
 {
-  "t1_unavailable": {
-    "_note": "Metrics in this section require @uipath/uipath-typescript/agents (PR #438, not yet released). Move to t1 when the package ships.",
-    "agent-errors": {
-      "aliases": ["agent errors", "error count", "errors over time", "agent failures", "error rate trend", "error spikes", "which agents are failing"],
-      "template": "line-chart",
-      "description": "Daily agent execution error counts. SDK: `new Agents(sdk as never).getErrorsTimeline(startTime, endTime)` → `{ data: [{date, value, name}] }`. dataSelector: `result?.data ?? []`, xKey: date, yKey: value",
-      "defaults": {
-        "title": "Agent Error Rate",
-        "description": "Daily error counts — spot spikes early",
-        "icon": "AlertTriangle",
-        "xKey": "date",
-        "yKey": "value",
-        "deltaDir": "down-good",
-        "deltaText": "errors today",
-        "dataSelector": "data?.data ?? []",
-        "valueExpression": "String((data?.data ?? []).reduce((s, d) => s + (d.value ?? 0), 0))"
-      }
-    },
-    "invocation-volume": {
-      "aliases": ["invocation volume", "total runs", "agent runs", "invocations", "run volume", "execution volume", "agu consumption", "consumption timeline"],
-      "template": "area-chart",
-      "description": "Agent AGU consumption over time. SDK: `new Agents(sdk as never).getConsumptionTimeline(startTime, endTime)` → `{ data: [{timeSlice, aguConsumption}] }`. xKey: timeSlice, yKey: aguConsumption",
-      "defaults": {
-        "title": "Invocation Volume",
-        "description": "Agent AGU consumption over time",
-        "icon": "Activity",
-        "xKey": "timeSlice",
-        "yKey": "aguConsumption",
-        "deltaDir": "up-good",
-        "deltaText": "AGU today",
-        "dataSelector": "data?.data ?? []",
-        "valueExpression": "String(((data?.data ?? []).reduce((s, d) => s + (d.aguConsumption ?? 0), 0)).toFixed(1))"
-      }
-    },
-    "top-failing-agents": {
-      "aliases": ["top failing agents", "most errors by agent", "agent leaderboard errors", "which agents fail most"],
-      "template": "ranked-table",
-      "description": "Agents ranked by error count. SDK: `new Agents(sdk as never).getTopErroredAgents(startTime, endTime)` → `{ data: [{name, count}] }`. template: ranked-table",
-      "defaults": {
-        "title": "Top Failing Agents",
-        "description": "Agents with the most errors",
-        "icon": "AlertOctagon",
-        "dataSelector": "data?.data ?? []",
-        "columns": "[{key:\"name\",label:\"Agent\"},{key:\"count\",label:\"Errors\",align:\"right\" as const}]",
-        "deltaDir": "neutral",
-        "deltaText": ""
-      }
-    },
+  "t1": {
     "active-agents-kpi": {
       "aliases": ["active agents", "active agent count", "how many agents", "agent count", "agents running"],
       "template": "kpi-card",
-      "description": "Count of agents with at least one run. SDK: `new Agents(sdk as never).getAll(startTime, endTime)` → `{ items: AgentListItem[] }`. For kpi-card: return `[{ count: result?.items?.length ?? 0 }]`, valueField: count",
+      "description": "Count of agents active in the window. SDK: `new Agents(sdk as never).getAll(startTime, endTime)` (positional Dates) → `{ items: AgentListItem[] }`. kpi: return `[{ count: result?.items?.length ?? 0 }]`, set valueField: \"count\", valueLabel: \"active agents\" in intent.",
       "defaults": {
         "title": "Active Agents",
         "description": "Agents with at least one run",
-        "icon": "Bot",
-        "valueExpression": "String(data?.items?.length ?? 0)",
-        "dataSelector": "data?.items ?? []",
-        "deltaDir": "up-good",
-        "deltaText": "active agents"
+        "icon": "Bot"
       }
     },
-    "agent-latency": {
-      "aliases": ["agent latency", "p95 latency", "response time", "execution time", "latency trend"],
-      "template": "multi-line-chart",
-      "description": "P50/P95 execution time. SDK: `new Agents(sdk as never).getLatencyTimeline(startTime, endTime)` → `{ data: [{name: 'P50'|'P95', value, date}] }`. Pivot by date for multi-line-chart",
+    "agent-consumption": {
+      "aliases": ["agu consumption", "agent consumption", "top agents by consumption", "units consumed", "most expensive agents", "platform units consumed"],
+      "template": "ranked-table",
+      "description": "Agents ranked by units consumed. SDK: `new Agents(sdk as never).getAll(startTime, endTime, { orderBy: { column: AgentListSortColumn.QuantityAGU, desc: true } })` → `{ items }`. Import AgentListSortColumn from the same subpath.",
       "defaults": {
-        "title": "Agent Latency",
-        "description": "P50 and P95 execution time",
-        "icon": "Timer",
-        "xKey": "date",
-        "yKey": "P95",
-        "deltaDir": "down-good",
-        "deltaText": "ms P95",
-        "dataSelector": "data?.data ?? []",
-        "series": "[{key:\"P50\",color:\"hsl(var(--chart-1))\",label:\"P50 ms\"},{key:\"P95\",color:\"hsl(var(--chart-2))\",label:\"P95 ms\"}]",
-        "pivotExpression": "rawData.reduce((acc: Record<string, unknown>[], row: any) => { const existing = acc.find((r: any) => r.date === row.date); if (existing) { existing[row.name] = row.value; } else { acc.push({ date: row.date, [row.name]: row.value }); } return acc; }, [])"
+        "title": "Agent Consumption",
+        "description": "Agents ranked by AGU consumed",
+        "icon": "Activity",
+        "columnDefs": [
+          { "key": "agentName", "label": "Agent" },
+          { "key": "quantityAGU", "label": "AGU", "align": "right", "format": "number" },
+          { "key": "quantityPLTU", "label": "PLTU", "align": "right", "format": "number" }
+        ]
       }
-    }
-  },
-  "t1": {
+    },
+    "agent-health": {
+      "aliases": ["agent health", "health score", "unhealthy agents", "agents by health", "agent health score"],
+      "template": "ranked-table",
+      "description": "Agents ranked by health score (worst first). SDK: `new Agents(sdk as never).getAll(startTime, endTime, { orderBy: { column: AgentListSortColumn.HealthScore, desc: false } })` → `{ items }`. healthScore is 0–100.",
+      "defaults": {
+        "title": "Agent Health",
+        "description": "Agents ranked by health score — lowest first",
+        "icon": "HeartPulse",
+        "columnDefs": [
+          { "key": "agentName", "label": "Agent" },
+          { "key": "healthScore", "label": "Health", "align": "right", "color": "goodHigh" },
+          { "key": "lastIncidentType", "label": "Last Incident" },
+          { "key": "lastRun", "label": "Last Run", "format": "timeAgo" }
+        ]
+      }
+    },
+    "agent-memory-timeline": {
+      "aliases": ["agent memory", "memory timeline", "memory state", "memory entries over time", "in-memory count"],
+      "template": "area-chart",
+      "description": "Agent memory entries over time. SDK: `new AgentMemory(sdk as never).getTimeline({ startTime, endTime })` (options object — Dates INSIDE it) → BARE array `[{ timeSlice, totalCount, inMemoryCount, ... }]`. Subpath: @uipath/uipath-typescript/agent-memory.",
+      "defaults": {
+        "title": "Agent Memory",
+        "description": "Memory entries over time",
+        "icon": "Database",
+        "xKey": "timeSlice",
+        "yKey": "totalCount",
+        "headlineMode": "latest",
+        "deltaPolarity": "neutral"
+      }
+    },
+    "memory-calls-trend": {
+      "aliases": ["memory calls", "memory access", "memory usage trend", "memory calls over time"],
+      "template": "area-chart",
+      "description": "Agent memory access volume over time. SDK: `new AgentMemory(sdk as never).getCallsTimeline({ startTime, endTime })` → BARE array `[{ timeSlice, memoryCallsCount }]`.",
+      "defaults": {
+        "title": "Memory Calls",
+        "description": "Memory access volume over time",
+        "icon": "MemoryStick",
+        "xKey": "timeSlice",
+        "yKey": "memoryCallsCount",
+        "headlineMode": "sum",
+        "deltaPolarity": "neutral"
+      }
+    },
+    "top-memory-spaces": {
+      "aliases": ["memory spaces", "top memory spaces", "largest memory spaces"],
+      "template": "ranked-table",
+      "description": "Top memory spaces by entry count. SDK: `new AgentMemory(sdk as never).getTopSpaces({ startTime, endTime, limit: 10 })` → BARE ranked array `[{ memorySpaceName, memoryCount, ... }]`.",
+      "defaults": {
+        "title": "Top Memory Spaces",
+        "description": "Memory spaces ranked by entry count",
+        "icon": "FolderTree",
+        "columnDefs": [
+          { "key": "memorySpaceName", "label": "Space" },
+          { "key": "memoryCount", "label": "Entries", "align": "right", "format": "number" },
+          { "key": "enabledMemoryCount", "label": "Enabled", "align": "right", "format": "number" }
+        ]
+      }
+    },
+    "policy-denials": {
+      "aliases": ["policy denials", "denied actions", "governance denials", "blocked actions", "policy violations"],
+      "template": "data-table",
+      "description": "Governance denials. SDK: `new Governance(sdk as never).getPolicyTraces(startTime, { evaluationResult: [PolicyEvaluationResult.Deny, PolicyEvaluationResult.SimulatedDeny] })` (startTime positional Date, REQUIRED) → `{ items }`. Needs elevated/org-admin access — surface a 403 as a permissions message.",
+      "defaults": {
+        "title": "Policy Denials",
+        "description": "Actions blocked by governance policies",
+        "icon": "ShieldX",
+        "columnDefs": [
+          { "key": "policyName", "label": "Policy" },
+          { "key": "actorProcessId", "label": "Actor" },
+          { "key": "resourceType", "label": "Resource" },
+          { "key": "startTime", "label": "When", "format": "timeAgo" }
+        ]
+      }
+    },
+    "governance-verdicts": {
+      "aliases": ["governance summary", "policy summary", "allow deny breakdown", "enforcement summary", "governance overview"],
+      "template": "donut-chart",
+      "description": "Allow/Deny/NoOp enforcement breakdown. SDK: `new Governance(sdk as never).getOperationSummary(startTime)` → SINGLE object `{ totalEvaluations, allowedCount, deniedCount, noOpCount }`. fnBody must transform to rows: `return [{ name: 'Allowed', value: s.allowedCount }, { name: 'Denied', value: s.deniedCount }, { name: 'Simulated', value: s.noOpCount }]`.",
+      "defaults": {
+        "title": "Governance Verdicts",
+        "description": "Policy enforcement breakdown",
+        "icon": "Shield",
+        "xKey": "name",
+        "yKey": "value"
+      }
+    },
     "job-failures": {
       "aliases": ["faulted jobs", "failed jobs", "job failures", "rpa failures", "process failures", "jobs that failed"],
       "template": "data-table",
@@ -88,10 +120,11 @@
         "title": "Faulted Jobs",
         "description": "Jobs currently in a faulted state",
         "icon": "XCircle",
-        "dataSelector": "data?.items ?? data?.value ?? []",
-        "columns": "[{key:\"processName\",label:\"Process\"},{key:\"state\",label:\"State\"},{key:\"createdTime\",label:\"Started\"}]",
-        "deltaDir": "down-good",
-        "deltaText": "faulted jobs"
+        "columnDefs": [
+          { "key": "processName", "label": "Process" },
+          { "key": "state", "label": "State" },
+          { "key": "createdTime", "label": "Started", "format": "timeAgo" }
+        ]
       }
     },
     "job-completion-trend": {
@@ -102,10 +135,11 @@
         "title": "Completed Jobs",
         "description": "Recently completed jobs",
         "icon": "CheckCircle",
-        "dataSelector": "data?.items ?? data?.value ?? []",
-        "columns": "[{key:\"processName\",label:\"Process\"},{key:\"state\",label:\"State\"},{key:\"endTime\",label:\"Completed\"}]",
-        "deltaDir": "up-good",
-        "deltaText": "completed jobs"
+        "columnDefs": [
+          { "key": "processName", "label": "Process" },
+          { "key": "state", "label": "State" },
+          { "key": "endTime", "label": "Completed", "format": "timeAgo" }
+        ]
       }
     }
   },
@@ -164,18 +198,16 @@
     }
   },
   "hardRefuse": [
-    { "pattern": "active agents|agent count|agents running|how many agents", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"ProcessType eq 'Agent'\" }), count distinct processName. Identify agent jobs by packageType==='Agent' (OData field ProcessType) — see sdk/orchestrator.md § Job classification." },
-    { "pattern": "invocation volume|agent runs|agu consumption|run volume|consumption timeline", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"ProcessType eq 'Agent'\" }) bucketed by date for run volume (AGU not available without Insights). See sdk/orchestrator.md § Job classification." },
-    { "pattern": "agent error|error rate|error trend|error count|error spike|agent failure", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"State eq 'Faulted' and ProcessType eq 'Agent'\" }). See sdk/orchestrator.md § Job classification." },
-    { "pattern": "top failing agent|most errors by agent|agent leaderboard", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"State eq 'Faulted' and ProcessType eq 'Agent'\" }) grouped by processName. See sdk/orchestrator.md § Job classification." },
-    { "pattern": "agent latency|p95 latency|p50 latency|latency trend|execution time", "reason": "Insights agent SDK (@uipath/uipath-typescript/agents) not yet released (PR #438 pending).", "alternative": "T3 via Jobs SDK, agent-scoped: getAll({ filter: \"ProcessType eq 'Agent'\" }), compute (endTime - startTime). See sdk/orchestrator.md § Job classification." },
-    { "pattern": "cost.*dollar|dollar.*cost|\\$.*agent|agent.*\\$", "reason": "The platform tracks AGU units, not currency.", "alternative": "AGU consumption chart (metric: invocation-volume)" },
-    { "pattern": "cpu|memory per agent|per.agent memory", "reason": "Per-agent CPU/memory is not exposed by any API.", "alternative": "Fleet-level latency (metric: agent-latency)" },
-    { "pattern": "who triggered|triggered by|user.*job|job.*user", "reason": "Job records carry no end-user identity.", "alternative": "T3-SDK: new Jobs(sdk as never).getAll({ filter: \"ProcessName eq 'x'\" }) grouped by processName" },
-    { "pattern": "cross.tenant|multi.tenant|compare.*tenant", "reason": "Dashboards are scoped to one tenant.", "alternative": "Multi-widget single-tenant view" },
+    { "pattern": "invocation volume|consumption timeline|consumption over time|invocations over time", "reason": "SDK 1.4.0 has per-agent consumption totals (Agents.getAll → quantityAGU) but no time-bucketed consumption endpoint.", "alternative": "agent-consumption (T1 ranked table of per-agent AGU totals), or T3 via Jobs SDK: getAll({ filter: \"ProcessType eq 'Agent'\" }) bucketed by date for a run-volume trend." },
+    { "pattern": "agent error|error rate|error trend|error count|error spike|agent failure", "reason": "SDK 1.4.0 Agents service exposes list/health/consumption only — no agent error timeline endpoint.", "alternative": "T3 via Jobs SDK: getAll({ filter: \"State eq 'Faulted' and ProcessType eq 'Agent'\" }); or agent-health (T1 — healthScore + lastIncidentType per agent)." },
+    { "pattern": "top failing agent|most errors by agent", "reason": "SDK 1.4.0 has no per-agent error counts.", "alternative": "T3 via Jobs SDK: getAll({ filter: \"State eq 'Faulted' and ProcessType eq 'Agent'\" }) grouped by processName; or agent-health (T1) for worst health scores." },
+    { "pattern": "agent latency|p95 latency|p50 latency|latency trend", "reason": "SDK 1.4.0 has no agent latency endpoint.", "alternative": "T3 via Jobs SDK: getAll({ filter: \"ProcessType eq 'Agent'\" }), compute (endTime - startTime)." },
+    { "pattern": "cost.*dollar|dollar.*cost|\\$.*agent|agent.*\\$", "reason": "The platform tracks AGU/PLTU units, not currency.", "alternative": "agent-consumption (T1) for per-agent AGU/PLTU totals." },
+    { "pattern": "cpu|ram per agent|per.agent ram", "reason": "Per-agent CPU/RAM is not exposed by any API. (Note: 'Agent Memory' is the memory-entries feature, not RAM.)", "alternative": "agent-health (T1) for health scores; agent-memory-timeline (T1) if they meant the Agent Memory feature." },
+    { "pattern": "who triggered|triggered by|user.*job|job.*user", "reason": "Job records carry no end-user identity.", "alternative": "T3-SDK: new Jobs(sdk as never).getAll({ filter: \"ProcessName eq 'x'\" }) grouped by processName. For governance events, policy-denials (T1) includes actorIdentityId." },
+    { "pattern": "cross.tenant|multi.tenant|compare.*tenant", "reason": "Dashboards are scoped to one tenant — except governance traces, which support fullOrganization: true (requires org admin).", "alternative": "Multi-widget single-tenant view; or T3 Governance.getPolicyTraces(start, { fullOrganization: true }) for org-wide governance data." },
     { "pattern": "sla.*breach|breach.*sla", "reason": "Raw counts only — no SLA metadata in any API.", "alternative": "T3-SDK: new Jobs(sdk as never).getAll({ filter: \"State eq 'Faulted'\" }) to compute failure rate" },
-    { "pattern": "error.*message|stack.*trace|exception.*text", "reason": "No aggregation endpoint for error text or stack traces.", "alternative": "Error count by type (metric: agent-errors)" },
-    { "pattern": "governance.*policy.*summary|policy.*summary.*governance|getPolicySummary", "reason": "Governance policy reporting requires a specific policy UUID that must be supplied by the user.", "alternative": "Ask the user which policy UUID to report on, then write a T3 fnBody using the Governance service (see sdk/orchestrator.md / governance reference) with that UUID." },
+    { "pattern": "error.*message|stack.*trace|exception.*text", "reason": "No aggregation endpoint for error text or stack traces.", "alternative": "T3 via Jobs SDK: faulted jobs expose errorCode/jobError per row (data-table), not aggregated text." },
     { "pattern": "queue.*failure.*threshold|queues.*failing|high.failure.*queue", "reason": "QueueGetResponse has no failure-count field (id, name, maxNumberOfRetries, … only) — see sdk/orchestrator.md.", "alternative": "T3 via Jobs SDK: getAll({ filter: \"State eq 'Faulted'\" }) grouped by processName for the most-failing processes." }
   ]
 }

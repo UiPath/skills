@@ -12,7 +12,10 @@ import { <<ICON_NAME>> } from 'lucide-react'
 type Row = Record<string, unknown>
 
 // ── Custom data function (injected at build time) ─────────────────────────────
-const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<Row[]> => {
+// Promise<any[]>: SDK response interfaces lack index signatures and are not
+// assignable to Record<string, unknown> — any[] accepts them while still
+// requiring an array return.
+const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<any[]> => {
 <<FN_BODY>>
 }
 // ─────────────────────────────────────────────────────────────────────────────

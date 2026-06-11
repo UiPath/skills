@@ -17,7 +17,9 @@ Read this when writing TypeScript code that imports classes, types, or options f
 | `@uipath/uipath-typescript/processes` | `Processes` |
 | `@uipath/uipath-typescript/jobs` | `Jobs` |
 | `@uipath/uipath-typescript/attachments` | `Attachments` |
-| `@uipath/uipath-typescript/agents` | `Agents` (Insights RTM — requires PR #438) |
+| `@uipath/uipath-typescript/agents` | `Agents`, `AgentListSortColumn` (Insights RTM — SDK ≥ 1.4.0) |
+| `@uipath/uipath-typescript/agent-memory` | `AgentMemory`, `AgentMemoryExecutionType` (SDK ≥ 1.4.0) |
+| `@uipath/uipath-typescript/governance` | `Governance`, `PolicyEvaluationResult` (SDK ≥ 1.4.0) |
 | `@uipath/uipath-typescript/conversational-agent` | `ConversationalAgent`, `Exchanges`, `Messages` |
 | `@uipath/uipath-typescript/feedback` | `Feedback` |
 

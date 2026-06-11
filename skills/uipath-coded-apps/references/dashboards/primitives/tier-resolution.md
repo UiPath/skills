@@ -47,10 +47,10 @@ After the plan is confirmed, **Phase 3.5 cross-checks each `fnBody` against the 
 
 The agent reads the SDK service reference (this file, loaded in the parallel blast) to find the right service and method. The `fnBody` must:
 
-- Return `Promise<Array<Record<string, unknown>>>`
+- Return a **flat array of row objects** — SDK-typed arrays are accepted directly (the harness signature is `Promise<any[]>`). `return result?.items ?? []` is correct as-is; **never add `as unknown as Record<string, unknown>[]` casts** — they're noise from an old harness signature
 - Use dynamic import: `const { ServiceClass } = await import('@uipath/uipath-typescript/...')`
 - Use constructor injection: `new ServiceClass(sdk as never)`
-- Return a flat array — the build script passes it directly to the chart/table
+- The build script passes the returned array directly to the chart/table
 - **Read methods ONLY.** Dashboards display data; they never mutate. Allowed: `getAll`, `getById`, `getAllRecords`, `queryRecordsById`, `getIncidents`. Never call `create`, `complete`, `assign`, `start`, `stop`, `resume`, `restart`, `insert*`, `update*`, `delete*`, `upload*` — even though the shared `sdk/*.md` references document them for the app-building modes.
 
 **Presentation matters as much as the query.** A chart with the wrong headline or an empty subtitle reads as broken. For every chart metric set `headlineMode` + `deltaPolarity` + `subtitle`, and give it a record-grain `detailFnBody` + `detailColumns` so the drill-down shows real records, not the chart's buckets. For ratios (error rate, success rate) use `displayAs: "rate-chart"` with `rateNum`/`rateDen`. See `plugins/build/impl.md § Presentation fields` for the full schema and an example.
@@ -66,13 +66,16 @@ Time constants (all `Date` objects, injected by build script):
 
 The registry entry describes the metric and the expected SDK call. Use it as your guide, then write the correct `fnBody` from the SDK documentation.
 
-| Metric name | What it shows | Registry template | SDK hint |
-|-------------|--------------|-------------------|----------|
-| ~~`agent-errors`~~ | ~~Daily error counts~~ | — | ~~`Agents.getErrorsTimeline`~~ — unavailable (PR #438) |
-| ~~`invocation-volume`~~ | ~~AGU consumption~~ | — | ~~`Agents.getConsumptionTimeline`~~ — unavailable (PR #438) |
-| ~~`top-failing-agents`~~ | ~~Agents ranked by errors~~ | — | ~~`Agents.getTopErroredAgents`~~ — unavailable (PR #438) |
-| ~~`active-agents-kpi`~~ | ~~Count of active agents~~ | — | ~~`Agents.getAll`~~ — unavailable (PR #438) |
-| ~~`agent-latency`~~ | ~~P50/P95 execution time~~ | — | ~~`Agents.getLatencyTimeline`~~ — unavailable (PR #438) |
+| Metric name | What it shows | Registry template | SDK hint (≥ 1.4.0) |
+|-------------|--------------|-------------------|--------------------|
+| `active-agents-kpi` | Count of active agents | `kpi-card` | `Agents.getAll(start, end)` → `{ items }`; return `[{ count: items.length }]` |
+| `agent-consumption` | Agents ranked by AGU/PLTU | `ranked-table` | `Agents.getAll(start, end, { orderBy: { column: AgentListSortColumn.QuantityAGU, desc: true } })` → `{ items }` |
+| `agent-health` | Agents ranked by health score | `ranked-table` | `Agents.getAll(start, end, { orderBy: { column: AgentListSortColumn.HealthScore } })` → `{ items }` (healthScore 0–100, lastIncidentType) |
+| `agent-memory-timeline` | Memory entries over time | `area-chart` | `AgentMemory.getTimeline({ startTime, endTime })` → BARE array `[{ timeSlice, totalCount, … }]` |
+| `memory-calls-trend` | Memory access volume | `area-chart` | `AgentMemory.getCallsTimeline({ startTime, endTime })` → BARE array `[{ timeSlice, memoryCallsCount }]` |
+| `top-memory-spaces` | Top memory spaces | `ranked-table` | `AgentMemory.getTopSpaces({ limit: 10 })` → BARE ranked array |
+| `policy-denials` | Governance-blocked actions | `data-table` | `Governance.getPolicyTraces(start, { evaluationResult: [Deny, SimulatedDeny] })` → `{ items }` (needs org-admin) |
+| `governance-verdicts` | Allow/Deny/NoOp breakdown | `donut-chart` | `Governance.getOperationSummary(start)` → single object; transform to `[{ name, value }]` rows |
 | `job-failures` | Faulted jobs | `data-table` | `new Jobs(sdk).getAll({ filter: "State eq 'Faulted'" })` → `{ items: [{processName, state, createdTime}] }` |
 | `job-completion-trend` | Completed jobs | `data-table` | `new Jobs(sdk).getAll({ filter: "State eq 'Successful'" })` → `{ items: [{processName, state, endTime}] }` |
 
@@ -80,14 +83,14 @@ The registry entry describes the metric and the expected SDK call. Use it as you
 
 ```json
 {
-  "name": "agent-errors",
+  "name": "agent-memory-timeline",
   "tier": "T1",
-  "title": "Agent Error Rate",
-  "fnBody": "const { Agents } = await import('@uipath/uipath-typescript/agents')\nconst svc = new Agents(sdk as never)\nreturn (await svc.getErrorsTimeline(THIRTY_DAYS_AGO, NOW))?.data ?? []"
+  "title": "Agent Memory",
+  "fnBody": "const { AgentMemory } = await import('@uipath/uipath-typescript/agent-memory')\nreturn await new AgentMemory(sdk as never).getTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })"
 }
 ```
 
-The registry fills in: `template: "line-chart"`, `xKey: "date"`, `yKey: "value"`, `title` default, `icon`, `deltaDir`.
+The registry fills in: `template: "area-chart"`, `xKey: "timeSlice"`, `yKey: "totalCount"`, `title` default, `icon`, `headlineMode`, `deltaPolarity`.
 You can override any of these in the intent.
 
 ### T1 kpi-card example (active agents)
@@ -153,16 +156,16 @@ For any metric not in the catalog. You provide all display config and write the 
 }
 ```
 
-### T3 ranked table from Insights
+### T3 ranked table from Insights (governance denials grouped by actor)
 
 ```json
 {
-  "name": "incident-distribution",
+  "name": "denials-by-actor",
   "tier": "T3",
-  "title": "Incident Distribution",
+  "title": "Denials by Actor",
   "displayAs": "ranked-table",
-  "columns": "[{key:\"name\",label:\"Type\"},{key:\"count\",label:\"Count\",align:\"right\" as const}]",
-  "fnBody": "const { Agents } = await import('@uipath/uipath-typescript/agents')\nconst svc = new Agents(sdk as never)\nconst result = await svc.getIncidentDistribution(THIRTY_DAYS_AGO, NOW)\nreturn result?.data ?? []"
+  "columns": "[{key:\"name\",label:\"Actor\"},{key:\"count\",label:\"Denials\",align:\"right\" as const}]",
+  "fnBody": "const { Governance, PolicyEvaluationResult } = await import('@uipath/uipath-typescript/governance')\nconst result = await new Governance(sdk as never).getPolicyTraces(THIRTY_DAYS_AGO, { evaluationResult: [PolicyEvaluationResult.Deny] })\nconst byActor: Record<string, number> = {}\nfor (const t of result?.items ?? []) {\n  const actor = t.actorProcessId ?? 'unknown'\n  byActor[actor] = (byActor[actor] ?? 0) + 1\n}\nreturn Object.entries(byActor).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)"
 }
 ```
 
@@ -188,13 +191,13 @@ For any metric not in the catalog. You provide all display config and write the 
 
 | User asks for | Why impossible | Suggest instead |
 |--------------|----------------|-----------------|
-| Agent cost in dollars | Platform tracks AGU, not currency | `invocation-volume` for AGU consumption |
-| CPU/memory per agent | Not exposed by any API | `agent-latency` for fleet-level latency |
-| Who triggered a job | Job records have no end-user identity | `job-completion-trend` grouped by process |
-| Cross-tenant data | Single-tenant scope only | Multi-widget single-tenant view |
+| Agent error / latency / consumption **timelines** | SDK 1.4.0 Agents service has only `getAll` (list + health + consumption totals) — no time-series endpoints | `agent-health` / `agent-consumption` (per-agent totals), or T3 Jobs trend with `ProcessType eq 'Agent'` |
+| Agent cost in dollars | Platform tracks AGU/PLTU units, not currency | `agent-consumption` for per-agent unit totals |
+| CPU/RAM per agent | Not exposed by any API ("Agent Memory" = memory entries, not RAM) | `agent-health`; or `agent-memory-timeline` if they meant the Memory feature |
+| Who triggered a job | Job records have no end-user identity | `job-completion-trend` grouped by process; `policy-denials` includes `actorIdentityId` for governance events |
+| Cross-tenant data | Single-tenant scope — except Governance, which supports `fullOrganization: true` (org admin) | Multi-widget single-tenant view; or T3 `getPolicyTraces(start, { fullOrganization: true })` |
 | SLA breach % | No SLA metadata in platform | Success rate from job completions |
-| Error text / stack traces | No aggregation endpoint | `agent-errors` for error counts |
-| Governance policy summary | Requires a policy UUID | Ask user for UUID, use T3 with `Governance` service |
+| Error text / stack traces | No aggregation endpoint | Faulted-jobs data-table — each row carries `errorCode` / `jobError` |
 
 ---
 
@@ -204,12 +207,18 @@ Full method signatures, response types, and field names live in `references/sdk/
 
 | Domain | Reference file | Key service classes |
 |--------|---------------|---------------------|
-| ~~Agents / Insights RTM~~ | ~~`sdk/agents.md`~~ | ~~`Agents`~~ — not yet available (PR #438 pending) |
+| Agents + Agent Memory (Insights RTM, ≥ 1.4.0) | `sdk/agents.md` *(from skill root)* | `Agents`, `AgentMemory` |
+| Governance (Insights RTM, ≥ 1.4.0) | `sdk/governance.md` *(from skill root)* | `Governance` |
 | Jobs, Queues, Processes, Assets | `sdk/orchestrator.md` *(from skill root)* | `Jobs`, `Queues`, `Processes`, `Assets` |
 | Tasks | `sdk/action-center.md` *(from skill root)* | `Tasks` |
 | Cases, Process Instances | `sdk/maestro.md` *(from skill root)* | `Cases`, `CaseInstances` |
 | Data entities | `sdk/data-fabric.md` *(from skill root)* | `Entities` |
 
-`sdk/orchestrator.md` is **always loaded** in the parallel blast. Load `sdk/action-center.md` or `sdk/maestro.md` only when the user's request involves tasks or cases. When PR #438 ships, uncomment `sdk/agents.md` in `CAPABILITY.md` and remove the strikethrough above.
+`sdk/agents.md` and `sdk/orchestrator.md` are **always loaded** in the parallel blast. Load `sdk/action-center.md` (tasks), `sdk/maestro.md` (cases), or `sdk/governance.md` (governance/policy) only when the request mentions them.
+
+**Three calling conventions — don't mix them up:**
+- `Agents.getAll(startTime, endTime, options?)` — positional `Date` args, rows on `.items`
+- `AgentMemory.getTimeline({ startTime?, endTime?, … })` — ONE options object, dates inside, returns a **bare array**
+- `Governance.getPolicyTraces(startTime, options?)` — required positional `startTime`, rest in options, rows on `.items`; `getOperationSummary` returns a **single object** (wrap into rows in `fnBody`)
 
 **Non-Insights services:** access items via `result?.items ?? result?.value ?? []`

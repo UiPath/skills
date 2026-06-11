@@ -32,7 +32,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 
 ## Critical Rules
 
-1. **Identify the app type before doing anything else.** Ask: *"Are you building a **Coded Web App** (custom frontend deployed to UiPath Cloud) or a **Coded Action App** (form for Action Center human task reviews)?"* The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
+1. **Identify the app type before doing anything else.** Ask as a structured choice (Rule 17): **Coded Web App** — custom frontend deployed to UiPath Cloud · **Coded Action App** — form for Action Center human task reviews. The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
 2. **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
 3. **Never skip the build step.** Run `npm run build` after scaffolding (to verify the scaffold compiles) and again before `pack` or `push` (to produce the deployable `dist/`). Verify `dist/` exists each time.
 4. **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
@@ -48,6 +48,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 14. **Every list call returns ONE page — even with no options. There is no "give me everything" path.** Applies to `getAll`, `getAllRecords`, `queryRecordsById`, `getFileMetaData`, etc. `getAll()` with no options does NOT return all rows; the SDK sends no `pageSize` and the **server** applies its own cap, wrapped in a misleadingly-named `NonPaginatedResponse`. To list every row from a source that may exceed the cap, you MUST loop the cursor: `while (page.hasNextPage) { page = await getAll({ cursor: page.nextCursor }) }` and accumulate `items`. Reading `result.items.length` after a single call is almost always a bug. See [sdk/pagination.md](references/sdk/pagination.md).
 15. **Tables of dynamic data must paginate, not dump all rows in one scroll.** Page size 25–50 with next/prev/page-number controls and a "Showing X–Y of Z" summary. Top-N + "see all" is acceptable for explicitly summary panels (e.g., "Top 10 oldest"). Infinite-scroll-of-N-rows is unusable for operational dashboards. Applies to any table backed by any service (DF entities, Tasks, Jobs, Conversations, Process Instances, etc.). See [patterns.md](references/patterns.md) "Tabular Data".
 16. **When adding any new SDK method call, verify `VITE_UIPATH_SCOPE` already includes the required scope.** Write operations, action methods (`Jobs.stop`, `Tasks.complete`, `ProcessInstances.cancel`, etc.), or first use of a new service typically need broader scopes than read-only flows. Mismatched scopes fail silently with `401` / `403` on the first call. See [oauth-scopes.md](references/oauth-scopes.md) for the per-method scope table.
+17. **Never make the user type magic phrases.** Whenever you ask the user to pick between known options (app type, build/edit/deploy intent, OAuth setup, deploy pinning), present a **structured choice** via the host coding agent's native question tool (selectable options) when one exists. Mechanics: one option per choice with a short bold label + one-line description of what picking it does; put the recommended option **first** and suffix its label "(Recommended)"; keep to **at most 4 options** (reserve one slot for an escape option like *Make changes* / *Cancel* when applicable). If there are 5+ candidates, or the host agent has no question tool, render a plain numbered list instead and accept the number or the option label as the answer. A free-text reply must always remain valid (e.g. a plan-change request) and takes precedence over the options. **Exception — never put a question in the same response as a long output:** plan-approval gates are free-text by design (the plan ends with "confirm or tell me what to change"); structured questions fire only on later, short turns. See `references/dashboards/plugins/build/impl.md`.
 
 ## Disambiguation — Apps vs Dashboards
 
@@ -59,11 +60,12 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 `dashboard`, `analytics`, `KPI`, `metrics`, `Insights`, `observability`,
 `admin console`, `report`, `chart`, `trend`, `governance report`, `agent metrics`
 
-**When intent is ambiguous** — render this verbatim, wait for digit `1` or `2` only:
+**When intent is ambiguous** — ask "Which fits your goal?" as a structured choice (Rule 17):
 
-> Which fits your goal?
-> 1. **Build or modify a Web App or Action App** — scaffold a UI, form, or app that deploys to Automation Cloud
-> 2. **Generate a dashboard** — analytics or admin view from a natural-language description
+| Option | Description |
+|--------|-------------|
+| **Build or modify a Web App / Action App** | Scaffold a UI, form, or app that deploys to Automation Cloud |
+| **Generate a dashboard** | Analytics or admin view from a natural-language description |
 
 ## Task Navigation
 

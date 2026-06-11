@@ -14,7 +14,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const DEFAULT_SCOPES = 'OR.Assets.Read OR.Jobs OR.Folders.Read OR.Buckets.Read OR.Execution.Read OR.Tasks OR.Queues.Read OR.Users.Read Insights Insights.RealTimeData'
+// Parent scopes only — must match DASHBOARD_SCOPES in build-dashboard.mjs and the
+// scopes registered on the external OAuth app (.Read sub-scopes are not reliably registered).
+const DEFAULT_SCOPES = 'OR.Assets OR.Jobs OR.Folders OR.Buckets OR.Execution OR.Tasks OR.Queues OR.Users Insights Insights.RealTimeData'
 const SCOPES = (import.meta.env.VITE_UIPATH_SCOPE as string) || DEFAULT_SCOPES
 
 function resolveConfig(): UiPathSDKConfig {

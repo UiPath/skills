@@ -50,33 +50,37 @@ const REGISTRY = JSON.parse(readFileSync(resolve(__dirname, 'capability-registry
  * @typedef {Object} IntentMetric
  * @property {string}      name          - Kebab-case metric identifier
  * @property {MetricTier}  tier          - Resolution tier
- * @property {string}      [title]       - Display title (required for T1/T2/T3)
- * @property {string}      [description] - One-line description
+ * @property {string}      [title]       - Display title (required for all tiers)
+ * @property {string}      [subtitle]    - CardDescription line; auto-filled from time range when absent
+ * @property {string}      [description] - Fallback for subtitle
  * @property {string}      [componentName] - Override PascalCase component name
  * @property {string}      [icon]        - lucide-react icon name
  * @property {string}      [detailRoute] - HashRouter path for drilldown
- * @property {Object}      [params]      - T2 filter params (used for validation only — agent writes fnBody)
- * @property {number}      [params.threshold]
- * @property {string}      [params.direction] - 'gt'|'lt'|'eq'|'gte'|'lte'|'neq'
+ * @property {Object}      [params]      - T2 filter params (validation only — agent writes fnBody)
  * @property {string}      fnBody        - Required for all tiers: async function body using SDK service classes
- * @property {string}      [displayAs]   - Widget template name (kpi-card | ranked-table | data-table | *-chart)
- * @property {string}      [valueField]  - kpi-card: which field to display as the headline number
- * @property {string}      [valueLabel]  - kpi-card: label shown below the headline (e.g. "running jobs")
- * @property {string}      [dataSelector]
- * @property {string}      [dataHook]
- * @property {string}      [columns]     - ColumnDef array literal string
- * @property {string}      [xKey]
- * @property {string}      [yKey]
- * @property {string}      [deltaDir]
- * @property {string}      [deltaText]
- * @property {string}      [series]
- * @property {string}      [pivotExpression]
+ * @property {string}      [displayAs]   - One of VALID_DISPLAY_TYPES
+ * @property {string}      [valueField]  - kpi-card: field shown as the headline number
+ * @property {string}      [valueLabel]  - kpi-card: label under the headline
+ * @property {string}      [xKey]        - Chart x-axis field
+ * @property {string}      [yKey]        - Chart value field
+ * @property {string}      [headlineMode]   - VALID_HEADLINE_MODES — how the chart headline aggregates
+ * @property {string}      [deltaPolarity]  - VALID_DELTA_POLARITIES — is an increase good?
+ * @property {string}      [rateNum]     - rate-chart: numerator field per bucket
+ * @property {string}      [rateDen]     - rate-chart: denominator field per bucket
+ * @property {string}      [columns]     - ColumnDef array literal string (tables)
+ * @property {Array<{key:string,label:string,align?:string,format?:string,color?:string}>} [columnDefs] - Structured columns; compiled to formatted/coloured cells
+ * @property {string}      [detailFnBody]   - Record-grain query for the chart's detail view
+ * @property {Array}       [detailColumns]  - Structured columns for the detail view
+ * @property {string}      [detailSortKey]  - Raw field the detail table sorts on
+ * @property {string}      [series]      - multi-line-chart series literal
+ * @property {string}      [pivotExpression] - multi-line-chart pivot expression
  */
 
 /**
  * The full intent.json structure.
  * @typedef {Object} DashboardIntent
  * @property {string}        dashboardName
+ * @property {string}        [dashboardDescription] - One sentence for the dashboard header
  * @property {'1d'|'7d'|'30d'|'90d'} timeRange
  * @property {IntentMetric[]} metrics
  * @property {string}        projectDir  - Absolute path for generated project
@@ -85,27 +89,26 @@ const REGISTRY = JSON.parse(readFileSync(resolve(__dirname, 'capability-registry
  * @property {string}        tenantName
  * @property {string}        cloudUrl    - e.g. https://alpha.uipath.com
  * @property {string}        apiUrl      - e.g. https://alpha.api.uipath.com
- * @property {string}        tenantId    - UUID from ~/.uipath/.auth
  * @property {string}        [clientId]  - External OAuth app client ID
  */
 
 /**
- * Derived widget specification — all fields resolved, ready for template substitution.
+ * Derived chart-widget spec — all fields resolved, ready for template substitution.
  * @typedef {Object} WidgetSpec
  * @property {string} componentName
  * @property {string} template
  * @property {string} title
- * @property {string} description
+ * @property {string} subtitle
  * @property {string} icon
  * @property {string} detailRoute
  * @property {string} dataHook
  * @property {string} dataSelector
  * @property {string} xKey
  * @property {string} yKey
- * @property {string} valueExpression
- * @property {string} columns
- * @property {string} deltaDir
- * @property {string} deltaText
+ * @property {string} headlineMode
+ * @property {string} deltaPolarity
+ * @property {string} rateNum
+ * @property {string} rateDen
  * @property {string} series
  * @property {string} pivotExpression
  */
@@ -120,10 +123,11 @@ const REGISTRY = JSON.parse(readFileSync(resolve(__dirname, 'capability-registry
 /**
  * Per-widget entry persisted in state.json.
  * @typedef {Object} WidgetHashEntry
- * @property {string}     hash     - SHA-256 prefix of generated file content
+ * @property {string}     hash         - SHA-256 prefix of generated file content
  * @property {MetricTier} tier
- * @property {string}     metric   - Original metric name from intent
- * @property {string}     template - Template used for layout classification
+ * @property {string}     metric       - Original metric name from intent
+ * @property {string}     template     - Template used for layout classification
+ * @property {IntentMetric} intentMetric - Full intent entry, persisted for CHANGE/REBUILD
  */
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -394,7 +398,8 @@ ${TIME_CONSTANTS.trimEnd()}
 type Row = Record<string, unknown>
 
 // ── Detail data function (record grain — individual records behind the chart) ──
-const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<Row[]> => {
+// Promise<any[]>: SDK response interfaces lack index signatures — see widget shell.
+const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<any[]> => {
 ${indentedFn}
 }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -455,7 +460,7 @@ export function ${componentName}View() {
  * @param {WidgetMeta[]} widgetMeta
  * @param {string} dashboardName
  */
-export function generateDashboardFiles(projectPath, widgetMeta, dashboardName) {
+export function generateDashboardFiles(projectPath, widgetMeta, dashboardName, dashboardDescription = '') {
   const widgetNames = widgetMeta.map(w => w.componentName)
 
   const kpis   = widgetMeta.filter(w => widgetLayoutGroup(w.template) === 'kpi')
@@ -497,7 +502,7 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-screen-2xl px-4 py-8 md:px-8 md:py-10">
-        <Header title="${dashboardName}" description="Operational metrics dashboard" />
+        <Header title="${dashboardName}" description="${dashboardDescription || 'Operational metrics dashboard'}" />
 ${kpiSection}${chartSection}${tableSection}
       </div>
     </div>
@@ -514,8 +519,8 @@ ${kpiSection}${chartSection}${tableSection}
  * @returns {'kpi'|'table'|'chart'}
  */
 export function widgetLayoutGroup(template) {
-  if (['kpi-card', 'kpi-with-sparkline'].includes(template)) return 'kpi'
-  if (['data-table', 'ranked-table', 'progress-bar-list'].includes(template)) return 'table'
+  if (template === 'kpi-card') return 'kpi'
+  if (['data-table', 'ranked-table'].includes(template)) return 'table'
   return 'chart'
 }
 
@@ -726,10 +731,14 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
   // ── Chart path ─────────────────────────────────────────────────────────────
   if (CHART_TYPES.has(displayAs)) {
     const indented = metric.fnBody.split('\n').map(l => '  ' + l).join('\n')
+    // Promise<any[]> (not Record<string, unknown>[]): SDK response types are
+    // interfaces, which lack implicit index signatures — they are NOT assignable
+    // to Record<string, unknown>. any[] keeps the "must return an array" check
+    // while letting fnBody return SDK-typed arrays directly, no casts.
     const customFnBlock = [
       '',
       '// ── Custom data function ──────────────────────────────────────────────────────',
-      'const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<Record<string, unknown>[]> => {',
+      'const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<any[]> => {',
       indented,
       '}',
       '// ────────────────────────────────────────────────────────────────────────────',
@@ -916,7 +925,7 @@ async function detectDevServerPort(startPort, timeoutMs) {
 async function runDashboardBuild(intent, intentPath) {
   const {
     dashboardName, timeRange, metrics,
-    projectDir, orgName, tenantName, cloudUrl, apiUrl, tenantId, clientId = '',
+    projectDir, orgName, tenantName, cloudUrl, apiUrl, clientId = '', dashboardDescription = '',
     routingName,
   } = intent
 
@@ -977,9 +986,10 @@ async function runDashboardBuild(intent, intentPath) {
     const existingState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {}
     const partialState = {
       schemaVersion: 1,
-      app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0' },
+      app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0', description: dashboardDescription },
       env: cloudUrl.includes('alpha') ? 'alpha' : cloudUrl.includes('staging') ? 'staging' : 'prod',
       org: orgName, tenant: tenantName, cloudUrl,
+      timeRange,
       widgets: existingState.widgets ?? {},
       deployment: existingState.deployment ?? { systemName: null, folderKey: null, appUrl: null, lastDeployedAt: null },
       buildStatus: 'in-progress',
@@ -1028,7 +1038,9 @@ async function runDashboardBuild(intent, intentPath) {
       const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
       writeAtomic(widgetPath, widgetContent)
 
-      widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: metric.tier, metric: metric.name, template: displayAs }
+      // intentMetric is persisted so incremental CHANGE/REBUILD can regenerate
+      // the widget without the original intent.json (fnBody, title, hints).
+      widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: metric.tier, metric: metric.name, template: displayAs, intentMetric: metric }
       widgetMeta.push({ componentName, template: displayAs })
 
       // Detail views: only chart widgets emit navigate/ViewAllLink (the shell
@@ -1043,7 +1055,7 @@ async function runDashboardBuild(intent, intentPath) {
     }
 
     // Step 5 — Generate Dashboard.tsx + index.ts
-    generateDashboardFiles(P, widgetMeta, dashboardName)
+    generateDashboardFiles(P, widgetMeta, dashboardName, dashboardDescription)
 
     // Step 5a — Generate view files (widgetSpecs is chart-only; every chart links to its view)
     const generatedViewNames = []
@@ -1084,9 +1096,10 @@ async function runDashboardBuild(intent, intentPath) {
     // Step 7 — Write final state.json (upgrade partial → complete)
     const newState = {
       schemaVersion: 1,
-      app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0' },
+      app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0', description: dashboardDescription },
       env: cloudUrl.includes('alpha') ? 'alpha' : cloudUrl.includes('staging') ? 'staging' : 'prod',
       org: orgName, tenant: tenantName, cloudUrl,
+      timeRange,
       widgets: widgetHashes,
       deployment: existingState.deployment ?? { systemName: null, folderKey: null, appUrl: null, lastDeployedAt: null },
       buildStatus: 'complete',
@@ -1140,6 +1153,21 @@ export function classifyEditIntent(editIntent) {
 }
 
 /**
+ * Build the metric used to regenerate a widget for a CHANGE op.
+ * Starts from the persisted intentMetric (full fnBody/title/hints) and merges
+ * the delta on top. Falls back to a minimal ref for legacy state files that
+ * predate intentMetric persistence — then the delta itself must carry fnBody + title.
+ * @param {object|undefined} stored - state.widgets[target]
+ * @param {string} target - widget component name
+ * @param {object|undefined} delta - fields to change
+ * @returns {IntentMetric}
+ */
+export function resolveChangeMetric(stored, target, delta) {
+  const base = stored?.intentMetric ?? { name: stored?.metric ?? target.toLowerCase(), tier: stored?.tier ?? 'T1' }
+  return { ...base, ...(delta ?? {}) }
+}
+
+/**
  * Apply an incremental edit (ADD / REMOVE / CHANGE / REBUILD) to an existing project.
  * @param {{ op: string, projectDir: string, target?: string, metric?: IntentMetric, delta?: object }} editIntent
  * @param {string} intentPath
@@ -1166,7 +1194,7 @@ async function runIncrementalEdit(editIntent, intentPath) {
     const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
     writeAtomic(widgetPath, widgetContent)
     state.widgets = state.widgets ?? {}
-    state.widgets[componentName] = { hash: hashContent(widgetContent), tier, metric: metric.name, template: addTemplate }
+    state.widgets[componentName] = { hash: hashContent(widgetContent), tier, metric: metric.name, template: addTemplate, intentMetric: metric }
     // Chart widgets emit a drill-down link — generate the detail view so the route resolves
     if (widgetLayoutGroup(addTemplate) === 'chart') {
       const viewContent = generateViewFile(buildViewSpec(componentName, metric, entry, timeRange))
@@ -1194,13 +1222,16 @@ async function runIncrementalEdit(editIntent, intentPath) {
       emit('HAND_EDIT_DETECTED', { widget: target })
       fail(`Widget "${target}" has been hand-edited. Overwriting would lose your changes.`)
     }
-    const tier = stored?.tier ?? 'T1'
-    const metricRef = { name: stored?.metric ?? target.toLowerCase(), tier, ...delta }
+    const metricRef = resolveChangeMetric(stored, target, delta)
+    if (!metricRef.fnBody) {
+      fail(`CHANGE "${target}": no fnBody available. This dashboard was built before intent persistence — include the full metric (fnBody, title) in the delta, or re-run a fresh build.`)
+    }
+    const tier = metricRef.tier ?? stored?.tier ?? 'T1'
     const { entry } = resolveMetric(metricRef)
     const widgetContent = buildWidgetFile(metricRef, entry, delta?.timeRange ?? timeRange)
     writeAtomic(widgetPath, widgetContent)
     const changeTemplate = metricRef.displayAs ?? entry?.template ?? stored?.template ?? 'data-table'
-    if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name, template: changeTemplate }
+    if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name, template: changeTemplate, intentMetric: metricRef }
     // Keep the detail view in sync: regenerate for charts, drop it if no longer a chart
     const changeViewPath = join(P, 'src', 'dashboard', 'views', `${target}View.tsx`)
     if (widgetLayoutGroup(changeTemplate) === 'chart') {
@@ -1211,10 +1242,24 @@ async function runIncrementalEdit(editIntent, intentPath) {
     }
 
   } else if (op === 'REBUILD') {
-    // Rebuild all widgets from existing state entries — requires fnBody not stored in state
+    // Regenerate every widget (and chart detail view) from the persisted intentMetric.
+    // Useful after scaffold/template updates. Legacy entries without intentMetric are skipped.
     for (const [componentName, info] of Object.entries(state.widgets ?? {})) {
-      // All tiers require fnBody which is not persisted in state — skip with warning
-      log(`⚠ Cannot rebuild ${info.tier} widget "${componentName}" from state alone — fnBody not persisted. Re-run full build with intent.json.`)
+      const m = info.intentMetric
+      if (!m?.fnBody) {
+        log(`⚠ Cannot rebuild "${componentName}" — built before intent persistence. Re-run a fresh build to refresh it.`)
+        continue
+      }
+      const { entry } = resolveMetric(m)
+      const content = buildWidgetFile(m, entry, timeRange)
+      writeAtomic(join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`), content)
+      info.hash = hashContent(content)
+      const rebuildViewPath = join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`)
+      if (widgetLayoutGroup(info.template ?? '') === 'chart') {
+        writeAtomic(rebuildViewPath, generateViewFile(buildViewSpec(componentName, m, entry, timeRange)))
+      } else if (existsSync(rebuildViewPath)) {
+        unlinkSync(rebuildViewPath)
+      }
     }
   }
 
@@ -1223,7 +1268,7 @@ async function runIncrementalEdit(editIntent, intentPath) {
     componentName: name,
     template: info.template ?? 'ranked-table',
   }))
-  generateDashboardFiles(P, widgetMeta, state.app?.name ?? 'Dashboard')
+  generateDashboardFiles(P, widgetMeta, state.app?.name ?? 'Dashboard', state.app?.description ?? '')
 
   // Re-inject App.tsx routes — only for widgets that have an actual view file on disk
   const viewNames = Object.keys(state.widgets ?? {}).filter(name =>
