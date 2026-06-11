@@ -57,9 +57,6 @@ success_criteria:
     include_reference: true
     include_agent_output: true
     include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
       You are grading a UiPath troubleshooting agent against a known-correct
       reference outcome. The Reference solution attached to this prompt
@@ -84,15 +81,14 @@ success_criteria:
               version with the documented Ctrl+K output-binding bug.
 
         Evidence sources (in priority order):
-          1. state.json's `matched_playbooks` -- the
-             get-asset-activity-bug-silent-failure playbook should
-             appear (absolute or relative path).
+          1. The agent's final response -- it should name the
+             get-asset-activity-bug-silent-failure playbook.
           2. The agent's tool-call summary -- a Read on the playbook
              file under references/activity-packages/system-activities/
              playbooks/ AND a Read on `project.json` (the
              package-version anchor).
-          3. state.json's `scope.domain` -- should include the
-             system-activities or activity-packages domain.
+        Grade only what the agent presented (final response + tool
+        calls); do NOT inspect internal investigation state.
 
         Acceptable / non-penalized: the agent may also Read neighboring
         get-asset-* playbooks (not-found, folder-scope-mismatch,
@@ -139,17 +135,16 @@ success_criteria:
         same either way: upgrade the package.
 
         Evidence sources (in priority order):
-          1. state.json -- `requirements.package_version` (22.10.5),
-             `requirements.downstream_error`, `triage_summary`,
-             scope/domain.
-          2. hypotheses.json -- a hypothesis (need not be flagged
-             `is_root_cause: true`) should name BOTH the package
-             version 22.10.x AND the silent-failure pattern
+          1. The agent's final response -- it should name BOTH the
+             package version 22.10.x AND the silent-failure pattern
              (Get Credential ran but produced no error AND null
-             output). The agent may legitimately leave the
-             root-cause flag conservative if they cannot verify
-             the Ctrl+K trigger from static XAML.
-          3. The agent's last text response.
+             output), and recommend the upgrade fix. The agent may
+             legitimately hedge about the exact Ctrl+K trigger, which
+             cannot be confirmed from static XAML.
+          2. The agent's tool-call summary and any evidence it cites
+             from the job logs / project.json / Main.xaml.
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
 
       SCORING RUBRIC (single score reflecting both dimensions):
 
