@@ -43,8 +43,7 @@ initial_prompt: |
   UCC portals.
 
   Help me map out the end-to-end process across ~45 tasks, data fields, and
-  business rules. Name the solution and case project "LoanOrigination". Use
-  v20 schema.
+  business rules. Name the solution and case project "LoanOrigination".
 
   No sdd.md exists yet. **Run ONLY Phase 0** of the uipath-maestro-case skill:
   the interview → generate `sdd.md` → approve it. Treat every approval / hard

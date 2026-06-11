@@ -27,6 +27,8 @@ Write the stage-entry condition directly to the target stage's `data.entryCondit
 
 Rules use DNF — outer array is OR, inner array is AND.
 
+> **One row = one condition object.** Each entry-condition row in tasks.md/SDD maps to a **separate** object in `entryConditions[]`. Never merge multiple rows into a single condition's `rules` AND group.
+
 ## Procedure
 
 1. Generate condition ID: `Condition_` + 6 alphanumeric chars
@@ -35,7 +37,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 4. Initialize `stageNode.data.entryConditions = []` if absent (regular Stage is created without this key — see [`../../stages/impl-json.md`](../../stages/impl-json.md))
 5. Read `rule-type` and `is-interrupting` from tasks.md; pick the recipe below
 6. Set `displayName`: use tasks.md `display-name` if present; else default to `Entry Rule {N}`, where `N` = the 1-based index this condition takes in `stageNode.data.entryConditions[]` (i.e. `entryConditions.length + 1` at append time). Never emit a blank or omitted `displayName`.
-7. Append the condition object to `stageNode.data.entryConditions[]`
+7. Append the condition object to `stageNode.data.entryConditions[]`. **When the table has multiple rows, repeat steps 1–7 once per row** — append one condition object per row. Never fold multiple rows into a single condition's `rules` group.
 
 ## Rule Types
 
@@ -83,7 +85,7 @@ Write `rule.uipath` per [connector-trigger-common.md § Target: connector-bound 
 | `user-selected-stage` | — |
 | `wait-for-connector` | `uipath` connector configuration (see [common](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
 
-`conditionExpression` is optional on every rule — add it to any rule to further gate when it fires.
+`conditionExpression` is optional on every rule — add it to any rule to further gate when it fires. **Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim).** Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ## Post-Write Verification
 
