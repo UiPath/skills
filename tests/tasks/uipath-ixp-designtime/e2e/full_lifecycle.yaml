@@ -6,7 +6,7 @@ description: >
   low-F1 field's prompt, captures improved metrics, publishes, and
   deletes the project as cleanup.
   Exercises every reference file in the skill end-to-end.
-tags: [uipath-ixp, e2e, mode:build, lifecycle:setup]
+tags: [uipath-ixp-designtime, e2e, mode:build, lifecycle:setup]
 
 run_limits:
   max_turns: 120
@@ -54,7 +54,7 @@ initial_prompt: |
   - The `uip` CLI is already authenticated.
   - Do NOT ask for approval, confirmation, or feedback; do NOT pause
     between steps.
-  - Before starting, load the `uipath-ixp` skill and follow its
+  - Before starting, load the `uipath-ixp-designtime` skill and follow its
     documented workflow, including how to wait for retrain before
     reading metrics.
 

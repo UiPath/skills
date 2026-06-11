@@ -64,7 +64,7 @@ The fallback is `core.logic.mock`, full stop. At most run one broader `registry 
 
 ## Listing Published Models
 
-When the user is working with a Maestro flow and asks what IxP models are available — "what IxP models can I access in Maestro?", "what IxP models / runtime projects can I use in this flow?", "what document extractors can I add here?", "list published extractors", "what extraction nodes are in the registry?" — answer with the same registry search **from the `uipath-maestro-flow` Skill**, not by switching to the `uipath-ixp` Skill (`uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro). Each `Data[]` entry corresponds to one published model (a.k.a. runtime project) visible to the flow registry on this tenant.
+When the user is working with a Maestro flow and asks what IxP models are available — "what IxP models can I access in Maestro?", "what IxP models / runtime projects can I use in this flow?", "what document extractors can I add here?", "list published extractors", "what extraction nodes are in the registry?" — answer with the same registry search **from the `uipath-maestro-flow` Skill**, not by switching to the `uipath-ixp-designtime` Skill (`uip ixp projects ...` lists IxP-product projects, not what is wired up for Maestro). Each `Data[]` entry corresponds to one published model (a.k.a. runtime project) visible to the flow registry on this tenant.
 
 ```bash
 uip login status --output json                              # confirm auth — without login, tenant IxP nodes are hidden

@@ -1,6 +1,6 @@
 ---
-name: uipath-ixp
-description: "UiPath IXP (Document Understanding) — review IXP predictions with Claude, confirm valid fields, improve prompts, publish models."
+name: uipath-ixp-designtime
+description: "UiPath IXP designtime (Document Understanding) — create projects, review/confirm predictions, improve prompts, and publish extraction models."
 ---
 
 # UiPath IXP Document Extraction Assistant
@@ -102,7 +102,7 @@ These requests fall outside the skill. Recognise the request, reply with the sta
 | "Give X access" / "share this project" / "change roles or permissions" | "Access, roles, and permissions are managed in-product, not through this skill: https://docs.uipath.com/ixp/automation-cloud/latest/overview/managing-access." |
 | "Use this model in my automation / workflow / agent" / "call the extractor from a process" | "Consuming a published model inside an automation is an authoring task outside this skill. See https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-consuming-a-workflow." |
 | "Mine these emails / communications" / "set up Communications Mining" | "Communications Mining is a separate IXP capability this skill doesn't cover (this skill is document extraction). See https://docs.uipath.com/ixp/automation-cloud/latest/cm-user-guide/introduction-to-uipath-communication-mining." |
-| "Monitor the deployed model" / "how many docs did it process?" / "runtime throughput or incidents" | "Runtime/operational monitoring of a deployed model lives in Orchestrator, not this skill: https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/about-monitoring. For design-time scores use `get-metrics` (see 'Show metrics')." |
+| "Monitor the deployed model" / "how many docs did it process?" / "runtime throughput or incidents" | "Runtime/operational monitoring of a deployed model lives in Orchestrator, not this skill: https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/about-monitoring. For designtime scores use `get-metrics` (see 'Show metrics')." |
 
 ## Reference Navigation
 

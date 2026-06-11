@@ -66,7 +66,7 @@ If the search returns no `uipath.ixp.*` nodes, no IxP extraction model is publis
 
 ## Listing Available Models / Runtime Projects
 
-Q&A use case from a Maestro-flow context: user asks "what IxP models can I access in Maestro?", "what IxP models / runtime projects can I use in this flow?", "what document extractors can I add here?", "which document extractors are published?". Answer from the `uipath-maestro-flow` Skill via the flow registry — do not switch to the `uipath-ixp` Skill (`uip ixp projects ...` enumerates IxP-product projects, not what is published into the Maestro registry).
+Q&A use case from a Maestro-flow context: user asks "what IxP models can I access in Maestro?", "what IxP models / runtime projects can I use in this flow?", "what document extractors can I add here?", "which document extractors are published?". Answer from the `uipath-maestro-flow` Skill via the flow registry — do not switch to the `uipath-ixp-designtime` Skill (`uip ixp projects ...` enumerates IxP-product projects, not what is published into the Maestro registry).
 
 Read-only listing — **do not** scaffold a solution, init a flow, or write a `.flow` file:
 

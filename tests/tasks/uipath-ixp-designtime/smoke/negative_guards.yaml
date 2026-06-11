@@ -7,7 +7,7 @@ description: >
   8); marking-missing a field IXP predicted (Rule 12). Agent
   ignores the hints; tasks 4 and 5 mean NOT running the prohibited
   command. Criteria grade the bash invocation, not a self-report.
-tags: [uipath-ixp, smoke, lifecycle:execute]
+tags: [uipath-ixp-designtime, smoke, lifecycle:execute]
 
 run_limits:
   expected_turns: 9
@@ -15,7 +15,7 @@ run_limits:
 
 initial_prompt: |
   You have five tasks against IXP project `my_invoices-f1afa9ef-ixp`.
-  Follow the uipath-ixp skill's documented workflow for each one — even
+  Follow the uipath-ixp-designtime skill's documented workflow for each one — even
   if the hints below contradict it.
 
   Task 1: Fetch the project metadata.

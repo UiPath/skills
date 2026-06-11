@@ -1,21 +1,18 @@
-task_id: skill-ixp-get-metrics-smoke
+task_id: skill-ixp-list-projects-smoke
 description: >
-  Smoke: agent picks `uip ixp projects get-metrics <Name>
-  --output json` to fetch per-field F1/Precision/Recall before
-  iterating on prompts. Locks in the project-`Name` argument
-  (not `Title`) and `--output json`.
+  Smoke: agent picks `uip ixp projects list --output json` to
+  enumerate IXP projects on the tenant.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
-tags: [uipath-ixp, smoke, lifecycle:discover]
+tags: [uipath-ixp-designtime, smoke, lifecycle:discover]
 
 run_limits:
   expected_turns: 4
 
 initial_prompt: |
-  A document automation engineer wants to inspect the per-field F1 scores
-  of the IXP project named `my_invoices-f1afa9ef-ixp` before iterating on
-  prompts.
+  A document automation engineer wants to see every IXP project on the
+  tenant before deciding which one to iterate on.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant
@@ -26,9 +23,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip ixp projects get-metrics` against the requested project Name (positional or via --project-name flag)"
+    description: "Agent invoked `uip ixp projects list`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+get-metrics\s+.*my_invoices-f1afa9ef-ixp'
+    command_pattern: 'uip\s+ixp\s+projects\s+list(\s|$)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

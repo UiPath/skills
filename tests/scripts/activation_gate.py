@@ -19,7 +19,7 @@ from pathlib import Path
 
 # Rounded recall.yes baseline (in %) per skill, from the 2026-05-08 full
 # activation run. Nearest 5%. Skills omitted have no activation test set
-# yet (uipath-admin, uipath-ixp) — the gate SKIPs them.
+# yet (uipath-admin, uipath-ixp-designtime) — the gate SKIPs them.
 # uipath-design (PDD→SDD authoring) and uipath-solution (`uip solution`
 # lifecycle) were split out of the former merged uipath-solution skill;
 # both omitted here pending a fresh full activation run — the gate SKIPs them.

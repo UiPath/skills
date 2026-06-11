@@ -107,7 +107,7 @@
 /skills/uipath-maestro-flow/references/author/references/plugins/inline-agent/ @AlexandruCGhimisi @andreibalas-uipath @al3xanndru
 /tests/tasks/uipath-maestro-flow/connector_features/ @baishalighosh
 
-# IXP
+# IXP plugin (uipath-maestro-flow)
 /skills/uipath-maestro-flow/references/author/references/plugins/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
 /tests/tasks/uipath-maestro-flow/ixp/ @jcalero @constantinmuraru @scallaway-uipath @tommilligan @joe-prosser @vlad-crisan @richsilv @AWilcke
 
@@ -143,10 +143,9 @@
 /skills/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge @yadvender-uipath @CalinMPopa @chandhanshanth
 /tests/tasks/uipath-admin/ @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath @uipathswapnil @ashleyetheridge @yadvender-uipath @CalinMPopa @chandhanshanth
 
-# IXP skill
-/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
-/skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
-/tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+# IXP skills (designtime + runtime)
+/skills/uipath-ixp-designtime/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath @alexandrujircan
+/tests/tasks/uipath-ixp-designtime/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath @alexandrujircan
 # MCP skill (UiPath AgentHub MCP server registration + tool authoring)
 /skills/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
 /tests/tasks/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents

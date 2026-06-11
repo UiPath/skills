@@ -56,7 +56,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-coded-apps** | Coded Web Apps and Coded Action Apps — scaffold, build, debug, pack, publish, deploy via `uip codedapp`. |
 | **uipath-api-workflow** | API Workflow JSON DSL — author, run, package, publish; HTTP and Integration Service connector activities. |
 | **uipath-human-in-the-loop** | Human task authoring and operations — design approval gates, escalations, and validation forms in Flow, Maestro, or coded agents; list, assign, complete, and reassign the resulting Action Center tasks. |
-| **uipath-ixp** | Document Understanding (IXP) — project setup, labeling, prediction review, prompt improvement, model publishing. |
+| **uipath-ixp-designtime** | Document Understanding (IXP) designtime — project setup, labeling, prediction review, prompt improvement, and model publishing. |
 
 ### Solution & Planning
 
@@ -98,7 +98,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-feedback` | Stable |
 | `uipath-governance` | In-development |
 | `uipath-human-in-the-loop` | In-development |
-| `uipath-ixp` | In-development |
+| `uipath-ixp-designtime` | In-development |
 | `uipath-maestro-bpmn` | In-development |
 | `uipath-maestro-case` | In-development |
 | `uipath-maestro-flow` | In-development |

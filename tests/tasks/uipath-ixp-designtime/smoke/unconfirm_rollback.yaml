@@ -8,7 +8,7 @@ description: >
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
-tags: [uipath-ixp, smoke, lifecycle:execute]
+tags: [uipath-ixp-designtime, smoke, lifecycle:execute]
 
 sandbox:
   driver: tempdir
