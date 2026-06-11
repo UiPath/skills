@@ -780,7 +780,7 @@ Before Approve atomic-renames `sdd.draft.md` → `sdd.md`, Phase 0 runs these ch
 
 On pass: atomic rename `sdd.draft.md` → `sdd.md`, print Approve summary (with Inferred / defaulted block + Caller obligation block when applicable + review-items count), run Approve AskUserQuestion.
 
-On fail: list specific errors, return to AskUserQuestion `Re-edit` / `Restart` / `Abort`. No Approve until all checks pass.
+On fail: list the specific failing checks, return to AskUserQuestion `Re-edit` / `Restart` / `Abort`. On `Re-edit`, fix the cited rows and **re-run only the checks that failed** (plus any whose inputs changed) — not the full suite, and without re-reading the whole document. No Approve until the cited checks pass.
 
 ## Anti-patterns
 
