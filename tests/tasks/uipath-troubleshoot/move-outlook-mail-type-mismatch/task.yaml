@@ -1,0 +1,167 @@
+task_id: skill-troubleshoot-move-outlook-mail-type-mismatch
+description: >
+  UiPath troubleshooting agent must diagnose a Move Outlook Mail Message
+  failure caused by a modern-vs-classic type mismatch (Branch 3 of the
+  move-outlook-mail-failures playbook). After a mail-package update the
+  InboxAutoFiler workflow uses the modern Move Email activity
+  (UiPath.MicrosoftOffice365.Activities) but wires a String message-ID
+  variable into the message input, which expects an Office365Message /
+  IResource object - so the job faults with "Cannot convert type
+  'System.String' to '...Office365Message'". Success = agent matches
+  Branch 3, attributes the cast error to a String wired into the modern
+  activity's resource-typed input (classic/modern mismatch), and
+  recommends the + resource picker OR switching to the classic Move
+  Outlook Mail Message (MoveOutlookMessage) with string/MailMessage
+  inputs.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My InboxAutoFiler process is faulting in Orchestrator on every run since
+  we updated the mail packages. The folder is "RPA Production". Can you
+  investigate why? The project source for the failing process is in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched move-outlook-mail-failures Branch 3 and reached the same conclusion as RESOLUTION.md (String-to-Office365Message type mismatch; fix via + resource picker or classic activity)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative. Grade
+      ONLY the agent's final response to the user and the tool calls it made.
+      Do NOT inspect or require any internal investigation state files
+      (state.json, hypotheses.json, matched_playbooks, scope fields, etc.).
+
+      The user's request was:
+        "My InboxAutoFiler process is faulting in Orchestrator on every run
+         since we updated the mail packages. The folder is 'RPA Production'.
+         Can you investigate why?"
+
+      DIMENSION A -- Correct playbook (Branch 3)
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/move-outlook-mail-failures.md
+        specifically Branch 3 (modern-vs-classic type mismatch).
+        Evidence to look for:
+          (1) the agent's final response names the move-outlook-mail-failures
+              playbook and/or its Branch 3 (modern-vs-classic type mismatch);
+          (2) a tool call that Read a file under
+              references/activity-packages/mail-activities/playbooks/.
+        Do NOT inspect internal investigation state to award this dimension;
+        grade only the final response text and the recorded tool calls.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause: after the dependency update mixed the
+        classic and modern mail packages, the workflow's modern Move Email
+        activity (UiPath.MicrosoftOffice365.Activities) received a String
+        (the messageId message-ID variable) on its message input, which
+        expects an Office365Message / IResource object reference. The type
+        mismatch threw
+          "Cannot convert type 'System.String' to
+           'UiPath.MicrosoftOffice365.Models.Office365Message'"
+        (System.InvalidCastException).
+        The reference fix: map the message (and folder) with the + (plus)
+        resource picker so the binding resolves to the expected
+        Office365Message / IResource object, OR switch to the classic
+        Move Outlook Mail Message (MoveOutlookMessage) activity, which
+        accepts string / MailMessage inputs directly. Do not mix classic
+        string inputs into modern resource-typed properties.
+        Evidence to look for:
+          (1) the agent's final response names the String-to-Office365Message
+              / IResource type mismatch, the classic-vs-modern cause after
+              the package update, AND the fix;
+          (2) the agent cited Main.xaml (a String wired into the modern
+              Move Email activity), project.json (both UiPath.Mail.Activities
+              and UiPath.MicrosoftOffice365.Activities present), and the
+              job-log line showing the String bound where a resource is
+              expected.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
+      any of these):
+        - COM session loss / Outlook not running (Branch 1).
+        - Folder-path or Account typo (Branch 2).
+        - New Outlook removed the desktop COM API (Branch 4).
+        - "The message ID is wrong or empty" -- the value is fine; it is the
+          TYPE (String vs Office365Message) that is wrong.
+        - A generic connectivity, authentication, or permission error.
+
+      SCORING RUBRIC:
+        1.0  Agent matched move-outlook-mail-failures Branch 3 AND
+             (a) named the String-to-Office365Message / IResource
+                 conversion / cast error,
+             (b) attributed it to a String wired into the modern Move
+                 Email activity's resource-typed input (classic/modern
+                 mismatch after the package update),
+             (c) recommended mapping the resource with the + (plus) picker
+                 OR switching to the classic Move Outlook Mail Message
+                 activity with string / MailMessage inputs.
+        0.8  Correct Branch 3 cause (String-to-resource type mismatch in the
+             modern activity) AND a correct fix, but missing one of the
+             three elements above (e.g., named the cast error and the fix
+             but did not tie it to the package update, or recommended only
+             one of the two fixes without the type-mismatch framing being
+             fully explicit).
+        0.5  Recognized a type / binding problem on the Move activity but
+             did not clearly identify the String-vs-Office365Message cause
+             or did not offer a correct fix.
+        0.2  Matched a sibling branch (1, 2, or 4), claimed the message ID
+             is wrong/empty, or surfaced the error without diagnosis.
+        0.0  Wrong cause entirely (generic connectivity / auth / permission)
+             or fabricated evidence.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing InboxAutoFiler
+    process. You only know that it started faulting on every run after the
+    team updated the mail packages, and that the Orchestrator folder is
+    "RPA Production". You trust the agent's expertise and are waiting for a
+    diagnosis.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
