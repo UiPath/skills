@@ -181,7 +181,7 @@ uip is resources run list <connector-key> <objectName> --connection-id <CURRENT_
 
 ### Symptom
 
-`uip solution upload` rejects the project. `flow init` returned without a `Data.SolutionRegistration` block (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution, it finds none and skips silently). Studio Web upload fails with structural errors. Packaging fails.
+`uip solution upload` rejects the project. `flow init` returned `Data.SolutionRegistration.Status: "NotInSolution"` (auto-registration walks up looking for the nearest `.uipx`; when the project is created outside the solution, it finds none, so the project was created standalone). Studio Web upload fails with structural errors. Packaging fails.
 
 The `.flow` file lives at `<Project>/<Project>.flow` (single-nested) instead of the required `<Solution>/<Project>/<Project>.flow` (double-nested).
 
@@ -198,7 +198,7 @@ uip solution init "<SolutionName>" --output json
 cd <SolutionName>
 uip maestro flow init <ProjectName> --output json
 # Confirm Data.SolutionRegistration.Status is "Registered" in the JSON response.
-# Only if Status is "Skipped" / "Failed" do you need:
+# Only if Status is "NotInSolution" / "Skipped" / "Failed" do you need:
 #   uip solution project add <SolutionName>/<ProjectName> <SolutionName>/<SolutionName>.uipx
 ```
 

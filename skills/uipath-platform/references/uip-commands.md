@@ -11,9 +11,10 @@
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
 - `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
-- `--all-fields` — (Orchestrator tool only) return raw DTO instead of the
-  curated PascalCase projection. Resource tool returns full DTO by default
-  on every list/get and does not expose this flag.
+- `--all-fields` — return raw DTO instead of the curated PascalCase
+  projection. Native Orchestrator commands curate by default; the migrated
+  resource commands (assets, queues, buckets, etc.) return the full DTO by
+  default and do not expose this flag.
 
 ---
 
@@ -55,18 +56,18 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 
 ## Orchestrator resources (`uip or assets` / `queues` / `triggers` / …)
 
-Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset of `uip or`. See [`uipath-resources`](resources/resources.md).
+Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset of `uip or`. See [Orchestrator resources](orchestrator/resources.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
-| **Assets** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare`, `get-asset-value` | [Manage Assets](resources/manage-assets.md) |
-| **Queues** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `get-stats`, `share`, `unshare` | [Process Queues](resources/process-queues.md) |
-| **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `set-progress`, `delete`, `delete-bulk`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](resources/process-queues.md) |
-| **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](resources/work-with-storage.md) |
-| **Bucket Files** | `list`, `list-dirs`, `get`, `download`, `upload`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](resources/work-with-storage.md) |
-| **Triggers** | `list`, `get`, `create`, `update [--enabled\|--disabled]`, `delete`, `history` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
-| **Libraries** | `list`, `get`, `versions`, `upload`, `download`, `delete` | [Resources overview](resources/resources.md) |
-| **Webhooks** | `list`, `get`, `create`, `update`, `delete`, `ping`, `event-types` | [Triggers & Webhooks](resources/triggers-and-webhooks.md) |
+| **Assets** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare`, `get-asset-value` | [Manage Assets](orchestrator/manage-assets.md) |
+| **Queues** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `get-stats`, `share`, `unshare` | [Process Queues](orchestrator/process-queues.md) |
+| **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `delete`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](orchestrator/process-queues.md) |
+| **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](orchestrator/work-with-storage.md) |
+| **Bucket Files** | `list`, `list-dirs`, `get`, `download`, `upload`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](orchestrator/work-with-storage.md) |
+| **Triggers** | `list`, `get`, `create`, `update [--enabled\|--disabled]`, `delete`, `history` | [Triggers & Webhooks](orchestrator/triggers-and-webhooks.md) |
+| **Libraries** | `list`, `get`, `versions`, `upload`, `download`, `delete` | [Resources overview](orchestrator/resources.md) |
+| **Webhooks** | `list`, `get`, `create`, `update`, `delete`, `ping`, `event-types` | [Triggers & Webhooks](orchestrator/triggers-and-webhooks.md) |
 
 ---
 
@@ -124,4 +125,4 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 ## Naming gotchas
 
 - Resource sub-nouns are **plural and hyphenated where shown**: `buckets`, `queues`, `assets`, `libraries`, `queue-items`, `bucket-files`. Never singular, never `queueitems`/`bucketfiles`.
-- The Orchestrator group prefix is `or`, not `orchestrator` (`uip orchestrator` does not exist). <!-- uip-check-skip -->
+- The canonical Orchestrator group prefix is `or`; `uip orchestrator` also works as a long-form alias, but these docs use `or`. <!-- uip-check-skip -->

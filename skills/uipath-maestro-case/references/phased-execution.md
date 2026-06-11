@@ -6,7 +6,7 @@ Authoritative reference for the post-planning execution flow. Read before execut
 
 ## Downstream CLI compatibility
 
-The skill emits the `20.0.0` top-level shape (`{ id, version, name, metadata, bindings, variables, nodes, edges, layout }`). Phase-specific downstream caveats:
+The skill emits the `23.0.0` top-level shape (`{ id, version, name, metadata, bindings, variables, nodes, edges, layout }`). Phase-specific downstream caveats:
 
 | Phase | Behavior |
 |---|---|

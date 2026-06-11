@@ -122,6 +122,8 @@ def main() -> None:
     is_exc: dict[str, bool] = {}
     interrupting: dict[str, str] = {}
     exit_types: dict[str, set[str]] = {}
+    marks_idx: int | None = None
+    et_idx: int | None = None
     for line in text.splitlines():
         s = line.strip()
         m = re.match(r"###\s+(Stage \d+|Exception Stage):\s*(.+)", s)
@@ -157,7 +159,16 @@ def main() -> None:
         if not (gate and s.startswith("|")):
             continue
         cells = [c.strip() for c in s.strip().strip("|").split("|")]
-        if not cells or cells[0] in ("WHEN", "") or set(cells[0]) <= set("-: "):
+        if not cells:
+            continue
+        # Header row: capture Marks-Complete / Exit-Type column positions by name
+        # (robust to the trailing "Display Name" column the template adds).
+        if cells[0] == "WHEN":
+            hdr = [c.lower() for c in cells]
+            marks_idx = next((i for i, h in enumerate(hdr) if h.startswith("marks")), None)
+            et_idx = next((i for i, h in enumerate(hdr) if "exit type" in h), None)
+            continue
+        if cells[0] == "" or set(cells[0]) <= set("-: "):
             continue
         rule = _rule_token(cells[0])
         if rule is None:
@@ -171,19 +182,24 @@ def main() -> None:
         elif gate == "task-entry" and rule not in TASK_ENTRY:
             issues.append(f"rule: {rule!r} is not a legal task-entry rule ({where})")
         elif gate in ("stage-exit", "case-exit"):
-            marks = cells[-1].lower()
+            # Resolve Marks-Complete by header index; fall back to last cell.
+            marks_cell = cells[marks_idx] if (marks_idx is not None and marks_idx < len(cells)) else cells[-1]
+            marks = marks_cell.lower()
             yes = marks.startswith("yes")
             legal = (STAGE_COMPLETION if gate == "stage-exit" else CASE_COMPLETION) if yes \
                 else (STAGE_EXIT if gate == "stage-exit" else CASE_EXIT)
             kind = "completion (Marks=Yes)" if yes else "exit (Marks=No)"
             if rule not in legal:
                 issues.append(f"rule: {rule!r} is not legal for {gate} {kind} ({where})")
-            if gate == "stage-exit" and len(cells) >= 4:
-                et = cells[-2]
-                if cur_stage:
-                    exit_types.setdefault(cur_stage, set()).add(et)
-                if et and et not in EXIT_TYPES:
-                    issues.append(f"rule: invalid exit-type {et!r} at {where}")
+            if gate == "stage-exit":
+                # Resolve Exit-Type by header index; fall back to second-to-last.
+                et = cells[et_idx] if (et_idx is not None and et_idx < len(cells)) \
+                    else (cells[-2] if len(cells) >= 4 else None)
+                if et is not None:
+                    if cur_stage:
+                        exit_types.setdefault(cur_stage, set()).add(et)
+                    if et and et not in EXIT_TYPES:
+                        issues.append(f"rule: invalid exit-type {et!r} at {where}")
 
     missing = sorted(
         st for st in has_entry

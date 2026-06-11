@@ -37,6 +37,7 @@ These skills are expected to ship but have no folder under `skills/` yet. Treat 
 | `uipath-marketplace` | UiPath Marketplace component publish/consume |
 | `uipath-process-mining` | Process Mining (event logs, conformance, dashboards) |
 | `uipath-task-mining` | Task Mining (recordings, task analysis) |
+| `uipath-agenthub` | Agent Hub (build, publish, and manage UiPath agents) |
 
 ## Phase 2 — Extract the skill's capability inventory
 

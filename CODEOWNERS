@@ -64,8 +64,8 @@
 /tests/tasks/uipath-planner/ @RaduAna-Maria
 
 # Solution skill (uip solution lifecycle)
-/skills/uipath-solution/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
-/tests/tasks/uipath-solution/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
+/skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
+/tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 
 # Design skill (PDD → SDD authoring)
 /skills/uipath-design/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange

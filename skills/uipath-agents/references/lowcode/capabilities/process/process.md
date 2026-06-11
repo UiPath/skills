@@ -222,8 +222,9 @@ When two agent projects in the same solution call each other (parent-tool topolo
 # 2. Add a second agent. When run from inside the solution directory,
 #    `uip agent init` auto-registers the project with the parent `.uipx`
 #    (confirm via `Data.SolutionRegistration.Status` in the response).
-#    `uip solution project add` is the fallback only when registration
-#    was `Skipped` or `Failed`.
+#    `uip solution project add` is the fallback when registration was
+#    `NotInSolution` / `Skipped` / `Failed` (not for `OptedOut`, which means
+#    `--skip-solution-registration` was passed and the skip was intentional).
 uip agent init "ToolAgent" --output json
 # (fallback) uip solution project add "ToolAgent" --output json
 # Either path creates resources/solution_folder/package/ToolAgent.json and

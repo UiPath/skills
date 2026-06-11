@@ -221,5 +221,5 @@ uip or attachments download "<attachment-id>" -o error-screenshot.png
 ## Related
 
 - [setup-environment.md](setup-environment.md) -- Credential stores are used during unattended user setup.
-- Triggers & Webhooks (calendars are referenced by `--calendar-key` when creating time triggers) → [`uipath-resources`](../resources/triggers-and-webhooks.md)
+- Triggers & Webhooks (calendars are referenced by `--calendar-key` when creating time triggers) → [triggers-and-webhooks.md](triggers-and-webhooks.md)
 - [orchestrator.md](orchestrator.md) -- Parent reference with common flags and pagination patterns.

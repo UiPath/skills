@@ -780,7 +780,7 @@ Before Approve atomic-renames `sdd.draft.md` → `sdd.md`, Phase 0 runs these ch
 
 On pass: atomic rename `sdd.draft.md` → `sdd.md`, print Approve summary (with Inferred / defaulted block + Caller obligation block when applicable + review-items count), run Approve AskUserQuestion.
 
-On fail: list specific errors, return to AskUserQuestion `Re-edit` / `Restart` / `Abort`. No Approve until all checks pass.
+On fail: list the specific failing checks, return to AskUserQuestion `Re-edit` / `Restart` / `Abort`. On `Re-edit`, fix the cited rows and **re-run only the checks that failed** (plus any whose inputs changed) — not the full suite, and without re-reading the whole document. No Approve until the cited checks pass.
 
 ## Anti-patterns
 
@@ -791,7 +791,7 @@ On fail: list specific errors, return to AskUserQuestion `Re-edit` / `Restart` /
 - **Do NOT emit a decision `action` task with fewer than 2 buttons.** `is_decision: Yes` requires ≥ 2 buttons; downgrade to `is_decision: No` if the task does not fork the case path.
 - **Do NOT emit a `wait-for-timer` task with `<UNRESOLVED>` duration.** Timer cannot fire — block Approve.
 - **Do NOT emit SLA cells on `process` / `agent` / `rpa` / `api-workflow` / timer / connector / `case-management` tasks.** SLA supports case, stage, and `action` tasks ONLY (sdd-template Key Rule 1).
-- **Do NOT emit `external-agent`, `connector-activity`, `connector-trigger`, or `wait-for-event` as task types.** This skill generates 9 of the CLI's 10 types (Rule 16); `external-agent` is a real CLI type but has no generation plugin here (model as `api-workflow` / `execute-connector-activity`), and the rest are not CLI task types at all.
+- **Do NOT emit `external-agent`, `external-workflow`, `document-extraction`, `flow-process`, `connector-activity`, `connector-trigger`, or `wait-for-event` as task types.** This skill generates 9 of the CLI's 10 types (Rule 16). `external-agent`, `external-workflow`, `document-extraction`, and `flow-process` are **not supported yet**. The rest are not CLI task types at all.
 - **Do NOT author task inputs as bare field-name lists** (`**Inputs:** a, b, c`). Use the `Field | Type | Binding` table — bare lists force Phase 1 into name-match inference.
 - **Do NOT close variable lineage by guessing producers.** If no producer fires before a consumer AND the §1.5 row has no `Default`, that is an open-lineage error — surface it. Never silently retag the row's `Category` to `In` or invent a `Default` to suppress the failure.
 - **Do NOT populate `sourceTriggers` on `In` or `Out` rows.** PR 860 added a Phase 2 validator that rejects `Out` + non-empty `sourceTriggers`. For trigger-payload extraction, use `Category: Variable` (see §1.5 and [sdd-template-examples.md](../assets/templates/sdd-template-examples.md) Use Case 2).

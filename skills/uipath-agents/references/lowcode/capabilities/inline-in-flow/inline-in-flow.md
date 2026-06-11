@@ -267,8 +267,9 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 | Agent-as-tool | `uipath.agent.resource.tool.agent.<release-key>` |
 | API workflow | `uipath.agent.resource.tool.api.<release-key>` |
 | Process Orchestration | `uipath.agent.resource.tool.processorchestration.<release-key>` |
+| Built-in tool | `uipath.agent.resource.tool.builtin.<tool-name>` |
 | IS connector | `uipath.agent.resource.tool.connector` |
-| Semantic index | `uipath.agent.resource.context.index` |
+| Semantic index | `uipath.agent.resource.context.index.<index-name>.<index-id>` |
 | Escalation | `uipath.agent.resource.escalation` |
 | Memory space | `uipath.agent.resource.memory.*` canvas node, backed by `features/<FeatureName>/feature.json` from `uip agent memory` |
 
@@ -345,8 +346,8 @@ uipath.agent.resource.tool.agent.<release-key>                 ← Tool: agent
 uipath.agent.resource.tool.api.<release-key>                   ← Tool: API workflow
 uipath.agent.resource.tool.processorchestration.<release-key>  ← Tool: process orchestration
 uipath.agent.resource.tool.connector                           ← Tool: IS connector
-uipath.agent.resource.tool.builtin                             ← Tool: built-in
-uipath.agent.resource.context.index                            ← Context: semantic index
+uipath.agent.resource.tool.builtin.<tool-name>                 ← Tool: built-in
+uipath.agent.resource.context.index.<index-name>.<index-id>    ← Context: semantic index
 uipath.agent.resource.escalation                               ← Escalation: HITL
 uipath.agent.resource.memory.*                                 ← Memory space canvas node; feature file lives under features/
 ```

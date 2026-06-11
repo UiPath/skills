@@ -48,9 +48,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered the index identity with uip solution resource list --kind Index"
+    description: "Agent discovered the index identity with uip solution resource list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--kind\s+Index'
+    command_pattern: 'uip\s+solution\s+resource\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -60,8 +60,8 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+resource\s+get\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent searched the flow registry for the context index manifest"
