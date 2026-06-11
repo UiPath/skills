@@ -241,7 +241,7 @@ Run from inside the flow project directory. Returns the same manifest format as 
    - Edit `nodes[]` — add the End node (and any other user-owned nodes).
    - Edit `definitions[]` — paste the End definition verbatim from T1's `registry get core.control.end` output.
    - Edit `edges[]` — wire `trigger → <httpNode> → end`. End-node `outputs` mapping goes here too if you declared an `out` variable in `variables.globals`.
-   - Edit `layout.nodes` — placeholder `{ position: { x: 0, y: 0 }, size: { width: 96, height: 96 }, collapsed: false }` per new node; `format` rewrites positions in T3.
+   - Edit `layout.nodes` — placeholder `{ position: { x: 0, y: 0 }, size: { width: 96, height: 96 }, collapsed: false }` per new node; `format` rewrites both position and size (by node shape) in T3.
 
    `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)).
 
@@ -312,7 +312,7 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 This is the last segment of the [canonical T3 chain](#canonical-t3-chain--issue-this-as-one-bash-call) above. After validation passes, format must run before publishing or debugging (see "Always run `flow format` after edits" in [the Author capability index](../CAPABILITY.md)). Format:
 
 - Arranges nodes horizontally (left-to-right) using ELK with `nodeSpacing: 96`, anchored to the leftmost node's original position
-- Sets every non-stickyNote node's `size` to `{ "width": 96, "height": 96 }` so Studio Web renders square nodes (skipping this leaves any non-96 dimensions intact and produces misshapen rectangles — the MST-9061 failure mode)
+- Sets each non-stickyNote node's `size` by its canvas shape so Studio Web renders it correctly: inline agents (`shape: rectangle`) → `{ "width": 288, "height": 96 }`, containers (loops/groups) → `{ "width": 560, "height": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ "width": 96, "height": 96 }` (skipping this leaves stale dimensions intact and produces misshapen nodes — the MST-9061 failure mode)
 - Recurses into subflows and rewrites `subflows[<id>].layout`
 - Backfills missing `position`/`size` entries
 

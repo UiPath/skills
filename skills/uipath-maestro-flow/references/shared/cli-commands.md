@@ -69,7 +69,7 @@ uip maestro flow format <path/to/file.flow> --output json
 
 Format:
 - Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved
-- Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }` — preserving sticky-note custom sizes
+- Sets each node's `size` to match its canvas shape — inline agents (`shape: rectangle`) → `{ "width": 288, "height": 96 }`, containers (loops/groups) → `{ "width": 560, "height": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ "width": 96, "height": 96 }`; sticky-note custom sizes are preserved
 - Recurses into subflows and rewrites `subflows[<id>].layout` for each
 - Backfills missing `position`/`size` entries
 - Does not modify node logic, edges, definitions, or variables — only layout coordinates
