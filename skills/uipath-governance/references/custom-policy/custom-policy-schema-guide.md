@@ -1,213 +1,182 @@
-# Custom Policy YAML Schema (v1)
+# Custom Policy — Rego Authoring Reference
 
-> **Schema is evolving.** This file is the single source of truth for the v1 customer-facing YAML format. Update here when the schema changes — the overview guide and SKILL.md reference this file.
-
-Customers author policies in YAML. The server compiles YAML → Rego → WASM. Customers never write Rego directly.
-
-> **Audit mode only.** All rule verdicts (allow/deny) are recorded in the agent's audit trail. The runtime does not yet stop or interrupt agent actions when a deny verdict fires — enforcement is coming in a future release. When authoring policies, make clear to users that a `deny` rule means "this will be flagged in audit" not "this will be blocked."
-
-## Not Yet Implemented
-
-Tell users plainly if they ask for any of the following — do not attempt to approximate them:
-
-- **Enforcement / blocking** — deny verdicts are audit-only; the agent is not stopped or interrupted.
-- **Semantic / intent-based checks** — e.g. "flag hostile tone", "detect jailbreak attempts", "check if output is factually correct". No natural-language reasoning check type exists in v1.
-- **Output length limits** — no check type for response token count or character length.
-- **Rate limiting per user or group** — no per-identity quota check type in v1.
-- **Cross-session state** — rules can only reference state within the current run (`session.tool_calls`). No persistent cross-run counters.
-- **Dynamic data lookups** — rules cannot call external APIs or query databases at evaluation time.
-- **Per-tool argument inspection** — `tool_call` hook exposes the tool name; inspecting specific argument values is not a v1 check type.
-
-This list grows as the schema evolves. Add entries here when a user requests something unsupported.
+Single source of truth for the JSON policy file format, the Rego input shape at each hook, common Rego patterns, and what can't be expressed in the current runtime.
 
 ---
 
-## Top-Level Structure
+## JSON Envelope (`--file` format)
 
-```yaml
-policy:
-  name: <string>         # required — unique within tenant
-  description: <string>  # optional
-  version: "<string>"    # required — e.g. "1.0"
-  scope:
-    hook: [<hook_name>, ...]     # required — lifecycle hooks this policy fires on
-  rules:
-    - <rule>
-    - <rule>
+The `--file` argument for `create` and `update` must be a JSON file:
+
+```json
+{
+  "rego": "package policy.my_policy\n\ndefault deny = false\n\ndeny if {\n    input.hook == \"before_model\"\n    input.model_name == \"forbidden-model\"\n}",
+  "metadata": {
+    "name": "My Policy",
+    "version": "1.0",
+    "hooks": ["before_model"],
+    "rules": [
+      { "id": "__POLICY_ID__/RULE-1", "message": "Forbidden model used", "priority": 80 }
+    ]
+  }
+}
 ```
 
-### Valid `hook` values
+Constraints:
 
-| Hook | When it fires |
-|------|--------------|
-| `before_agent` | Before the agent run starts (agent input available) |
-| `after_agent` | After the agent run ends (agent output available) |
-| `before_model` | Before each LLM call (model input / prompt available) |
-| `after_model` | After each LLM call (model output available) |
-| `tool_call` | Before each tool invocation (tool name + args available) |
-| `after_tool` | After each tool invocation (tool result available) |
+- `rego` — full Rego source. Must pass Regal lint or the request is rejected.
+- `metadata.name` — must be unique within the tenant. Duplicate name returns an error.
+- `metadata.hooks` — controls which hook WASMs are recompiled. List only hooks the Rego actually fires on.
+- `metadata.rules[].id` — must follow `{policyId}/RULE-N` format. Use `__POLICY_ID__/RULE-1` as a placeholder at authoring time. Replace with the real `policyId` returned by `create` in any copy you keep locally.
 
 ---
 
-## Rule Structure
+## Hook Input Reference
 
-```yaml
-- id: <string>          # required — unique within policy, used in audit records
-  name: <string>        # required — human-readable label
-  when:
-    <field>:
-      <check_type>: <value>
-  action: allow | deny  # required — verdict recorded in audit trail; does not yet stop agent actions
-  priority: <integer>   # required — higher number = evaluated first; higher-priority allow beats lower-priority deny
-  message: <string>     # optional — surfaced in audit records when the rule fires
-```
+All fields available in `input` when Rego is evaluated. Fields not populated at a given hook are `null` — always null-guard before using.
 
-### Conflict resolution
-
-Most-restrictive by default: if any rule across any loaded policy returns `deny` for a given hook, that verdict wins — regardless of other rules allowing. `priority` is used within the same pack to order rule evaluation; it does not override cross-pack deny semantics. All verdicts are recorded in the audit trail; the agent is not yet stopped when a deny verdict fires.
-
----
-
-## Check Types (v1)
-
-### `matches` — Regex pattern match
-
-Fires when the field value matches the regular expression.
-
-```yaml
-when:
-  model_input:
-    matches: '\b\d{3}-\d{2}-\d{4}\b'   # SSN pattern
-```
-
-Available fields: `model_input`, `model_output`, `agent_input`, `agent_output`, `tool_result`.
+| Field | Type | Populated at hooks |
+|-------|------|-------------------|
+| `input.hook` | string | all |
+| `input.agent_name` | string | all |
+| `input.ring` | string | all |
+| `input.session_state.tool_calls` | int | all |
+| `input.session_state.llm_calls` | int | all |
+| `input.agent_input` | any | `before_agent` |
+| `input.agent_output` | any | `after_agent` |
+| `input.model_input` | any | `before_model`, `after_model` |
+| `input.model_output` | any | `after_model` |
+| `input.model_name` | string | `before_model`, `after_model` |
+| `input.messages` | array | `before_model`, `after_model` |
+| `input.tool_name` | string | `tool_call`, `after_tool` |
+| `input.tool_args` | any | `tool_call` |
+| `input.tool_result` | any | `after_tool` |
 
 ---
 
-### `contains_pii` — PII entity detection
+## Package Naming
 
-Fires when the field contains any of the listed PII entity types. Entity names follow [Microsoft Presidio standards](https://microsoft.github.io/presidio/supported_entities/).
-
-```yaml
-when:
-  model_input:
-    contains_pii: [EMAIL_ADDRESS, PHONE_NUMBER, CREDIT_CARD, LOCATION]
+```rego
+package policy.<snake_case_name>
 ```
 
-Available fields: `model_input`, `model_output`, `agent_input`, `agent_output`.
-
-Common Presidio entity names: `EMAIL_ADDRESS`, `PHONE_NUMBER`, `CREDIT_CARD`, `LOCATION`, `PERSON`, `US_SSN`, `IBAN_CODE`, `IP_ADDRESS`, `NRP`, `DATE_TIME`.
+Use the policy name lowercased with spaces replaced by underscores. One package per file.
 
 ---
 
-### `tool_name.allowed_only` — Tool allowlist
+## Common Rego Patterns
 
-Fires on `tool_call` hook when the called tool is NOT in the allowed list.
+### 1. Regex match on model input
 
-```yaml
-when:
-  tool_name:
-    allowed_only: [search_web, read_file, send_email]
+```rego
+package policy.block_ssn_in_prompts
+
+default deny = false
+
+deny if {
+    input.hook == "before_model"
+    regex.match(`\b\d{3}-\d{2}-\d{4}\b`, input.model_input)
+}
 ```
 
-Only valid on `hook: [tool_call]`. When a tool outside the list is called, a deny verdict is recorded in the audit trail.
+Metadata hooks: `["before_model"]`
 
 ---
 
-### `session.tool_calls.max` — Tool call budget
+### 2. Model allowlist
 
-Fires when the cumulative tool call count for the session exceeds the threshold.
+```rego
+package policy.approved_models_only
 
-```yaml
-when:
-  session:
-    tool_calls:
-      max: 20
+default deny = false
+
+allowed_models := {"gpt-4o", "claude-sonnet-4-6"}
+
+deny if {
+    input.hook == "before_model"
+    not allowed_models[input.model_name]
+}
 ```
 
-Evaluated on every `tool_call` hook. When the count reaches `max`, a deny verdict is recorded in the audit trail.
+Metadata hooks: `["before_model"]`
 
 ---
 
-### `model_name.allowed` — Model allowlist / blocklist
+### 3. Tool allowlist
 
-Fires on `before_model` when the model identifier is not in the allowed list.
+```rego
+package policy.approved_tools_only
 
-```yaml
-when:
-  model_name:
-    allowed: [gpt-4o, claude-opus-4-7, claude-sonnet-4-6]
+default deny = false
+
+allowed_tools := {"search", "calculator", "send_email"}
+
+deny if {
+    input.hook == "tool_call"
+    not allowed_tools[input.tool_name]
+}
 ```
 
-Model identifiers are the string the agent passes to the LLM gateway (e.g. `gpt-4o`, `claude-opus-4-7`). Match is exact.
+Metadata hooks: `["tool_call"]`
 
 ---
 
-## Worked Examples
+### 4. Session tool-call budget
 
-### Example 1 — Audit SSN allowance and flag other PII
+```rego
+package policy.tool_call_budget
 
-```yaml
-policy:
-  name: tax-agent-pii-guardrail
-  description: Flag non-SSN PII in tax-filing agent prompts; allow SSN through.
-  version: "1.0"
-  scope:
-    hook: [before_model, after_model]
-  rules:
-    - id: allow-ssn
-      name: Allow SSN in tax context
-      when:
-        model_input:
-          matches: '\b\d{3}-\d{2}-\d{4}\b'
-      action: allow
-      priority: 100
-    - id: flag-other-pii
-      name: Flag non-SSN PII
-      when:
-        model_input:
-          contains_pii: [EMAIL_ADDRESS, PHONE_NUMBER, CREDIT_CARD, LOCATION]
-      action: deny
-      priority: 50
-      message: "Non-SSN PII detected in prompt"
+default deny = false
+
+deny if {
+    input.hook == "tool_call"
+    input.session_state.tool_calls >= 20
+}
 ```
 
-### Example 2 — Audit model usage and tool call volume
-
-```yaml
-policy:
-  name: cost-control-guardrail
-  description: Flag unapproved models and excess tool calls for audit.
-  version: "1.0"
-  scope:
-    hook: [before_model, tool_call]
-  rules:
-    - id: approved-models
-      name: Flag unapproved models
-      when:
-        model_name:
-          allowed: [gpt-4o, claude-sonnet-4-6]
-      action: deny
-      priority: 80
-      message: "Model not on the approved list"
-    - id: tool-budget
-      name: Flag when tool calls exceed 15
-      when:
-        session:
-          tool_calls:
-            max: 15
-      action: deny
-      priority: 70
-      message: "Tool call budget exceeded"
-```
+Metadata hooks: `["tool_call"]`
 
 ---
 
-## Authoring Checklist
+### 5. Scope to specific agent or ring
 
-- [ ] `policy.name` is unique within the tenant (`list` to verify no collision)
-- [ ] `scope.hook` lists only hooks relevant to the check types used (e.g. `tool_name.allowed_only` requires `tool_call`)
-- [ ] Every rule has a unique `id` (used in audit records)
-- [ ] `priority` is set intentionally — allow rules that must override deny rules have a higher priority number
-- [ ] `contains_pii` entity names match Presidio spelling exactly (UPPER_SNAKE_CASE)
-- [ ] `model_name.allowed` values match the exact identifier string the agent uses at runtime
+Add conditions to any pattern to limit it to a specific agent name or deployment ring:
+
+```rego
+deny if {
+    input.hook == "before_model"
+    input.ring == "production"
+    input.agent_name == "finance-agent"
+    not allowed_models[input.model_name]
+}
+```
+
+Omit the filter to apply the rule to all agents on the tenant.
+
+---
+
+## Regal Lint Rules
+
+> Guidelines will be added here. The server enforces whatever Regal config is active at submission time — check this section before submitting.
+
+*(empty — populated in a future update)*
+
+---
+
+## What Can't Be Expressed
+
+The following rule types are outside the current `input.*` surface. Refuse these requests explicitly — do not approximate:
+
+| Requested rule | Why it can't be expressed | Suggest instead |
+|---------------|--------------------------|-----------------|
+| User / caller identity | No user or group fields in `input` | Access ToolUsePolicy (`uip gov access-policy`) |
+| Folder or tenant metadata | Not in `input` | AOps product policy (`uip gov aops-policy`) |
+| Arbitrary HTTP calls or external lookups | WASM runs without network access | — |
+| Persistent cross-session counters | `session_state` resets per run | — |
+| File or environment access | Not available in WASM evaluation context | — |
+| Semantic / intent checks (e.g. "detect hostile tone") | No NLP check type in current runtime | — |
+| Per-tool argument inspection | `tool_args` is available but no structured schema per tool | Use `tool_call` + regex on serialized args if pattern is known |
+
+When refusing: name the missing field or capability and suggest the correct governance layer if one exists.
+
+> **Audit mode only.** All rule verdicts (allow/deny) are recorded in the audit trail. The runtime does not yet stop or interrupt agent actions when a deny verdict fires. Be explicit with users: an active policy means its verdicts appear in audit logs, not that matching actions are blocked.
