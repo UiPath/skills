@@ -76,7 +76,7 @@ uip api-workflow registry resolve <keyword> [--limit <n>] --output json
 
 | Argument / Flag | Required | Description |
 |--|--|--|
-| `<keyword>` | yes | Whitespace-tokenized; every token must substring-match somewhere in `displayName`, `connectorKey`, `objectName`, `fullName`. Case-insensitive. Combined queries narrow: `"github list all records"` matches GitHub's "List All Records". |
+| `<keyword>` | yes | Whitespace-tokenized; every token must substring-match somewhere in `displayName`, `connectorKey`, `objectName`, `fullName`. Case-insensitive. Combined queries narrow: `"github list records"` matches GitHub's "List Records". |
 | `-l, --limit <n>` | no | Max results (default: 50). |
 
 Success output (keys are PascalCased by the output formatter):
@@ -128,7 +128,7 @@ uip api-workflow registry stub <activity-type-id> \
 |--|--|--|
 | `<activity-type-id>` | yes | The `uiPathActivityTypeId` GUID from `resolve`. |
 | `--connection-id <uuid>` | IntSvc kind only | Pinged vendor connection UUID. IntSvc kind leaves `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` placeholders if omitted. Ignored for Http kind (HTTP). |
-| `--object-name <name>` | Generic activities only | Target connector object for a Generic activity ("List All Records" of *what*). Discover names with `uip is resources list <connector-key> --connection-id <uuid>`. Defaults to the object pinned in the activity definition, when present. Ignored (with a warning) for Curated activities — their object is fixed by the activity definition. |
+| `--object-name <name>` | Generic activities only | Target connector object for a Generic activity ("List Records" of *what*). Discover names with `uip is resources list <connector-key> --connection-id <uuid>`. Defaults to the object pinned in the activity definition, when present. Ignored (with a warning) for Curated activities — their object is fixed by the activity definition. |
 | `--instance <n>` | no | Suffix for slot/export bucket key. Default `1`. `--instance 2` produces `<Name>_2` keys. |
 | `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. The export bucket key always derives from `objectName + "_<n>"` (both Curated and Generic) and is not affected by this flag. |
 | `-i, --inputs <json>` | no | JSON object mapping field names to values. Field names match the IS schema (flat dotted keys — `"message.subject"`, not `{message:{subject:…}}`). Pass bare strings for literals; `${...}` for expression references. |

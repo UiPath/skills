@@ -125,7 +125,7 @@ Decide which activities to use and in what order.
 | Exit nested loops | **Flag variable + Break twice** | Set a flag in inner loop, check + Break in outer — see [control-flow-patterns.md](references/control-flow-patterns.md#5-conditional-break-inside-a-loop) |
 | Call an arbitrary REST API (catfacts, stock prices, weather, any public/internal endpoint) | **Unified HTTP Request** (`call: "UiPath.Http"`, Http kind) | `connectionId: "ImplicitConnection"`. NEVER `call: "http"` (block icon). Via rule 16's flow. |
 | Call a vendor service via its UiPath connection (Gmail, Outlook, GitHub, Slack, …) | **Vendor curated activity** (`call: "UiPath.IntSvc"`, IntSvc kind) | Needs a pinged connection UUID. Via rule 16's flow. |
-| CRUD a connector object that has no curated activity | **Generic activity** (`ActivityType: "Generic"` in resolve output — "List All Records", "Get Record", …; IntSvc kind) | Add `--object-name <object>` (from `uip is resources list`) to the stub. Prefer a curated activity when one exists. Via rule 16's flow. |
+| CRUD a connector object that has no curated activity | **Generic activity** (`ActivityType: "Generic"` in resolve output — "List Records", "Get Record", …; IntSvc kind) | Add `--object-name <object>` (from `uip is resources list`) to the stub. Prefer a curated activity when one exists. Via rule 16's flow. |
 
 Before generating, determine:
 1. Which activities are needed and in what order

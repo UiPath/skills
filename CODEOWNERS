@@ -81,8 +81,8 @@
 /skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 /tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 # API Workflow skill
-/skills/uipath-api-workflow/ @rares-baesu-uipath
-/tests/tasks/uipath-api-workflow/ @rares-baesu-uipath
+/skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
+/tests/tasks/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
 
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath

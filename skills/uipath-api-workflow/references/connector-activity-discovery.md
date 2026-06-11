@@ -45,7 +45,7 @@ What the `stub` command does internally (you don't need to call any of these by 
 uip api-workflow registry resolve "<keyword>" --output json
 ```
 
-Sends `keyword` to the TypeCache server search (`projectType=Api`), then tokenizes it on whitespace and requires every token to match against `displayName`, `description`, `connectorKey`, `objectName`, or `fullName` — so combined queries like `"github list all records"` narrow the search. Returns up to 50 candidates by default; raise with `--limit <n>`.
+Sends `keyword` to the TypeCache server search (`projectType=Api`), then tokenizes it on whitespace and requires every token to match against `displayName`, `description`, `connectorKey`, `objectName`, or `fullName` — so combined queries like `"github list records"` narrow the search. Returns up to 50 candidates by default; raise with `--limit <n>`.
 
 ```json
 {
@@ -389,12 +389,12 @@ The IntSvc kind speaks directly to the vendor connector's curated operation:
 
 The IS proxy URL for a IntSvc kind call to Outlook GetNewestEmail becomes `/elements_/v3/element/instances/{outlookConnId}/getNewestEmail?parentFolderId=Inbox` — a real curated endpoint on the Outlook connector. The connector itself adds the Microsoft Graph OAuth at the proxy layer. **You don't supply a Graph URL; the connector knows where the Outlook API lives.**
 
-### Generic activities — `--object-name` required ("List All Records" of *what?*)
+### Generic activities — `--object-name` required ("List Records" of *what?*)
 
 Connector activities come in two flavors, visible as `ActivityType` in `resolve` output:
 
 - **Curated** — hand-designed by the connector author ("Create Issue", "Get Newest Email"). The TypeCache entry already pins the object and HTTP method; `stub` works as described above.
-- **Generic** — auto-generated record operations ("List All Records", "Get Record", "Insert Record", …). The TypeCache entry carries only an `Operation` (`List`, `Retrieve`, `Create`, `Update`, `Replace`, `Delete`) and **no object** — the user chooses the target object at authoring time.
+- **Generic** — auto-generated record operations ("List Records", "Get Record", "Insert Record", …). The TypeCache entry carries only an `Operation` (`List`, `Retrieve`, `Create`, `Update`, `Replace`, `Delete`) and **no object** — the user chooses the target object at authoring time.
 
 To stub a Generic activity, pass the object via `--object-name`:
 
@@ -407,13 +407,13 @@ To stub a Generic activity, pass the object via `--object-name`:
 uip is resources list uipath-microsoft-github --connection-id <uuid> --output json
 
 # 2. Stub: operation comes from the activity, object from you
-uip api-workflow registry stub <list-all-records-guid> \
+uip api-workflow registry stub <list-records-guid> \
   --object-name user_repos \
   --connection-id <uuid> \
   --output json
 ```
 
-To find the Generic activity itself, combined keywords narrow the search (`resolve` matches every whitespace-separated token across displayName/connectorKey/objectName): `uip api-workflow registry resolve "github list all records"`. Filter the matches for `ActivityType: "Generic"` and the `Operation` you want.
+To find the Generic activity itself, combined keywords narrow the search (`resolve` matches every whitespace-separated token across displayName/connectorKey/objectName): `uip api-workflow registry resolve "github list records"`. Filter the matches for `ActivityType: "Generic"` and the `Operation` you want.
 
 `stub` resolves the HTTP verb and endpoint by matching the activity's operation against the object's IS Elements metadata (e.g. operation `List` on `user_repos` → `GET /user_repos`; operation `Retrieve` on `repos` → `GET /repos/{repo}`). The emitted JSON is ordinary IntSvc kind — same `call: "UiPath.IntSvc"`, same `with` shape, same `.content` response wrapping; the runtime makes no distinction between Generic and Curated.
 
