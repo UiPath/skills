@@ -6,18 +6,12 @@ description: >
 tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that:
-  - Waits for 1 second using a Wait activity
-  - Then returns { "done": true }
+  Make a UiPath API Workflow JSON file at Workflow.json that waits ~1 second
+  using a Wait activity, then returns { "done": true }.
 
-  Test locally:
-    uip api-workflow run ./Workflow.json --no-auth --output json
-
-  Confirm the run returns Result: "Success" and done = true.
-
-  Important:
-  - The `uip` CLI is already available.
-  - StudioWeb-roundtrip-safe: Response with then:"end".
+  Validate and run it locally to confirm it completes and returns done; it must
+  survive a StudioWeb designer roundtrip.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

@@ -7,16 +7,12 @@ description: >
 tags: [uipath-api-workflow, smoke, mode:build, lifecycle:generate]
 
 initial_prompt: |
-  Make a UiPath API Workflow JSON file at Workflow.json that:
-  - Sets a variable `message` to the string "ready"
-  - Returns { "status": "ready" }
+  Make a UiPath API Workflow JSON file at Workflow.json that sets a variable
+  `message` to "ready" and returns { "status": "ready" }.
 
-  Then validate it (offline, no run needed) and confirm it reports valid.
-
-  Important:
-  - The `uip` CLI is already available.
-  - StudioWeb-roundtrip-safe: single-key Assign, string literals wrapped as
-    ${'literal'}, Response with then:"end".
+  Validate it offline (no run needed) and confirm it reports valid. It must
+  survive a StudioWeb designer roundtrip.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

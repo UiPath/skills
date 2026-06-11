@@ -11,25 +11,17 @@ description: >
 tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, feature:registry]
 
 initial_prompt: |
-  Author (do NOT execute) a UiPath API Workflow at Workflow.json that sends an
-  email via the Outlook Integration Service connector. Build the activity using
-  the connector discovery flow: resolve the activity, verify a working Outlook
-  connection, and stub the activity against that connection. Then validate the
-  workflow offline.
+  Author — but do NOT run — a UiPath API Workflow at Workflow.json that sends
+  an email via the Outlook Integration Service connector. Build the connector
+  activity through the skill's discovery flow against a working Outlook
+  connection, then validate the workflow offline.
 
-  Do NOT run the workflow with auth and do NOT send a real email — stop after
-  the workflow validates.
-
+  Do NOT run the workflow with auth and do NOT send a real email — stop once it
+  validates. The activity must come from the registry (not hand-authored) wired
+  to a real connection, leaving no <REPLACE_WITH_*> placeholders.
   Do NOT ask for approval, confirmation, or feedback.
   Before starting, load the uipath-api-workflow skill and follow its
   connector-activity discovery flow.
-
-  Important:
-  - The `uip` CLI is available and authenticated, and an Outlook connection
-    exists in the tenant.
-  - The activity must be produced by the registry (resolve + stub with a real,
-    pinged connection UUID), not hand-authored, and must contain NO
-    <REPLACE_WITH_*> placeholders.
 
 success_criteria:
   - type: file_exists

@@ -9,15 +9,9 @@ tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate]
 
 initial_prompt: |
   Make a simple UiPath API Workflow (it can just return a constant), then
-  package the project into a deployable solution artifact using the UiPath
-  solution packager.
-
-  Confirm a package file (.nupkg / .zip) is produced.
-
-  Important:
-  - The `uip` CLI is already available.
-  - There is NO `uip api-workflow build` / `publish` command — packaging goes
-    through the solution packager. The project type must be "Api".
+  package the project into a deployable solution artifact (.nupkg / .zip).
+  Confirm a package artifact is produced.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: command_executed
