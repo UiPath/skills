@@ -20,7 +20,8 @@ Pack a solution into a deployable package, publish to the feed, and deploy to Or
 
 ```mermaid
 graph LR
-    A[solution pack] --> B[solution publish]
+    R["(optional)<br/>solution restore"] --> A[solution pack]
+    A --> B[solution publish]
     B --> C[deploy config get]
     C --> D[config set / link]
     D --> E["deploy run<br/>(auto-activate by default)"]
@@ -31,6 +32,21 @@ graph LR
 ```
 
 ---
+
+## Step 0 (Optional): Restore Dependencies
+
+Resolve NuGet dependencies for every project in the solution, in place, using the authenticated session:
+
+```bash
+uip solution restore ./MySolution --output json
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `<solutionPath>` | Solution directory (containing a `.uipx`) or a `.uis` file (required) | -- |
+| `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI refreshes it before restore starts | 10 |
+
+`restore` resolves dependencies on disk and does **not** produce a package. It needs an authenticated session (`uip login`) to reach private Orchestrator feeds. `pack` already restores internally, so this step is an **optimization, not a requirement** — its value is in CI, where running `login → restore → pack` fails fast on a missing or unreachable feed before the heavier pack step runs. Skip it for a plain local pack.
 
 ## Step 1: Pack the Solution
 
@@ -245,6 +261,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: npm install -g @uipath/cli
       - run: uip login --client-id "${{ secrets.UIPATH_CLIENT_ID }}" --client-secret "${{ secrets.UIPATH_CLIENT_SECRET }}" --tenant "${{ secrets.UIPATH_TENANT }}" --output json
+      - run: uip solution restore ./MySolution --output json   # optional: fail fast on a missing feed before pack
       - run: uip solution pack ./MySolution ./output --version "1.0.${{ github.run_number }}" --output json
       - run: uip solution publish ./output/MySolution.*.zip --output json
       - run: uip solution deploy run -n "MySolution-${{ github.run_number }}" --package-name "MySolution" --package-version "1.0.${{ github.run_number }}" --folder-name "MySolution" --config-file deploy-config.json --output json

@@ -1,6 +1,6 @@
 ---
 name: uipath-solution
-description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via the `uip solution` CLI: init/pack/publish/deploy/activate/upload, project add|import|remove, resource refresh|add|remove|edit. Bundles multiple automation projects (RPA/Flow/Case/Agents/API Workflows) into one deployable `.uipx`. For PDD→SDD design (sdd.md/pdd.md) & multi-skill task derivation→uipath-planner. For non-solution Orchestrator/IS/resources/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For .bpmn→uipath-maestro-bpmn. For agent.json and .py agents→uipath-agents. For coded-app deploy→uipath-coded-apps."
+description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via the `uip solution` CLI: init/restore/pack/publish/deploy/activate/upload, project add|import|remove, resource refresh|add|remove|edit. Bundles multiple automation projects (RPA/Flow/Case/Agents/API Workflows) into one deployable `.uipx`. For PDD→SDD design (sdd.md/pdd.md) & multi-skill task derivation→uipath-planner. For non-solution Orchestrator/IS/resources/auth/traces→uipath-platform. For .xaml/.cs→uipath-rpa. For .flow→uipath-maestro-flow. For .bpmn→uipath-maestro-bpmn. For agent.json and .py agents→uipath-agents. For coded-app deploy→uipath-coded-apps."
 when_to_use: "User mentions .uipx / 'uip solution' / 'pack the solution' / 'publish the solution' / 'deploy the solution' / 'activate' / multi-project / Solution scope / Solution Folder. Fires for 'create a new solution', 'add project/resource to solution', 'add a queue/asset/bucket/connection to the solution', 'import a cloud queue/asset', 'edit/remove a resource', 'change a queue/asset field', 'set an asset value in the solution'. Load BEFORE editing .uipx or running uip solution commands. For PDD→SDD design→uipath-planner; for an 'architect then deploy' two-phase request, run uipath-planner first, then return here to pack/deploy."
 ---
 
@@ -62,12 +62,15 @@ The typical lifecycle for a UiPath Solution:
 ```
 1. init / project add  → Create solution, register projects (.uipx + resources/solution_folder/)
 2. resource refresh    → Sync bundled artefacts and debug overwrites with cloud state
-3. pack                → Produce deployable .zip package
-4. login               → uip login (if not already authenticated)
-5. publish             → Upload packed solution to UiPath
-6. deploy run          → Promote to Orchestrator (auto-activates by default)
-7. (optional) activate → Use --skip-activate on deploy, then activate explicitly
+3. (optional) restore  → Resolve NuGet deps in place (incl. authenticated Orchestrator feeds); login first
+4. pack                → Produce deployable .zip package
+5. login               → uip login (if not already authenticated)
+6. publish             → Upload packed solution to UiPath
+7. deploy run          → Promote to Orchestrator (auto-activates by default)
+8. (optional) activate → Use --skip-activate on deploy, then activate explicitly
 ```
+
+> **`restore` is an optimization, not a requirement.** `pack` restores dependencies internally, so a separate `restore` step is only useful when you want deps resolved up front — most often in CI (`login → restore → pack`) to fail fast on a missing feed before the heavier pack runs. `restore` takes a `<solutionPath>` only (solution dir with a `.uipx`, or a `.uis` file), resolves deps in place, and does **not** produce a package. It needs an authenticated session to reach private Orchestrator feeds, so run `uip login` before it.
 
 > **Coded apps in the project list deploy in parallel, not through `uip solution`.** Coded-app projects (Coded Web Apps and Coded Action Apps) have no `project.uiproj` / `project.json` and are NOT registered via `uip solution project add`. For each coded-app project in the unified list, run `uip codedapp publish` / `uip codedapp deploy` independently — the rest of the solution still goes through steps 1-7 above. See `uipath-coded-apps` for the coded-app lifecycle.
 
@@ -85,7 +88,7 @@ This skill is the terminal step of an SDD-driven build: after `uipath-planner` p
 |------|---------|
 | [Solution Overview](references/solution-overview.md) | What a Solution is, `.uipx` manifest, file structure, lifecycle diagram, command tree |
 | [Develop a Solution](references/develop-solution.md) | `uip solution init / project add / import / remove / resource refresh / resource add / resource remove / resource edit`; field-tested gotchas |
-| [Pack and Deploy](references/pack-and-deploy.md) | `pack / publish / deploy run`, deploy configs, CI/CD pipeline patterns |
+| [Pack and Deploy](references/pack-and-deploy.md) | `restore / pack / publish / deploy run`, deploy configs, CI/CD pipeline patterns |
 | [Activate and Manage](references/activate-and-manage.md) | `deploy activate / status / uninstall`, environment management |
 | [Scenarios Index](references/scenarios.md) | Failure modes and edge cases — manual edits, shared resources, virtual resources, name collisions |
 

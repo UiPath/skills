@@ -73,6 +73,7 @@ uip solution
   │                                        (pre-rename CLIs expose this as `new`; see SKILL.md "CLI Surface Probe")
   ├── delete <solution-id>                Delete a solution from Studio Web
   ├── upload <path>                       Upload solution to Studio Web
+  ├── restore <solution>                  Resolve NuGet deps in place before pack (needs login; no package produced)
   ├── pack <solution> <output>            Pack into a deployable .zip package
   ├── publish <package>                   Upload packed solution to UiPath
   ├── project
