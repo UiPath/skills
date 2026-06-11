@@ -17,6 +17,18 @@ If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy.
 
 1. **Activity execution traces** — these activities emit per-call traces. Pull them when available — they expose the exact Microsoft Graph endpoint hit, request/response status, and timing. Trace evidence narrows whether the failure originated at connection resolution, OAuth token validation, the Graph call, or post-processing inside the activity.
 
+## Cross-Cutting Error Classes
+
+Many Microsoft Office 365 failures are **not specific to one activity** — they come from the shared authentication + Microsoft Graph layer and can surface from *any* Mail / Files / Excel activity. The user-visible text is keyed off the **Microsoft Graph error code, not the HTTP status**: some codes surface a fixed UiPath message, others surface the raw Graph message verbatim. So **match on the message text**, and when the class is cross-cutting, investigate the connection / permission / rate / configuration rather than over-focusing on the faulted activity's own arguments.
+
+Route by message:
+
+- Token / `AADSTS` / `not authenticated` / cancelled login / `No default connection` / `Automation Cloud cannot be reached` → [authentication-token-invalid](./playbooks/authentication-token-invalid.md) (401).
+- `The caller doesn't have permission ...` / `Access restricted to the item's owner.` / raw `Insufficient privileges ...` → [insufficient-graph-scope](./playbooks/insufficient-graph-scope.md) (403). Note Graph may instead return **404** for unauthorized cross-mailbox/shared access — that path is the not-found playbooks.
+- `Too many requests.` / `The app or user has been throttled.` / batched 429 → [request-throttled](./playbooks/request-throttled.md) (429).
+- `The server is unable to process the current request.` / `Request time out.` / 500 / 504 / batched 5xx → [transient-service-error](./playbooks/transient-service-error.md).
+- Faults **before any Graph call** (`Could not retrieve the selected asset`, `You must provide a value for ...`, `Please select an account.`, placement errors) → [application-scope-misconfigured](./playbooks/application-scope-misconfigured.md).
+
 ## Testing Prerequisites
 
 When testing hypotheses for Microsoft Office 365 Activities issues, gather and verify these before drawing conclusions:
