@@ -183,7 +183,7 @@ uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
 # 5. (CONDITIONAL: IntSvc kind + Solutions-mode — skip for Http kind / ImplicitConnection / standalone projects)
 #     Emit bindings_v2.json next to the workflow, then sync the Solution catalogue + debug overwrites:
 uip api-workflow bindings sync --workflow Solution/<ProjectName>/Workflow.json --output json
-uip solution resource refresh --solution-folder Solution --output json
+uip solution resources refresh --solution-folder Solution --output json
 
 # 6. Validate:
 uip api-workflow run ./my-workflow.json --output json
@@ -193,13 +193,13 @@ See [connector-activity-discovery.md](connector-activity-discovery.md) for the f
 
 ## `uip api-workflow bindings sync`
 
-Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Pure-local transformation — no auth, no API calls. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resource refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
+Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Pure-local transformation — no auth, no API calls. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resources refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
 
-**When to run.** After every `registry stub --connection-id <uuid>` that adds an IntSvc activity to a workflow inside a `Solution/` tree. Always paired with `uip solution resource refresh` (the next step in the typical sequence).
+**When to run.** After every `registry stub --connection-id <uuid>` that adds an IntSvc activity to a workflow inside a `Solution/` tree. Always paired with `uip solution resources refresh` (the next step in the typical sequence).
 
 **When to skip:**
 - **Http-kind-only workflows** — no IntSvc activities to bind. The command will still succeed with `ResourceCount: 0`, but the empty `bindings_v2.json` it writes serves no purpose.
-- **Standalone projects** (no `Solution/` wrapper). StudioWeb doesn't consult a Solution resource tree in this mode; the downstream `solution resource refresh` has no solution to operate on.
+- **Standalone projects** (no `Solution/` wrapper). StudioWeb doesn't consult a Solution resource tree in this mode; the downstream `solution resources refresh` has no solution to operate on.
 
 ```bash
 uip api-workflow bindings sync \
@@ -234,12 +234,12 @@ Failure modes:
 
 **Idempotency.** Always overwrites the existing `bindings_v2.json`. The output is a pure function of the workflow's IntSvc activities — re-running with the same workflow produces the same file byte-for-byte (modulo trailing newline).
 
-## `uip solution resource refresh`
+## `uip solution resources refresh`
 
 Re-scan all projects in a solution and sync resource declarations from their `bindings_v2.json` files into the Solution catalogue. Uses `@uipath/resource-builder-sdk` to write the catalogue resource files (`Solution/resources/...*.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`) — the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click. For api-workflow projects, run `uip api-workflow bindings sync` first to generate the `bindings_v2.json` this command consumes.
 
 ```bash
-uip solution resource refresh \
+uip solution resources refresh \
   --solution-folder <path-to-solution-root> \
   [--login-validity <minutes>] \
   --output json

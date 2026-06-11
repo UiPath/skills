@@ -1,10 +1,11 @@
-task_id: skill-sdd-smoke-skill-activation
+task_id: skill-planner-smoke-pdd-activation
 description: >
-  Smoke test: a PDD-design prompt loads the uipath-design skill body.
-  Verifies activation only — no PDD analysis, no SDD generation. The agent
-  echoes the three phase names defined in the skill, which appear verbatim in
-  SKILL.md and cannot be fabricated without loading the skill.
-tags: [uipath-design, smoke, lifecycle:generate]
+  Smoke test: a PDD-design prompt loads the uipath-planner skill body and
+  routes to Phase D (design). Verifies activation only — no PDD analysis, no
+  SDD generation. The agent echoes the three Phase D phase names defined in
+  the skill, which appear verbatim in SKILL.md and cannot be fabricated
+  without loading the skill.
+tags: [uipath-planner, smoke, lifecycle:generate]
 
 run_limits:
   expected_turns: 4

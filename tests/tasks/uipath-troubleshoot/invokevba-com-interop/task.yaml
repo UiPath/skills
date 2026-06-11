@@ -13,9 +13,10 @@ agent:
   type: claude-code
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
-task_timeout: 5400
-max_turns: 60
-turn_timeout: 3600
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
 
 sandbox:
   template_sources:
@@ -110,16 +111,28 @@ success_criteria:
              checking for modal dialogs, but did not enumerate the
              other host-side checks (orphaned EXCEL.EXE, Office
              versions).
-        0.5  Recognized the COM interop class but recommended only one
-             of several possible causes without offering a check list,
-             or matched a sibling cause (claimed Excel was hung
-             without first asking the user to look for a dialog).
+        0.5  Recognized the COM interop class but did NOT recommend
+             making Excel visible / checking for a hidden modal dialog
+             anywhere in its answer - e.g. concluded only "Excel is
+             hung, kill the orphaned EXCEL.EXE / restart Excel" and
+             stopped there, never surfacing the hidden-dialog path.
         0.2  Surfaced the HRESULT to the user without diagnosis or
              escalated to support without trying the playbook.
         0.0  Wrong cause (e.g., concluded Trust Center, code-file-path
              missing wrapper, entry-method-name typo, or parameter
              mismatch), or the agent fabricated a host action it could
              not perform.
+
+      Calibration note: a correct COM-interop diagnosis whose host
+      check list INCLUDES making Excel visible / checking for a hidden
+      modal dialog (Visible=True / ShowExcel=True) passes at >= 0.8,
+      even if the agent ALSO lists parallel hypotheses such as an
+      orphaned EXCEL.EXE or an Office bitness/version conflict. Those
+      are legitimate sibling causes from the same playbook and must NOT
+      be penalised when the dialog/visibility check is also offered.
+      Note the evidence rules the orphan-process cause largely out:
+      the Excel Process Scope ran with KillExcelProcessesEachIteration
+      =True and the job logs show 0 residual EXCEL.EXE cleared at start.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

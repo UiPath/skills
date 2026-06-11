@@ -38,7 +38,7 @@ if not secret:
     sys.exit("FAIL: secret.txt empty")
 
 # 1) Webhook present with right config
-env = uip_json("resource", "webhooks", "list")
+env = uip_json("or", "webhooks", "list")
 if env.get("Result") != "Success":
     sys.exit(f"FAIL: webhooks list Result={env.get('Result')!r}")
 items = env.get("Data") or []

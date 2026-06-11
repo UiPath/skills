@@ -36,7 +36,7 @@ uip rpa packages versions --package-id UiPath.UIAutomation.Activities --include-
 Install / upgrade (mutating — only after consent per the table above; substitute `<MIN_VERSION>` with the value declared at the top of this file):
 
 ```bash
-uip rpa packages install --packages '[{"id": "UiPath.UIAutomation.Activities", "version": "<MIN_VERSION>"}]' --project-dir "$PROJECT_DIR" --output json
+uip rpa packages install --packages 'id=UiPath.UIAutomation.Activities,version=<MIN_VERSION>' --project-dir "$PROJECT_DIR" --output json
 ```
 
 `packages install` accepts the beta version directly via the `version` field — no separate prerelease flag is needed once the version string is specified explicitly.

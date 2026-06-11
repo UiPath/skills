@@ -12,7 +12,7 @@ Pack a solution into a deployable package, publish to the feed, and deploy to Or
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Solution developed and ready to pack (see [develop-solution.md](develop-solution.md))
 - Solution state verified — `.uipx` and `resources/solution_folder/` agree on the project set (see [develop-solution.md - Always verify state after every mutation](develop-solution.md#always-verify-state-after-every-mutation))
 
@@ -50,7 +50,7 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
 
-The output is a `.zip` file named `<name>.<version>.zip` written under `<output-path>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resource refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
+The output is a `.zip` file named `<name>.<version>.zip` written under `<output-path>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
 ## Step 2: Publish to the Solution Feed
 

@@ -12,7 +12,6 @@ dataset:
     - uipath-agents.jsonl
     - uipath-coded-apps.jsonl
     - uipath-data-fabric.jsonl
-    - uipath-design.jsonl
     - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
@@ -31,7 +30,7 @@ dataset:
 
 initial_prompt: "${row.prompt}"
 
-# 20 skill_triggered criteria — one per skill. Each derives expected internally
+# 17 skill_triggered criteria — one per skill. Each derives expected internally
 # from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~900 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
@@ -103,11 +102,6 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-rpa activation"
     skill_name: uipath-rpa
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-  - type: skill_triggered
-    description: "uipath-design activation"
-    skill_name: uipath-design
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered

@@ -5,7 +5,7 @@ description: >
   as a local resource in the solution. Verifies `uip solution project add`
   registers the project and writes a process resource file with a `resource.key`
   UUID under `resources/solution_folder/process/`, and that
-  `uip solution resource list` surfaces it as a Local resource.
+  `uip solution resources list` surfaces it as a Local resource.
 tags: [uipath-agents, coded, mode:build, lifecycle:generate, resource, feature:registry]
 
 run_limits:
@@ -18,9 +18,9 @@ initial_prompt: |
   "ClaimsFlow" and a sibling Coded Function agent "ClassifierAgent"
   (Python, simple stub — no LLM call needed, just Input/Output Pydantic
   models). Register the coded agent in the solution and confirm it is
-  registered as a local resource using `uip solution resource list`.
+  registered as a local resource using `uip solution resources list`.
   When confirming local registration, use structured CLI output:
-  `uip solution resource list ... --output json`.
+  `uip solution resources list ... --output json`.
 
   Use the Coded Function framework (package: `uipath`) — NOT LangGraph,
   LlamaIndex, or OpenAI Agents. This keeps setup minimal: one lightweight
@@ -67,9 +67,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent confirmed local registration with uip solution resource list"
+    description: "Agent confirmed local registration with uip solution resources list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list'
+    command_pattern: 'uip\s+solution\s+resources\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -77,7 +77,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used structured output when listing solution resources"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--output\s+json'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

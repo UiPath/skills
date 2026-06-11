@@ -48,7 +48,7 @@ if not uuid8 or not folder_path:
 
 expected_name = f"e2e-trigger-time-{uuid8}"
 
-envelope = uip_json("resource", "triggers", "list", "--type", "time", "--folder-path", folder_path)
+envelope = uip_json("or", "triggers", "list", "--type", "time", "--folder-path", folder_path)
 if envelope.get("Result") != "Success":
     sys.exit(f"FAIL: triggers list Result={envelope.get('Result')!r}")
 items = envelope.get("Data")

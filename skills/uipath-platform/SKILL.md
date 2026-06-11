@@ -1,13 +1,13 @@
 ---
 name: uipath-platform
-description: "UiPath platform ops via the uip CLI — use this skill for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / LLM Gateway. Load BEFORE writing any code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, bucket files, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, BYO LLM product configurations (`uip llm-configuration byo-connections` — register / audit / re-probe / troubleshoot tenant-owned OpenAI / Azure OpenAI / Bedrock / Vertex / Anthropic keys against UiPath products), traces, licensing. For `uip solution` lifecycle→uipath-solution. For PDD/SDD authoring→uipath-design. For workflow code (.xaml/.cs)→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
+description: "UiPath platform ops via the uip CLI — use this skill for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / LLM Gateway. Load BEFORE writing any code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, bucket files, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, BYO LLM product configurations (`uip llm-configuration byo-connections` — register / audit / re-probe / troubleshoot tenant-owned OpenAI / Azure OpenAI / Bedrock / Vertex / Anthropic keys against UiPath products), traces, licensing. For `uip solution` lifecycle→uipath-solution. For PDD/SDD design & task planning→uipath-planner. For workflow code (.xaml/.cs)→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
 when_to_use: "User mentions UiPath / Orchestrator / Studio Web / Integration Service / LLM Gateway / 'uip' CLI / asset / queue / bucket / library / webhook / trigger / connector / connection / tenant / folder / robot / package / BYO LLM. Also 'upload to UiPath', 'create asset', 'start job', 'list queues', 'deploy a single package to Orchestrator', 'OAuth2 token', 'register my own LLM key', 'configure a model substitution', 'my BYO LLM key stopped working / returns errors', 're-probe / audit a BYO configuration', 'uipath.com REST'. Load BEFORE composing any HTTP request — most UiPath tasks have a `uip` command. For `uip solution` ops or `.uipx` deploys→uipath-solution."
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # UiPath Platform — uip CLI Assistant
 
-Comprehensive guide for UiPath Cloud / Orchestrator / Studio Web / Integration Service, end-to-end via the `uip` CLI. For `uip solution` lifecycle load [`uipath-solution`](/uipath:uipath-solution); for PDD/SDD authoring load [`uipath-design`](/uipath:uipath-design).
+Comprehensive guide for UiPath Cloud / Orchestrator / Studio Web / Integration Service, end-to-end via the `uip` CLI. For `uip solution` lifecycle load [`uipath-solution`](/uipath:uipath-solution); for PDD/SDD design & task planning load [`uipath-planner`](/uipath:uipath-planner).
 
 ## Use the CLI. Don't roll your own REST.
 
@@ -58,7 +58,14 @@ This token can be reused for direct Orchestrator REST API calls when CLI command
 
 Before interacting with Orchestrator, solutions, or Integration Service, the user must be logged in.
 
-**Interactive login (browser OAuth2):**
+**Always check first** — most sessions are already authenticated:
+```bash
+uip login status --output json
+```
+
+If it reports `Logged in`, skip the rest of this step. There is no `--check` flag — `status` is the verification subcommand.
+
+**Interactive login (browser OAuth2):** `uip login` opens a browser window on the user's machine and blocks until they complete it. In a non-interactive or automated session, do NOT run it yourself — tell the user to run it and wait.
 ```bash
 uip login --output json
 ```
@@ -71,11 +78,6 @@ uip login --authority "https://alpha.uipath.com/identity_" --it --output json
 For non-interactive (CI/CD) scenarios, use client credentials:
 ```bash
 uip login --client-id "<ID>" --client-secret "<SECRET>" --tenant "<TENANT>" --output json
-```
-
-Check login status:
-```bash
-uip login status --output json
 ```
 
 ### Step 2 — Select a Tenant
@@ -246,7 +248,7 @@ Every `uip` command accepts:
 - **[Orchestrator](references/orchestrator/orchestrator.md)** — Concepts, folders, jobs, processes, machines, users
 - **[Resources](references/orchestrator/resources.md)** — Assets, queues, buckets, triggers, libraries, webhooks
 - **[Solutions](/uipath:uipath-solution)** — Solution lifecycle (`uip solution init/pack/publish/deploy/activate`)
-- **[Design](/uipath:uipath-design)** — PDD/SDD authoring (Process → Solution Design Document)
+- **[Planner](/uipath:uipath-planner)** — PDD/SDD design + multi-skill task planning (Process → Solution Design Document → task list)
 - **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability
 - **[Traces — Feedback](references/traces/feedback.md)** — Annotate traces with sentiment and comments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources

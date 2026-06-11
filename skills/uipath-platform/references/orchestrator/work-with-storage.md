@@ -11,7 +11,7 @@ Create storage buckets, upload and download files, and generate presigned URLs f
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Target folder exists (`uip or folders list`)
 
 ## Flow
@@ -198,6 +198,24 @@ Returns a presigned URL (PUT verb) and any required headers (e.g., `x-ms-blob-ty
 
 Use cases: share temporary download links, allow external systems to upload directly, time-limited CI/CD access.
 
+### Upload via REST (when the CLI is not available)
+
+`bucket-files upload` already does presign + PUT in one step — prefer it. If a non-CLI system must upload, mirror the same two steps:
+
+```bash
+# 1. Get a presigned PUT URL (GetWriteUri). Single-URL-encode the path.
+curl -s -H "Authorization: Bearer $TOKEN" \
+  -H "X-UIPATH-OrganizationUnitId: $FOLDER_ID" \
+  "https://cloud.uipath.com/$ORG/$TENANT/orchestrator_/odata/Buckets($BUCKET_ID)/UiPath.Server.Configuration.OData.GetWriteUri?path=reports%2Fsummary.csv&contentType=text%2Fcsv"
+
+# 2. PUT the file to the returned Uri, including every header the response
+#    lists under RequiredHeaders (e.g. x-ms-blob-type: BlockBlob on Azure).
+curl -s -X PUT -H "x-ms-blob-type: BlockBlob" -H "Content-Type: text/csv" \
+  --data-binary @./summary.csv "$PRESIGNED_URI"
+```
+
+Caveats: the returned URI is short-lived (default 5–15 minutes); the `RequiredHeaders` differ per storage provider; and `GetWriteUri` corrupts paths containing `&`, `+`, `%`, or `?` (see Common Pitfalls below) — avoid those characters in file names.
+
 ---
 
 ## Complete Example
@@ -247,6 +265,7 @@ uip or bucket-files get-download-url <bucket-key> "2026/04/expenses.pdf" \
 ### Common Pitfalls
 
 - **`buckets list` requires either `--folder-path`/`--folder-key` or `--all-folders`.** No-flag invocations error out — there is no implicit cross-folder default.
+- **File paths containing `&`, `+`, `%`, or `?` are rejected by the CLI.** The Orchestrator storage API builds presigned blob URIs without re-encoding URL-reserved characters, so such paths are silently corrupted server-side while the API reports success (`a&b.txt` is truncated to `a`; `+` and `%xx` decode to other characters; delete then operates on the corrupted name). The CLI refuses these paths up front on every path-taking command (`upload`, `download`, `delete`, `get`, `get-download-url`, `get-upload-url`). Rename files to avoid these characters. The same corruption applies when calling the REST API directly — the only REST workaround is double-URL-encoding the `path` parameter, which will break when the server-side fix lands; prefer renaming.
 - **`download` without `--destination`** writes to stdout. For binary files, always use `--destination`.
 - **External providers** (Azure, Amazon) require `--credential-store-key`. Use `uip or credential-stores list` to find keys.
 - **Bucket keys** are GUIDs (the `identifier` field from list/create output). Do not confuse with numeric `id`.
