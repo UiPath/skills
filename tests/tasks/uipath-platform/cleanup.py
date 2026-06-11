@@ -49,20 +49,20 @@ for r in items_of(uip("or", "roles", "list")):
     if has_uuid(r, uuid8):
         key = r.get("Key") or r.get("Id")
         if key:
-            uip("or", "roles", "delete", str(key))
+            uip("or", "roles", "delete", str(key), "--yes")
 
 # 2) Tenant-scoped webhooks
-for w in items_of(uip("resource", "webhooks", "list")):
+for w in items_of(uip("or", "webhooks", "list")):
     if has_uuid(w, uuid8):
         key = w.get("Key") or w.get("Id")
         if key:
-            uip("resource", "webhooks", "delete", str(key))
+            uip("or", "webhooks", "delete", str(key), "--yes")
 
 # 3) Solution deploys (uninstall by name; cascades to folder + processes)
 for d in items_of(uip("solution", "deploy", "list")):
     name = d.get("Name") or d.get("DeploymentName") or ""
     if uuid8 in name.lower():
-        uip("solution", "deploy", "uninstall", name)
+        uip("solution", "deploy", "uninstall", name, "--yes")
 
 # 4) Folders — delete recursively (cascades to child assets/queues/buckets/triggers)
 for f in items_of(uip("or", "folders", "list", "--limit", "200")):
@@ -70,6 +70,6 @@ for f in items_of(uip("or", "folders", "list", "--limit", "200")):
     if uuid8 in name.lower():
         key = f.get("Key")
         if key:
-            uip("or", "folders", "delete", str(key))
+            uip("or", "folders", "delete", str(key), "--yes")
 
 sys.exit(0)

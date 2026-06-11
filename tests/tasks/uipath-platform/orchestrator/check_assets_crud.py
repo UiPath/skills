@@ -36,7 +36,7 @@ EXPECTED = {
     f"e2e-asset-{uuid8}-bool": ("Bool", "boolValue", True),
 }
 
-env = uip_json("resource", "assets", "list", "--folder-path", folder_path)
+env = uip_json("or", "assets", "list", "--folder-path", folder_path)
 if env.get("Result") != "Success":
     sys.exit(f"FAIL: assets list Result={env.get('Result')!r}")
 items = env.get("Data") or []

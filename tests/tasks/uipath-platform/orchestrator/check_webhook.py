@@ -31,7 +31,7 @@ if not uuid8:
 
 expected_name = f"e2e-webhook-{uuid8}"
 
-env = uip_json("resource", "webhooks", "list")
+env = uip_json("or", "webhooks", "list")
 if env.get("Result") != "Success":
     sys.exit(f"FAIL: webhooks list Result={env.get('Result')!r}")
 items = env.get("Data") or []
@@ -45,7 +45,7 @@ if not match:
 
 # `webhooks list` only exposes Key/Name/Url/Enabled — Events requires `get`.
 webhook_key = _pick(match, "Key", "Id")
-get_env = uip_json("resource", "webhooks", "get", str(webhook_key))
+get_env = uip_json("or", "webhooks", "get", str(webhook_key))
 if get_env.get("Result") != "Success":
     sys.exit(f"FAIL: webhooks get {webhook_key!r} Result={get_env.get('Result')!r}")
 detail = get_env.get("Data") or {}
