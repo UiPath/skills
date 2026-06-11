@@ -41,11 +41,11 @@ Returns `403` for UiPath default policies. Always run before `update` to retriev
 
 ## uip gov custom-policy create
 
-Upload a YAML policy file. The server compiles it to WASM and stores both.
+Upload a JSON policy file. The server lints, compiles, and stores it.
 
 ```bash
 uip gov custom-policy create \
-  --file <PATH_TO_YAML> \
+  --file <PATH_TO_JSON> \
   --output json
 ```
 
@@ -63,11 +63,11 @@ uip gov custom-policy create \
 
 ## uip gov custom-policy update
 
-Upload a revised YAML file. The server recompiles to WASM and updates the stored bundle.
+Upload a revised JSON file. The server re-lints, recompiles, and updates the stored bundle.
 
 ```bash
 uip gov custom-policy update <POLICY_ID> \
-  --file <PATH_TO_YAML> \
+  --file <PATH_TO_JSON> \
   --output json
 ```
 
