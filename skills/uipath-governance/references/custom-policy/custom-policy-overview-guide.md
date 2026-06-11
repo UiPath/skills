@@ -66,60 +66,54 @@ uip gov custom-policy list --output json
 
 ## Author Mode
 
-Goal: turn the user's natural-language description into a valid policy YAML file, then offer to upload it.
+Goal: turn the user's natural-language description into a valid Rego policy, wrap it in the JSON envelope, then offer to upload it.
 
 ### Step 1 — Gather scope
 
 Ask (or infer from context):
 
-1. **Agent tags** — which agents does this policy target? (e.g. `tax-filing`, `internal`, `production`)
-2. **Lifecycle hooks** — which events should the policy fire on? Offer the list: `before_agent`, `after_agent`, `before_model`, `after_model`, `tool_call`, `after_tool`. Match to the check type the user described.
+1. **Lifecycle hooks** — which events should the policy fire on? Options: `before_agent`, `after_agent`, `before_model`, `after_model`, `tool_call`, `after_tool`. Match to the check the user described.
+2. **Agent name / ring** — optional. If the user wants to scope the policy to specific agents or deployment rings, note them for Rego conditions.
 3. **Policy name** — unique display name for the tenant.
 
-### Step 2 — Build rules
+### Step 2 — Draft Rego
 
-For each guardrail the user described, determine the check type from [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) and fill in the rule fields:
+- Select patterns from [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) that match the user's request.
+- Use `__POLICY_ID__` as a placeholder in all rule IDs (e.g. `__POLICY_ID__/RULE-1`). The server assigns the real `policyId` on create.
+- If the request requires a field not in `input.*`, refuse explicitly: "That rule requires access to [X], which isn't available in the Rego input at any hook." Do not approximate with an unsupported field. See the "What Can't Be Expressed" section of [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) for the full list.
 
-| User says... | Check type | Hook |
-|---|---|---|
-| "flag emails / phone numbers / credit cards in prompts" | `contains_pii` | `before_model` or `after_model` |
-| "match this pattern / regex" | `matches` | whichever hook exposes the field |
-| "audit which tools the agent calls / flag calls outside this list" | `tool_name.allowed_only` | `tool_call` |
-| "flag when tool calls exceed N per session" | `session.tool_calls.max` | `tool_call` |
-| "audit model usage / flag calls to unapproved models" | `model_name.allowed` | `before_model` |
+### Step 3 — Show Rego and confirm
 
-If the user's requested rule does not map to any of the v1 check types, tell them plainly: "That rule can't be expressed in the current v1 schema. The supported check types are: regex match, PII detection, tool allowlist, tool call budget, and model allowlist." Do not attempt to approximate it with an unsupported pattern.
+Show the Rego to the user. Note: the server runs Regal lint on every create/update — if the submission is rejected, fix the lint error and retry.
 
-Set `priority` so allow rules that must override deny rules have a higher number.
+### Step 4 — Write JSON and offer create
 
-### Step 3 — Draft and validate
-
-1. Compose the YAML following the schema in [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md).
-2. Verify the authoring checklist at the bottom of that file.
-3. Show the YAML to the user.
-
-### Step 4 — Write file and offer create
+Write the JSON envelope to a session file:
 
 ```bash
-# Write YAML to session file
-cat > /tmp/custom-policy-draft.yaml << 'EOF'
-<YAML_CONTENT>
+cat > /tmp/custom-policy-draft.json << 'EOF'
+<JSON_ENVELOPE_CONTENT>
 EOF
 ```
 
-Ask: "Ready to create this policy on the tenant? I'll run:
+Show the JSON to the user and ask: "Ready to create this policy on the tenant? I'll run:
 ```bash
 uip gov custom-policy create \
-  --file /tmp/custom-policy-draft.yaml \
+  --file /tmp/custom-policy-draft.json \
   --output json
 ```"
 
-Run only after explicit confirmation. On success, show the returned `policyId` and confirm the policy is active (verdicts will appear in the audit trail at the next agent run). Remind the user that verdicts are currently recorded only — agent actions are not yet stopped by the policy.
+Run only after explicit confirmation. On success:
+- Show the returned `policyId`.
+- Remind the user to replace `__POLICY_ID__` in any local copy they keep with the real `policyId`.
+- Confirm the policy is active (verdicts will appear in the audit trail at the next agent run).
+- Remind: verdicts are currently recorded only — agent actions are not yet stopped by the policy.
 
 ### Author mode — common gaps
 
-- **No agent tags supplied:** Ask "Which agent tag(s) should this policy target?" before drafting YAML.
-- **Ambiguous hook:** If the user says "flag PII" without specifying input vs output, default to `[before_model, after_model]` and note the choice.
-- **Unknown Presidio entity name:** Show the user the common names (`EMAIL_ADDRESS`, `PHONE_NUMBER`, `CREDIT_CARD`, `LOCATION`, `PERSON`, `US_SSN`) and ask them to pick.
-- **Model identifier unclear:** Ask for the exact model string the agent uses at runtime (e.g. `gpt-4o`, `claude-sonnet-4-6`).
-- **Unsupported rule type:** If the user's guardrail can't be expressed with the five v1 check types, say so explicitly: "That rule isn't supported in the current schema." Do not approximate it or stay silent.
+| Gap | Resolution |
+|-----|-----------|
+| No hook specified | Default to `[before_model, after_model]`, note the choice to the user |
+| Request uses a field not in `input.*` | Refuse explicitly, list available fields at the relevant hook from [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) |
+| Model identifier unclear | Ask for the exact model string used at runtime (e.g. `gpt-4o`, `claude-sonnet-4-6`) |
+| Agent name / ring not needed | Omit the filter condition — policy applies to all agents on the tenant |
