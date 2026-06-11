@@ -33,7 +33,7 @@ Registry flag forces the public npm registry (skill default — users may have `
 
 ## Static Assets — Vite Plugin
 
-Append to `vite.config.ts`. The plugin runs after `build` and copies the WC's `du-assets/` next to the emitted JS chunks:
+Replace `vite.config.ts` with the full file below. The plugin runs after `build` and copies the WC's `du-assets/` next to the emitted JS chunks:
 
 ```typescript
 import react from '@vitejs/plugin-react';
@@ -242,6 +242,8 @@ function ValidatePage({ taskId, folderId }: { taskId: number; folderId: number }
     />
   );
 }
+
+export default ValidatePage;
 ```
 
 Two things to lock in:
