@@ -14,14 +14,16 @@ uip solution init "<SolutionName>" --output json
 
 # 2. Init the flow project inside the solution folder.
 #    When run from inside a solution directory, `flow init` auto-registers
-#    the project with the parent `.uipx` — no manual `solution project add`
-#    is required. Confirm via `Data.SolutionRegistration.Status` in the
-#    response (`Registered` or `AlreadyRegistered`).
+#    the project with the parent `.uipx` (pass `--skip-solution-registration` to skip) —
+#    no manual `solution project add` is required. Confirm via
+#    `Data.SolutionRegistration.Status` in the response (`Registered` or
+#    `AlreadyRegistered`).
 cd <directory>/<SolutionName> && uip maestro flow init <ProjectName> --output json
 
 # 3. (Fallback only) Wire the project manually if auto-registration was
-#    `Skipped` or `Failed` — typically because init was run outside the
-#    solution dir and produced a single-nested layout.
+#    `NotInSolution` / `Skipped` / `Failed` — typically because init was run
+#    outside the solution dir and produced a single-nested layout. (`OptedOut`
+#    means `--skip-solution-registration` was passed and the skip was intentional.)
 uip solution project add \
   <directory>/<SolutionName>/<ProjectName> \
   <directory>/<SolutionName>/<SolutionName>.uipx
@@ -93,10 +95,10 @@ Requires `content/package-descriptor.json` and `content/operate.json` in the pro
 Re-scan all projects in the solution and sync resource declarations (connections, processes, queues, etc.) from their `bindings_v2.json` files. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists. **Always run this before `uip solution upload` or `uip maestro flow debug`.**
 
 ```bash
-uip solution resource refresh <SolutionDir> --output json
+uip solution resource refresh --solution-folder <SolutionDir> --output json
 ```
 
-The argument is the solution directory (containing the `.uipx` file). Defaults to the current directory if omitted.
+`<SolutionDir>` is the solution directory (containing the `.uipx` file). The command has no positional solution argument; omit `--solution-folder` only when the current directory is already the solution root.
 
 ## uip solution resource add / remove / edit
 
@@ -130,7 +132,7 @@ Upload a solution directly to Studio Web. **Requires `uip login`.**
 uip solution upload <SolutionDir> --output json
 ```
 
-`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
+`uip solution upload` accepts the solution directory (the folder containing the `.uipx` file) directly — no intermediate bundling step is required. Use the exact solution root path (or `.` from inside the solution root). If your shell is inside a nested project folder, pass the absolute solution root path or `..`; do not pass the solution name again. Uploads the solution to Studio Web where the user can visualize, inspect, edit, and publish the flow from the browser.
 
 > **This is the default publish path.** When the user asks to "publish" without specifying where, run `uip solution upload <SolutionDir>` to push to Studio Web. Share the resulting URL with the user.
 
@@ -167,6 +169,8 @@ The CLI does not validate `<variableId>` — a mismatch uploads successfully the
 1. Read `<flow>.flow` (it is plain JSON) and inspect `variables.globals[]`. Valid `<variableId>` values are entries where `direction` is `"in"` and `type` is `"file"`.
 2. Confirm each `<variableId>` passed to `--attachment` appears in that list.
 3. If none exist, add one to `variables.globals[]`: `{ "id": "<variableId>", "direction": "in", "type": "file", "triggerNodeId": "<triggerId>" }`.
+
+> **Reading the bound file in a Script node.** A `file` variable hydrates at runtime as an object; read the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [variables-and-expressions.md — Runtime shape of a `file` variable](variables-and-expressions.md#file-input).
 
 Run `uip maestro flow debug --help` for other options.
 
@@ -354,7 +358,7 @@ uip maestro flow registry get <node-type> --output json     # get full schema fo
 - `true` — the tenant registry can return this node; it is valid to continue with `registry get <NodeType>` or `node add <NodeType>`.
 - `false` — the SDK knows about this node type, but the current tenant registry did not return it. Treat it as not enabled or not available for this tenant. Do **not** try nonexistent flags such as `--include-unavailable`; they are not supported. Choose an enabled alternative, use `--local` for in-solution resources, or report the feature/resource as unavailable.
 
-The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array.
+The `Data.Node` object from `registry get` is what you paste into your `.flow` file's `definitions` array. Unlike `registry search` (PascalCase summary), `registry get` returns the definition **verbatim** — its keys keep the manifest's own casing, predominantly **camelCase** (`nodeType`, `inputDefinition`, `supportsErrorHandling`, `form`), exactly as they must appear in the `.flow`. Filter it with that casing (`--output-filter "Node.inputDefinition"`, not `Node.InputDefinition`).
 
 Run `uip maestro flow registry <subcommand> --help` for additional options (e.g., `--force`, `--filter`, `--connection-id`).
 

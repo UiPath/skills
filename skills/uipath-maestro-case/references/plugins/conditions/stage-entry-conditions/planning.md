@@ -17,7 +17,7 @@ Every stage with an **Entry Condition** declared in sdd.md gets its own stage-en
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | previously captured from the stages plugin | Target stage |
-| `display-name` | sdd.md (optional) | e.g., "Pre-check", "Interrupt on Fraud" |
+| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Entry Rule {N}`. e.g., "Pre-check", "Interrupt on Fraud" |
 | `is-interrupting` | sdd.md (default `false`) | `true` if the condition interrupts the current stage |
 | `rule-type` | Pick from the catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | ID of the referenced stage |
@@ -39,6 +39,8 @@ Allowed `ruleType` values and when to pick each:
 
 `is-interrupting: true` means the condition can fire **while another stage is active** and will interrupt it. Use for exception/interrupt flows.
 
+> **First-stage start — `case-entered` is the case-start signal (edges retired).** With edges gone, there is no Trigger→first-stage edge; the case begins at the stage whose entry condition is `case-entered`. **At least one regular stage must carry `case-entered`**, or the case can never start. The sdd.md's first stage normally declares it — emit it verbatim. If NO stage declares `case-entered`, flag to the user via AskUserQuestion; do NOT silently inject one (Rule 2 — trust the sdd.md, no gap-fill). The reachability walk in [`sdd-generation-rules.md` § Logical integrity](../../../sdd-generation-rules.md) treats a case with no `case-entered` stage as a blocking orphan.
+
 ## Ordering
 
 Stage entry conditions are created **after** all stages exist (Step 7 in implementation.md). Source/target stage IDs must both be captured by then.
@@ -48,7 +50,7 @@ Stage entry conditions are created **after** all stages exist (Step 7 in impleme
 ```markdown
 ## T<n>: Add stage-entry condition for "<stage>" — <summary>
 - target-stage: "<stage-name>"
-- display-name: "<name>"
+- display-name: "<name>"   # optional — omit when SDD Display Name cell is blank; impl defaults to "Entry Rule {N}"
 - is-interrupting: false
 - rule-type: selected-stage-completed
 - selected-stage: "<upstream-stage-name>"

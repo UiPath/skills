@@ -43,6 +43,8 @@ Follow the pipeline in [connector-trigger-common.md § Planning Pipeline](../../
 
 ## Unresolved Fallback
 
+Two entry paths: **Scenario A** — connector not found in TypeCache ([connector-trigger-common.md § 1 No-match](../../../connector-trigger-common.md#1-find-the-trigger-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the create offer ([connector-trigger-common.md § Resolve the connection](../../../connector-trigger-common.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
+
 > **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector trigger exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
 
 If the connector or connection cannot be resolved:

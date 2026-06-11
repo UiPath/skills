@@ -2,10 +2,16 @@
 
 Data Fabric supports file-type fields on entities. Files are stored per-record per-field.
 
+> **⚠ `files upload` is unsupported via the CLI.** The server returns `"Update entity data failed. Relationship violation"`. Upload via the UiPath Data Fabric UI instead. The `download` / `delete` commands below are documented for completeness, but require the file to have been uploaded through the UI.
+
+## Creating a FILE field correctly
+
+The FILE field itself must still be created via the CLI before the UI can upload to it. Bind `referenceEntityId` / `referenceFieldId` to the tenant's `EntityAttachment` entity + its `Name` field — any other target produces a column the UI cannot use, with no in-place fix. Discovery snippet and full shape: [`entity-schema.md` → FILE Fields](entity-schema.md#file-fields).
+
 ## Prerequisites
 
 The entity must have a field configured for file storage. File fields are defined in the entity schema.
-Use `uip df entities get <entity-id> --output json` to identify file-type fields.
+Use `uip df entities get <entity-id> --output json` to identify file-type fields. A correctly-defined FILE field shows `FieldDataType.Name: "FILE"`, `FieldDisplayType: "File"`, `IsForeignKey: true`, and `ReferenceEntity.Name == "EntityAttachment"`.
 
 ## Upload a File
 

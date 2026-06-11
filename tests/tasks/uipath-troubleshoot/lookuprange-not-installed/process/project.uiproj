@@ -1,0 +1,6 @@
+{
+  "Name": "VendorLookup",
+  "ProjectType": "Process",
+  "Description": "Reproduces a classic Lookup Range failure caused by Microsoft Excel not being installed on the robot host (REGDB_E_CLASSNOTREG).",
+  "MainFile": "Main.xaml"
+}

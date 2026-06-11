@@ -1,0 +1,190 @@
+task_id: skill-troubleshoot-rpa-job-killed-by-watchdog-account
+description: >
+  UiPath diagnostic agent must diagnose a faulted LongRunningProcess job that
+  ended with System.Exception: "Job stopped with an unexpected exit code:
+  0x40010004". The job was force-killed via the Orchestrator REST API by a
+  watchdog automation account (no human in the loop). The agent must match
+  the orchestrator/job-stopped-exit-code-0x40010004 playbook, query the audit
+  log to identify the actor as an automation/service account, and recommend
+  the appropriate resolution path (review watchdog rules; harden API
+  credentials).
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, faulted-jobs, orchestrator, job-killed, exit-code-0x40010004]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My LongRunningProcess job just ended Faulted in Orchestrator with
+  "Job stopped with an unexpected exit code: 0x40010004". This is a
+  scheduled run and I have no idea what stopped it — what killed it
+  and who did it? Tell me the root cause and stop there.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the orchestrator/job-stopped-exit-code-0x40010004 playbook AND identified the watchdog automation account as the actor that killed the job"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My LongRunningProcess job just ended Faulted in Orchestrator
+         with 'Job stopped with an unexpected exit code: 0x40010004'.
+         This is a scheduled run and I have no idea what stopped it —
+         can you investigate?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/products/orchestrator/playbooks/job-stopped-exit-code-0x40010004.md
+        because the runtime error
+          "System.Exception: Job stopped with an unexpected exit code: 0x40010004"
+        is the verbatim signature of that playbook.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` — the
+             orchestrator/job-stopped-exit-code-0x40010004 playbook
+             should appear (absolute or relative path).
+          2. The agent's tool-call summary — a Read on
+             references/products/orchestrator/playbooks/job-stopped-exit-code-0x40010004.md.
+          3. state.json's `scope.domain` — should include the
+             orchestrator domain.
+
+        Acceptable / non-penalized: the agent may also Read the
+        sibling foreground-already-running playbook while ruling
+        it out. Exploration is normal.
+
+        PENALIZED: matching ONLY the foreground-already-running
+        playbook, or matching generic runtime-exceptions playbooks
+        (this is not user code).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The job's executor was force-killed via the Orchestrator
+            REST API by an automation account (`watchdog-svc`).
+          - State history shows `Running → Killing → Faulted` — the
+            transition into `Killing` confirms an operator-initiated
+            kill (vs host-side termination which goes Running →
+            Faulted directly).
+          - The audit event for this job key names the actor as a
+            non-human service account: `watchdog-svc`
+            (`watchdog-svc@acme.com`), with `clientInfo` absent (no
+            browser session — API call), `origin: "API"`, and
+            `eventDetails` referencing a watchdog rule name
+            (e.g., "HungJobReaper").
+
+        The reference fix (any of the following is acceptable):
+          - Review the watchdog rule that fired — if the threshold
+            is too aggressive (killing healthy long-running jobs),
+            relax it or exclude `LongRunningProcess` from the rule
+            scope.
+          - Rotate / restrict the API credentials granted to the
+            watchdog account so only intentional kill scopes are
+            permitted.
+          - If the watchdog action was legitimate (job genuinely
+            stuck), accept the kill and investigate the upstream
+            stuck-state.
+
+        NOT acceptable as the sole conclusion:
+          - "A user killed the job" without recognizing the actor is
+            a service account (the audit `actorName` is non-human and
+            `clientInfo` is absent).
+          - "Session logoff / RDP disconnect" (state history shows
+            Killing transition — operator-initiated, not host-side).
+          - "Restart the Robot" (recovery action, not root-cause).
+
+        Evidence sources (in priority order):
+          1. state.json — `requirements.error_code`,
+             `requirements.error_message`, `triage_summary`,
+             scope/domain.
+          2. hypotheses.json — the hypothesis flagged
+             `is_root_cause: true` should describe a watchdog /
+             automation-account kill via API and identify the actor.
+          3. The agent's tool-call summary — `uip admin audit tenant
+             events --search` against the job key and `uip or jobs
+             history` showing Killing.
+          4. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched orchestrator/job-stopped-exit-code-0x40010004
+             AND identified the watchdog automation account
+             (`watchdog-svc` / service account / non-human actor) as
+             the killer via API, with at least one actionable fix
+             from the acceptable list.
+        0.8  Both partial: correct playbook but conclusion says
+             "operator killed the job" without recognizing the actor
+             is a service account / non-human; OR correctly named
+             the watchdog actor but matched only the broader 0x40010004
+             page without confirming the Operator Kill branch.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (job faulted with 0x40010004) but
+             neither matched the playbook nor identified the
+             API-initiated kill.
+        0.0  Misdiagnosed (concluded host-side cause).
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who owns the scheduled LongRunningProcess
+    job. You did NOT kill it and you don't know about any watchdog
+    service. You only have the information you wrote in your initial
+    report.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion the agent requests so
+    the investigation reaches the audit log and identifies the
+    automation-account actor.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, audit, system-activities), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know about any watchdog."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

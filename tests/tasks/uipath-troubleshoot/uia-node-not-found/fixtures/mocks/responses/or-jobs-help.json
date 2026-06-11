@@ -1,0 +1,40 @@
+                                  uip or jobs                                   
+Manage UiPath Orchestrator jobs (process executions). Start jobs from processes, monitor execution, check logs and traces.
+                Use --help with nested commands for more detail.                
+
+┌─ Usage ──────────────────────────────────────────────────────────────────────┐
+│ uip or jobs [options] [command]                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ Commands ───────────────────────────────────────────────────────────────────┐
+│ get            Get a job by its key (GUID). Returns state, input/output      │
+│                arguments, timing, machine info, and error details if         │
+│                faulted. If the job is in Pending state, also includes        │
+│                diagnostic reasons (robot availability, capacity, etc.). No   │
+│                folder context needed — the key is globally unique. Use 'jobs │
+│                list' to find job keys.                                       │
+│ healing-data   Download healing agent (Autopilot for Robots) recovery data   │
+│                as a ZIP file. Contains screenshots, UI element data, and     │
+│                recovery logs. Only available for jobs where the healing      │
+│                agent was active. Triggers an async export, polls until       │
+│                complete, then downloads the ZIP.                             │
+│ help           display help for command                                      │
+│ history        Get state transition history for a job. Shows timestamps for  │
+│                each state change (Pending → Running → Successful/Faulted).   │
+│                Useful for understanding job lifecycle and identifying        │
+│                delays. Folder context is resolved automatically from the job │
+│                key.                                                          │
+│ list           List jobs. Returns job key, state, process name, timing, and  │
+│                machine info. Use --state to filter by job state (Pending,    │
+│                Running, Successful, Faulted, Stopped, Stopping, Suspended,   │
+│                Resumed, Terminating). Provide --folder-path or --folder-key  │
+│                to scope to a folder, or omit for cross-folder listing.       │
+│ logs           Get robot execution logs for a job. Filter by --level to      │
+│                quickly find errors. Folder context is inferred from the job  │
+│                key. Logs are returned newest-first.                          │
+│ restart        Restart a faulted or stopped job. Creates a new job from the  │
+│                same process. No folder context needed — resolved from job    │
+│                key.                                                          │
+│ resume         Resume a suspended job. Jobs become suspended when they use   │
+│                the 'Suspend' activity (long-running workflows that wait for  │
+│                external input). Optionally pass new --input-arguments to     │

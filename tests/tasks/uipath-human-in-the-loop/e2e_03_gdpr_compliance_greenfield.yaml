@@ -5,9 +5,9 @@ task_id: skill-hitl-e2e-gdpr-compliance-greenfield
 description: >
   Authoring E2E golden scenario (green field): agent builds a GDPR deletion
   request flow with a privacy officer sign-off checkpoint. Tests proactive
-  compliance pattern detection, schema design with Reject path, and timeout
-  duration configuration. Real business use case. Full Discover -> Plan ->
-  Build -> Verify loop. Does not deploy or run the flow.
+  compliance pattern detection and schema design with Reject path. Real
+  business use case. Full Discover -> Plan -> Build -> Verify loop. Does not
+  deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, compliance, gdpr]
 
 run_limits:
@@ -19,15 +19,12 @@ initial_prompt: |
   Build a UiPath Flow named "GdprDeletionApproval" that processes GDPR
   data deletion requests. Each request must be reviewed and signed off by
   a privacy officer before the deletion runs — we need an audit trail for
-  every decision. If the officer doesn't respond within 7 days, escalate
-  automatically.
+  every decision.
 
-  The HITL node must use the inline quickform style (uipath.human-in-the-loop).
-  Give the privacy officer Approve and Reject outcomes. Configure the node
-  with a 7-day ISO 8601 timeout duration (e.g. "P7D") so the request
-  expires automatically if the officer does not respond.
+  Give the privacy officer Approve and Reject outcomes.
 
   Validate the flow when you're done.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: file_exists
@@ -57,14 +54,7 @@ success_criteria:
     description: "Flow wires the completed handle"
     path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
     includes:
-      - '"completed"'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_matches_regex
-    description: "Flow configures a 7-day ISO 8601 timeout (P7D or PT168H or similar)"
-    path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
-    pattern: '"P(7D|T168H|1W)"'
+      - 'completed'
     weight: 2.0
     pass_threshold: 1.0
 

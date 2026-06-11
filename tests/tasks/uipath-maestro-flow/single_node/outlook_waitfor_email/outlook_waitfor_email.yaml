@@ -1,0 +1,72 @@
+task_id: skill-flow-outlook-waitfor-email
+description: >
+  Build-and-validate: a Flow with a manual start trigger, a mid-flow
+  Wait-for-event node that pauses until a Microsoft Outlook 365 email is
+  received in the Inbox
+  (`uipath.connector.event.uipath-microsoft-outlook365.email-received`)
+  WHOSE SUBJECT CONTAINS the fixed string "TestWaitFor", then an End. Exercises
+  the connector-trigger plugin's "Wait for events" variant (event node added
+  mid-flow with `node add`, NOT replacing the start trigger; bound to the
+  Outlook connection with `parentFolderId` resolved for Inbox) AND the
+  structured `filter` tree (a `subject` / `Contains` / "TestWaitFor" literal
+  leaf — never a `filterExpression` string input). No execution — `flow debug`
+  is intentionally omitted; the task only requires the flow to build and
+  validate. Distinct from `outlook_trigger_inbox`, which uses the same event as
+  the flow's START trigger; this one uses it as a mid-flow wait.
+tags:
+  [
+    uipath-maestro-flow,
+    integration,
+    mode:build,
+    lifecycle:generate,
+    shape:single-node,
+    feature:trigger,
+    connector,
+    uipath-microsoft-outlook365,
+    filter,
+  ]
+run_limits:
+  expected_turns: 55
+  turn_timeout: 600
+
+initial_prompt: |
+  Create a UiPath Flow named "OutlookWaitForEmail".
+
+  Keep the flow's manual start trigger. After it, add a mid-flow
+  Wait-for-event node that pauses the flow until a Microsoft Outlook 365 email
+  is received in the **Inbox** folder whose SUBJECT CONTAINS the string
+  "TestWaitFor". Then End the flow.
+
+  Validate the flow. Do NOT run `uip maestro flow debug` — the task is complete
+  once `uip maestro flow validate` passes.
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Build the complete flow end-to-end in a single
+  pass. Before starting, load the uipath-maestro-flow skill and follow its
+  connector-trigger plugin "Wait for events" workflow exactly — the event node
+  is added mid-flow with `node add` and must NOT replace the start trigger, and
+  the subject filter must be a structured `filter` tree, not a
+  `filterExpression` string.
+
+success_criteria:
+  # ── Structural: flow builds and validates ──────────────────────────────
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "uip maestro flow validate OutlookWaitForEmail/OutlookWaitForEmail/OutlookWaitForEmail.flow"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Composite: event node mid-flow + subject-contains-"TestWaitFor" filter ─
+  - type: run_command
+    description: "Mid-flow Outlook email-received node filters subject contains 'TestWaitFor'"
+    command: "python3 $TASK_DIR/check_outlook_waitfor_email.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+    timeout: 120

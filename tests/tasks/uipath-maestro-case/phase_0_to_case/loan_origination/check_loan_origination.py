@@ -7,10 +7,11 @@ just a structurally valid one:
 
   - 6 primary stages exist with the expected names
   - Gating chain Intake → Loan Setup → Underwriting → QA/QC → Closing → Resolved
-    exists as an edge path (allowing arbitrary intermediate routing)
+    exists as a condition-driven transition path (edges retired; arbitrary
+    intermediate routing allowed)
   - At least 3 of the 4 named exception lanes (Customer Comms, Escalation,
     Withdrawn, Rejected) exist as ExceptionStage nodes OR as regular stages
-  - Withdrawn and Rejected are terminal (no outgoing edges leaving them
+  - Withdrawn and Rejected are terminal (no outgoing transitions leaving them
     back into the happy path) and at least one terminal exception drives a
     case-exit condition that marks the case complete
   - Resolved is required and terminal
@@ -28,7 +29,8 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 from _shared.case_check import (  # noqa: E402
-    find_edges,
+    assert_tasks_nested,
+    find_transitions,
     find_stages,
     first_rule_of_condition,
     get_case_exit_conditions,
@@ -74,8 +76,8 @@ def _has_path(plan: dict, src_id: str, dst_id: str, max_hops: int = 8) -> bool:
     for _ in range(max_hops):
         nxt = set()
         for node_id in frontier:
-            for edge in find_edges(plan, source=node_id):
-                t = edge.get("target")
+            for tr in find_transitions(plan, source=node_id):
+                t = tr.get("target")
                 if t == dst_id:
                     return True
                 if t and t not in seen:
@@ -93,6 +95,7 @@ def _fail(msg: str):
 
 def main():
     plan = read_caseplan()
+    assert_tasks_nested(plan)
     all_stages = find_stages(plan, include_exception=True)
     if not all_stages:
         _fail("no stages found in caseplan")
@@ -119,7 +122,7 @@ def main():
         d_id = primary_nodes[dst]["id"]
         if not _has_path(plan, s_id, d_id):
             _fail(
-                f"no edge path from {src!r} to {dst!r}; gating chain broken "
+                f"no transition path from {src!r} to {dst!r}; gating chain broken "
                 f"between consecutive primary stages"
             )
 
@@ -134,7 +137,7 @@ def main():
             f"All stage labels: {stage_labels}"
         )
 
-    # 4. Withdrawn / Rejected terminality — no outgoing edges back into a
+    # 4. Withdrawn / Rejected terminality — no outgoing transitions back into a
     #    non-exception stage (terminal lane).
     primary_ids = {n["id"] for n in primary_nodes.values()}
     for name in ("Withdrawn", "Rejected"):
@@ -142,14 +145,14 @@ def main():
         if not node:
             continue  # already covered by exception count
         bad = []
-        for edge in find_edges(plan, source=node["id"]):
-            tgt = edge.get("target")
+        for tr in find_transitions(plan, source=node["id"]):
+            tgt = tr.get("target")
             if tgt in primary_ids and tgt != node["id"]:
                 bad.append(tgt)
         if bad:
             _fail(
                 f"terminal exception {name!r} should not route back to a "
-                f"primary stage; found edges to {bad}"
+                f"primary stage; found transitions to {bad}"
             )
 
     # 5. Resolved required + terminal
@@ -159,17 +162,17 @@ def main():
             "Resolved stage should be required for case completion "
             "(isRequired=true); got isRequired=false"
         )
-    out_edges = find_edges(plan, source=resolved["id"])
-    if out_edges:
+    out_transitions = find_transitions(plan, source=resolved["id"])
+    if out_transitions:
         # Allow exit-to into an exception stage but not into another primary
         leaks = [
-            e.get("target")
-            for e in out_edges
-            if e.get("target") in primary_ids and e.get("target") != resolved["id"]
+            t.get("target")
+            for t in out_transitions
+            if t.get("target") in primary_ids and t.get("target") != resolved["id"]
         ]
         if leaks:
             _fail(
-                f"Resolved stage should be terminal; has outgoing edges to "
+                f"Resolved stage should be terminal; has outgoing transitions to "
                 f"{leaks}"
             )
 
@@ -197,9 +200,13 @@ def main():
         marks = ce.get("marksCaseComplete")
         if rname == "required-stages-completed" and marks is True:
             happy_found = True
+        # Terminal exceptions (Withdrawn / Rejected) close the case via a
+        # selected-stage-* case-exit with marksCaseComplete=FALSE — the
+        # platform-mandated shape: selected-stage-* may pair ONLY with
+        # marks-case-complete=false (marks=true is reserved for
+        # required-stages-completed). So accept the rule regardless of `marks`.
         if (
             rname in ("selected-stage-completed", "selected-stage-exited")
-            and marks is True
             and rule.get("selectedStageId") in terminal_ids
         ):
             terminal_found = True
@@ -210,8 +217,9 @@ def main():
         )
     if not terminal_found:
         _fail(
-            "no case-exit ties a terminal exception (Withdrawn / Rejected / "
-            "Resolved) to marksCaseComplete=true"
+            "no case-exit references a terminal exception (Withdrawn / Rejected "
+            "/ Resolved) via selected-stage-completed/-exited; a terminal lane "
+            "must drive a case-exit condition (marks-case-complete=false)"
         )
 
     # 7. Conditional gating: somewhere in the plan we expect a rule

@@ -41,7 +41,9 @@ The `<resourceKey>` is the local UUID minted by `uip solution project add` — s
 
 ## Scaffolding the Sibling-Folder Coded Agent
 
-The solution and flow project already exist (created by [`uipath-maestro-flow`](../../../uipath-maestro-flow/SKILL.md)).
+The full end-to-end workflow (solution init → flow scaffold → agent scaffold → register → wire → validate) is owned by [`quickstart.md` § Scenario 2](quickstart.md#quick-start-scenario-2--in-solution-coded-agent-in-a-flow). This file covers the agent-side detail of step 3 (scaffold) and step 5 (registration) in finer detail; the canonical sequence stays in the quickstart so it remains executable in one pass.
+
+If the solution and flow project don't yet exist, run `uip solution init "<SolutionName>"` and then `uip maestro flow init "<FlowName>"` from inside the solution **before** the steps below — those calls are the start of Scenario 2.
 
 1. From the solution directory, create the agent folder and scaffold inside it:
 
@@ -93,3 +95,41 @@ uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output
 The second command's `Data.Node` object is what the flow skill pastes into the flow's `definitions[]`. For the node instance shape and top-level `bindings[]` entries, see [agent/impl.md § In-solution variant](../../../uipath-maestro-flow/references/plugins/agent/impl.md#node-instance-inside-nodes--in-solution-variant).
 
 Without `--local`, `registry list`/`get` query the tenant registry (Orchestrator-published resources only) and will not surface the sibling project.
+
+## Wiring the Agent's Inputs
+
+The agent node carries one entry under `inputs.<fieldName>` for every property declared in the agent's `entry-points.json` input schema (the Pydantic `Input` model). `uip maestro flow node add` seeds each entry with an empty string; you replace that placeholder with one of two forms.
+
+> **Do NOT use `=js:` for these fields.** Agent input slots are bound by the agent activity, not evaluated by Jint. Wrapping the value in `=js:` ships the literal string `=js:...` to the agent and the runtime fails with `Cannot find name '<identifier>'`. The same rule applies to inputs on most action nodes — `=js:` is reserved for the few fields explicitly documented to take expressions (decision `expression`, variable updates, end-node output `source`, IS connector `bodyParameters` — see [variables-and-expressions.md](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md)).
+
+### Allowed forms
+
+| Form | Example | Use when |
+|---|---|---|
+| Literal value | `"file_path": "shared/inputs/report.txt"` | The value is known at design time and never varies. |
+| `$vars.<flowVarId>` reference | `"file_path": "$vars.file_path"` | The value comes from a flow-level `globals[]` input (`direction: "in"` or `"inout"`). |
+| `$vars.<nodeId>.output.<field>` reference | `"file_path": "$vars.uploadDoc.output.path"` | The value comes from an upstream node's output. |
+
+The `$vars.…` strings are pattern-matched by the agent activity at runtime and resolved against the flow's variable scope. They are NOT JavaScript expressions — only the bare reference form works (no arithmetic, no method calls, no template literals).
+
+### Wiring the agent's output back out
+
+This direction *does* use `=js:` — output mappings and variable updates go through Jint. On an End node, map each `direction: "out"` global from the agent's output:
+
+```json
+"outputs": {
+  "summary": { "source": "=js:$vars.<agentNodeId>.output.summary" }
+}
+```
+
+Or, with a `variableUpdate` against an `inout` global:
+
+```json
+"variableUpdates": {
+  "<agentNodeId>": [
+    { "variableId": "summary", "expression": "=js:$vars.<agentNodeId>.output.summary" }
+  ]
+}
+```
+
+See [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates) for the full rules around `=js:` contexts.

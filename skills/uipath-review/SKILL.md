@@ -7,8 +7,6 @@ user-invocable: true
 
 # UiPath Solution & Artifact Reviewer
 
-> **Preview** — skill is under active development; review surface and report format may change.
-
 Review UiPath solutions and individual artifacts for structural validity, quality, best practices, optimization, and correctness. Produces a structured review report with findings and recommendations.
 
 ## When to Use This Skill
@@ -30,6 +28,10 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 6. **Use `--output json`** on all CLI validation commands for programmatic parsing.
 7. **Do not duplicate what validation commands catch.** Reference the validation output by rule ID and message — do not manually re-describe the same issue. But DO include every validation result (Error, Warning, Info) in the report.
 8. **Cap the review at 30 minutes of analysis.** For very large solutions (10+ projects), provide a summary review with deep dives on the 3 highest-risk projects. Offer to review remaining projects if the user wants.
+9. **Run the review CLI first, then apply the judgment catalog, for every agent encountered.** First run `uip agent review` (low-code) or `uip codedagent review` (coded) with `--output json` — it returns the deterministic findings (Step 2.5a). Then load the judgment catalog: `references/agents/agents-common-rules.md` plus the format-specific file (`agents-lowcode-rules.md` or `agents-coded-rules.md`); for the agent-builder coded layout (both `agent.json` and `main.py`), load all three and run both CLI commands. Future phases add catalogs for RPA, flows, coded apps.
+10. **Rule findings are authoritative as emitted.** Carry review-CLI findings (`Data.Issues[]`) into the report verbatim — `RuleId`, `Severity`, `Description`, `File`, `SuggestedFix` unchanged. For the judgment catalog, use its `rule_id`, `severity`, `trigger`, and `suggested_fix` verbatim. Map severity to the report's bands: `error` → Critical, `warning` → Warning, `info` → Info. `judgment` severity rows default to Warning; the agent may escalate or de-escalate with reasoning logged in the finding's `description`. Do not re-rank otherwise.
+11. **Report rules that could not be applied** (missing tooling, missing file, review CLI unavailable, `status: deferred`) in a dedicated "Rules Skipped" subsection of the report — never silently skip.
+12. **Never invent `rule_id` values.** Every `rule_id` cited in the report MUST appear verbatim in EITHER a loaded judgment-catalog file (`references/agents/agents-*-rules.md`) OR the `uip agent review` / `uip codedagent review` JSON output. `rule_id` is a stable contract identifier — consumers grep for it, dashboards aggregate by it, audits trace it. An invented identifier looks authoritative but cannot be looked up, doesn't aggregate, and produces a different name for the same observation on the next run. If you observe a real issue covered by neither source, the finding is still valid — report it as a normal Critical / Warning / Info finding **without** a `rule_id` (no `` `RULE_ID` `` backtick token in the line). **Before emitting the report, scan every cited `rule_id` and confirm it appears verbatim in a loaded catalog file or the review-CLI output; demote any that don't to `rule_id`-less findings.**
 
 ## Review Workflow
 
@@ -132,8 +134,9 @@ Record the language per project alongside the type (see solution table below).
 | `project.json` with `expressionLanguage: "VisualBasic"` and no/Legacy `targetFramework` | RPA (Windows-Legacy) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) §10. Also recommend the user invoke `uipath-rpa` (Legacy mode) for Legacy-specific deep validation. Legacy is supported indefinitely in Studio LTS — do NOT flag as Critical. |
 | `project.json` + both `.cs` and `.xaml` | RPA (Hybrid) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) |
 | `project.json` + `.xaml` + DU packages in dependencies (`UiPath.IntelligentOCR.Activities`, `UiPath.DocumentUnderstanding.ML.Activities`) | RPA + Document Understanding | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) + [du-review-checklist.md](references/document-understanding/du-review-checklist.md) |
-| `agent.json` (no `main.py`) | Agent (Low-Code) | [agent-review-checklist.md](references/agents/agent-review-checklist.md) |
-| `main.py` + `langgraph.json` / `llama_index.json` / `openai_agents.json` / `uipath.json` | Agent (Coded) | [agent-review-checklist.md](references/agents/agent-review-checklist.md) |
+| `agent.json` (no `main.py`) | Agent (Low-Code) | Checklist: [agent-review-checklist.md](references/agents/agent-review-checklist.md). Rule catalog (Step 2.5): [agents-common-rules.md](references/agents/agents-common-rules.md) + [agents-lowcode-rules.md](references/agents/agents-lowcode-rules.md) |
+| `main.py` + `langgraph.json` / `llama_index.json` / `openai_agents.json` / `google_adk.json` / `pydantic_ai.json` / `agent_framework.json` / `uipath.json` | Agent (Coded) | Checklist: [agent-review-checklist.md](references/agents/agent-review-checklist.md). Rule catalog (Step 2.5): [agents-common-rules.md](references/agents/agents-common-rules.md) + [agents-coded-rules.md](references/agents/agents-coded-rules.md) |
+| `agent.json` + `main.py` + `pyproject.toml` (agent-builder coded layout) | Agent (Low-Code + Coded) | Checklist: [agent-review-checklist.md](references/agents/agent-review-checklist.md). Rule catalog (Step 2.5): all three — [agents-common-rules.md](references/agents/agents-common-rules.md) + [agents-lowcode-rules.md](references/agents/agents-lowcode-rules.md) + [agents-coded-rules.md](references/agents/agents-coded-rules.md) |
 | `*.flow` + `project.uiproj` with `"ProjectType": "Flow"` | Flow | [flow-review-checklist.md](references/flows/flow-review-checklist.md) |
 | `.uipath/` directory or `app.config.json` | Coded App | [coded-app-review-checklist.md](references/coded-apps/coded-app-review-checklist.md) |
 
@@ -163,7 +166,7 @@ Report **all** results — Errors, Warnings, and Info — in the final review re
 2. For **each** entry point file, run validation yourself:
 
 ```bash
-uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json
 ```
 
 3. **Then run a project-level build** to catch what `validate` misses (unknown member names like `NGetText.Value`, invalid enum values like `Operator="StartsWith"`, member resolution / CacheMetadata failures, attribute-form C# expression JIT failures):
@@ -184,7 +187,7 @@ uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 The Workflow Analyzer checks code quality rules (ST-NMG naming, ST-DBP design, ST-MRD maintainability, ST-USG usage, ST-SEC security, ST-REL reliability). Run it explicitly:
 
 ```bash
-uip rpa analyze --project-dir "<PROJECT_DIR>" --output json --use-studio
+uip rpa analyze --project-dir "<PROJECT_DIR>" --output json
 ```
 
 If `uip rpa analyze` is not available, `uip rpa validate` includes Workflow Analyzer results. Check the output for all rule violations:
@@ -200,7 +203,6 @@ If `uip rpa analyze` is not available, `uip rpa validate` includes Workflow Anal
 | Project Type | Validation Command | Report All Severities |
 |---|---|---|
 | Agent (Low-Code) | `uip agent validate ./path --output json` | Yes — errors, warnings, info |
-| Agent (Coded) | `uip codedagent eval main evaluations/eval-sets/smoke-test.json --no-report` (if eval sets exist) | Yes — pass/fail per test case |
 | Flow | `uip maestro flow validate <ProjectName>.flow --output json` | Yes — schema errors, reference errors, warnings |
 | Coded App | `uip codedapp pack dist --dry-run` | Yes — build errors, pack warnings |
 | Solution | `uip solution pack <SolutionDir> <OutputDir> --output json` | Yes — per-project pack results |
@@ -229,6 +231,50 @@ For the review report, create a validation summary:
 ```
 
 > The validation results section is **required** in every review report. A review without automated validation is incomplete.
+
+### Step 2.5 — Run the Review CLI, then Apply the Judgment Catalog
+
+After Step 2 validation and before manual checklist review, produce rule-ID-level findings in two passes: **first** the `uip agent review` / `uip codedagent review` CLI for the deterministic static checks, **then** the skill's judgment-only catalog for what code cannot decide reliably.
+
+#### 2.5a — Run the review CLI first (deterministic findings)
+
+Run the review command for the agent type, once, capturing JSON:
+
+| Agent type | Command |
+|---|---|
+| Low-code (`agent.json`) | `uip agent review --project-dir "<PROJECT_DIR>" --output json` |
+| Coded (`main.py` + framework config) | `uip codedagent review --project-dir "<PROJECT_DIR>" --output json` |
+| Agent-builder coded layout (`agent.json` + `main.py`) | run **both** commands |
+
+The CLI runs every deterministic static check — structural/schema, placeholder cross-refs, eval counts/diversity, secret & import regex, framework symbol existence, eval-run analysis, packaging/git hygiene — and returns them in rule format. Parse `Data.Issues[]`; each issue is `{RuleId, Category, Severity, Description, File, SuggestedFix}`. Carry each into the report **verbatim** — do not re-derive, rename, or re-rank. These rule IDs are authoritative as emitted by the CLI; they are **not** listed in the skill catalog.
+
+#### 2.5b — Apply the judgment catalog (reasoning the CLI cannot do)
+
+1. **Identify which catalog files apply** for the current project type:
+
+| Signals present | Project type | Catalog files |
+|---|---|---|
+| `agent.json` AND no `main.py` AND no `pyproject.toml` | Agent (low-code) | `references/agents/agents-common-rules.md` + `references/agents/agents-lowcode-rules.md` |
+| `pyproject.toml` + `main.py` + any of `langgraph.json` / `llama_index.json` / `openai_agents.json` / `google_adk.json` / `pydantic_ai.json` / `agent_framework.json` | Agent (coded) | `references/agents/agents-common-rules.md` + `references/agents/agents-coded-rules.md` |
+| `pyproject.toml` + `main.py` + `uipath.json[functions]` only (no framework config) | Agent (coded — Simple Function) | same as Agent (coded) |
+| `agent.json` + `pyproject.toml` + `main.py` (agent-builder coded layout) | Agent (low-code + coded) | all three: common + lowcode + coded; tag each finding with its source file |
+| `project.json` + `.xaml` / `.cs` | RPA | *(phase 2)* |
+| `*.flow` | Flow | *(phase 2)* |
+| `.uipath/` or `app.config.json` | Coded App | *(phase 2)* |
+
+2. **Read each catalog file in full.** Every rule is judgment-form.
+3. **Apply each rule's `detection_method`:** read the named source material (system prompt, tool descriptions, eval datapoints, schemas) and reason about it. Emit a finding when the criteria hold; log the reasoning in the finding's `description`.
+4. **Track skipped rules** with their reason (`status: deferred`, missing optional file, review CLI unavailable). Never silently skip.
+5. **Verify rule_id provenance.** Before merging, confirm each cited `rule_id` appears **verbatim** in EITHER a loaded catalog file OR the `uip agent review` / `uip codedagent review` JSON output. Any finding whose `rule_id` matches neither is **demoted** to a `rule_id`-less Critical / Warning / Info finding (the observation stays; the false citation goes). This enforces Critical Rule 12.
+6. **Merge findings into the Step 5 report** under the "Rule Findings" subsection. Use the canonical line format:
+
+   ```
+   [<prefix><n>] `<rule_id>` — <file> — <description>. Fix: <suggested_fix>.
+   ```
+
+   where prefix is `C-D-` (Critical), `W-D-` (Warning), or `I-D-` (Info) per the severity mapping in [`references/rule-format.md`](references/rule-format.md).
+
+See [`references/rule-catalog-workflow.md`](references/rule-catalog-workflow.md) for the full procedure including the CLI contract and determinism rules.
 
 ### Step 3 — Manual Quality Review
 
@@ -453,6 +499,28 @@ Output a structured report in chat (do NOT create a file):
 
 > For Legacy projects, note: "Validation CLI (`uip rpa validate`, `uip rpa analyze`) targets Modern projects. Legacy validation runs through `uipath-rpa` Legacy mode (using the `uip rpa-legacy` CLI)."
 
+### Rule Findings
+
+| Project | Source | Errors | Warnings | Info | Skipped |
+|---|---|---|---|---|---|
+| ClassifierAgent | `uip agent review` + judgment catalog | 2 | 5 | 3 | 1 |
+| TriageAgent | `uip codedagent review` + judgment catalog | 1 | 4 | 2 | 1 |
+
+**From the review CLI (deterministic):**
+- [C-D-001] `LOWCODE_MESSAGES_NO_USER` — `ClassifierAgent/agent.json` — messages[] has no role="user" entry. Fix: Add a `{"role": "user", "content": "..."}` message.
+- [C-D-003] `FRAMEWORK_DEP_MISSING` — `TriageAgent/pyproject.toml` — langgraph.json present but uipath-langchain missing from [project] dependencies. Fix: Add `"uipath-langchain"` to [project] dependencies in pyproject.toml.
+
+**From the judgment catalog (reasoning):**
+- [W-D-002] `LC_PROMPT_ROLE_DEFINITION` — `ClassifierAgent/agent.json` — System prompt opens with task instructions before establishing the agent's role. Fix: Add an opening sentence: "You are an X that does Y."
+- [W-D-004] `CODED_ERROR_HANDLING` — `TriageAgent/main.py` — `llm.ainvoke(...)` call has no try/except, fallback, or retry. Fix: Wrap the call in try/except with a fallback path or surface the error in the agent's output state.
+- ...
+
+**Rules Skipped (and why):**
+- `uip codedagent review` — CLI not available in environment (deterministic checks not run)
+- `LC_GUARDRAIL_EVALS_CONSISTENCY` — no eval set present to assess against
+
+> The Rule Findings section is required for every agent project (low-code or coded). It is omitted for project types whose catalog has not yet been authored (RPA, flows, coded apps as of phase 1).
+
 ### Critical Findings (block deployment)
 1. [C-001] <concise title> — `<project/file>` — <what to check + recommended fix>
 
@@ -504,6 +572,11 @@ Route each fix to the appropriate skill:
 
 | I need to... | Read this |
 |---|---|
+| Understand the rule row schema | [rule-format.md](references/rule-format.md) |
+| Run the review CLI + judgment catalog (Step 2.5) | [rule-catalog-workflow.md](references/rule-catalog-workflow.md) |
+| Apply common rules for agents (both formats) | [agents-common-rules.md](references/agents/agents-common-rules.md) |
+| Apply the low-code agent judgment catalog | [agents-lowcode-rules.md](references/agents/agents-lowcode-rules.md) |
+| Apply the coded agent judgment catalog | [agents-coded-rules.md](references/agents/agents-coded-rules.md) |
 | Understand the full review workflow in detail | [review-workflow-guide.md](references/review-workflow-guide.md) |
 | Review a solution structure (.uipx) | [solution-review-guide.md](references/solution-review-guide.md) |
 | Review an RPA project (coded or XAML) | [rpa-review-checklist.md](references/rpa/rpa-review-checklist.md) |
@@ -533,3 +606,4 @@ Route each fix to the appropriate skill:
 8. **Do not flag Windows-Legacy compatibility as Critical.** Legacy is supported **indefinitely** in Studio LTS — 2024.10, 2025.10, 2026.10, and all future LTS releases continue to support creating, opening, editing, running, and deploying Legacy projects. It is NOT a deployment blocker and NOT a mid-term support risk. Deprecation means "no new features added to Legacy," not "Legacy will be removed." Flag as **Warning** (if the project would benefit from capabilities Legacy lacks — see [rpa-review-checklist.md §10](references/rpa/rpa-review-checklist.md) for ranked feature list) or **Info** (if Studio LTS is the organizational standard or SOAP web services are required). When recommending migration, lead with the 2-3 features most relevant to the project's actual pain (typically **Healing Agent**, **Unified Target / Modern UIA**, **Object Repository**, **ScreenPlay**, **coded test cases**, **Autopilot**, **Agents/Maestro**). Route Legacy-specific deep validation to `uipath-rpa` (Legacy mode).
 9. **Do not recommend removing a dependency without grepping for usages.** A package may be the sole supplier of an activity used elsewhere — recommend removal only after confirming no consumers exist.
 10. **Do not flag `-preview` package versions.** Many UiPath packages currently ship preview-by-default during the public preview phase, and resolution defaults to bringing them in with explicit user confirmation. Surface stability concerns through activity-owner channels, not user-facing review reports.
+11. **Do not run scripts or install Python packages from this skill.** Deterministic checks run in the `uip agent review` / `uip codedagent review` CLI (Step 2.5a), not via scripts. The skill itself ships no executable code.

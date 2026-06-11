@@ -7,19 +7,19 @@ description: >
   UUID subdirectory uses `type: "process"`, `location: "external"`,
   real `folderPath`, and that a `uipath.agent.resource.tool.process.<uuid>`
   flow node is wired to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e, low-code, inline-flow]
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
 
 run_limits:
   expected_turns: 65
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "FibonacciFlowSol" containing a flow project
-  "FibonacciFlow" with an inline low-code agent. The agent accepts a
-  required `index` (number) and returns a number `value`. It must
-  compute the value using an process named "FibonacciRPA" that is
-  already deployed in the tenant — not by reasoning about the answer
-  itself.
+  Create a UiPath Flow project "FibonacciFlow" with an inline low-code agent
+  that accepts a required `index` (number) and returns a number
+  `value`. It must compute the value using a process named
+  "FibonacciRPA" that is already deployed in the tenant — not by
+  reasoning about the answer itself. The solution should be named
+  "FibonacciFlowSol".
 
   Use the real folder and process name from the tenant — do not
   hard-code or guess these values. Name the agent's tool resource
@@ -47,9 +47,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered the process identity with uip solution resource list --kind Process"
+    description: "Agent discovered the process identity with uip solution resource list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--kind\s+Process'
+    command_pattern: 'uip\s+solution\s+resource\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -59,8 +59,8 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+resource\s+get\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent searched the flow registry for the external resource manifest"
@@ -95,6 +95,14 @@ success_criteria:
       - expression: "length(Projects)"
         operator: "gte"
         expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the inline agent with --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 

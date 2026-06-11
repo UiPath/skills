@@ -1,6 +1,6 @@
 # HTTP Request Node — Planning
 
-> **MUST READ FIRST:** [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md). This file is the flow-specific authoring layer on top.
+> **MUST READ FIRST — confirm Managed HTTP Request fits your use case before authoring:** [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md). This planning doc is the flow-specific layer on top of it.
 
 ## Node Type
 
@@ -12,9 +12,9 @@
 
 | Situation | Use Managed HTTP? |
 | --- | --- |
-| Connector exists but lacks the specific curated activity | Yes — connector mode with target connector's connection |
-| No connector exists, but service has a REST API | Yes — manual mode with full URL |
-| Quick prototyping against any REST API | Yes — manual mode |
+| Connector exists but lacks the specific curated activity | Yes — connector mode ([impl-connector.md](impl-connector.md)), **if the connector supports HTTP request activity** (verify `HasHttpRequest` — see [Prerequisites](#prerequisites)) |
+| No connector exists, but service has a REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
+| Quick prototyping against any REST API | Yes — manual mode ([impl-manual.md](impl-manual.md)) |
 | Connector exists and covers the use case | No — use [Connector Activity](../connector/planning.md) |
 | Target system has no API (desktop app) | No — use [RPA Workflow](../rpa/planning.md) |
 
@@ -58,7 +58,7 @@ Wire `branch-hasItems` / `branch-empty` as source ports on outgoing edges. `defa
 
 ## Dynamic values
 
-IS activity input fields (`url`, `headers`, `body`, `query` under `bodyParameters`) do **not** resolve `{$vars.x}` brace-templates — the template runner only applies to native flow fields. Use `=js:` expressions for any dynamic value; template literals with `${...}` interpolation or string concatenation both work. See [Step 3b — Dynamic values](impl.md#step-3b--dynamic-values-in-url--headers--body--query) for the full rationale and examples.
+IS activity input fields (`url`, `headers`, `body`, `query` under `bodyParameters`) do **not** resolve `{$vars.x}` brace-templates — the template runner only applies to native flow fields. Use `=js:` expressions for any dynamic value; template literals with `${...}` interpolation or string concatenation both work. See [Dynamic values](impl.md#dynamic-values-in-url--headers--body--query) for the full rationale and examples.
 
 ## Key Inputs (`--detail` for `node configure`)
 
@@ -76,7 +76,7 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 | `url` | No | API endpoint URL/path (e.g., `"/conversations.replies"`). Auto-fills both `bodyParameters.path` and `bodyParameters.url`. |
 | `query` | No | Query parameters as key-value object |
 | `headers` | No | Additional headers as key-value object |
-| `body` | No | Request body (for POST/PUT/PATCH) |
+| `body` | No | Request body (for POST/PUT/PATCH). Connector mode is **`application/json` only** (request and response) — no other content type. |
 
 **Manual mode** (no connector auth):
 
@@ -92,7 +92,8 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 ## Prerequisites
 
 - `uip login` required (for both modes — node type comes from registry)
-- For connector mode: a healthy IS connection must exist for the **target connector**. **If none exists, STOP** — surface in **Open Questions**. See [impl.md Step 2](impl.md#step-2--identify-target-connector-and-connection-connector-mode-only) for connection recovery.
+- For connector mode: connector must support the HTTP request activity — verify the `HasHttpRequest` flag via `uip is connectors get "<connector-key>"`. If false, fall back to manual mode — confirm the switch with the user before finalizing. See [impl-connector.md Step 2](impl-connector.md#step-2--identify-target-connection).
+- For connector mode: a healthy IS connection must exist for the **target connector**. If none exists, auto-fall-through to manual mode is the recommended fallback — but confirm the mode switch with the user before finalizing. See [impl-connector.md Step 2 — HTTP-specific recovery](impl-connector.md#step-2--identify-target-connection) for the `AskUserQuestion` flow (switch-to-manual / create-now / skip).
 - `uip maestro flow registry pull` to cache the `core.action.http.v2` definition
 
 ## Planning Annotation

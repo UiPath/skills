@@ -3,13 +3,20 @@ description: >
   Verifies the agent knows to use uip codedagent push and pull when
   UIPATH_PROJECT_ID is already wired in .env. Project is pre-seeded;
   tests command selection, not cloud connectivity.
-tags: [uipath-agents, integration, mode:operate, coded, lifecycle:execute, feature:file-sync]
+tags: [uipath-agents, smoke, integration, mode:operate, coded, lifecycle:execute, feature:file-sync]
 
 run_limits:
-  expected_turns: 31
   max_turns: 30
   task_timeout: 600
   turn_timeout: 300
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: mocks
+      mount_point: mocks
+  mock_path_dirs:
+    - mocks
 
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/push_pull_roundtrip/_fixtures/roundtrip-agent ."
@@ -27,7 +34,7 @@ success_criteria:
   - type: command_executed
     description: "Agent pushed to Studio Web with uip codedagent push"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+push'
+    command_pattern: 'uip\s+codedagent\s+push(?!\s+--help)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -35,7 +42,7 @@ success_criteria:
   - type: command_executed
     description: "Agent pulled from Studio Web with uip codedagent pull"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+pull'
+    command_pattern: 'uip\s+codedagent\s+pull(?!\s+--help)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

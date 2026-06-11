@@ -40,7 +40,7 @@ initial_prompt: |
      `chosen_choice_set_id`.
 
   3. If a choice set was found in step 2, inspect its values:
-       uip df choice-sets get <chosen_choice_set_id> --output json
+       uip df choice-sets list-values <chosen_choice_set_id> --output json
      Capture the first value's NumberId and DisplayName. Save the NumberId as
      `chosen_choice_number_id`.
 
@@ -55,9 +55,11 @@ initial_prompt: |
 
   5. Create the CHILD entity "IntegrationOrder<SAME_RUN_ID>" with fields:
        - amount     (DECIMAL, decimalPrecision 2, isRequired: true)
-       - customerId (RELATIONSHIP — referenceEntityName equal to the parent's
-                     technical Name from step 4, referenceFieldName "Id",
-                     isRequired: true)
+       - customerId (RELATIONSHIP — `referenceEntityId` equals the parent's
+                     entity UUID (`parent_entity_id` from step 4); `referenceFieldId`
+                     equals the parent's `Id` field UUID — discover with
+                     `uip df entities get <parent_entity_id>` and read the
+                     `Fields[]` entry whose `Name == "Id"`; isRequired: true)
      If `choice_set_available` is true, ALSO add:
        - status     (CHOICE_SET_SINGLE — choiceSetId = chosen_choice_set_id,
                      isRequired: true)
@@ -146,7 +148,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the child entity with a RELATIONSHIP field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*IntegrationOrder)(?=.*RELATIONSHIP)(?=.*referenceEntityName)(?=.*referenceFieldName)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*IntegrationOrder)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

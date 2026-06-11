@@ -6,14 +6,14 @@ description: >
   sync between agent.json and entry-points.json, the {{input.X}}
   syntax, and contentTokens construction. A check script verifies
   deep equivalence of the two schema files.
-tags: [uipath-agents, smoke, low-code]
+tags: [uipath-agents, smoke, mode:build, low-code]
 
 run_limits:
   expected_turns: 16
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a low-code agent "QueryAgent" that accepts a required
+  Create a UiPath low-code agent "QueryAgent" that accepts a required
   `userQuery` (string) and returns a `reply` (string). Validate the
   agent. The solution should be named "QuerySol".
 
@@ -22,6 +22,14 @@ initial_prompt: |
   implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent validated the project"
     tool_name: "Bash"

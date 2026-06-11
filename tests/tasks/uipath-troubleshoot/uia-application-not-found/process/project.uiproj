@@ -1,0 +1,6 @@
+<Project Sdk="UiPath.Workflow.Sdk/26.0.191.0">
+  <PropertyGroup>
+    <OutputType>Process</OutputType>
+    <TargetFramework>Windows</TargetFramework>
+  </PropertyGroup>
+</Project>

@@ -48,7 +48,7 @@ _JSONSTRING_PREFIX = "=jsonString:"
 
 _EXPECTED_BODY = {
     "to": "baishali13@gmail.com",
-    "importance": "medium", # this is the enum field under test
+    "importance": "high", # this is the enum field under test
 }
 
 

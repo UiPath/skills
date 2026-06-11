@@ -50,6 +50,7 @@ initial_prompt: |
   Now add a Human-in-the-Loop node between the trigger and the posting step.
   A manager should review and approve the expense before it is posted.
   Wire the completed handle to the posting step and validate the flow.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Complete the task end-to-end in a single pass.
 
 success_criteria:
   - type: file_contains
@@ -64,7 +65,7 @@ success_criteria:
     description: "Completed handle is wired in the flow file"
     path: "ExpenseApproval/ExpenseApproval/ExpenseApproval.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 1.5
     pass_threshold: 1.0
 

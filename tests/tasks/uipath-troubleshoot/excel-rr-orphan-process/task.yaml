@@ -1,0 +1,141 @@
+task_id: skill-troubleshoot-excel-rr-orphan-process
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (System.IO.IOException: ... used by another process) where a prior
+  faulted job left an orphan EXCEL.EXE process holding the workbook
+  lock. The agent must match the activity-packages/excel-activities/playbooks/read-range-file-locked.md
+  playbook, identify the orphan-process branch from the prior faulted
+  job in `or jobs list` AND from the `ContinueOnError="True"` pattern
+  in the workflow source (process/Main.xaml), and recommend both a
+  one-off orphan kill and a permanent workflow fix.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, file-locked, orphan-process]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.IO.IOException: The process cannot access the file 'C:\Robot\Data\sales-2026-05.xlsx' because it is being used by another process.`
+  Pinned job key: cc333333-4444-5555-6666-777788889999. No one was using
+  the workbook and no other jobs are scheduled at the same time. The
+  previous run of the same process also failed earlier this hour. What
+  is holding the file?
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-range-file-locked playbook AND identified an orphan EXCEL.EXE from a prior faulted job (driven by ContinueOnError=True on the Excel scope) as the cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.IO.IOException: ... used by another process.` Pinned
+         job key: cc333333-4444-5555-6666-777788889999. No one was
+         using the workbook and no other jobs are scheduled at the
+         same time. The previous run of the same process also failed
+         earlier this hour. What is holding the file?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-file-locked.md
+        because the runtime error
+          "System.IO.IOException: The process cannot access the file
+          '<path>' because it is being used by another process."
+        is the verbatim file-acquisition signature of that playbook.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The prior faulted job (key
+            dd444444-5555-6666-7777-888899990000) left an orphan
+            EXCEL.EXE process running under the Robot user's session
+            because the workflow's `Excel Application Scope` had
+            `ContinueOnError="True"` AND a `Try Catch` wrapper that
+            swallowed the scope's exception without disposing the
+            scope.
+          - The orphan EXCEL.EXE still holds the workbook's file
+            lock when the current job (cc333333-...) starts and
+            attempts to open the same workbook.
+          - There is NO concurrent sibling job (`or jobs list`
+            shows no overlap with another running job; `or triggers
+            list` shows a single trigger). The cause is the orphan,
+            not concurrency.
+
+        The reference fix:
+          - One-off: kill the orphan EXCEL.EXE owned by the Robot user
+            on MOCK-HOST (Stop-Process / taskkill /F /IM EXCEL.EXE
+            scoped to the Robot's session).
+          - Permanent: fix the workflow source. Remove
+            `ContinueOnError="True"` from the Excel Application
+            Scope, fix the Try Catch to either re-throw or dispose
+            the scope cleanly, and ideally migrate from Excel
+            Application Scope to Use Excel File (more robust
+            disposal).
+          - Defensive: add a pre-job cleanup step that kills stale
+            EXCEL.EXE under the Robot user before the workflow
+            begins, until the workflow fix lands.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-file-locked playbook AND
+             converged on the orphan-process branch with BOTH pieces
+             of evidence: prior faulted job key + workflow source's
+             `ContinueOnError="True"`. Recommended both the orphan
+             kill and the workflow fix.
+        0.8  Both dimensions partially correct: e.g., matched the
+             playbook and identified an orphan but only cited ONE
+             evidence source (just the prior job OR just the
+             ContinueOnError pattern), or recommended only one of
+             the two fixes.
+        0.5  Only one dimension correct: e.g., matched the playbook
+             but classified the cause-branch incorrectly (concurrent,
+             network-share); OR identified the orphan cause without
+             matching the specific playbook.
+        0.2  Agent recognized SOME aspect (excel-activities domain)
+             but did not converge on the orphan branch.
+        0.0  Reached the wrong branch (concurrent / network-share /
+             AV without evidence), concluded a different root cause,
+             got blocked, or failed.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

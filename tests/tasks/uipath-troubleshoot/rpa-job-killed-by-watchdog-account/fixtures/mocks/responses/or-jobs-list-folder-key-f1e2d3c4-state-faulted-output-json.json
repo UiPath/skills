@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "_doc": "Faulted-only view: just the failing LongRunningProcess job.",
+  "Data": [
+    {
+      "Key": "b2c0b2c3-d4e5-4678-9012-3456789bbbbb",
+      "State": "Faulted",
+      "ProcessName": "LongRunningProcess",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-19T08:00:00.500Z",
+      "EndTime": "2026-05-19T08:03:01.255Z",
+      "CreationTime": "2026-05-19T08:00:00.302Z"
+    }
+  ]
+}

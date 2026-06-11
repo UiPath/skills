@@ -1,0 +1,137 @@
+task_id: skill-troubleshoot-excel-rr-sheet-case
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure
+  (UiPath.Excel.BusinessException: The sheet with the name '<X>' does
+  not exist) where the configured SheetName differs from the actual
+  sheet only in letter casing, and the activity runs on the OpenXML
+  provider (case-sensitive). Workflow uses `Use Excel File` with no
+  COM-forcing properties. Agent must match the
+  activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md
+  playbook, identify the case-mismatch branch, and recommend either
+  matching the casing in the workflow or forcing the COM provider.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, sheet-not-found, case-mismatch]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 30
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `UiPath.Excel.BusinessException: The sheet with the name 'data' does not exist.`
+  Pinned job key: bb222222-7777-8888-9999-000011112222. The sheet
+  DOES exist — I just opened the workbook and it's right there. The
+  same workflow worked yesterday on my dev machine. Why is the
+  Robot saying the sheet is missing?
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-range-sheet-not-found playbook AND identified the case-mismatch branch (configured 'data' vs actual 'Data', Use Excel File on the OpenXML provider which is case-sensitive)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `UiPath.Excel.BusinessException: The sheet with the name 'data'
+         does not exist.` Pinned job key:
+         bb222222-7777-8888-9999-000011112222. The sheet DOES exist —
+         I just opened the workbook and it's right there. The same
+         workflow worked yesterday on my dev machine. Why is the
+         Robot saying the sheet is missing?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md
+        because the runtime error is the BusinessException sheet-resolution
+        failure signature.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Configured `SheetName: "data"` (lowercase).
+          - Workbook's actual sheets are `["Sheet1", "Data", "Summary"]` —
+            the sheet exists as `Data` with a capital D, surfaced by the
+            prior `Get Workbook Sheets` activity that ran successfully
+            and logged the list.
+          - The workflow uses `Use Excel File` (modern scope) with no
+            `ReadFormatting`, `EditPassword`, or macro-related
+            properties set. This means the runtime uses the OpenXML
+            provider, which is CASE-SENSITIVE in sheet name lookups.
+          - Excel COM (used by legacy `Excel Application Scope`, or by
+            `Use Excel File` when COM is forced) is case-insensitive.
+            The "worked on my dev machine" clue points at COM on dev
+            (Excel installed) vs. OpenXML on the Robot host (Excel not
+            installed or no COM-forcing properties).
+
+        The reference fix:
+          - Primary: change the configured `SheetName` from `"data"` to
+            `"Data"` in workflow source. Cheapest and most portable.
+          - Alternative: force the COM provider by setting
+            `ReadFormatting: True` or another COM-forcing property on
+            the `Use Excel File` scope. Requires Excel installed on
+            the Robot host.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-sheet-not-found playbook AND
+             converged on the case-mismatch branch (named both `"data"`
+             and `"Data"`, identified `Use Excel File` / OpenXML
+             provider as case-sensitive, and explained the "worked on
+             dev" clue via Excel-COM vs OpenXML). Recommended either
+             casing fix or provider forcing.
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified the case difference but did NOT explain
+             the provider behavior (just said "case-sensitive");
+             OR identified the provider but missed the case clue.
+        0.5  Only one dimension correct: matched the playbook but
+             classified as typo or other branch without noticing the
+             casing; OR identified the case issue without matching the
+             specific playbook.
+        0.2  Agent recognized SOME aspect (sheet-name issue) but
+             neither matched the playbook nor identified the case
+             dimension.
+        0.0  Reached the wrong branch (concluded typo or rename),
+             concluded a different root cause, got blocked, or failed.
+
+      Be substance-focused. The "worked on dev machine" clue is the
+      strongest indicator of provider divergence — penalize agents
+      that ignore it.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

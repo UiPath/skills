@@ -1,0 +1,65 @@
+task_id: skill-agent-coded-strict-input-no-messages
+description: >
+  Negative framework-fit smoke test: the user explicitly asks for an OpenAI
+  Agents coded agent but with a hard input contract — a single field and no
+  `messages`. OpenAI Agents cannot express that (its runner forces a required
+  `messages` field), so the agent must recognise the conflict, explain that
+  OpenAI Agents is not a fit, and suggest a different framework — without
+  scaffolding an OpenAI Agents project or silently falling back to a plain
+  function.
+tags: [uipath-agents, smoke, mode:build, coded, lifecycle:discover, feature:framework-openai-agents]
+
+run_limits:
+  expected_turns: 3
+
+initial_prompt: |
+  Build me a UiPath coded agent using OpenAI Agents. It takes an address and
+  breaks it down into its parts — street, city, postal code, and country.
+
+  It'll be called by another automation that passes the address in a single
+  named input field called `address` — it's not a chatbot, there's no
+  conversation and no chat history.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent consulted the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent recognises OpenAI Agents cannot satisfy a messages-free input and suggests an alternative"
+    include_agent_output: true
+    prompt: |
+      The user asked for an OpenAI Agents coded agent whose input is a single
+      named field (`address`), invoked programmatically by another automation —
+      explicitly NOT a chatbot and with no conversation.
+
+      OpenAI Agents cannot satisfy this: its runner only accepts conversation
+      input, so `uip codedagent init` always emits a required `messages` field
+      in the input schema. The correct response is to explain this constraint
+      and recommend a different coded-agent framework (e.g. LangGraph) that can
+      express a messages-free, typed input contract.
+
+      Score 1.0 if the agent clearly states that OpenAI Agents cannot produce an
+      input schema without `messages` (so it cannot meet the named/non-chat input
+      contract) AND surfaces a different framework as the way to get it. It is
+      fine if the agent also offers a `messages`-based OpenAI Agents workaround as
+      an additional option — as long as the limitation is stated clearly and the
+      alternative is presented, that still scores 1.0.
+      Score 0.5 if the agent mentions the `messages` limitation but neither clearly
+      states OpenAI Agents cannot meet the contract nor surfaces an alternative.
+      Score 0.0 if the agent silently builds an OpenAI Agents project as if it
+      satisfies the request (e.g. maps the input into `messages` without flagging
+      the limitation), claims OpenAI Agents can produce a messages-free schema, or
+      silently falls back to a plain Coded Function without explaining anything.
+    weight: 3.0
+    pass_threshold: 0.8
+
+  - type: command_not_executed
+    description: "Agent did not scaffold a project despite the infeasible request"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    weight: 2.0
+    pass_threshold: 1.0

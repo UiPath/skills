@@ -118,40 +118,43 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
    Skip init only when the edit is purely inside node bodies / helpers (logic, prompts, business rules) and leaves every schema and the entry signature byte-identical. Then test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
 7. **Evaluate** — Run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report`. Idempotent by `has_evaluators` / `has_smoke_set`: create the missing one(s) only — **never overwrite an existing evaluator config or smoke set**, the user may have tuned them.
 
-   **Note:** `uipath-llm-judge-trajectory-similarity` requires emitted trace spans to populate `AgentRunHistory`. Plain `StateGraph` agents without explicit OpenTelemetry tracing produce empty history → all cases score 0.0 even on successful runs. If the smoke set scores 0.0, verify the agent actually executed (via local `uip codedagent run`) before treating it as a logic failure; consider an output-only evaluator for non-conversational graphs.
+   **Default the smoke evaluator to an output-based type, never a trajectory or tool-call evaluator** (those score 0.0 on single-step agents — use them only for multi-step / tool-using agents). Pick:
 
-   **If `has_evaluators == false`**, create `evaluations/evaluators/llm-judge-trajectory.json`. If the default `model` below is not available in the user's tenant, call `sdk.agenthub.get_available_llm_models()` and substitute a `model_name` from the returned list.
+   - **Deterministic or structured output** (a fixed string, number, or JSON shape) → `uipath-exact-match`, `uipath-contains`, or `uipath-json-similarity`. No LLM, no tenant model needed, binary/continuous scoring. Prefer this whenever the task allows it.
+   - **Natural-language output** (summaries, reports, free text) → `uipath-llm-judge-output-semantic-similarity` (`LLMJudgeOutputEvaluator`). Scores output semantics, works without tracing.
+
+   **If `has_evaluators == false`**, create `evaluations/evaluators/llm-judge-output.json` (default for NL output; swap to a deterministic type above when the output is fixed/structured). For any `uipath-llm-judge-*` type, if the default `model` below is not available in the user's tenant, run `uip codedagent list-models` and substitute an available model name.
 
    ```json
    {
      "version": "1.0",
-     "id": "LLMJudgeTrajectoryEvaluator",
-     "evaluatorTypeId": "uipath-llm-judge-trajectory-similarity",
+     "id": "LLMJudgeOutputEvaluator",
+     "evaluatorTypeId": "uipath-llm-judge-output-semantic-similarity",
      "evaluatorConfig": {
-       "name": "LLMJudgeTrajectoryEvaluator",
+       "name": "LLMJudgeOutputEvaluator",
        "model": "gpt-4o-mini-2024-07-18",
        "defaultEvaluationCriteria": {
-         "expectedAgentBehavior": "Agent should process the input and return a response."
+         "expectedOutput": {"<output_field>": "A correct, on-topic response for the given input."}
        }
      }
    }
    ```
 
-   **If `has_smoke_set == false`**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input schema (version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array):
+   **If `has_smoke_set == false`**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input/output schema (version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array). Key each case's criteria on the evaluator `id` you created above, and shape `expectedOutput` to match the agent's actual output field(s):
    ```json
    {
      "version": "1.0",
      "id": "smoke-test",
      "name": "Smoke Test",
-     "evaluatorRefs": ["LLMJudgeTrajectoryEvaluator"],
+     "evaluatorRefs": ["LLMJudgeOutputEvaluator"],
      "evaluations": [
        {
          "id": "test-1",
          "name": "Basic test",
-         "inputs": {"field": "value"},
+         "inputs": {"<input_field>": "value"},
          "evaluationCriterias": {
-           "LLMJudgeTrajectoryEvaluator": {
-             "expectedAgentBehavior": "Agent should process the input and return a response."
+           "LLMJudgeOutputEvaluator": {
+             "expectedOutput": {"<output_field>": "A correct, on-topic response for this input."}
            }
          }
        }
@@ -218,13 +221,95 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
 
    > **For `project_state == local-workspace`:** the user can still choose A/B/C to publish a package via `uip codedagent deploy` — that targets package feeds (personal workspace / tenant / folder) **outside** the Studio Web project lifecycle. It is a separate distribution path from Studio Web's own publish-from-UI button, which remains available in the SW browser. Skip deployment is the most common answer here, since Studio Web's publish UI typically covers the user's intent.
 
+10. **Continue to flow wiring if the prompt asked for it.** If the original request also describes wiring the agent into a Maestro Flow (phrases like *"use that agent in a flow"*, *"build a flow that calls it"*, *"hand off to maestro flow"*, *"wire the agent in as a node"*), deploy is not the final step. Do the hand-off **with a tool call, not narration** — invoke the `Skill` tool with `skill: uipath-maestro-flow` directly; do NOT emit a text-only "now switching to the flow skill" message in place of the invocation.
+
+    For a Published coded agent, the flow project lives in its OWN directory, NOT as a sibling of the coded agent. After loading the `uipath-maestro-flow` skill, refresh the registry (`uip maestro flow registry pull --force`) so the just-deployed agent is discoverable, then author the flow per the `uipath-maestro-flow` skill's workflow. Done when the requested `.flow` file exists and `uip maestro flow validate` passes on it.
+
 Read the relevant reference file at each step — do not guess.
 
 ## Quick Start: Scenario 2 — In-Solution Coded Agent in a Flow
 
-Use when the coded agent is tightly coupled to one flow and lives as a sibling folder inside the same solution. The agent is wired to the flow via `--local` registry discovery — no separate Orchestrator deployment for the agent.
+Use when the coded agent is tightly coupled to one flow and lives as a sibling folder inside the same solution. The agent is wired to the flow via `--local` registry discovery — no separate Orchestrator deployment for the agent, no separate skill hand-off. **`uipath-agents` owns this scenario end-to-end** — solution scaffolding, flow scaffolding, agent build, registration, and flow wiring all happen here. Do not invoke `uipath-maestro-flow` as a separate skill; run the maestro-flow CLI commands directly from this workflow.
 
-See [embedding-in-flows.md](embedding-in-flows.md) for the agent-side steps: scaffold the sibling folder, register it with `uip solution project add` to mint the `resource.key`, and verify discoverability via `uip maestro flow registry list --local`. Flow node JSON shape is in [flow-integration.md — Pattern 1](flow-integration.md#pattern-1-in-solution-coded-agent).
+Execute the following in order, end-to-end, in one pass — do not pause for confirmation between steps.
+
+1. **Scaffold the solution.** From the working directory:
+
+   ```bash
+   uip solution init "<SolutionName>" --output json
+   ```
+
+   Creates `<SolutionName>/<SolutionName>.uipx`. All subsequent project paths are relative to the solution root.
+
+2. **Scaffold the flow project inside the solution** (the layout is always double-nested `<Solution>/<Flow>/<Flow>.flow`):
+
+   ```bash
+   cd "<SolutionName>"
+   uip maestro flow init "<FlowName>" --output json
+   ```
+
+   This auto-registers the flow as a project in the solution.
+
+3. **Scaffold the coded agent as a sibling folder.** From the solution root (still inside `<SolutionName>/`):
+
+   ```bash
+   uv venv --python 3.13
+   source .venv/bin/activate        # .venv\Scripts\activate on Windows
+   uv add <framework-package>       # e.g. uipath-langchain for LangGraph
+   uv add uipath-dev --dev
+   uv sync
+   uip codedagent setup --force
+   uip codedagent new "<AgentName>"
+   ```
+
+   Result: `<SolutionName>/<AgentName>/` sibling to `<SolutionName>/<FlowName>/`.
+
+4. **Implement the agent's `main.py`** with lazy LLM initialization (LLM clients inside graph nodes only — never at module top level), then regenerate entry-points / bindings:
+
+   ```bash
+   cd "<AgentName>"
+   uip codedagent init
+   ```
+
+   Refer to [frameworks/](frameworks/) for the chosen framework's patterns. Verify locally with `uip codedagent run <entrypoint> '<input>'`.
+
+5. **Register the agent in the solution.** This step mints the `resource.key` UUID the flow node will reference:
+
+   ```bash
+   cd ..
+   uip solution project add "<AgentName>" "<SolutionName>.uipx" --output json
+   ```
+
+   After this command, `resources/solution_folder/process/agent/<AgentName>.json` holds the `resource.key`. Read that file (or the `--output json` response) to capture the UUID — it is what the flow node's `type` (`uipath.core.agent.<resourceKey>`) and `model.bindings.resourceKey` will reference.
+
+6. **Discover the agent's flow-side definition** (no `uip login` required for `--local`):
+
+   ```bash
+   cd "<FlowName>"
+   uip maestro flow registry list --local --output json
+   uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json
+   ```
+
+   The second command's `Data.Node` object is what gets pasted verbatim into the flow's top-level `definitions[]` array.
+
+7. **Wire the agent node into the `.flow` file.** Edit `<FlowName>.flow` directly:
+   - Add a `uipath.core.agent.<resourceKey>` node to `nodes[]` with one `inputs.<field>` entry per property in the agent's input schema (see step 6's `Data.Node.inputDefinition`) and `model.section: "In this solution"`.
+   - Each input field takes either a **literal value** (`"file_path": "/path/to/file.txt"`) or a **bare `$vars.<flowVarId>` reference** (`"file_path": "$vars.file_path"` to read a flow-level global, or `"$vars.<upstreamNodeId>.output.<field>"` to chain from another node's output). **Never wrap agent input values in `=js:`** — those fields are bound by the agent activity, not evaluated by Jint, and an `=js:…` value ships as a literal string and fails at runtime with `Cannot find name '<identifier>'`. See [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs).
+   - Add the definition from step 6 to `definitions[]`.
+   - Add a top-level `bindings[]` entry for the agent (no duplicates per `(resourceKey, propertyAttribute)`).
+   - Add edges from upstream nodes to the agent's input port and from its output port downstream.
+   - To surface the agent's output as a flow-level result, declare an `out` global and map it on the End node with `"source": "=js:$vars.<agentNodeId>.output.<field>"` (this direction *does* use `=js:` — only the agent's *input* slots do not). See [embedding-in-flows.md § Wiring the agent's output back out](embedding-in-flows.md#wiring-the-agents-output-back-out).
+
+   See [embedding-in-flows.md](embedding-in-flows.md) for the directory layout and [flow-integration.md § Pattern 1](flow-integration.md#pattern-1-in-solution-coded-agent) for the JSON shape.
+
+8. **Validate and format:**
+
+   ```bash
+   uip maestro flow validate "<FlowName>.flow" --output json
+   uip maestro flow format "<FlowName>.flow" --output json
+   ```
+
+   Resolve any validation errors before declaring the scenario complete. Done when both commands return success and the flow file contains the wired agent node.
 
 ## Framework Selection
 

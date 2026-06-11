@@ -1,16 +1,17 @@
 task_id: skill-case-phase-0-loan-origination
 description: >
-  End-to-end Phase 0 interview → case generation for a commercial-loan
-  origination case at a mid-market bank. Exercises logical integrity of the
-  generated case: 6 primary gating stages in order (Intake → Loan Setup →
-  Underwriting → QA/QC → Closing → Resolved), 4 exception lanes (Customer
-  Comms, Escalation, Withdrawn, Rejected), conditional gating for the
-  Credit-Analyst review (>$5M loans only), and case-exit conditions
-  covering happy path + terminal exception stages. No sdd.md is supplied —
-  the skill must run Phase 0 from the narrative prompt before building.
+  Phase 0 INTERVIEW ONLY — simulated interview → sdd.draft.md for a
+  commercial-loan origination case at a mid-market bank. Tests whether the
+  Phase 0 interview captures a logically coherent design: 6 primary stages in
+  order (Intake → Loan Setup → Underwriting → QA/QC → Closing → Resolved), 4
+  exception lanes (Customer Comms, Escalation, Withdrawn, Rejected), and the
+  conditional >$5M Credit-Analyst gate. STOPS at the draft — no Finalization,
+  no sdd.md — and an LLM judge rates the draft's design coherence. Mechanical
+  validity is covered separately by the finalize-from-draft task. Second domain
+  alongside candidate_interview.
 tags:
   - uipath-maestro-case
-  - e2e
+  - integration
   - lifecycle:generate
   - mode:build
   - shape:multi-node
@@ -18,85 +19,149 @@ tags:
   - feature:stages
   - feature:case-exit
   - feature:conditions
-max_iterations: 3
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+  # Cap per-turn extended thinking so the agent writes the draft instead of
+  # deliberating it as thinking tokens. Interview turns use far less than this.
+  sdk_options:
+    max_thinking_tokens: 10000
 
 run_limits:
-  task_timeout: 2700
-  max_turns: 300
-  turn_timeout: 1500
+  task_timeout: 3000
+  max_turns: 150
+  turn_timeout: 2400
 
 initial_prompt: |
-  We are building a case management solution for commercial loan origination
-  at Accrual Capital, a mid-market commercial bank handling ~600 term
-  loans/month between $1M–$25M (this case: $4M, real-estate secured), with
-  a 30–45 day lifecycle. The process spans six primary stages — Intake,
-  Loan Setup, Underwriting, QA/QC, Closing, and Resolved — plus four
-  exception paths (Customer Comms, Escalation, Withdrawn, Rejected).
+  We're designing a case-management solution for commercial loan origination at
+  Accrual Capital, a mid-market bank doing ~600 term loans a month ($1M–$25M;
+  this one is a $4M real-estate-secured deal) on a 30–45 day timeline. The
+  process has six stages — Intake, Loan Setup, Underwriting, QA/QC, Closing, and
+  Resolved — plus four exception paths: Customer Comms, Escalation, Withdrawn,
+  and Rejected.
 
-  Personas are Loan Officer, Credit Analyst (loans >$5M only; Underwriter
-  absorbs this role for ≤$5M), Underwriter, Closing Officer, and Borrower.
-  External systems include Experian, D&B, Databricks, Snowflake, and county
-  UCC portals.
+  Keep it compact. Three people are involved — Loan Officer, Underwriter, and
+  Credit Analyst — and three systems: Experian for credit, the county UCC portal
+  for lien/title, and DocuSign for closing docs. One rule matters: a Credit
+  Analyst only underwrites loans over $5M; at or below $5M the Underwriter
+  handles it.
 
-  Help me map out the end-to-end process across ~45 tasks, data fields, and
-  business rules, then build the UiPath Case Management solution. Name the
-  solution and the case project "LoanOrigination". Use v20 schema.
+  Help me map this out end to end — about two tasks per stage, the key data we
+  track, and the business rules. Call it "LoanOrigination".
 
-  No sdd.md exists yet — run the Phase 0 interview to generate one from
-  this narrative, then proceed through planning and implementation. Treat
-  every approval / hard-stop prompt as pre-approved: do not block on
-  AskUserQuestion. Do not ask the user any clarifying questions. Do not
-  run `uip maestro case debug` yourself. Build end-to-end in a single pass
-  and finish with `uip maestro case validate` passing on the resulting
-  caseplan.json.
+  I want a draft design document I can review before we commit to anything. Let's
+  get the draft down and stop there — we'll finalize and build it later, so don't
+  polish or validate it yet, just capture the design.
 
-  Before starting, load the uipath-maestro-case skill. Read and follow its
-  workflow steps exactly, except for the approval gates noted above.
+  Use the uipath-maestro-case skill.
 
 success_criteria:
+  # The interview grades the captured DESIGN, in whichever file Phase 0 leaves it:
+  # sdd.draft.md if it stopped at the draft, or sdd.md if it finalized. All
+  # content criteria read whichever exists, so the test does not hinge on the
+  # agent stopping at exactly the draft step.
   - type: run_command
-    description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate LoanOrigination/LoanOrigination/caseplan.json --output json"
-    timeout: 60
+    description: "Phase 0 interview produced a design document (draft or finalized)"
+    command: "test -f sdd.draft.md || test -f sdd.md"
+    timeout: 10
     expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "sdd.md was generated by Phase 0 (not pre-supplied)"
-    path: "LoanOrigination/LoanOrigination/sdd.md"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "sdd.md mentions the conditional Credit-Analyst rule for >$5M loans"
-    command: "grep -Eiq 'credit analyst.{0,80}5' LoanOrigination/LoanOrigination/sdd.md"
+    description: "design models the conditional >$5M Credit-Analyst gate"
+    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'credit analyst.{0,80}5'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "logical integrity: 6 primary stages in order, 4 exception lanes, conditional gating, terminal case-exits"
-    command: "python3 $TASK_DIR/check_loan_origination.py"
-    timeout: 120
+    description: "design declares all 4 exception lanes"
+    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'customer comms' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'escalation' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'withdrawn' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'rejected'"
+    timeout: 10
     expected_exit_code: 0
-    weight: 5.0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "rule + variable mapping integrity: every rule is a valid V12 name; selected-stage/task refs resolve; =vars / =bindings references all resolve"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/rule_variable_check.py"
-    timeout: 60
+    description: "design captures all 6 primary stages (not truncated)"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 6 ]"
+    timeout: 10
     expected_exit_code: 0
-    weight: 3.0
+    weight: 1.0
     pass_threshold: 1.0
 
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
+  - type: run_command
+    description: "stayed in Phase 0 — did not run ahead into a caseplan build"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Captured design is domain-coherent for commercial loan origination"
+    files:
+      - sdd.draft.md
+      - sdd.md
+    max_file_chars: 150000
+    include_agent_output: false
+    prompt: |
+      You are reviewing a Phase-0 design document for a COMMERCIAL LOAN
+      ORIGINATION case. The design is in whichever file is attached —
+      `sdd.draft.md` (a pre-finalization draft) or `sdd.md` (the finalized
+      version); grade whichever is present. Do NOT penalize unresolved connector
+      IDs, placeholder resource references, or minor rule-syntax issues. Focus on
+      DOMAIN COHERENCE of the captured design.
+
+      Judge:
+      - Stage order is sensible for loan origination (Intake → Loan Setup →
+        Underwriting → QA/QC → Closing → Resolved).
+      - Task types fit the work (credit pulls, eligibility, appraisal, UCC/title,
+        financial analysis, credit memo, compliance, closing docs, recording,
+        disbursement).
+      - The 4 exception lanes (Customer Comms, Escalation, Withdrawn, Rejected)
+        are entered by a sensible trigger and correctly terminal (Withdrawn /
+        Rejected) or returning (Escalation / Customer Comms).
+      - The >$5M Credit-Analyst conditional gate is genuinely modeled as a guarded
+        rule/task, not just mentioned in prose.
+      - No semantic gaps that would break downstream: a decision outcome that
+        routes nowhere, an inverted sequence (commitment before approval,
+        recording after disbursement), or data a task needs that no upstream task
+        produces.
+
+      Score 1.0 if the captured design is coherent and would finalize into a
+      working case with no major flaws; 0.5 if mostly coherent with minor gaps;
+      0.0 if there are major logical/domain errors.
+    weight: 3.0
+    pass_threshold: 0.7
+
+simulation:
+  enabled: true
+  persona: |
+    You are the lending-operations lead at Accrual Capital who owns commercial
+    loan origination end to end. You know everything in your opening message:
+    the six stages (Intake → Loan Setup → Underwriting → QA/QC → Closing →
+    Resolved), the four exception lanes (Customer Comms, Escalation, Withdrawn,
+    Rejected), the three personas (Loan Officer, Underwriter, Credit Analyst),
+    the conditional rule (a Credit Analyst underwrites loans over $5M only; the
+    Underwriter absorbs that role at or below $5M), and the three external
+    systems (Experian for credit, the county UCC portal for lien/title, and
+    DocuSign for closing documents). A solution designer is interviewing you to
+    map this process into a compact case definition.
+  goal: |
+    Get a complete Phase-0 sdd.draft.md for the LoanOrigination case. Answer the
+    designer's interview questions so the design reaches full depth. When the
+    designer has written the draft and asks whether to finalize, produce sdd.md,
+    or proceed, tell them to STOP at the draft — the draft is all you need.
+  constraints:
+    - "Answer each question concisely and decisively — one short sentence, or pick the recommended / first option in an AskUserQuestion. Never bounce the decision back ('you decide') and never stall."
+    - "Ground every answer in the process described in your opening message. For a detail you never specified, make a sensible, consistent call and state it in one line — do not invent new stages, exception lanes, personas, external systems, or extra tasks beyond that brief."
+    - "Keep the design lightweight and within Phase-0 scope: about two tasks per stage (~12–14 total), three personas, three integrations. When the agent lays out a stage's tasks, confirm a minimal set — do NOT pad, add steps, or suggest extra automations."
+    - "You want a draft to review first. If the assistant offers to finalize, validate, approve, build, or move to a next phase, tell it to leave it as a draft for now — you'll finalize later. If it wants to keep polishing or double-checking the draft, say it's good enough for a first review."
+    - "Once the draft captures the design, you're done — end the conversation; don't open new topics or extend the interview."
+    - "Keep replies short — one sentence or a single option pick."
+  max_turns: 40

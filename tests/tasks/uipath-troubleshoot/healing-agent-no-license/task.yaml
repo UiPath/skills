@@ -17,9 +17,9 @@ agent:
 
 run_limits:
   expected_turns: 42
-  task_timeout: 2400
+  task_timeout: 3600
   max_turns: 60
-  turn_timeout: 1800
+  turn_timeout: 2400
 
 sandbox:
   template_sources:
@@ -51,12 +51,10 @@ success_criteria:
     weight: 0.5
 
   - type: file_contains
-    description: "state.json names the healing-agent-no-license playbook (not the older selector-failure-manual / no-recovery-data classification)"
+    description: "state.json names the healing-agent-no-license playbook as a match (the agent may also legitimately note selector-failure-manual / no-recovery-data as lower-confidence secondary matches — the llm_judge grades which is primary)"
     path: .local/investigations/state.json
     includes:
       - "healing-agent-no-license"
-    excludes:
-      - "selector-failure-manual"
     weight: 1.0
 
   - type: file_contains

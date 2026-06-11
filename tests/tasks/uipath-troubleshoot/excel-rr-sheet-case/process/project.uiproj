@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Read Range process with case-mismatched SheetName ('data' lowercase vs actual 'Data'). Uses modern Use Excel File scope with no COM-forcing properties (OpenXML provider, case-sensitive). Used to exercise the activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md playbook (case-mismatch branch).",
+  "MainFile": "Main.xaml"
+}

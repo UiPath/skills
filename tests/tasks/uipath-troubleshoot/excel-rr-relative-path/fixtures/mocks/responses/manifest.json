@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the relative-path-wrong-CWD branch of the excel-activities/read-range-file-not-found playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get (resolved path shows %LocalAppData%\\UiPath\\Packages\\... prefix) → jobs logs → workflow source. The combination of (relative WorkbookPath in source) + (per-package prefix in resolved path) is decisive.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"cc333333-9999-aaaa-bbbb-ccccddddeeee\" --output json",
+      "file": "or-jobs-get-cc333399-output-json.json"
+    },
+    {
+      "match": "or jobs get cc333333-9999-aaaa-bbbb-ccccddddeeee --output json",
+      "file": "or-jobs-get-cc333399-output-json.json"
+    },
+    {
+      "match": "or jobs history \"cc333333-9999-aaaa-bbbb-ccccddddeeee\" --output json",
+      "file": "or-jobs-history-cc333399-output-json.json"
+    },
+    {
+      "match": "or jobs history cc333333-9999-aaaa-bbbb-ccccddddeeee --output json",
+      "file": "or-jobs-history-cc333399-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"cc333333-9999-aaaa-bbbb-ccccddddeeee\" --output json",
+      "file": "or-jobs-logs-cc333399-output-json.json"
+    },
+    {
+      "match": "or jobs logs cc333333-9999-aaaa-bbbb-ccccddddeeee --output json",
+      "file": "or-jobs-logs-cc333399-output-json.json"
+    }
+  ]
+}

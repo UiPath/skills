@@ -86,6 +86,26 @@ A request is **single-skill** when:
 6. uipath-agents   → deploy
 ```
 
+## Pattern 8 — Build an AgentHub MCP server
+
+**When it applies:** the request is to register an AgentHub MCP server that wraps a coded agent or uses Orchestrator-asset-backed auth that does not exist yet. Pure `uipath-mcp-servers` work — `uipath` / `command` / `platform` servers, `remote`/`swagger` with auth assets already in place, or any `is-activity` tool authoring against existing IS connections — is single-skill; go straight to `uipath-mcp-servers`.
+
+Wrapping a not-yet-built coded agent (server type `coded`):
+
+```
+1. uipath-agents      → develop and publish the coded agent (deploys end-to-end as an Orchestrator process)
+2. uipath-mcp-servers → register the coded MCP server against the published process key
+```
+
+Orchestrator assets needed for `remote` / `swagger` Bearer / header substitution that don't exist yet:
+
+```
+1. uipath-platform    → create the Orchestrator asset(s) holding the auth values
+2. uipath-mcp-servers → register the server with asset-substituted headers
+```
+
+Missing IS connections are **not** a `uipath-platform` prereq — IS connections are created interactively in the Integration Service UI via OAuth, not by the CLI.
+
 ## Pattern routing for PDD-driven lane
 
 When deriving tasks from an SDD, the planner picks a pattern based on the SDD's project list:

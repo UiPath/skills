@@ -1,0 +1,136 @@
+task_id: skill-troubleshoot-lookup-filters
+description: >
+  UiPath troubleshooting agent must diagnose a Lookup Range "value not found"
+  failure caused by an active AutoFilter applied earlier in the same workflow:
+  a Filter activity narrows the Prices sheet to Status = "Active" before the
+  Lookup Range runs, so a Discontinued SKU that is physically present is
+  hidden from the lookup and the workflow throws "not found". Success = agent
+  matches the lookup-range-active-filters playbook AND identifies the active
+  filter as the reason the present value is not matched.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 60
+turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My PriceUpdater process is faulting in Orchestrator on every run. It
+  throws "SKU-8842 not found in price list", but SKU-8842 is definitely
+  in that spreadsheet - I can see the row when I open the file myself.
+  The folder is "RPA Production".
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the lookup-range-active-filters playbook AND identified the active filter hiding the target row"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My PriceUpdater process faults with 'SKU-8842 not found in price
+         list', but SKU-8842 is definitely in the spreadsheet - I can see
+         the row when I open the file. Folder 'RPA Production'."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/excel-activities/playbooks/lookup-range-active-filters.md
+        because the symptom is the playbook's signature: Lookup Range
+        reports a value as not present even though it physically exists in
+        the sheet, because the activity searches only *visible* cells and an
+        active filter hides the target row.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Main.xaml applies a Filter activity ("Filter Status = Active")
+            to the Prices sheet BEFORE the Lookup Range runs.
+          - SKU-8842 has Status "Discontinued", so the active filter hides
+            its row. Lookup Range searches only visible cells, returns
+            empty, and the workflow's guard throws "SKU-8842 not found in
+            price list".
+          - The value is genuinely present; it is filtered out, not absent.
+        The reference fix:
+          - Clear/remove the filter before the Lookup Range (e.g. a Clear
+            Filter / Filter-reset, or reorder so the lookup runs against
+            unfiltered data), so the lookup sees all rows.
+        The agent should read Main.xaml and notice the Filter activity
+        precedes the Lookup Range on the same sheet.
+
+      SCORING RUBRIC:
+        1.0  Agent matched lookup-range-active-filters AND identified the
+             active filter (applied before the lookup) as why the present
+             value is not matched, AND recommended clearing/resetting the
+             filter before the lookup.
+        0.8  Correct playbook and filter cause, but the fix is vague
+             (e.g., "remove filters" without tying it to the Filter
+             activity that runs before the lookup).
+        0.5  Recognized that the value is present-but-not-matched but
+             attributed it to a sibling cause (type/whitespace mismatch,
+             wrong sheet) without identifying the filter, OR identified
+             the filter but did not connect it to the lookup's
+             visible-cells-only behavior.
+        0.2  Concluded the value is simply absent / the data is wrong,
+             contradicting the user's "it's definitely there".
+        0.0  Wrong cause unrelated to the lookup result (e.g., Excel not
+             installed, file locked, COM interop), or matched no playbook.
+
+      The agent has the workflow source; the Filter-before-Lookup ordering
+      is discoverable in Main.xaml. Reward finding it there. Do not require
+      the agent to have read the binary .xlsx (it cannot).
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You are
+    certain SKU-8842 is in the price list because you can see the row when
+    you open the file. You only have the information in your initial report.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks whether SKU-8842 is really in the file, confirm yes - you can see the row when you open it manually."
+    - "If asked about the row's Status value, say you think it is an old/discontinued item but you are not certain - do not volunteer that a filter is involved."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

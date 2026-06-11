@@ -8,7 +8,7 @@ Execute a flow on demand and monitor progress. Three modes: **debug** (controlle
 2. **For debug runs: solution resources refreshed.** Always run before `flow debug` so connection and process resource declarations are in sync with project bindings:
 
    ```bash
-   uip solution resource refresh <SolutionDir> --output json
+   uip solution resource refresh --solution-folder <SolutionDir> --output json
    ```
 
 ## Debug — controlled end-to-end run
@@ -38,6 +38,8 @@ UIPCLI_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
 
 > **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../../shared/cli-commands.md#pre-flight---attachment-binding).
+
+> **Reading the bound file.** At runtime a `file` variable is an object — a Script node reads the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [shared/variables-and-expressions.md — Runtime shape of a `file` variable](../../shared/variables-and-expressions.md#file-input).
 
 ### Reporting debug runs to the user
 

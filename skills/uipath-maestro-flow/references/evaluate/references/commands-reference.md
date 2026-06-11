@@ -87,11 +87,11 @@ Create an evaluation set.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--evaluators <refs>` | No (default: all) | Comma-separated evaluator IDs or file base names |
+| `--evaluators <refs>` | No (default: all) | Comma-separated evaluator IDs or generated file base names; do not pass display names |
 | `--entry-point <id>` | No | Entry point node id stored as the eval set's `selectedEntrypoint` |
 | `--path <path>` | No | (see Common Options) |
 
-When `--evaluators` is omitted, the new eval set references **all** evaluators present in the project at creation time.
+When `--evaluators` is omitted, the new eval set references **all** evaluators present in the project at creation time using their generated evaluator file refs. Prefer this when creating a set immediately after adding the evaluator(s). If passing `--evaluators`, use the generated id/file base returned by `evaluator add/list`, not the evaluator display name.
 
 ### `uip maestro flow eval set list`
 

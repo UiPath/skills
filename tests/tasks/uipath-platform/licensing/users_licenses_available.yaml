@@ -7,11 +7,7 @@ description: >
   (2) it fetches the UiPath docs license-codes page to resolve the code, and
   (3) the final reply uses the required friendly-name format. CLI auth failure
   is expected in this offline environment; the friendly-name rule still applies.
-tags: [uipath-platform, smoke-blocked, licensing, users]
-skip: true
-# Blocked: `uip platform users licenses` is not in the public
-# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
-# Re-enable when the CLI ships the users surface. See PLT-103133.
+tags: [uipath-platform, smoke, licensing, users]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

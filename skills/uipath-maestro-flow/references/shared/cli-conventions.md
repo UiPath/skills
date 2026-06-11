@@ -87,7 +87,10 @@ Before reaching for an external parser, verify the JSON shape. The CLI roots `--
 - **Check whether `Data` is array or object first** — `--output-filter "type(@)"` returns `"array"` or `"object"`. `keys(@)` throws on arrays (`Filter 'keys(@)' failed to evaluate: Invalid type: keys() expected argument 1 to be type (object) but received type array instead`), so use `type(@)` as the first probe.
 - **If `type(@)` returned `"object"`:** `--output-filter "keys(@)"` lists the top-level field names at `Data`.
 - **If `type(@)` returned `"array"`:** `--output-filter "[0]"` shows the first row, or `--output-filter "[0] | keys(@)"` lists the keys of one row.
-- **Watch for silent `[]`** — when the JMESPath path doesn't match anything, the CLI returns `Data: []` with `Result: "Success"`. That's the exact silent-failure mode the docs are designed to surface. If you got `Data: []` and were expecting a value, double-check field-name casing (manifest fields are PascalCase: `Node.SupportsErrorHandling`, not `node.supportsErrorHandling`).
+- **Watch for silent `[]`** — when the JMESPath path doesn't match anything, the CLI returns `Data: []` with `Result: "Success"`. That's the exact silent-failure mode the docs are designed to surface. If you got `Data: []` and were expecting a value, double-check field-name casing — **and note casing differs by command:**
+  - `registry search` / `list` (and most `uip … --output json` commands) return **PascalCase** keys → filter `[*].NodeType`, `[*].DisplayName`.
+  - `registry get` returns the node definition **verbatim** (it is pasted straight into the `.flow`), so its keys keep the manifest's own casing — predominantly **camelCase**: `Node.nodeType`, `Node.inputDefinition`, `Node.supportsErrorHandling`, `Node.form.sections[…]`. A few nested *runtime-output* schemas are PascalCase because the engine emits them that way (e.g. Summarize's `content.Text` / `content.Citations`) — match whatever the manifest actually declares, not a normalized form.
+  - When unsure, probe before guessing: `--output-filter "keys(@)"` (object) or `--output-filter "[0] | keys(@)"` (array).
 
 Most agent-side retry loops on `uip --output json` parsing come from guessing the shape wrong; verify, then parse.
 

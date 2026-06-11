@@ -1,15 +1,12 @@
 task_id: skill-case-multi-case-exit-full
 description: >
-  Build a Case Management definition that exercises every case-exit
-  rule-type plus a wait-for-connector stage-entry in a single linear flow.
-  Three regular stages with mixed isRequired (Intake true, Audit false,
-  Archive true). Audit is gated by a wait-for-connector stage-entry. Root
-  carries four case-exit conditions covering all four rule-types and both
-  marks-case-complete shapes: required-stages-completed (true) +
-  wait-for-connector (true) + selected-stage-exited on Audit (false) +
-  selected-stage-completed on Archive (false). Closes the case-exit
-  rule-type matrix and exercises wait-for-connector at stage-entry scope.
-tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:case-exit, feature:conditions, feature:stages, feature:wait-for-connector]
+  Build a Case Management definition that exercises three case-exit
+  rule-types in a single linear flow. Three regular stages with mixed
+  isRequired (Intake true, Audit false, Archive true). Root carries three
+  case-exit conditions covering three rule-types and both marks-case-complete
+  shapes: required-stages-completed (true) + selected-stage-exited on Audit
+  (false) + selected-stage-completed on Archive (false).
+tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:case-exit, feature:conditions, feature:stages]
 max_iterations: 1
 
 run_limits:
@@ -19,7 +16,7 @@ run_limits:
 
 initial_prompt: |
   Build a UiPath Case Management solution named "CaseExitFull" containing
-  a project also named "CaseExitFull" from the sdd.md below. Use v20 schema.
+  a project also named "CaseExitFull" from the sdd.md below.
   Write the sdd.md to disk first, then build from it.
 
   ```
@@ -27,7 +24,7 @@ initial_prompt: |
 
   **Case Definition Blueprint** · Generic — Case-Exit Rule Matrix Coverage
 
-  A three-stage linear flow exercising every case-exit rule-type plus a wait-for-connector stage-entry. Closes the case-exit rule-type matrix (required-stages-completed, wait-for-connector, selected-stage-exited, selected-stage-completed) across both marks-case-complete shapes.
+  A three-stage linear flow exercising three case-exit rule-types (required-stages-completed, selected-stage-exited, selected-stage-completed) across both marks-case-complete shapes.
 
   Prepared date: 2026-05-19
 
@@ -37,7 +34,7 @@ initial_prompt: |
   | Property | Value |
   |---|---|
   | Case Name | CaseExitFull |
-  | Case Description | Three-stage linear flow with four case-exit conditions covering all rule-types and both marks-case-complete shapes; Audit gated by a wait-for-connector stage-entry. |
+  | Case Description | Three-stage linear flow with three case-exit conditions covering three rule-types and both marks-case-complete shapes. |
   | Case Identifier | Prefix: CEF, Type: constant |
   | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
@@ -57,7 +54,6 @@ initial_prompt: |
   | WHEN | IF | THEN | Marks Case Complete |
   |---|---|---|---|
   | required-stages-completed ("All required stages done") | - | Default completion path; fires when every isRequired:true stage has completed. | Yes |
-  | wait-for-connector ("Cancel signal received") | =event.type == 'case_cancel' | External cancel/close event closes the case. | Yes |
 
   ### 1.4a Case Exit Conditions
   | WHEN | IF | THEN | Marks Case Complete |
@@ -88,15 +84,37 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
   | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `intake.placeholder` | Intake Placeholder | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 1.1: Intake Placeholder (`intake.placeholder`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer so the stage carries a required task for required-tasks-completed to satisfy.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+  | Required | Yes (default) |
 
   ### Stage 2: Audit (`audit`)
   **Type:** Stage
-  **Description:** Optional follow-up; gated by an external submission event.
+  **Description:** Optional follow-up; entered after Intake completes.
   **Required for Case Completion:** No
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
   |---|---|---|
-  | wait-for-connector ("On submission event") | =event.type == 'submission_received' | No |
+  | selected-stage-completed | - | No |
   #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
   |---|---|---|---|
@@ -104,7 +122,48 @@ initial_prompt: |
   #### Stage Exit Conditions
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
-  | No stage exit hand-off declared. | - | exit-only | - | No |
+  | selected-tasks-completed ("Audit handed off") | selected-tasks: Audit Handoff | exit-only | Archive | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `audit.placeholder` | Audit Placeholder | wait-for-timer | Yes | No | system | — |
+  | 2 | `audit.handoff` | Audit Handoff | wait-for-timer | No | No | system | — |
+
+  ##### Task 2.1: Audit Placeholder (`audit.placeholder`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer so the stage carries a required task for required-tasks-completed to satisfy.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+  | Required | Yes (default) |
+
+  ##### Task 2.2: Audit Handoff (`audit.handoff`)
+
+  **Type:** wait-for-timer
+  **Description:** Optional second placeholder timer; on completion it fires the stage's selected-tasks-completed exit hand-off to Archive (non-completing).
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+  | Required | No |
 
   ### Stage 3: Archive (`archive`)
   **Type:** Stage
@@ -122,6 +181,28 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
   | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `archive.placeholder` | Archive Placeholder | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 3.1: Archive Placeholder (`archive.placeholder`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder in-stage timer so the stage carries a required task for required-tasks-completed to satisfy.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (in-stage timer; built-in, no registry) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
+  | Required | Yes (default) |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
@@ -142,7 +223,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "3 stages with mixed isRequired; Audit has wait-for-connector entry; case has 4 case-exits (metadata.caseExitRules) covering all rule-types (required-stages-completed/wait-for-connector true; selected-stage-exited Audit / selected-stage-completed Archive false)"
+    description: "3 stages with mixed isRequired, each carrying ≥1 task (placeholder); Audit has selected-stage-completed entry, ≥2 tasks, and a selected-tasks-completed stage-exit routing to Archive (marksStageComplete false); case has 3 case-exits (metadata.caseExitRules) covering three rule-types (required-stages-completed true; selected-stage-exited Audit / selected-stage-completed Archive false)"
     command: "python3 $TASK_DIR/check_case_exit_full.py"
     timeout: 720
     expected_exit_code: 0

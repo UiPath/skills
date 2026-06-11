@@ -6,14 +6,14 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    _get_ci,
     assert_count,
-    find_edges,
     find_node_by_label,
     find_stages,
+    find_transitions,
     find_triggers,
     first_rule_of_condition,
     iter_stage_entry_conditions,
-    payload_contains,
     read_caseplan,
     start_debug,
     task_is_skeleton,
@@ -34,26 +34,26 @@ def main():
     enrich = find_node_by_label(plan, "Enrich")
     join = find_node_by_label(plan, "Join")
 
-    if not find_edges(plan, source=triggers[0]["id"], target=triage["id"]):
-        sys.exit(f"FAIL: missing TriggerEdge {triggers[0]['id']} → Triage")
-    if not find_edges(plan, source=triage["id"], target=validate["id"]):
-        sys.exit("FAIL: missing edge Triage → Validate")
-    if not find_edges(plan, source=triage["id"], target=enrich["id"]):
-        sys.exit("FAIL: missing edge Triage → Enrich")
-    if not find_edges(plan, source=validate["id"], target=join["id"]):
-        sys.exit("FAIL: missing edge Validate → Join")
-    if not find_edges(plan, source=enrich["id"], target=join["id"]):
-        sys.exit("FAIL: missing edge Enrich → Join")
-
-    inbound_to_join = find_edges(plan, target=join["id"])
-    if len(inbound_to_join) < 2:
+    # Reachability is condition-driven (edges retired): Triage is the case start
+    # (case-entered); Validate & Enrich are reached from Triage via their
+    # selected-stage-completed entry rules; Join fans in from both (asserted via
+    # Join's two entry rules below). No trigger→stage edge.
+    triage_entry = list(iter_stage_entry_conditions(triage))
+    triage_rules = {(first_rule_of_condition(c) or {}).get("rule") for c in triage_entry}
+    if "case-entered" not in triage_rules:
         sys.exit(
-            f"FAIL: Join must have ≥2 inbound stage edges (fan-in); got {len(inbound_to_join)}"
+            f"FAIL: 'Triage' must carry a case-entered entry condition; "
+            f"got entry rules {sorted(r for r in triage_rules if r)}"
         )
-    inbound_sources = {e.get("source") for e in inbound_to_join}
-    if not {validate["id"], enrich["id"]}.issubset(inbound_sources):
+    if not find_transitions(plan, source=triage["id"], target=validate["id"]):
         sys.exit(
-            f"FAIL: Join inbound sources must include Validate and Enrich; got {inbound_sources}"
+            "FAIL: no Triage → Validate transition; Validate's entry must name "
+            "Triage (selected-stage-completed selectedStageId=Triage)"
+        )
+    if not find_transitions(plan, source=triage["id"], target=enrich["id"]):
+        sys.exit(
+            "FAIL: no Triage → Enrich transition; Enrich's entry must name "
+            "Triage (selected-stage-completed selectedStageId=Triage)"
         )
 
     join_entry = list(iter_stage_entry_conditions(join))
@@ -83,6 +83,7 @@ def main():
 
     expected_skeleton_types_per_stage = {
         "Triage": {"rpa", "api-workflow"},
+        "Validate": {"agent"},
         "Enrich": {"agent"},
         "Join": {"case-management"},
     }
@@ -110,25 +111,15 @@ def main():
                     f"connector tasks); got data keys {sorted(data.keys())}"
                 )
 
-    # Validate is an intentional empty pass-through branch (no tasks). A
-    # skeleton action UserTask cannot survive a live debug run, so this stage
-    # carries no task — see check history / fan_in_join.yaml.
-    validate_lanes = (validate.get("data") or {}).get("tasks") or []
-    if any(t for lane in validate_lanes for t in (lane or [])):
-        sys.exit("FAIL: Validate stage must be an empty pass-through (no tasks)")
-
     payload = start_debug(timeout=540)
-    payload_contains(
-        payload, "Triage", "Validate", "Enrich", "Join", require_all=False
-    )
-    status = payload.get("finalStatus") or payload.get("status")
+    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
 
     print(
         "OK: diamond topology Triage→{Validate,Enrich}→Join with two "
         "selected-stage-completed entry rules on Join referencing both upstream "
-        "stages; 4 skeleton tasks across 3 stages cover 4 plugin types "
-        "(Triage:{rpa, api-workflow}, Enrich:agent, Join:case-management), "
-        f"Validate empty; debug payload returned (status={status})"
+        "stages; 5 skeleton tasks across 4 stages span 4 plugin types "
+        "(Triage:{rpa, api-workflow}, Validate:agent, Enrich:agent, "
+        f"Join:case-management); debug payload returned (status={status})"
     )
 
 

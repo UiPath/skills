@@ -1,6 +1,6 @@
 # tests/tasks/uipath-troubleshoot — Test Scenario Generator
 
-This directory contains regression tests for the `uipath-troubleshoot` skill. Each scenario replays a real troubleshooting investigation against a `uip` CLI mock so the agent's reasoning is exercised without hitting a real UiPath tenant.
+This directory contains faithful-replay test scenarios for the `uipath-troubleshoot` skill. Each scenario replays a real troubleshooting investigation against a `uip` CLI mock so the agent's reasoning is exercised without hitting a real UiPath tenant. A scenario for a new failure class is new acceptance coverage when first added; once committed and green it serves as a regression guard against future skill/playbook changes.
 
 This file tells you (Claude or a contributor) how to **add a new scenario** from a real session you just resolved.
 
@@ -8,7 +8,7 @@ This file tells you (Claude or a contributor) how to **add a new scenario** from
 
 Trigger:
 
-- You ran the `uipath-troubleshoot` skill against a real failing job, reached a verified resolution, and want to lock the case in as a regression test.
+- You ran the `uipath-troubleshoot` skill against a real failing job, reached a verified resolution, and want to lock the case in as a faithful-replay scenario (a regression guard going forward).
 - A user reports a new failure class not yet covered by an existing scenario.
 
 Skip:
@@ -135,12 +135,14 @@ Every new scenario's `task.yaml` MUST satisfy the following.
 
 ```yaml
 run_limits:
-  task_timeout: 2400
+  task_timeout: 5400
   max_turns: 60
-  turn_timeout: 1800
+  turn_timeout: 3600
 ```
 
-Troubleshooting investigations span many turns and produce large intermediate outputs. Lower limits cause spurious timeouts in CI and mask real regressions.
+Troubleshooting investigations span many turns and produce large intermediate outputs. Use `task_timeout: 5400` (90 min) and `turn_timeout: 3600` (60 min) so the full triage → hypothesis → tester → depth-check → presenter chain has headroom — proxy-mode runs cluster around 25–55 min wall, so a 30-min `task_timeout` clips right before the presenter spawn on the slow end of the distribution.
+
+`task_timeout`, `max_turns`, and `turn_timeout` belong inside the `run_limits:` block (the canonical location after the c/2026-05-12-unify-run-limits migration). Top-level placement still works via a grace shim but is deprecated; setting both top-level and `run_limits:` raises `ValueError` on the validator.
 
 ### `tags`
 

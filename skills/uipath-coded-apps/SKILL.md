@@ -6,8 +6,6 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 # UiPath Coded Apps
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps using the `uip codedapp` CLI and `@uipath/uipath-typescript` SDK.
 
 ## When to Use This Skill

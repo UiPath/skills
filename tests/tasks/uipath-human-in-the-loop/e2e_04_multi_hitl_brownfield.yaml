@@ -42,6 +42,7 @@ initial_prompt: |
 
   Wire the completed handles for both HITL nodes to their respective downstream
   steps. Validate the full flow after both nodes are added.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Complete the task end-to-end in a single pass.
 
 success_criteria:
   - type: file_contains
@@ -56,7 +57,7 @@ success_criteria:
     description: "Completed handles wired in the flow file"
     path: "HROnboarding/HROnboarding/HROnboarding.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 2.0
     pass_threshold: 1.0
 

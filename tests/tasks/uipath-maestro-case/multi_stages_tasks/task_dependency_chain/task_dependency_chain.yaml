@@ -6,19 +6,18 @@ description: >
   timers forming a runs-sequentially group whose parallel members share
   one lane (semantic, not FE layout) and exits via
   required-tasks-completed (marks-stage-complete: true). Finalize
-  contains a wait-for-connector-gated task referencing a string Variable
-  AND a number Variable inside its conditionExpression, a sibling-gated
+  contains a current-stage-entered task, a sibling-gated
   task (task-entry selected-tasks-completed), and an adhoc PROCESS task
   (registry unresolved → skeleton, exercising the non-timer task type
   in a downstream stage that no other multi_stages_tasks test covers). Finalize
   exits via selected-tasks-completed (marks-stage-complete: false)
   routing to Done. Finalize entry uses selected-stage-completed on
-  Process. Closes gaps: stage-exit required-tasks-completed +
+  Process; Done entry uses selected-stage-completed on Finalize. Closes
+  gaps: stage-exit required-tasks-completed +
   selected-tasks-completed, stage-entry selected-stage-completed,
-  task-entry runs-sequentially + adhoc + wait-for-connector +
-  selected-tasks-completed, both string AND number Variables referenced
-  inside a rule conditionExpression, and a non-timer (process) skeleton
-  task in a multi-stage flow.
+  task-entry runs-sequentially + current-stage-entered + adhoc +
+  selected-tasks-completed, root string AND number Variables,
+  and a non-timer (process) skeleton task in a multi-stage flow.
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:multi-node, feature:tasks, feature:conditions, feature:task-entry, feature:variables, feature:skeleton-task]
 max_iterations: 1
 
@@ -30,14 +29,14 @@ run_limits:
 initial_prompt: |
   Build a UiPath Case Management solution named "TaskDependencyChain"
   containing a project also named "TaskDependencyChain" from the sdd.md
-  below. Use v20 schema. Write the sdd.md to disk first, then build from it.
+  below. Write the sdd.md to disk first, then build from it.
 
   ```
   # SDD — TaskDependencyChain
 
   **Case Definition Blueprint** · Generic — Task-Driven Stage Completion Coverage
 
-  Three-stage linear flow that exercises task-driven stage completion, the under-covered task-entry rule-types, and a non-timer task type embedded in a multi-stage flow. Process exits via required-tasks-completed; Finalize gates on a wait-for-connector expression referencing both string AND number Variables (plus metadata.tier) and exits via selected-tasks-completed to Done.
+  Three-stage linear flow that exercises task-driven stage completion, the under-covered task-entry rule-types, and a non-timer task type embedded in a multi-stage flow. Process exits via required-tasks-completed; Finalize's Region Check fires on current-stage-entered and the stage exits via selected-tasks-completed to Done.
 
   > **Unresolved-fallback rule.** The Optional Audit process is NOT registered in the tenant. The agent MUST leave `taskTypeId` as `<UNRESOLVED: ...>`, omit inputs/outputs, and emit a skeleton process task. DO NOT fabricate a taskTypeId. The skeleton's TaskId is still captured and the task still carries its task-entry condition.
 
@@ -49,7 +48,7 @@ initial_prompt: |
   | Property | Value |
   |---|---|
   | Case Name | TaskDependencyChain |
-  | Case Description | Three-stage flow exercising task-driven stage completion, runs-sequentially / adhoc / wait-for-connector / selected-tasks-completed task-entry rules, and a non-timer skeleton task in a downstream stage. |
+  | Case Description | Three-stage flow exercising task-driven stage completion, runs-sequentially / adhoc / selected-tasks-completed task-entry rules, and a non-timer skeleton task in a downstream stage. |
   | Case Identifier | Prefix: TDC, Type: constant |
   | Priority | Choiceset: Low, Medium, High - Default: Medium |
   | Case-Level SLA | Not specified |
@@ -78,8 +77,8 @@ initial_prompt: |
   ### 1.5 Case Variables
   | Variable | Category | Type | Default | Description | Produced By | Consumed By |
   |---|---|---|---|---|---|---|
-  | region | Variable | string | "US" | Case-level region flag referenced inside the Region Check task-entry conditionExpression. | - | finalize.regionCheck |
-  | priorityScore | Variable | integer | 0 | Case-level numeric score referenced alongside region inside the same task-entry conditionExpression. | - | finalize.regionCheck |
+  | region | Variable | string | "US" | Case-level region flag. | - | - |
+  | priorityScore | Variable | integer | 0 | Case-level numeric score. | - | - |
 
   ## Section 2: Stages & Tasks
 
@@ -99,18 +98,18 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
   | No stage exit hand-off declared. | - | exit-only | - | No |
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Lane |
-  |---|---|---|---|---|
-  | 1 | `process.firstStep` | First Step | wait-for-timer | 0 |
-  | 2 | `process.secondStep` | Second Step | wait-for-timer | 0 |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `process.firstStep` | First Step | wait-for-timer | Yes | No | system | — |
+  | 2 | `process.secondStep` | Second Step | wait-for-timer | Yes | No | system | — |
 
   > Both tasks share lane 0: they are parallel members of the same `runs-sequentially` group, so the shared lane is semantic (parallel siblings inside the sequential group), not the default one-task-per-lane layout.
 
   ##### Task 1.1: First Step (`process.firstStep`)
 
   **Type:** wait-for-timer
-  **Description:** Bounded recurring timer — every 1 hour, 5 repetitions total. Exercises the wait-for-timer plugin's bounded `repeat` flag.
+  **Description:** Non-repeating fixed-delay timer (timeDuration branch). Fires once after 2 seconds.
 
   **Entry Condition**
 
@@ -124,13 +123,12 @@ initial_prompt: |
   |---|---|
   | Component Type | TIMER (built-in) |
   | Timer Type | timeDuration |
-  | Time Duration | 1h |
-  | Repeat | 5 (bounded) |
+  | Time Duration | 2s (PT2S, fires once — not repeating) |
 
   ##### Task 1.2: Second Step (`process.secondStep`)
 
   **Type:** wait-for-timer
-  **Description:** Raw ISO 8601 repeating-interval timer (timeCycle branch, NOT every/at). Exercises the timeCycle branch of the wait-for-timer plugin.
+  **Description:** Non-repeating fixed-delay timer (timeDuration branch). Fires once after 5 seconds.
 
   **Entry Condition**
 
@@ -143,9 +141,8 @@ initial_prompt: |
   | Field | Value |
   |---|---|
   | Component Type | TIMER (built-in) |
-  | Trigger Style | TIME-CYCLE (raw ISO 8601 repeating interval) |
-  | Timer Type | timeCycle |
-  | Time Cycle | R3/PT2H (every 2 hours, 3 repetitions) |
+  | Timer Type | timeDuration |
+  | Time Duration | 5s (PT5S, fires once — not repeating) |
 
   ### Stage 2: Finalize (`finalize`)
   **Type:** Stage
@@ -162,30 +159,30 @@ initial_prompt: |
   #### Stage Exit Conditions
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
-  | selected-tasks-completed ("Final task done") | selected-tasks: Final Task | exit-only | Done | No |
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `finalize.regionCheck` | Region Check | wait-for-timer | (system-driven) |
-  | 2 | `finalize.finalTask` | Final Task | wait-for-timer | (system-driven) |
-  | 3 | `finalize.optionalAudit` | Optional Audit | process | (UNRESOLVED) |
+  | selected-tasks-completed ("Audit done") | selected-tasks: Optional Audit | exit-only | Done | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `finalize.regionCheck` | Region Check | wait-for-timer | Yes | No | system | — |
+  | 2 | `finalize.finalTask` | Final Task | wait-for-timer | Yes | No | system | — |
+  | 3 | `finalize.optionalAudit` | Optional Audit | process | No | No | system | — |
 
   ##### Task 2.1: Region Check (`finalize.regionCheck`)
 
   **Type:** wait-for-timer
-  **Description:** Gated by an external region event whose expression references both case Variables AND a case METADATA field — exercises the `=metadata.X` reference form.
+  **Description:** Fires when the Finalize stage is entered (current-stage-entered). No gate.
 
   **Entry Condition**
 
   | WHEN | IF |
   |---|---|
-  | wait-for-connector ("On region event") | =js:vars.region == 'EU' && vars.priorityScore > 5 && metadata.tier == 'gold' |
+  | current-stage-entered | - |
 
   | Field | Value |
   |---|---|
   | Component Type | TIMER (built-in) |
   | Timer Type | timeDuration |
-  | Time Duration | 1h |
+  | Time Duration | 2s |
 
   ##### Task 2.2: Final Task (`finalize.finalTask`)
 
@@ -202,7 +199,7 @@ initial_prompt: |
   |---|---|
   | Component Type | TIMER (built-in) |
   | Timer Type | timeDuration |
-  | Time Duration | 1h |
+  | Time Duration | 2s |
 
   ##### Task 2.3: Optional Audit (`finalize.optionalAudit`)
 
@@ -229,7 +226,7 @@ initial_prompt: |
   #### Stage Entry Conditions
   | WHEN | IF | Interrupting |
   |---|---|---|
-  | selected-tasks-completed | - | No |
+  | selected-stage-completed ("After Finalize") | selected-stage: Finalize | No |
   #### Stage Completion Conditions
   | WHEN | IF | Exit Type | Marks Stage Complete |
   |---|---|---|---|
@@ -238,6 +235,27 @@ initial_prompt: |
   | WHEN | IF | Exit Type | Exit-To Stage | Marks Stage Complete |
   |---|---|---|---|---|
   | No stage exit hand-off declared. | - | exit-only | - | No |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `done.placeholder` | Placeholder | wait-for-timer | Yes | No | system | — |
+
+  ##### Task 3.1: Placeholder (`done.placeholder`)
+
+  **Type:** wait-for-timer
+  **Description:** Placeholder task so the terminal Done stage carries at least one task for its required-tasks-completed completion condition.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Component Type | TIMER (built-in) |
+  | Timer Type | timeDuration |
+  | Time Duration | 2s |
   ```
 
   Treat the generated tasks.md plan as pre-approved — do NOT block on the
@@ -258,7 +276,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; tasks carry runs-sequentially/adhoc/wait-for-connector/selected-tasks-completed task-entry rules; First Step and Second Step are parallel members of the runs-sequentially group and share one lane (same laneIndex in Process data.tasks); First Step timer carries bounded repeat=5 (timeDuration); Second Step timer uses timeCycle (R3/PT2H); root has string variable 'region' AND number variable 'priorityScore' (both referenced alongside metadata.tier in Region Check conditionExpression); 'Optional Audit' is a process-typed skeleton task in Finalize"
+    description: "Process exit=required-tasks-completed; Finalize exit=selected-tasks-completed; Finalize entry=selected-stage-completed; Done entry=selected-stage-completed on Finalize; tasks carry runs-sequentially/current-stage-entered/selected-tasks-completed/adhoc task-entry rules; First Step and Second Step are parallel members of the runs-sequentially group and share one lane (same laneIndex in Process data.tasks); First Step timer is non-repeating timeDuration (PT2S, no repeat); Second Step timer is non-repeating timeDuration (PT5S, no repeat); Region Check fires on current-stage-entered; root has string variable 'region' AND number variable 'priorityScore'; 'Optional Audit' is a process-typed skeleton task in Finalize"
     command: "python3 $TASK_DIR/check_task_dependency_chain.py"
     timeout: 720
     expected_exit_code: 0

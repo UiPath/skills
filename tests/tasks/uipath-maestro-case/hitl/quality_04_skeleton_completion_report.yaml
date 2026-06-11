@@ -92,10 +92,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `extract.extractMetadata` | Extract Metadata | process | System |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `extract.extractMetadata` | Extract Metadata | process | Yes | No | system | — |
 
   ##### Task 1.1: Extract Metadata (`extract.extractMetadata`)
 
@@ -129,10 +129,10 @@ initial_prompt: |
   |---|---|---|---|
   | selected-tasks-completed("Approve Contract") | - | exit-only | Yes |
 
-  #### Stage Task Summary
-  | # | Task ID | Task | Type | Owner |
-  |---|---|---|---|---|
-  | 1 | `legalReview.approveContract` | Approve Contract | action | Legal Reviewer |
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `legalReview.approveContract` | Approve Contract | action | Yes | No | Legal Reviewer | — |
 
   ##### Task 2.1: Approve Contract (`legalReview.approveContract`)
 
@@ -177,7 +177,7 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Stage Task Summary
+  #### Tasks
   (none)
   ```
 
@@ -287,4 +287,6 @@ post_run:
 
 run_limits:
   expected_turns: 73
-  max_turns: 110
+  task_timeout: 900
+  max_turns: 120
+  turn_timeout: 900

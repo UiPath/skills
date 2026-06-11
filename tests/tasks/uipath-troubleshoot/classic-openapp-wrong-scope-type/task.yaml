@@ -1,0 +1,159 @@
+task_id: skill-troubleshoot-classic-openapp-wrong-scope-type
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim sub-agent outputs from the real session.
+  Success = the agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay, rpa, classic-activities, orchestrator]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  Why did my last job from folder Shared fail? The failing project source
+  is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the classic UI-activity config-error playbook AND identified the scope-side (wrong scope type) root cause, not the surface 'Click has no target'"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The attached Reference (RESOLUTION.md) is the
+      authoritative ground truth.
+
+      The user's request was:
+        "Why did my last job from folder Shared fail? The failing project
+         source is in the current working directory."
+
+      Grade what the agent PRESENTED to the user (its final response is the
+      contract). Use the attached state.json / hypotheses.json only as soft
+      corroboration — do NOT require any particular field, status, or path
+      shape inside them. Pending sibling hypotheses and early-stop are
+      normal and must not be penalized.
+
+      Score BOTH dimensions in a single number.
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/classic-activities/playbooks/ui-activity-configuration-error.md
+        (the high-confidence classic "UI Activity Configuration Error"
+        playbook). The signature: a classic UI activity faults immediately
+        (~5s), before any element search, with
+        ElementNotSetException ---> UninitializedNodeException thrown in
+        Target.FindByElement / ValidateSearchArgs, and NO
+        SelectorNotFoundException.
+        Evidence (any one suffices): the agent names/reads this playbook
+        (tool-call Read under classic-activities/playbooks/), or
+        state.json.matched_playbooks references it, or the agent's narrative
+        clearly identifies the classic UI-activity configuration-error family.
+        NOT penalized: reading neighbouring classic playbooks (ui-element-
+        not-found, ui-activity-timeout) while ruling them out; explicitly
+        noting that the playbook's enumerated causes do not exactly match
+        and the real defect is an adjacent variant (this cause refinement is
+        CORRECT — see RESOLUTION.md — and should be rewarded, not docked).
+
+      DIMENSION B -- Same root cause + fix as RESOLUTION.md
+        Correct root cause (REQUIRED for a high score): the enclosing scope
+        `Open Application 'msedge.exe Google'` (a classic DESKTOP
+        ui:OpenApplication, FileName = ...\chrome.exe) is the WRONG SCOPE
+        TYPE for its target — it was given a BROWSER-style html selector
+        (`<html app='chrome.exe' title='Google' />`) and ApplicationWindow
+        = {x:Null}, so it never initializes a context window. The child
+        `Click 'push button'` then faults on that uninitialized scope
+        context BEFORE its own (intact, valid) selector is ever evaluated.
+        I.e. the fault is UPSTREAM in the scope, not a missing Click target.
+
+        Correct fix (at least one): use a BROWSER scope (Open Browser /
+        Attach Browser / Use Application-Browser) for the Chrome target, OR
+        give the desktop Open Application a native top-level window selector
+        PLUS a valid ApplicationWindow.
+
+        CRITICAL DISTINCTION: concluding only that "the Click activity has
+        no Target Element / Selector set" (parroting the runtime error text)
+        is the SURFACE symptom and the DISPROVEN hypothesis (H1) — the
+        Click's own selector is actually intact. An answer that stops there,
+        or that "fixes" it by setting a target/selector on the Click, has
+        the wrong root cause and must be capped at 0.5.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+        1.0  Matched the config-error playbook AND identified the scope
+             wrong-type root cause (desktop OpenApplication + browser
+             selector + null ApplicationWindow -> uninitialized scope
+             context -> child Click faults) AND gave a correct scope-side
+             fix.
+        0.8  Scope-side root cause + correct fix, but playbook match is
+             weak/implicit; OR playbook + scope cause correct but the fix
+             is vague.
+        0.5  Stopped at the surface (config-error family / "Click missing
+             its target") without identifying the scope wrong-type cause;
+             OR only one dimension correct.
+        0.2  Recognized a UI-automation configuration failure but neither
+             matched the playbook nor reached the scope-side cause.
+        0.0  Wrong conclusion (e.g. selector-not-found / element-not-found,
+             healing/license, environment/runtime, or a missing-Click-target
+             fix) or got blocked.
+
+      Be substance-focused, not schema-focused. Intermediate file shapes
+      vary between runs — grade the meaning of what the agent concluded and
+      presented.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and root cause>"}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

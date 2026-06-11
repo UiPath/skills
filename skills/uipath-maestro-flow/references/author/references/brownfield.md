@@ -4,6 +4,21 @@ Recipe-driven journey for targeted changes to an existing `.flow` file. Author t
 
 > **Greenfield (creating a new flow) uses a different journey.** If the `.flow` file does not yet exist, see [greenfield.md](greenfield.md) instead.
 
+## Converting an existing project to Maestro
+
+A frequent request: *"Can my existing project — e.g. a low-code agent plus a coded (C#) RPA rule engine — become a Maestro flow, and what would the structure look like?"*
+
+There is **no automatic "turn this project into a flow" conversion, and you shouldn't want one.** You don't rewrite the project into a flow — you **re-host the orchestration and keep the parts**:
+
+1. **Keep the executors as-is.** Existing coded/RPA components and any existing agent stay their own artifacts. They are **not** rewritten into Maestro — they become **resource nodes** the flow calls (`uipath.core.rpa-workflow.*`, `uipath.core.agent.*`). See the relevant plugin's `planning.md`.
+2. **Lift only the orchestration into Maestro.** The control flow currently implicit in the rule engine (what runs first, what waits, what branches) becomes the explicit flow topology — trigger → steps → decisions → end.
+3. **Make every wait a first-class node.** Anything the old code did with sleeps, polling loops, or "check again later" becomes a Maestro wait/delay/HITL/`create-and-wait` node — that visibility is the whole reason to move.
+4. **Publish (or keep in-solution), then reference.** Each executor is published or kept as a sibling project so the flow's registry resolves it (`registry list --local` for in-solution).
+
+Resulting structure: a **thin flow** that is mostly trigger + waits + branches, delegating the real work to the existing RPA and agent artifacts. To author it, treat the flow as greenfield ([greenfield.md](greenfield.md)) with those artifacts discovered as resource nodes during [planning-arch.md](planning-arch.md).
+
+> **Migrate when** the project has long waits, human approvals, parallel branches, or needs per-case visibility. **Don't migrate** a short, fully-automated, fire-once script — Maestro adds orchestration overhead it won't repay. Apply the [Is Maestro the Right Home?](planning-arch.md#before-you-build-is-maestro-the-right-home) gate first.
+
 ## Read this first
 
 > **Before each node you add or modify, classify it as user-owned or CLI-owned (see [CAPABILITY.md — Node ownership](../CAPABILITY.md#node-ownership--who-authors-the-node)). Connector activities, connector triggers, and `core.action.http.v2` are CLI-only — use `uip maestro flow node add` + `uip maestro flow node configure`, never Edit. Hand-writing these will fail `flow validate`.** The same risk applies when *adding* a connector node to an existing flow as when building a new one.
@@ -15,6 +30,8 @@ Recipe-driven journey for targeted changes to an existing `.flow` file. Author t
 ## Common edits
 
 For each edit, run `uip maestro flow validate` once after **all** edits are complete, then `uip maestro flow format`. Do not validate after each individual change — intermediate states are expected to be invalid.
+
+When a single edit touches more than one top-level array (e.g. insert-a-node hits `nodes`, `edges`, and `definitions`), follow the [parallel same-file Edit rules](editing-operations.md#parallel-same-file-edits) — anchor each Edit on its own array's opening key, never on top-level key order.
 
 | Edit | Description | Guide |
 |------|-------------|-------|
@@ -38,6 +55,16 @@ The table intentionally routes OOTB structural CRUD to Edit/Write only. There is
 
 1. **Validate** — `uip maestro flow validate <ProjectName>.flow --output json`. Fix any errors and re-validate.
 2. **Format** — `uip maestro flow format <ProjectName>.flow --output json`. Required before publish or debug (see "Always run `flow format` after edits" in [the Author capability index](../CAPABILITY.md)) — without format, hand-edited or stale `layout` data renders as misshapen rectangles in Studio Web.
+
+## "Refusing to serialize a vX workflow" — migrate first
+
+If `flow format`, `flow debug`, or `flow pack` fails with `[inMemoryWorkflowToFileFormat] Refusing to serialize a vX workflow to the v<current> file format`, the `.flow` file predates the current schema version. Recover with one command:
+
+```bash
+uip maestro flow migrate <ProjectName>.flow --output json
+```
+
+`migrate` is lossless — it walks the per-version migration chain (e.g. `=js:` expression strings become rich expression objects) and bumps the file to the current version. Re-run `flow format` and `flow validate` afterward; both should now pass. **A passing `flow validate` does NOT imply `format`/`debug`/`pack` will pass** — `validate` never re-serializes the workflow, so it skips the version guard those commands enforce. When you see the refusal, always migrate; never assume the edit was wrong.
 
 ## Completion Output
 

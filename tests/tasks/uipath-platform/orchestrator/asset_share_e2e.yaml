@@ -1,0 +1,44 @@
+task_id: skill-platform-asset-share-e2e
+description: >
+  E2E: agent leaves the tenant with an asset shared with exactly one folder
+  (created in A, shared with B, then unshared from B — so final state is
+  "asset visible only in A"). Check queries tenant.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  I'm trying to verify that asset sharing and unsharing across folders
+  works end-to-end. The path to folder A is in `seed.json` along with a
+  unique prefix.
+
+  First, create a second folder named `e2e-folder-b-<prefix>` directly
+  inside folder A (so it lives at `<folder_a_path>/e2e-folder-b-<prefix>`).
+  Save its full path to `folder_b.txt`.
+
+  Then create an asset in folder A called `e2e-asset-share-<prefix>`.
+  Share it with folder B, then unshare it. By the end I want the asset
+  to be visible in A but no longer in B — the round-trip through the
+  shared state needs to actually happen.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: asset visible in folder A; absent from folder B"
+    command: "python3 $TASK_DIR/check_asset_share.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

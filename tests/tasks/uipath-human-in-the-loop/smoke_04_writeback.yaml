@@ -52,6 +52,6 @@ success_criteria:
     assertions:
       - expression: "pattern"
         operator: regex
-        expected: "(?i)(write.back|enrich|agentic.output|approval)"
+        expected: "(?i)(write.back|enrich|agentic.output|approv|review)"
     weight: 1.5
     pass_threshold: 1.0

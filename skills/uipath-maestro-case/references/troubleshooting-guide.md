@@ -71,7 +71,7 @@ uip maestro case instance variables <INSTANCE_ID> --folder-key <FOLDER_KEY> --pa
 
 ## Step 4 — Correlate with the case definition
 
-Use the incident's faulting element ID and the variable state to locate the failure point in `caseplan.json`. Map the element ID to the corresponding stage, task, edges etc., check its `data.inputs[]`, upstream edges, and the variable values flowing into it.
+Use the incident's faulting element ID and the variable state to locate the failure point in `caseplan.json`. Map the element ID to the corresponding stage or task, check its `data.inputs[]`, the entry/exit conditions that route into it, and the variable values flowing into it.
 
 If the local `caseplan.json` may differ from what was deployed, fetch the deployed case definition:
 

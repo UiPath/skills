@@ -9,7 +9,6 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting planning workflow. For how to fill fields for a specific node, consult the relevant plugin:
 > - Root case → `plugins/case/planning.md`
 > - Stages (regular / exception) → `plugins/stages/planning.md`
-> - Edges → `plugins/edges/planning.md`
 > - Tasks → `plugins/tasks/<type>/planning.md`
 > - Triggers → `plugins/triggers/<type>/planning.md`
 > - Conditions → `plugins/conditions/<scope>/planning.md`
@@ -50,73 +49,15 @@ uip maestro case registry pull
 
 If not logged in, prompt the user to log in. The registry pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
-**Capture `Data.BaseUrl` from the `login status` JSON for Step 2.1 tenant-override detection.** If `login status` failed or the field is absent, treat tenant override as unavailable and let Step 2.1 fall through to prompt-phrase detection — do not re-run `login status`.
-
 ## Step 2 — Locate and parse the design document
 
 Accept the `sdd.md` file path from the user, or ask if not provided. When the directory contains multiple `.md` files, use **AskUserQuestion** with the candidates + "Something else" to disambiguate.
 
 If the resolved path has **no `sdd.md`**, skill enters Phase 0 (interview mode) before this step. See [phase-0-interview.md](phase-0-interview.md). Phase 1 resumes here only after the Approve hard-stop in Phase 0.
 
-`sdd.md` is the **sole input**. It describes stages, tasks, edges, conditions, SLA, component types, persona information, and provides the search keywords for registry lookups. The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
+`sdd.md` is the **sole input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keywords for registry lookups. (It does not describe edges — transitions are expressed as stage entry/exit conditions; edges are retired.) The skill does not validate or gap-fill sdd.md — trust it as written. (Phase 0 may have generated it; once approved, Rule 2 applies regardless of source.)
 
 > **Phase 0 carryover.** When Phase 0 ran, `tasks/registry-resolved.json` already contains user-confirmed registry picks. During Step 3 below, **read the existing file first**: skip re-search for entries already resolved, only run discovery for tasks Phase 0 deferred (`<UNRESOLVED>` markers in `sdd.md`). Append new resolutions to the same file.
-
-### Step 2.1 — Detect schema version (Rule 18)
-
-Resolution order (first match wins):
-
-#### 2.1.a — Tenant override (alpha environment)
-
-Read the `Data.BaseUrl` value captured from Step 1's `uip login status --output json` call. If the value equals `https://alpha.uipath.com` (exact case-sensitive string match, no trailing slash), schema is `v20` regardless of user prompt. Print plain-text confirmation BEFORE Step 3 begins:
-
-```
-> Schema: v20 (alpha tenant override — BaseUrl=https://alpha.uipath.com forces v20 regardless of prompt phrasing). Phase 4 informational; CLI validate / upload / debug may reject downstream.
-```
-
-Skip Step 2.1.b. The override is **forced** — user prompt phrases cannot downgrade to v19 from an alpha tenant.
-
-If `Data.BaseUrl` is absent (login failed, field missing, different value), proceed to Step 2.1.b. Do NOT halt — login state is independent of schema selection.
-
-#### 2.1.b — User-prompt phrase
-
-Scan **only the user message that activated the skill** (the prompt that matched the skill description). Match case-insensitive substrings:
-
-| Phrase (any one matches) |
-|---|
-| `v20 schema` |
-| `schema v20` |
-| `use v20` |
-| `emit v20` |
-| `generate v20` |
-| `unified schema` |
-| `schema 20.0.0` |
-
-- **Match** → schema is `v20`. Print plain-text confirmation BEFORE Step 3 begins:
-  ```
-  > Schema: v20 (skill-emit-only mode — Phase 4 informational; CLI validate / upload / debug may reject downstream)
-  ```
-- **No match** → schema is `v19` (default). No confirmation line.
-
-**Never** scan sdd.md content, file paths, registry-resolved.json, Phase 0 transcripts, or any subsequent user message. Detection happens once, at Phase 1 entry. If the user wants to switch schema mid-build, they must re-run the skill from Phase 1 (Rule 6). The tenant override (2.1.a) is also fixed at Phase 1 entry — switching tenants mid-build does not change `tasks.md`'s `Schema:` header.
-
-### Step 2.2 — Persist schema choice in tasks.md header
-
-When `tasks.md` is written at Step 4, the **first non-comment line** is the schema header:
-
-```markdown
-Schema: v19
-```
-
-or
-
-```markdown
-Schema: v20
-```
-
-Place this line above all `T<n>` headings. Re-entry protocol (Phase 3 Step 9.6, Phase 4) re-reads tasks.md per Rule 7 and recovers the schema choice from this header. caseplan.json self-identifies via its top-level `version` literal as a secondary check.
-
-If the schema header in tasks.md conflicts with an already-written caseplan.json's `version` field at re-entry, **halt with explicit error** — never silently re-flip.
 
 ## Step 3 — Resolve resources
 
@@ -127,11 +68,10 @@ Before resource resolution, seed TodoWrite with the items below to track Phase 1
 3. Write trigger entries T02+ (§4.3)
 4. Write variable / argument entries (§4.2.1)
 5. Write stage entries (§4.4)
-6. Write edge entries (§4.5)
-7. Write task entries (§4.6)
-8. Write condition entries (§4.7)
-9. Write SLA entries (§4.8)
-10. User approves tasks.md (Step 5)
+6. Write task entries (§4.6)
+7. Write condition entries (§4.7)
+8. Write SLA entries (§4.8)
+9. User approves tasks.md (Step 5)
 
 For every task, trigger, and condition in the sdd.md:
 
@@ -177,7 +117,11 @@ For every task, trigger, and condition in the sdd.md:
 
 ### 3.4 Unresolved resources
 
-When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**. Instead:
+When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**.
+
+> **Missing connection — offer to create first.** A missing/empty IS connection is not immediately "unresolved". The connector pipeline offers to create one via `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-common.md § Resolve the connection](connector-trigger-common.md#2-resolve-the-connection)). Only after the user **declines** or creation fails does the connection become `<UNRESOLVED>` and fall through to the steps below.
+
+Otherwise:
 
 1. Mark the line in `tasks.md` with `<UNRESOLVED: <reason>>` in the `taskTypeId` / `typeId` / `connectionId` slot.
 2. **Omit `inputs:` and `outputs:` entirely** on that task entry — there is no schema to wire against. Any input mapping the sdd.md described becomes a fenced ```` ```text ```` code block under the entry with a `wiring notes (user must attach):` header line. **Do not start lines with `#`** — they would render as markdown headings; use a fenced code block instead. Example shape is in [placeholder-tasks.md § `tasks.md` Planning-Entry Shape](placeholder-tasks.md).
@@ -188,7 +132,7 @@ At execution time, unresolved tasks become **placeholder tasks** in `caseplan.js
 
 ## Step 4 — Generate tasks.md and registry-resolved.json
 
-Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. The **first non-comment line is the schema header** (`Schema: v19` or `Schema: v20` per Step 2.1–2.2). Each subsequent section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
+Create a `tasks/` folder adjacent to the sdd.md file. Generate `tasks.md` using the structure below. Each section is a numbered task (`T01`, `T02`, …) — declarative parameters only. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. The implementation phase translates each entry into the matching plugin's JSON writes.
 
 Cross-reference: [case-schema.md](case-schema.md) for JSON shape, [bindings-and-expressions.md](bindings-and-expressions.md) for inputs/outputs wiring.
 
@@ -198,13 +142,13 @@ Also write `registry-resolved.json` — full detail per task: search query, all 
 
 Every declaration in `sdd.md` must become a T-task in `tasks.md`. Mapping is 1-to-1:
 
-- **Never filter** declarations on the grounds that the default rule-type, default field value, or "implicit behavior" would cover them. If `sdd.md` lists a task, stage, edge, trigger, condition, SLA row, **variable, or argument**, `tasks.md` emits a T-task for it — regardless of rule-type (`current-stage-entered`, `case-entered`, `exit-only`, `required-tasks-completed`, etc.).
+- **Never filter** declarations on the grounds that the default rule-type, default field value, or "implicit behavior" would cover them. If `sdd.md` lists a task, stage, trigger, condition, SLA row, **variable, or argument**, `tasks.md` emits a T-task for it — regardless of rule-type (`current-stage-entered`, `case-entered`, `exit-only`, `required-tasks-completed`, etc.).
 - **Never merge** two sdd.md items into one T-task "because they're similar."
 - **Never drop** defaults-looking items (e.g., `is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`). The explicit declaration is the signal — honor it.
 - **When in doubt, emit.** It is always correct to create a T-task that mirrors an sdd.md row. It is never correct to silently omit one.
 - **When format is ambiguous or unrecognized, ASK — do not skip.** If a row exists but you cannot determine the right plugin, category, or T-entry shape (e.g., trigger "Initial Variable Mapping" uses an aggregate phrase instead of explicit per-field mappings; a variable's category — In / Out / Variable — is unclear; a task type does not match the closed enum), invoke **AskUserQuestion** with the row content + the specific ambiguity + bounded options. Silent omission is a defect. This obligation applies to every sdd.md declaration class above, including variables and arguments.
 
-Before presenting `tasks.md` at Step 5, run a completeness cross-check: for every declared stage / edge / task / trigger / condition / SLA row **and every Case Variables table row (one T-entry each, per §4.2.1)** in sdd.md, verify a corresponding T-task exists. Gaps are a defect — fix before approval.
+Before presenting `tasks.md` at Step 5, run a completeness cross-check: for every declared stage / task / trigger / condition / SLA row **and every Case Variables table row (one T-entry each, per §4.2.1)** in sdd.md, verify a corresponding T-task exists. Gaps are a defect — fix before approval.
 
 **Cross-check inventory.** Before approval, count and report each class:
 
@@ -214,7 +158,6 @@ Before presenting `tasks.md` at Step 5, run a completeness cross-check: for ever
 | Triggers | Case Triggers | §4.3 (T02+) |
 | Variables / arguments | Case Variables | §4.2.1 (after last trigger) |
 | Stages | Section 2 stage headings | §4.4 |
-| Edges | Stage Entry Conditions / Stage Exit Conditions referencing other stages | §4.5 |
 | Tasks | Per-stage Tasks tables | §4.6 |
 | Conditions | Stage Entry / Stage Exit / Task Entry / Case Exit tables | §4.7 |
 | SLA | Case-Level SLA + per-stage Stage SLA + per-action Task SLA | §4.8 |
@@ -227,8 +170,8 @@ Counts that don't match the sdd.md → fix before Step 5 hard stop.
 
 Procedure:
 
-1. **Seed.** Write `tasks.md` with header only — `Schema: v19` (or `Schema: v20`), then a `## Inventory` placeholder section. Single Write.
-2. **Per section.** Sections are §4.2.1 vars → §4.3 triggers → §4.4 stages → §4.5 edges → §4.6 tasks → §4.7 conditions → §4.8 SLA. For each section:
+1. **Seed.** Write `tasks.md` with a `## Inventory` placeholder section only. Single Write.
+2. **Per section.** Sections are §4.2.1 vars → §4.3 triggers → §4.4 stages → §4.6 tasks → §4.7 conditions → §4.8 SLA. For each section:
    - **One Read** of `tasks.md` at section entry.
    - **N Edit-appends** in sequence, one per T-entry in the section. Skip the re-Read between sibling Edits — Edit's tool result confirms applied state in context.
    - TaskUpdate marks each T-entry `in_progress` → `completed` as it goes — that is the per-T-entry audit trail, not the file diff.
@@ -237,7 +180,7 @@ Procedure:
 
 Why: section-batched round-trips keep tool-call transcript reviewable, preserve rollback granularity at section boundary, allow mid-run interruption recovery via re-Read + resume from next un-applied T-entry, and surface omissions before they propagate — without paying a per-T-entry Read tax that inflates inference latency by ~5s per turn.
 
-**Hard cap on tasks.md write size.** After the §4.0a Step 1 Seed Write (header + Inventory placeholder, <1KB), the only legal mutation of `tasks.md` is **Edit-append** per the section-batched contract above. A single Write replacing the whole `tasks.md` is **forbidden** regardless of size. A single Edit-append payload >30KB is also forbidden — split into per-section Edit-appends even when consecutive Edits would total >30KB combined. Rationale: a single 96KB Write of tasks.md emits ~40K output tokens in one turn = ~360s inference latency = ~20% of total session in one tool call. Section-batched Edit-appends spread that cost across ~7 turns of ~50s each, recovers reviewability, and matches the recovery contract (re-Read + resume from next un-applied T-entry).
+**Hard cap on tasks.md write size.** After the §4.0a Step 1 Seed Write (Inventory placeholder, <1KB), the only legal mutation of `tasks.md` is **Edit-append** per the section-batched contract above. A single Write replacing the whole `tasks.md` is **forbidden** regardless of size. A single Edit-append payload >30KB is also forbidden — split into per-section Edit-appends even when consecutive Edits would total >30KB combined. Rationale: a single 96KB Write of tasks.md emits ~40K output tokens in one turn = ~360s inference latency = ~20% of total session in one tool call. Section-batched Edit-appends spread that cost across ~7 turns of ~50s each, recovers reviewability, and matches the recovery contract (re-Read + resume from next un-applied T-entry).
 
 **Recovery on interruption:** re-Read `tasks.md`, scan for next un-applied T-entry (the audit trail in TaskUpdate identifies it), resume from there. No sidecar checkpoint file.
 
@@ -245,7 +188,7 @@ This contract mirrors Phase 3's per-section JSON-write contract (see [implementa
 
 ### 4.1 Task ordering
 
-Always in this order: stages → edges → tasks → conditions → SLA.
+Always in this order: stages → tasks → conditions → SLA.
 
 The task **title IS the action description** — do not add a redundant `what` or `type` field. Absorb type into the title (e.g., `Add api-workflow task "..."` not `Add task` + `type: api-workflow`).
 
@@ -269,7 +212,7 @@ Title format: `Configure <trigger-type> trigger "<name>"`
 
 Consult the corresponding trigger plugin (`plugins/triggers/<type>/planning.md`) for required fields.
 
-**One T-entry per trigger row in sdd.md.** A case with N entry-point rows in its triggers table emits N trigger T-entries (T02, T03, …) — even when several rows would resolve to `<UNRESOLVED>` because the IS connection isn't provisioned. Per §4.0, "value can't be resolved yet" is not a reason to omit a row; it's a reason to mark `<UNRESOLVED: …>` and continue. See [edges/planning.md § Multi-Trigger Cases](plugins/edges/planning.md#multi-trigger-cases) for the matching N edges from triggers to the first stage.
+**One T-entry per trigger row in sdd.md.** A case with N entry-point rows in its triggers table emits N trigger T-entries (T02, T03, …) — even when several rows would resolve to `<UNRESOLVED>` because the IS connection isn't provisioned. Per §4.0, "value can't be resolved yet" is not a reason to omit a row; it's a reason to mark `<UNRESOLVED: …>` and continue. Regardless of how many triggers a case has, no per-trigger edge is created (edges are retired) — the case starts at the first stage's `case-entered` entry condition whenever any trigger fires.
 
 Each trigger row uses its plugin's full field set — see `plugins/triggers/<type>/planning.md` for the per-type entry format. Worked example — sdd.md declares 3 entry-point rows (one manual + two events), one of which is unresolved:
 
@@ -311,11 +254,9 @@ Title format: `Create stage "<name>"` or `Create exception stage "<name>"`
 
 One task per stage. Consult [`plugins/stages/planning.md`](plugins/stages/planning.md) for required fields and the `stage` vs `exception` (a.k.a. secondary) decision. Basic properties only — SLA and escalation come later (§4.7).
 
-### 4.5 Setup edges
+### 4.5 Edges — not authored (RETIRED)
 
-Title format: `Add edge "<source>" → "<target>"`
-
-One task per edge. Consult [`plugins/edges/planning.md`](plugins/edges/planning.md) for required fields (source, target, label, handles) and the orphan check.
+The skill does not author edges. Emit no edge T-entries. Stage transitions derive entirely from stage entry/exit conditions (§4.7); `caseplan.json.edges` stays `[]`. The first stage's `case-entered` entry condition replaces the former Trigger→first-stage edge. See the reachability check in [`sdd-generation-rules.md`](sdd-generation-rules.md).
 
 ### 4.6 Add tasks
 

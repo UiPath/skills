@@ -1,0 +1,82 @@
+task_id: skill-mcp-servers-e2e-command-server
+description: >
+  E2E (live DefaultTenant): register a `command`-type AgentHub MCP server that launches the public
+  MCP reference "everything" server over stdio, trigger refresh-tools (async), verify the server
+  resolved, then the harness deletes it.
+tags: [uipath-mcp-servers, e2e, mode:build]
+
+# Inherits experiments/nightly.yaml (docker + live tenant auth). The container has node/npx.
+run_limits:
+  max_turns: 60
+  turn_timeout: 600
+
+initial_prompt: |
+  Work autonomously — take this end to end and don't stop to ask me anything.
+
+  I want a command-type MCP server in AgentHub that launches the official MCP reference
+  "everything" server over stdio. Register it in the Shared folder, name it "E2E Command", running
+  `npx -y @modelcontextprotocol/server-everything`, then kick off a tools refresh. For a command
+  server that refresh runs in the background — you'll get a runtime id back, so just grab it and
+  move on; don't wait for the tools to show up or re-trigger the refresh. The server registration
+  is the goal here. Give it a unique slug (append the Unix epoch, e.g. command-e2e-<EPOCH>).
+
+  When it's done, leave a report.json in the working dir for cleanup:
+  {"slug": "<slug>", "folder_path": "Shared"}
+
+success_criteria:
+  - type: skill_triggered
+    description: "uipath-mcp-servers skill auto-loaded (inferred from the task, not named in the prompt)"
+    skill_name: "uipath-mcp-servers"
+    expected_skill: "uipath-mcp-servers"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created a command-type MCP server"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agenthub\s+mcp\s+create\s+command'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Passed the launch command (npx)"
+    tool_name: "Bash"
+    command_pattern: '(?s)mcp\s+create\s+command.*--command'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Triggered refresh-tools with --folder-key (async for command servers; endpoint requires the folder key)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-key'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json written for cleanup"
+    path: report.json
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json so CLI output is machine-parseable (repo convention)"
+    tool_name: "Bash"
+    command_pattern: '--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Live tenant: the command server is retrievable"
+    command: 'uip agenthub mcp get "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e ".Data"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-mcp-servers/_shared/cleanup_mcp_server.py"
+    timeout: 120
