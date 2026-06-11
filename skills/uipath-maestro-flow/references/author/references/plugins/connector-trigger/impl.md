@@ -162,7 +162,7 @@ Check every entry in `parameters[]` (Step 1b) where `required: true`. All requir
 
 1. Collect all required entries from `parameters[]`
 2. For each, check if the user's prompt provides a value
-3. If any required field is missing, **ask the user** — list the missing fields with their `displayName` (and `description` if useful). Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them via `AskUserQuestion` per the dropdown rule in [SKILL.md](../../../../../SKILL.md).
+3. If any required field is missing, **ask the user** — list the missing fields with their `displayName` (and `description` if useful). Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them as options per the dropdown question rule in [SKILL.md](../../../../../SKILL.md).
 4. Only proceed after all required event parameters are resolved
 
 > Step 6 buckets each resolved value into `eventParameters`, `queryParameters`, or `pathParameters` based on the entry's `type` — see Step 6's `--detail` table.

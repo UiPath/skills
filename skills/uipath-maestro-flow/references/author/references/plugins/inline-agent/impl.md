@@ -116,7 +116,7 @@ The system prompt here is a real one (bounded role, output contract, grounding, 
 Some upstream nodes (notably connector triggers like email-received) only expose their full output shape after a real run — `subject`, `from`, `body` are not knowable from the registry definition alone. In that case:
 
 1. Write the prompt against your **best guess** of the upstream node's output paths based on the connector's documented output schema (e.g., `{{ $vars.emailReceived1.output.subject }}`).
-2. Surface the assumption to the user with `AskUserQuestion` — list the referenced paths and ask the user to correct any wrong fields before they run or upload the flow. Do not invent field names silently.
+2. Surface the assumption by asking the user — list the referenced paths and ask them to correct any wrong fields before they run or upload the flow. Do not invent field names silently.
 3. After the first real run, the author can verify the actual output paths and update the prompt tokens (and matching `contentTokens[].rawString` mirrors).
 
 ### Anti-patterns
