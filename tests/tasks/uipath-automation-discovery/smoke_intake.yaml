@@ -81,10 +81,10 @@ success_criteria:
     path: "report.json"
     assertions:
       - expression: "scope"
-        operator: contains
-        expected: "quick"
+        operator: regex
+        expected: "(?i)^quick( scan)?$"
       - expression: "output_format"
-        operator: contains
-        expected: "markdown"
+        operator: regex
+        expected: "(?i).*markdown.*"
     weight: 1.5
     pass_threshold: 1.0

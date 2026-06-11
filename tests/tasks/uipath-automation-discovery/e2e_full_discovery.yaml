@@ -8,6 +8,8 @@ tags: [uipath-automation-discovery, e2e, mode:build, lifecycle:generate]
 
 agent:
   type: claude-code
+
+run_limits:
   max_turns: 40
   turn_timeout: 1200
 
