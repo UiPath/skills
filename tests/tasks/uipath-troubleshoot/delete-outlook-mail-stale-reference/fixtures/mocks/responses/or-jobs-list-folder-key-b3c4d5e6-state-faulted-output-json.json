@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c4d5e6f7-8091-4b2c-9d3e-4f5a6b7c8d9e",
+      "State": "Faulted",
+      "ProcessName": "InboxCleanupBot",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-04T11:00:00.140Z",
+      "EndTime": "2026-06-04T11:00:08.220Z",
+      "CreationTime": "2026-06-04T10:59:59.910Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
