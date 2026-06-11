@@ -216,7 +216,7 @@ Then pick the first match down this ladder:
 1. **Curated connector activity** (`uipath.connector.<key>.<op>` in the results) → use it.
 2. **Connector exists but no activity for what you need** → `core.action.http.v2` (connector mode).
 3. **No connector at all** → `core.action.http.v2` (manual mode).
-4. **No API** (desktop app) → [rpa](references/plugins/rpa/planning.md).
+4. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal).
 
