@@ -1,0 +1,87 @@
+task_id: skill-agent-guardrail-coded-escalation-smoke
+description: >
+  Smoke test: skill routes to guardrails.md and the agent adds an ESCALATION
+  (human-in-the-loop) guardrail to a coded LangGraph agent. Uses a deterministic
+  (custom rule) validator + EscalateAction as the simplest scenario — no ML
+  backend required — so it exercises the escalation wiring (EscalateAction +
+  Action App + recipient + bindings.json) structurally, without tenant connectivity.
+tags: [uipath-agents, smoke, coded, mode:build, guardrail]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/SimpleCodedAgent
+
+initial_prompt: |
+  I have a coded LangGraph agent in graph.py with a lookup_account_info tool.
+  Add a deterministic guardrail that, whenever the customer_id input contains
+  the word "secret", ESCALATES to a human reviewer (instead of blocking) via the
+  UiPath Action App "Guardrail.Escalation.Action.App" in the "Shared" folder,
+  routing the review task to reviewer@example.com. Declare the app in bindings.json.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: run_command
+    description: "graph.py still parses after the edit"
+    command: "python3 -c \"import ast; ast.parse(open('graph.py').read())\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EscalateAction imported from the LangChain adapter module (not uipath.platform)"
+    command: "grep -q 'from uipath_langchain.guardrails import' graph.py && grep -q 'EscalateAction' graph.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Deterministic guardrail with the 'secret' rule present"
+    command: "grep -qE 'UiPathDeterministicGuardrailMiddleware|CustomValidator' graph.py && grep -q 'secret' graph.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "EscalateAction configured with the Action App name + folder"
+    path: "graph.py"
+    includes:
+      - "EscalateAction"
+      - "Guardrail.Escalation.Action.App"
+      - "Shared"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Review task routed to the reviewer via TaskRecipient"
+    path: "graph.py"
+    includes:
+      - "TaskRecipient"
+      - "reviewer@example.com"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Escalation Action App declared as a binding"
+    path: "bindings.json"
+    includes:
+      - "Guardrail.Escalation.Action.App"
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  # Escalation is heavier than the block smoke (fetch docs + author guardrail +
+  # app/recipient + bindings.json) — needs a larger turn budget. expected_turns
+  # drives the cap in coder-eval; max_turns kept for parity with recommend/validate.
+  expected_turns: 32
+  max_turns: 40
+  turn_timeout: 300
