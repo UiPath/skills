@@ -5,7 +5,7 @@ description: >
   (custom rule) validator + EscalateAction as the simplest scenario — no ML
   backend required — so it exercises the escalation wiring (EscalateAction +
   Action App + recipient + bindings.json) structurally, without tenant connectivity.
-tags: [uipath-agents, smoke, coded, mode:build, guardrail]
+tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, guardrail, feature:escalation]
 
 agent:
   type: claude-code
@@ -70,12 +70,12 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Escalation Action App declared as a binding"
-    path: "bindings.json"
-    includes:
-      - "Guardrail.Escalation.Action.App"
-    weight: 2.0
+  - type: run_command
+    description: "Escalation Action App declared as a well-formed app binding"
+    command: "python3 $TASK_DIR/check_escalation.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
 run_limits:
