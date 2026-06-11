@@ -1,0 +1,6 @@
+{
+  "Name": "StoredProcWriteBack",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Execute Non Query failure: a stored procedure with an Output parameter whose Size=0, invoked over an ODBC provider, throws 'The Size property has an invalid size of 0'.",
+  "MainFile": "Main.xaml"
+}

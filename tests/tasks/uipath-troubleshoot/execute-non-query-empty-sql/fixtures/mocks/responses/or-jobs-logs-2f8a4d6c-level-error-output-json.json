@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-20T08:15:04.560Z",
+      "Message": "Execute Non Query: A database error occurred. CommandText property has not been initialized."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-20T08:15:04.580Z",
+      "Message": "CommandText property has not been initialized.\r\nin Main.xaml\r\n    at ExecuteNonQuery \"Execute Non Query\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}
