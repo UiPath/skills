@@ -11,7 +11,7 @@ Two modes inside this branch:
 | Mode | When | What happens |
 |------|------|-------------|
 | **Operate** | User references an existing policy by name/ID, or uses list/get/enable/disable/delete | Emit the matching CLI command |
-| **Author** | User describes a new guardrail in natural language | Interview → YAML → offer to create via CLI |
+| **Author** | User describes a new guardrail in natural language | Interview → Rego → JSON envelope → offer to create via CLI |
 
 ---
 
@@ -22,7 +22,7 @@ Two modes inside this branch:
 3. **Never fabricate policy IDs.** Always resolve policy names to IDs via `list` — never guess a GUID.
 4. **For delete: always confirm.** Run `get`, show the policy summary, and ask for explicit user confirmation before running `delete`.
 5. **For update: always get first.** Retrieve the current YAML via `get` and use it as the edit base — never start from scratch when updating.
-6. **Author mode produces a file, then offers to create.** Write the YAML to a file in the session directory, show it to the user, and ask before running `create`.
+6. **Author mode produces a file, then offers to create.** Write the JSON envelope to a session file, show it to the user, and ask before running `create`.
 
 ---
 
