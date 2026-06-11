@@ -26,6 +26,7 @@ If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy.
 
 1. **Connection configuration** — the literal `ConnectionString` and `ProviderName` on the activity, and whether the matching driver is installed on the Robot host.
 2. **Output variable wiring and scope** — the `DatabaseConnection` output variable name, the scope it is declared in, and every downstream data activity that reads it. A connection declared inside a nested `Sequence` is out of scope (and `Nothing`) for activities outside it.
+3. **Transaction commit/rollback outcome (Start Transaction only)** — correlate the **job final state** with the **actual database effect** and the in-scope activity logs: a `Success` job with no committed data, or with no child-activity log lines at all, points to a transaction-specific fault (swallowed rollback or a body-skip package bug) rather than a child-statement error. Capture the `UiPath.Database.Activities` version (v1.5.0 is the known body-skip build) and confirm whether each child activity binds the scope's output connection to its `ExistingDbConnection` (a child on its own inline connection runs outside the transaction). See [start-transaction-failures.md](./playbooks/start-transaction-failures.md).
 
 ## Testing Prerequisites
 
