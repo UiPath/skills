@@ -1,0 +1,90 @@
+{
+  "version": 2,
+  "_doc": "Canned responses extracted from the original investigation's raw/ CLI outputs (scrubbed). Substring dispatch, first match wins — specific rules precede generic ones.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get cbbaaaf6-b416-4025-9a98-c8ee50990f76",
+      "file": "or-jobs-get-cbbaaaf6-b416-4025-9a98-c8ee50990f76-output-json.json"
+    },
+    {
+      "match": "or jobs logs cbbaaaf6-b416-4025-9a98-c8ee50990f76 --level Error",
+      "file": "or-jobs-logs-cbbaaaf6-b416-4025-9a98-c8ee50990f76-level-error.json",
+      "_doc": "Error-level subset of the recorded log set (rows verbatim, filtered to Level == Error)."
+    },
+    {
+      "match": "or jobs logs cbbaaaf6-b416-4025-9a98-c8ee50990f76",
+      "file": "or-jobs-logs-cbbaaaf6-b416-4025-9a98-c8ee50990f76-output-json.json",
+      "_doc": "Full log set (execution started -> Error -> execution ended) for unfiltered log retrieval."
+    },
+    {
+      "match": "or jobs history cbbaaaf6-b416-4025-9a98-c8ee50990f76",
+      "file": "or-jobs-history-cbbaaaf6-b416-4025-9a98-c8ee50990f76-output-json.json"
+    },
+    {
+      "match": "or jobs traces cbbaaaf6-b416-4025-9a98-c8ee50990f76",
+      "file": "or-jobs-traces-cbbaaaf6-b416-4025-9a98-c8ee50990f76-output-json.json",
+      "_doc": "Four recorded spans: RobotJob (full Microsoft.Graph.ServiceException ErrorItemNotFound stack incl. 'Status Code: NotFound' in Attributes), the Microsoft 365 Scope span, the preceding 'Get newest email (source of a real ID)' GetMail span that SUCCEEDED on the same Inbox, and the faulting 'Get Mail by corrupted ID ...' GetMail span with Private.EmailId=\"staleId\". The two-GetMail sequence and the staleId binding are the core evidence for the stale/deleted-ID diagnosis."
+    },
+    {
+      "match": "traces spans get --job-key cbbaaaf6-b416-4025-9a98-c8ee50990f76",
+      "file": "or-jobs-traces-cbbaaaf6-b416-4025-9a98-c8ee50990f76-output-json.json",
+      "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call falls through to the empty unmocked_default."
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "No --state Faulted raw was recorded in this session, so there is no Faulted-only fixture; substring dispatch routes `--state Faulted` variants here too, returning the full recorded list — the failing job is the most recent row."
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "Fallback for flag-order variations. The tenant has one folder of interest (Shared); the recorded folder-scoped job list is the correct answer for any jobs-list variant the agent tries."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get cbbaaaf6-b416-4025-9a98-c8ee50990f76",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the raw Microsoft.Graph.ServiceException — Code: ErrorItemNotFound, 'The specified object was not found in the store., The process failed to get the correct properties.' — from the legacy GetMail activity."
+    },
+    {
+      "pattern": "traces",
+      "min": 1,
+      "description": "Core evidence: the spans carry the two-GetMail sequence — 'Get newest email (source of a real ID)' SUCCEEDED on the same Inbox right before the faulting 'Get Mail by corrupted ID ...' span whose Private.EmailId=\"staleId\" — distinguishing a stale/deleted message ID from mailbox-mismatch (ErrorInvalidMailboxItemId), auth, and scope-as-404 causes."
+    },
+    {
+      "pattern": "or jobs logs cbbaaaf6-b416-4025-9a98-c8ee50990f76",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history cbbaaaf6-b416-4025-9a98-c8ee50990f76",
+      "min": 0,
+      "description": "OPTIONAL — state transitions (Pending -> Running -> Faulted) confirm a clean single execution."
+    }
+  ]
+}
