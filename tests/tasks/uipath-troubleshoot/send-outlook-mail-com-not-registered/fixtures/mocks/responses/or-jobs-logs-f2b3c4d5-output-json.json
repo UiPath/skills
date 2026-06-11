@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-02T06:15:00.150Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-02T06:15:00.420Z",
+      "Message": "Robot executor process started (64-bit) for InvoiceMailer under UIPATH\\ROBOTUSER1"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-02T06:15:01.880Z",
+      "Message": "[Send Outlook Mail Message] Launching / attaching to Outlook (OUTLOOK.EXE) for the current mail profile"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-02T06:15:03.401Z",
+      "Message": "[Send Outlook Mail Message] Unable to cast COM object of type 'Microsoft.Office.Interop.Outlook.ApplicationClass' to interface type 'Microsoft.Office.Interop.Outlook._Application'. (Library not registered. Exception from HRESULT: 0x8002801D (TYPE_E_LIBNOTREGISTERED))"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-02T06:15:03.452Z",
+      "Message": "Unable to cast COM object of type 'Microsoft.Office.Interop.Outlook.ApplicationClass' to interface type 'Microsoft.Office.Interop.Outlook._Application'. This operation failed because the QueryInterface call on the COM component for the interface with IID '{00063001-0000-0000-C000-000000000046}' failed due to the following error: Library not registered. (Exception from HRESULT: 0x8002801D (TYPE_E_LIBNOTREGISTERED)).\r\nin Main.xaml\r\n    at SendOutlookMail \"Send Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-02T06:15:03.465Z",
+      "Message": "Execution ended in: 00:00:03"
+    }
+  ]
+}

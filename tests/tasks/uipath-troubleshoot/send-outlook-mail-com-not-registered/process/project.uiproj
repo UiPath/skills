@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceMailer",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Send Outlook Mail Message failure caused by a COM cast / library-not-registered error (0x8002801D TYPE_E_LIBNOTREGISTERED) when a 64-bit Robot process binds a 32-bit / corrupted Outlook install on the Robot host.",
+  "MainFile": "Main.xaml"
+}

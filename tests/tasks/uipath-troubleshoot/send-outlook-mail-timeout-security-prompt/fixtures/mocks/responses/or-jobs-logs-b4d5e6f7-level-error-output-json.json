@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-02T02:30:30.560Z",
+      "Message": "[Send Outlook Mail Message] Timeout reached. (30000 ms) Outlook did not respond to the send request; the COM call blocked until the timeout elapsed."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-02T02:30:30.601Z",
+      "Message": "Send Outlook Mail Message: Timeout reached. (30000 ms)\r\nin Main.xaml\r\n    at SendOutlookMail \"Send Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.TimeoutException: The operation has timed out."
+    }
+  ]
+}

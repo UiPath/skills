@@ -1,0 +1,179 @@
+task_id: skill-troubleshoot-send-outlook-mail-timeout-security-prompt
+description: >
+  UiPath troubleshooting agent must diagnose a Send Outlook Mail Message
+  failure where the activity times out / hangs (System.TimeoutException
+  after TimeoutMS) because a hidden Outlook Object Model Guard security
+  prompt ("a program is trying to send an email message on your behalf")
+  is awaiting input on an unattended Robot session, blocking the COM
+  send. Work Offline is a sibling sub-cause. Success = agent matches the
+  send-outlook-mail-failures playbook Branch 2 AND hands a host-side
+  check list (AV/Security-Center registration or programmatic-access
+  GPO, ensure Online, switch to SMTP/Graph for unattended) - NOT merely
+  raising TimeoutMS.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My NightlyReportMailer process runs unattended every night and is
+  faulting in Orchestrator on every run. The folder is "RPA Production".
+
+  I'm not on the Robot host (MOCK-HOST), only Orchestrator. Diagnose what
+  you can; if the fix needs the host, hand me the exact things to check
+  next time I'm there and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched send-outlook-mail-failures Branch 2 (timeout/hang from a hidden Outlook security prompt on an unattended session) AND handed a host-side check list - not merely bumping TimeoutMS"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My NightlyReportMailer process runs unattended every night and is
+         faulting in Orchestrator on every run. The folder is 'RPA
+         Production'. I'm not on the Robot host (MOCK-HOST), only
+         Orchestrator. Diagnose what you can; if the fix needs the host,
+         hand me the exact things to check next time I'm there and stop."
+
+      Grade ONLY the agent's final response to the user and the tool calls
+      it made. Do NOT inspect internal investigation state in
+      .local/investigations/ (state.json, hypotheses.json, matched_playbooks,
+      scope.domain, requirements, is_root_cause). What the agent presents to
+      the user is the contract.
+
+      DIMENSION A -- Correct playbook (matched send-outlook-mail-failures /
+      Branch 2)
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/send-outlook-mail-failures.md
+        specifically Branch 2 ("Activity times out or hangs"), because the
+        Send Outlook Mail Message activity blocked until TimeoutMS elapsed
+        and faulted with a timeout, not a clean COM cast error.
+        Evidence the agent matched it:
+          (1) the agent's final response names the playbook and/or Branch 2
+              (the timeout/hang branch); AND
+          (2) a tool call that Read a file under
+              references/activity-packages/mail-activities/playbooks/.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause: the Send Outlook Mail call blocked until
+        TimeoutMS (30000 ms) because a hidden Outlook security prompt (the
+        Object Model Guard, "a program is trying to send an email message on
+        your behalf") was foregrounded but awaiting input on the unattended
+        Robot session, where no one is present to dismiss it. (Work Offline
+        on the Robot's profile is an acceptable sibling sub-cause.)
+        The reference fix is host-side and/or design:
+          - keep antivirus current and registered with Windows Security
+            Center, or set the programmatic-access / Trust Center Group
+            Policy, so the Object Model Guard prompt never fires;
+          - ensure Outlook is running, signed in, and Online (not Work
+            Offline) under the Robot's Windows user, with a configured
+            profile;
+          - and/or switch to Send SMTP Mail Message
+            (UiPath.Mail.SMTP.Activities) or the modern Graph o365-activities
+            for unattended mail.
+        The agent must hand the user a host-side check list (the user is
+        off-host) and must NOT fabricate host actions it could not perform.
+        Evidence the agent reached this conclusion:
+          (1) the agent's final response names the timeout/hang + the
+              hidden-prompt / unattended-session cause + the fix / host
+              check list; AND
+          (2) the agent cited Main.xaml (the SendOutlookMail activity and
+              its TimeoutMS) and the job-log Warn line about the send call
+              pending / an interactive prompt awaiting input.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if any is the agent's
+      conclusion):
+        - COM cast / "library not registered" / bitness mismatch (that is
+          Branch 1, not this failure).
+        - Uninitialized To/Subject/Body (that is Branch 3; here they are
+          literals).
+        - "Just raise TimeoutMS" as the SOLE recommendation -- raising the
+          timeout does not clear a blocking security prompt; it only makes
+          the Robot hang longer before failing.
+        - A generic SMTP / network error, or an invalid-recipient error.
+        - Fabricating host actions (claiming it killed processes, edited
+          GPO, registered antivirus, or ran host-side commands itself).
+
+      SCORING RUBRIC:
+        1.0  Agent (a) identifies that the activity blocked / timed out
+             (NOT a clean COM cast error), (b) attributes it to a hidden
+             interactive prompt (Outlook Object Model Guard security prompt)
+             or Work Offline on the unattended session, AND (c) recommends
+             the real fix (AV up-to-date + registered with Windows Security
+             Center, or programmatic-access GPO; ensure Outlook Online;
+             and/or SMTP / Graph for unattended) and hands a host check
+             list -- NOT merely bumping TimeoutMS.
+        0.8  Correct Branch 2 + hidden-prompt/Work-Offline cause and
+             recommended the real fix, but did not enumerate the full host
+             check list (missing e.g. the SMTP/Graph alternative or the
+             profile/Online check).
+        0.5  Recognized the timeout/hang class on an unattended session but
+             did not attribute it to the hidden prompt / Work Offline, or
+             offered no actionable host check list.
+        0.2  Surfaced the timeout to the user without diagnosis; OR
+             recommended ONLY raising TimeoutMS; OR matched a wrong branch
+             (COM cast, null input) or a generic SMTP/recipient error.
+        0.0  Wrong cause entirely, or the agent fabricated a host action it
+             could not perform.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    NightlyReportMailer runs unattended on a nightly schedule. You are
+    away from the Robot host (MOCK-HOST) and only have Orchestrator
+    access. You trust the agent's expertise and are waiting for either a
+    diagnosis or a list of host-side things to check next time you are in
+    front of the machine.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
