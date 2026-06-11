@@ -13,7 +13,7 @@ Create folders, assign users with roles, provision machines, and configure licen
 
 ## Prerequisites
 
-1. Authenticated: `uip login`
+1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
 2. Tenant selected: `uip login tenant set <tenant-name>`
 3. Sufficient permissions: tenant-level admin or folder-create rights.
 

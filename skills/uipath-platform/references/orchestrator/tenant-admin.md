@@ -17,7 +17,7 @@ Configure tenant settings, manage calendars for scheduling, export audit logs, a
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Tenant selected (`uip login tenant set "<tenant>"`)
 - Appropriate admin permissions (Settings and Audit Logs require tenant admin; other commands vary by role)
 

@@ -75,7 +75,7 @@ Two distinct distribution paths from the same source:
 - **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.
 - **`upload`** — pushes the solution to Studio Web for browser-based debugging only. Does not produce a published package and cannot be deployed via `deploy run`.
 
-Authentication is a prerequisite. Run `uip login --output json` before any work; see `uipath-platform` for full auth options (interactive OAuth, client credentials, tenant switching).
+Authentication is a prerequisite. Check `uip login status --output json` before any work; if not logged in, ask the user to run `uip login` (interactive browser flow). See `uipath-platform` for full auth options (interactive OAuth, client credentials, tenant switching).
 
 This skill is the terminal step of an SDD-driven build: after `uipath-design` produces the SDD and implementation specialists build the projects, the `.uipx` is packed and shipped here.
 

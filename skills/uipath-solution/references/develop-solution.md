@@ -12,7 +12,7 @@ Create a solution, add automation projects, and sync resource declarations.
 
 ## Prerequisites
 
-- Authenticated (`uip login`) -- required for remote resource lookup during `resource refresh` and for `upload`
+- Authenticated — verify with `uip login status` (required for remote resource lookup during `resource refresh` and for `upload`); if not logged in, ask the user to run `uip login` (interactive browser flow)
 - Projects to add must contain `project.uiproj` or `project.json`
 
 ## Flow

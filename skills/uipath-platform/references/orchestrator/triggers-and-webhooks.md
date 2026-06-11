@@ -13,7 +13,7 @@ Automate job execution with time, queue, and API triggers, and set up webhooks f
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Target folder exists with machines assigned (see [setup-environment.md](setup-environment.md))
 - Process (release) created -- you need the release key from `uip or processes list`
 

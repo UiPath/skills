@@ -13,7 +13,7 @@ Create configuration assets, share them across folders, and manage credential ro
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Target folder exists (see [setup-environment.md](setup-environment.md))
 - For Credential/Secret types: a credential store must exist (`uip or credential-stores list`)
 

@@ -13,7 +13,7 @@ Upload automation packages, bind them as processes, start jobs, and monitor exec
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Target folder exists with machines assigned (see [setup-environment.md](setup-environment.md))
 - Automation package (.nupkg) built and ready to upload
 
