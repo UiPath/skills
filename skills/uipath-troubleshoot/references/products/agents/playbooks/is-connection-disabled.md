@@ -2,7 +2,7 @@
 confidence: medium
 ---
 
-# IS Connection Forbidden (403)
+# IS Connection Disabled (403)
 
 ## Context
 
@@ -17,11 +17,10 @@ What this looks like:
 - Applies to OAuth2 authorization code connections only — client credentials flows are not affected by this lockout mechanism
 
 What can cause it:
-- IS locked out the connection after consecutive authentication failures (protective lockout)
+- IS disabled the connection after failing consecutively to refresh the token (protective lockout)
 - Repeated IS health-check failures cascaded into a lockout independently of credential validity
 - Connected app credentials (OAuth client secret, API key) were rotated on the external system after the connection was created
 - An IS administrator manually disabled the connection
-- Concurrent agent runs sharing the same IS connection triggered enough failures simultaneously to trip the lockout
 
 What to look for:
 - Whether the error says "temporarily disabled due to multiple unsuccessful attempts" (lockout) vs. a generic 403 (external system permissions changed)
