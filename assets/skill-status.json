@@ -27,6 +27,11 @@
       "confluence": { "page_id": null, "url": null },
       "last_synced": null
     },
+    "uipath-agent-memory": {
+      "status": "in-development",
+      "confluence": { "page_id": null, "url": null },
+      "last_synced": null
+    },
     "uipath-api-workflow": {
       "status": "in-development",
       "confluence": { "page_id": null, "url": null },

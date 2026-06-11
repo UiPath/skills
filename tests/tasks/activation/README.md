@@ -44,7 +44,7 @@ Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.y
 
 ## Cost
 
-On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~950 rows total. The agent runs ONCE per row regardless of criteria count, and the 20 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark across all 20 skills costs **~$50–95**. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
+On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~980 rows total. The agent runs ONCE per row regardless of criteria count, and the 19 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark across all 19 covered skills costs **~$50–100**. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
 
 ## Provenance
 

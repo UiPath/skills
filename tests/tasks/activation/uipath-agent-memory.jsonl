@@ -1,0 +1,10 @@
+{"id": "uipath-agent-memory-001", "prompt": "Add a UiPath Memory Space to my low-code Agent Builder project", "expected_skill": "uipath-agent-memory"}
+{"id": "uipath-agent-memory-002", "prompt": "Attach the existing MemorySpace named SupportRecall to this agent.json project", "expected_skill": "uipath-agent-memory"}
+{"id": "uipath-agent-memory-003", "prompt": "Use uip agent memory to add dynamic few-shot retrieval to my low-code agent", "expected_skill": "uipath-agent-memory"}
+{"id": "uipath-agent-memory-004", "prompt": "Seed an episodic memory item into my UiPath low-code agent", "expected_skill": "uipath-agent-memory"}
+{"id": "uipath-agent-memory-005", "prompt": "My low-code agent has no memorySpace binding after refresh. Fix the memory configuration.", "expected_skill": "uipath-agent-memory"}
+{"id": "uipath-agent-memory-006", "prompt": "Remove the SupportRecall memory feature from this Agent Builder project", "expected_skill": "uipath-agent-memory"}
+{"id": "uipath-agent-memory-007", "prompt": "List the memory spaces attached to my UiPath low-code agent and validate the generated binding", "expected_skill": "uipath-agent-memory"}
+{"id": "uipath-agent-memory-008", "prompt": "Add a Memory Space to an inline low-code agent in my Flow project and propagate bindings to the parent flow", "expected_skill": "uipath-agent-memory"}
+{"id": "uipath-agent-memory-009", "prompt": "Configure hybrid search, threshold, result count, and field weights for an agent memory feature", "expected_skill": "uipath-agent-memory"}
+{"id": "uipath-agent-memory-010", "prompt": "Add an escalation memory seed item to my UiPath Agent Builder project", "expected_skill": "uipath-agent-memory"}

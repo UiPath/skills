@@ -1,0 +1,32 @@
+task_id: skill-agent-memory-smoke-help
+description: >
+  Smoke test: agent should trigger the uipath-agent-memory skill for a
+  low-code agent memory request and verify the `uip agent memory` CLI
+  surface without mutating project files.
+tags: [uipath-agent-memory, smoke, mode:build, lifecycle:discover, low-code]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  I have a UiPath low-code Agent Builder project and need to attach an
+  existing Memory Space for dynamic few-shot retrieval. Use the applicable
+  UiPath skill. Before giving the command sequence, verify the memory CLI
+  surface with `uip agent memory --help --output json`. Do NOT scaffold or
+  edit files.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agent-memory skill"
+    expected_skill: "uipath-agent-memory"
+    skill_name: "uipath-agent-memory"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inspected the memory CLI help"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+memory\s+--help\b.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

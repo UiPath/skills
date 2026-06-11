@@ -51,6 +51,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-rpa** | RPA workflows (`.xaml` and `.cs` coded) — create, edit, build, run, debug, test; UI automation, Object Repository, Integration Service activities. |
 | **uipath-maestro-flow** | Maestro Flow (`.flow`) — author, connect nodes, validate, run, publish; triggers, schedules, evals, incidents. |
 | **uipath-agents** | UiPath agents end-to-end — coded (Python: LangGraph, LlamaIndex, OpenAI Agents) and low-code (`agent.json`); scaffold, run, evaluate, deploy. |
+| **uipath-agent-memory** | Low-code agent memory spaces — attach existing MemorySpace resources, configure dynamic few-shot retrieval, seed items, refresh bindings, validate. |
 | **uipath-maestro-bpmn** | Maestro BPMN process orchestration (`.bpmn`) — author XML, validate, package, operate, diagnose. |
 | **uipath-maestro-case** | Case Management (`caseplan.json`) authoring from SDD with phased build and validation. |
 | **uipath-coded-apps** | Coded Web Apps and Coded Action Apps — scaffold, build, debug, pack, publish, deploy via `uip codedapp`. |
@@ -90,6 +91,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | Skill | Status |
 |-------|--------|
 | `uipath-admin` | In-development |
+| `uipath-agent-memory` | In-development |
 | `uipath-agents` | In-development |
 | `uipath-api-workflow` | In-development |
 | `uipath-coded-apps` | Preview |
