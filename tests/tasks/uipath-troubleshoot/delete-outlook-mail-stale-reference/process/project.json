@@ -1,0 +1,51 @@
+{
+  "name": "InboxCleanupBot",
+  "projectId": "d6e7f8a9-b0c1-4d23-8e4f-5a6b7c8d9e0f",
+  "description": "Reproduces a Delete Outlook Mail Message failure: the MailMessage retrieved by an upstream Get Outlook Mail Messages is moved or deleted during a long per-item processing loop, so by delete time the item no longer exists at its original location and the activity faults with 'The operation failed. An object could not be found.'",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.Mail.Activities": "[1.18.3]",
+    "UiPath.System.Activities": "[25.10.5]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "25.10.7.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "isAttended": false,
+    "executionType": "Workflow",
+    "requiresUserInteraction": false,
+    "supportsPersistence": false,
+    "excludedLoggedData": [
+      "Private:*",
+      "*password*"
+    ]
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {
+      "privateWorkflows": []
+    },
+    "processOptions": {
+      "ignoredFiles": []
+    },
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "CSharp",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "e7f8a9b0-c1d2-4e34-9f56-7a8b9c0d1e2f",
+      "input": [],
+      "output": []
+    }
+  ],
+  "isTemplate": false,
+  "templateProjectData": {},
+  "publishData": {},
+  "targetFramework": "Windows"
+}

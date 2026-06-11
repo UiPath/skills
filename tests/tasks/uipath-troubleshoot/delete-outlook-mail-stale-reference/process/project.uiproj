@@ -1,0 +1,6 @@
+{
+  "Name": "InboxCleanupBot",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Delete Outlook Mail Message failure: the MailMessage retrieved by an upstream Get Outlook Mail Messages is moved or deleted during a long per-item processing loop, so by delete time the item no longer exists at its original location and the activity faults with 'The operation failed. An object could not be found.'",
+  "MainFile": "Main.xaml"
+}

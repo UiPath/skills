@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T03:00:00.180Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T03:00:00.420Z",
+      "Message": "Running unattended on MOCK-HOST as UIPATH\\ROBOTUSER1 (no interactive desktop session)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T03:00:01.005Z",
+      "Message": "[Move Outlook Mail Message] Configured destination MailFolder: 'Inbox\\Processed' (Account: default profile)"
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-06-04T03:00:03.640Z",
+      "Message": "[Move Outlook Mail Message] could not bind to a running Outlook instance for UIPATH\\ROBOTUSER1 (no live COM session); the destination folder tree could not be indexed"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T03:00:05.190Z",
+      "Message": "[Move Outlook Mail Message] The operation failed."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T03:00:05.231Z",
+      "Message": "The operation failed.\r\nin Main.xaml\r\n    at MoveOutlookMessage \"Move Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.Runtime.InteropServices.COMException: The operation failed. (Exception from HRESULT: 0x800706BA (RPC_S_SERVER_UNAVAILABLE))"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-04T03:00:05.255Z",
+      "Message": "Execution ended in: 00:00:05"
+    }
+  ]
+}

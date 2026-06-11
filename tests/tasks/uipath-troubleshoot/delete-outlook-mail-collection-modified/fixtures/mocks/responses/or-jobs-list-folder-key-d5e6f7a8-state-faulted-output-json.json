@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "e6f7a8b9-0123-4d4e-9f5a-6b7c8d9e0f10",
+      "State": "Faulted",
+      "ProcessName": "BulkMailPurger",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-04T13:30:00.140Z",
+      "EndTime": "2026-06-04T13:30:04.470Z",
+      "CreationTime": "2026-06-04T13:29:59.910Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

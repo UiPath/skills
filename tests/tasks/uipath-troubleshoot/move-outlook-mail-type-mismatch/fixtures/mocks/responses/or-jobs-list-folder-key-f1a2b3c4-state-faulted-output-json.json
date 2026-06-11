@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "a2b3c4d5-6e7f-4a8b-9c0d-0e1f2a3b4c5d",
+      "State": "Faulted",
+      "ProcessName": "InboxAutoFiler",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-04T09:10:00.140Z",
+      "EndTime": "2026-06-04T09:10:02.260Z",
+      "CreationTime": "2026-06-04T09:09:59.910Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

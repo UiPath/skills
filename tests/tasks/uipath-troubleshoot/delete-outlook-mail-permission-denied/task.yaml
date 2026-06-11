@@ -1,0 +1,170 @@
+task_id: skill-troubleshoot-delete-outlook-mail-permission-denied
+description: >
+  UiPath troubleshooting agent must diagnose a Delete Outlook Mail Message
+  failure caused by a mailbox-permission / access-denied COMException
+  (0x80070005 E_ACCESSDENIED). The shared mailbox ap-shared@contoso.com
+  opens and the target message resolves, but the delete is denied because
+  the Robot account has Send-As but not Full Access (delete) rights on the
+  shared mailbox. Success = agent matches Branch 5 of the
+  delete-outlook-mail-failures playbook AND hands an IT/Exchange check list
+  (set Account to the shared address, request Full Access from the Exchange
+  admin) without fabricating the change.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My SharedInboxArchiver process is faulting in Orchestrator on every run;
+  it reads a shared mailbox fine but fails when it tries to delete. The
+  folder is "RPA Production".
+
+  I'm not on the Robot host (MOCK-HOST) and I'm not an Exchange admin.
+  Diagnose what you can from Orchestrator. If the fix needs the host or IT,
+  hand me the exact things to request and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched Branch 5 of delete-outlook-mail-failures AND handed an IT/Exchange check list (Account = shared address, request Full Access) without fabricating the change"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My SharedInboxArchiver process is faulting in Orchestrator on every
+         run; it reads a shared mailbox fine but fails when it tries to
+         delete. The folder is 'RPA Production'. I'm not on the Robot host
+         (MOCK-HOST) and I'm not an Exchange admin. If the fix needs the
+         host or IT, hand me the exact things to request and stop."
+
+      Grade ONLY the agent's final response to the user and its tool calls.
+      Do NOT inspect or require any internal investigation state under
+      .local/investigations/ (state.json, hypotheses.json, matched_playbooks,
+      scope.domain, requirements, is_root_cause, evidence shapes). What the
+      agent presents IS the contract.
+
+      DIMENSION A -- Correct playbook (Branch 5)
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/delete-outlook-mail-failures.md
+        specifically Branch 5 (Mailbox permission / access denied), because
+        the runtime error is a delete denied on a shared mailbox with
+          "You do not have sufficient permission to perform this operation
+           on this object."
+          / "Access is denied. (Exception from HRESULT: 0x80070005
+             (E_ACCESSDENIED))".
+        Evidence the agent matched it:
+          (1) the agent's final response names the delete-outlook-mail-failures
+              playbook / Branch 5 (mailbox permission / access denied); AND
+          (2) a tool call that Read a file under
+              references/activity-packages/mail-activities/playbooks/.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause: the delete was DENIED (Access is denied /
+        E_ACCESSDENIED, insufficient permission) because the Robot account
+        (UIPATH\ROBOTUSER1) lacks Full Access (delete) rights on the shared
+        mailbox ap-shared@contoso.com -- it has Send-As but NOT Full Access.
+        The folder ("RPA Production") resolved, the Account is already the
+        shared address, the shared mailbox opened, and the target message
+        was FOUND -- so this is NOT a stale reference, NOT a missing object,
+        NOT a folder-path typo, NOT a credential problem.
+        The reference fix: keep the shared mailbox address in `Account`, and
+        have the Exchange administrator grant the Robot's AD account Full
+        Access (not just Send-As) on the shared mailbox. Because the user is
+        off-host and not an Exchange admin, the agent must hand an IT/host
+        check list and must NOT fabricate an Exchange change it cannot make.
+        Evidence the agent reached this:
+          (1) the agent's final response names the access-denied /
+              insufficient-permission cause on the shared mailbox AND the
+              Full-Access (Exchange) fix; AND
+          (2) the agent cited Main.xaml (Account set to the shared address)
+              and the job-log line showing the delete was denied because the
+              account has Send-As but not Full Access.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
+      any of these as the root cause):
+        - Stale reference / "object could not be found" (Branch 1) -- the
+          message WAS found here.
+        - Collection modified inside a For Each loop (Branch 2).
+        - New Outlook removed the desktop COM API (Branch 3).
+        - COM session blocked / modal dialog / timeout / privilege mismatch
+          (Branch 4) -- this is an access-denied, not a hang.
+        - A folder-path typo (the folder resolved).
+        - "The credential / password is wrong."
+        - Fabricating an Exchange change the agent cannot perform.
+
+      SCORING RUBRIC:
+        1.0  Agent (a) names the access-denied / insufficient-permission
+             failure on the shared mailbox, (b) attributes it to the Robot
+             account lacking Full Access (delete) rights (Send-As is not
+             enough), AND (c) recommends setting `Account` to the shared
+             address AND requesting Full Access from the Exchange admin --
+             handing an IT check list without fabricating the change.
+        0.8  Correct Branch 5 cause (access-denied / lacks Full Access on the
+             shared mailbox) AND recommends the Exchange Full-Access fix, but
+             omits the `Account` confirmation or part of the IT check list.
+        0.5  Recognized a permission / access-denied class but did not tie it
+             to Full Access vs Send-As on the shared mailbox, or offered no
+             actionable IT check list.
+        0.2  Surfaced the HRESULT / error to the user without diagnosis, OR
+             concluded one of the WRONG ANSWERS above.
+        0.0  Wrong cause unrelated to permissions, or the agent fabricated an
+             Exchange / host action it could not perform.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are away from the Robot host (MOCK-HOST), only have Orchestrator
+    access, and are NOT an Exchange administrator. You trust the agent's
+    expertise and are waiting for either a diagnosis or a list of things to
+    request from IT / the Exchange admin.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the IT / Exchange check list at the end."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
