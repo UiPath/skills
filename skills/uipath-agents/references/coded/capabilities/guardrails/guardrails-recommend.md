@@ -160,12 +160,14 @@ Always confirm the chosen scope is in the validator's `allowed_scopes` from the 
 
 ### Step 6 — Choose the Action
 
-The action (`BlockAction` vs `LogAction`) is **not** a free choice — default to the `action_type` in the catalog entry's representative `examples[].config`. For security-critical guardrails (`adversarial_input` — prompt injection / user prompt attacks; `content_safety` — harmful content / IP) the catalog examples use **Block**, because a logged-but-allowed violation provides no actual protection.
+The action (`BlockAction` vs `LogAction` vs `EscalateAction`) is **not** a free choice — default to the `action_type` in the catalog entry's representative `examples[].config`. For security-critical guardrails (`adversarial_input` — prompt injection / user prompt attacks; `content_safety` — harmful content / IP) the catalog examples use **Block**, because a logged-but-allowed violation provides no actual protection.
+
+**`EscalateAction` (human-in-the-loop)** is a third option — recommend it when the user wants a **human to review/approve** a flagged item rather than hard-block it (high-stakes or sensitive content where a person should approve or edit before the run proceeds). It **suspends** the run for review and resumes on Approve (terminates on Reject). **Prerequisite:** a deployed Action App declared in `bindings.json` — see [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop). If the user asks for escalation but no Action App is available, say so and fall back to Block/Log rather than authoring a guardrail that fails at runtime.
 
 Rules:
 
 1. **Default to the catalog example's `action_type`.** If it is `Block`, generate `BlockAction(...)`. Do not substitute `LogAction` for a security-critical guardrail on your own initiative.
-2. **Never silently downgrade Block → Log.** A guardrail set to log-only when the user expected blocking is the dangerous failure mode — the agent looks protected but isn't. If you use `LogAction` for any guardrail whose catalog default is `Block`, you **must** state it explicitly in the report and give the reason.
+2. **Never silently downgrade Block → Log** (or a requested escalation → Log/Block). A guardrail set to log-only when the user expected blocking is the dangerous failure mode — the agent looks protected but isn't. If you use `LogAction` for any guardrail whose catalog default is `Block`, you **must** state it explicitly in the report and give the reason. If the user asked for **human review** (escalation) but you author Block/Log instead (e.g. no Action App available), say so explicitly — don't quietly drop the human-in-the-loop step.
 3. **Legitimate reasons to use Log instead of Block** (state which applies):
    - The user explicitly asked for observe-only / audit / "log first, block later" rollout.
    - A high false-positive risk where blocking would break normal operation (e.g. PII `PERSON` entity flagging ordinary words) — log so the user can tune thresholds before enforcing.
@@ -188,7 +190,7 @@ Map catalog parameter shapes to Python:
 | `map-enum` (e.g. `entityThresholds`) | Dict from enum member → number (e.g. `{PIIDetectionEntityType.EMAIL: 0.5}`) — keys must exactly match the `enum-list` parameter's values |
 | `number` (e.g. `threshold`) | Plain `float` / `int` constructor argument |
 
-Use `BlockAction(...)`, `LogAction(severity_level=...)`, or other actions exposed by the SDK docs. Never invent action class names.
+Use `BlockAction(...)`, `LogAction(severity_level=...)`, or `EscalateAction(app_name=..., app_folder_path=..., recipient=...)` for human-in-the-loop review — or any other action the SDK docs expose. Never invent action class names. For `EscalateAction`, the Action App must be deployed and declared in `bindings.json` (see [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop)).
 
 > Read [guardrails.md](guardrails.md) before writing any Python. The middleware spread, decorator stacking, and factory refactor rules cannot be safely inferred.
 
@@ -282,3 +284,4 @@ python3 -c "import ast; ast.parse(open('graph.py').read())"
 12. **The cache file is `.guardrails-catalog-cache.json`** in the working directory. Add it to `.gitignore` if one exists.
 13. **Class names and enum names come from the SDK docs** — never invent them. The SDK evolves; relying on memory produces stale code. For **import paths**, use the `langchain/guardrails/` page when the agent is LangChain (paths live in `uipath_langchain.guardrails`); for every other framework use the `core/guardrails/` page (paths live in `uipath.platform.guardrails`). See Rule 8.
 14. **Read [guardrails.md](guardrails.md) before writing any Python** — the middleware spread (`*`), decorator placement above `@tool` / factory, factory refactor, and import-source rules are specified there and cannot be safely inferred.
+15. **`EscalateAction` is the human-in-the-loop option** — recommend it when the user wants a person to review/approve a flagged item rather than hard-block it. It requires a **deployed Action App** declared in `bindings.json` (`app_name` / `app_folder_path`); if none is available, fall back to Block/Log and say so — never silently drop the requested escalation. See Step 6 and [guardrails.md § Escalation action (HITL)](guardrails.md#escalation-action-human-in-the-loop).
