@@ -11,7 +11,7 @@ description: >
   (`current_weather.temperature`), and live execution. Distinct from the
   managed-HTTP `bellevue_weather` task — this one must use the native connector,
   not `core.action.http`.
-tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, custom-codereval-openmeteoapis]
+tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, custom-codereval-openmeteoapis, ipe, custom-connector]
 
 agent:
   type: claude-code

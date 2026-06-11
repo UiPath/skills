@@ -24,6 +24,8 @@ tags:
     connector,
     uipath-microsoft-outlook365,
     filter,
+    ipe,
+    wait-for-event,
   ]
 run_limits:
   expected_turns: 55
