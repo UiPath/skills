@@ -113,7 +113,7 @@ uip or processes resources <process-key-guid> --output json
 
 # Edit fields after creation. Same flag set as `processes create` minus name/package-key/package-version,
 # plus --healing-agent / --no-healing-agent (Autopilot for Robots toggle).
-uip or processes edit <process-key-guid> --description "Updated description" --output json
+uip or processes update <process-key-guid> --description "Updated description" --output json
 
 # Walk the package version history (every package version this release ever pointed at)
 uip or processes version-history <process-key-guid> --output json
@@ -128,7 +128,7 @@ uip or processes rollback <process-key-guid> --output json
 uip or processes delete <process-key-guid> --yes --output json
 ```
 
-`processes edit` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.
+`processes update` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.
 
 ## Step 4: Start Job
 
@@ -147,11 +147,12 @@ uip or jobs start <process-key> --folder-path "Production" \
 Key options:
 
 - `--input-arguments <json>` / `--input-file <path>` — pick one. `--input-arguments` inlines a JSON object (validated client-side — invalid JSON is rejected before the call); `--input-file` uploads a file as the job's `InputFile` argument.
+  - **10K character cap on job arguments.** Orchestrator caps serialized input/output arguments at 10,240 characters for classic `StartJob` runs; an oversized output is silently dropped (the consuming workflow receives `null`, the job still reports Successful). `StartAgentJob` (agent runs) is not subject to the same cap in practice. Robot 2025.10.1+ removes the cap entirely ("Support for large input and output arguments"). If you hit it: pass big payloads via a storage bucket / queue item reference, or upgrade the Robot.
 - `--attachment <[name=]path>` — upload one or more files and attach them to the job. Repeat the flag for multiple. Pair with `--attachment-id <guid>` to reuse an attachment that was previously uploaded.
 - `--runtime-type <type>` — `Unattended`, `Headless`, `NonProduction`, `AgentService`, or `Serverless`. Picks the runtime kind the scheduler will use.
 - `--strategy <strategy>` — one of `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (use `--user-keys` / `--machine-keys`), or `JobsCount`. Validated client-side. `--jobs-count` must be a whole number greater than 0.
 - `--user-keys <guids>` / `--machine-keys <guids>` — comma-separated GUIDs to pin the job to specific identities. With `--strategy ModernJobsCount` they restrict the candidate pool; with `Specific` they're required.
-- `--healing-agent` — enable Autopilot for Robots (Healing Agent) just for this job, regardless of the process-level `--healing-agent` setting on `processes edit`. Useful for one-off self-healing without flipping the process default.
+- `--healing-agent` — enable Autopilot for Robots (Healing Agent) just for this job, regardless of the process-level `--healing-agent` setting on `processes update`. Useful for one-off self-healing without flipping the process default.
 - `--reference <text>` — user-set reference (free-form string) attached to the job. Useful for correlation with external systems.
 - `--environment-variables <json>` — JSON object of per-job environment variables. Merged on top of folder-/process-level env.
 - `--run-as-me` — run under the caller's identity instead of resolving an unattended robot account in the folder.
@@ -172,7 +173,12 @@ uip or jobs list --state Running --folder-path "Production" --output json
 
 # Filter by process name and date range
 uip or jobs list --process-name "MyProcess" --folder-path "Production" --output json
+
+# List jobs across all accessible folders
+uip or jobs list --all-folders --state Faulted --output json
 ```
+
+`jobs list` requires `--folder-path`, `--folder-key`, or `--all-folders` — a bare `jobs list` is rejected. (Older CLI versions listed tenant-wide by default; pass `--all-folders` for that behavior.)
 
 ## Step 6: Get Logs
 
@@ -248,7 +254,7 @@ uip or processes update-version <process-key> --output json
 uip or processes rollback <process-key> --output json
 
 # Edit process properties
-uip or processes edit <process-key> --output json
+uip or processes update <process-key> --output json
 ```
 
 ---

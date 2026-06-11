@@ -29,11 +29,11 @@ Tenant settings are dot-notation key-value pairs that control tenant behavior. U
 
 | Command | What it does |
 |---------|--------------|
-| `uip or settings list` | List all settings. Filter with `--scope Application\|Tenant\|User\|All`. |
+| `uip or settings list` | List all settings as curated `{Name, Value, Scope}` rows. Filter with `--scope Application\|Tenant\|User\|All`; `--all-fields` for the raw DTO. |
 | `uip or settings get <key>` | Get a single setting value by key. |
 | `uip or settings update <key> <value>` | Update a setting value. |
 | `uip or settings execution` | Get execution settings with display names, types, and allowed values. Use `--scope 0` (Global) or `--scope 1` (Robot). |
-| `uip or settings timezones` | List all valid timezone IDs (for use with `Abp.Timing.TimeZone`). |
+| `uip or settings timezones` | List all valid timezone IDs as `{Name, Value}` rows — pass the `Value` to `Abp.Timing.TimeZone`. |
 
 **Common setting keys:**
 

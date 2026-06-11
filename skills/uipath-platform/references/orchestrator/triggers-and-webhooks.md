@@ -134,7 +134,7 @@ uip or triggers update <trigger-key> --type time \
 
 > **`--type` filters the list.** `triggers list --type time` returns only time triggers, `--type queue` only queue triggers (both live in ProcessSchedules, so the CLI discriminates by queue binding). The curated output carries a canonical `Type` field with one of `Time`, `Queue`, or `Api` across `create`/`get`/`list` (use `--all-fields` for the raw entity, where api triggers report `Http`). `get` also returns `StartProcessCronSummary` (a human-readable cron, e.g. "At 12:00 PM").
 
-> **Enum flag values are case-insensitive.** `--method POST`, `--runtime-type SERVERLESS`, `--job-priority HIGH` all work and are normalized to canonical PascalCase before the API call. Same on `queue-items` (`--priority high` ≡ `High`) and `processes edit` (`--retention-action delete`, `--robot-size standard`).
+> **Enum flag values are case-insensitive.** `--method POST`, `--runtime-type SERVERLESS`, `--job-priority HIGH` all work and are normalized to canonical PascalCase before the API call. Same on `queue-items` (`--priority high` ≡ `High`) and `processes update` (`--retention-action delete`, `--robot-size standard`).
 
 ---
 
@@ -161,7 +161,7 @@ Shows every activation attempt and why it succeeded or failed. Check this before
 uip or triggers history <trigger-key> --folder-path "Finance" --output json
 ```
 
-Entries include `logEventType` (Fired, Failed, Skipped) and `message` ("No machines available", "License limit reached", "Calendar exclusion").
+Entries are curated rows with `TimeStamp`, `EventType` (Fired, Failed, Skipped, DisabledDueToConsecutiveFailures, ...), `Level`, `Message` ("No machines available", "License limit reached", "Calendar exclusion") and `TriggerKey`. The response includes a `Pagination` block; pass `--all-fields` for the raw DTO.
 
 ---
 
@@ -175,7 +175,7 @@ Webhooks are **tenant-scoped** -- no `--folder-path` needed. They POST to your U
 uip or webhooks event-types --output json
 ```
 
-Returns names like `job.completed`, `job.faulted`, `queueItem.failed`. Use these with `--events`.
+Returns names like `job.completed`, `job.faulted`, `queueItem.failed`. Use these with `--events`. The response carries the standard `Pagination` block (full enumeration in one call, `HasMore` always false).
 
 ### Create a Webhook
 
@@ -212,9 +212,11 @@ uip or webhooks update <webhook-key> \
 uip or webhooks update <webhook-key> --disabled --output json
 uip or webhooks update <webhook-key> --enabled --output json
 
-uip or webhooks ping <webhook-key> --output json     # test connectivity
+uip or webhooks ping <webhook-key> --output json     # dispatch a test ping event
 uip or webhooks delete <webhook-key> --yes --output json
 ```
+
+> **`ping` reports dispatch, not delivery.** The ping event goes through the asynchronous event pipeline; Success means the ping was queued, not that the endpoint answered. The API exposes no delivery result, so confirm receipt on the receiving endpoint (or its logs).
 
 ---
 
