@@ -1,0 +1,88 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for logon-failure-password-mismatch scenario (job-faulted-logon-failure playbook, branch 3 — stale Orchestrator credential after AD password rotation). Folder/job/user keys are stable; the agent derives them by chaining: folders list-current-user -> jobs list --state Faulted -> jobs get -> jobs logs -> robots list -> users get. The same-user-different-machine and same-machine-different-user evidence is surfaced via the broader jobs-list call (without --state filter).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f1e2d3c4-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f1e2d3c4-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f1e2d3c4-b5a6-7890-1234-56789abcdef0\" --output json",
+      "file": "or-jobs-list-folder-key-f1e2d3c4-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f1e2d3c4-b5a6-7890-1234-56789abcdef0 --output json",
+      "file": "or-jobs-list-folder-key-f1e2d3c4-output-json.json"
+    },
+    {
+      "match": "or jobs get \"aabb1122-3344-5566-7788-99aabbccdd00\" --output json",
+      "file": "or-jobs-get-aabb1122-output-json.json"
+    },
+    {
+      "match": "or jobs get aabb1122-3344-5566-7788-99aabbccdd00 --output json",
+      "file": "or-jobs-get-aabb1122-output-json.json"
+    },
+    {
+      "match": "or jobs get \"aabb1100-3344-5566-7788-99aabbccdd11\" --output json",
+      "file": "or-jobs-get-aabb1100-output-json.json"
+    },
+    {
+      "match": "or jobs get aabb1100-3344-5566-7788-99aabbccdd11 --output json",
+      "file": "or-jobs-get-aabb1100-output-json.json"
+    },
+    {
+      "match": "or jobs get \"bbcc2233-4455-6677-8899-aabbccddee22\" --output json",
+      "file": "or-jobs-get-bbcc2233-output-json.json"
+    },
+    {
+      "match": "or jobs get bbcc2233-4455-6677-8899-aabbccddee22 --output json",
+      "file": "or-jobs-get-bbcc2233-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"aabb1122-3344-5566-7788-99aabbccdd00\" --level Error --output json",
+      "file": "or-jobs-logs-aabb1122-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs aabb1122-3344-5566-7788-99aabbccdd00 --level Error --output json",
+      "file": "or-jobs-logs-aabb1122-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"aabb1122-3344-5566-7788-99aabbccdd00\" --output json",
+      "file": "or-jobs-logs-aabb1122-output-json.json"
+    },
+    {
+      "match": "or jobs logs aabb1122-3344-5566-7788-99aabbccdd00 --output json",
+      "file": "or-jobs-logs-aabb1122-output-json.json"
+    },
+    {
+      "match": "or users get \"c1d2e3f4-a5b6-c7d8-e9f0-1a2b3c4d5e6f\" --output json",
+      "file": "or-users-get-c1d2e3f4-output-json.json"
+    },
+    {
+      "match": "or users get c1d2e3f4-a5b6-c7d8-e9f0-1a2b3c4d5e6f --output json",
+      "file": "or-users-get-c1d2e3f4-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy any docsai query to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  }
+}

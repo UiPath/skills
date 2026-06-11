@@ -5,7 +5,7 @@ description: >
   production bar — overriding the stale gpt-4o scaffold default, writing a
   non-placeholder system prompt, and declaring a typed outputSchema. Guards
   against shipping the toy scaffold a customer would otherwise inherit.
-tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, node:inline-agent]
+tags: [uipath-maestro-flow, mode:build, lifecycle:generate, node:inline-agent]
 
 run_limits:
   expected_turns: 32

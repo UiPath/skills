@@ -1,0 +1,153 @@
+task_id: skill-case-phase-0-finalize-draft-loan
+description: >
+  Phase 0 FINALIZATION ONLY — a LoanOrigination interview draft (sdd.draft.md)
+  is staged into the sandbox; the skill resumes Phase 0, runs the Finalization
+  checks (normalizing rule syntax / gate legality / interrupting flags as
+  needed), and renames it to an approved sdd.md. Decoupled from the interview
+  (covered by loan_origination) so the heavy finalization step runs in one
+  bounded turn. Grades mechanical validity of the produced sdd.md (sdd_check)
+  plus domain coherence. Loan-domain counterpart to finalize_from_draft.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+  - feature:phase-0
+  - feature:stages
+  - feature:case-exit
+  - feature:conditions
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+  # Cap per-turn extended thinking so finalization writes/edits rather than
+  # deliberating the whole document as thinking tokens.
+  sdk_options:
+    max_thinking_tokens: 10000
+
+run_limits:
+  task_timeout: 3000
+  max_turns: 150
+  turn_timeout: 2400
+
+# Stage the ready-made interview draft into the sandbox root as sdd.draft.md.
+# The skill's resumption path (sdd.draft.md present, no sdd.md) picks it up.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  I have a draft design document for our LoanOrigination case-management
+  solution — it's saved as `sdd.draft.md` in this folder. Please finalize it into
+  the final design document.
+
+  Work from what's there; the design is settled, so don't redo it or re-interview
+  me. The connector IDs in the draft are placeholders on purpose — leave them as
+  they are. I just need the finalized design for now, nothing built yet.
+
+  Use the uipath-maestro-case skill.
+
+success_criteria:
+  - type: file_exists
+    description: "Finalization produced the approved sdd.md"
+    path: "sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "sdd.md is mechanically sound: variable mappings + lineage, per-gate rule legality, task types, entry/completion/exit conditions"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "sdd.md preserves the conditional >$5M Credit-Analyst gate"
+    command: "grep -Eiq 'credit analyst.{0,80}5' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "sdd.md preserves all 4 exception lanes"
+    command: "grep -Eiq 'customer comms' sdd.md && grep -Eiq 'escalation' sdd.md && grep -Eiq 'withdrawn' sdd.md && grep -Eiq 'rejected' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "finalized sdd.md preserves all 6 primary stages (none dropped at finalization)"
+    command: "[ \"$(grep -cE '^#+ +Stage [0-9]' sdd.md)\" -ge 6 ]"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "stopped at the finalized sdd.md — did not run ahead into a caseplan build"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Finalized sdd.md is domain-coherent for commercial loan origination"
+    files:
+      - sdd.md
+    max_file_chars: 150000
+    include_agent_output: false
+    prompt: |
+      You are reviewing a finalized Phase-0 Solution Design Document (the attached
+      sdd.md) for a COMMERCIAL LOAN ORIGINATION case. A separate mechanical check
+      already verifies variable mappings, lineage, per-gate rule legality, task
+      types, and entry/exit conditions — focus on DOMAIN COHERENCE.
+
+      Judge:
+      - Stage order is sensible for loan origination (Intake → Loan Setup →
+        Underwriting → QA/QC → Closing → Resolved).
+      - Task types fit the work (credit pulls, eligibility, appraisal, UCC/title,
+        financial analysis, credit memo, compliance, closing docs, recording,
+        disbursement).
+      - The 4 exception lanes (Customer Comms, Escalation, Withdrawn, Rejected)
+        are entered by a sensible trigger and correctly terminal or returning.
+      - The >$5M Credit-Analyst conditional gate is genuinely modeled as a guarded
+        rule/task, not just mentioned in prose.
+      - No semantic gaps that break downstream: a decision outcome that routes
+        nowhere, an inverted sequence (recording after disbursement), or data a
+        task needs that no upstream task produces. Tenant-default / placeholder
+        connector IDs are expected — do NOT penalize them.
+
+      Score 1.0 if the design is coherent and would build into a working case
+      with no major flaws; 0.5 if mostly coherent with minor gaps; 0.0 if there
+      are major logical/domain errors.
+    weight: 3.0
+    # 0.7, not 1.0: an LLM coherence judge rarely returns a perfect 1.0.
+    pass_threshold: 0.7
+
+# Simulator only confirms resumption + approves the finalized sdd.md. No
+# interview — the design is already settled in the staged draft.
+simulation:
+  enabled: true
+  persona: |
+    You are the lending-operations lead at Accrual Capital who requested the
+    LoanOrigination case. The design draft is already written; you are only
+    confirming its finalization into an approved sdd.md.
+  goal: |
+    Get the existing sdd.draft.md finalized into an approved sdd.md. Resume from
+    the draft, use it as-is, and approve. Keep the agent in Phase 0 only.
+  constraints:
+    - "If it asks how you want to proceed with the existing draft, tell it to use the draft as-is and finalize it — you don't want to be re-interviewed or redo the design."
+    - "When the agent presents the finalized sdd.md for approval, approve it on the first pass ('looks good — approved'). If it warns about high-severity review items or unresolved/tenant-default connector IDs, approve anyway — the placeholders are intentional for this design spec."
+    - "Do not request design changes or add new requirements — the draft is settled. Do not ask the agent to re-run the interview."
+    - "Decline or skip any optional HTML-preview offer."
+    - "Keep the agent in Phase 0 only. If it offers to plan tasks.md, build a caseplan, or move to a later phase, tell it to stop at the approved sdd.md."
+    - "Once sdd.md is approved, the task is done — end the conversation; do not open new topics."
+    - "Keep replies short — one sentence or a single option pick."
+  max_turns: 10

@@ -42,7 +42,7 @@ Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../..
 
 - `resource`: `"process"`
 - `resourceSubType`: `"Agent"`
-- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields
+- `name` / `folderPath` defaults: from `tasks.md` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)) — never the raw sdd.md "Folder", which may be a parent path and faults the job at runtime.
 
 Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 

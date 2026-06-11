@@ -213,7 +213,7 @@ initial_prompt: |
 ## Lifecycle E2E tests (uipath-platform pattern)
 
 `tests/tasks/uipath-platform/{orchestrator,resources}/` and
-`tests/tasks/uipath-solution/operate/` follow the same shape as `traces_e2e.yaml`:
+`tests/tasks/uipath-solution/` follow the same shape as `traces_e2e.yaml`:
 the agent receives a process key (and derived folder) via env var, exercises
 the operational scenario, and a `check_*.py` script verifies tenant state
 directly.

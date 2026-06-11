@@ -1,0 +1,123 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="DesktopApp" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="DesktopApp_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing.Common" xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives" xmlns:uix="http://schemas.uipath.com/workflow/activities/uix" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Text</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.UIAutomationCore.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Models</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+      <x:String>UiPath.Shared.Activities</x:String>
+      <x:String>UiPath.Platform.ObjectLibrary</x:String>
+      <x:String>UiPath.Platform.SyncObjects</x:String>
+      <x:String>UiPath.UIAutomationNext.Contracts</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>Microsoft.CSharp</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.Net.Mail</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization</AssemblyReference>
+      <AssemblyReference>System.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.ServiceModel.Activities</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Constants</AssemblyReference>
+      <AssemblyReference>System.Private.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.Private.DataContractSerialization</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Formatters</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Primitives</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.OCR.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="DesktopApp" sap:VirtualizedContainerService.HintSize="1263,742.6566666666666" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <uix:NApplicationCard AttachMode="ByInstance" DisplayName="GitHub Desktop" HealingAgentBehavior="Job" sap:VirtualizedContainerService.HintSize="452,493" sap2010:WorkflowViewState.IdRef="NApplicationCard_1" ScopeGuid="87783197-7dba-4665-be30-d746e1a595d8" Version="V2">
+      <uix:NApplicationCard.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="WSSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Do" sap:VirtualizedContainerService.HintSize="450,245.5" sap2010:WorkflowViewState.IdRef="Sequence_5">
+            <sap:WorkflowViewStateService.ViewState>
+              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+              </scg:Dictionary>
+            </sap:WorkflowViewStateService.ViewState>
+            <uix:NClick ActivateBefore="True" ClickType="Single" DisplayName="Click 'Changes'" HealingAgentBehavior="SameAsCard" sap:VirtualizedContainerService.HintSize="416,185.5" sap2010:WorkflowViewState.IdRef="NClick_1" InteractionMode="SameAsCard" KeyModifiers="None" MouseButton="Left" ScopeIdentifier="87783197-7dba-4665-be30-d746e1a595d8" Version="V5">
+              <uix:NClick.Target>
+                <uix:TargetAnchorable ContentHash="XMY1-44f4U2VFn3LhZ0TJA" DesignTimeRectangle="13, 171, 606, 58" ElementType="TabPage" ElementVisibilityArgument="Interactive" FullSelectorArgument="&lt;ctrl name='GitHub Desktop' role='document' /&gt;&lt;ctrl name='Changes' role='page tab' /&gt;" Guid="83a578b9-ae5d-49ca-89b5-5e227c8bb1c8" InformativeScreenshot="b85b797d4645a8f4c47da2e3bfb2e9f4.jpg" Reference="z7XKmoN6VE-q9t8QvMUhDw/p-YQZWzSXEaWBIzN7CdzvQ" ScopeSelectorArgument="&lt;wnd app='githubdesktop.exe' cls='Chrome_WidgetWin_1' title='GitHub Desktop' /&gt;" SearchSteps="Selector" Version="V6" WaitForReadyArgument="Interactive" />
+              </uix:NClick.Target>
+            </uix:NClick>
+          </Sequence>
+        </ActivityAction>
+      </uix:NApplicationCard.Body>
+      <uix:NApplicationCard.OCREngine>
+        <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))">
+          <ActivityFunc.Argument>
+            <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+          </ActivityFunc.Argument>
+        </ActivityFunc>
+      </uix:NApplicationCard.OCREngine>
+      <uix:NApplicationCard.TargetApp>
+        <uix:TargetApp Area="-13, -13, 3866, 2330" ContentHash="6OSC7gEG40K5k7tZrGFBLA" FilePath="C:\Users\original_user\AppData\Local\GitHubDesktop\app-3.5.12\githubdesktop2.exe" IconBase64="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" InformativeScreenshot="7562cc6ec35c59f03d70139d93dfd86f.jpg" Reference="z7XKmoN6VE-q9t8QvMUhDw/ZSyWauSiekm39Tsexg6vpA" Selector="&lt;wnd app='githubdesktop.exe' cls='Chrome_WidgetWin_1' title='GitHub Desktop' /&gt;" Version="V3">
+          <uix:TargetApp.Arguments>
+            <InArgument x:TypeArguments="x:String" />
+          </uix:TargetApp.Arguments>
+          <uix:TargetApp.WorkingDirectory>
+            <InArgument x:TypeArguments="x:String" />
+          </uix:TargetApp.WorkingDirectory>
+        </uix:TargetApp>
+      </uix:NApplicationCard.TargetApp>
+    </uix:NApplicationCard>
+  </Sequence>
+</Activity>

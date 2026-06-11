@@ -4,7 +4,7 @@ description: >
   product configurations on the tenant via `uip llm-configuration byo-connections
   list`. Verifies the agent uses the read-only list command and knows the
   `--include-connection-details` flag for resolving connector metadata.
-tags: [uipath-platform, smoke, llmgateway, byo-connections, lifecycle:discover]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
 
 run_limits:
   expected_turns: 13

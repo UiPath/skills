@@ -1,0 +1,192 @@
+task_id: skill-troubleshoot-rpa-job-killed-by-autocancel-trigger
+description: >
+  UiPath diagnostic agent must diagnose a faulted LongRunningProcess job that
+  ended with System.Exception: "Job stopped with an unexpected exit code:
+  0x40010004". The job was force-killed by an auto-cancel trigger
+  ('kill-after-10min') after exceeding its 10-minute time budget. The agent
+  must match the orchestrator/job-stopped-exit-code-0x40010004 playbook,
+  query the audit log to identify the trigger-initiated kill (not human, not
+  service account), and recommend the appropriate resolution path (raise the
+  time budget OR fix the workflow to fit the budget).
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, faulted-jobs, orchestrator, job-killed, exit-code-0x40010004]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 4500
+max_turns: 40
+turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My LongRunningProcess job in Orchestrator just ended Faulted after
+  exactly 10 minutes with "Job stopped with an unexpected exit code:
+  0x40010004". The run normally takes about 5 minutes — what killed
+  it and who did it? Tell me the root cause and stop there.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
+  - type: llm_judge
+    description: "Agent matched the orchestrator/job-stopped-exit-code-0x40010004 playbook AND identified the auto-cancel trigger as the actor (not a human, not a service account)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My LongRunningProcess job in Orchestrator just ended Faulted
+         after exactly 10 minutes with 'Job stopped with an unexpected
+         exit code: 0x40010004'. The run normally takes about 5
+         minutes — what happened?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/products/orchestrator/playbooks/job-stopped-exit-code-0x40010004.md
+        because the runtime error
+          "System.Exception: Job stopped with an unexpected exit code: 0x40010004"
+        is the verbatim signature of that playbook.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` — the
+             orchestrator/job-stopped-exit-code-0x40010004 playbook
+             should appear (absolute or relative path).
+          2. The agent's tool-call summary — a Read on
+             references/products/orchestrator/playbooks/job-stopped-exit-code-0x40010004.md.
+          3. state.json's `scope.domain` — should include the
+             orchestrator domain.
+
+        Acceptable / non-penalized: the agent may also Read the
+        sibling foreground-already-running playbook while ruling
+        it out. Exploration is normal.
+
+        PENALIZED: matching ONLY the foreground-already-running
+        playbook, or generic runtime-exceptions playbooks (this is
+        not user code).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The job's executor was force-killed by an auto-cancel
+            trigger (`kill-after-10min`) after exceeding its
+            configured 10-minute (600s) time budget.
+          - State history shows `Running → Killing → Faulted` with
+            the Killing transition timestamp at exactly +600s
+            (matches the time budget).
+          - The audit event names `actorName: "System"` (not a
+            human, not a service account); `eventDetails.triggerType:
+            "AutoCancel"`, `triggerName: "kill-after-10min"`,
+            `timeBudgetSeconds: 600`, `reason: "TimeBudgetExceeded"`;
+            `clientInfo` is absent.
+
+        The reference fix (any of the following is acceptable):
+          - Raise the time budget on the `kill-after-10min` trigger
+            if the workflow legitimately runs longer than 10 minutes
+            in some cases.
+          - Scope the trigger more narrowly so it does not apply to
+            `LongRunningProcess`.
+          - Fix the workflow to consistently finish within the
+            budget (profile the slow step; parallelize; cache; etc.).
+          - Remove the trigger if the time budget is no longer
+            justified.
+
+        NOT acceptable as the sole conclusion:
+          - "A user killed the job" (the audit actor is `System`,
+            not a user).
+          - "A watchdog service killed it" (the audit `actorType`
+            is `System`, not `ServiceAccount`; `triggerType` is
+            `AutoCancel`).
+          - "Session logoff / RDP disconnect" (state history shows
+            Killing transition — operator/trigger-initiated, not
+            host-side).
+          - "Restart the Robot" (recovery action, not root-cause).
+
+        Evidence sources (in priority order):
+          1. state.json — `requirements.error_code`,
+             `requirements.error_message`, `triage_summary`,
+             scope/domain.
+          2. hypotheses.json — the hypothesis flagged
+             `is_root_cause: true` should describe an auto-cancel
+             trigger / time-budget kill and name the trigger.
+          3. The agent's tool-call summary — `uip admin audit tenant
+             events --search` against the job key and `uip or jobs
+             history` showing Killing at +600s.
+          4. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched orchestrator/job-stopped-exit-code-0x40010004
+             AND identified the auto-cancel trigger
+             (`kill-after-10min` / time-budget cancellation /
+             system-initiated trigger) as the cause, with at least
+             one actionable fix from the acceptable list.
+        0.8  Both partial: correct playbook but conclusion lumps
+             this in with "an operator killed the job" without
+             distinguishing the trigger-initiated cancel; OR
+             correctly named the trigger but matched only the
+             broader 0x40010004 page without confirming the
+             Operator Kill branch.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (job faulted with 0x40010004) but
+             neither matched the playbook nor identified the
+             trigger-initiated cancel.
+        0.0  Misdiagnosed (concluded host-side cause).
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who owns the scheduled LongRunningProcess
+    job. You did NOT kill it. You may or may not know that an
+    auto-cancel trigger exists — only share information that's in
+    your initial report.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion the agent requests
+    so the investigation reaches the audit log and identifies the
+    trigger.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, audit, system-activities), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know about any trigger."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

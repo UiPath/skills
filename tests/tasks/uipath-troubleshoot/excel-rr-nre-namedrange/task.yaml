@@ -1,0 +1,151 @@
+task_id: skill-troubleshoot-excel-rr-nre-namedrange
+description: >
+  UiPath troubleshoot agent must diagnose a Read Range failure where
+  the workflow references a named range (Range="MyDataRange") in the
+  Read Range activity, the workbook opens successfully, sheet
+  enumeration succeeds, but the named-range lookup fails with
+  NullReferenceException because the named range in the workbook
+  has a #REF! refers-to (points at a deleted sheet or cell). Agent
+  must match the activity-packages/excel-activities/playbooks/read-range-null-reference.md
+  playbook, identify the broken-named-range branch from the workflow
+  source + the job-log Trace entry showing the named range resolved
+  to a broken reference, and recommend fixing the named range in
+  Excel's Name Manager.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, read-range, null-reference, named-range]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+task_timeout: 5400
+max_turns: 50
+turn_timeout: 5400
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.NullReferenceException: Object reference not set to an instance of an object.`
+  Pinned job key: bb222222-bbbb-cccc-dddd-eeeeffffaaaa. The
+  workbook opens fine and the workflow successfully enumerated the
+  sheets earlier in the run. The Read Range step then failed with
+  no pointer to a specific cell. The Range property uses a named
+  range called "MyDataRange". Did something happen to it?
+
+  The project source for the failing process is at ./ExcelDailyImport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-range-null-reference playbook AND identified the broken-named-range branch (workflow uses named range 'MyDataRange'; job logs show Get Workbook Sheets succeeded but the named-range lookup failed because the workbook's Name Manager has #REF! for MyDataRange)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.NullReferenceException: Object reference not set to
+         an instance of an object.` Pinned job key:
+         bb222222-bbbb-cccc-dddd-eeeeffffaaaa. The workbook opens
+         fine and the workflow successfully enumerated the sheets
+         earlier in the run. The Read Range step then failed with
+         no pointer to a specific cell. The Range property uses a
+         named range called 'MyDataRange'. Did something happen to
+         it?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/read-range-null-reference.md
+        because the runtime error is a NullReferenceException from
+        inside the activity (not a sheet-resolution or file-
+        resolution error).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workflow's Read Range activity is configured with
+            `Range: "MyDataRange"` (named range), not an A1
+            address.
+          - The workbook contains a defined name `MyDataRange` but
+            its `Refers to` is `#REF!` (broken -- it used to point
+            at `Sheet1!A1:E1000`, but Sheet1 was deleted or
+            restructured upstream).
+          - When the activity walks the workbook's defined names
+            to resolve `MyDataRange`, it gets a null target and
+            throws NullReferenceException without a cell pointer.
+          - Job logs show `Get Workbook Sheets` SUCCEEDED earlier
+            in the run (returning the surviving sheets), AND a
+            Trace entry from `Read Range` includes the named-
+            range lookup attempt with the broken refers-to value.
+
+        The reference fix:
+          - Open the workbook in Excel.
+          - Press `Ctrl+F3` to open Name Manager.
+          - Find the `MyDataRange` entry; the `Refers to` column
+            will show `#REF!`.
+          - Either delete the broken named range and update the
+            workflow to use an A1 address (`Sheet1!A1:E1000` or
+            equivalent), OR fix the named range to point at the
+            new location of the data.
+          - Save the workbook.
+          - Coordinate with the workbook publisher: never delete
+            sheets that named ranges depend on without first
+            updating Name Manager.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the read-range-null-reference playbook AND
+             converged on the broken-named-range branch (named
+             `MyDataRange`, explained the #REF! / Name Manager
+             concept, recommended fixing or replacing the named
+             range).
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified the named-range issue but didn't
+             specifically reference Name Manager / #REF!; OR
+             identified the named-range cause without matching the
+             specific playbook.
+        0.5  Only one dimension correct: matched the playbook but
+             confidently guessed a different branch (sensitivity
+             label, corruption, OpenXML feature) without
+             supporting evidence; OR identified the named-range
+             issue without matching the playbook.
+        0.2  Agent recognized the NRE as a parsing failure but
+             neither matched the playbook nor identified the
+             named-range pattern.
+        0.0  Agent confidently picked a wrong branch without
+             evidence; concluded a different root cause; got
+             blocked; or failed.
+
+      Be substance-focused. The workflow source's named-range
+      Range property + the user's explicit mention of "MyDataRange"
+      are the decisive signals.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

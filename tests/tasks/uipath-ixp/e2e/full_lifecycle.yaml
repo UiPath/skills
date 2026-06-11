@@ -1,0 +1,158 @@
+task_id: skill-ixp-e2e-full-lifecycle
+description: >
+  Full IXP lifecycle against the live tenant: agent creates a project
+  from bundled invoice fixtures, configures the model, reviews and
+  confirms predictions, captures baseline metrics, improves one
+  low-F1 field's prompt, captures improved metrics, publishes, and
+  deletes the project as cleanup.
+  Exercises every reference file in the skill end-to-end.
+tags: [uipath-ixp, e2e, mode:build, lifecycle:setup]
+
+run_limits:
+  max_turns: 120
+  task_timeout: 1800
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  Run a complete UiPath IXP project lifecycle ending with a published
+  model, using the three vendor invoices in `./fixtures/` 
+  (`hp_tax_invoice.png`, `york_solutions_invoice.png`, `csi_tower_invoice.png`).
+
+  Scenario setup:
+  - Create the project WITHOUT a taxonomy, then import the bundled
+    `./fixtures/taxonomy.json` (a taxonomy already exists for this
+    scenario).
+  - Use a unique title `e2e-test-<random-suffix>` so concurrent
+    runs do not collide.
+
+  Goal: configure the model, review and confirm predictions, then
+  improve the single lowest-F1 field — ONE iteration only (update
+  prompt → re-label → re-read metrics) — and publish. Do NOT run a second
+  improve-prompts iteration.
+
+  Capture these artifacts in the current working directory:
+  - `baseline_metrics.json` — full metrics response before the
+    improvement.
+  - `target_field.json` — the field you chose to improve, exactly:
+      {"field_id": "<FieldId from metrics>", "name": "<name from taxonomy>"}
+  - `improved_metrics.json` — full metrics response after the
+    improvement and retrain. If retrain has not completed after a few
+    minutes of polling, capture the current metrics and proceed rather
+    than waiting indefinitely.
+
+  Cleanup (final step): once the artifacts above are saved and the model
+  is published, delete the project to clean up. The task is NOT complete
+  until the project is deleted.
+
+  - The `uip` CLI is already authenticated.
+  - Do NOT ask for approval, confirmation, or feedback; do NOT pause
+    between steps.
+  - Before starting, load the `uipath-ixp` skill and follow its
+    documented workflow, including how to wait for retrain before
+    reading metrics.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created an IXP project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+create'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent imported the bundled taxonomy fixture"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+import-taxonomy'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent configured the model"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+configure-model'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched predictions"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+get-predictions'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent confirmed labellings"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched metrics at least twice (baseline + improved)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics'
+    min_count: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated a field prompt"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Target field artifact written"
+    path: "target_field.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Baseline metrics captured"
+    path: "baseline_metrics.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Improved metrics captured"
+    path: "improved_metrics.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Metrics are well-formed, ModelVersion advanced, target field F1 did not regress"
+    command: "python3 $TASK_DIR/check_full_lifecycle.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent published the model"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+publish'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the project as cleanup (with --confirm-data-loss)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

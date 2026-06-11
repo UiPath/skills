@@ -1,0 +1,30 @@
+{
+  "Result": "Success",
+  "Code": "JobHistory",
+  "_doc": "State transitions for the failing job. The presence of 'Killing' confirms an operator-initiated Kill — distinguishes from host-side termination (which goes Running → Faulted directly). The transition into Killing was triggered by the REST API (Source=API on the transition reason).",
+  "Data": [
+    {
+      "State": "Pending",
+      "Timestamp": "2026-05-19T08:00:00.302Z",
+      "Reason": "JobCreated"
+    },
+    {
+      "State": "Running",
+      "Timestamp": "2026-05-19T08:00:00.500Z",
+      "Reason": "ExecutorStarted"
+    },
+    {
+      "State": "Killing",
+      "Timestamp": "2026-05-19T08:03:00.000Z",
+      "Reason": "StopRequested",
+      "Strategy": "Kill",
+      "Source": "API"
+    },
+    {
+      "State": "Faulted",
+      "Timestamp": "2026-05-19T08:03:01.255Z",
+      "Reason": "ExecutorExited",
+      "ExitCode": "0x40010004"
+    }
+  ]
+}

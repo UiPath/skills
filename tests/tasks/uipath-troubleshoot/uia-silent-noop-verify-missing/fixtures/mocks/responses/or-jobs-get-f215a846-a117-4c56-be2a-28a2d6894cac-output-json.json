@@ -1,0 +1,43 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "f215a846-a117-4c56-be2a-28a2d6894cac",
+    "StartTime": "2026-06-02T09:41:25.187Z",
+    "EndTime": "2026-06-02T09:41:53.797Z",
+    "State": "Successful",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 45,
+    "Source": "Agent",
+    "SourceType": "Agent",
+    "BatchExecutionKey": "f215a846-a117-4c56-be2a-28a2d6894cac",
+    "Info": "Job completed",
+    "CreationTime": "2026-06-02T09:41:25.187Z",
+    "ReleaseName": "BlankProcess2",
+    "Type": "Attended",
+    "InputArguments": "{}",
+    "EnvironmentVariables": "",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "StudioPro",
+    "RequiresUserInteraction": true,
+    "ReleaseVersionId": 20708856,
+    "EntryPointPath": "Main.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+    "Reference": "",
+    "ProcessType": "Process",
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "UIPATH\\REPLACEMENT_USER",
+    "OrchestratorUserIdentity": "original_email@test.com",
+    "RemoteControlAccess": "None",
+    "LastModificationTime": "2026-06-02T09:41:53.797Z",
+    "AutopilotForRobots": {
+      "Enabled": true,
+      "HealingEnabled": true
+    },
+    "Id": 65787958
+  }
+}

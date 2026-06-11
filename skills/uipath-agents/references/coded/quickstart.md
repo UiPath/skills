@@ -290,10 +290,12 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
    The second command's `Data.Node` object is what gets pasted verbatim into the flow's top-level `definitions[]` array.
 
 7. **Wire the agent node into the `.flow` file.** Edit `<FlowName>.flow` directly:
-   - Add a `uipath.core.agent.<resourceKey>` node to `nodes[]` with `inputs.detail` matching the agent's input schema and `model.section: "In this solution"`.
+   - Add a `uipath.core.agent.<resourceKey>` node to `nodes[]` with one `inputs.<field>` entry per property in the agent's input schema (see step 6's `Data.Node.inputDefinition`) and `model.section: "In this solution"`.
+   - Each input field takes either a **literal value** (`"file_path": "/path/to/file.txt"`) or a **bare `$vars.<flowVarId>` reference** (`"file_path": "$vars.file_path"` to read a flow-level global, or `"$vars.<upstreamNodeId>.output.<field>"` to chain from another node's output). **Never wrap agent input values in `=js:`** — those fields are bound by the agent activity, not evaluated by Jint, and an `=js:…` value ships as a literal string and fails at runtime with `Cannot find name '<identifier>'`. See [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs).
    - Add the definition from step 6 to `definitions[]`.
    - Add a top-level `bindings[]` entry for the agent (no duplicates per `(resourceKey, propertyAttribute)`).
    - Add edges from upstream nodes to the agent's input port and from its output port downstream.
+   - To surface the agent's output as a flow-level result, declare an `out` global and map it on the End node with `"source": "=js:$vars.<agentNodeId>.output.<field>"` (this direction *does* use `=js:` — only the agent's *input* slots do not). See [embedding-in-flows.md § Wiring the agent's output back out](embedding-in-flows.md#wiring-the-agents-output-back-out).
 
    See [embedding-in-flows.md](embedding-in-flows.md) for the directory layout and [flow-integration.md § Pattern 1](flow-integration.md#pattern-1-in-solution-coded-agent) for the JSON shape.
 
