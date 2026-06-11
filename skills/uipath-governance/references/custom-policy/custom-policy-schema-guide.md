@@ -34,7 +34,7 @@ Constraints:
 
 **Conflict resolution:**
 - `metadata.rules[].priority` — higher number evaluated first within this policy.
-- Cross-policy: if any rule across any active custom or default policy returns `deny`, that verdict is recorded — `priority` does not override cross-policy deny semantics.
+- Cross-policy: each active policy is evaluated independently. Any `deny` verdict from any active policy is recorded in the audit trail. No `allow` verdict in one policy cancels a `deny` from another.
 
 ---
 
