@@ -1,4 +1,4 @@
-task_id: skill-troubleshooting-getasset-name-mismatch
+task_id: skill-troubleshoot-getasset-name-mismatch
 description: >
   UiPath troubleshooting agent must troubleshoot a Get Credential failure where
   the workflow's AssetName property is misspelled ("myHiddenAset" —
