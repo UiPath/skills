@@ -54,7 +54,7 @@ The user message carries the task and the data — not the role.
 
 Token form depends on context:
 
-- **Inline-in-flow agents** reference upstream flow nodes: `{{ $vars.<flowNodeId>.output[.<field>] }}`. See the [uipath-maestro-flow inline-agent prompt-wiring guide](../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
+- **Inline-in-flow agents** reference upstream flow nodes: `{{ $vars.<flowNodeId>.output[.<field>] }}` (spaced braces), mirrored in `contentTokens[]` with leading and trailing space inside `rawString`. Token wiring is owned by the `uipath-maestro-flow` skill's inline-agent plugin — load that skill for flow-side authoring.
 - **Standalone agents** reference declared inputs: `{{input.<field>}}`.
 
 Mirror every `{{ ... }}` in `contentTokens[]` per [agent-definition.md § contentTokens Construction](agent-definition.md#contenttokens-construction).

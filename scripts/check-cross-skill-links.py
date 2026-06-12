@@ -46,17 +46,8 @@ ALLOWED_EDGES = {
     # Publish -> pack -> link -> execute chain spans rpa/solution/test.
     ("uipath-rpa", "uipath-solution"),
     ("uipath-rpa", "uipath-test"),
-    ("uipath-test", "uipath-rpa"),
     # HITL surfaces Action Center tasks; URL patterns owned by uipath-tasks.
     ("uipath-human-in-the-loop", "uipath-tasks"),
-    # agents <-> maestro-flow agent-node docs are split across both skills.
-    # Known cycle — scheduled for ownership consolidation; do not add links.
-    ("uipath-agents", "uipath-maestro-flow"),
-    ("uipath-maestro-flow", "uipath-agents"),
-    # HITL node authoring detail owned by uipath-human-in-the-loop; the
-    # maestro-flow hitl plugin defers to it.
-    ("uipath-maestro-flow", "uipath-human-in-the-loop"),
-    ("uipath-human-in-the-loop", "uipath-maestro-flow"),
 }
 
 LINK_RE = re.compile(r"\]\(([^)\s]+?\.md)(?:#[^)\s]*)?\)")

@@ -7,6 +7,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 - [Repository Structure](#repository-structure)
 - [Adding a New Skill](#adding-a-new-skill)
 - [Modifying an Existing Skill](#modifying-an-existing-skill)
+- [Canonical Blocks](#canonical-blocks)
 - [Hooks](#hooks)
 - [Quality Checklist](#quality-checklist)
 - [Pull Request Process](#pull-request-process)
@@ -222,6 +223,25 @@ Static files like code templates go in `assets/`:
 3. **Don't break frontmatter.** The `name` and `description` fields are parsed by the plugin system. Validate your YAML.
 4. **Test your changes.** After editing, verify the skill still activates correctly for its intended scenarios.
 5. **Coordinate with CODEOWNERS.** Check who owns the skill and tag them in your PR.
+
+## Canonical Blocks
+
+Boilerplate shared across skills (e.g. `uip` CLI resolution/install) drifts when copy-pasted. Canonical blocks fix this without breaking self-containment: each skill keeps its own physical copy, CI verifies every copy is byte-identical to a source file at `assets/canonical-blocks/<block-id>.md` (block body only, no frontmatter).
+
+Marker syntax inside any `skills/**/*.md`:
+
+```markdown
+<!-- BEGIN CANONICAL: uip-cli-resolution -->
+...block body...
+<!-- END CANONICAL: uip-cli-resolution -->
+```
+
+Rules:
+
+1. **Never hand-edit a marked body.** Edit `assets/canonical-blocks/<block-id>.md`, then stamp all copies: `python3 scripts/check-canonical-blocks.py --write`
+2. **Skill-specific additions go outside the markers**, after the block. If a copy is too divergent to share the block, leave it unmarked.
+3. List blocks and occurrences: `python3 scripts/check-canonical-blocks.py --list`
+4. CI (`validate-canonical-blocks.yml`) fails on drifted copies, unknown block-ids, broken marker pairs, and orphaned canonical files.
 
 ## Hooks
 
