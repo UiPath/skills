@@ -66,7 +66,7 @@ Who moves what:
 |-----|----------|-----|
 | `release/v<minor>` | `daily-version-bump.yml` | daily plugin-version bump commit (skipped when nothing landed since the last bump) |
 | `release/latest` | `daily-version-bump.yml` | fast-forward to the same commit |
-| `release/latest` | sprint release cut (Sunday automation) | **forced ref update** to the new `release/v<minor>` (the new branch does not contain the old line's daily-bump commits; `release/latest` is a pointer, never a base for work) |
+| `release/latest` | `sprint-release-cut.yml` (Sunday 18:00 UTC) | **forced ref update** to the new `release/v<minor>` (the new branch does not contain the old line's daily-bump commits; `release/latest` is a pointer, never a base for work) |
 
 `main` gets **no daily plugin bumps** — its plugin version is pinned at `M.N.0` per sprint. Plugin auto-update fires off the `version` field on the tracked ref, so daily bumps land only on the release line. Plugin version monotonicity holds across the sprint handoff (`1.197.0 > 1.196.k`).
 
@@ -96,6 +96,6 @@ Branch-protection requirements (repo settings): `release/v*` and `release/latest
 
 - [x] **npmjs Trusted Publishing** — configure a GitHub Actions trusted publisher on the `@uipath/skills` package (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the `publish-release` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
-- [x] Seed version confirmed: **`1.196.0`** (current CLI minor line). Automating the ongoing CLI↔skills lockstep is tracked in PILOT-5518.
+- [x] Seed version confirmed: **`1.196.0`** (current CLI minor line). The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 18:00 UTC): it reads the canonical CLI version from the `UiPath/cli` repo's `main` (never the stale npmjs `@uipath/cli`), cuts `release/v<minor>` from `main` at `M.N.0`, force-updates `release/latest`, and opens the matching bump PR against `main`. Requires the **`CLI_REPO_TOKEN`** secret (contents:read on UiPath/cli). The cli-repo-side bump is owned by the cli repo.
 
 > The alpha track also needs no secret — `publish-alpha` uses the built-in `GITHUB_TOKEN` with `packages: write`.
