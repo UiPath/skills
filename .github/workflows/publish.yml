@@ -98,6 +98,20 @@ jobs:
           npm install -g npm@latest
           echo "npm $(npm --version) / node $(node --version)"
 
+      # Maturity gate (stable track only — alpha ships everything): drop
+      # in-development skills from the tarball. Uncommitted working-tree
+      # mutation, same pattern as the alpha version stamp. The pruned list
+      # lands in the step summary so an exclusion is never silent.
+      - name: Exclude in-development skills (maturity gate)
+        run: |
+          node scripts/prune-dev-skills.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # The packaged README must not advertise skills absent from the tarball.
+      # prune-dev-skills.mjs already rewrote the manifest; regenerate the
+      # generated status table from it (stdlib-only script, runner python3).
+      - name: Regenerate README status table for the pruned package
+        run: python3 scripts/check-skill-status.py --write-readme
+
       # No auth token and no setup-node registry-url — a token would make npm
       # use token auth and bypass OIDC. We only pin the scoped package to
       # npmjs; credentials come from the OIDC exchange. `--provenance` attaches
