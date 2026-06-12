@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "uip-cli": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@uipath/cli@latest",
+        "mcp",
+        "serve"
+      ]
+    }
+  }
+}
