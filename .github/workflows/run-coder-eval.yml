@@ -158,10 +158,11 @@ jobs:
             -f tests/docker/Dockerfile \
             .
 
-      # ROPC bot-user auth via coder_eval's shared script (same as VM cron).
-      # Required because `uip flow debug` needs a real user `sub` claim —
-      # s2s/client_credentials tokens lack one. Writes ~/.uipath/.auth which
-      # experiments/nightly.yaml mounts into each eval container.
+      # ROPC bot-user auth via this repo's vendored script (mirrors the VM
+      # cron's ROPC flow). Required because `uip flow debug` needs a real user
+      # `sub` claim — s2s/client_credentials tokens lack one. Writes
+      # ~/.uipath/.auth which experiments/nightly.yaml mounts into each eval
+      # container.
       - name: Mint UiPath bot token (ROPC)
         env:
           UIPATH_URL:               https://alpha.uipath.com
@@ -173,7 +174,7 @@ jobs:
           CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
-        run: bash .coder_eval/dashboard/scripts/ci/refresh-auth.sh
+        run: bash .github/scripts/refresh-auth.sh
 
       # TASK_GLOBS here is the partition-resolved list of *file paths* (not
       # globs). Word-splitting is intentional — do not quote.
