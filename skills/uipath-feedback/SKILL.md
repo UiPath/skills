@@ -65,6 +65,13 @@ From login status, extract only: `tenantName`, `organizationName`, `baseUrl`. St
 
 From tools list, extract tool `name` and `version` from each row.
 
+**Capture installed skills version.** Read `skillsVersion` from `version-manifest.json` — it ships next to the skills. Check in order, stop at first hit:
+
+1. `$CLAUDE_PLUGIN_ROOT/version-manifest.json` (Claude Code plugin install)
+2. `version-manifest.json` two levels up from this skill's own directory (CLI-copied install)
+
+When found via the plugin root, also read `version` from `$CLAUDE_PLUGIN_ROOT/.claude-plugin/plugin.json` (the daily plugin build). If neither file exists, report `unknown`. Never guess the version and never derive it from `uip --version` (that is the CLI version, captured separately).
+
 #### 2c. Capture skill-specific troubleshooting
 
 | Skill context | What to capture | Limits |
@@ -181,6 +188,8 @@ Build the `--description` content:
 ## Environment
 - Skill context: {detected skill name}
 - uip version: {version}
+- Skills version: {skillsVersion from version-manifest.json, or "unknown"}
+- Plugin version: {plugin.json version -- omit this line when not installed as a plugin}
 - CLI tools: {name version, name version, ...}
 - OS: {os info}
 - Tenant: {tenant} ({org})
@@ -227,6 +236,8 @@ ExpressionError: Invalid expression at unknown location — currentItem is not d
 ## Environment
 - Skill context: Flow
 - uip version: 0.1.20
+- Skills version: 1.196.0
+- Plugin version: 1.196.4
 - CLI tools: docsai-tool 0.1.12
 - OS: Windows 11 Enterprise 10.0.26100
 - Tenant: demo (aro)
