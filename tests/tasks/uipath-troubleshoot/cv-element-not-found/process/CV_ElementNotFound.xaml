@@ -1,0 +1,227 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="CV_ElementNotFound" sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:p="http://schemas.uipath.com/workflow/activities/cv" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing.Common" xmlns:sd1="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives" xmlns:uc="clr-namespace:UiPath.CV;assembly=UiPath.CV" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>GlobalConstantsNamespace</x:String>
+      <x:String>GlobalVariablesNamespace</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.CV</x:String>
+      <x:String>UiPath.CV.Activities</x:String>
+      <x:String>System.Reflection</x:String>
+      <x:String>System.Linq.Expressions</x:String>
+      <x:String>System.Runtime.Serialization</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>UiPath.UIAutomationCore.Contracts</x:String>
+      <x:String>UiPath.UIAutomationNext.Enums</x:String>
+      <x:String>UiPath.Platform.SyncObjects</x:String>
+      <x:String>UiPath.CV.Activities.Interfaces</x:String>
+      <x:String>UiPath.Shared.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>UiPath.UIAutomationNext.Activities</x:String>
+      <x:String>UiPath.Platform.ObjectLibrary</x:String>
+      <x:String>UiPath.UIAutomationNext.Models</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Drawing.Common</AssemblyReference>
+      <AssemblyReference>System.Drawing.Primitives</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>UiPath.CV</AssemblyReference>
+      <AssemblyReference>UiPath.CV.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Constants</AssemblyReference>
+      <AssemblyReference>System.Reflection.DispatchProxy</AssemblyReference>
+      <AssemblyReference>System.Reflection.TypeExtensions</AssemblyReference>
+      <AssemblyReference>System.Reflection.Metadata</AssemblyReference>
+      <AssemblyReference>System.Reflection.MetadataLoadContext</AssemblyReference>
+      <AssemblyReference>System.Console</AssemblyReference>
+      <AssemblyReference>System.Security.Permissions</AssemblyReference>
+      <AssemblyReference>System.Configuration.ConfigurationManager</AssemblyReference>
+      <AssemblyReference>System.ComponentModel</AssemblyReference>
+      <AssemblyReference>System.Memory</AssemblyReference>
+      <AssemblyReference>System.Private.Uri</AssemblyReference>
+      <AssemblyReference>System.Private.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.Linq.Expressions</AssemblyReference>
+      <AssemblyReference>System.Private.DataContractSerialization</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Formatters</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization.Primitives</AssemblyReference>
+      <AssemblyReference>System.Collections.NonGeneric</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext</AssemblyReference>
+      <AssemblyReference>UiPath.Platform</AssemblyReference>
+      <AssemblyReference>UiPath.OCR.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationNext.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="CV Element Not Found repro" sap:VirtualizedContainerService.HintSize="981,690" sap2010:WorkflowViewState.IdRef="Sequence_root">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Default="https://cv.uipath.com/" Name="CVServer" />
+      <Variable x:TypeArguments="x:String" Default="MOCK_CV_API_KEY" Name="AKey" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <p:CVScope ContinueOnError="{x:Null}" DelayBefore="{x:Null}" ScopeId="{x:Null}" ScrollOffset="{x:Null}" CvMethod="ElementDetection, OCR" DesignTimeCacheId="d21ec0b8-b00a-48c7-b986-98426651f652" DisplayName="CV Screen Scope 'msedge.exe  Google'" sap:VirtualizedContainerService.HintSize="450,667" sap2010:WorkflowViewState.IdRef="CVScope_2" SendOnPremData="False" UseLocalServer="False" Version="V6">
+      <p:CVScope.ApiKey>
+        <InArgument x:TypeArguments="x:String">
+          <CSharpValue x:TypeArguments="x:String" sap2010:WorkflowViewState.IdRef="CSharpValue`1_4">AKey</CSharpValue>
+        </InArgument>
+      </p:CVScope.ApiKey>
+      <p:CVScope.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="CVSessionData" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <Delay Duration="00:00:10" sap:VirtualizedContainerService.HintSize="400,123.5" sap2010:WorkflowViewState.IdRef="Delay_1" />
+            <p:CvClickWithDescriptor DelayBefore="{x:Null}" DelayMS="{x:Null}" DelayScreenshotAfterScroll="{x:Null}" SendWindowMessages="{x:Null}" SimulateClick="{x:Null}" ClickType="CLICK_SINGLE" ContinueOnError="False" DesignTimeCacheId="d21ec0b8-b00a-48c7-b986-98426651f652" DesignTimeScaleFactor="2" DisplayName="CV Click - 'Button'" sap:VirtualizedContainerService.HintSize="400,211" sap2010:WorkflowViewState.IdRef="CvClickWithDescriptor_3" InformativeScreenshot="06400c25e476d1d580f5b9117b27f1f9" KeyModifiers="None" MouseButton="BTN_LEFT" NumberOfScrolls="2" ScrollDirection="None" Version="V6">
+              <p:CvClickWithDescriptor.CursorPosition>
+                <ui:CursorPosition Position="Center">
+                  <ui:CursorPosition.OffsetX>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetX>
+                  <ui:CursorPosition.OffsetY>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetY>
+                </ui:CursorPosition>
+              </p:CvClickWithDescriptor.CursorPosition>
+              <p:CvClickWithDescriptor.Descriptor>
+                <InArgument x:TypeArguments="uc:CvDescriptor">
+                  <CSharpValue x:TypeArguments="uc:CvDescriptor" sap2010:WorkflowViewState.IdRef="CSharpValue`1_5" xml:space="preserve">"Target: Button (352,241,149,40)" +
+"Anchor: Button (202,241,140,40)" +
+"Anchor: Button (491,165,112,46)"</CSharpValue>
+                </InArgument>
+              </p:CvClickWithDescriptor.Descriptor>
+              <p:CvClickWithDescriptor.DesignTimeDescriptor>
+                <uc:CvDescriptor Id="a2b76e9f-6302-4f8a-98bb-e5a03965480b">
+                  <uc:CvDescriptor.Anchors>
+                    <x:Array Type="uc:CvElementDescriptor">
+                      <uc:CvElementDescriptor CellExtraInfo="{x:Null}" DesignTimeArea="202, 241, 140, 40" ElementType="Button" />
+                      <uc:CvElementDescriptor CellExtraInfo="{x:Null}" DesignTimeArea="491, 165, 112, 46" ElementType="Button" />
+                    </x:Array>
+                  </uc:CvDescriptor.Anchors>
+                  <uc:CvDescriptor.Target>
+                    <uc:CvElementDescriptor CellExtraInfo="{x:Null}" DesignTimeArea="352, 241, 149, 40" ElementType="Button" />
+                  </uc:CvDescriptor.Target>
+                </uc:CvDescriptor>
+              </p:CvClickWithDescriptor.DesignTimeDescriptor>
+              <p:CvClickWithDescriptor.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="{x:Null}" Id="add7357d-cd0b-4873-b10e-48b2ceb4c65d">
+                  <ui:Target.TimeoutMS>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:Target.TimeoutMS>
+                  <ui:Target.WaitForReady>
+                    <InArgument x:TypeArguments="ui:WaitForReady" />
+                  </ui:Target.WaitForReady>
+                </ui:Target>
+              </p:CvClickWithDescriptor.Target>
+            </p:CvClickWithDescriptor>
+          </Sequence>
+        </ActivityAction>
+      </p:CVScope.Body>
+      <p:CVScope.DesignTimeCacheContainer>
+        <uc:CvCacheContainer>
+          <uc:CvCacheContainer.Caches>
+            <scg:List x:TypeArguments="uc:CVCache" Capacity="1">
+              <uc:CVCache OcrTexts="{x:Null}" DataSent="False" DisplayName="Screen CV Click - Button (Main)" Id="d21ec0b8-b00a-48c7-b986-98426651f652" InformativeScreenshot="cd1c372ed2624c10302806ea079b3ad8" LogicalPosition="0, 0" Position="0, 0" ScaleFactor="2" ScreenshotGuid="c177d797-a076-4432-8bb7-87d695599274" ServerVersion="24.10">
+                <uc:CVCache.CvUiElements>
+                  <scg:List x:TypeArguments="uc:CvElementInfo" Capacity="64">
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="387, 8, 22, 22" />
+                    <uc:CvElementInfo Category="Icon" Description="github icon" Region="112, 8, 22, 22" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="509, 8, 23, 23" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="500, 48, 20, 22" />
+                    <uc:CvElementInfo Category="Icon" Description="github icon" Region="57, 8, 22, 22" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="453, 176, 26, 25" />
+                    <uc:CvElementInfo Category="Icon" Description="microfone icon" Region="416, 175, 21, 24" />
+                    <uc:CvElementInfo Category="Button" Description="Button" Region="375, 85, 61, 32" />
+                    <uc:CvElementInfo Category="Icon" Description="lock icon" Region="83, 49, 18, 19" />
+                    <uc:CvElementInfo Category="InputBox" Description="Inputbox" Region="75, 43, 378, 33" />
+                    <uc:CvElementInfo Category="Icon" Description="refresh icon" Region="46, 48, 21, 21" />
+                    <uc:CvElementInfo Category="Icon" Description="github icon" Region="222, 8, 22, 22" />
+                    <uc:CvElementInfo Category="Button" Description="Button" Region="202, 241, 140, 40" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="646, 46, 27, 26" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="167, 8, 22, 22" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="373, 178, 26, 21" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="463, 49, 21, 21" />
+                    <uc:CvElementInfo Category="Icon" Description="human icon" Region="572, 45, 28, 27" />
+                    <uc:CvElementInfo Category="Icon" Description="star icon" Region="539, 48, 23, 22" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="502, 176, 22, 22" />
+                    <uc:CvElementInfo Category="CloseButton" Description="CloseButton" Region="685, 11, 18, 18" />
+                    <uc:CvElementInfo Category="Icon" Description="star icon" Region="427, 49, 21, 22" />
+                    <uc:CvElementInfo Category="Button" Description="Button" Region="352, 241, 149, 40" />
+                    <uc:CvElementInfo Category="ArrowButton" Description="ArrowButton" Region="697, 127, 17, 17" />
+                    <uc:CvElementInfo Category="ArrowButton" Description="ArrowButton" Region="697, 410, 18, 18" />
+                    <uc:CvElementInfo Category="MinimizeButton" Description="MinimizeButton" Region="592, 10, 20, 17" />
+                    <uc:CvElementInfo Category="CloseButton" Description="CloseButton" Region="682, 90, 22, 21" />
+                    <uc:CvElementInfo Category="MaximizeButton" Description="MaximizeButton" Region="639, 9, 19, 19" />
+                    <uc:CvElementInfo Category="Icon" Description="youtube logo icon" Region="276, 9, 23, 19" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="8, 48, 24, 22" />
+                    <uc:CvElementInfo Category="Icon" Description="youtube logo icon" Region="332, 10, 23, 19" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="612, 50, 22, 16" />
+                    <uc:CvElementInfo Category="Button" Description="Button" Region="491, 165, 112, 46" />
+                    <uc:CvElementInfo Category="Icon" Description="undo icon" Region="424, 7, 33, 24" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="483, 7, 20, 23" />
+                    <uc:CvElementInfo Category="ArrowButton" Description="ArrowButton" Region="2, 1, 37, 35" />
+                    <uc:CvElementInfo Category="Icon" Description="Icon" Region="113, 177, 21, 22" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Icon" Confidence="Runtime" Region="398, 49, 23, 19" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="641, 42, 72, 35" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="2, 1, 36, 37" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="261, 4, 54, 30" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="316, 5, 54, 28" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="CloseButton" Confidence="Runtime" Region="3, 2, 36, 36" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="470, 6, 17, 24" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="484, 8, 19, 22" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Icon" Confidence="Runtime" Region="683, 91, 20, 20" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Icon" Confidence="Runtime" Region="472, 13, 12, 14" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="456, 11, 15, 17" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="ArrowButton" Confidence="Runtime" Region="8, 48, 24, 22" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="646, 45, 28, 28" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="95, 3, 55, 32" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Icon" Confidence="Runtime" Region="457, 12, 13, 14" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="InputBox" Confidence="Runtime" Region="376, 86, 61, 31" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="InputBox" Confidence="Runtime" Region="491, 166, 109, 43" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="205, 3, 55, 31" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="7, 373, 690, 49" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Button" Confidence="Runtime" Region="151, 2, 53, 33" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="ArrowButton" Confidence="Runtime" Region="277, 10, 21, 17" />
+                    <uc:CvElementInfo Description="{x:Null}" Category="Icon" Confidence="Runtime" Region="3, 2, 35, 35" />
+                  </scg:List>
+                </uc:CVCache.CvUiElements>
+              </uc:CVCache>
+            </scg:List>
+          </uc:CvCacheContainer.Caches>
+        </uc:CvCacheContainer>
+      </p:CVScope.DesignTimeCacheContainer>
+      <p:CVScope.OCREngine>
+        <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd1:Rectangle, x:String))" />
+      </p:CVScope.OCREngine>
+      <p:CVScope.Server>
+        <InArgument x:TypeArguments="x:String">
+          <CSharpValue x:TypeArguments="x:String" sap2010:WorkflowViewState.IdRef="CSharpValue`1_3">CVServer</CSharpValue>
+        </InArgument>
+      </p:CVScope.Server>
+      <p:CVScope.Target>
+        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="bb5b75d9-5baa-4665-bdb7-e5c67e3cbb98" InformativeScreenshot="89e1cd4ceb4318acd7aadd6223b0e50f" Selector="&lt;html app='msedge.exe' title='Google' /&gt;" WaitForReady="INTERACTIVE">
+          <ui:Target.TimeoutMS>
+            <InArgument x:TypeArguments="x:Int32" />
+          </ui:Target.TimeoutMS>
+        </ui:Target>
+      </p:CVScope.Target>
+    </p:CVScope>
+  </Sequence>
+</Activity>

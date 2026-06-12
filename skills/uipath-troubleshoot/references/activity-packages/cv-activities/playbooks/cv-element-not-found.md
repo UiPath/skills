@@ -62,6 +62,8 @@ What to look for:
 
 Walk the decision tree. Choose the first branch whose evidence holds. Do not apply a branch whose ruling-out evidence is present.
 
+> **Not applicable — do NOT recommend:** the **Healing Agent** and selector-improvement remedies (`selector-failure-*` playbooks) are **UIA-selector** features. They do NOT apply to CV `Cv*WithDescriptor` activities, which match a visual **descriptor**, not a UIA selector. The fix for a CV find failure is descriptor **re-indication** (Branch A) / scope or OCR correction (Branches B/C) — never selector healing. Recommending Healing Agent here is a misattribution.
+
 ### Branch A — Genuine descriptor mismatch (UI changed, anchors moved, DPI scale mismatch)
 
 **Evidence (required to apply):** the dump screenshot shows the expected application screen rendered normally, AND the target is absent, visually changed, or relocated relative to its anchors. OCR/detected text in the dump is populated (rules out Branch C). No `Could not get screenshot` trace (rules out Branch B).
