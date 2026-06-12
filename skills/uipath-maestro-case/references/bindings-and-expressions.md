@@ -66,7 +66,9 @@ Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime 
 
 ### Equality operators
 
-In any `=js:` expression use **strict** `===` / `!==`, never loose `==` / `!=`. JS eval coerces types on loose equality (`vars.flag == "true"` is truthy for the string `"true"`), which silently breaks boolean/number routing. Canonical: `=js:vars.approved === true`.
+In any `=js:` expression use **strict** `===` / `!==`, never loose `==` / `!=`. JS eval coerces types on loose equality (`vars.flag == "true"` is truthy for the string `"true"`), which silently breaks boolean/number routing — and validation passes either way (loose `==` is valid JS), so nothing flags it.
+
+SDD IF columns and `tasks.md` conditions use natural shorthand — `approved == true`, `status != "done"`. When rewriting into a `conditionExpression` (or any `=js:` sink) you MUST upgrade the operator: `approved == true` → `=js:vars.approved === true`. Do NOT transcribe `==` / `!=` verbatim.
 
 ### Conservative rule for `=metadata.X`
 

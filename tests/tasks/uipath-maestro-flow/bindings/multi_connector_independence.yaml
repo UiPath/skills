@@ -32,19 +32,23 @@ initial_prompt: |
       echo '{"a":"<conn-id-1>","ka":"<connector-key-1>","b":"<conn-id-2>","kb":"<connector-key-2>"}' > conn_ids.json
 
 success_criteria:
+  # min_count: 1 (not 2) — agents commonly chain two `uip ... node add` calls
+  # into a single Bash invocation with `&&`, which the checker counts as one
+  # match (re.search returns the first hit). Behavioral checks below verify
+  # both nodes actually exist in the flow.
   - type: command_executed
-    description: "Agent added two connector nodes"
+    description: "Agent used `uip flow node add` at least once"
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+add"
-    min_count: 2
+    min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent configured two nodes"
+    description: "Agent used `uip flow node configure` at least once"
     tool_name: "Bash"
     command_pattern: "(uip|\\$UIP)\\s+(maestro\\s+)?flow\\s+node\\s+configure"
-    min_count: 2
+    min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 

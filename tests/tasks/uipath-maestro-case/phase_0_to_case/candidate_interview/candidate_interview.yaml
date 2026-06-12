@@ -1,13 +1,15 @@
 task_id: skill-case-phase-0-candidate-interview
 description: >
-  Phase 0 ONLY — interview → sdd.md for a candidate-interview process at a
-  software company. Tests whether Phase 0 forms a logically coherent Solution
-  Design Document: 7 primary stages in order (Application Received → Recruiter
-  Screen → Technical Screen → Onsite Loop → Debrief → Offer → Hired), 3 exception
-  lanes (Rejected, Withdrawn, On Hold), the conditional Onsite-Loop gate
-  (engineering L4+), and Debrief scorecard gating. No sdd.md is supplied and NO
-  build is performed — the test stops at the approved sdd.md and an LLM judge
-  rates its logical coherence.
+  Phase 0 INTERVIEW ONLY — simulated interview → sdd.draft.md for a
+  candidate-interview process at a software company. Tests whether the Phase 0
+  interview captures a logically coherent design: 7 primary stages in order
+  (Application Received → Recruiter Screen → Technical Screen → Onsite Loop →
+  Debrief → Offer → Hired), 3 exception lanes (Rejected, Withdrawn, On Hold),
+  the conditional Onsite-Loop gate (engineering L4+), and Debrief scorecard
+  gating. STOPS at the draft — no Finalization, no sdd.md — and an LLM judge
+  rates the draft's design coherence. Mechanical validity is covered separately
+  by the finalize-from-draft task. Simple within-caps case (loan_origination is
+  the complex over-cap counterpart).
 tags:
   - uipath-maestro-case
   - integration
@@ -18,107 +20,104 @@ tags:
   - feature:stages
   - feature:case-exit
   - feature:conditions
-max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion", "TodoWrite"]
+  # Cap per-turn extended thinking so the agent writes the draft instead of
+  # deliberating it as thinking tokens. Interview turns use far less than this.
+  sdk_options:
+    max_thinking_tokens: 10000
 
 run_limits:
-  task_timeout: 2700
+  task_timeout: 3300
   max_turns: 150
-  turn_timeout: 1500
+  turn_timeout: 2700
 
 initial_prompt: |
-  We are building a case management solution for the candidate-interview
-  process at Helix, a 1,200-person software company hiring ~80 candidates
-  per quarter across engineering, product, and design. A typical case
-  (this one: senior backend engineer, L5) takes 4–6 weeks from application
-  to offer. The process spans seven primary stages — Application Received,
-  Recruiter Screen, Technical Screen, Onsite Loop, Debrief, Offer, and
-  Hired — plus three exception paths (Rejected, Withdrawn, On Hold).
+  We're designing a case-management solution for the candidate-interview process
+  at Helix, a 1,200-person software company that hires ~80 candidates a quarter.
+  A typical case (this one is a senior backend engineer, L5) runs 4–6 weeks. The
+  process has seven stages — Application Received, Recruiter Screen, Technical
+  Screen, Onsite Loop, Debrief, Offer, and Hired — plus three exception paths:
+  Rejected, Withdrawn, and On Hold.
 
-  Personas are Recruiter, Hiring Manager, Technical Interviewer,
-  Compensation Analyst, and Candidate. Conditional rules: the Onsite Loop
-  is required only for engineering roles at L4 and above (Technical Screen
-  absorbs the loop for non-engineering or junior roles); Debrief cannot
-  start until every onsite interview has submitted a scorecard. External
-  systems include Greenhouse (ATS), LinkedIn Recruiter, CoderPad, DocuSign
-  (offer letters), and Workday (HRIS handoff at the Hired stage).
+  Keep it compact. Three people are involved — Recruiter, Hiring Manager, and the
+  Candidate — and three systems: Greenhouse (our ATS), DocuSign for offer
+  letters, and Workday for the HRIS handoff once someone's hired. Two rules
+  matter: the Onsite Loop only applies to engineering roles at L4 and up (for
+  everyone else the Technical Screen covers it), and Debrief can't start until
+  every onsite interviewer has filed a scorecard.
 
-  Help me map out the end-to-end process across ~30 tasks, data fields,
-  and business rules. Name the solution and case project "CandidateInterview".
-  Use v20 schema.
+  Help me map this out end to end — about two tasks per stage, the key data we
+  track, and the business rules. Call it "CandidateInterview".
 
-  No sdd.md exists yet. **Run ONLY Phase 0** of the uipath-maestro-case skill:
-  the interview → generate `sdd.md` → approve it. Treat every approval / hard
-  stop as pre-approved (Phase 0 sdd.md: APPROVED; skip the HTML preview). Do
-  NOT ask clarifying questions — make reasonable calls.
+  I want a draft design document I can review before we commit to anything. Let's
+  get the draft down and stop there — we'll finalize and build it later, so don't
+  polish or validate it yet, just capture the design.
 
-  **STOP once `sdd.md` is approved. Do NOT proceed to Phase 1 (tasks.md),
-  Phase 2–3 (caseplan.json / build), or beyond.** Produce the Phase 0 sdd.md
-  only — no solution, no caseplan.
-
-  **Final step — rate the SDD.** After approving `sdd.md`, review it end to end
-  and judge whether the case design is logically coherent for THIS domain: are
-  the stages and their order sensible; the tasks and task-types appropriate; the
-  exception lanes each triggered and terminated/returned correctly; the gating
-  and decision rules sound (including the engineering-L4+ Onsite-Loop gate and
-  the Debrief scorecard gate); the data captured wherever a downstream task needs
-  it; with no dead-end branches or inverted sequences? Output, as your final
-  message:
-  (1) a concise structured recap — every stage in order with its tasks + types,
-  each exception lane with its entry trigger + disposition, the conditional
-  rules, the personas, and the key variables;
-  (2) a coherence rating out of 10; and
-  (3) any logical gaps you found.
-
-  Before starting, load the uipath-maestro-case skill and follow its Phase 0 steps.
+  Use the uipath-maestro-case skill.
 
 success_criteria:
-  - type: file_exists
-    description: "Phase 0 generated sdd.md (not pre-supplied)"
-    path: "sdd.md"
+  # The interview grades the captured DESIGN, in whichever file Phase 0 leaves it:
+  # sdd.draft.md if it stopped at the draft, or sdd.md if it finalized. All
+  # content criteria read whichever exists, so the test does not hinge on the
+  # agent stopping at exactly the draft step.
+  - type: run_command
+    description: "Phase 0 interview produced a design document (draft or finalized)"
+    command: "test -f sdd.draft.md || test -f sdd.md"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "sdd.md models the engineering-role / L4+ Onsite-Loop gating rule"
-    command: "grep -Eiq '(onsite|loop).{0,80}(engineering|l[45]|level)' sdd.md"
+    description: "design models the engineering-role / L4+ Onsite-Loop gating rule"
+    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq '(onsite|loop).{0,80}(engineering|l[45]|level)'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "sdd.md declares all 3 exception lanes"
-    command: "grep -Eiq 'rejected' sdd.md && grep -Eiq 'withdrawn' sdd.md && grep -Eiq 'on hold' sdd.md"
+    description: "design declares all 3 exception lanes"
+    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'rejected' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'withdrawn' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'on hold'"
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "sdd.md is mechanically sound: variable mappings + lineage, per-gate rule legality, task types, entry/completion/exit conditions"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/sdd_check.py"
-    timeout: 30
+    description: "design captures all 7 primary stages (not truncated)"
+    command: "f=$(ls sdd.draft.md sdd.md 2>/dev/null | head -1); [ -n \"$f\" ] && [ \"$(grep -cE '^#+ +Stage [0-9]' \"$f\")\" -ge 7 ]"
+    timeout: 10
     expected_exit_code: 0
-    weight: 3.0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "stayed in Phase 0 — did not run ahead into a caseplan build"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "SDD is domain-coherent and will deliver downstream for the candidate-interview process"
+    description: "Captured design is domain-coherent for the candidate-interview process"
     files:
+      - sdd.draft.md
       - sdd.md
     max_file_chars: 150000
     include_agent_output: false
     prompt: |
-      You are reviewing a Phase-0 Solution Design Document (the attached sdd.md)
-      for a CANDIDATE-INTERVIEW (hiring) case. A separate mechanical check already
-      verifies variable mappings, lineage, per-gate rule legality, task types, and
-      that entry/completion/exit conditions exist — so focus on DOMAIN COHERENCE
-      and whether this design will actually deliver a working case downstream.
+      You are reviewing a Phase-0 design document for a CANDIDATE-INTERVIEW
+      (hiring) case. The design is in whichever file is attached — `sdd.draft.md`
+      (a pre-finalization draft) or `sdd.md` (the finalized version); grade
+      whichever is present. Do NOT penalize unresolved connector IDs, placeholder
+      resource references, or minor rule-syntax issues. Focus on DOMAIN COHERENCE
+      of the captured design.
 
       Judge:
       - Stage order is sensible for hiring (Application Received → Recruiter
@@ -129,21 +128,44 @@ success_criteria:
       - The 3 exception lanes (Rejected, Withdrawn, On Hold) are entered by a
         sensible trigger and correctly terminal (Rejected / Withdrawn) or
         resumable (On Hold).
-      - Each exception lane's Interrupting flag fits its purpose: a lane that
-        pauses active work and resumes (On Hold) should be Interrupting; a lane
-        reached only when a stage completes (Rejected on a decline) need not;
-        any return-to-origin lane must be Interrupting.
-      - The conditional rules are genuinely modeled as guarded rules/tasks, not
-        just mentioned: the Onsite Loop gated to engineering L4+ (Technical Screen
-        absorbs it otherwise), and Debrief blocked until all onsite scorecards
-        are in.
-      - No semantic gaps that break downstream: an offer-letter / email recipient
-        bound to a name instead of an address; a decision outcome that routes
-        nowhere; an inverted sequence (offer before debrief, Workday handoff
-        before Hired); or data a task needs that no upstream task produces.
+      - The conditional rules are genuinely modeled, not just mentioned: the
+        Onsite Loop gated to engineering L4+ (Technical Screen absorbs it
+        otherwise), and Debrief blocked until all onsite scorecards are in.
+      - No semantic gaps that would break downstream: a decision outcome that
+        routes nowhere, an inverted sequence (offer before debrief, Workday
+        handoff before Hired), or data a task needs that no upstream task
+        produces.
 
-      Score 1.0 if the design is coherent and would build into a working case with
-      no major flaws; 0.5 if mostly coherent with minor gaps; 0.0 if there are
-      major logical/domain errors.
+      Score 1.0 if the captured design is coherent and would finalize into a
+      working case with no major flaws; 0.5 if mostly coherent with minor gaps;
+      0.0 if there are major logical/domain errors.
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.7
+
+simulation:
+  enabled: true
+  persona: |
+    You are the talent-acquisition operations lead at Helix who owns the
+    candidate-interview process end to end. You know everything in your opening
+    message: the seven stages (Application Received → Recruiter Screen →
+    Technical Screen → Onsite Loop → Debrief → Offer → Hired), the three
+    exception lanes (Rejected, Withdrawn, On Hold), the three personas
+    (Recruiter, Hiring Manager, Candidate), the conditional rules (Onsite Loop
+    only for engineering roles at L4+, with Technical Screen absorbing it
+    otherwise; Debrief blocked until every onsite scorecard is in), and the
+    three external systems (Greenhouse ATS, DocuSign for offer letters, Workday
+    for the HRIS handoff). A solution designer is interviewing you to map this
+    process into a compact case definition.
+  goal: |
+    Get a complete Phase-0 sdd.draft.md for the CandidateInterview case. Answer
+    the designer's interview questions so the design reaches full depth. When the
+    designer has written the draft and asks whether to finalize, produce sdd.md,
+    or proceed, tell them to STOP at the draft — the draft is all you need.
+  constraints:
+    - "Answer each question concisely and decisively — one short sentence, or pick the recommended / first option in an AskUserQuestion. Never bounce the decision back ('you decide') and never stall."
+    - "Ground every answer in the process described in your opening message. For a detail you never specified, make a sensible, consistent call and state it in one line — do not invent new stages, exception lanes, personas, external systems, or extra tasks beyond that brief."
+    - "Keep the design lightweight and within Phase-0 scope: about two tasks per stage (~12–14 total), three personas, three integrations. When the agent lays out a stage's tasks, confirm a minimal set — do NOT pad, add steps, or suggest extra automations."
+    - "You want a draft to review first. If the assistant offers to finalize, validate, approve, build, or move to a next phase, tell it to leave it as a draft for now — you'll finalize later. If it wants to keep polishing or double-checking the draft, say it's good enough for a first review."
+    - "Once the draft captures the design, you're done — end the conversation; don't open new topics or extend the interview."
+    - "Keep replies short — one sentence or a single option pick."
+  max_turns: 40

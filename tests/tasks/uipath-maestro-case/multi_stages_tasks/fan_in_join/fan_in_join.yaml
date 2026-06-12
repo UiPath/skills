@@ -26,7 +26,7 @@ run_limits:
 
 initial_prompt: |
   Build a UiPath Case Management solution named "FanInJoin" containing
-  a project also named "FanInJoin" from the sdd.md below. Use v20 schema.
+  a project also named "FanInJoin" from the sdd.md below.
   Write the sdd.md to disk first, then build from it.
 
   ```

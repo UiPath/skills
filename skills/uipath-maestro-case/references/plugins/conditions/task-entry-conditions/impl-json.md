@@ -71,7 +71,7 @@ Rules use DNF — outer array is OR, inner array is AND.
 ]]
 ```
 
-`conditionExpression` uses bare `=js:<expr>` (no outer parens) — per FE convention for conditions. Operators (`>`, `<`, `===`, etc.) and function calls go inline. For combined boolean expressions, wrap each sub-clause in parens before joining: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
+`conditionExpression` uses bare `=js:<expr>` (no outer parens) — per FE convention for conditions. Operators (`>`, `<`, `===`, etc.) and function calls go inline. Use strict `===` / `!==`, never loose `==` / `!=` — normalize SDD shorthand like `approved == true` to `=js:vars.approved === true` (do not transcribe `==` verbatim). For combined boolean expressions, wrap each sub-clause in parens before joining: `=js:(vars.X === 'foo') && (vars.Y > 5)`. Full per-sink rule: [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink).
 
 ### wait-for-connector — bind a connector event
 

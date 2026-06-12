@@ -265,7 +265,8 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **Use execution templates** | XAML | [testing-guide.md § Execution Templates](references/testing-guide.md) |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Use a common activity** (`Sequence` / `If` / `Switch<T>` / `TryCatch` / `While` / `DoWhile` / `ForEach<T>` / `Assign` / `LogMessage` / `WriteLine` / `Delay` / `Throw` / `Rethrow`) | XAML | [common-activity-card.md](references/common-activity-card.md) |
-| **Create Flowchart/StateMachine/LRW** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
+| **Create Flowchart/StateMachine** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
+| **Create/edit Long Running Workflow (ProcessDiagram)** | XAML | [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
 | **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
@@ -347,7 +348,7 @@ XAML workflows follow a **discovery-first, phase-based approach**: Discovery →
 | **Sequence** | Linear step-by-step logic; most common for simple automations |
 | **Flowchart** | Branching/looping logic with multiple decision points |
 | **State Machine** | Long-running processes with distinct states and transitions |
-| **Long Running Workflow** | BPMN-style horizontal flow; event-driven processes with long waits |
+| **Long Running Workflow** | BPMN-style horizontal flow; event-driven processes with long waits. Requires `UiPath.FlowchartBuilder.Activities` — see [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) |
 
 ### Expression Language
 
@@ -387,6 +388,7 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 - [xaml/csharp-activity-binding-guide.md](references/xaml/csharp-activity-binding-guide.md) — Canonical C# binding forms per common activity property (LogMessage, GetText, StartProcess, …) — flat lookup table + recipes
 - [xaml/csharp-expression-pitfalls.md](references/xaml/csharp-expression-pitfalls.md) — C#-specific expression failures (attribute-form VB JIT, ThrowIfNotInTree, OutArgument parse errors)
 - [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — Flowchart, State Machine, and Long Running Workflow canvas layout with ViewState
+- [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) — LRW package dependency, node vocabulary, gateway patterns, suspend/resume persistence
 - [xaml/jit-custom-types-schema.md](references/xaml/jit-custom-types-schema.md) — JIT custom type discovery
 
 ### Multi-Screen UI Automation Workflows
@@ -410,7 +412,7 @@ Check `project.json` → `dependencies` for the required package.
 
 ```bash
 uip rpa packages versions --package-id <PackageId> --include-prerelease --project-dir "<PROJECT_DIR>" --output json
-uip rpa packages install --packages '[{"id":"<PackageId>","version":"<LATEST_VERSION>"}]' --project-dir "<PROJECT_DIR>" --output json
+uip rpa packages install --packages 'id=<PackageId>,version=<LATEST_VERSION>' --project-dir "<PROJECT_DIR>" --output json
 ```
 
 ### Step 2 — Find activity docs (priority order)

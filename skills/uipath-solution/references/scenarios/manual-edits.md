@@ -1,8 +1,8 @@
 # Manual edits when the CLI doesn't cover the case
 
-The CLI now covers the full resource CRUD: **create** ([Step 9: `solution resource add`](../develop-solution.md#step-9-add-a-resource-atomically)), **delete** ([Step 10: `solution resource remove`](../develop-solution.md#step-10-remove-a-resource)), and **update** ([Step 11: `solution resource edit`](../develop-solution.md#step-11-edit-a-resource)). `edit` patches an existing resource's `spec` through the SDK — it even renames (with duplicate protection), so the old "rename is Studio-Web-only" rule no longer holds.
+The CLI now covers the full resource CRUD: **create** ([Step 9: `solution resources add`](../develop-solution.md#step-9-add-a-resource-atomically)), **delete** ([Step 10: `solution resources remove`](../develop-solution.md#step-10-remove-a-resource)), and **update** ([Step 11: `solution resources edit`](../develop-solution.md#step-11-edit-a-resource)). `edit` patches an existing resource's `spec` through the SDK — it even renames (with duplicate protection), so the old "rename is Studio-Web-only" rule no longer holds.
 
-**Reach for `solution resource edit` first** for any spec-field change. The SDK validates against kind metadata: it silently skips unknown / reference / read-only properties, and identity fields (`key`, `kind`, `type`, `apiVersion`, `dependencies`, `folders`) live outside `spec` so `edit` can't touch them at all.
+**Reach for `solution resources edit` first** for any spec-field change. The SDK validates against kind metadata: it silently skips unknown / reference / read-only properties, and identity fields (`key`, `kind`, `type`, `apiVersion`, `dependencies`, `folders`) live outside `spec` so `edit` can't touch them at all.
 
 This page is now the **last resort** — for the narrow cases `edit` *won't* cover:
 
@@ -10,7 +10,7 @@ This page is now the **last resort** — for the narrow cases `edit` *won't* cov
 2. **`solution deploy config set` / `link` / `unlink`** — for changes that only need to apply at deploy time (per-environment values, link state). Touches only the deploy config file, not the solution-level resources.
 3. **Hand-edit the JSON directly** — the escape hatch when none of the above fit. Works, but **not ideal** — no validation, the SDK can silently undo your change on the next refresh if it conflicts with what bindings re-derive, and structural mistakes corrupt the solution. Use only when you understand which fields the SDK leaves alone.
 
-This page covers (3) — what's safe to hand-edit and what's not. For everyday spec changes prefer `solution resource edit`; for creating or deleting a whole resource, `solution resource add` / `remove`.
+This page covers (3) — what's safe to hand-edit and what's not. For everyday spec changes prefer `solution resources edit`; for creating or deleting a whole resource, `solution resources add` / `remove`.
 
 ## What the SDK actually compares
 
@@ -86,7 +86,7 @@ Open the file. The shape is roughly:
 After any solution-level edit, run a sanity check:
 
 ```bash
-uip solution resource list --kind <kind> --solution-folder . --source local --output json
+uip solution resources list --kind <kind> --solution-folder . --source local --output json
 ```
 
 The list should show your resource with the new spec. If `resource refresh` reverts the change on the next run, you edited a field the bindings re-derive — back out and use the deploy-config path or SW UI instead.

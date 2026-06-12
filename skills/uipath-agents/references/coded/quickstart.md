@@ -118,40 +118,43 @@ Then STOP and wait. On reply, run the matching one-shot login from [../authentic
    Skip init only when the edit is purely inside node bodies / helpers (logic, prompts, business rules) and leaves every schema and the entry signature byte-identical. Then test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
 7. **Evaluate** — Run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report`. Idempotent by `has_evaluators` / `has_smoke_set`: create the missing one(s) only — **never overwrite an existing evaluator config or smoke set**, the user may have tuned them.
 
-   **Note:** `uipath-llm-judge-trajectory-similarity` requires emitted trace spans to populate `AgentRunHistory`. Plain `StateGraph` agents without explicit OpenTelemetry tracing produce empty history → all cases score 0.0 even on successful runs. If the smoke set scores 0.0, verify the agent actually executed (via local `uip codedagent run`) before treating it as a logic failure; consider an output-only evaluator for non-conversational graphs.
+   **Default the smoke evaluator to an output-based type, never a trajectory or tool-call evaluator** (those score 0.0 on single-step agents — use them only for multi-step / tool-using agents). Pick:
 
-   **If `has_evaluators == false`**, create `evaluations/evaluators/llm-judge-trajectory.json`. If the default `model` below is not available in the user's tenant, call `sdk.agenthub.get_available_llm_models()` and substitute a `model_name` from the returned list.
+   - **Deterministic or structured output** (a fixed string, number, or JSON shape) → `uipath-exact-match`, `uipath-contains`, or `uipath-json-similarity`. No LLM, no tenant model needed, binary/continuous scoring. Prefer this whenever the task allows it.
+   - **Natural-language output** (summaries, reports, free text) → `uipath-llm-judge-output-semantic-similarity` (`LLMJudgeOutputEvaluator`). Scores output semantics, works without tracing.
+
+   **If `has_evaluators == false`**, create `evaluations/evaluators/llm-judge-output.json` (default for NL output; swap to a deterministic type above when the output is fixed/structured). For any `uipath-llm-judge-*` type, if the default `model` below is not available in the user's tenant, run `uip codedagent list-models` and substitute an available model name.
 
    ```json
    {
      "version": "1.0",
-     "id": "LLMJudgeTrajectoryEvaluator",
-     "evaluatorTypeId": "uipath-llm-judge-trajectory-similarity",
+     "id": "LLMJudgeOutputEvaluator",
+     "evaluatorTypeId": "uipath-llm-judge-output-semantic-similarity",
      "evaluatorConfig": {
-       "name": "LLMJudgeTrajectoryEvaluator",
+       "name": "LLMJudgeOutputEvaluator",
        "model": "gpt-4o-mini-2024-07-18",
        "defaultEvaluationCriteria": {
-         "expectedAgentBehavior": "Agent should process the input and return a response."
+         "expectedOutput": {"<output_field>": "A correct, on-topic response for the given input."}
        }
      }
    }
    ```
 
-   **If `has_smoke_set == false`**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input schema (version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array):
+   **If `has_smoke_set == false`**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input/output schema (version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array). Key each case's criteria on the evaluator `id` you created above, and shape `expectedOutput` to match the agent's actual output field(s):
    ```json
    {
      "version": "1.0",
      "id": "smoke-test",
      "name": "Smoke Test",
-     "evaluatorRefs": ["LLMJudgeTrajectoryEvaluator"],
+     "evaluatorRefs": ["LLMJudgeOutputEvaluator"],
      "evaluations": [
        {
          "id": "test-1",
          "name": "Basic test",
-         "inputs": {"field": "value"},
+         "inputs": {"<input_field>": "value"},
          "evaluationCriterias": {
-           "LLMJudgeTrajectoryEvaluator": {
-             "expectedAgentBehavior": "Agent should process the input and return a response."
+           "LLMJudgeOutputEvaluator": {
+             "expectedOutput": {"<output_field>": "A correct, on-topic response for this input."}
            }
          }
        }

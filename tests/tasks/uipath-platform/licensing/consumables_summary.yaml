@@ -4,11 +4,7 @@ description: >
   summary report (default mode). Verifies the agent calls `uip platform
   licenses consumables get --mode summary --output json`. CLI auth failure
   is expected offline.
-tags: [uipath-platform, smoke-blocked, licensing, consumables]
-skip: true
-# Blocked: `uip platform licenses consumables get` is not in the public
-# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
-# Re-enable when the CLI ships the consumables surface. See PLT-103133.
+tags: [uipath-platform, smoke, licensing, consumables]
 
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.

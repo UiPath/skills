@@ -242,8 +242,8 @@ Run the review command for the agent type, once, capturing JSON:
 
 | Agent type | Command |
 |---|---|
-| Low-code (`agent.json`) | `uip agent review --project-dir "<PROJECT_DIR>" --output json` |
-| Coded (`main.py` + framework config) | `uip codedagent review --project-dir "<PROJECT_DIR>" --output json` |
+| Low-code (`agent.json`) | `uip agent review "<PROJECT_DIR>" --output json` |
+| Coded (`main.py` + framework config) | `uip codedagent review "<PROJECT_DIR>" --output json` |
 | Agent-builder coded layout (`agent.json` + `main.py`) | run **both** commands |
 
 The CLI runs every deterministic static check — structural/schema, placeholder cross-refs, eval counts/diversity, secret & import regex, framework symbol existence, eval-run analysis, packaging/git hygiene — and returns them in rule format. Parse `Data.Issues[]`; each issue is `{RuleId, Category, Severity, Description, File, SuggestedFix}`. Carry each into the report **verbatim** — do not re-derive, rename, or re-rank. These rule IDs are authoritative as emitted by the CLI; they are **not** listed in the skill catalog.

@@ -1,0 +1,93 @@
+task_id: skill-test-objectlabel-lifecycle-integration
+description: >
+  Integration test: agent uses the uipath-test skill to manage tag-style
+  object labels across three specific, named test cases in the HEALTH
+  project using the `uip tm objectlabel` commands. The prompt references
+  the test cases by their human-readable keys and descriptions
+  (HEALTH:11/12/13, the "PHI Masking" cases) and the agent resolves them
+  to ids live; it also names the `objectlabel` command group explicitly so
+  the agent does not confuse it with the `customfield label` subgroup. It
+  attaches labels many-to-many, lists the distinct labels narrowed by
+  `--filter`, inspects one assignment row, then detaches a single label.
+  Assertions validate the complete command shape and the exact label
+  names.
+tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:objectlabel]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 45
+
+initial_prompt: |
+  Hey, quick one in the test manager HEALTH project. I need to tag our 
+  three PHI Masking test cases — HEALTH:11 ("PHI Masking - SSN in Patient
+  Search Results"), HEALTH:12 ("PHI Masking - DOB Redacted in Logs") and
+  HEALTH:13 ("PHI Masking - Diagnosis Code in Reports"). You'll have to 
+  grab their ids first.
+
+  Can you put the tags "eval-regression" and "eval-smoke" on all three?
+  Then show me the test-case labels filtered down to just "eval-regression",
+  and open one of those label rows by its id so I can see the detail. Once
+  that's done, take "eval-smoke" back off the three but keep "eval-regression"
+  on them.
+
+  Then just scribble a one-liner on where the tags ended up into
+  ./health-labels.md.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Resolved the three test-case ids (`uip tm testcases list --project-key HEALTH --output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+list\s'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete attach command naming both labels: `uip tm objectlabel add --project-key HEALTH --object-type TestCase --object-ids <ids> --labels eval-regression eval-smoke --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete narrowed-list command: `uip tm objectlabel list --project-key HEALTH --object-type TestCase --filter eval-regression --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--filter\s+["\x27]?eval-regression)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete inspect command: `uip tm objectlabel get --project-key HEALTH --label-id <uuid> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--label-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete detach command removing only eval-smoke: `uip tm objectlabel remove --project-key HEALTH --object-type TestCase --object-ids <ids> --labels eval-smoke --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--object-ids\s+\S+)(?=.*--labels\s+["\x27]?eval-smoke)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+remove\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final tag-state summary written"
+    command: |
+      ls health-labels.md >/dev/null 2>&1 \
+        && grep -qiE 'eval-regression|label|HEALTH:1[123]|tag' health-labels.md
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

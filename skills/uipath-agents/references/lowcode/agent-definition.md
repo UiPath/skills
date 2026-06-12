@@ -311,12 +311,12 @@ The `validate` command reads these files and resolves `referenceKey` for solutio
 
 ### `folderPath` semantics
 
-`folderPath` (or `channel.properties.folderName` for escalations / `action.app.folderName` for guardrail escalations) carries the literal `Folder` field returned by `uip solution resource list` — the same rule for both local (`Source: "Local"`) and external (`Source: "Remote"`) resources:
+`folderPath` (or `channel.properties.folderName` for escalations / `action.app.folderName` for guardrail escalations) carries the literal `Folder` field returned by `uip solution resources list` — the same rule for both local (`Source: "Local"`) and external (`Source: "Remote"`) resources:
 
 | `location` | `folderPath` value | Source |
 |---|---|---|
-| `"solution"` | Typically `"solution_folder"` (the in-solution declared folder) | `Folder` field from `uip solution resource list` |
-| `"external"` | Literal Orchestrator folder, slash-separated (e.g., `"Shared/Sales"`) | `Folder` field from `uip solution resource list` |
+| `"solution"` | Typically `"solution_folder"` (the in-solution declared folder) | `Folder` field from `uip solution resources list` |
+| `"external"` | Literal Orchestrator folder, slash-separated (e.g., `"Shared/Sales"`) | `Folder` field from `uip solution resources list` |
 
 The author writes the value verbatim into `resource.json` (or into the guardrail action under `agent.json`); `uip agent refresh` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules.md](critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
 

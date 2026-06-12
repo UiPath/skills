@@ -10,8 +10,8 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 | Commands | What | Auth |
 |----------|------|------|
-| `solution init`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
-| `solution resource add --source local\|remote`, `solution resource remove <key>`, `solution resource edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
+| `solution init`, `solution project add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+| `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
@@ -46,7 +46,7 @@ cd <SolutionDir> && uip maestro case init <ProjectName>
 |------|-------------|
 | `<ProjectName>` | **(required)** Project directory name. Created inside the current directory |
 
-Run from inside the solution directory so the resulting layout is `<SolutionDir>/<ProjectName>/`. When run from inside a solution directory, `case init` **auto-registers** the project with the parent `.uipx` — confirm via `Data.SolutionRegistration.Status` in the response (`Registered` or `AlreadyRegistered`). Use `uip solution project add ./<ProjectName>` only as a fallback when `Status` is `Skipped` or `Failed`. Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution project add` step — see `implementation.md` § Step 6.
+Run from inside the solution directory so the resulting layout is `<SolutionDir>/<ProjectName>/`. When run from inside a solution directory, `case init` **auto-registers** the project with the parent `.uipx` — confirm via `Data.SolutionRegistration.Status` in the response (`Registered` or `AlreadyRegistered`). Pass `--skip-solution-registration` to skip auto-registration (the status is then `OptedOut`). Use `uip solution project add ./<ProjectName>` as a fallback when `Status` is `NotInSolution` (`init` ran outside a solution), `Skipped` (ambiguous discovery), or `Failed` (`.uipx` write error). Note: the SKILL's standard JSON-authoring path (see `plugins/case/impl-json.md`) does not invoke `case init` and still requires the explicit `solution project add` step — see `implementation.md` § Step 6.
 
 ---
 
@@ -55,7 +55,7 @@ Run from inside the solution directory so the resulting layout is `<SolutionDir>
 Register a project with an existing solution. Used in two scenarios in this skill:
 
 1. **Standard SKILL path** — after the case plugin (T01 in `impl-json.md`) writes `project.uiproj` directly via JSON authoring without invoking `case init`, the project is not auto-registered, so this command is required (see `implementation.md` § Step 6.0b).
-2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `Skipped` or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered`, this command is redundant.
+2. **Fallback for `uip maestro case init`** — when `case init` returns `Data.SolutionRegistration.Status` of `NotInSolution`, `Skipped`, or `Failed`, run this manually to wire the project in. When `case init` returns `Registered` or `AlreadyRegistered`, this command is redundant. When it returns `OptedOut` (`--skip-solution-registration` was passed), the skip was intentional — run this only if you later decide to register.
 
 ```bash
 uip solution project add <ProjectName> <SolutionName>.uipx
@@ -70,12 +70,12 @@ Adds the project to `.uipx.Projects[]`. Run after `project.uiproj` exists.
 
 ---
 
-## uip solution resource refresh
+## uip solution resources refresh
 
 Re-scan all projects in the solution and sync resource declarations from `bindings_v2.json`. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists.
 
 ```bash
-uip solution resource refresh --solution-folder <SolutionDir> --output json
+uip solution resources refresh --solution-folder <SolutionDir> --output json
 ```
 
 > `--solution-folder` is required when invoking from outside the solution directory. Omit the flag (and run from inside the solution dir) only for ad-hoc local use; the skill always passes it explicitly so the cwd doesn't matter.
@@ -91,7 +91,7 @@ uip solution resource refresh --solution-folder <SolutionDir> --output json
 Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
-uip solution resource refresh --solution-folder <SolutionDir> --output json
+uip solution resources refresh --solution-folder <SolutionDir> --output json
 uip solution upload <SolutionDir> --output json
 ```
 
@@ -144,11 +144,11 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. Executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.**
 
 ```bash
-uip solution resource refresh --solution-folder <SolutionDir> --output json
+uip solution resources refresh --solution-folder <SolutionDir> --output json
 uip maestro case debug <project-path> --log-level debug --output json
 ```
 
-> **Always run `uip solution resource refresh`** on the solution directory before debug.
+> **Always run `uip solution resources refresh`** on the solution directory before debug.
 
 | Flag | Description |
 |------|-------------|

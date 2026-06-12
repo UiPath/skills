@@ -55,9 +55,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered the memory space with uip solution resource list --kind MemorySpace"
+    description: "Agent discovered the memory space with uip solution resources list --kind MemorySpace"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--kind\s+MemorySpace'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+MemorySpace'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -89,7 +89,7 @@ success_criteria:
   - type: command_executed
     description: "Agent refreshed solution resources after memory binding propagation"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+refresh'
+    command_pattern: 'uip\s+solution\s+resources\s+refresh'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

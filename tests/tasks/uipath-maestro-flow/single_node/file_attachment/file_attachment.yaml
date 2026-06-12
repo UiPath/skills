@@ -32,7 +32,7 @@ initial_prompt: |
   planning and implementation. Build, validate, and run end-to-end in a single
   pass. Before starting, load the uipath-maestro-flow skill and follow its
   workflow steps exactly — in particular the file-attachment binding pre-flight
-  and the requirement to run `solution resource refresh` before debug.
+  and the requirement to run `solution resources refresh` before debug.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────

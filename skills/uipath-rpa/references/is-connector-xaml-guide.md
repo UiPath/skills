@@ -56,7 +56,7 @@ Required for the `isactr:ConnectorActivity` type.
 
 ```bash
 uip rpa packages versions --package-id UiPath.IntegrationService.Activities --project-dir "<PROJECT_DIR>" --output json
-uip rpa packages install --packages '[{"id":"UiPath.IntegrationService.Activities"}]' --project-dir "<PROJECT_DIR>" --output json
+uip rpa packages install --packages id=UiPath.IntegrationService.Activities --project-dir "<PROJECT_DIR>" --output json
 ```
 
 ### Step 2 — Find the operation's `activityTypeId`

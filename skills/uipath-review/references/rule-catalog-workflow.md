@@ -13,8 +13,8 @@ Run the review command for the agent type, once, capturing JSON:
 
 | Agent type | Command |
 |---|---|
-| Low-code (`agent.json`) | `uip agent review --project-dir "<PROJECT_DIR>" --output json` |
-| Coded (`main.py` + framework config) | `uip codedagent review --project-dir "<PROJECT_DIR>" --output json` |
+| Low-code (`agent.json`) | `uip agent review "<PROJECT_DIR>" --output json` |
+| Coded (`main.py` + framework config) | `uip codedagent review "<PROJECT_DIR>" --output json` |
 
 Parse the JSON. Findings live under `Data.Issues[]`; each issue is:
 

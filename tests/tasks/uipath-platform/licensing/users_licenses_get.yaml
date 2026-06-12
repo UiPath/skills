@@ -6,11 +6,7 @@ description: >
   --output json` shape, (2) docs page fetch for code resolution, and
   (3) final reply uses `<Friendly Name> (<CODE>)` format. CLI auth failure
   is expected in this offline environment.
-tags: [uipath-platform, smoke-blocked, licensing, users]
-skip: true
-# Blocked: `uip platform users licenses` is not in the public
-# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
-# Re-enable when the CLI ships the users surface. See PLT-103133.
+tags: [uipath-platform, smoke, licensing, users]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
