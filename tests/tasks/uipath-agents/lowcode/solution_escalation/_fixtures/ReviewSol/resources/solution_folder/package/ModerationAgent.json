@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "ModerationAgent",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "15f9fe04-d8a9-4836-9ad4-53ca869792ce",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": null,
+      "fileReference": null,
+      "name": "ModerationAgent",
+      "description": null
+    },
+    "locks": [],
+    "key": "7ccd3fda-072c-4e2a-bceb-78fd17e353e7"
+  }
+}
