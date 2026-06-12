@@ -1,0 +1,94 @@
+task_id: skill-agent-conversational-guardrail-agent-scope-rejected
+description: >
+  Negative integration test for Critical Rule 26 (conversational agents
+  support only Tool-scoped guardrails). The prompt asks for a PII
+  detection guardrail at the agent level — which is the autonomous
+  pattern but forbidden for conversational because the runtime silently
+  ignores `Agent` and `Llm` scopes. Passes if the skill restrains the
+  agent from writing `selector.scopes` containing `"Agent"` or `"Llm"`
+  in either the `agent.json` root `guardrails[]` array or any per-tool
+  `resources/<Tool>/resource.json` → `guardrail.policies[]` — either by
+  refusing, auto-correcting to `["Tool"]`, or scoping per-tool. Fails
+  if a forbidden scope is written to either location.
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, guardrail]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+  max_turns: 50
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a low-code conversational (multi-turn chat) agent named
+  "ChatGuardAgent" inside a UiPath solution named "PiiGuardSol". The
+  agent answers user questions about customer accounts and must include
+  a PII detection guardrail configured to block Email and PhoneNumber.
+
+  This is a conversational (multi-turn chat) agent — not an autonomous
+  single-turn agent.
+
+  Validate the agent successfully at the end.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire build (solution + agent +
+  guardrail + validation) end-to-end in a single pass without stopping
+  for a summary until all four are done.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new/init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(new|init)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ChatGuardAgent/agent.json was created"
+    path: "PiiGuardSol/ChatGuardAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "agent.json has conversational shape — isConversational true + engine conversational-v1"
+    path: "PiiGuardSol/ChatGuardAgent/agent.json"
+    assertions:
+      - expression: "metadata.isConversational"
+        operator: "equals"
+        expected: true
+      - expression: "settings.engine"
+        operator: "equals"
+        expected: "conversational-v1"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No guardrail uses Agent or Llm scope in agent.json root or per-tool resource.json (Rule 26)"
+    command: "python3 $TASK_DIR/check_conversational_guardrail_scope.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0

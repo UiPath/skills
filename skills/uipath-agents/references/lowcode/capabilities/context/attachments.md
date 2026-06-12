@@ -12,6 +12,10 @@ For other context variants, see [context.md](context.md).
 - No persistent index needed — files are processed per-invocation
 - No solution-level resource binding (attachments are runtime-only)
 
+## Conversational Support
+
+**Status: Supported.**
+
 ## Agent-Level Resource Shape
 
 **Path:** `<AgentName>/resources/<ContextName>/resource.json`

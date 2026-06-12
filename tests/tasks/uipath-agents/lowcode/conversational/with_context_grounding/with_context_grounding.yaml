@@ -1,0 +1,127 @@
+task_id: skill-agent-conversational-with-context-grounding
+description: >
+  Positive integration test. Builds a conversational chatbot that
+  answers product support questions by retrieving from a Context
+  Grounding semantic index already deployed in the tenant. Verifies the
+  skill teaches: conversational scaffold + 7-field fixup + context
+  resource (`$resourceType: "context"`, `contextType: "index"`) wiring
+  + uip solution resource refresh to produce `bindings_v2.json`. The
+  context resource shape is identical to autonomous; only the agent.json
+  shell (empty schemas, conversational engine, static user message)
+  differs.
+tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, context-grounding]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Build a low-code conversational (multi-turn chat) agent named
+  "SupportBot" inside a UiPath solution named "SupportSol". The agent
+  answers customer product support questions by retrieving relevant
+  info from the existing Context Grounding semantic index named
+  "UiPathAgentsProductKnowledge" already deployed in the tenant.
+
+  This is a conversational (multi-turn chat) agent — not an autonomous
+  single-turn agent. Users will ask product questions over chat; the
+  agent should query the knowledge base index and ground its answers.
+
+  Use the real folder, index name, and backing storage bucket from the
+  tenant — do not hard-code or guess these values. Name the agent's
+  context resource `UiPathAgentsProductKnowledge` (matching the index).
+
+  Validate the agent successfully at the end.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire build end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new/init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(new|init)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the index identity with uip solution resource list --kind Index"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+list\b.*--kind\s+Index'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the index configuration with uip solution resource get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed solution resources with uip solution resource refresh"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resource\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SupportBot/agent.json was created"
+    path: "SupportSol/SupportBot/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "UiPathAgentsProductKnowledge context resource.json was created"
+    path: "SupportSol/SupportBot/resources/UiPathAgentsProductKnowledge/resource.json"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "agent.json has conversational shape — isConversational true + engine conversational-v1"
+    path: "SupportSol/SupportBot/agent.json"
+    assertions:
+      - expression: "metadata.isConversational"
+        operator: "equals"
+        expected: true
+      - expression: "settings.engine"
+        operator: "equals"
+        expected: "conversational-v1"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Context resource shape, conversational schemas empty, bindings_v2.json index binding"
+    command: "python3 $TASK_DIR/check_context_index_conversational.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

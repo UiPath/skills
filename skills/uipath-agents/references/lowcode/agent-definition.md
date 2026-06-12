@@ -2,6 +2,8 @@
 
 Schemas for the core agent definition files: `agent.json`, `entry-points.json`, `project.uiproj`. Plus contentTokens construction, message templates, and Common Edits.
 
+> **Conversational variant.** For conversational agents (`metadata.isConversational: true`, `settings.engine: "conversational-v1"`), see § Conversational Variant below. Most of this page applies to both autonomous and conversational agents.
+
 ## Project Directory Structure
 
 After `uip agent init <name>`:
@@ -326,6 +328,114 @@ For each resource type's full schema, see the relevant capability file:
 - Context resources (`$resourceType: "context"`) — [capabilities/context/context.md](capabilities/context/context.md)
 - Escalation resources (`$resourceType: "escalation"`) — [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md)
 - MCP server resources (`$resourceType: "mcp"`) — [capabilities/mcp/mcp.md](capabilities/mcp/mcp.md)
+
+## Conversational Variant
+
+Conversational agents (`metadata.isConversational: true`, `engine: "conversational-v1"`) share most of this page's schema with autonomous. This section documents only what differs.
+
+### Minimum Viable `agent.json` for Conversational
+
+```json
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "conversational-v1",
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": true,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "projectId": "<AUTO_GENERATED_UUID>",
+  "messages": [
+    {
+      "role": "system",
+      "content": "<SYSTEM_PROMPT>",
+      "contentTokens": [
+        { "type": "simpleText", "rawString": "<SYSTEM_PROMPT>" }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "What is the current date?",
+      "contentTokens": [
+        { "type": "simpleText", "rawString": "What is the current date?" }
+      ]
+    }
+  ]
+}
+```
+
+### Init Defaults to Fix
+
+`uip agent init` scaffolds an autonomous agent. After init, change these **7 fields** for conversational:
+
+| Field | `uip agent init` Default | Conversational |
+|---|---|---|
+| `metadata.isConversational` | `false` | `true` |
+| `settings.engine` | `"basic-v2"` | `"conversational-v1"` (must match `isConversational`) |
+| `settings.maxIterations` | `25` | *omit* |
+| `messages[1].content` | `"{{input.input}}"` template | static placeholder, e.g., `"What is the current date?"` (no variable references) |
+| `inputSchema` | `{ properties: { input: ... }, required: ["input"] }` | `{ properties: {} }`, no `required` array |
+| `outputSchema` | `{ properties: { content: { type: "string", description: "Agent response" } } }` | `{ properties: {} }` |
+| `metadata.targetRuntime` | `"pythonAgent"` | *omit* |
+
+Model and `maxTokens` defaults also differ between CLI init and PROD (see § Settings below), but both CLI values still work — they're style defaults, not required fixups.
+
+Apply all changes before running `uip agent validate` — migration runs in memory and writes back on success. Shared schema fields (`version`, `storageVersion`, `mode`) are managed by validate per [critical-rules.md](critical-rules.md) Rule 14; do not edit them manually.
+
+### Settings (Conversational defaults)
+
+| Field | PROD default | Notes |
+|---|---|---|
+| `model` | `"anthropic.claude-sonnet-4-5-20250929-v1:0"` | Studio Web PROD default |
+| `maxTokens` | `64000` | Different from autonomous |
+| `temperature` | `0` | Same as autonomous |
+| `engine` | `"conversational-v1"` | Must match `isConversational: true` |
+| `maxIterations` | *omit* | Conversational engine ignores it |
+
+### Messages (Conversational)
+
+- `messages[0]` (system) — full freedom. Same as autonomous.
+- `messages[1]` (user) — **static placeholder text only**. No `{{input.*}}` variables, no expressions. Required by the runtime. Without it the runtime emits the misleading error `"No system message found"`. Chat messages flow over the WebSocket session, not through this template.
+
+### Input and Output Schema (Conversational)
+
+- `inputSchema.properties` — empty `{}`. No `required` array. The conversational runtime does not consume typed input fields — chat input flows over the WebSocket session.
+- `outputSchema.properties` — **empty `{}`**. Do not add `content` or other fields.
+- Schema sync (per [critical-rules.md](critical-rules.md) Rule 4) — `entry-points.json` `input` / `output` mirror these (both empty for conversational).
+
+### Not Yet Available
+
+The following autonomous capabilities are **not yet supported** for conversational agents. Do not add them to a conversational agent; if a user requests one, inform them it isn't available for conversational.
+
+- **Memory spaces** — referenced in autonomous as `uipath.agent.resource.memory.*` (flow node type) and via the `agentMemory: true` flag in agent-process specs. Not available in conversational. Memory itself is not yet documented as a standalone capability for either flavor — see the BM1 Dependencies row in the Coding Agents Tracker for owner + ETA.
+
+When the runtime adds support for a currently-unavailable capability, the matching capability doc will gain a § Conversational Support subsection like other capabilities, and this list shrinks.
+
+### Anti-patterns
+
+- Setting `engine: "basic-v2"` with `isConversational: true` — validate passes, runtime breaks.
+- Putting `{{input.fieldName}}` in `messages[1].content`.
+- Adding required fields to `inputSchema`.
+- Adding `content` or other properties to `outputSchema` (PROD canonical shape is empty).
+- Setting `metadata.targetRuntime: "pythonAgent"` on a conversational agent.
+- Setting `settings.maxIterations` on a conversational agent.
+- Using `selector.scopes: ["Agent"]` or `["Llm"]` for guardrails on a conversational agent — only `["Tool"]` scope is honored. Writing the conversational guardrail only at `agent.json` root `guardrails[]` — the runtime takes guardrails from each tool's `resources/<Tool>/resource.json` → `guardrail.policies[]`. See [critical-rules.md](critical-rules.md) Rule 26.
+- Adding memory spaces or setting `agentMemory: true` on a conversational agent — see § Not Yet Available.
 
 ## Common Edits
 

@@ -2,6 +2,25 @@
 
 Entry point for low-code agent work. Read this first after low-code mode is detected.
 
+## Flavor: Autonomous and Conversational
+
+UiPath low-code agents come in **two flavors**. Both share this skill — capabilities, lifecycle, validation, packaging, and evaluations all apply to either flavor.
+
+| Signal | Flavor |
+|---|---|
+| User wants multi-turn chat / chatbot / streaming UI / WebSocket | **Conversational** |
+| Existing `agent.json` has `metadata.isConversational: true` | **Conversational** |
+| User wants single-turn (input → output → done), batch, or scheduled invocation | **Autonomous** |
+| `agent.json` has `metadata.isConversational: false` or unset | **Autonomous** |
+| Ambiguous | Ask the user |
+
+The differences between flavors are localized — they do **not** live in a separate subdirectory. Look here:
+
+- **Schema deltas** — [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant) covers the 7-field Init Defaults to Fix table, PROD canonical shape, and settings defaults (different model + maxTokens).
+- **Critical Rules** — [critical-rules.md](critical-rules.md) rules 22-26 apply only when `isConversational: true`.
+- **Per-capability support** — each capability file (`capabilities/*`) has a § Conversational Support subsection noting Supported / Likely / Open / restrictions.
+- **Deployment** — [project-lifecycle.md § Conversational Deployment Notes](project-lifecycle.md#conversational-deployment-notes) covers External Application setup with the `ConversationalAgents` OAuth scope and frontend client handoff.
+
 ## When to Use
 
 - Create a new low-code agent project (standalone or inline in a flow)

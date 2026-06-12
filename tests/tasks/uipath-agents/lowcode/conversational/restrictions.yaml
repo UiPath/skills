@@ -1,0 +1,94 @@
+task_id: skill-agent-conversational-restrictions
+description: >
+  Negative smoke test for conversational agent restrictions. Asks the
+  agent to build a conversational agent in a way that would tempt it to
+  follow autonomous patterns (question/answer framing implies populated
+  inputSchema + `{{input.question}}` user-message template). Verifies the
+  skill correctly restrains the agent: inputSchema stays empty,
+  outputSchema stays empty, and messages[1].content is a static
+  placeholder — per Critical Rules 23 and 24.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, feature:conversational]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+  max_turns: 50
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "QASol" containing a low-code conversational
+  agent "QAAgent" that answers user questions. The user types a question
+  and the agent responds with an answer.
+
+  Make sure it validates successfully.
+
+  This is a conversational (multi-turn chat) agent — not an autonomous
+  single-turn agent.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the solution with uip solution new/init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(new|init)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "QAAgent/agent.json was created"
+    path: "QASol/QAAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent set conversational flavor + did NOT populate inputSchema/outputSchema despite Q&A framing"
+    path: "QASol/QAAgent/agent.json"
+    assertions:
+      - expression: "metadata.isConversational"
+        operator: "equals"
+        expected: true
+      - expression: "settings.engine"
+        operator: "equals"
+        expected: "conversational-v1"
+      - expression: "length(inputSchema.properties)"
+        operator: "equals"
+        expected: 0
+      - expression: "length(outputSchema.properties)"
+        operator: "equals"
+        expected: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "messages[1] does NOT use {{input.*}} variable template (Rule 23)"
+    path: "QASol/QAAgent/agent.json"
+    excludes:
+      - "{{input"
+    weight: 3.0
+    pass_threshold: 1.0

@@ -13,6 +13,10 @@ For other context variants, see [context.md](context.md).
 
 **Only `contextType: "index"` with a StorageBucket data source is supported.** `attachments` and `datafabricentityset` contexts, and indexes backed by GoogleDrive / OneDrive / Dropbox / Confluence, emit a warning from refresh and must be hand-authored.
 
+## Conversational Support
+
+**Status: Supported.**
+
 ## Discovery
 
 Two `uip` calls — identity from `resource list`, full configuration from `resource get`. Symmetric with [../process/process.md § Discovery](../process/process.md#discovery).

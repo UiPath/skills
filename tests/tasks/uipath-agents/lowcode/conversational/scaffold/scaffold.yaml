@@ -1,0 +1,104 @@
+task_id: skill-agent-conversational-scaffold
+description: >
+  Skill-guided evaluation: agent uses the uipath-agents skill to scaffold
+  a low-code conversational agent inside a solution and validate it.
+  Tests whether the skill teaches the 7-field Init Defaults to Fix
+  workflow and the PROD-canonical conversational agent.json shape
+  (anthropic.claude-sonnet-4-5, empty inputSchema, empty outputSchema,
+  static user-message placeholder, no maxIterations, no targetRuntime).
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, feature:conversational]
+max_iterations: 1
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+  max_turns: 50
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Create a UiPath solution "ChatSol" containing a low-code conversational
+  agent "ChatAgent" and make sure it validates successfully.
+
+  This is a conversational (multi-turn chat) agent — not an autonomous
+  single-turn agent.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution new/init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+(new|init)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "ChatSol/ChatSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ChatAgent/agent.json was created"
+    path: "ChatSol/ChatAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "agent.json has the two core conversational fields set"
+    path: "ChatSol/ChatAgent/agent.json"
+    assertions:
+      - expression: "metadata.isConversational"
+        operator: "equals"
+        expected: true
+      - expression: "settings.engine"
+        operator: "equals"
+        expected: "conversational-v1"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Conversational fixup applied (7 fields), static user message, entry-points.json schema sync"
+    command: "python3 $TASK_DIR/check_conversational_scaffold.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
