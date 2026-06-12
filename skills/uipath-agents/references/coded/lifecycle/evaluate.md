@@ -64,6 +64,29 @@ Example `evaluations/evaluators/llm-judge-output.json`:
 }
 ```
 
+Example `evaluations/eval-sets/smoke-test.json` — version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array. Key each case's criteria on the evaluator `id`, and shape `expectedOutput` to match the agent's actual output field(s):
+
+```json
+{
+  "version": "1.0",
+  "id": "smoke-test",
+  "name": "Smoke Test",
+  "evaluatorRefs": ["LLMJudgeOutputEvaluator"],
+  "evaluations": [
+    {
+      "id": "test-1",
+      "name": "Basic test",
+      "inputs": {"<input_field>": "value"},
+      "evaluationCriterias": {
+        "LLMJudgeOutputEvaluator": {
+          "expectedOutput": {"<output_field>": "A correct, on-topic response for this input."}
+        }
+      }
+    }
+  ]
+}
+```
+
 ## Mocking External Calls
 
 Two mocking paths are available:

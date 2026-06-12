@@ -86,22 +86,7 @@ uip maestro flow registry get "<node-type>" --output json
 
 Record `inputDefinition` and `outputDefinition` for the node table.
 
-If Phase 1 flagged a resource as not found, check two sources:
-
-**1. In-solution discovery (preferred — no login required):**
-```bash
-uip maestro flow registry list --local --output json
-uip maestro flow registry search "<resource-name>" --local --output json   # keyword match when the list is long
-```
-Run from the flow project directory. If the resource exists as a sibling project in the same `.uipx` solution, it appears here — use `registry get "<node-type>" --local --output json` to get the full manifest.
-
-**2. Tenant registry (if not in solution):**
-```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search "<resource-name>" --output json
-```
-
-If found in neither, keep the `core.logic.mock` placeholder and note the gap.
+If Phase 1 flagged a resource as not found, re-run the discovery ladder ([planning-arch.md — Capability Discovery](planning-arch.md#capability-discovery)): in-solution `--local` first (preferred — no login; sibling projects in the same `.uipx` solution), then tenant registry after `registry pull --force`. When found locally, fetch the full manifest with `uip maestro flow registry get "<node-type>" --local --output json`. If found in neither, keep the `core.logic.mock` placeholder and note the gap.
 
 #### IxP nodes — context-dispatched, no bindings
 
@@ -116,11 +101,9 @@ IxP extraction nodes (`uipath.ixp.*`) skip binding resolution. Design-time confi
 
 For each `core.logic.mock` node in the architectural plan:
 
-1. Check in-solution discovery first: `uip maestro flow registry list --local --output json` (or `registry search "<name>" --local --output json` for keyword match)
-2. If found locally: replace the mock with the in-solution resource node type, update inputs/outputs
-3. If not found locally, check tenant registry: `uip maestro flow registry search "<name>" --output json`
-4. If published: replace the mock with the real resource node type, update inputs/outputs
-5. If not found in either: keep the mock and note it in the "Open Questions" section for user resolution
+1. Re-run the discovery ladder — in-solution `--local` first, then tenant registry ([planning-arch.md — Capability Discovery](planning-arch.md#capability-discovery))
+2. If found (locally or published): replace the mock with the real resource node type, update inputs/outputs
+3. If not found in either: keep the mock and note it in the "Open Questions" section for user resolution
 
 ### Step 5 — Replace Placeholders
 
@@ -226,14 +209,7 @@ See [planning-arch.md — Selecting External Service Nodes](planning-arch.md#sel
 
 ### Agent Nodes vs Workflow Logic
 
-See [agent/planning.md](plugins/agent/planning.md) for the full decision table. Summary:
-
-- **Agent nodes** for ambiguous input, reasoning, judgment, NLG
-- **Script/Decision/Switch** for structured input, deterministic logic, data transformation
-
-**Anti-pattern:** Don't use an agent node for tasks that can be done with a Decision + Script. Agents are slower, more expensive (LLM tokens), and less predictable.
-
-**Hybrid pattern:** Use workflow nodes for the deterministic parts (fetch data, transform, route) and agent nodes for the ambiguous parts (classify intent, draft response, extract entities). The flow orchestrates; the agent reasons.
+Full decision table, anti-pattern, and hybrid pattern: [agent/planning.md](plugins/agent/planning.md#agent-vs-scriptdecision-decision-table). Summary: **agent nodes** for ambiguous input, reasoning, judgment, NLG; **Script/Decision/Switch** for structured input, deterministic logic, data transformation.
 
 ---
 

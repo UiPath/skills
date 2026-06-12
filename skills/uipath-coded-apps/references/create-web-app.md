@@ -90,14 +90,14 @@ Then `cd` into `<app-name>`. Every subsequent step runs from this directory.
 Run these as **two separate commands** in order. The `--@uipath:registry` flag binds only to the first command (the SDK install) — do not apply it to the second, and do not run a bare `npm install` with the flag.
 
 ```bash
-# 1. UiPath SDK (registry flag forces public npm to bypass GitHub Packages auth)
+# 1. UiPath SDK
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 
 # 2. Remaining runtime + Tailwind dependencies
 npm install path-browserify tailwindcss@3 postcss autoprefixer
 ```
 
-> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces `@uipath/uipath-typescript` to install from the public npm registry.
+> `--@uipath:registry` rationale: [debug.md § `npm install` fails with 401](debug.md#npm-install-fails-with-401-unauthorized-from-npmpkggithubcom).
 
 ### 4.4 — Remove Vite defaults that will be overwritten
 

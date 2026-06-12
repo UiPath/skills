@@ -305,63 +305,7 @@ Use when the issue is a **missed optimization** or **minor convention deviation*
 
 ## Report Format Specification
 
-The review report follows a fixed markdown structure. Produce it in chat — do NOT write it to a file.
-
-```markdown
-## Review Report: <Solution/Project Name>
-
-### Summary
-- **Overall Quality:** Good / Needs Improvement / Critical Issues
-- **Business Value:** <1-2 sentence description of what this solution does>
-- **Project Types Found:** <list with counts>
-- **Validation Status:** <pass/fail per project>
-
-### Automated Validation & Workflow Analyzer Results
-
-> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip maestro flow validate` (for flows), etc. Report ALL Errors, Warnings, and Info.
-
-| Project | File | Command | Errors | Warnings | Info |
-|---|---|---|---|---|---|
-| ... | ... | ... | ... | ... | ... |
-
-**Validation Details:**
-- [V-E-001] Project/File: **ST-RULE-ID** — Description
-- [V-W-001] Project/File: **ST-RULE-ID** — Description
-- [V-I-001] Project/File: **ST-RULE-ID** — Description
-
-### Critical Findings (blocks deployment)
-1. [C-001] <finding title> — `<project/file path>` — <recommendation>
-2. [C-002] ...
-
-### Warnings (should fix before production)
-1. [W-001] <finding title> — `<project/file path>` — <recommendation>
-2. [W-002] ...
-
-### Improvement Opportunities
-1. [I-001] <finding title> — `<project/file path>` — <recommendation>
-2. [I-002] ...
-
-### Per-Project Summary
-| Project | Type | Validation | Quality | Key Findings |
-|---|---|---|---|---|
-| ProjectA | RPA (Coded) | Pass | Good | W-001 |
-| ProjectB | Flow | 2 errors | Needs Work | C-001, W-002 |
-
-### Recommended Next Steps
-1. Fix [C-001] using `uipath-rpa` skill
-2. Add test cases using `uipath-rpa` skill
-3. ...
-
-### Optimization Notes
-- Queue usage: <observation and recommendation>
-- Bulk operations: <observation and recommendation>
-- Transaction handling: <observation and recommendation>
-```
-
-**Overall Quality determination:**
-- **Good** — 0 Critical findings, 0-3 Warnings
-- **Needs Improvement** — 0 Critical findings, 4+ Warnings OR 1 Critical with clear fix
-- **Critical Issues** — 2+ Critical findings OR 1 Critical with security implications
+The canonical report structure, report rules, structural metrics, severity labels, and quality determination thresholds are in [review-report-template.md](review-report-template.md). Produce the report in chat — do NOT write it to a file. The Automated Validation Results section is MANDATORY in every report; include ALL Errors, Warnings, and Info from every validation command.
 
 ## Optimization Evaluation Framework
 

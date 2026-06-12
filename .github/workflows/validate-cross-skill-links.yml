@@ -1,0 +1,25 @@
+name: Validate Cross-Skill Links
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**/*.md'
+      - 'scripts/check-cross-skill-links.py'
+      - '.github/workflows/validate-cross-skill-links.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-links:
+    runs-on: ubuntu-latest
+    name: Cross-skill links resolve and stay within allowed edges
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Check cross-skill links
+        run: python3 scripts/check-cross-skill-links.py

@@ -11,23 +11,7 @@ The node-instance shape (in `nodes[]`) is identical across the two variants — 
 
 ## Discovery
 
-**Published (tenant registry):**
-
-```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search "uipath.core.agent" --output json
-```
-
-Requires `uip login`. Only published agents from your tenant appear.
-
-**In-solution (local, no login required):**
-
-```bash
-uip maestro flow registry list --local --output json
-uip maestro flow registry get "<node-type>" --local --output json
-```
-
-Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.
+Follow the canonical ladder in [planning-arch.md — Capability Discovery](../../planning-arch.md#capability-discovery). Agent-specific: tenant registry via `uip maestro flow registry search "uipath.core.agent" --output json` (after `registry pull --force`; requires `uip login`; published agents only); sibling agent projects in the same `.uipx` solution via `registry list --local` (no login; run from inside the flow project directory).
 
 ## Registry Validation
 
@@ -148,6 +132,29 @@ Same shape as the published variant — no `model` on the instance.
 ```
 
 > For the resolution mechanics and why these entries are required, see [file-format.md — Bindings](../../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings).
+
+### Wiring input from an upstream node
+
+The agent accepts one `inputs.<fieldName>` entry per property in its input schema. **Agent input slots take bare `$vars` references — never `=js:`.** They are pattern-matched and resolved by the agent activity at runtime, not evaluated by Jint; wrapping the value in `=js:` ships the literal string to the agent and the run fails with `Cannot find name '<identifier>'`. Only the bare reference form works (no arithmetic, no method calls). See [node-output-wiring.md](../../../../shared/node-output-wiring.md) for the per-node-type table. Example: classify a ticket fetched by an upstream HTTP node `fetchTicket`:
+
+```json
+{
+  "id": "classifyIntent",
+  "type": "uipath.core.agent.ffa33d88-8a85-4570-933c-9a69aa2dfbb5",
+  "typeVersion": "<DEFINITION_VERSION>",
+  "display": { "label": "Classify Intent" },
+  "inputs": {
+    "subject": "$vars.fetchTicket.output.body.subject",
+    "description": "$vars.fetchTicket.output.body.description"
+  },
+  "outputs": {
+    "output": { "type": "object", "description": "The return value of the agent", "source": "=result.response", "var": "output" },
+    "error":  { "type": "object", "description": "Error information if the agent fails", "source": "=result.Error", "var": "error" }
+  }
+}
+```
+
+Static values are plain literals (`"priority": "high"`). Wiring the agent's *output* onward (End-node `outputs.<varId>.source`, variable updates) does use `=js:` — those fields are Jint-evaluated.
 
 ## Accessing Output
 

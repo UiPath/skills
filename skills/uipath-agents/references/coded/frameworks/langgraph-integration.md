@@ -326,14 +326,8 @@ uip codedagent init
 - The file path and variable name must match exactly (e.g., `"./main.py:graph"`)
 
 **Import errors during init / authentication failures**
-- `uip codedagent init` imports your Python file to introspect the graph
-- Module-level `UiPathAzureChatOpenAI()` or `UiPathChat()` will try to authenticate on import and fail
-- **Fix: Move LLM instantiation inside functions/nodes, never at module level:**
+- Module-level LLM clients fail when `init` imports the file — see [quickstart Critical Rules](../quickstart.md#critical-rules). Instantiate lazily inside graph nodes:
   ```python
-  # BAD — fails during uip codedagent init:
-  llm = UiPathAzureChatOpenAI()
-
-  # GOOD — lazy initialization inside a node:
   async def my_node(state):
       llm = UiPathAzureChatOpenAI()
       return await llm.ainvoke(state["messages"])

@@ -72,8 +72,9 @@ Three failure modes observed in agent-generated `.flow` files:
 | **Subflow nodes** (`core.subflow`) | `inputs.<inputId>.source` | **YES** |
 | **Script nodes** (`core.action.script`) | `inputs.script` body — `$vars.*` is read inside JS, no `=js:` wrapping | **NO** — the body is already JS |
 | **Inline-agent prompt** (`uipath.agent.autonomous` `agent.json` `messages[].content`) | Tokens reference upstream flow nodes directly: `{{ $vars.<flowNodeId>.output[.<field>] }}` (spaced braces). Mirror in `contentTokens[]` as `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }` — `rawString` must include leading and trailing space. Never `{{input.<id>}}` and never bare `{{name}}`. | **NO** — `{{ ... }}` tokens, not `=js:`. See [author/references/plugins/inline-agent/impl.md § Wiring Flow Variables into Agent Prompts](../author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts). |
+| **Agent resource nodes** (`uipath.core.agent.*`) | `inputs.<fieldName>` | **NO** — bare reference only (`"$vars.<nodeId>.output.<field>"` or `"$vars.<flowVarId>"`), pattern-matched by the agent activity, not Jint. `=js:` ships the literal string and the run fails with `Cannot find name '<identifier>'`. |
 
-**Rule of thumb:** If the field is *value-typed* (anything other than a hardcoded condition), `=js:` is required for `$vars`/`$metadata`/`$self` references. The two condition fields (Decision, Switch) and the script body are the only exceptions — they are always parsed as JS regardless.
+**Rule of thumb:** If the field is *value-typed* (anything other than a hardcoded condition), `=js:` is required for `$vars`/`$metadata`/`$self` references. Exceptions: the two condition fields (Decision, Switch) and the script body (always parsed as JS), inline-agent prompt tokens (`{{ }}`), and agent resource-node inputs (bare reference).
 
 ---
 

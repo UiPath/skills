@@ -36,9 +36,9 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 - **NEVER add a `[build-system]` section to `pyproject.toml`**. No `hatchling`, no `setuptools`, no build backend. UiPath agents do not use a build system. Only include `[project]`, `[dependency-groups]`, and `[tool.*]` sections.
 - **Always create a smoke evaluation set.** Every agent must include `evaluations/eval-sets/smoke-test.json` with 2-3 test cases covering the primary happy path (not exhaustive error-case coverage — the smoke set exists to catch regressions, not to fully validate behavior). Create it in the Evaluate step, not during Build.
 - **Select a framework before writing any code.** If the prompt clearly implies a framework (e.g., mentions tools, RAG, multi-step orchestration, or a specific SDK), pick the best match. If the prompt is ambiguous, ask the user to choose from: Coded Function, LangGraph, LlamaIndex, or OpenAI Agents.
-- **Correct SDK import: `from uipath.platform import UiPath`** — not `from uipath import UiPath` (that path does not exist and will cause `ImportError`). Always instantiate `UiPath()` inside functions/nodes, never at module level.
+- **Correct SDK import: `from uipath.platform import UiPath`** — not `from uipath import UiPath` (that path does not exist and will cause `ImportError`).
+- **NEVER instantiate LLM or SDK clients at module level** — no module-level `UiPath()`, `UiPathChat()`, `UiPathChatOpenAI()`, `UiPathAzureChatOpenAI()`, or other auth-dependent clients. `uip codedagent init` imports `main.py` to introspect schemas; module-level clients authenticate on import and fail. Instantiate inside functions/graph nodes only.
 - **Refresh the CLI's Python executable path after venv changes.** If `uip codedagent` reports that the UiPath CLI/Python executable is not recognized, or any error indicates a stale `uipathExePath`, activate the project venv and run `uip codedagent setup --force`. This rewrites the CLI configuration to point at the current `.venv` executable.
-- **Auth check is one-shot.** Run `uip login status --output json` once, at step 5. If the user supplied environment + organization + tenant or explicitly asked to connect to a specific tenant, run the matching one-shot `uip login --organization "<ORG>" --tenant "<TENANT>" --output json` after the status check, even if another session is already logged in. Otherwise, the wrapper auto-refreshes tokens on subsequent cloud calls (no `uip login refresh` exists); re-auth only on a real `401`.
 - **Use `uip codedagent run` from non-interactive shells.** `uip codedagent dev` auto-appends `--interactive`.
 - **Runtime captures only the last node's delta as output.** `Annotated[list, operator.add]` reducers accumulate inside the graph but vanish from `--output-file` JSON and eval trajectories. Carry aggregate fields forward in each node's return (`{"items": [*state.get("items", []), x]}`) — see [frameworks/langgraph-integration.md](frameworks/langgraph-integration.md) § Runtime Output Quirk.
 - **Verify the JSON, not the streamed display.** After `uip codedagent run --output-file out.json`, inspect `out.json` — the streamed view shows per-node deltas; the JSON is the runtime's actual final result. Mismatches expose the runtime quirk above.
@@ -99,68 +99,26 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the us
 
    **Exception — Integration Service / SaaS-connector agents:** if the agent calls IS connector activities (`sdk.connections.invoke_activity`), you cannot author its `body_fields` / `ActivityMetadata` without `uip is resources describe` output, which is auth-gated. For these agents, do the step-5 auth one-shot **and** IS discovery (per [capabilities/integration-service.md](capabilities/integration-service.md) § Discovery) NOW, before Build, then resume at Build with the discovered metadata in hand. Non-IS agents keep the default order (auth after build).
 3. **Build** — Implement agent logic using the selected framework's patterns. **For `local-workspace`: skip only the scaffold-cleanup sub-step below** — Studio Web supplied a clean shell, so the module-level-client checks aren't needed. Logic edits in `main.py` proceed normally. For `greenfield` / `existing-coded`, after scaffolding and before running `uip codedagent init`, inspect the generated code and clean up scaffold hazards:
-   - No module-level `UiPathChat`, `UiPathAzureChatOpenAI`, `UiPath`, or other auth-dependent clients.
-   - Instantiate LLM/SDK clients inside graph nodes/functions only.
-   - Ensure importing `main.py` works without UiPath auth.
+   - No module-level LLM/SDK clients (see Critical Rules) — instantiate inside graph nodes/functions only.
+   - Importing `main.py` works without UiPath auth.
 
    See [lifecycle/build.md](lifecycle/build.md) § Additional Instructions for the detailed Build-stage rules. After implementing, re-run `uip codedagent init` to update schemas from the actual code.
 4. **Bindings** — Gate first: Grep all project `*.py` (excluding `.venv/`, `__pycache__/`, `.uipath/`) for SDK resource calls — `sdk.` service methods (`assets`, `queues`, `processes`, `buckets`, `tasks`, `context_grounding`, `connections`, `mcp`) and `interrupt(InvokeProcess|CreateTask|CreateEscalation`. **No matches** → write the empty skeleton `{"version": "2.0", "resources": []}` to `bindings.json` and skip the reference. **Any match** → sync `bindings.json` using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md).
-5. **Auth (one-shot)** — Run `uip login status --output json` once. If the user supplied environment + organization + tenant, immediately run the matching one-shot login command from [../authentication.md](../authentication.md), using both `--organization` and `--tenant` in the same `uip login` command. Do this even when `Status: Logged in`, because the existing session may be for a different tenant. If no credentials were supplied and `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
-
-> What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
-
-Then STOP and wait. On reply, run the matching one-shot login from [../authentication.md](../authentication.md) (maps environment → `--authority`). Never run `uip login` without `--tenant`.
+5. **Auth (one-shot)** — Run `uip login status --output json` once. If the user supplied environment + organization + tenant, or explicitly asked to connect to a specific tenant, run the matching one-shot login from [../authentication.md](../authentication.md) with both `--organization` and `--tenant` — even when `Status: Logged in`, because the existing session may be for a different tenant. If no credentials were supplied and `Status: Logged in`, trust the wrapper for the rest of the run. Otherwise ask the auth question from Critical Rules (your entire response = that question), STOP, and on reply run the matching one-shot login from [../authentication.md](../authentication.md) (maps environment → `--authority`).
 6. **Run** — Re-run `uip codedagent init` first whenever any of these changed since the last init, **or** when `has_entry_points == false`:
    - `Input`/`Output`/`State` Pydantic models or TypedDicts — any field added, removed, renamed, or retyped counts (the class name being the same does not).
    - The entry function's signature (parameters or return type annotation).
    - `<framework>.json` (`langgraph.json` / `llama_index.json` / `openai_agents.json` / `uipath.json` `functions`).
 
    Skip init only when the edit is purely inside node bodies / helpers (logic, prompts, business rules) and leaves every schema and the entry signature byte-identical. Then test locally with `uip codedagent run <ENTRYPOINT> '<input>'` (use the entrypoint name from `entry-points.json`, e.g., `main`).
-7. **Evaluate** — Run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report`. Idempotent by `has_evaluators` / `has_smoke_set`: create the missing one(s) only — **never overwrite an existing evaluator config or smoke set**, the user may have tuned them.
+7. **Evaluate** — Idempotent by `has_evaluators` / `has_smoke_set`: create the missing one(s) only — **never overwrite an existing evaluator config or smoke set**, the user may have tuned them.
 
    **Default the smoke evaluator to an output-based type, never a trajectory or tool-call evaluator** (those score 0.0 on single-step agents — use them only for multi-step / tool-using agents). Pick:
 
    - **Deterministic or structured output** (a fixed string, number, or JSON shape) → `uipath-exact-match`, `uipath-contains`, or `uipath-json-similarity`. No LLM, no tenant model needed, binary/continuous scoring. Prefer this whenever the task allows it.
    - **Natural-language output** (summaries, reports, free text) → `uipath-llm-judge-output-semantic-similarity` (`LLMJudgeOutputEvaluator`). Scores output semantics, works without tracing.
 
-   **If `has_evaluators == false`**, create `evaluations/evaluators/llm-judge-output.json` (default for NL output; swap to a deterministic type above when the output is fixed/structured). For any `uipath-llm-judge-*` type, if the default `model` below is not available in the user's tenant, run `uip codedagent list-models` and substitute an available model name.
-
-   ```json
-   {
-     "version": "1.0",
-     "id": "LLMJudgeOutputEvaluator",
-     "evaluatorTypeId": "uipath-llm-judge-output-semantic-similarity",
-     "evaluatorConfig": {
-       "name": "LLMJudgeOutputEvaluator",
-       "model": "gpt-4o-mini-2024-07-18",
-       "defaultEvaluationCriteria": {
-         "expectedOutput": {"<output_field>": "A correct, on-topic response for the given input."}
-       }
-     }
-   }
-   ```
-
-   **If `has_smoke_set == false`**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input/output schema (version is string `"1.0"`, top-level `id`/`name` required, test cases in `evaluations` array). Key each case's criteria on the evaluator `id` you created above, and shape `expectedOutput` to match the agent's actual output field(s):
-   ```json
-   {
-     "version": "1.0",
-     "id": "smoke-test",
-     "name": "Smoke Test",
-     "evaluatorRefs": ["LLMJudgeOutputEvaluator"],
-     "evaluations": [
-       {
-         "id": "test-1",
-         "name": "Basic test",
-         "inputs": {"<input_field>": "value"},
-         "evaluationCriterias": {
-           "LLMJudgeOutputEvaluator": {
-             "expectedOutput": {"<output_field>": "A correct, on-topic response for this input."}
-           }
-         }
-       }
-     ]
-   }
-   ```
+   **If `has_evaluators == false`**, create `evaluations/evaluators/llm-judge-output.json` (default for NL output; swap to a deterministic type above when the output is fixed/structured). **If `has_smoke_set == false`**, create `evaluations/eval-sets/smoke-test.json` with 2-3 test cases based on the agent's input/output schema, keyed on the evaluator `id` you created above. Both JSON shapes: [lifecycle/evaluate.md](lifecycle/evaluate.md). For any `uipath-llm-judge-*` type, if the default `model` is not available in the user's tenant, run `uip codedagent list-models` and substitute an available model name.
 
    **Finally**, run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report` (use the entrypoint name from `entry-points.json`).
 8. **Delivery target.** Single branch point. **Evaluate branches in order — Local Workspace projects also have `UIPATH_PROJECT_ID` set in `.env`, so the `local-workspace` check MUST come before the `has_project_id` check, or Local Workspace will incorrectly fall into the push branch:**

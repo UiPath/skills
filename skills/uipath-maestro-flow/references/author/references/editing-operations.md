@@ -88,21 +88,36 @@ These apply regardless of which strategy you use.
 
 ### Validation
 
-- Run `uip maestro flow validate <ProjectName>.flow --output json` **once** after all edits complete
-- Do not validate after each individual edit — intermediate states are expected to be invalid
+- Run `uip maestro flow validate <ProjectName>.flow --output json` **once** after all edits complete — not after each individual edit ([CAPABILITY.md rule #8](../CAPABILITY.md#critical-rules))
 - Validation checks: JSON schema, definitions coverage, edge references, unique IDs
 - Validation does NOT check: connector configuration, connection health, expression correctness, required field completeness
 
 ### Parallel same-file Edits
 
-Applies to any turn that issues more than one `Edit` against the same `.flow` (greenfield T2 and brownfield alike):
+Applies to any turn that issues more than one `Edit` against the same `.flow` (greenfield T2 and brownfield alike). **Same-file Edits serialize in execution order** — they do not race, but each later Edit runs against the text the earlier ones already changed. An `old_string` that overlaps text a prior Edit removed or shifted fails with "string not found."
 
-- **Same-file Edits serialize in execution order** — they do not race, but each later Edit runs against the text the earlier ones already changed. An `old_string` that overlaps text a prior Edit removed or shifted fails with "string not found."
-- **Anchor each Edit on its target array's OWN opening key** (`"nodes": [`, `"edges": [`, `"definitions": [`, or `layout.nodes`), located in the text you just `Read` — never on "the key that follows X." Top-level key order and presence are not guaranteed (see [file-format.md](../../shared/file-format.md#top-level-structure)).
-- **`"nodes": [` and `"edges": [` are NOT unique** — they recur inside inline `definitions[]` and inside any `subflows.<id>` block. Anchor on the 2-space-indented (top-level) occurrence and extend until the match is unique.
-- Insert at the array's head (right after `[`) so the `old_string` never spans the array's closing `]`.
+#### Anchoring parallel `.flow` Edits — anchor on what you Read, not on key order
 
-Full per-array anchor table and worked example: [greenfield.md — Anchoring parallel `.flow` Edits](greenfield.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order).
+> **Do not assume a top-level key order.** The CLI does not guarantee which keys are present or in what sequence — fixtures show `runtime` before `nodes` on one flow and absent on another, and `bindings` / `variables` / `solutionId` / `projectId` / `metadata` appear in varying positions. Any anchor of the form "closing `]` + the NEXT top-level key" is coupled to that ordering and will silently break across CLI versions or between flows. **Anchor on the target array's OWN key instead — anchor to text the file you just `Read` actually contains.**
+
+Anchor each Edit using its target array's own opening key, located in the text you just Read — not adjacency to a neighbor key. The catch: `"nodes": [` and `"edges": [` are NOT unique in the file. They recur **inside inline `definitions[]`** (an HTTP v2 / agent / subprocess definition embeds its own nested `nodes`/`edges`) **and inside any `subflows.<id>` block** (each subflow holds its own `nodes`/`edges`) — so even a small flow can carry several copies. The reliable, version-independent discriminator is **indentation: the top-level array sits at 2-space indent; every nested one is deeper.** `"definitions": [` and the top-level `"layout": {` appear once each, so they need no disambiguation.
+
+| Edit target | Anchor on (from the text you Read) | How to insert |
+|---|---|---|
+| Append to `nodes[]` | The **2-space-indented** `\n  "nodes": [` (the top-level array — deeper-indented `"nodes": ["` inside definitions do not match the two-leading-space prefix) plus the `start` node's opening `{ "id": "start"`. | Insert the new node object as the first element, immediately after the `[`: `\n    { new node JSON },`. Head-insertion keeps `old_string` clear of the array's closing `]`. |
+| Append to `edges[]` | The **2-space-indented** `\n  "edges": [`. Empty after `flow init` (`\n  "edges": []`); the 2-space prefix distinguishes it from nested `edges` arrays. | When empty, replace `\n  "edges": []` with `\n  "edges": [\n    { new edge JSON }\n  ]`. When non-empty, anchor through the first edge and insert the new edge as the first element. |
+| Append to `definitions[]` | `"definitions": [` plus the first definition's opening bytes. Top-level `definitions[]` is the only one in the file, so this is reliably unique. | Insert the new definition right after the opening `[`, as the first element. Never anchor on whatever key follows `definitions` — that key varies (`runtime`, `bindings`, `variables`, `layout`, depending on CLI version and what the flow contains). |
+| Add an entry to `layout.nodes` | `"layout": {\n    "nodes": {\n      "start":` — `start` is the always-present trigger and the first key under `layout.nodes` in `init`-scaffolded flows. The top-level `"layout": {` is the only one. | `"layout":` + `"start":` jointly disambiguate. Insert `"<newId>": { ... },\n      ` before `"start":`. CLI-owned nodes added via `node add` already have a `layout.nodes` entry — only add entries for nodes you author by hand (e.g. End). |
+
+**Why head-insertion.** Inserting the new element right after the array's opening `[` means the `old_string` never includes the array's closing `]` — so it cannot collide with a closing `]` from a nested object (`form.sections[].fields[]`), and it never references a sibling top-level key whose position is not guaranteed. JSON array element order is not semantically significant for `nodes` / `edges` / `definitions`, so head vs. tail insertion is equivalent; `flow format` normalizes layout regardless.
+
+**Disjointness rule.** Two parallel Edits MUST anchor on DIFFERENT top-level arrays — nodes-Edit on the top-level `nodes[]`, edges-Edit on the top-level `edges[]`, definitions-Edit on `definitions[]`, layout-Edit on `layout.nodes`. Because each anchors on its own array (not a shared boundary), the parallel Edits never overlap — provided each anchor is unique first (see below).
+
+**Pre-flight uniqueness check.** Before submitting an Edit, confirm your `old_string` appears **exactly once** in the file you Read. `"definitions": [` and the top-level `"layout": {` are reliably unique. `"nodes": [` and `"edges": [` are NOT — they recur inside inline definitions and subflows, so anchor on the **2-space-indented** occurrence and extend through the first element's opening (e.g. `"id": "start"`) until the match count is one. Never anchor on a bare bracket shape, and never assume the first textual occurrence is the top-level one.
+
+**Safer fallback when in doubt:** serialize the Edits across two turns. One extra turn is cheaper than a failed-Edit recovery loop (which forces a re-Read, a re-derived anchor, and a re-submit).
+
+See [shared/file-format.md — Top-level structure](../../shared/file-format.md#top-level-structure) for which top-level keys exist and the note that their order is not guaranteed.
 
 ### Expression prefix rules
 

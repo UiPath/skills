@@ -17,7 +17,7 @@ There is **no automatic "turn this project into a flow" conversion, and you shou
 
 Resulting structure: a **thin flow** that is mostly trigger + waits + branches, delegating the real work to the existing RPA and agent artifacts. To author it, treat the flow as greenfield ([greenfield.md](greenfield.md)) with those artifacts discovered as resource nodes during [planning-arch.md](planning-arch.md).
 
-> **Migrate when** the project has long waits, human approvals, parallel branches, or needs per-case visibility. **Don't migrate** a short, fully-automated, fire-once script — Maestro adds orchestration overhead it won't repay. Apply the [Is Maestro the Right Home?](planning-arch.md#before-you-build-is-maestro-the-right-home) gate first.
+> **Migrate when** the project has long waits, human approvals, parallel branches, or needs per-case visibility. **Don't migrate** a short, fully-automated, fire-once script — Maestro adds orchestration overhead it won't repay. Apply the [Is Maestro the Right Home?](plan-document-guide.md#before-you-build-is-maestro-the-right-home) gate first.
 
 ## Read this first
 
@@ -29,7 +29,7 @@ Resulting structure: a **thin flow** that is mostly trigger + waits + branches, 
 
 ## Common edits
 
-For each edit, run `uip maestro flow validate` once after **all** edits are complete, then `uip maestro flow format`. Do not validate after each individual change — intermediate states are expected to be invalid.
+Validate once after **all** edits complete, then `uip maestro flow format` — not after each individual change ([CAPABILITY.md rule #8](../CAPABILITY.md#critical-rules)).
 
 When a single edit touches more than one top-level array (e.g. insert-a-node hits `nodes`, `edges`, and `definitions`), follow the [parallel same-file Edit rules](editing-operations.md#parallel-same-file-edits) — anchor each Edit on its own array's opening key, never on top-level key order.
 

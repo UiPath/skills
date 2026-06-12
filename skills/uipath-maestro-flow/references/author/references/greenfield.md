@@ -43,10 +43,10 @@ Steps 0–6 are **logical phases**, not separate turns. A typical greenfield bui
 
 - **One CLI per turn.** Never issue `solution init`, then `cd`, then `flow init` as three separate Bash calls — chain with `&&`. Same for `node configure && validate && format`.
 - **Sequential `registry get`s.** Emit every `registry get` as a parallel `Bash` in one message alongside the T1 scaffold chain.
-- **Validating after every Edit.** Validate once at the end of T3 (or after a recovery Edit). Intermediate states are expected to be invalid.
+- **Validating after every Edit.** Validate once at the end of T3, or after a recovery Edit ([CAPABILITY.md rule #8](../CAPABILITY.md#critical-rules)).
 - **Re-reading the `.flow` every turn.** `Read` once at the start of T2; subsequent `Edit`s in the same conversation don't need re-reading unless an external command (e.g., `node configure`, `format`) rewrites the file between Edits.
 - **`Edit` in the same turn as a `Bash` that mutates the same file.** Parallel tool calls race — separate them across turns.
-- **Two parallel `Edit`s anchored to the same byte range.** Same-file Edits serialize in execution order; if Edit N's `old_string` overlaps text that Edit N-1's substitution removed or shifted, Edit N fails with "string not found." Use the [per-array anchor pattern](#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order) — anchor each Edit on its target array's own opening key, never on key order or a shared boundary.
+- **Two parallel `Edit`s anchored to the same byte range.** Same-file Edits serialize in execution order; if Edit N's `old_string` overlaps text that Edit N-1's substitution removed or shifted, Edit N fails with "string not found." Use the [per-array anchor pattern](editing-operations.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order) — anchor each Edit on its target array's own opening key, never on key order or a shared boundary.
 
 ## Step 0 — Resolve the `uip` binary and detect command prefix **[T1]**
 
@@ -211,24 +211,9 @@ Calling a named external service (Slack, open-meteo, Stripe, any REST API)? **Se
 uip maestro flow registry search "<service>" --output json --output-filter "[*].{NodeType:NodeType,DisplayName:DisplayName,Description:Description,AvailableOnTenant:AvailableOnTenant}"
 ```
 
-Then pick the first match down this ladder:
+Then pick the highest matching rung in the [Selecting External Service Nodes ladder](planning-arch.md#selecting-external-service-nodes): curated connector activity → `core.action.http.v2` connector mode → `core.action.http.v2` manual mode → [rpa](plugins/rpa/planning.md). Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal).
 
-1. **Curated connector activity** (`uipath.connector.<key>.<op>` in the results) → use it.
-2. **Connector exists but no activity for what you need** → `core.action.http.v2` (connector mode).
-3. **No connector at all** → `core.action.http.v2` (manual mode).
-4. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
-
-Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal).
-
-**In-solution discovery (no login required):**
-
-```bash
-uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
-uip maestro flow registry search "<keyword>" --local --output json  # keyword search across in-solution nodes
-uip maestro flow registry get "<node-type>" --local --output json  # get full manifest for a local node
-```
-
-Run from inside the flow project directory. Returns the same manifest format as the tenant registry. Use `--local` to wire in-solution resources (RPA, agents, flows, API workflows) without publishing them first. `search --local` omits `AvailableOnTenant` — drop it from `--output-filter` projections.
+**In-solution discovery (no login required):** sibling projects in the same `.uipx` solution resolve via `--local` (`registry list --local`, `registry search "<keyword>" --local`, `registry get "<node-type>" --local` — same manifest format as the tenant registry; run from inside the flow project directory). Full ladder and rules: [planning-arch.md — Capability Discovery](planning-arch.md#capability-discovery). `search --local` omits `AvailableOnTenant` — drop it from `--output-filter` projections.
 
 ## Step 4 — Build the flow **[T2]**
 
@@ -245,28 +230,9 @@ Run from inside the flow project directory. Returns the same manifest format as 
 
    `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)).
 
-#### Anchoring parallel `.flow` Edits — anchor on what you Read, not on key order
+#### Anchoring parallel `.flow` Edits
 
-> **Do not assume a top-level key order.** The CLI does not guarantee which keys are present or in what sequence — fixtures show `runtime` before `nodes` on one flow and absent on another, and `bindings` / `variables` / `solutionId` / `projectId` / `metadata` appear in varying positions. Any anchor of the form "closing `]` + the NEXT top-level key" is coupled to that ordering and will silently break across CLI versions or between flows. **Anchor on the target array's OWN key instead — you just `Read` the file at the top of T2, so anchor to text that read actually contains.**
-
-Anchor each Edit using its target array's own opening key, located in the text you just Read — not adjacency to a neighbor key. The catch: `"nodes": [` and `"edges": [` are NOT unique in the file. They recur **inside inline `definitions[]`** (an HTTP v2 / agent / subprocess definition embeds its own nested `nodes`/`edges`) **and inside any `subflows.<id>` block** (each subflow holds its own `nodes`/`edges`) — so even a small flow can carry several copies. The reliable, version-independent discriminator is **indentation: the top-level array sits at 2-space indent; every nested one is deeper.** `"definitions": [` and the top-level `"layout": {` appear once each, so they need no disambiguation.
-
-| Edit target | Anchor on (from the text you Read) | How to insert |
-|---|---|---|
-| Append to `nodes[]` | The **2-space-indented** `\n  "nodes": [` (the top-level array — deeper-indented `"nodes": ["` inside definitions do not match the two-leading-space prefix) plus the `start` node's opening `{ "id": "start"`. | Insert the new node object as the first element, immediately after the `[`: `\n    { new node JSON },`. Head-insertion keeps `old_string` clear of the array's closing `]`. |
-| Append to `edges[]` | The **2-space-indented** `\n  "edges": [`. Empty after `flow init` (`\n  "edges": []`); the 2-space prefix distinguishes it from nested `edges` arrays. | When empty, replace `\n  "edges": []` with `\n  "edges": [\n    { new edge JSON }\n  ]`. When non-empty, anchor through the first edge and insert the new edge as the first element. |
-| Append to `definitions[]` | `"definitions": [` plus the first definition's opening bytes. Top-level `definitions[]` is the only one in the file, so this is reliably unique. | Insert the new definition right after the opening `[`, as the first element. Never anchor on whatever key follows `definitions` — that key varies (`runtime`, `bindings`, `variables`, `layout`, depending on CLI version and what the flow contains). |
-| Add an entry to `layout.nodes` | `"layout": {\n    "nodes": {\n      "start":` — `start` is the always-present trigger and the first key under `layout.nodes` in `init`-scaffolded flows. The top-level `"layout": {` is the only one. | `"layout":` + `"start":` jointly disambiguate. Insert `"<newId>": { ... },\n      ` before `"start":`. CLI-owned nodes added via `node add` already have a `layout.nodes` entry — only add entries for nodes you author by hand (e.g. End). |
-
-**Why head-insertion.** Inserting the new element right after the array's opening `[` means the `old_string` never includes the array's closing `]` — so it cannot collide with a closing `]` from a nested object (`form.sections[].fields[]`), and it never references a sibling top-level key whose position is not guaranteed. JSON array element order is not semantically significant for `nodes` / `edges` / `definitions`, so head vs. tail insertion is equivalent; `flow format` normalizes layout regardless.
-
-**Disjointness rule.** Two parallel Edits MUST anchor on DIFFERENT top-level arrays — nodes-Edit on the top-level `nodes[]`, edges-Edit on the top-level `edges[]`, definitions-Edit on `definitions[]`, layout-Edit on `layout.nodes`. Because each anchors on its own array (not a shared boundary), the parallel Edits never overlap — provided each anchor is unique first (see below).
-
-**Pre-flight uniqueness check.** Before submitting an Edit, confirm your `old_string` appears **exactly once** in the file you Read. `"definitions": [` and the top-level `"layout": {` are reliably unique. `"nodes": [` and `"edges": [` are NOT — they recur inside inline definitions and subflows, so anchor on the **2-space-indented** occurrence and extend through the first element's opening (e.g. `"id": "start"`) until the match count is one. Never anchor on a bare bracket shape, and never assume the first textual occurrence is the top-level one.
-
-**Safer fallback when in doubt:** serialize the Edits across two turns. One extra turn is cheaper than a failed-Edit recovery loop (which forces a re-Read, a re-derived anchor, and a re-submit).
-
-See [shared/file-format.md — Top-level structure](../../shared/file-format.md#top-level-structure) for which top-level keys exist and the note that their order is not guaranteed.
+Anchor each Edit on its target array's OWN opening key (2-space-indented for `nodes[]` / `edges[]`), head-insert after the `[`, and never anchor on top-level key order. Full anchor table, head-insertion rationale, disjointness rule, and pre-flight uniqueness check: [editing-operations.md — Anchoring parallel `.flow` Edits](editing-operations.md#anchoring-parallel-flow-edits--anchor-on-what-you-read-not-on-key-order). You just `Read` the file at the top of T2 — anchor only to text that read actually contains.
 
 > **Intra-turn ordering.** If a parallel `Edit` fails with "file not read," split `Read` into its own turn (cost: +1 turn).
 
@@ -298,7 +264,7 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 
 > **The plugin `impl.md` is authoritative — follow its full procedure, not just its `--detail` schema, and let it override this turn map.** A plugin may prescribe steps the three-turn collapse does not show — most importantly a **pre-`configure` live fetch** whose output you must read before you can author `--detail` (the value depends on the live response, so it cannot be guessed or copied from a doc example). When `impl.md` defines such a step, run it in its **own turn before T3** and build `--detail` from its result; do not batch it into the chain, skip it, or hand-author the payload. An empty or static base response is expected for these steps and is not a signal the step is unavailable. This is general to every CLI-owned node type — defer to the owning `impl.md` rather than assuming static config.
 
-**On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate after every individual Edit during T2 — intermediate states are expected to be invalid.
+**On validate failure:** one `Edit` turn to fix, then re-chain `validate && format` in one Bash. Do not validate during T2 ([CAPABILITY.md rule #8](../CAPABILITY.md#critical-rules)).
 
 ### Common error categories
 

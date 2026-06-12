@@ -138,7 +138,7 @@ See [http/impl.md](plugins/http/impl.md) for the full configuration workflow and
 uip maestro flow validate <ProjectName>.flow --output json
 ```
 
-Run **once** after all nodes, edges, and configuration are complete. Do not validate after each individual edit — intermediate states are expected to be invalid.
+Run **once** after all nodes, edges, and configuration are complete — not after each individual edit ([CAPABILITY.md rule #8](../CAPABILITY.md#critical-rules)).
 
 ---
 

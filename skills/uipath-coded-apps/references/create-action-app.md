@@ -120,7 +120,7 @@ If SDK services are needed:
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 ```
 
-> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces these packages to install from the public npm registry.
+> `--@uipath:registry` rationale: [debug.md § `npm install` fails with 401](debug.md#npm-install-fails-with-401-unauthorized-from-npmpkggithubcom).
 
 ---
 

@@ -58,23 +58,7 @@ The `error` port is the implicit error port shared with all action nodes — see
 
 ## Discovery
 
-**Published (tenant registry):**
-
-```bash
-uip maestro flow registry pull --force
-uip maestro flow registry search "uipath.core.agent" --output json
-```
-
-Requires `uip login`. Returns published tenant resources only — for in-solution sibling projects, use the `--local` discovery below.
-
-**In-solution (local, no login required):**
-
-```bash
-uip maestro flow registry list --local --output json
-uip maestro flow registry get "<node-type>" --local --output json
-```
-
-Run from inside the flow project directory. Discovers sibling agent projects in the same `.uipx` solution.
+Follow the canonical ladder in [planning-arch.md — Capability Discovery](../../planning-arch.md#capability-discovery). Agent-specific: search the tenant registry with `uip maestro flow registry search "uipath.core.agent" --output json` (after `registry pull --force`; requires `uip login`; returns published agents only); sibling agent projects in the same `.uipx` solution resolve via `registry list --local` + `registry get "<node-type>" --local` (no login; run from inside the flow project directory).
 
 ## Planning Annotation
 

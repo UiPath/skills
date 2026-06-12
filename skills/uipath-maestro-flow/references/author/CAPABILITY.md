@@ -87,6 +87,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 | **Edit an existing flow** | [brownfield.md](references/brownfield.md) + [editing-operations.md](references/editing-operations.md) |
 | **Add/remove/wire nodes and edges** | [editing-operations.md](references/editing-operations.md) (strategy selection) + relevant plugin's `impl.md` (node-specific inputs) |
 | **Generate a flow plan** | [planning-arch.md](references/planning-arch.md) + [planning-impl.md](references/planning-impl.md) |
+| **Write the plan artifact (gate, `.arch.plan.md` format, mermaid rules)** | [plan-document-guide.md](references/plan-document-guide.md) |
 | **Choose the right node type** | [planning-arch.md — Plugin Index](references/planning-arch.md#plugin-index) + relevant plugin's `planning.md` |
 | **Understand the .flow JSON format** | [shared/file-format.md](../shared/file-format.md) |
 | **Look up CLI commands** | [shared/cli-commands.md](../shared/cli-commands.md) |
@@ -122,7 +123,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 - **Never author `model.context[]` on resource-node instances** — resource-node instances have no `model` block. For `uipath.core.*` resource nodes (rpa, agent, flow, agentic-process, api-workflow, hitl), the definition (from `registry get`) already carries `model.context[]` with `<bindings.{name}>` placeholders. Your job is to add matching entries to the top-level `bindings[]` array — two entries per resource node (`name` + `folderPath`) with `resourceKey` matching the definition's `model.bindings.resourceKey`. At BPMN emit, the runtime rewrites `<bindings.{name}>` → `=bindings.{id}` via `(resourceKey, name)` matching. Without the top-level `bindings[]` entries, `uip maestro flow validate` passes but `uip maestro flow debug` fails with "Folder does not exist or the user does not have access to the folder." See the resource plugin's `impl.md`.
 - **Never put a `ui` block on node instances** — position and size belong in the top-level `layout.nodes` object. Nodes with `"ui": { "position": ... }` use the wrong format and may not render correctly in Studio Web.
 - **Never skip `flow format` before publish or debug** — without it, hand-written `layout` data renders as misshapen rectangles in Studio Web (the MST-9061 failure mode). See rule #12 above for the format step.
-- **Never validate after every individual edit** — intermediate flow states (e.g., node added but not yet wired) are expected to be invalid. Run `uip maestro flow validate` once after the full build is complete.
+- **Never validate after every individual edit** — rule #8: validate once after the full build is complete.
 - **Never use `console.log` in script nodes** — `console` is not available in the Jint runtime. Use `return { debug: value }` to inspect values.
 - **Never forget output mapping on End nodes** — every `out` variable in `variables.globals` must have a `source` expression in every reachable End node's `outputs`. Missing mappings cause silent runtime failures.
 - **Never update `in` variables** — only `inout` variables can be modified via `variableUpdates`. Input variables are read-only after flow start.
@@ -143,6 +144,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
 - [editing-operations-json.md](references/editing-operations-json.md) — Edit / Write recipes (default)
 - [editing-operations-cli.md](references/editing-operations-cli.md) — CLI-owned node procedures
 - [planning-arch.md](references/planning-arch.md) — capability discovery, plugin index, topology design
+- [plan-document-guide.md](references/plan-document-guide.md) — Maestro-fit gate, `.arch.plan.md` output format, mermaid validation rules
 - [planning-impl.md](references/planning-impl.md) — registry lookups, connection binding, wiring rules
 - [plugins/](references/plugins/) — per-node-type planning + impl docs:
   - [connector](references/plugins/connector/) — IS connector nodes
