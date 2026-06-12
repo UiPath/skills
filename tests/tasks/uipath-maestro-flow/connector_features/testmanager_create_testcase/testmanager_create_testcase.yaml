@@ -1,15 +1,16 @@
-# SKELETON — skip:true. BLOCKED UPSTREAM (not just tenant-gated).
-# Discovery (2026-06-12, org testmanagerdev / TestManagerDevTenant) found the TM
-# connector is NOT surfaced to Maestro Flow: `uip maestro flow registry search`
-# returns 0 `uipath.connector.uipath-uipath-testmanager.*` nodes (manifest has
-# 3766 connector nodes, none for TM). The connector IS live on the Integration
-# Service surface (uip is resources), so this is a connector-platform gap —
-# the TM connector must be registered as Maestro Flow nodes before this task can
-# be authored/run. Track with the connector/IS team.
-# When TM flow nodes land: set CONNECTOR_NODE in check_testmanager_create_testcase.py
-# to the real node type (uipath.connector.uipath-uipath-testmanager.<op>), confirm
-# a connection via `uip is connections list uipath-uipath-testmanager --all-folders`,
-# then flip skip:false.
+# SKELETON — skip:true. NEEDS CONNECTOR-TEAM CONFIRMATION on the node key.
+# Discovery (2026-06-12, org testmanagerdev / TestManagerDevTenant): the FIRST-PARTY
+# connector `uipath-uipath-testmanager` does NOT appear in the Maestro Flow node
+# manifest (`uip maestro flow registry search` → 0 nodes for that key). However a
+# CUSTOM, org-scoped connector IS present and DOES expose Flow nodes, e.g.:
+#   uipath.connector.custom-testmanagerdev-uipathtestmanager.create-test-case
+#   (+ list-test-cases, get-test-case-details, list-custom-field-values, …; 16 nodes)
+# So TM IS usable in Flow today only via that custom connector — not the shipping
+# first-party one. CONFIRM with the connector/IS team whether the first-party
+# `uipath-uipath-testmanager` will register Maestro Flow nodes (preferred for a
+# portable eval), or whether Flow is expected to use the custom-connector path.
+# Then set CONNECTOR_NODE in check_testmanager_create_testcase.py to the confirmed
+# node type, ensure a connection exists in the CI eval tenant, and flip skip:false.
 task_id: skill-flow-testmanager-create-testcase
 description: >
   E2E (connector): agent uses the uipath-maestro-flow skill to build a Maestro

@@ -1,13 +1,11 @@
-# tenant-gated, skip:true. Discovery confirmed (2026-06-12, org testmanagerdev /
-# TestManagerDevTenant): connectorKey `uipath-uipath-testmanager` is LIVE on the
-# Integration Service surface — 22 objects, and TestCase.Create =
-#   POST /v2/{ProjectId}/testcases  (required field `name`; path param ProjectId)
-# Enabled connections exist (folder `Shared`). This surface (uip is resources /
-# coded UiPath.IntegrationService.Activities) is the one that actually exposes the
-# connector — unlike Maestro Flow / API Workflow, which do NOT surface it yet
-# (0 registry nodes / 0 Api TypeCache matches as of this date).
-# Before flipping skip:false: the TM connector + an Enabled connection must also
-# exist in the *CI eval tenant* (testmanagerdev is a dev tenant, not skills CI).
+# tenant-gated, skip:true. CONFIRMED AVAILABLE (2026-06-12, org testmanagerdev /
+# TestManagerDevTenant): the first-party connector `uipath-uipath-testmanager` is
+# live for RPA/Studio — `uip is activities list uipath-uipath-testmanager` returns
+# 36 IS connector activities (CreateTestCase, CreateRequirement, ExecuteTestSet, …),
+# backed by `uip is resources` (TestCase.Create = POST /v2/{ProjectId}/testcases,
+# required `name`). Enabled connections exist (folder `Shared`).
+# Before flipping skip:false: the connector + an Enabled connection must also exist
+# in the *CI eval tenant* (testmanagerdev is a dev tenant, not skills CI).
 # Coded (.cs) workflow on purpose: builds headless cross-platform (no Windows
 # runner). Criteria grade the discovery → coded IS connector call → build passes.
 task_id: skill-rpa-testmanager-create-testcase
