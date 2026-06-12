@@ -421,6 +421,8 @@ Emit this block as the Phase 1 summary content:
 **Decomposition signals matched:** <LIST_MATCHED_SIGNALS_PER_RPA_PROCESS_PROJECT_OR_N/A>
 ```
 
+**Durable home.** This block is conversation output at the Phase 1 checkpoint, but the `## Recommended Scope` lines (`Recommendation:`, `Delivery model:`, `Blocked by platform:`) must also survive into the SDD — every template hosts a `## Recommended Scope` section between `## Decisions Made` and `## Action Required`, emitted in BOTH execution modes (Phase 3 Step 2 item 3). Autonomous mode skips the checkpoint presentation, so the SDD copy is the only durable record of the Constraint Gate outcome.
+
 ### Confirmation question
 
 Right after emitting the summary, confirm the scope via `AskUserQuestion` with the numbered-choice format. **The recommended option is always item 1.**

@@ -31,7 +31,7 @@ Before reading the PDD, ask **one `AskUserQuestion` call containing two question
 Record both choices — they go into the SDD's `## Planner Handoff` header (Phase 3 Step 2) and propagate to Lane A (task derivation): execution mode drives task review behavior; delivery model is passed to specialists as a platform constraint.
 
 In **Autonomous** mode:
-- Skip Phase 1 summary presentation (generate internally, do not wait for confirmation)
+- Skip Phase 1 summary presentation (generate internally, do not wait for confirmation) — the `## Recommended Scope` block still persists into the SDD (Phase 3 Step 2 item 3)
 - Skip Phase 2 architecture review (generate, do not wait)
 - Still ask the SME Review resolution question before writing (Step 1.5) — this is a hard blocker
 - Still ask the Agent/Coded App gap-filling question if triggered — this is a hard blocker
@@ -389,7 +389,9 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
    - For non-RPA scopes (e.g., Single-product Agent), rows 3-5 collapse to N/A with one row covering the product-specific Level-1.5-equivalent (framework choice, app type, etc.).
    - The block does NOT replace the per-section detail later in the SDD — §10 / §11 / §13 still carry the full justification. The block is the **scannable index** of those decisions.
 
-4. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` block if present) and before the Table of Contents:
+   In BOTH modes, also emit the `## Recommended Scope` block directly after `## Decisions Made` (directly after the Planner Handoff header when that block is absent — interactive runs): copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, and `Blocked by platform:` lines (see [product-selection-guide.md → Summary block](product-selection-guide.md#summary-block)). Autonomous mode skips the Phase 1 presentation, so this copy is the only durable record of the Constraint Gate outcome.
+
+4. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the Table of Contents:
 
 ```markdown
 ## Action Required — SME Review Items

@@ -47,6 +47,19 @@ Non-RPA scope: rows collapse to scope + product-specific Level-1.5-equivalent.
 ---
 
 <!--
+EMIT THIS BLOCK ALWAYS (both execution modes).
+Durable copy of the Phase 1 Recommended Scope summary — the SDD record of the
+Constraint Gate outcome. See product-selection-guide.md → Summary block for the full format.
+-->
+## Recommended Scope
+
+**Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, ...)>
+**Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
+**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... | none>
+
+---
+
+<!--
 EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
 Skip entirely when no review items are open.
 See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.

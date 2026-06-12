@@ -50,6 +50,19 @@ See sdd-generation-guide.md Phase 3 Step 2 item 3 for the format spec.
 ---
 
 <!--
+EMIT THIS BLOCK ALWAYS (both execution modes).
+Durable copy of the Phase 1 Recommended Scope summary — the SDD record of the
+Constraint Gate outcome. See product-selection-guide.md → Summary block for the full format.
+-->
+## Recommended Scope
+
+**Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, ...)>
+**Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
+**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... | none>
+
+---
+
+<!--
 EMIT THIS BLOCK ONLY when at least one [SME REVIEW] item remains after Step 1.5 resolution.
 Skip entirely when no review items are open.
 See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
@@ -595,9 +608,10 @@ Implementation tasks **do not live in this SDD** — they live in the planner's 
 
 ### Terminal artefact — a packed `.uipx` solution
 
-<!-- CONSTRAINT GATE: if the platform-availability-guide blocks Solutions (.uipx needs AS 2.2510+)
-     for this SDD's Delivery model, REWRITE this subsection: per-package Orchestrator publish,
-     deploy tasks route to uipath-platform instead of uipath-solution. -->
+<!-- CONSTRAINT GATE: if the platform-availability-guide blocks Solutions for this SDD's
+     Delivery model (standalone, AS older than 2.2510, or user exclusion), REWRITE this
+     subsection: per-package Orchestrator publish, deploy tasks route to uipath-platform
+     instead of uipath-solution. -->
 
 The build is not finished when the project folder compiles. **The terminal artefact of an SDD-driven build is a packed `.uipx` solution**, not a bare project folder. After the implementation specialist (`uipath-rpa`, `uipath-agents`, etc.) reports its tasks complete, load the **`uipath-solution`** skill and run:
 

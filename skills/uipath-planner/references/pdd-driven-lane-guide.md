@@ -79,6 +79,8 @@ Based on the project list, pick the matching pattern from [multi-skill-patterns-
 | API Workflow | API Workflow build + `uipath-solution` publish + testing |
 | Solution scope | Compose patterns per project, sequenced by cross-product integration order (dependencies before dependents) |
 
+> **Deploy routing is constraint-gated.** Before emitting any deploy task, check the handoff header's `Delivery model` against [platform-availability-guide.md](platform-availability-guide.md). When Solutions (`.uipx`) is blocked for that model — standalone, Automation Suite older than 2.2510, or a user exclusion — replace every `uipath-solution` deploy/publish step in the table above with per-package Orchestrator publish routed to `uipath-platform`. An SDD whose §18 the Constraint Gate rewrote already says this; apply the same rule when entering Lane A with a hand-written SDD whose §18 does not.
+
 ## Step 5 — UI element targeting (only when §9 contains UI applications)
 
 If the SDD's §9 Application Inventory contains web / desktop / Citrix applications AND the plan loads `uipath-rpa` for a workflow that interacts with them, ask the UI batch as a single `AskUserQuestion` call (3 questions, batched):
