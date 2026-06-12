@@ -1,0 +1,86 @@
+# tenant-gated, skip:true. CONFIRMED AVAILABLE (2026-06-12, org testmanagerdev /
+# TestManagerDevTenant): the first-party connector `uipath-uipath-testmanager` is
+# live for RPA/Studio — `uip is activities list uipath-uipath-testmanager` returns
+# 36 IS connector activities (CreateTestCase, CreateRequirement, ExecuteTestSet, …),
+# backed by `uip is resources` (TestCase.Create = POST /v2/{ProjectId}/testcases,
+# required `name`). Enabled connections exist (folder `Shared`).
+# Before flipping skip:false: the connector + an Enabled connection must also exist
+# in the *CI eval tenant* (testmanagerdev is a dev tenant, not skills CI).
+# Coded (.cs) workflow on purpose: builds headless cross-platform (no Windows
+# runner). Criteria grade the discovery → coded IS connector call → build passes.
+task_id: skill-rpa-testmanager-create-testcase
+description: >
+  E2E (connector): agent uses the uipath-rpa skill to build a coded (`.cs`)
+  workflow that creates a Test Case in UiPath Test Manager via the
+  `uipath-uipath-testmanager` Integration Service connector
+  (UiPath.IntegrationService.Activities / ConnectorConnection.ExecuteAsync),
+  then builds it clean. Exercises connector/connection discovery on the `uip is`
+  surface, coded IS connector authoring, and `uip rpa build`/`get-errors`. Shape
+  check asserts the project references the Test Manager connector (not a faked
+  stand-in).
+tags: [uipath-rpa, e2e, mode:build, lifecycle:generate, connector, uipath-uipath-testmanager, feature:test-case, feature:connections]
+skip: true
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 80
+  turn_timeout: 1200
+
+initial_prompt: |
+  Before starting, load the uipath-rpa skill and follow its workflow.
+
+  Build a UiPath coded automation (a `.cs` coded workflow, not XAML) that
+  creates a Test Case in UiPath Test Manager via the Test Manager Integration
+  Service connector, then build the project so it compiles clean.
+
+  - Use the Test Manager Integration Service connection on this tenant — discover
+    it via the `uip is` surface; do not mock it.
+  - Name the new test case "Connector Eval - RPA TC".
+  - Call the connector from coded with UiPath.IntegrationService.Activities
+    (ConnectorConnection.ExecuteAsync), binding the connection.
+
+  Not complete until `uip rpa get-errors` (or `uip rpa build`) reports no errors.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent loaded the uipath-rpa skill"
+    tool_name: "Skill"
+    command_pattern: "uipath-rpa"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the Test Manager connector/connection on the `uip is` surface"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+(connectors\s+list|resources\s+describe|connections\s+list)[\s\S]{0,200}?uipath-uipath-testmanager'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent built / error-checked the project (`uip rpa build` or `uip rpa get-errors`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(build|get-errors)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json on uip calls"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Project references the Test Manager IS connector (not a faked stand-in)"
+    command: "python3 $TASK_DIR/check_testmanager_create_testcase.py shape"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

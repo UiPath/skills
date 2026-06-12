@@ -1,0 +1,123 @@
+# tenant-gated, skip:true. CONFIRMED AVAILABLE (2026-06-12, org testmanagerdev /
+# TestManagerDevTenant): the first-party connector IS in the API Workflow
+# (projectType=Api) TypeCache — `uip api-workflow registry resolve testmanager`
+# returns 36 curated activities, ConnectorKey `uipath-uipath-testmanager`. The
+# create activity:
+#   DisplayName "Create Test Case"  ObjectName TestCase  HttpMethod POST
+#   UiPathActivityTypeId 6773e8bd-17a2-3253-9890-6b5faaae27e1
+# `uip api-workflow registry stub 6773e8bd-... --connection-id <uuid>` returns
+# Result Success, Kind IntSvc, SlotKey TestCase_1 — the full authoring path works.
+# (Note: resolve substring-match is CASE-SENSITIVE; use token `testmanager`.)
+# Before flipping skip:false: the connector + an Enabled connection must exist in
+# the *CI eval tenant* (this discovery was on a dev tenant), then fill the TODO in
+# check_testmanager_create_testcase.py.
+task_id: skill-api-workflow-testmanager-create-testcase
+description: >
+  E2E (connector): agent uses the uipath-api-workflow skill to author an API
+  Workflow (project type "Api") with a UiPath Test Manager Integration Service
+  connector activity that creates a Test Case, then validates and runs it.
+  Drives the full connector discovery flow — `registry resolve` →
+  `is connections list`/`ping` (connectorKey `uipath-uipath-testmanager`) →
+  `registry stub --connection-id` → `is resources describe` required-field
+  cross-check → `api-workflow validate`. Shape check asserts the produced
+  Workflow.json carries a real `UiPath.IntSvc` call against the testmanager
+  connector with a resolved connection (no `<REPLACE_WITH_*>` placeholder).
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, uipath-uipath-testmanager, feature:test-case, feature:registry, feature:connections]
+skip: true
+
+sandbox:
+  python: {}
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 80
+  turn_timeout: 1200
+
+initial_prompt: |
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
+
+  Build a UiPath API Workflow at Workflow.json that creates a UiPath Test
+  Manager test case through the Test Manager Integration Service connector, then
+  validate it.
+
+  Use the Test Manager connection `tm-connector-eval` in the `Shared/uipath-test`
+  folder. Name the new test case "Connector Eval - API Workflow TC".
+
+  Discover the connector activity through the registry (resolve + stub), verify
+  the connection pings, and cross-check required fields — do not hand-author the
+  activity or invent a uiPathActivityTypeId. Not complete until
+  `uip api-workflow validate ./Workflow.json` passes.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent loaded the uipath-api-workflow skill"
+    tool_name: "Skill"
+    command_pattern: "uipath-api-workflow"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Resolved the Test Manager connector activity from the registry (`uip api-workflow registry resolve testmanager`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+resolve\s+["\x27]?testmanager'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed or pinged the testmanager connection (`uip is connections list <connectorKey>` / `ping`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+connections\s+(list[\s\S]{0,200}?uipath-uipath-testmanager|ping)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Stubbed the activity with a real connection id (`uip api-workflow registry stub ... --connection-id`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+stub[\s\S]+?--connection-id'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Required-field cross-check (`uip is resources describe`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+resources\s+describe'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Validated the workflow (`uip api-workflow validate`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json on uip calls"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json shape: real testmanager IntSvc connector call, resolved connection, no placeholder"
+    command: "python3 $TASK_DIR/check_testmanager_create_testcase.py shape"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

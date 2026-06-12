@@ -1,0 +1,102 @@
+task_id: skill-platform-is-testmanager-create-testcase
+description: >
+  Smoke test: agent uses the uipath-platform skill to drive the UiPath Test
+  Manager Integration Service connector through the full `uip is` workflow —
+  find the connector, list + ping a connection, describe the TestCase resource
+  for the Create operation, then run create with a --body. Tests that the skill
+  teaches the correct connector key (uipath-uipath-testmanager), the TestCase
+  object, the `resources describe ... --operation Create` discovery step, and
+  the `resources run create <connector> <object> --connection-id --body` syntax.
+  Offline (command-shape) grading — like the sibling Salesforce execute task it
+  does not need a live connection, so it runs in CI without the connector being
+  provisioned in the eval tenant. Verified against a live tenant (2026-06-12):
+  the connector exposes TestCase with Create = POST /v2/{ProjectId}/testcases,
+  required field `name`.
+tags: [uipath-platform, smoke, integration-service, resources, execute]
+
+run_limits:
+  expected_turns: 15
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Walk me through creating a Test Case in UiPath Test Manager via UiPath
+  Integration Service. Follow the full Integration Service workflow: find the
+  connector, list and ping a connection, describe the resource, then create.
+
+  Details:
+  - Connector key: `uipath-uipath-testmanager`
+  - Object: `TestCase`
+  - The new test case name is "IS Connector Eval - TestCase" (the `name` field
+    is required).
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - Always pass `--connection-id` on resource commands (use a placeholder UUID
+    if you cannot obtain a real one).
+  - For describe and run, use `--operation Create` / the `create` subcommand.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent searched for the Test Manager connector"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+list.*--filter'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed connections for the Test Manager connector"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+list[\s\S]*uipath-uipath-testmanager'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pinged a connection"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+ping'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent described the TestCase resource for the Create operation"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+describe\s+uipath-uipath-testmanager\s+TestCase[\s\S]*--operation\s+Create'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran create on the TestCase object with a --body (`uip is resources run create uipath-uipath-testmanager TestCase ... --body`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+TestCase[\s\S]*--body'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --connection-id on resource commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+(describe|run\s+create)[\s\S]*--connection-id'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json consistently"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0
