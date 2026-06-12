@@ -134,6 +134,12 @@ This repository works as a **Claude Code plugin**. Install skills via `uip skill
 
 > **Avoid manual plugin installation** (e.g., `claude plugin marketplace add` / `claude plugin install`). Manually installed plugins must be updated manually, and you may miss skill updates and fixes.
 
+If you must add the marketplace manually, pin the release line — never bare `UiPath/skills` (that tracks `main`, which gets no plugin version bumps and will not auto-update):
+
+```text
+/plugin marketplace add UiPath/skills@release/latest
+```
+
 If you've already installed manually, uninstall and re-install via `uip skills install` to switch to automatic updates.
 
 #### Reduce permission prompts

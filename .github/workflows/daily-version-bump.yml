@@ -1,12 +1,25 @@
 name: Daily Version Bump
 
+# Bumps the Claude Code plugin version (plugin.json + marketplace.json) on the
+# current release line. The marketplace tracks `release/latest`, and plugin
+# auto-update fires when the `version` field on that ref changes — so the bump
+# commits directly to the durable release branch (`release/v<minor>`) and
+# fast-forwards `release/latest` to it. `main` gets NO daily bumps: its plugin
+# version is pinned at `M.N.0` once per sprint by the release cut.
+# See docs/RELEASE.md ("Marketplace channel").
+
 on:
   schedule:
     - cron: '0 7 * * *' # every day at 07:00 UTC
   workflow_dispatch:
     inputs:
+      legacy_main_bump:
+        description: 'Transition-only: bump via PR to main instead of the release line (delete after one sprint)'
+        type: boolean
+        required: false
+        default: false
       assignees:
-        description: 'Comma-separated GitHub usernames to assign to the PR'
+        description: 'Comma-separated GitHub usernames to assign to the legacy PR'
         required: false
         default: ''
 
@@ -14,8 +27,110 @@ permissions:
   contents: write
   pull-requests: write
 
+# Shared with the sprint release cut so a daily bump never races the Sunday
+# branch advance.
+concurrency:
+  group: release-line-updates
+  cancel-in-progress: false
+
 jobs:
-  bump-version:
+  bump-release-line:
+    if: github.event_name == 'schedule' || github.event.inputs.legacy_main_bump != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release/latest
+        id: resolve
+        run: |
+          if ! git ls-remote --exit-code --heads origin release/latest > /dev/null; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Skipped: release/latest does not exist yet"
+              echo ""
+              echo "Create the release line first (see docs/RELEASE.md, Marketplace channel)."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+          git fetch origin release/latest
+          git checkout --detach FETCH_HEAD
+
+      - name: Skip if nothing landed since the last bump
+        id: guard
+        if: steps.resolve.outputs.exists == 'true'
+        run: |
+          SUBJECT=$(git log -1 --format=%s)
+          if [[ "$SUBJECT" == "chore: bump plugin version to"* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Skipped: no new content on the release line"
+              echo ""
+              echo "HEAD is already a bump commit (\`$SUBJECT\`). Bumping again would force a plugin re-download for identical content."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version in plugin.json and marketplace.json
+        id: bump
+        if: steps.resolve.outputs.exists == 'true' && steps.guard.outputs.skip != 'true'
+        run: |
+          PLUGIN=".claude-plugin/plugin.json"
+          MARKETPLACE=".claude-plugin/marketplace.json"
+
+          # Plugin version shares major.minor with package.json (the npm
+          # package / CLI line); the patch is an independent daily counter.
+          # When the package minor advances, the counter resets to 0.
+          # See docs/RELEASE.md.
+          PKG_LINE=$(jq -r '.version | split(".") | "\(.[0]).\(.[1])"' package.json)
+          VERSION=$(jq -r '.version' "$PLUGIN")
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          if [ "$MAJOR.$MINOR" = "$PKG_LINE" ]; then
+            NEW_VERSION="$PKG_LINE.$((PATCH + 1))"
+          else
+            NEW_VERSION="$PKG_LINE.0"
+          fi
+
+          jq --arg v "$NEW_VERSION" '.version = $v' "$PLUGIN" > tmp.json && mv tmp.json "$PLUGIN"
+          jq --arg v "$NEW_VERSION" '.plugins[0].version = $v' "$MARKETPLACE" > tmp.json && mv tmp.json "$MARKETPLACE"
+
+          echo "old_version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "release_branch=release/v$PKG_LINE" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push to the release line
+        if: steps.resolve.outputs.exists == 'true' && steps.guard.outputs.skip != 'true'
+        run: |
+          BRANCH="${{ steps.bump.outputs.release_branch }}"
+
+          # Invariant: release/latest HEAD belongs to the durable branch for
+          # the current minor. If that branch is missing, the release line is
+          # broken — fail loudly instead of inventing a branch.
+          if ! git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+            echo "::error::release/latest is at $(git rev-parse --short HEAD) but $BRANCH does not exist on origin."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .claude-plugin/plugin.json .claude-plugin/marketplace.json
+          git commit -m "chore: bump plugin version to ${{ steps.bump.outputs.new_version }}"
+          git push origin "HEAD:$BRANCH" "HEAD:release/latest"
+
+          {
+            echo "## Plugin version bumped"
+            echo ""
+            echo "\`${{ steps.bump.outputs.old_version }}\` → \`${{ steps.bump.outputs.new_version }}\` on \`$BRANCH\` (+ \`release/latest\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Transition-only fallback: the pre-release-line flow (PR to main). Kept for
+  # one sprint after the marketplace cutover to release/latest; delete after.
+  legacy-main-bump:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.legacy_main_bump == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,10 +166,6 @@ jobs:
           PLUGIN=".claude-plugin/plugin.json"
           MARKETPLACE=".claude-plugin/marketplace.json"
 
-          # Plugin version shares major.minor with package.json (the npm
-          # package / CLI line); the patch is an independent daily counter.
-          # When the package minor advances, the counter resets to 0.
-          # See docs/RELEASE.md.
           PKG_LINE=$(jq -r '.version | split(".") | "\(.[0]).\(.[1])"' package.json)
           VERSION=$(jq -r '.version' "$PLUGIN")
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
@@ -65,10 +176,7 @@ jobs:
             NEW_VERSION="$PKG_LINE.0"
           fi
 
-          # Update plugin.json
           jq --arg v "$NEW_VERSION" '.version = $v' "$PLUGIN" > tmp.json && mv tmp.json "$PLUGIN"
-
-          # Update marketplace.json (version is inside plugins[0])
           jq --arg v "$NEW_VERSION" '.plugins[0].version = $v' "$MARKETPLACE" > tmp.json && mv tmp.json "$MARKETPLACE"
 
           echo "old_version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -81,7 +189,7 @@ jobs:
           commit-message: "chore: bump version to ${{ steps.bump.outputs.new_version }}"
           title: "chore: bump version from ${{ steps.bump.outputs.old_version }} to ${{ steps.bump.outputs.new_version }}"
           body: |
-            Automated daily version bump.
+            Automated daily version bump (legacy main flow).
 
             `${{ steps.bump.outputs.old_version }}` → `${{ steps.bump.outputs.new_version }}`
 
