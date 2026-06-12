@@ -194,8 +194,10 @@ After collecting all answers, scaffold the project. **[assets/templates/action-a
 > 1. **Default `Form` is form-only — no document/PDF tab.** Only add the optional `DocumentTab` (PDF viewer step) when the use case requires showing a document.
 > 2. **Adapt the schema-specific parts** — `FormData`, defaults, labels, sections, formatting, outcome buttons — to the confirmed `action-schema.json`.
 > 3. **Customer instructions (Q5) always win.** Layer the user's requested colours, layout, copy, and structure on top of this baseline; fall back to the baseline only where they gave no direction.
+> 4. **CSS ships as files — copy, don't retype.** The four stylesheets live as real files under [assets/templates/action-app/](../assets/templates/action-app/). Copy them byte-for-byte into the project; never regenerate them from memory. Byte-exact copying is what makes the default UI identical across every scaffold.
+> 5. **Customization is token-first.** Satisfy colour/brand/font/radius requests by editing the design tokens in `src/index.css` (`:root` / `body.dark`) **only** — leave the component stylesheets untouched. Edit `Form.css` / `DocumentTab.css` only for **structural** changes the tokens can't express.
 
-The sections below describe the schema-driven adaptations; copy verbatim from the template for the parts they don't override (`index.css`, `App.css`, `main.tsx`, the design-system tokens, animations).
+The sections below describe the schema-driven adaptations; copy the CSS files verbatim (per rules 4–5) and copy the small TS scaffolding (`main.tsx`, `vite.config.ts`, `App.tsx`) from the template for the parts they don't override.
 
 ```bash
 npm create vite@latest <app-name> -- --template react-ts
@@ -282,7 +284,9 @@ Without SDK services there is no OAuth client, so **do not** write `uipath.json`
 
 ### `src/index.css`, `src/App.css`, `src/main.tsx`
 
-Copy verbatim from the template — these carry the design system (light/dark tokens, fonts, accent palette), the `app-shell` wrapper, and the Vite entry that imports `index.css`. Adjust only the accent palette if the customer asked for a different brand colour.
+- `src/index.css` — copy [assets/templates/action-app/index-template.css](../assets/templates/action-app/index-template.css) byte-for-byte. Carries the design system (light/dark tokens, fonts, accent palette). For brand/colour/font requests, edit the `:root` / `body.dark` token values **here** (token-first rule) — do not touch component CSS.
+- `src/App.css` — copy [assets/templates/action-app/app-template.css](../assets/templates/action-app/app-template.css) byte-for-byte (`app-shell` wrapper; no changes).
+- `src/main.tsx` — copy verbatim from the template's `src/main.tsx` section (Vite entry that imports `index.css`).
 
 ### `src/App.tsx`
 
@@ -376,9 +380,9 @@ const handle<OutcomeName> = async () => {
 
 ### `src/components/Form.css`
 
-Copy the template's `Form.css` as the default — it styles the gradient header (`.review-header`), section cards (`.form-section`, `.form-title`), the responsive `.form-grid`, inputs (incl. read-only/dashed treatment), the sticky `.form-buttons` footer with primary/secondary `.outcome-btn`, and the entrance/header animations, all on the `index.css` design-system tokens.
+Copy [assets/templates/action-app/form-template.css](../assets/templates/action-app/form-template.css) byte-for-byte to `src/components/Form.css`. It styles the gradient header (`.review-header`), section cards (`.form-section`, `.form-title`), the responsive `.form-grid`, inputs (incl. read-only/dashed treatment), the sticky `.form-buttons` footer with primary/secondary `.outcome-btn`, and the entrance/header animations, all on the `index.css` design-system tokens.
 
-Adapt only what the schema or customer needs: drop classes for sections you removed, add classes for new ones, and apply the Q5 layout intent (e.g. two-column grid, summary card at top, different brand colour). Customer styling instructions override the baseline.
+Edit `Form.css` only for **structural** Q5 changes the tokens can't express — drop classes for sections you removed, add classes for new ones, apply a two-column grid or a top summary card. Colour/brand/font changes go in the `index.css` tokens (token-first rule), **not** here. Customer styling instructions override the baseline.
 
 ---
 
@@ -408,7 +412,7 @@ npm install react-pdf
 
 #### Component & styles — copy from the template
 
-Copy `src/components/DocumentTab.tsx` and `src/components/DocumentTab.css` **verbatim** from the template's [DocumentTab sections](../assets/templates/action-app-template.md). The component is a generic PDF viewer: it takes a ready-to-render `fileUrl` (a `blob:` URL or direct URL) and owns paging, zoom, download, and the pdf.js worker setup. **The parent fetches the bytes** from whatever source Q3-doc settled on (Attachments / Buckets / Data Fabric), builds the URL with `URL.createObjectURL(blob)`, and passes it in as `fileUrl`. No schema-driven changes are needed inside the component.
+Copy `src/components/DocumentTab.tsx` verbatim from the template's [DocumentTab section](../assets/templates/action-app-template.md), and copy [assets/templates/action-app/document-tab-template.css](../assets/templates/action-app/document-tab-template.css) byte-for-byte to `src/components/DocumentTab.css`. The component is a generic PDF viewer: it takes a ready-to-render `fileUrl` (a `blob:` URL or direct URL) and owns paging, zoom, download, and the pdf.js worker setup. **The parent fetches the bytes** from whatever source Q3-doc settled on (Attachments / Buckets / Data Fabric), builds the URL with `URL.createObjectURL(blob)`, and passes it in as `fileUrl`. No schema-driven changes are needed inside the component.
 
 ---
 
