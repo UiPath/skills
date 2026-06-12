@@ -1,14 +1,15 @@
-# SKELETON — tenant-gated, skip:true. Before flipping skip:false:
-#   1. Confirm the connector node type against a live tenant:
-#        uip maestro flow registry search testmanager --output json
-#        uip is connectors list --output json   # confirm key `uipath-uipath-testmanager`
-#      → set CONNECTOR_NODE in check_testmanager_create_testcase.py to the real
-#        node type, e.g. uipath.connector.uipath-uipath-testmanager.<create-op>.
-#   2. Provision a TM Integration Service connection on the run tenant,
-#        discoverable via `uip is connections list uipath-uipath-testmanager --all-folders`.
-# The command_executed criteria grade the connector-agnostic authoring flow
-# (registry discovery → connector node add → validate); the run_command check
-# debugs the produced flow once the node type is confirmed.
+# SKELETON — skip:true. BLOCKED UPSTREAM (not just tenant-gated).
+# Discovery (2026-06-12, org testmanagerdev / TestManagerDevTenant) found the TM
+# connector is NOT surfaced to Maestro Flow: `uip maestro flow registry search`
+# returns 0 `uipath.connector.uipath-uipath-testmanager.*` nodes (manifest has
+# 3766 connector nodes, none for TM). The connector IS live on the Integration
+# Service surface (uip is resources), so this is a connector-platform gap —
+# the TM connector must be registered as Maestro Flow nodes before this task can
+# be authored/run. Track with the connector/IS team.
+# When TM flow nodes land: set CONNECTOR_NODE in check_testmanager_create_testcase.py
+# to the real node type (uipath.connector.uipath-uipath-testmanager.<op>), confirm
+# a connection via `uip is connections list uipath-uipath-testmanager --all-folders`,
+# then flip skip:false.
 task_id: skill-flow-testmanager-create-testcase
 description: >
   E2E (connector): agent uses the uipath-maestro-flow skill to build a Maestro

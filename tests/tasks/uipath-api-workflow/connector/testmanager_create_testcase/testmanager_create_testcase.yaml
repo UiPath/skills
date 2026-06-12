@@ -1,14 +1,15 @@
-# SKELETON — tenant-gated, skip:true. Before flipping skip:false:
-#   1. Confirm the connector key + create operation against a live tenant:
-#        uip api-workflow registry resolve "test manager test case" --output json
-#      → note the uiPathActivityTypeId + objectName for the "create test case" op,
-#        and confirm connectorKey is `uipath-uipath-testmanager`.
-#   2. Provision an Integration Service connection named `tm-connector-eval`
-#        in folder `Shared/uipath-test` on the run tenant (TM connector).
-#   3. Fill the TODO(operation) in check_testmanager_create_testcase.py.
-# The success criteria below grade the connector-agnostic discovery flow
-# (resolve → connection ping → stub → required-field cross-check → validate),
-# which is correct regardless of the exact operation slug.
+# SKELETON — skip:true. BLOCKED UPSTREAM (not just tenant-gated).
+# Discovery (2026-06-12, org testmanagerdev / TestManagerDevTenant) found the TM
+# connector is NOT in the API Workflow (StudioWeb projectType=Api) TypeCache:
+# `uip api-workflow registry resolve` returns 0 matches for any TM keyword, while
+# control keywords (outlook/gmail/http) return 20 each — so resolve works; the TM
+# connector simply isn't surfaced to API Workflow. The connector IS live on the
+# Integration Service surface (uip is resources), so this is a connector-platform
+# gap — TM must be added to the Api TypeCache before this task can be authored/run.
+# Track with the connector/IS team.
+# When TM resolves: confirm the create activity's uiPathActivityTypeId/objectName,
+# provision a connection, fill the TODO in check_testmanager_create_testcase.py,
+# then flip skip:false. connectorKey confirmed: `uipath-uipath-testmanager`.
 task_id: skill-api-workflow-testmanager-create-testcase
 description: >
   E2E (connector): agent uses the uipath-api-workflow skill to author an API
