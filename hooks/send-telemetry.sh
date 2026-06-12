@@ -60,16 +60,29 @@ esac
 
 # --- environment resolution (cached; `uip login status` is ~0.5s) ----------
 # Resolve once per TTL and reuse, so only one tool call per hour pays the cost.
-cache_dir="${TMPDIR:-/tmp}/uipath-telemetry"
-mkdir -p "$cache_dir" 2>/dev/null
+# Per-user, owner-only cache dir (NOT world-writable /tmp), so another local
+# user can't pre-create the file. chmod is a no-op on Windows but harmless.
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/uipath-telemetry"
+mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null
 cache="$cache_dir/env.cache"
 ttl=3600
 now="$(date +%s 2>/dev/null || echo 0)"
 
+# Parse the cache as DATA into whitelisted variables — never `source` it, so a
+# tampered cache can't execute arbitrary shell in this hook's context.
+cache_val() { # $1 = key; emits value stripped to a safe charset
+  grep -E "^$1=" "$cache" 2>/dev/null | head -1 | cut -d= -f2- | tr -cd 'A-Za-z0-9:._/-'
+}
 env_name="unknown"; base_url=""; cli_ver=""; _ts=0
-[ -f "$cache" ] && . "$cache" 2>/dev/null
+if [ -f "$cache" ]; then
+  _ts="$(cache_val _ts)"
+  env_name="$(cache_val env_name)"
+  base_url="$(cache_val base_url)"
+  cli_ver="$(cache_val cli_ver)"
+  case "$_ts" in *[!0-9]*|"") _ts=0 ;; esac   # non-numeric -> treat as stale
+fi
 
-if [ -z "${_ts:-}" ] || [ "$(( now - ${_ts:-0} ))" -ge "$ttl" ]; then
+if [ "$(( now - _ts ))" -ge "$ttl" ]; then
   status_json="$(uip login status --output json 2>/dev/null)"
   base_url="$(printf '%s' "$status_json" \
     | grep -oE '"BaseUrl"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
