@@ -25,10 +25,10 @@ from _shared.flow_check import (  # noqa: E402
     run_debug,
 )
 
-# TODO(node-type): confirm the real Test Manager create node type via
-#   `uip maestro flow registry search testmanager --output json`
-# First-party connectors follow uipath.connector.<connectorKey>.<operation>;
-# the connectorKey is uipath-uipath-testmanager. Substring match is enough.
+# Confirmed (2026-06-12) via `uip maestro flow registry pull` + search:
+#   node type = uipath.connector.uipath-uipath-testmanager.create-test-case
+# Substring match on the connectorKey is enough to gate "a real TM connector node
+# is present" (anti-hardcode) without pinning the exact operation slug.
 CONNECTOR_NODE = "uipath-uipath-testmanager"
 TC_NAME = "Connector Eval - Maestro Flow TC"
 

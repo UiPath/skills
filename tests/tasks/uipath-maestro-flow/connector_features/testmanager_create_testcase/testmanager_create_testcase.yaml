@@ -1,16 +1,15 @@
-# SKELETON — skip:true. NEEDS CONNECTOR-TEAM CONFIRMATION on the node key.
-# Discovery (2026-06-12, org testmanagerdev / TestManagerDevTenant): the FIRST-PARTY
-# connector `uipath-uipath-testmanager` does NOT appear in the Maestro Flow node
-# manifest (`uip maestro flow registry search` → 0 nodes for that key). However a
-# CUSTOM, org-scoped connector IS present and DOES expose Flow nodes, e.g.:
-#   uipath.connector.custom-testmanagerdev-uipathtestmanager.create-test-case
-#   (+ list-test-cases, get-test-case-details, list-custom-field-values, …; 16 nodes)
-# So TM IS usable in Flow today only via that custom connector — not the shipping
-# first-party one. CONFIRM with the connector/IS team whether the first-party
-# `uipath-uipath-testmanager` will register Maestro Flow nodes (preferred for a
-# portable eval), or whether Flow is expected to use the custom-connector path.
-# Then set CONNECTOR_NODE in check_testmanager_create_testcase.py to the confirmed
-# node type, ensure a connection exists in the CI eval tenant, and flip skip:false.
+# tenant-gated, skip:true. CONFIRMED AVAILABLE (2026-06-12, org testmanagerdev /
+# TestManagerDevTenant). The first-party connector IS in the Maestro Flow node
+# manifest — but ONLY after refreshing it: `uip maestro flow registry pull`
+# ("Synced fresh nodes") then `uip maestro flow registry search uipath-uipath-testmanager`
+# returns 72 nodes, including:
+#   uipath.connector.uipath-uipath-testmanager.create-test-case   (+ create-requirement,
+#   create-test-set, list-records, get-assigned-test-cases-for-req, …)
+# IMPORTANT: a stale manifest returns 0 — the agent MUST run `registry pull` before
+# searching (the uipath-maestro-flow skill workflow already does). Same manifest
+# backs Maestro BPMN, so the connector is available there too.
+# Before flipping skip:false: the connector + an Enabled connection must exist in
+# the *CI eval tenant* (testmanagerdev is a dev tenant, not skills CI).
 task_id: skill-flow-testmanager-create-testcase
 description: >
   E2E (connector): agent uses the uipath-maestro-flow skill to build a Maestro
@@ -52,6 +51,14 @@ initial_prompt: |
   Do NOT pause between planning and implementation.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent refreshed the node manifest before searching (`uip maestro flow registry pull`) — avoids the stale-manifest trap where TM nodes return 0"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+registry\s+pull'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent discovered the connector node (`uip maestro flow registry search`/`get`)"
     tool_name: "Bash"
