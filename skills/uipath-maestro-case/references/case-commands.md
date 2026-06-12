@@ -122,6 +122,8 @@ uip maestro case pack <project-path> <output-path> --output json
 | `<output-path>` | **(required)** Output directory for the `.nupkg` |
 | `-n, --name <name>` | Package name (default: project folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
+| `--author <author>` | Package author (default: `UiPath`) |
+| `--description <text>` | Package description (default: `Created by UiPath`) |
 
 > **Not the deploy path.** `uip solution publish` accepts a solution `.zip`, not a project `.nupkg`, and `uip solution pack` already produces the project `.nupkg` internally. Phase 7 uses `uip solution pack` — see below.
 
