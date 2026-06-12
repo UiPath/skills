@@ -51,10 +51,19 @@ jobs:
           PLUGIN=".claude-plugin/plugin.json"
           MARKETPLACE=".claude-plugin/marketplace.json"
 
-          # Read current version from plugin.json
+          # Plugin version shares major.minor with package.json (the npm
+          # package / CLI line); the patch is an independent daily counter.
+          # When the package minor advances, the counter resets to 0.
+          # See docs/RELEASE.md.
+          PKG_LINE=$(jq -r '.version | split(".") | "\(.[0]).\(.[1])"' package.json)
           VERSION=$(jq -r '.version' "$PLUGIN")
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+
+          if [ "$MAJOR.$MINOR" = "$PKG_LINE" ]; then
+            NEW_VERSION="$PKG_LINE.$((PATCH + 1))"
+          else
+            NEW_VERSION="$PKG_LINE.0"
+          fi
 
           # Update plugin.json
           jq --arg v "$NEW_VERSION" '.version = $v' "$PLUGIN" > tmp.json && mv tmp.json "$PLUGIN"

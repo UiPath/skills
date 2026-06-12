@@ -5,16 +5,21 @@
  *
  * `package.json` `version` is authoritative. This script propagates it to:
  *
- *   - version-manifest.json   .skillsVersion + .targetCli
+ *   - version-manifest.json        .skillsVersion + .targetCli
+ *   - .claude-plugin/plugin.json   .version (major.minor only — see below)
+ *   - .claude-plugin/marketplace.json  .plugins[0].version (== plugin.json)
  *
  * `targetCli` is derived as the matching @uipath/cli minor line
  * (`^MAJOR.MINOR.0`). A skills release tracks the CLI minor line it ships
  * with, so a given CLI release resolves to a compatible skills package and
  * the two never mismatch.
  *
- * Note: `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
- * are deliberately NOT managed here yet — they stay on their own version
- * track (bumped by daily-version-bump.yml) until the alignment task lands.
+ * Plugin/marketplace versions share `major.minor` with package.json but the
+ * patch is an independent daily counter (bumped by daily-version-bump.yml to
+ * drive Claude Code plugin auto-update). Rule enforced here:
+ *   - plugin major.minor != package.json major.minor -> reset to `M.N.0`
+ *   - plugin major.minor == package.json major.minor -> patch left untouched
+ *   - marketplace .plugins[0].version must always equal plugin.json .version
  * See docs/RELEASE.md.
  *
  * Usage:
@@ -32,6 +37,8 @@ const CHECK = process.argv.includes("--check");
 const PATHS = {
   pkg: join(ROOT, "package.json"),
   manifest: join(ROOT, "version-manifest.json"),
+  plugin: join(ROOT, ".claude-plugin", "plugin.json"),
+  marketplace: join(ROOT, ".claude-plugin", "marketplace.json"),
 };
 
 function readJson(p) {
@@ -49,6 +56,12 @@ function cliLine(version) {
   return `^${major}.${minor}.0`;
 }
 
+/** `1.196.4` -> `1.196`. */
+function minorLine(version) {
+  const [major, minor] = version.split(".");
+  return `${major}.${minor}`;
+}
+
 const version = readJson(PATHS.pkg).version;
 const targetCli = cliLine(version);
 
@@ -64,6 +77,27 @@ if (manifest.skillsVersion !== version || manifest.targetCli !== targetCli) {
   manifest.skillsVersion = version;
   manifest.targetCli = targetCli;
   writes.push(() => writeJson(PATHS.manifest, manifest));
+}
+
+// .claude-plugin/plugin.json — shared major.minor, independent patch counter.
+const plugin = readJson(PATHS.plugin);
+let pluginVersion = plugin.version;
+if (minorLine(pluginVersion) !== minorLine(version)) {
+  const next = `${minorLine(version)}.0`;
+  drift.push(`.claude-plugin/plugin.json: ${pluginVersion} -> ${next}`);
+  pluginVersion = next;
+  plugin.version = next;
+  writes.push(() => writeJson(PATHS.plugin, plugin));
+}
+
+// .claude-plugin/marketplace.json — must equal plugin.json exactly.
+const marketplace = readJson(PATHS.marketplace);
+if (marketplace.plugins[0].version !== pluginVersion) {
+  drift.push(
+    `.claude-plugin/marketplace.json: ${marketplace.plugins[0].version} -> ${pluginVersion}`,
+  );
+  marketplace.plugins[0].version = pluginVersion;
+  writes.push(() => writeJson(PATHS.marketplace, marketplace));
 }
 
 if (CHECK) {
