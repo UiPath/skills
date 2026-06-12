@@ -33,6 +33,44 @@ Maestro exports commonly model trigger-bound values as `uipath:inputOutput`
 variables scoped with `elementId`. Prefer that shape for new runtime-oriented
 examples unless a value is only an entry input or only a process output.
 
+### Entry-point input lifecycle
+
+`uipath:input` entry-point input variables are read-only at runtime. Static
+validation accepts a downstream `=vars.<inputId>` reference because the variable
+id is declared, but the runtime engine treats entry-point inputs as immutable
+caller-supplied values and raises `Unknown identifier '<name>'` when downstream
+mappings, conditions, or scripts try to read them as if they were process state.
+
+To make an entry-point input usable downstream, declare a sibling
+`uipath:inputOutput` variable and mirror the entry input into it from a
+`BPMN.Variables` mapping on the start event. The downstream nodes then read the
+mutable variable, never the entry-point input directly.
+
+Minimal shell:
+
+```xml
+<bpmn:process id="Process_Demo" name="Demo" isExecutable="true">
+  <bpmn:extensionElements>
+    <uipath:variables version="v1">
+      <uipath:input id="Var_RequestId_In" name="requestId" type="string" elementId="Start_Manual" />
+      <uipath:inputOutput id="Var_RequestId" name="requestId" type="string" />
+    </uipath:variables>
+  </bpmn:extensionElements>
+  <bpmn:startEvent id="Start_Manual" name="Start">
+    <bpmn:extensionElements>
+      <uipath:entryPointId value="Entry_Demo" />
+      <uipath:mapping version="v1">
+        <uipath:output name="requestId" type="string" var="Var_RequestId" source="=vars.Var_RequestId_In" />
+      </uipath:mapping>
+    </bpmn:extensionElements>
+    <bpmn:outgoing>Flow_Start_To_Next</bpmn:outgoing>
+  </bpmn:startEvent>
+</bpmn:process>
+```
+
+After the start event runs, downstream nodes read `=vars.Var_RequestId` (the
+`uipath:inputOutput`), never `=vars.Var_RequestId_In` (the `uipath:input`).
+
 Subprocesses can carry scoped `uipath:variables` in subprocess extension elements. Do not silently move variables across scopes.
 
 Author variables in pass 2 after the BPMN skeleton and entry points are stable. If an entry point changes during pass 1, update every variable whose `elementId` points at the old start event.
@@ -112,8 +150,10 @@ Gateway conditions belong on outgoing sequence flows. Service skip conditions be
 
 Output mappings should target mutable variables: `uipath:inputOutput` or
 `uipath:output`. Do not write task outputs back to read-only `uipath:input`
-variables. If a caller-provided input must also become mutable state, model the
-entry value as a start-scoped `uipath:inputOutput`.
+variables. If a caller-provided input must also become mutable state, declare a
+separate `uipath:inputOutput` variable and map the entry input into it. See
+[Entry-point input lifecycle](#entry-point-input-lifecycle) for the start-event
+mirroring pattern.
 
 ## Script tasks
 
