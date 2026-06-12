@@ -35,6 +35,14 @@
       "file": "or-jobs-logs-7d2e5f3c-level-error-output-json.json"
     },
     {
+      "match": "or jobs logs \"7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d\" --output json",
+      "file": "or-jobs-logs-7d2e5f3c-output-json.json"
+    },
+    {
+      "match": "or jobs logs 7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d --output json",
+      "file": "or-jobs-logs-7d2e5f3c-output-json.json"
+    },
+    {
       "match": "or assets list --folder-key 5a8c4d3e-9f2b-4a6c-8e1f-2b3c4d5e6f7a --output json",
       "file": "or-assets-list-folder-key-5a8c4d3e-output-json.json"
     },
