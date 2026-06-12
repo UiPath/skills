@@ -155,6 +155,13 @@ High-level view of what each specialist owns. **Do not describe internal flows o
 | [Coded App Template](assets/templates/coded-app-sdd-template.md) | SDD template for Coded Apps (web) |
 | [API Workflow Template](assets/templates/api-workflow-sdd-template.md) | SDD template for API Workflows |
 
+### Scripts (Phase D)
+
+| Script | Purpose |
+|------|---------|
+| `scripts/docx-extract.sh` | .docx PDD → UTF-8 markdown + extracted screenshots (pandoc). Run at Phase D Step 1 when a Word PDD renders garbled — never drive Word via COM. |
+| `scripts/sdd-to-docx.sh` | Generated SDD markdown → styled .docx, optional corporate `--reference-doc`. Run at Phase D Step 2.5 only when the user asks for Word output. |
+
 ### Lanes A & B — Planning
 
 | File | Purpose |
