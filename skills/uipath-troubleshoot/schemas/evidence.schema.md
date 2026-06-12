@@ -59,6 +59,54 @@ Each evidence file:
 }
 ```
 
+## Signals (triage-initial.json only)
+
+`evidence/triage-initial.json` carries a top-level `signals` array. Signals are the structured inventory of discrete facts triage extracted from gathered data. They are the unified input to playbook matching, hypothesis generation, and hypothesis testing.
+
+```json
+{
+  "signals": [
+    {
+      "name": "exception_class",
+      "value": "System.NullReferenceException",
+      "category": "exception",
+      "source": "raw/triage-job-logs.json"
+    },
+    {
+      "name": "package_version",
+      "value": "UiPath.System.Activities 22.10.5",
+      "category": "package_version",
+      "source": "raw/triage-job-traces.json"
+    },
+    {
+      "name": "asset_exists",
+      "value": true,
+      "category": "entity_state",
+      "source": "raw/triage-resource-assets-list.json"
+    }
+  ]
+}
+```
+
+### Fields
+
+- `name` — short identifier for the signal (e.g., `exception_class`, `error_code`, `asset_exists`, `package_version`). Snake_case, descriptive.
+- `value` — observed value. String, number, or boolean. For boolean signals like `asset_exists`, `true` means "asset is present"; `false` means "asset is absent".
+- `category` — one of: `exception | error_code | http_status | activity_label | entity_state | package_version | runtime_type | error_fragment | cross_product_ref | folder_context`. Use the closest match; do not invent new categories without need.
+- `source` — relative path to the raw file the signal was extracted from. The signal MUST be traceable back to actual observed data.
+
+### Producers and consumers
+
+- **Triage** produces signals while executing plan data-fetch steps. Each fetched response is scanned for signal-worthy facts and entries are appended to `signals`. Triage step E (match playbooks) iterates this array, not the raw files.
+- **Hypothesis generator** reads `signals` to inform what hypotheses to draft. Each generated hypothesis records which signals supported it (see `schemas/hypotheses.schema.md` → `signals_supporting`).
+- **Hypothesis tester** reads `signals` BEFORE its test plan. For each `to_confirm` / `to_eliminate` item, the tester checks whether a signal already resolves it. If yes, the corresponding plan step is `status: skipped` with the signal name in `purpose` — no re-fetch.
+
+### Rules
+
+- One signal per discrete fact. Do NOT combine multiple facts into one signal (`exception_class_and_message` is two signals, not one).
+- Contradictory signals are not allowed. If two raw sources disagree, record both observations as separate signals with distinct `name`s and let the matcher / downstream agents resolve the conflict.
+- Signals are immutable once written. New evidence appends new signals; existing signals don't get rewritten.
+
 ## Rules
 
 - **Raw data MUST be written to `.local/investigations/raw/` immediately** — write the full response to a raw file BEFORE summarizing

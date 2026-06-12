@@ -183,39 +183,67 @@ Any rule matching `uip docsai ask ...` in `manifest.json` MUST be `passthrough: 
 
 ### `success_criteria`
 
-Every scenario MUST include exactly TWO required criteria:
+Every scenario MUST include exactly TWO criteria, and ONLY these two:
 
 1. **`skill_triggered`** — verify `uipath-troubleshoot` activated. Without this, the agent can fake an answer by reading fixture files directly and bypassing the skill entirely (we have seen this happen).
 2. **`llm_judge`** — grade whether the agent reached the correct conclusion against `RESOLUTION.md`.
 
-Do NOT add `file_exists` or `command_executed` criteria as standard practice — they encode one specific path through the investigation and turn legitimate alternative solutions into false failures.
+**Do NOT add any other criterion type.** Specifically forbidden across the whole troubleshoot suite:
 
-Concrete failure mode this rule prevents: an agent that reaches the correct root cause via `jobs logs` (skipping `jobs get`) is graded `FAILURE` solely because a `command_executed` rule required `jobs get d5fed611`. The conclusion was right; the path was different. Brittle.
+- ❌ `file_exists` — testing whether `.local/investigations/state.json` (or any internal file) was written grades bookkeeping, not the deliverable. `skill_triggered` already verifies the skill ran.
+- ❌ `file_contains` — grading the shape of `state.json` / `hypotheses.json` punishes correct skill behavior (multiple playbooks legitimately match; hypotheses legitimately stay `pending` after early-stop).
+- ❌ `command_executed` — encodes one investigation path; an agent reaching the right answer via a different (still valid) CLI route gets false-failed.
 
-#### Judge prompts grade on PRESENTATION, not internal state
+Concrete failure mode this rule prevents: an agent that reaches the correct root cause via `jobs logs` (skipping `jobs get`) is graded FAILURE solely because a `command_executed` rule required `jobs get d5fed611`. The conclusion was right; the path was different. Brittle.
 
-The `llm_judge` prompt MUST grade only:
+Anything task-specific the test needs to verify goes in `RESOLUTION.md`. The judge reads it via `include_reference` and compares.
 
-- The agent's **final response** to the user.
-- The agent's **conclusion vs. `RESOLUTION.md`** (correct root cause, fix, evidence-citation).
-- Optionally: whether the agent **avoided fabrication** (no invented assets/configs/policies).
+#### Judge configuration — single canonical shape for every task
 
-The judge MUST NOT grade on internal-state fields in `.local/investigations/`:
+Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prompt, the same flags, and the same description. Per-task customization lives in `RESOLUTION.md`, never in `task.yaml`.
 
-- ❌ Require a specific path in `state.json.matched_playbooks`.
-- ❌ Require `hypotheses.json` entries to carry a particular `status` (`eliminated`, `confirmed`) or `is_root_cause` value.
-- ❌ Require a specific `evidence_refs` or `evidence_summary` shape.
+**Canonical `llm_judge` block** (copy verbatim into every new scenario):
 
-Reason: `hypotheses.json` legitimately contains `pending` hypotheses after early-stop. The orchestrator stops testing as soon as a high-confidence root cause is confirmed (see `SKILL.md` "When to stop testing"); remaining hypotheses correctly stay `pending` so the user can choose to investigate them later. Grading on those internal fields punishes correct skill behavior.
+```yaml
+- type: llm_judge
+  description: "Agent's diagnosis matches RESOLUTION.md"
+  weight: 3.0
+  pass_threshold: 0.7
+  include_reference: true
+  include_agent_output: true
+  prompt: |
+    Grade the agent's final answer against the attached RESOLUTION.md.
 
-What the agent presents IS the contract. What it writes into `.local/investigations/` is bookkeeping for the next conversation, not a deliverable.
+    Score on whether the agent identifies the same root cause and
+    recommends the same fix as RESOLUTION.md:
 
-Permissible exceptions — add a non-required criterion ONLY when:
+      1.0  Same root cause AND same fix (or equivalent).
+      0.8  Same root cause; fix is right area but vague.
+      0.5  Adjacent cause, missing a key specific.
+      0.2  Wrong direction; recognized surface only.
+      0.0  Misdiagnosed or blocked.
 
-- **`file_exists`** — only when the scenario specifically tests artifact production (e.g., a deliverable file the skill is contracted to write). Do not use it to verify intermediate investigation state — the judge reads the agent's output directly.
-- **`command_executed`** — only when the scenario specifically tests that a particular dangerous/required action ran (e.g., a destructive cleanup that MUST be invoked). Never use it to enforce investigation paths.
+    Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+```
 
-Lean default for a new scenario:
+**What the judge sees** (both flags MUST be `true`):
+
+- `include_reference: true` — passes `RESOLUTION.md` (the file named under `reference:` at the task root)
+- `include_agent_output: true` — passes the agent's final user-facing response
+
+That is **all** the context the judge gets. The contract: agent's final answer vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
+
+**Forbidden on `llm_judge`:**
+
+- ❌ `files:` array (passing `state.json`, `hypotheses.json`, or any internal artifact). The judge grades presentation, not bookkeeping.
+- ❌ Custom prompt language per task — no `DIMENSION A / DIMENSION B`, no `SCORING RUBRIC` clauses citing specific playbook names, no "Evidence sources" enumerations referencing `matched_playbooks` / `is_root_cause` / etc.
+- ❌ Per-task hedging notes ("Be substance-focused", "multiple playbooks may match", etc.). The lean rubric already encodes this.
+
+**Why:** the skill's internal state (`state.json`, `hypotheses.json`) is bookkeeping for the next conversation, not a deliverable. Multiple playbooks may legitimately appear in `matched_playbooks`; hypotheses legitimately stay `pending` after early-stop (see SKILL.md "When to stop testing"). Grading on internal-state shape punishes correct skill behavior. What the agent **presents** is the contract.
+
+**Where task-specific guidance lives:** `RESOLUTION.md`. If the judge needs to know that a specific fix must name "AlterIfDisabled = True" or that "Test Heals pool" is wrong — that goes in `RESOLUTION.md` as the authoritative root cause + fix. The judge reads it via `include_reference` and grades against it.
+
+**Lean default for every new scenario:**
 
 ```yaml
 success_criteria:
@@ -226,18 +254,29 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent reached the same root cause as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      ...grading rubric tied to RESOLUTION.md...
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 ```
 
 ## Anti-patterns
 
+- **Do not** add `command_executed` criteria. The lean contract is `skill_triggered + llm_judge` only — no `command_executed`, no `file_exists`, no `file_contains`. Asserting a specific CLI command was run encodes one investigation path and false-fails agents that reach the correct conclusion via a different (still valid) route. If a test needs to verify a specific CLI fact, put the fact in `RESOLUTION.md` and let the judge grade it. See the `success_criteria` section above for the full forbidden list.
 - **Do not** hand-edit a generated scenario's `manifest.json` to "make tests pass." If the agent calls a command not in the manifest, that's a coverage gap — add a rule with the verbatim recorded response.
 - **Do not** include the original `.local/investigations/` outputs in the committed scenario. The fresh run produces its own.
 - **Do not** ship real email addresses, real personal Windows paths, or real machine hostnames. The scrub pass is mandatory.

@@ -19,6 +19,7 @@ agent:
       path: "$SKILLS_REPO_PATH"
 
 run_limits:
+  expected_turns: 300
   task_timeout: 2400
   max_turns: 60
   turn_timeout: 1800
@@ -50,161 +51,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the ambiguous-selector playbook AND reached the same conclusion as RESOLUTION.md AND did not recommend any anti-pattern fix"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "my last job from folder Shared failed"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      The originating fault is `NodeAmbiguousException` on NClick
-      "Click 'Airi Satou'" inside NApplicationCard "Edge DataTables
-      Javascript table library" in Amb.xaml (process ERN, job
-      79e6d2c6-ab69-4e32-a831-d80f2f6036b6). The friendly message is the
-      static resource string `Strings.NodeNotFoundMultipleMatches`:
-      "Multiple similar matches found. Could not uniquely identify the
-      user-interface element for this action. Edit the element, run
-      Validation, and add anchors in order to ensure the element is
-      uniquely identified." The click never dispatched — `TargetCommonLogic.GetSearchResultAsync`
-      / `NClick.SearchAndSetTargetAsync` short-circuited when the
-      FuzzySelectorArgument `<webctrl id='example' matching:id='fuzzy'
-      fuzzylevel:id='0.0' tag='TABLE' /><webctrl tag='TD' />` matched
-      every TD cell in the DataTables demo grid on https://datatables.net/.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      Per the ambiguous-selector.md playbook decision tree:
-        - Branch (A) Selector relies only on generic attributes —
-          ELIMINATED: outer table segment has `id='example'`, a specific
-          attribute.
-        - Branch (B) Repeated UI pattern (table rows / card grid / list
-          items) without anchor/idx — APPLIES. The DataTables grid renders
-          many `<td>` cells; the inner `<webctrl tag='TD' />` segment
-          matches every one.
-        - Branch (C) Multiple windows / tabs of the same app open —
-          ELIMINATED: `NApplicationCard.TargetApp.Url=https://datatables.net/`
-          and the card binds to one specific Edge window
-          (`AttachMode='ByInstance'`).
-        - Branches (D), (E), (F) — N/A; branch (B) already matched.
-
-      You must grade THREE dimensions in a single score:
-
-      DIMENSION A -- Correct playbook + actual CLI work
-        The agent must match the UI-automation ambiguous-selector
-        playbook (ambiguous-selector.md). It is acceptable for the
-        agent to also Read neighboring playbooks (the selector-failure-*
-        family, timeout-issue, no-recovery-data) during exploration,
-        but the conclusion must rest on ambiguous-selector.md.
-
-        Matching one of the selector-failure-*.md playbooks instead of
-        ambiguous-selector.md is INCORRECT. Those playbooks target
-        `NodeNotFoundException` / `SelectorNotFoundException` — the
-        zero-match cases. `NodeAmbiguousException` is the multiple-match
-        case and has its own playbook.
-
-        Independently, the agent's tool-call history must show real
-        Orchestrator interrogation via the uip CLI — at minimum
-        `uip or jobs get <key>` on the faulted job, plus an inspection
-        of the workflow source (read Amb.xaml or equivalent). If the
-        agent reached a conclusion without invoking uip on the faulted
-        job AND without reading the workflow XAML, the playbook
-        dimension is failed regardless of which playbook was named.
-
-      DIMENSION B -- Correct fix per playbook branch (B)
-        The reference fix names ALL of:
-          (a) The exception is `NodeAmbiguousException` on NClick
-              "Click 'Airi Satou'" in Amb.xaml — the agent must name
-              both the activity and the ambiguous-selector failure mode
-              (the selector matched MORE than one element, not zero).
-          (b) Branch (B) — the failure happens against a repeated UI
-              pattern (DataTables grid rows / cells). The authored
-              FuzzySelectorArgument's outer segment specifically
-              identifies the table (`id='example'`) but the inner
-              `<webctrl tag='TD' />` segment matches every TD cell in
-              the table. Branch (A) is correctly eliminated because the
-              outer segment carries a specific attribute.
-          (c) Primary fix: narrow the selector to one specific cell.
-              Acceptable phrasings:
-                - Add a row anchor (Find Anchor, Object Repository
-                  anchor) keyed to a stable neighbor in the same row.
-                - Add `aaname='Airi Satou'` (or `innertext='Airi Satou'`)
-                  to the inner `<webctrl tag='TD' />` segment so the
-                  selector encodes the row value.
-                - Add `idx='N'` only if explicitly noted as fragile /
-                  position-stable case.
-              Any one of these is acceptable as the primary fix.
-          (d) The agent eliminates at least one other branch — most
-              commonly branch (A) (selector is not generically-only
-              because outer segment has `id='example'`) or branch (C)
-              (single window, not multiple).
-
-      DIMENSION C -- Mandatory anti-recommendations
-        The agent's presented resolution MUST NOT recommend any of the
-        following, in any phrasing:
-          - "Increase the activity Timeout" / "raise the Timeout" /
-            "give the find service more time" as a fix. The find
-            service decided as soon as >1 match was detected; activity
-            Timeout is irrelevant.
-          - "Switch InteractionMode" (Simulate → Hardware Events,
-            ChromiumAPI, WindowMessages, etc.) as a fix. Input mode
-            applies after the target is found, which never happened.
-          - "Enable Healing Agent" / "turn on HA" / "change
-            HealingAgentBehavior" as a fix. HA explicitly bypasses
-            `NodeAmbiguousException` (`FindAlternativeOriginalTargetHiddenStrategy`
-            short-circuits). The agent may correctly NOTE that HA is
-            bypassed for this exception, but must not recommend turning
-            it on as the fix.
-          - "Wrap the activity in a Retry Scope" as a fix. The ambiguity
-            is structural, not transient.
-          - "Wrap in try / catch and continue" / "swallow the exception"
-            as a fix. The click never happened; downstream workflow
-            state is invalid.
-          - Treating the fault as a `NodeNotFoundException` /
-            `SelectorNotFoundException` selector-failure case and
-            recommending the `selector-failure-*.md` playbooks'
-            remediations (apply Healing Agent recovery from
-            `healing-fixes.json`, restart with HA enabled, etc.). The
-            selector matched MORE than one element, not zero.
-
-        Any of the above as a primary or fallback fix fails Dimension C.
-        Mentioning them as "do NOT do this" anti-patterns is acceptable
-        and in fact desirable.
-
-      SCORING RUBRIC (single score reflecting all three dimensions):
-
-        1.0  All dimensions clean: matched ambiguous-selector.md,
-             named (a)+(b)+(c)+(d), and the resolution does not
-             recommend any of the Dimension C anti-patterns.
-        0.8  Matched playbook, named (a)+(b)+(c), and Dimension C is
-             clean.
-        0.5  Matched playbook and identified the ambiguous-selector
-             failure, but recommended `idx='1'` blindly as the primary
-             fix (the playbook explicitly calls this out as an
-             anti-pattern outside the position-stable case), OR
-             omitted the branch (B) reasoning. Dimension C must still
-             be clean.
-        0.2  Matched the playbook but recommended a wrong primary fix
-             (e.g., increase timeout, change input mode, treat as a
-             selector-not-found case), OR matched a selector-failure-*
-             playbook instead of ambiguous-selector.md.
-        0.0  Recommended enabling Healing Agent as the primary fix in
-             ANY form (HA explicitly bypasses this exception — this is
-             a hard fail).
-        0.0  Misdiagnosed entirely (e.g., blamed verify-execution
-             failure, disabled element, Orchestrator infrastructure)
-             or got blocked.
-
-      Be substance-focused, not schema-focused. Intermediate file shapes
-      may vary between runs — look at the meaning of what the agent
-      presented to the user. Grade on the agent's final response and
-      the diagnosis it presents, NOT on the contents of
-      `.local/investigations/state.json` or `hypotheses.json`.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering playbook match, fix recommendation, and Dimension C compliance>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 # Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
 # end-to-end without a human. The simulator always picks the recommended /

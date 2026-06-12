@@ -37,9 +37,9 @@ on:
         type: string
         default: main
       cli_version:
-        description: '@uipath/cli version.'
+        description: '@uipath/cli version. Default pinned to the last 1.2.0 build — the 1.196 alphas (re-versioned 2026-06-04) broke the `or` alias and changed `jobs get` flags.'
         type: string
-        default: alpha
+        default: 1.2.0-alpha.20260603.7393
 
 concurrency:
   group: run-coder-eval-${{ github.ref }}
@@ -333,6 +333,10 @@ jobs:
           //npm.pkg.github.com/:_authToken=${NPM_AUTH_TOKEN}
           EOF
           NPM_CONFIG_USERCONFIG="$tmp_npmrc" npm install -g "@uipath/cli@${CLI_VERSION}"
+          # Pin orchestrator-tool to the same build while the GH-feed auth is
+          # still in scope — on-demand auto-install at eval time would pull the
+          # newest alpha (1.196 line), which broke the `or` alias.
+          NPM_CONFIG_USERCONFIG="$tmp_npmrc" uip tools install "@uipath/orchestrator-tool@${CLI_VERSION}"
           rm -f "$tmp_npmrc"
           uip --version
 
