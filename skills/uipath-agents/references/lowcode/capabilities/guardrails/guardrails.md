@@ -14,7 +14,7 @@ Two types exist:
 
 **Status: Tool-scoped only, per-tool resource files are authoritative.** Conversational agents support guardrails with `selector.scopes: ["Tool"]` only — `"Agent"` and `"Llm"` scopes are not honored by the conversational runtime, even though `uip agent validate` accepts them.
 
-This restriction is enforced as [../../critical-rules.md](../../critical-rules.md) Rule 26.
+This restriction is enforced as [../../critical-rules.md](../../critical-rules.md) Rule 23.
 
 ## Guardrail Schema (Base Fields)
 
@@ -100,7 +100,7 @@ Each entry in the `Data` array contains:
 
 Do not hardcode assumptions about scope/stage support or availability.
 
-> **Conversational override (Rule 26).** `AllowedScopes` describes what the validator's schema accepts — it is **not** the set of scopes valid for the runtime you're targeting. For conversational agents (`metadata.isConversational: true` / `settings.engine: "conversational-v1"`), **intersect `AllowedScopes` with `["Tool"]`** before writing `selector.scopes`. If the validator does not list `"Tool"` in `AllowedScopes`, it cannot be used in a conversational agent — do not substitute `"Agent"` or `"Llm"` as a workaround; the conversational runtime ignores those scopes silently.
+> **Conversational override (Rule 23).** `AllowedScopes` describes what the validator's schema accepts — it is **not** the set of scopes valid for the runtime you're targeting. For conversational agents (`metadata.isConversational: true` / `settings.engine: "conversational-v1"`), **intersect `AllowedScopes` with `["Tool"]`** before writing `selector.scopes`. If the validator does not list `"Tool"` in `AllowedScopes`, it cannot be used in a conversational agent — do not substitute `"Agent"` or `"Llm"` as a workaround; the conversational runtime ignores those scopes silently.
 
 ## Actions
 
@@ -578,7 +578,7 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 
 ### Validators Quick Reference
 
-> **For conversational agents (Rule 26): use `"Tool"` only — ignore the `Agent` and `Llm` entries below.** The Scopes column is the validator's schema-level support, not the conversational runtime's support. Conversational runtime silently ignores `Agent` and `Llm` scopes.
+> **For conversational agents (Rule 23): use `"Tool"` only — ignore the `Agent` and `Llm` entries below.** The Scopes column is the validator's schema-level support, not the conversational runtime's support. Conversational runtime silently ignores `Agent` and `Llm` scopes.
 
 | Validator | Scopes (autonomous) | Conversational | Stages | Supported Actions |
 |-----------|---------------------|----------------|--------|-------------------|
@@ -595,7 +595,7 @@ Run `uip agent guardrails list --output json` to get the authoritative list. Onl
 |-----------|---------|
 | `Status` | Gate check — only proceed if `"Available"` |
 | `Validator` | `validatorType` value |
-| `AllowedScopes` | Valid values for `selector.scopes` (autonomous). **Conversational: intersect with `["Tool"]`** — see Rule 26. |
+| `AllowedScopes` | Valid values for `selector.scopes` (autonomous). **Conversational: intersect with `["Tool"]`** — see Rule 23. |
 | `GuardrailStages[scope]` | Valid execution stages for that scope |
 | `Parameters[].Id` | `validatorParameters[].id` |
 | `Parameters[].Type` | `validatorParameters[].$parameterType` |

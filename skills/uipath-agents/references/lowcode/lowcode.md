@@ -2,25 +2,6 @@
 
 Entry point for low-code agent work. Read this first after low-code mode is detected.
 
-## Flavor: Autonomous and Conversational
-
-UiPath low-code agents come in **two flavors**. Both share this skill — capabilities, lifecycle, validation, packaging, and evaluations all apply to either flavor.
-
-| Signal | Flavor |
-|---|---|
-| User wants multi-turn chat / chatbot / streaming UI / WebSocket | **Conversational** |
-| Existing `agent.json` has `metadata.isConversational: true` | **Conversational** |
-| User wants single-turn (input → output → done), batch, or scheduled invocation | **Autonomous** |
-| `agent.json` has `metadata.isConversational: false` or unset | **Autonomous** |
-| Ambiguous | Ask the user |
-
-The differences between flavors are localized — they do **not** live in a separate subdirectory. Look here:
-
-- **Schema deltas** — [agent-definition.md § Conversational Variant](agent-definition.md#conversational-variant) covers the 7-field Init Defaults to Fix table, PROD canonical shape, and settings defaults (different model + maxTokens).
-- **Critical Rules** — [critical-rules.md](critical-rules.md) rules 22-26 apply only when `isConversational: true`.
-- **Per-capability support** — each capability file (`capabilities/*`) has a § Conversational Support subsection noting Supported / Likely / Open / restrictions.
-- **Deployment** — [project-lifecycle.md § Conversational Deployment Notes](project-lifecycle.md#conversational-deployment-notes) covers External Application setup with the `ConversationalAgents` OAuth scope and frontend client handoff.
-
 ## When to Use
 
 - Create a new low-code agent project (standalone or inline in a flow)
@@ -31,6 +12,27 @@ The differences between flavors are localized — they do **not** live in a sepa
 - Design input/output schemas and sync with `entry-points.json`
 - Validate agent project structure
 - Publish agent to Studio Web, pack and deploy to Orchestrator
+
+## Autonomous and Conversational Variant
+
+UiPath low-code agents come in **two variants**, both sharing this skill.
+
+1. Autonomous agents are intended for any general use-cases involving execution from input → output.
+   
+2. Conversational agents are intended for use-cases involving multi-turn conversations / fast latency with real-time user-interaction / streamed responses. 
+
+After deployment, conversational agents are interacted with through the UiPath Conversational Service - which manages conversation-history and exposes a CLI/SDK for client UIs to interact with the service. Low-code conversational agents run for each conversational exchange; the agent is initiated by the Conversational Service upon exchange-start, performs its loop of messages and tool-calls while streaming events, then ends after its turn.
+
+In summary:
+| Signal | Variant |
+|---|---|
+| User wants general input → output execution | **Autonomous** |
+| `agent.json` has `metadata.isConversational: false` or unset | **Autonomous** |
+| User wants multi-turn chat / fast latency with real-time user-interaction / streamed responses | **Conversational** |
+| Existing `agent.json` has `metadata.isConversational: true` | **Conversational** |
+| Ambiguous | Ask the user |
+
+Although most of the lifecycle and capabilities are shared between both autonomous and conversational agents, some files will have distinguishing differences between the two (for example, mark that certain features do not apply for conversational agents). You can assume that when not labeled otherwise, content from files would apply to both variants.
 
 ## Critical Rules
 

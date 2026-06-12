@@ -1,6 +1,6 @@
 task_id: skill-agent-conversational-guardrail-agent-scope-rejected
 description: >
-  Negative integration test for Critical Rule 26 (conversational agents
+  Negative integration test for Critical Rule 23 (conversational agents
   support only Tool-scoped guardrails). The prompt asks for a PII
   detection guardrail at the agent level — which is the autonomous
   pattern but forbidden for conversational because the runtime silently
@@ -86,7 +86,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No guardrail uses Agent or Llm scope in agent.json root or per-tool resource.json (Rule 26)"
+    description: "No guardrail uses Agent or Llm scope in agent.json root or per-tool resource.json (Rule 23)"
     command: "python3 $TASK_DIR/check_conversational_guardrail_scope.py"
     timeout: 30
     expected_exit_code: 0
