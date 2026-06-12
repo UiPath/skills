@@ -67,6 +67,8 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
 | `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
+| `--author <author>` | Set the package author | `UiPath` |
+| `--description <text>` | Set the package description | `Created by UiPath` |
 
 The output is a `.zip` file named `<name>_<version>.zip` — **underscore between name and version, not a dot** — written under `<output-path>/` (e.g., `MySolution_2.0.0.zip`). Don't guess the filename: read it from the command's `Data.Packages` field, or list `<output-path>/`. Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
