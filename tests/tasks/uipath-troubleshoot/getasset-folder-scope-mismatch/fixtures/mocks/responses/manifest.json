@@ -55,11 +55,11 @@
       "file": "or-assets-list-folder-key-6d8c5e3f-output-json.json"
     },
     {
-      "match": "resource assets list --folder-path Remote Debugging",
+      "match": "or assets list --folder-path Remote Debugging",
       "file": "or-assets-list-folder-key-6d8c5e3f-output-json.json"
     },
     {
-      "match": "resource assets list --folder-path \"Remote Debugging\"",
+      "match": "or assets list --folder-path \"Remote Debugging\"",
       "file": "or-assets-list-folder-key-6d8c5e3f-output-json.json"
     },
     {
