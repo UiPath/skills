@@ -1,0 +1,61 @@
+task_id: skill-api-workflow-edit-add-activity
+description: >
+  Skill-guided e2e brown-field edit: agent builds a small workflow, then
+  modifies the existing file to add a second computed field — without breaking
+  key-uniqueness or the export chain. Tests whether the skill teaches editing
+  an existing Workflow.json (read first, insert at the right point, keep keys
+  globally unique) rather than only greenfield authoring.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, shape:multi-node]
+
+initial_prompt: |
+  Work against a single file Workflow.json, in two steps.
+
+  Step 1 — Create Workflow.json that takes a `name` input and returns
+  { "greeting": "hello <name>" }.
+
+  Step 2 — EDIT that same file (read it first, then insert the new activity —
+  do not rewrite from scratch) so it ALSO takes an `items` array input, computes
+  `count` = the number of items, and returns
+  { "greeting": "hello <name>", "count": <count> }.
+
+  For input {name:"ada", items:[1,2,3]} the result should contain "hello ada"
+  and count 3. Validate and run it to confirm both fields are present; it must
+  survive a StudioWeb designer roundtrip.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final workflow returns the original greeting field"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"ada","items":[1,2,3]}'' --output json | grep -q ''hello ada'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final workflow also returns the added count field with value 3"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"name":"ada","items":[1,2,3]}'' --output json | grep -qiE ''"count"[ :]+3'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40

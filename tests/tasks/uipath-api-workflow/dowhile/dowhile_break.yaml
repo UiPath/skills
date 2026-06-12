@@ -1,0 +1,63 @@
+task_id: skill-api-workflow-dowhile-break
+description: >
+  Skill-guided evaluation: agent authors a DoWhile loop with a conditional
+  Break that counts up to a target. Tests whether the skill teaches the DoWhile
+  shape (rule 9 — for.in is always "${ [1] }", body must update the condition),
+  the Break value as the string "true" wrapped in an If (rule 12), and exiting
+  the innermost loop.
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node, node:loop]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Takes a `stopAt` integer input
+  - Uses a DoWhile loop that increments a counter from 0 and Breaks once it
+    reaches `stopAt`
+  - Returns { "final": <counter> }  (e.g. stopAt 3 → 3, stopAt 6 → 6)
+
+  Validate and run it locally to confirm it works; it must survive a StudioWeb
+  designer roundtrip.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Uses a DoWhile loop and a Break with string \"true\" (rules 9, 12)"
+    path: "Workflow.json"
+    includes:
+      - "DoWhile"
+      - '"break": "true"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts to 3 (stopAt=3)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"stopAt":3}'' --output json | grep -qiE ''"final"[ :]+3'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Counts to 6 (proves the Break tracks the input, not a constant)"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --input-arguments ''{"stopAt":6}'' --output json | grep -qiE ''"final"[ :]+6'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 11
+  max_turns: 35

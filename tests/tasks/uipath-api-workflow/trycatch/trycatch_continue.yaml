@@ -1,0 +1,53 @@
+task_id: skill-api-workflow-trycatch-continue
+description: >
+  Skill-guided evaluation: agent wraps a failing JavaScript activity in a
+  TryCatch and returns a handled fallback instead of crashing. Tests whether
+  the skill teaches TryCatch structure and the $-prefixed catch error variable
+  (rule 11 — $error is a ProblemDetails object).
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+initial_prompt: |
+  Make a UiPath API Workflow JSON file at Workflow.json that:
+  - Runs a JavaScript activity that deliberately throws an error
+  - Catches it with a TryCatch
+  - From the catch branch, returns { "status": "handled" }
+
+  The run must succeed (the error is caught, not fatal). Validate and run it
+  locally to confirm; it must survive a StudioWeb designer roundtrip.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
+
+success_criteria:
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Workflow.json is valid JSON"
+    command: "python -c \"import json; json.load(open('Workflow.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Uses a TryCatch with a catch error variable"
+    path: "Workflow.json"
+    includes:
+      - "TryCatch"
+      - "catch"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caught error yields a handled response, run succeeds"
+    command: 'uip api-workflow run ./Workflow.json --no-auth --output json | grep -q ''handled'''
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
