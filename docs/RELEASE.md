@@ -57,6 +57,37 @@ Both tracks are **manually triggered** — there is no auto-publish on push to `
 | `publish-alpha` | GitHub Packages (`npm.pkg.github.com`) | built-in `GITHUB_TOKEN` |
 | `publish-release` | npmjs (`registry.npmjs.org`) | **OIDC trusted publishing** (no token) + signed `--provenance` |
 
+## Marketplace channel (`release/latest`)
+
+The Claude Code marketplace tracks the **latest release branch**, not `main`. Release branches are named per sprint (`release/v1.195` → `release/v1.196`), and a marketplace `ref` is a fixed string — so the marketplace points permanently at the stable ref **`release/latest`**, which always equals the HEAD of the newest `release/v<minor>` branch.
+
+Who moves what:
+
+| Ref | Moved by | How |
+|-----|----------|-----|
+| `release/v<minor>` | `daily-version-bump.yml` | daily plugin-version bump commit (skipped when nothing landed since the last bump) |
+| `release/latest` | `daily-version-bump.yml` | fast-forward to the same commit |
+| `release/latest` | sprint release cut (Sunday automation) | **forced ref update** to the new `release/v<minor>` (the new branch does not contain the old line's daily-bump commits; `release/latest` is a pointer, never a base for work) |
+
+`main` gets **no daily plugin bumps** — its plugin version is pinned at `M.N.0` per sprint. Plugin auto-update fires off the `version` field on the tracked ref, so daily bumps land only on the release line. Plugin version monotonicity holds across the sprint handoff (`1.197.0 > 1.196.k`).
+
+Manual marketplace add (when not using `uip skills install`) must pin the ref:
+
+```text
+/plugin marketplace add UiPath/skills@release/latest
+```
+
+> **Warning:** installs added as bare `UiPath/skills` track `main` and will never see a version bump again — they silently freeze. Re-add with `@release/latest`.
+
+### One-time setup for a new line (or first rollout)
+
+```bash
+git push origin main:refs/heads/release/v<minor>
+git push origin main:refs/heads/release/latest
+```
+
+Branch-protection requirements (repo settings): `release/v*` and `release/latest` must allow direct push by the Actions identity, and `release/latest` must additionally allow **force push** (for the sprint handoff).
+
 ## Cutting a stable release
 
 1. Bump `package.json` to the target version (match the CLI minor line), run `npm run version:sync`, merge.
