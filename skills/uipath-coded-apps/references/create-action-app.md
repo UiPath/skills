@@ -312,7 +312,7 @@ Collect these initial values into a `const defaultFormData: FormData = { ... }` 
 
 **Imports:**
 - Without SDK services: `import { codedActionAppService } from '../uipath';`
-- With SDK services: `import { codedActionAppService, <serviceInstance> } from '../uipath';` (add the named service exports the component uses, e.g. `entities`, `bucketService`)
+- With SDK services: `import { codedActionAppService, <serviceInstance> } from '../uipath';` (add the named service exports the component uses, e.g. `entities`, `buckets`)
 - Always: `import { Theme } from '@uipath/coded-action-app';` (`MessageSeverity` is also exported from this package)
 
 **Service accessor:** call `codedActionAppService.getTask()`, `.completeTask()`, `.setTaskData()`, `.showMessage()` directly. Call any SDK services via their named imports (e.g. `bucketService.getAll(...)`).
@@ -422,11 +422,6 @@ Copy `src/components/DocumentTab.tsx` and `src/components/DocumentTab.css` **ver
 
 If the app uses SDK services, confirm `uipath.json` exists at the project root with `scope` and `clientId` populated before packing — the `uip codedapp` CLI reads it during pack.
 
-```bash
-npm run build
-uip codedapp pack dist -n <app-name> -v 1.0.0
-uip codedapp publish -t Action        # -t Action is required
-uip codedapp deploy
-```
+Full pack/publish/deploy pipeline, options, folder-key resolution, and troubleshooting live in **[pack-publish-deploy.md](pack-publish-deploy.md)**. Follow it for deployment — with one mandatory override below.
 
-See [pack-publish-deploy.md](pack-publish-deploy.md) for full deployment options.
+> **Critical — always publish action apps with `--type Action`.** `uip codedapp publish` defaults to `--type Web`. An action app published without `--type Action` registers as a Web app and will **not** bind to Action Center tasks. Pass `--type Action` on **every** publish of this app — first deploy and every version update. Never omit it, never rely on the default.
