@@ -20,30 +20,17 @@ sandbox:
       path: fixtures
 
 initial_prompt: |
-  Hand-author (do NOT scaffold via the CLI) a UiPath coded Python
-  agent at `./slack-notifier/` that posts a Slack message via
-  Integration Service. Operation: Slack's curated `send_message_to_channel_v2`.
+  I want a UiPath coded Python agent at `./slack-notifier/` that posts a
+  message to a Slack channel through Integration Service. It takes a
+  `channel` and a `message` and returns `ok` (bool). Use the Slack
+  `send_message_to_channel_v2` operation, and bind it to our Slack
+  connection under the key `slack-notifier`.
 
-  Use the `uipath-agents` skill and its coded Integration Service
-  capability doc to determine what artifacts to write and what shape
-  they need to take. Follow the doc's mandatory discovery step (read the
-  platform `agent-workflow.md` reference) even though discovery's live
-  `uip is resources describe` call is pre-recorded for you here.
-
-  The describe output for this operation is provided at
-  `./slack_send_message_describe.json` (staged in your cwd). Treat it as
-  the live `uip is resources describe --output json` result and map it to
-  your `ActivityMetadata` literal per the capability doc's mapping table.
-  Do NOT invent field names from worked examples; derive them from the
-  provided describe JSON.
-
-  No live tenant: do not run `uip codedagent init` / `run`. For the
-  required `__uipath/uipath.json` resourceOverwrite, use placeholder values
-  per the capability doc's local-run binding recipe (a real run would source
-  them from `uip is connections list`).
-
-  Agent input: `channel` (str), `message` (str). Output: `ok` (bool).
-  Bind to the connection under the key `slack-notifier`.
+  I don't have a live tenant here, so don't run the agent — just build it
+  so it's ready to run. To save you a round-trip, I've staged a sample of
+  what that connector operation's `describe` output looks like at
+  `./slack_send_message_describe.json`; use that to get the operation's
+  fields right rather than guessing them.
 
   Do NOT pause between planning and implementation. Do NOT ask for
   approval. Complete in a single pass.
