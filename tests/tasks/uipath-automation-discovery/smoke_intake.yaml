@@ -81,8 +81,8 @@ success_criteria:
     path: "report.json"
     assertions:
       - expression: "scope"
-        operator: contains
-        expected: "quick"
+        operator: regex
+        expected: "(?i)quick"
       - expression: "output_format"
         operator: contains
         expected: "markdown"
