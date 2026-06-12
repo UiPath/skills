@@ -87,7 +87,7 @@ Full table in the package README. Inside a coded app you usually only touch:
 | `data` | Yes | `ContentValidationData` — for action apps, this comes from the task payload. For web apps, fetch and pass yourself. |
 | `folderId` | No | Falls back to `data.FolderId`. Pass explicitly if the data payload omits it. |
 | `theme` | No | `'light' \| 'dark' \| 'light-hc' \| 'dark-hc'`. Keep in sync with body class. |
-| `language` | No | `Language` enum re-exported from the package. |
+| `language` | No | `ValidationStationLanguage` enum exported from the package (e.g. `English`, `German`, `Japanese`, `ChineseSimplified`). |
 | `isReadonly` | No | `true` to render in read-only mode (e.g., audit view). |
 | `enableSaveAsDraft` | No | Adds a "Save as draft" action. |
 | `save` | No | Controlled trigger: `{ validate: true }` to validate before saving. Set from a button. |
@@ -104,7 +104,7 @@ Validation Station as the form inside an Action Center DU validation task. Repla
 import { useState, useEffect, useCallback } from 'react';
 import {
   ValidationStation,
-  Language,
+  ValidationStationLanguage,
   type SaveValidatedDataResult,
 } from '@uipath/ui-widgets-validation-station';
 import { Theme } from '@uipath/coded-action-app';
@@ -156,7 +156,7 @@ function Form({ onInitTheme }: FormProps) {
         data={data}
         folderId={folderId}
         theme={theme}
-        language={Language.English}
+        language={ValidationStationLanguage.English}
         isReadonly={isReadonly}
         save={save}
         onSaveComplete={handleSaveComplete}
@@ -204,7 +204,7 @@ Same widget, sdk comes from `useAuth()`. Typical flow: list `TaskType.DocumentVa
 import { useEffect, useMemo, useState } from 'react';
 import {
   ValidationStation,
-  Language,
+  ValidationStationLanguage,
   type SaveValidatedDataResult,
 } from '@uipath/ui-widgets-validation-station';
 import { Tasks, TaskType } from '@uipath/uipath-typescript/tasks';
@@ -237,7 +237,7 @@ function ValidatePage({ taskId, folderId }: { taskId: number; folderId: number }
       data={selectedTask.data}
       folderId={selectedTask.folderId}
       theme="light"
-      language={Language.English}
+      language={ValidationStationLanguage.English}
       onSaveComplete={handleSaveComplete}
     />
   );
@@ -263,7 +263,6 @@ useEffect(() => {
 ## Anti-patterns
 
 - **Do not skip the `du-assets/` copy step.** PDF rendering and translations 404 silently in prod; "works on my machine" because dev serves from `node_modules`.
-- **Do not `npm install playwright` or pre-bundle the WC.** `optimizeDeps.exclude` is mandatory.
 - **Do not construct a second `UiPath` SDK** for the widget. Reuse the app's authenticated instance.
 - **Do not call `setTaskData` and try to drive a custom form alongside the widget.** The widget owns the data contract end-to-end; mixing produces stale state and double saves.
 - **Do not pass a `tasks.getAll()` row straight into the widget.** `getAll()` rows omit `data` — the viewer renders empty. Hydrate with `tasks.getById(id, undefined, folderId)` first.
