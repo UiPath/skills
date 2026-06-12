@@ -32,6 +32,14 @@ defaults:
   # bun startup + helm chart bootstrap + auth handshake off the agent's
   # first turn budget.
   pre_run:
+    # Step 1 — Auth heartbeat. Fast (<1s), definitive signal that the host's
+    # ~/.uipath/.auth refresh token is fresh. fail_on_error: true so the
+    # experiment dies cleanly with a clear message on stale auth instead of
+    # burning a 30-min cold-install on a confused agent run.
+    - command: 'uip login status --output json'
+      timeout: 30
+      fail_on_error: true
+    # Step 2 — Helm warmup (see comment block in earlier commit for rationale).
     - command: 'cmd /c "mkdir df-warmup 2>nul & bun C:\Users\suphalathlur\Studio\RpaTool\rpa-tool\src\index.ts install-data-fabric-entities --add SystemUser --project-dir df-warmup --format json"'
       timeout: 300
       fail_on_error: false
