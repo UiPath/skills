@@ -4,13 +4,25 @@ The whole skills repo is published as an npm package, **`@uipath/skills`**, vers
 
 ## Version model
 
-`package.json` `version` is the **single source of truth** for the npm package. `scripts/sync-version.mjs` derives this manifest from it (do not edit by hand):
+`package.json` `version` is the **single source of truth** for the npm package. `scripts/sync-version.mjs` derives these manifests from it (do not edit by hand):
 
 | File | Field | Purpose |
 |------|-------|---------|
 | `version-manifest.json` | `skillsVersion`, `targetCli` | CLI↔skills pairing record |
+| `.claude-plugin/plugin.json` | `version` | Claude Code plugin version (shared `major.minor`, independent patch) |
+| `.claude-plugin/marketplace.json` | `plugins[0].version` | Always equals `plugin.json` `version` |
 
-> **Not yet unified:** `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` stay on their own version track (bumped daily by `daily-version-bump.yml`) until the alignment task lands. Unifying them under this scheme is tracked separately — see the linked Jira task in PR #1283.
+### One `major.minor`, three patch counters
+
+All channels share `major.minor` (the CLI-compatibility signal); the **patch diverges deliberately per channel**:
+
+| Channel | Version | Patch cadence |
+|---------|---------|---------------|
+| npm `latest` | `M.N.<release>` | per stable release — what the CLI pins |
+| npm `alpha` | `M.N.<release>-alpha.<date>.<run>` | per alpha dispatch |
+| plugin / `marketplace.json` | `M.N.<daily-counter>` | daily (`daily-version-bump.yml`) — drives Claude Code plugin auto-update |
+
+`sync-version.mjs` enforces the shared line: if the plugin `major.minor` differs from `package.json`, it resets the plugin/marketplace version to `M.N.0`; if they match, the daily counter is left untouched. The marketplace version must always equal the plugin version exactly. `--check` fails on any violation, so a hand-bumped plugin manifest cannot drift the line.
 
 Run after any version change:
 
