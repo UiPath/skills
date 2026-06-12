@@ -9,6 +9,7 @@ tags: [activation, classification]
 
 dataset:
   paths:
+    - uipath-admin.jsonl
     - uipath-agents.jsonl
     - uipath-coded-apps.jsonl
     - uipath-data-fabric.jsonl
@@ -16,6 +17,7 @@ dataset:
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
     - uipath-human-in-the-loop.jsonl
+    - uipath-ixp.jsonl
     - uipath-maestro-bpmn.jsonl
     - uipath-maestro-case.jsonl
     - uipath-maestro-flow.jsonl
@@ -30,8 +32,8 @@ dataset:
 
 initial_prompt: "${row.prompt}"
 
-# 17 skill_triggered criteria — one per skill. Each derives expected internally
-# from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~900 no
+# 19 skill_triggered criteria — one per skill. Each derives expected internally
+# from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~1070 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
   - type: skill_triggered
@@ -117,5 +119,15 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-test activation"
     skill_name: uipath-test
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-admin activation"
+    skill_name: uipath-admin
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-ixp activation"
+    skill_name: uipath-ixp
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}

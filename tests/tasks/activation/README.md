@@ -10,7 +10,7 @@ plus a confusion matrix.
 |------|---------|
 | `<skill>.jsonl` | Positives for that skill — every prompt should fire that skill. `expected_skill` is injected per file by `activation.yaml`. |
 | `negative.jsonl` | Shared negatives — prompts that should fire **no** skill (small talk, unrelated dev tasks, adjacent UiPath products, other workflow tools). |
-| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 20 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
+| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 19 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
 
 The `expected_skill` field on each row is the row's true label (the skill it should fire, or `""` for negatives). Each criterion compares its own `skill_name` to `expected_skill`: `expected="yes"` iff they match. So for skill X:
 - `<X>.jsonl` rows are positives.
@@ -34,7 +34,7 @@ uv run --project /path/to/coder_eval coder-eval run \
   --backend bedrock --sample 20 -j 4
 ```
 
-Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.yes < 0.70`. Class imbalance (~50 yes / ~900 no per skill) makes accuracy and recall.no trivially high; recall.yes is the only meaningful gate.
+Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.yes < 0.70`. Class imbalance (~50 yes / ~1070 no per skill) makes accuracy and recall.no trivially high; recall.yes is the only meaningful gate.
 
 ## Adding a new skill
 
@@ -44,7 +44,7 @@ Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.y
 
 ## Cost
 
-On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~950 rows total. The agent runs ONCE per row regardless of criteria count, and the 20 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark across all 20 skills costs **~$50–95**. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
+On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1,120 rows total. The agent runs ONCE per row regardless of criteria count, and the 19 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark across all 19 skills costs **~$55–110**. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
 
 ## Provenance
 
@@ -59,3 +59,11 @@ file just stops at the highest count quality could sustain.
 Covers most skills in the repo. Brand-new skills (especially Preview-tagged
 ones whose CLI surface is still in flux) may be added on a delay so prompt
 curation doesn't chase a moving target.
+
+2026-06: added `uipath-admin` (50) and `uipath-ixp` (50) after their CLI
+surfaces and descriptions stabilized; expanded `uipath-solution` 11 → 50;
+appended adversarial negatives adjacent to all three (Azure AD / Okta identity
+admin, AWS IAM, Office 365 audit, Google Document AI / Textract / pdfplumber
+extraction, docker/npm deploys). `negative-045` was rephrased from a UiPath
+Document Understanding prompt (now a true `uipath-ixp` positive) to
+Communications Mining, which stays out of every skill's scope.

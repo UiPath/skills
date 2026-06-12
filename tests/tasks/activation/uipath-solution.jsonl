@@ -9,3 +9,42 @@
 {"id": "uipath-solution-009", "prompt": "Upgrade my solution to the latest published version in the Shared folder", "expected_skill": "uipath-solution"}
 {"id": "uipath-solution-010", "prompt": "List solution packages in the tenant feed and filter by name", "expected_skill": "uipath-solution"}
 {"id": "uipath-solution-011", "prompt": "Deploy my solution to production Orchestrator with a deployment pipeline and approval gates", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-012", "prompt": "uip solution init MyAutomationSuite", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-013", "prompt": "Initialize a new solution and register my two RPA projects in it", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-014", "prompt": "Add the InvoiceProcessor project to my solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-015", "prompt": "uip solution project add ./agents/triage-agent", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-016", "prompt": "Import an existing cloud project into the solution manifest", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-017", "prompt": "Remove the deprecated project from the solution and let the CLI clean up resources/solution_folder", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-018", "prompt": "Add a queue resource to the solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-019", "prompt": "Add an asset to the solution so it ships with the package", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-020", "prompt": "Add a storage bucket resource to the solution manifest", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-021", "prompt": "Add an Integration Service connection resource to my solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-022", "prompt": "Import the TransactionQueue from the cloud tenant into the solution's resources", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-023", "prompt": "Edit the queue resource in the solution to bump its max retries field", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-024", "prompt": "Set the asset value in the solution before packing", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-025", "prompt": "Remove the unused bucket resource from the solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-026", "prompt": "Refresh the solution resources so the bundled artefacts match cloud state", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-027", "prompt": "My .uipx and resources/solution_folder disagree on the project set — reconcile them", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-028", "prompt": "Open this .uipx and tell me which projects are registered in it", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-029", "prompt": "uip solution pack --output json", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-030", "prompt": "Pack the solution and publish it to the tenant feed", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-031", "prompt": "uip solution deploy run -c prod --parent-folder-path Shared --output json", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-032", "prompt": "Deploy the solution with --skip-activate, then activate it explicitly", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-033", "prompt": "Activate the staged solution deployment in the Finance folder", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-034", "prompt": "Check the deploy status of my solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-035", "prompt": "uip solution deploy status --output json", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-036", "prompt": "Upgrade the deployed solution to version 2.1.0", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-037", "prompt": "Uninstall the solution deployment from the staging folder", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-038", "prompt": "Roll back the solution deployment to the previous published version", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-039", "prompt": "Promote the same .uipx from dev to staging to prod using deploy configs", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-040", "prompt": "List the resources registered in my solution and verify the imported queue is there", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-041", "prompt": "Bundle my RPA process, Maestro flow, and agent project into one solution package", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-042", "prompt": "Push the solution to Studio Web with uip solution upload for browser debugging", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-043", "prompt": "uip solution project import ./crm-flow", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-044", "prompt": "Pack failed with stale bindings — do I need to run resources refresh first?", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-045", "prompt": "deploy run says 'unknown flag --parent-folder-path' — am I on the pre-rename CLI?", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-046", "prompt": "uip solution project remove ./legacy-process", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-047", "prompt": "List the solution's deployments and their activation state", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-048", "prompt": "Create a multi-project solution for our order-to-cash automations and pack it", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-049", "prompt": "Add my API workflow project to the solution and re-pack the .uipx", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-050", "prompt": "I hand-edited resources/solution_folder and now pack is broken — restore a consistent state", "expected_skill": "uipath-solution"}

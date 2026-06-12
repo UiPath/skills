@@ -1,0 +1,50 @@
+{"id": "uipath-admin-001", "prompt": "Invite jane@acme.com to our UiPath organization and add her to the Administrators group", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-002", "prompt": "List all identity users in our UiPath organization", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-003", "prompt": "uip admin users invite --email new.hire@acme.com --output json", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-004", "prompt": "Delete the user mark.old@acme.com from our organization directory", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-005", "prompt": "Create a group called Finance-Devs and add alice@acme.com and bob@acme.com as members", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-006", "prompt": "Remove bob@acme.com from the Citizen Developers group", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-007", "prompt": "uip admin groups members add 1a2b3c4d --user-ids 9f8e7d6c", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-008", "prompt": "Create a robot account identity for our unattended payroll automation", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-009", "prompt": "uip admin robot-accounts create --name svc-finance-bot --output json", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-010", "prompt": "Register an external OAuth2 application with the OR.Folders application scope", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-011", "prompt": "Generate a new client secret for our CI/CD external app", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-012", "prompt": "The external app secret was only shown once and I lost it — issue a new one", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-013", "prompt": "List the OAuth2 scopes I can grant to an external application", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-014", "prompt": "Create three new groups for the RPA CoE and set their initial members", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-015", "prompt": "Offboard a departing employee: remove them from every group, then delete their identity user", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-016", "prompt": "Create a custom role at Tenant scope from my actions.json permission list", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-017", "prompt": "uip admin authorization roles create --scope Tenant --name \"ReadOnlyOps\" --file ./actions.json", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-018", "prompt": "Assign the AuditViewer custom role to the ComplianceTeam group at organization scope", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-019", "prompt": "roles assignments create failed because the role's owner service doesn't match the scope path", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-020", "prompt": "Show me the permission definitions catalog across all services", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-021", "prompt": "Run a check-access to see what alice@acme.com can effectively do at Tenant scope", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-022", "prompt": "uip admin authorization check-access alice@acme.com --scope Tenant --output json", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-023", "prompt": "What can the robot account svc-bot actually do? Compute its effective access", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-024", "prompt": "Show our UiPath organization's settings", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-025", "prompt": "Update our organization's display name", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-026", "prompt": "Create a new tenant called staging in the Europe region", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-027", "prompt": "uip admin tenants create --name staging --region europe --output json", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-028", "prompt": "Disable the qa tenant in our organization", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-029", "prompt": "Re-enable the finance-dev tenant that was disabled last month", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-030", "prompt": "Soft-delete the old sandbox tenant", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-031", "prompt": "Which regions can I provision a new tenant in?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-032", "prompt": "List which services are provisioned on the staging tenant and which are still available to add", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-033", "prompt": "tenants services remove reported Success but the service is still listed on the tenant", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-034", "prompt": "Add IP range 10.8.0.0/16 to the organization's IP allowlist", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-035", "prompt": "Enable IP-restriction enforcement for the org — verify my IP is covered first", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-036", "prompt": "uip admin ip-restriction enforcement enable --confirm", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-037", "prompt": "Add a bypass rule so webhook callbacks are exempt from IP restriction", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-038", "prompt": "I locked myself out of the org with an IP restriction rule — how do I recover access?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-039", "prompt": "Our new contractor should only reach the platform from the office VPN range — set that up", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-040", "prompt": "What's my public IP as seen by UiPath? I want to check it before enabling IP restriction", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-041", "prompt": "Export the org audit log for Q1 as a ZIP for the compliance team", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-042", "prompt": "uip admin audit export --from-date 2026-01-01 --to-date 2026-03-31 --output-file q1-audit.zip", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-043", "prompt": "uip admin audit org events --from-date 2026-06-01 --to-date 2026-06-07 --limit 500", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-044", "prompt": "Show failed logins for dana@acme.com this month", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-045", "prompt": "Which users logged in last week from outside the office network?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-046", "prompt": "Who was made an organization admin in the last 30 days?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-047", "prompt": "Which users joined or left the organization this quarter?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-048", "prompt": "Did anyone delete the Vendors group recently? Pull the relevant audit events", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-049", "prompt": "The auditors need a who-did-what-when dump for the whole organization covering Q4", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-050", "prompt": "uip admin audit org events returns 401 even though I'm logged in", "expected_skill": "uipath-admin"}

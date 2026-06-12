@@ -1,0 +1,50 @@
+{"id": "uipath-ixp-001", "prompt": "Create a new IXP project from these 20 invoice PDFs", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-002", "prompt": "Upload this batch of contracts to my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-003", "prompt": "uip ixp projects list --output json", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-004", "prompt": "Import this taxonomy file into a new Document Understanding extraction project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-005", "prompt": "Review the predictions on the newly uploaded documents and confirm the correct fields", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-006", "prompt": "Confirm the valid fields on document 42 in the invoices IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-007", "prompt": "The total_amount field keeps extracting the subtotal instead — fix the extraction", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-008", "prompt": "Improve the field instructions so invoice_date stops grabbing the due date", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-009", "prompt": "Update the extraction prompt for the vendor_name field", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-010", "prompt": "uip ixp fields update-prompts my_invoices-f1afa9ef-ixp --updates \"$(cat field_updates.json)\"", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-011", "prompt": "Publish the current model version of my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-012", "prompt": "uip ixp projects publish my_invoices-f1afa9ef-ixp --output json", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-013", "prompt": "List the trained model versions for my extraction project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-014", "prompt": "Roll back the IXP project to model version 3", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-015", "prompt": "What's the per-field F1 on my IXP project?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-016", "prompt": "Show extraction metrics for the invoices project — which fields score lowest?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-017", "prompt": "uip ixp projects get-metrics my_invoices-f1afa9ef-ixp --output json", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-018", "prompt": "Add a field group called line_items to my IXP taxonomy", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-019", "prompt": "Rename the field invoice_no to invoice_number in my extraction project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-020", "prompt": "Add a money data type for the currency fields in the IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-021", "prompt": "Delete document 7c2a from my IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-022", "prompt": "uip ixp documents upload my_contracts-9b1d2c3e-ixp ./contract_041.pdf --output json", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-023", "prompt": "po_number genuinely doesn't appear on these documents and IXP predicted nothing — record it as missing", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-024", "prompt": "Unconfirm the fields I wrongly confirmed on document 15", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-025", "prompt": "uip ixp labellings confirm my_invoices-f1afa9ef-ixp 42 --fields total_amount,invoice_date --output json", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-026", "prompt": "Suggest a taxonomy from these 8 sample documents", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-027", "prompt": "Set the overall extraction instructions for the whole IXP project", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-028", "prompt": "uip ixp projects update-prompt my_receipts-2c4d6e8f-ixp --prompt \"Extract line-level values only\"", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-029", "prompt": "Describe my IXP project — live model version, taxonomy, field groups", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-030", "prompt": "What did the taxonomy look like when model version 4 was published?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-031", "prompt": "uip ixp deployments get-taxonomy my_invoices-f1afa9ef-ixp --version 4", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-032", "prompt": "Which documents in the project still have unconfirmed predictions?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-033", "prompt": "Run the prompt-improvement loop on the receipts project until F1 stops improving", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-034", "prompt": "The OCR garbled the invoice number (MSIÓÓÓ601020 instead of MSI0601020) — apply a correction while confirming", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-035", "prompt": "Metrics didn't change after my prompt update — did the retrain finish?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-036", "prompt": "ModelVersion in my IXP project isn't advancing after labelling — check the retrain status", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-037", "prompt": "The IXP CLI rejects my project Title — should I be using the Name slug instead?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-038", "prompt": "uip ixp projects configure-model my_invoices-f1afa9ef-ixp --output json", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-039", "prompt": "uip ixp groups add my_invoices-f1afa9ef-ixp --name line_items --instructions \"One row per line item\" --fields '[{\"name\":\"description\"}]'", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-040", "prompt": "uip ixp data-types add my_invoices-f1afa9ef-ixp --name due_date --kind date --instructions \"Payment due date\"", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-041", "prompt": "Compare extraction scores before and after the last prompt update", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-042", "prompt": "Which fields in my document-extraction model have precision below 0.8?", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-043", "prompt": "Vendor invoices come in three layouts and the extractor confuses them — tighten the field prompts", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-044", "prompt": "Label the remaining 30 documents in the IXP project — confirm only the correct predictions", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-045", "prompt": "Delete the abandoned IXP project and its trained models", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-046", "prompt": "Change the quantity field's type from text to number in the extraction taxonomy", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-047", "prompt": "The amount field found the right spot on the page but the text is OCR-mangled — correct it", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-048", "prompt": "Publish the model version and tag it as live", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-049", "prompt": "labellings confirm was a no-op for a field with a stale annotation — mark it missing instead", "expected_skill": "uipath-ixp"}
+{"id": "uipath-ixp-050", "prompt": "I have a folder of utility bills — set up an IXP extraction project end to end: upload, review predictions, publish", "expected_skill": "uipath-ixp"}

@@ -42,9 +42,21 @@
 {"id": "negative-042", "prompt": "Create a Camunda BPMN process", "expected_skill": ""}
 {"id": "negative-043", "prompt": "Design a Process Maker workflow", "expected_skill": ""}
 {"id": "negative-044", "prompt": "Set up UiPath AI Center to deploy my fraud detection ML model", "expected_skill": ""}
-{"id": "negative-045", "prompt": "Configure UiPath Document Understanding to extract invoice line items from scanned PDFs", "expected_skill": ""}
+{"id": "negative-045", "prompt": "Set up UiPath Communications Mining to triage our support emails", "expected_skill": ""}
 {"id": "negative-046", "prompt": "Build a UiPath Insights dashboard to visualize bot performance over the last quarter", "expected_skill": ""}
 {"id": "negative-047", "prompt": "Migrate my Automation Anywhere bots to a new environment", "expected_skill": ""}
 {"id": "negative-048", "prompt": "Refactor my Blue Prism object to use a work queue instead of a collection", "expected_skill": ""}
 {"id": "negative-049", "prompt": "Train a sklearn random forest classifier on my customer churn dataset", "expected_skill": ""}
 {"id": "negative-050", "prompt": "Set up Kubernetes ingress with cert-manager and Let's Encrypt", "expected_skill": ""}
+{"id": "negative-051", "prompt": "Add jane@contoso.com to the Marketing group in Azure AD", "expected_skill": ""}
+{"id": "negative-052", "prompt": "Create an AWS IAM role with S3 read-only access for my Lambda", "expected_skill": ""}
+{"id": "negative-053", "prompt": "Rotate the client secret on my Azure AD app registration", "expected_skill": ""}
+{"id": "negative-054", "prompt": "Parse this PDF and extract the invoice total in Python with pdfplumber", "expected_skill": ""}
+{"id": "negative-055", "prompt": "Use Google Document AI to process my receipts", "expected_skill": ""}
+{"id": "negative-056", "prompt": "Build an AWS Textract pipeline for form extraction", "expected_skill": ""}
+{"id": "negative-057", "prompt": "Deploy my Docker container to Kubernetes", "expected_skill": ""}
+{"id": "negative-058", "prompt": "Publish my package to the npm registry", "expected_skill": ""}
+{"id": "negative-059", "prompt": "Set up Okta group-based access for our internal apps", "expected_skill": ""}
+{"id": "negative-060", "prompt": "Export the Office 365 audit log for the security team", "expected_skill": ""}
+{"id": "negative-061", "prompt": "Block sign-ins from outside our corporate IP range using Azure AD conditional access", "expected_skill": ""}
+{"id": "negative-062", "prompt": "Label images for my YOLO object detection training set", "expected_skill": ""}
