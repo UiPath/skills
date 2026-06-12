@@ -1,0 +1,63 @@
+task_id: skill-test-customfield-definition-crud-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to manage a custom field
+  *definition* through its lifecycle — create a Text field scoped to
+  Requirement, list to confirm, rename it, then delete it. The task is
+  self-contained and deterministic: it creates its own field with a fixed
+  name in the HEALTH project (which has no custom fields) and removes it
+  again. Every assertion validates the complete command — the
+  case-sensitive `--object-type Requirement` and `--data-type Text`, the
+  exact field name, `--rename-to`, and `--output json` — not a fragment.
+tags: [uipath-test, smoke, mode:operate, lifecycle:manage, feature:customfield]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 35
+
+initial_prompt: |
+  I'm in the HEALTH project in Test Manager. Can you add a custom field on
+  requirements called "Eval Reviewer" — just free text, to note who
+  reviewed a requirement. Show me the project's custom fields so I can
+  check it's there. Actually, rename it to "Eval Reviewer Team". And once
+  we're done, remove it so we don't leave anything behind.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create command: `uip tm customfield create --project-key HEALTH --name \"Eval Reviewer\" --data-type Text --object-type Requirement --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Reviewer)(?=.*--data-type\s+Text)(?=.*--object-type\s+Requirement)(?=.*--output\s+json)uip\s+tm\s+customfield\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete list command: `uip tm customfield list --project-key HEALTH --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+customfield\s+list\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete rename command: `uip tm customfield update --project-key HEALTH --rename-to \"Eval Reviewer Team\" --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--rename-to\s+["\x27]?Eval Reviewer Team)(?=.*--output\s+json)uip\s+tm\s+customfield\s+update\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete delete command: `uip tm customfield delete --project-key HEALTH (--field-ids <uuid> | --name \"Eval Reviewer Team\" --object-type Requirement) --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*(--field-ids\s+\S+|--object-type\s+Requirement))(?=.*--output\s+json)uip\s+tm\s+customfield\s+delete\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

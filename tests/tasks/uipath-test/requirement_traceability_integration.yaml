@@ -1,0 +1,93 @@
+task_id: skill-test-requirement-traceability-integration
+description: >
+  Integration test: agent uses the uipath-test skill to build and verify
+  requirements-to-tests traceability against deterministic, named fixtures
+  in the HEALTH project. The prompt references entities by their
+  human-readable keys and descriptions (test cases HEALTH:11 "PHI Masking
+  - SSN in Patient Search Results" and HEALTH:12 "PHI Masking - DOB
+  Redacted in Logs"; the execution for test set HEALTH:21 "Healthcare
+  Compliance Suite") and the agent resolves them to ids live via the
+  skill's discover-first workflow. It self-seeds a requirement, attaches
+  the two test cases, then audits coverage forward (list-testcase-ids) and
+  from the execution (list-by-test-execution). Assertions validate the
+  complete command shape and flags.
+tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:requirement]
+
+run_limits:
+  expected_turns: 24
+  max_turns: 60
+
+initial_prompt: |
+  I'm in the HEALTH project in Test Manager and want to set up some
+  PHI-masking traceability. Create a requirement called "Eval Trace - PHI
+  masking coverage", then link these two test cases to it: HEALTH:11 ("PHI
+  Masking - SSN in Patient Search Results") and HEALTH:12 ("PHI Masking -
+  DOB Redacted in Logs") — you'll need to look up their ids first. Once
+  they're attached, show me the test cases linked to that requirement so I
+  can confirm it took.
+
+  After that, find the most recent run of the "Healthcare Compliance Suite"
+  test set (HEALTH:21) and list the requirements that execution covered.
+
+  When you're done, drop a one-line traceability summary into
+  ./health-traceability.md that names the requirement, the two test cases,
+  and the execution.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Resolved the named test cases (`uip tm testcases list --project-key HEALTH --output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+list\s'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create command: `uip tm requirements create --project-key HEALTH --name \"Eval Trace - PHI masking coverage\" --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name\s+["\x27]?Eval Trace - PHI masking coverage)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete attach command: `uip tm requirements testcases --project-key HEALTH --requirement-id <uuid> --add-testcase-ids <uuid> <uuid> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-id\s+\S+)(?=.*--add-testcase-ids\s+\S+)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+testcases\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete forward-lookup command: `uip tm requirements list-testcase-ids --project-key HEALTH --requirement-id <uuid> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--requirement-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+list-testcase-ids\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete execution-back command: `uip tm requirements list-by-test-execution --project-key HEALTH --execution-id <uuid> --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--execution-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+list-by-test-execution\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Traceability summary written with requirement + test-case + execution linkage"
+    command: |
+      ls health-traceability.md >/dev/null 2>&1 \
+        && grep -qiE 'PHI Masking|requirement|HEALTH:1[12]|execution|coverage' health-traceability.md
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

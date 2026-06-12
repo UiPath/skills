@@ -320,7 +320,7 @@ jobs:
             -d "grant_type=client_credentials" \
             -d "client_id=$UIPATH_CLIENT_ID" \
             -d "client_secret=$UIPATH_CLIENT_SECRET" \
-            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments" \
+            -d "scope=OR.Default OR.Execution OR.Robots OR.Machines.Read TM.Projects TM.TestCases TM.TestSets TM.TestExecutions TM.Requirements TM.ObjectLabels TM.Attachments TM.CustomFieldValues TM.CustomFieldDefinitions" \
             | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
           echo "::add-mask::$TOKEN"
           TENANT_NAME="${{ secrets.UIPATH_TENANT_NAME }}"
