@@ -14,12 +14,14 @@ If the user just wants a generic form (no DU document), use the standard Action 
 
 ## Critical Rules
 
-1. **Peer versions are hard requirements.** Widget requires `react >= 19.2.0`, `react-dom >= 19.2.0`, `@uipath/uipath-typescript >= 1.3.9`. The Vite scaffold pins React 19.2+, but verify in `package.json` before installing.
+1. **Peer versions are hard requirements.** Widget requires `react >= 19.2.0`, `react-dom >= 19.2.0`, `@uipath/uipath-typescript >= 1.4.1`. The Vite scaffold pins React 19.2+, but verify in `package.json` before installing.
 2. **Copy `du-assets/` into build output.** The underlying web component loads PDF.js worker, cmaps, wasm, and i18n from a sibling `du-assets/` directory resolved via `import.meta.url`. Without this, **PDF rendering and translations silently 404 in production** — no build error. See "Static assets" below.
 3. **Set `optimizeDeps.exclude: ['@uipath/du-validation-station-wc']` in `vite.config.ts`.** Vite's pre-bundler rewrites `import.meta.url` and breaks runtime asset resolution.
 4. **Body needs `light` or `dark` class** for theming. Match it to the `theme` prop. Action apps already manage this via `onInitTheme` from `CodedActionAppService.getTask()`.
 5. **`sdk` must already be initialized.** Pass the same `UiPath` instance produced by `useAuth()` (web app) or constructed in `src/uipath.ts` (action app). Do not construct a second SDK just for the widget — auth state will diverge.
 6. **Required SDK scopes:** `OR.Buckets` (the widget fetches the document and extraction artifacts from a storage bucket). Add `OR.Tasks` as well when the widget is rendered inside an Action Center task (action app, or web app that completes a task on save). Add to `VITE_UIPATH_SCOPE` before first run; mismatch fails silently with 401/403. See [../oauth-scopes.md](../oauth-scopes.md).
+7. **Widget does NOT surface failures.** `onSubmitComplete` / `onSaveAsDraftComplete` fire with `{ success: false, error }` on failure but render no toast — the host owns all UI feedback (toast, retry, log). Wire these callbacks or failures are silent.
+8. **Report-as-exception makes no API call.** `onReportExceptionComplete(documentId, reason)` only hands the host the data — it does NOT persist. The host must call `OrchestratorDuModule.submitExceptionReport(taskId, documentId, reason, { folderId })` itself, or the user's "Report as exception" click is a no-op. Needs `OR.Tasks`.
 
 ## Install
 
@@ -85,15 +87,18 @@ Full table in the package README. Inside a coded app you usually only touch:
 |------|----------|-------|
 | `sdk` | Yes | `UiPath` instance — from `useAuth()` or `src/uipath.ts`. Must be initialized. |
 | `data` | Yes | `ContentValidationData` — for action apps, this comes from the task payload. For web apps, fetch and pass yourself. |
-| `folderId` | No | Falls back to `data.FolderId`. Pass explicitly if the data payload omits it. |
+| `folderId` | No* | Falls back to `data.FolderId`. One of the two must resolve to a value or the widget errors — pass explicitly when the payload omits it. |
 | `theme` | No | `'light' \| 'dark' \| 'light-hc' \| 'dark-hc'`. Keep in sync with body class. |
-| `language` | No | `Language` enum re-exported from the package. |
+| `language` | No | `ValidationStationLanguage` enum exported from the package (e.g. `English`, `German`, `Japanese`, `ChineseSimplified`). |
 | `isReadonly` | No | `true` to render in read-only mode (e.g., audit view). |
-| `enableSaveAsDraft` | No | Adds a "Save as draft" action. |
-| `save` | No | Controlled trigger: `{ validate: true }` to validate before saving. Set from a button. |
-| `onSaveComplete` | No | Fires after ProcessExtractedData + bucket upload finishes. Use to call `task.complete(...)`. |
+| `options` | No | `IValidationStationOptions` — fine-grained WC feature flags. Set `emitDtoStateChanges: true` to enable save-as-draft. |
+| `save` | No | Controlled trigger from a button. `{ validate: true }` = **submit** (validate, then save). `{ validate: false }` = **save as draft** (requires `options.emitDtoStateChanges: true`, else no-op). |
+| `discardChanges` | No | Controlled trigger: `{ value: true }` to discard pending edits. Pass a fresh object each time — the widget watches for the new reference, so repeated `{ value: true }` calls all fire. |
+| `onSubmitComplete` | No | Fires after **submit** (`save={{ validate: true }}`): ProcessExtractedData + bucket upload. Receives `SaveValidatedDataResult`. Use to complete the task with the approve action. |
+| `onSaveAsDraftComplete` | No | Fires after **save as draft** (`save={{ validate: false }}`): uploads in-progress data, no ProcessExtractedData. Receives `SaveValidatedDataResult`. |
+| `onReportExceptionComplete` | No | Fires when the user reports an exception. Signature `(documentId, reason)`, **not** `SaveValidatedDataResult`. Widget makes **no API call** — host must persist via `OrchestratorDuModule.submitExceptionReport(...)`. |
 
-`onSaveComplete` receives `SaveValidatedDataResult` — `{ success: true }` or `{ success: false, error: string }`. The widget already shows a toast on failure; only add custom retry/analytics here if needed.
+The widget surfaces three flows. **Submit** and **save as draft** are owned end-to-end by the widget and hand the host a `SaveValidatedDataResult` — `{ success: true }` or `{ success: false, error: string }`. **Report as exception** is forwarded to the host as raw `(documentId, reason)` strings with no API call. The widget renders no failure UI for any flow — handle `success: false` in the callback yourself (toast, retry, log).
 
 ## Integration: Action App (most common)
 
@@ -104,10 +109,12 @@ Validation Station as the form inside an Action Center DU validation task. Repla
 import { useState, useEffect, useCallback } from 'react';
 import {
   ValidationStation,
-  Language,
+  ValidationStationLanguage,
   type SaveValidatedDataResult,
 } from '@uipath/ui-widgets-validation-station';
-import { Theme } from '@uipath/coded-action-app';
+import type { DuFramework } from '@uipath/uipath-typescript/document-understanding';
+import { OrchestratorDuModule } from '@uipath/uipath-typescript/orchestrator-du-module';
+import { MessageSeverity, Theme } from '@uipath/coded-action-app';
 import { sdk, codedActionAppService } from '../uipath';
 
 const isDarkTheme = (t: Theme) =>
@@ -118,7 +125,8 @@ interface FormProps {
 }
 
 function Form({ onInitTheme }: FormProps) {
-  const [data, setData] = useState<unknown>(null);
+  const [data, setData] = useState<DuFramework.ContentValidationData | null>(null);
+  const [taskId, setTaskId] = useState<number | undefined>(undefined);
   const [folderId, setFolderId] = useState<number | undefined>(undefined);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isReadonly, setIsReadonly] = useState(false);
@@ -126,8 +134,9 @@ function Form({ onInitTheme }: FormProps) {
 
   useEffect(() => {
     codedActionAppService.getTask().then((task) => {
-      // Task payload carries ContentValidationData under task.data
-      setData(task.data);
+      // task.data is typed `unknown`; the payload is ContentValidationData
+      setData(task.data as DuFramework.ContentValidationData);
+      setTaskId(task.taskId);
       setFolderId(task.folderId);
       setIsReadonly(task.isReadOnly);
       const dark = isDarkTheme(task.theme);
@@ -136,12 +145,38 @@ function Form({ onInitTheme }: FormProps) {
     });
   }, [onInitTheme]);
 
-  const handleSaveComplete = useCallback(
+  // Submit succeeded → approve the task. Widget shows no error toast — handle failure here.
+  const handleSubmitComplete = useCallback(
     async (result: SaveValidatedDataResult) => {
-      if (!result.success) return; // widget already shows a toast
+      if (!result.success) {
+        codedActionAppService.showMessage(result.error, MessageSeverity.Error);
+        return;
+      }
       await codedActionAppService.completeTask('Approve', {});
     },
     [],
+  );
+
+  // Report-as-exception is not persisted by the widget — call the SDK, then reject the task.
+  const handleReportException = useCallback(
+    async (documentId: string, reason: string) => {
+      if (taskId === undefined) return;
+      const response = await new OrchestratorDuModule(sdk).submitExceptionReport(
+        taskId,
+        documentId,
+        reason || 'Reported via Validation Station',
+        { folderId },
+      );
+      if (!response.IsSuccessful) {
+        codedActionAppService.showMessage(
+          response.ErrorMessage ?? 'Failed to report exception',
+          MessageSeverity.Error,
+        );
+        return;
+      }
+      await codedActionAppService.completeTask('Reject', {});
+    },
+    [taskId, folderId],
   );
 
   if (!data) return null; // wait for task payload
@@ -156,10 +191,11 @@ function Form({ onInitTheme }: FormProps) {
         data={data}
         folderId={folderId}
         theme={theme}
-        language={Language.English}
+        language={ValidationStationLanguage.English}
         isReadonly={isReadonly}
         save={save}
-        onSaveComplete={handleSaveComplete}
+        onSubmitComplete={handleSubmitComplete}
+        onReportExceptionComplete={handleReportException}
       />
     </>
   );
@@ -204,9 +240,10 @@ Same widget, sdk comes from `useAuth()`. Typical flow: list `TaskType.DocumentVa
 import { useEffect, useMemo, useState } from 'react';
 import {
   ValidationStation,
-  Language,
+  ValidationStationLanguage,
   type SaveValidatedDataResult,
 } from '@uipath/ui-widgets-validation-station';
+import type { DuFramework } from '@uipath/uipath-typescript/document-understanding';
 import { Tasks, TaskType } from '@uipath/uipath-typescript/tasks';
 import type { TaskGetResponse } from '@uipath/uipath-typescript/tasks';
 import { useAuth } from '../hooks/useAuth';
@@ -218,11 +255,11 @@ function ValidatePage({ taskId, folderId }: { taskId: number; folderId: number }
 
   // getAll() rows don't carry `data` — fetch the full task by id.
   useEffect(() => {
-    tasks.getById(taskId, undefined, folderId).then(setSelectedTask);
+    tasks.getById(taskId, { taskType: TaskType.DocumentValidation }, folderId).then(setSelectedTask);
   }, [tasks, taskId, folderId]);
 
-  const handleSaveComplete = async (result: SaveValidatedDataResult) => {
-    if (!result.success || !selectedTask) return; // widget already shows a toast
+  const handleSubmitComplete = async (result: SaveValidatedDataResult) => {
+    if (!result.success || !selectedTask) return; // widget renders no error UI — surface it yourself
     await selectedTask.complete({
       action: 'Completed',
       type: TaskType.DocumentValidation,
@@ -234,11 +271,11 @@ function ValidatePage({ taskId, folderId }: { taskId: number; folderId: number }
   return (
     <ValidationStation
       sdk={sdk}
-      data={selectedTask.data}
+      data={selectedTask.data as DuFramework.ContentValidationData}
       folderId={selectedTask.folderId}
       theme="light"
-      language={Language.English}
-      onSaveComplete={handleSaveComplete}
+      language={ValidationStationLanguage.English}
+      onSubmitComplete={handleSubmitComplete}
     />
   );
 }
@@ -248,7 +285,7 @@ export default ValidatePage;
 
 Two things to lock in:
 
-- **Always call `tasks.getById(id, undefined, folderId)` before rendering the widget.** Even if you already have a `TaskGetResponse` from `getAll()`, its `data` field is undefined. Re-fetch by id.
+- **Always call `tasks.getById(id, { taskType: TaskType.DocumentValidation }, folderId)` before rendering the widget.** Even if you already have a `TaskGetResponse` from `getAll()`, its `data` field is undefined. Re-fetch by id.
 - **DU validation tasks are `TaskType.DocumentValidation`** — do not pass `TaskType.Form`, `App`, or `External`. The action string for a successful validation is `"Completed"`. Prefer the task-attached `selectedTask.complete(...)` over the service-level `tasks.complete(...)` — no `taskId`/`folderId` to thread through. See [../sdk/action-center.md](../sdk/action-center.md) for the broader Tasks API.
 
 Body theme class — toggle on the document body (e.g., from `useAuth` user preferences or a theme switcher):
@@ -263,8 +300,9 @@ useEffect(() => {
 ## Anti-patterns
 
 - **Do not skip the `du-assets/` copy step.** PDF rendering and translations 404 silently in prod; "works on my machine" because dev serves from `node_modules`.
-- **Do not `npm install playwright` or pre-bundle the WC.** `optimizeDeps.exclude` is mandatory.
 - **Do not construct a second `UiPath` SDK** for the widget. Reuse the app's authenticated instance.
 - **Do not call `setTaskData` and try to drive a custom form alongside the widget.** The widget owns the data contract end-to-end; mixing produces stale state and double saves.
-- **Do not pass a `tasks.getAll()` row straight into the widget.** `getAll()` rows omit `data` — the viewer renders empty. Hydrate with `tasks.getById(id, undefined, folderId)` first.
-- **Do not call `completeTask` inside the `save` setter.** Always wait for `onSaveComplete` with `success: true` — saving may fail validation, and completing early submits unvalidated data.
+- **Do not pass a `tasks.getAll()` row straight into the widget.** `getAll()` rows omit `data` — the viewer renders empty. Hydrate with `tasks.getById(id, { taskType: TaskType.DocumentValidation }, folderId)` first.
+- **Do not call `completeTask` inside the `save` setter.** Always wait for `onSubmitComplete` with `success: true` — submit may fail validation, and completing early submits unvalidated data.
+- **Do not assume the widget shows an error on failure — it does not.** `onSubmitComplete`/`onSaveAsDraftComplete` with `success: false` render no UI; surface the error yourself (`showMessage`, toast, etc.).
+- **Do not treat `onReportExceptionComplete` like the save callbacks.** It receives `(documentId, reason)`, not `SaveValidatedDataResult`, and persists nothing — you must call `OrchestratorDuModule.submitExceptionReport(...)` before completing the task.
