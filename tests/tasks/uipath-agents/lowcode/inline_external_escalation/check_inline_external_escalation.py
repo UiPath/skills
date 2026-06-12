@@ -20,7 +20,7 @@ Validates:
          properties.folderName == "Shared/uipath-agents/FraudEscalation"
          (the deployed Orchestrator folder of the app), and
          properties.resourceKey is a UUID-shaped non-empty string
-         (copied from `uip solution resource list`'s `Key`)
+         (copied from `uip solution resources list`'s `Key`)
 
   Note: the escalation resource.json format does not expose a
   `location` field — the solution-vs-external distinction is captured
@@ -144,7 +144,7 @@ def main() -> None:
     if not isinstance(rkey, str) or not UUID_RE.match(rkey):
         sys.exit(
             f"FAIL: channel properties.resourceKey must be a UUID-shaped string "
-            f"copied from `uip solution resource list`'s `Key`, got {rkey!r}"
+            f"copied from `uip solution resources list`'s `Key`, got {rkey!r}"
         )
     print(
         f"OK: actionCenter channel is bound to appName={EXPECTED_APP_NAME!r}, "
