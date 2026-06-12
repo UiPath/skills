@@ -1,66 +1,6 @@
 # CodedWorkflow Base Class Reference
 
-All workflow and test case files inherit from `CodedWorkflow`, which provides built-in methods and service access. The `CodedWorkflow` class is a **partial class** — you can extend it in a Coded Source File (see "Extending CodedWorkflow with Before/After Hooks" below).
-
-## Built-in Methods (available in any workflow/test case via `this`)
-
-| Method | Description |
-|--------|-------------|
-| `Log(string message, LogLevel level = LogLevel.Info, IDictionary<string, object> additionalLogFields = null)` | Output log messages with optional level and custom fields. Valid `LogLevel` values: `Trace`, `Verbose`, `Info`, `Warn`, `Error`, `Fatal`. Note: `LogLevel.Warning` does not exist — use `LogLevel.Warn` |
-| `Delay(TimeSpan time)` / `Delay(int delayMs)` | Pause execution synchronously |
-| `DelayAsync(TimeSpan time)` / `DelayAsync(int delayMs)` | Pause execution asynchronously |
-| `BuildClient(string scope = "Orchestrator", bool force = true)` | Build an authenticated `HttpClient` for Orchestrator or custom scopes |
-| `GetRunningJobInformation()` | Returns `IRunningJobInformation` with current job context: job ID, process name/version, tenant, folder, organization, robot name, and more (see [IRunningJobInformation](#irunningjobinformation-properties) below) |
-| `RunWorkflow(string workflowFilePath, IDictionary<string, object> inputArguments = null, TimeSpan? timeout = null, bool isolated = false, InvokeTargetSession targetSession = InvokeTargetSession.Current)` | **Fallback method:** Invoke workflow by string path. Use `workflows.MyWorkflow()` instead when possible |
-| `RunWorkflowAsync(...)` | Async version of `RunWorkflow` (same limitations apply) |
-
-## Invoking Other Workflows
-
-**Recommended:** Use the strongly-typed `workflows` property to invoke other workflows in your project:
-
-```csharp
-// Invoke workflow with strongly-typed parameters
-var result = workflows.ProcessInvoice(invoiceId: "INV-001", amount: 1500.00m);
-Log($"Processing completed: {result.success}");
-```
-
-**Benefits of `workflows.MyWorkflow()`:**
-- **Type-safe:** Compile-time checking of workflow names and parameters
-- **IntelliSense:** Auto-completion for workflow names and parameters
-- **Refactor-friendly:** Renaming workflows/parameters updates all references
-- **Dynamic updates:** Automatically adapts when workflows change
-
-**Default parameters:** Workflows with default parameter values can be invoked with or without those arguments — omitted parameters use their defaults:
-```csharp
-// If ProcessData has: Execute(string source, int maxRows = 100, bool verbose = false)
-workflows.ProcessData(source: "invoices.csv");                          // maxRows=100, verbose=false
-workflows.ProcessData(source: "invoices.csv", maxRows: 500);           // verbose=false
-workflows.ProcessData(source: "invoices.csv", maxRows: 500, verbose: true);  // all explicit
-```
-
-**Fallback (string-based):** For dynamic scenarios where workflow name isn't known at compile time:
-
-```csharp
-// Only use when workflow name is determined at runtime
-string workflowPath = GetWorkflowPathFromConfig();
-var result = RunWorkflow(workflowPath, new Dictionary<string, object>
-{
-    { "invoiceId", "INV-001" },
-    { "amount", 1500.00m }
-});
-```
-
-> **Return value:** `RunWorkflow` returns `IDictionary<string, object>`. Argument direction is determined by the `Execute` method signature:
->
-> - **Single return value** (`public string Execute(int a, int b)`) — the result is stored under the key `"Output"`. Access it as `result["Output"]`.
-> - **Multiple outputs via tuple** (`public (string a, string b) Execute()`) — each tuple member becomes a separate key: `result["a"]`, `result["b"]`. These are Out arguments.
-> - **InOut arguments** — when a parameter name appears in both the input parameters and the return tuple, it is an InOut argument. Example: `public (string a, string b) Execute(string b, int c)` — `a` is Out, `b` is InOut (same name in input and output), `c` is In.
->
-> For same-project workflows, prefer the type-safe `workflows.MyWorkflow()` property — it returns the declared return type directly and avoids this dictionary lookup.
-
-## Service Properties (injected based on installed packages)
-
-Services are accessed as properties on `this`: `system.GetAsset(...)`, `excel.ReadRange(...)`, `testing.VerifyExpression(...)`, etc. See the Service-to-Package mapping in SKILL.md.
+All workflow and test case files inherit from `CodedWorkflow`. The class is a **partial class** — extend it in a Coded Source File (see "Extending CodedWorkflow with Before/After Hooks" below). Built-in method surface, service-to-package mapping, and workflow invocation: [critical-rules-coded.md](critical-rules-coded.md). This file covers Integration Service connections, the `services` property, job context (`IRunningJobInformation`), and Before/After hooks. Services are accessed as properties on `this`: `system.GetAsset(...)`, `excel.ReadRange(...)`, `testing.VerifyExpression(...)`, etc.
 
 ## Integration Service Connections
 
@@ -153,19 +93,6 @@ mailService.SendEmail("recipient@example.com", "Subject", "Body");
 - The connection ID (GUID) is embedded in the factory — it references the specific Integration Service connection
 - If a connection is **not authorized** or the token is expired, you get `ConnectionHttpException: Connection [...] failed to authorize` at runtime — re-authorize in Automation Cloud → Integration Service
 - The `connections` property is always available on `CodedWorkflow` regardless of installed packages, but the factory properties (`.O365Mail`, `.OneDrive`, etc.) only exist when the corresponding package is installed and connections are configured
-
-## The `workflows` Property (Strongly-Typed Workflow Invocation)
-
-The `workflows` property provides strongly-typed access to all workflows in your project:
-
-```csharp
-// Invoke workflows with IntelliSense and compile-time checking
-var result1 = workflows.ReadInvoices(folderPath: "/data/invoices");
-var result2 = workflows.ValidateInvoices(invoices: result1.invoiceList);
-var result3 = workflows.PostToERP(validInvoices: result2.validInvoices);
-```
-
-Each workflow in your project becomes a method on the `workflows` object with parameters matching the workflow's input arguments and return values matching output arguments. This is the **recommended approach** for invoking workflows.
 
 ## The `services` Property
 

@@ -152,24 +152,12 @@ if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResourc
 
 ### Validation Loop (Critical Rule #4 — validate-as-you-go)
 uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
-@../validation-guide.md
+Full loop, fix discipline, and error-class lists: [validation-guide.md](../validation-guide.md).
 
 ### Error Handling
 - **Fix compilation errors methodically** — Categorize: Syntax → Type → Logic. Use the validation loop above to iterate until clean.
-- **Retry on execution failures** — Attempt to fix and retry up to 2 times before asking user
-- **Analyze errors carefully** — Read error messages, identify root cause, make targeted fixes
 - **Fix one thing at a time** — When a runtime error occurs, identify the root cause, fix ONLY that, and re-run. Never bundle a speculative "improvement" (e.g., switching from TypeInto to KeyboardShortcut) with the actual fix (e.g., correcting a selector). Changing two things at once makes it impossible to verify which change resolved the issue — or whether the speculative change introduced a new one.
-- **Don't give up too early** — But stop after 2 failed retries and present the user with options:
-```
-Workflow execution failed after 2 retry attempts.
-
-**Error Details:** <specific error message and location>
-**Suggested Fix:** <analysis of what went wrong>
-**Next Steps:** Would you like me to:
-A) <recommended fix approach>
-B) <alternative approach>
-C) <user-driven approach>
-```
+- **Stop after 2 failed runtime retries** and present error details, suggested fix, and options using the escalation template in [validation-guide.md § Smoke Test](../validation-guide.md#smoke-test).
 
 ### File Operations
 - **ALWAYS use Read tool before Edit tool** — Understand current state before making changes

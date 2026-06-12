@@ -41,4 +41,4 @@ Pauses workflow execution for a fixed duration.
 - `Delay` blocks the workflow's host thread for the full duration — use sparingly inside `ForEach` or `While` bodies where it multiplies latency.
 - Do **not** use `Delay` as a substitute for waiting on an external condition. Prefer `RetryScope`, `WaitForElement`, or a polling loop with a `Condition` for state-dependent waits.
 - `activities get-default-xaml` for `Delay` returns `<Delay />` only — `Duration` is invisible to the CLI.
-- `Delay` is a leaf activity. It does not need a `<Sequence>` wrap around itself; its parent container slot still must be `<Sequence>`-wrapped per Rule 24.
+- `Delay` is a leaf activity. It does not need a `<Sequence>` wrap around itself; its parent container slot still must be `<Sequence>`-wrapped per Rule 24 (`references/xaml/critical-rules-xaml.md`).

@@ -194,3 +194,24 @@ uip rpa studio start --project-dir "{projectRoot}" --output json   # launches St
 If `studio start` cannot resolve Studio's install directory from the registry, pass `--studio-dir` pointing to the Studio installation root.
 
 You can also force Studio Desktop for any other command by setting `UIPATH_RPA_TOOL_USE_STUDIO=1`, but this is not needed for the standard authoring loop and gives up the headless benefits.
+
+## Project Context Discovery
+
+SKILL.md § Precondition gates all work on a fresh `.claude/rules/project-context.md`. Full procedure:
+
+**Staleness check (file exists):**
+1. Read the first line of `.claude/rules/project-context.md` to extract the metadata comment: `<!-- discovery-metadata: cs=N xaml=N deps=N -->`
+2. Count current files: Glob `**/*.cs` (excluding `.local/` and `.codedworkflows/`) and `**/*.xaml` in the project directory
+3. Count current dependencies: read `project.json` and count keys in the `.dependencies` object
+4. Compare the current counts against the stored metadata values
+5. For each count (cs, xaml, deps), compute the percentage difference: `abs(current - stored) / max(stored, 1) * 100`
+6. If **any individual count differs by 60–70% or more** → run the discovery flow below
+7. If all counts are within the threshold → context is fresh, proceed with the skill workflow
+
+**Discovery flow (file missing or stale):**
+1. Trigger the `uipath-project-discovery-agent` and wait for it to complete
+2. The agent returns the generated context document as its response
+3. Write the returned content to **both**:
+   - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
+   - `AGENTS.md` at project root — read by UiPath Autopilot in Studio Desktop. If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
+4. Then proceed with the skill workflow

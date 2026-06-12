@@ -26,4 +26,4 @@ Re-raises the exception currently being handled by an enclosing `TryCatch.Catch`
 - Use `Rethrow` to preserve the original exception's stack trace after side-effect work in the `Catch` body (logging, cleanup, partial rollback). Use `Throw new <Type>(...)` instead when you want to translate the exception to a different type.
 - `Rethrow` does not need to be the last activity in a `Catch` body — anything after it is unreachable, but Studio's validator does not flag this. Place `Rethrow` last.
 - `activities get-default-xaml` for `Rethrow` returns `<Rethrow />` (already correct — no properties exist).
-- `Rethrow` is a leaf activity. Its parent `Catch.Action` body must be `<Sequence>`-wrapped per Rule 24.
+- `Rethrow` is a leaf activity. Its parent `Catch.Action` body must be `<Sequence>`-wrapped per Rule 24 (`references/xaml/critical-rules-xaml.md`).

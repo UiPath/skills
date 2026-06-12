@@ -2,7 +2,7 @@
 
 When creating a project, **proactively design the right file structure** based on the task complexity. Do not put everything into a single root workflow file. Use your best judgment to split the project into multiple files following good software engineering practices.
 
-For the coded vs XAML decision, see [coded-vs-xaml-guide.md](coded-vs-xaml-guide.md). For new projects, the default is XAML — examples below lead with XAML and note where the coded equivalent differs.
+For the coded vs XAML decision, see [coded-vs-xaml-guide.md](coded-vs-xaml-guide.md). For the anatomy of project files (directory layout, `project.json` schema, generated files), see [project-structure.md](project-structure.md). For new projects, the default is XAML — examples below lead with XAML and note where the coded equivalent differs.
 
 ## Guidelines
 
@@ -44,7 +44,7 @@ Compose via `Invoke Workflow File` (coded: `workflows.StepName()`). Process work
 
 ### Layout and scale-out
 
-- Sequence vs Flowchart vs State Machine per workflow: Workflow Types table in SKILL.md § XAML Workflows Quick Reference
+- Sequence vs Flowchart vs State Machine per workflow: Workflow Types table in [xaml/critical-rules-xaml.md § XAML Workflows Quick Reference](xaml/critical-rules-xaml.md)
 - High-volume transactional work: dispatcher/performer split via queues — [reframework-guide.md § Execution Mode: Queue-Driven](reframework-guide.md)
 
 ### Promotion ladder

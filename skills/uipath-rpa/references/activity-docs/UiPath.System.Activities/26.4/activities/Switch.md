@@ -52,7 +52,7 @@ Evaluates an expression and executes the case whose key matches, or the default 
 
 ## Notes
 
-- Each case body and the `Switch.Default` body **must wrap their content in `<Sequence>`** per Rule 24.
+- Each case body and the `Switch.Default` body **must wrap their content in `<Sequence>`** per Rule 24 (`references/xaml/critical-rules-xaml.md`).
 - Case keys are declared via `x:Key="<literal>"` on each case-body child element directly inside `<Switch>`. The `Cases` dictionary is not declared explicitly — child elements with `x:Key` populate it.
 - `x:TypeArguments` on the `<Switch>` element fixes `T`. For string keys use `x:TypeArguments="x:String"` and set `x:Key="someString"`; for integers use `x:TypeArguments="x:Int32"`.
 - `activities get-default-xaml` for `Switch`1` returns `<Switch x:TypeArguments="x:Object" />` only — `Expression`, every case, and `Default` are invisible to the CLI.

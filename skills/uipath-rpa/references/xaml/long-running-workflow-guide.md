@@ -24,7 +24,7 @@ uip rpa packages install --packages '[{"id":"UiPath.FlowchartBuilder.Activities"
 
 BPMN import (`.bpmn` → ProcessDiagram, Studio wizard) requires version 1.0.4 or later.
 
-**Discovery commands do not see LRW nodes.** `upa:` node types are diagram nodes, not activities — `activities find` returns nothing for them and `activities get-default-xaml --activity-class-name "UiPath.Process.Activities.SplitNode"` fails with `TypeLoadException`. The package also ships no `.local/docs`. Author nodes structurally from this guide's vocabulary and patterns; do NOT burn calls on Rule 21 discovery for `upa:` types. Activities *inside* a TaskNode body (Sequence content) follow normal Rule 21 discovery.
+**Discovery commands do not see LRW nodes.** `upa:` node types are diagram nodes, not activities — `activities find` returns nothing for them and `activities get-default-xaml --activity-class-name "UiPath.Process.Activities.SplitNode"` fails with `TypeLoadException`. The package also ships no `.local/docs`. Author nodes structurally from this guide's vocabulary and patterns; do NOT burn calls on Rule 21 ([critical-rules-xaml.md](critical-rules-xaml.md)) discovery for `upa:` types. Activities *inside* a TaskNode body (Sequence content) follow normal Rule 21 discovery.
 
 ## Node Vocabulary
 

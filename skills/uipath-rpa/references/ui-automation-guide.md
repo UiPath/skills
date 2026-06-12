@@ -25,6 +25,21 @@ Do not re-inspect or keep polling after the initial check — subsequent capture
 
 ---
 
+## Capture-First Fast Path
+
+When the request is "automate this dialog/form" or "build a UI test from these manual steps" — i.e. the bulk of the work is target capture, not coding — **defer authoring-phase prerequisites until target capture is complete**. The capture surface is interactive, app-state-sensitive, and time-bound; project-context discovery and analyzer rules add nothing during capture and steal time from it.
+
+**Fast-path order for capture-first tasks.** Read this guide and [uia-configure-target-workflows.md](uia-configure-target-workflows.md) in full first (SKILL.md Rule 7; the second is used in step 3). Then:
+
+1. **Pre-flight Window Baseline** — list top-level windows once; decide whether to launch the app ([§ Pre-flight: Window Baseline](#pre-flight-window-baseline)).
+2. **Inventory targets from manual steps** (Test Manager test case, PDD, or written script). Each "Click X" / "Enter Y" / "Select Z" / "Verify W" step maps to one OR element. Group by screen state ([§ Capturing from Manual Test Steps](#capturing-from-manual-test-steps)).
+3. **Capture all targets** screen by screen via `uia-configure-target` and screen advancement ([uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md)).
+4. **Then enter authoring phase:** project-context discovery (SKILL.md § Precondition: Project Context), analyzer rules (SKILL.md Common Rule 3 — Authoring-phase start), write code, validate.
+
+Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but **no live app to capture against** (app not installed, no GUI, capture deferred to a developer) — there is nothing to capture, so use [§ Placeholder-Selector Stub Pattern](#placeholder-selector-stub-pattern) instead. The Window Baseline does not tell you if the app is installed and has a GUI — validate that separately (e.g. look for the executable on disk) or ask the user.
+
+---
+
 ## Capturing from Manual Test Steps
 
 When the source is a Test Manager test case, a PDD, or any written list of "Click X / Enter Y / Select Z / Verify W" steps, treat each interaction step as a capture target before writing any workflow code.
@@ -259,7 +274,7 @@ Install the UI Library as a package dependency; its descriptors appear under **U
 
 ## Running UI Automation Workflows
 
-**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection.
+**Always use `uip rpa debug start`** (not `uip rpa run`) when running workflows with UI automation. A debug session pauses on error instead of tearing down the application, leaving the UI state available for inspection. During capture, advance app state with the UIA interact CLI, never `run` — a finishing `run` can close the target app. Switch to `run --skip-build` only as the final, non-interactive smoke test once the workflow is stable and `build` has passed.
 
 **Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
@@ -297,6 +312,24 @@ Repeat until the workflow completes successfully. Each failure advances the app 
 ## UIA Activity-Docs Discovery
 
 The UIA activity-docs version folder may contain additional guides (selector creation, target configuration, CV targeting, selector improvement). Discover them by globbing: `Glob: pattern="**/*.md" path="activity-docs/UiPath.UIAutomation.Activities/{closest}/"`. These are **reference docs to read and follow** — they are NOT invocable as slash commands. Read the relevant `.md` file and follow its steps using the `uip rpa` CLI commands directly.
+
+---
+
+## UIA Activity Pack Doc Map
+
+In `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/` (installed via `uip rpa packages install`). Co-versioned with the package — source-of-truth over this skill when they diverge.
+
+- `overview.md` — Package overview and entry point
+- `references/cli-reference.md` — Full `uip rpa uia` CLI: subcommands, flags, accepted values, artifact filenames
+- `references/object-repository.md` — Object Repository concepts and CLI flows
+- `references/selector-variables.md` — Selector variable substitution
+- `references/uia-target-attachment-guide.md` — Attaching OR targets to XAML activities (TargetApp / TargetAnchorable)
+- `references/indication-fallback-workflow.md` — Indication-mode capture when `uia-configure-target` is unavailable
+- `coded/coded-api.md` — Coded API surface for `uiAutomation.*` service calls
+- `activities/<Activity>.md` — Per-activity property surface (`NClick`, `NTypeInto`, `NApplicationCard`, …)
+- `activities/common/<Type>.md` — Shared enums and types (`NHealingAgentBehavior`, `Target`, `NClickType`, …)
+- `skills/uia-configure-target/{SKILL.md,USAGE.md}` — Target-configuration skill: procedure + invocation modes
+- `skills/uia-improve-selector/{SKILL.md,USAGE.md}` — Selector recovery / improvement skill
 
 ---
 

@@ -59,7 +59,7 @@ Each `Catch<TException>` exposes:
 
 ## Notes
 
-- `Try`, every `Catch.Action`, and `Finally` **must wrap their body in `<Sequence>`** per Rule 24.
+- `Try`, every `Catch.Action`, and `Finally` **must wrap their body in `<Sequence>`** per Rule 24 (`references/xaml/critical-rules-xaml.md`).
 - Each `Catch` requires its own `<ActivityAction x:TypeArguments="...">` element holding a `<DelegateInArgument x:TypeArguments="..." Name="exception" />` and the handler `<Sequence>`. The `Name` of the `DelegateInArgument` is the variable name that the handler body uses to reference the caught exception.
 - Order matters: the first `Catch` whose type the thrown exception is assignable to wins. Place more specific exception types before `s:Exception`.
 - Use `Rethrow` inside a `Catch.Action` body to re-raise the current exception with its original stack trace; use `Throw` to raise a different exception.

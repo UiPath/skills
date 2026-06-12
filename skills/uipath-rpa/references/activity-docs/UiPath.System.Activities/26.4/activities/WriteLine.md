@@ -38,4 +38,4 @@ Writes a text expression to a text writer, followed by a newline. Defaults to wr
 - Do **not** set `TextWriter` unless the workflow legitimately needs to write somewhere other than stdout (e.g., a custom file stream). The default is correct for every Studio and runner context.
 - For C# XAML projects, use `<CSharpValue x:TypeArguments="x:String">...</CSharpValue>` inside the `InArgument`; do not use VB bracket shorthand.
 - `activities get-default-xaml` for `WriteLine` returns `<WriteLine />` only — both arguments are invisible to the CLI.
-- `WriteLine` is a leaf activity. It does **not** require a `<Sequence>` wrap around itself; it only requires that its parent slot (e.g., `If.Then`) is wrapped in `<Sequence>` per Rule 24.
+- `WriteLine` is a leaf activity. It does **not** require a `<Sequence>` wrap around itself; it only requires that its parent slot (e.g., `If.Then`) is wrapped in `<Sequence>` per Rule 24 (`references/xaml/critical-rules-xaml.md`).

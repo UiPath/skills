@@ -2,7 +2,7 @@
 
 **Package anchor:** `UiPath.System.Activities` 26.4 (verified against 26.4.1-preview).
 
-Copy-safe snippets for the 13 activities listed below. **Supersedes the Rule 21 discovery procedure for these activities only** — when authoring one of these, skip `activities find`, skip `activities get-default-xaml`, skip the per-activity `<Activity>.md` read, and copy the snippet here.
+Copy-safe snippets for the 13 activities listed below. **Supersedes the Rule 21 ([xaml/critical-rules-xaml.md](xaml/critical-rules-xaml.md)) discovery procedure for these activities only** — when authoring one of these, skip `activities find`, skip `activities get-default-xaml`, skip the per-activity `<Activity>.md` read, and copy the snippet here.
 
 For every other activity, full Rule 21 applies. Self-extending this card by personal judgment ("this one feels simple, I'll skip the procedure") is the failure mode.
 
@@ -39,7 +39,7 @@ Snippets use the property-element form with `<VisualBasicValue>` / `<VisualBasic
 </Sequence>
 ```
 
-**Notes:** `Sequence` is the canonical container wrap required by Rule 24 in every body/branch slot of `If`, `Switch`, `TryCatch`, `While`, `DoWhile`, `ForEach`, `Pick`, etc. — even with a single child. Declare `<Sequence.Variables>` only when this sequence owns local variables. ViewState is **optional** for Sequences (Rule 20); required only when the parent is `Flowchart`, `StateMachine`, or `ProcessDiagram`.
+**Notes:** `Sequence` is the canonical container wrap required by Rule 24 ([xaml/critical-rules-xaml.md](xaml/critical-rules-xaml.md)) in every body/branch slot of `If`, `Switch`, `TryCatch`, `While`, `DoWhile`, `ForEach`, `Pick`, etc. — even with a single child. Declare `<Sequence.Variables>` only when this sequence owns local variables. ViewState is **optional** for Sequences (Rule 20); required only when the parent is `Flowchart`, `StateMachine`, or `ProcessDiagram`.
 
 **Long-form:** [`activity-docs/UiPath.System.Activities/26.4/activities/Sequence.md`](activity-docs/UiPath.System.Activities/26.4/activities/Sequence.md)
 

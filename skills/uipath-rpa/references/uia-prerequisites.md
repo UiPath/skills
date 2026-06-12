@@ -23,7 +23,11 @@ Never upgrade UIA silently. Every upgrade requires explicit user consent before 
 | Patch / build upgrade within the preview band | Ask before installing the newer preview build. |
 | Already at or above `<MIN_VERSION>` | Proceed without prompting. |
 
-If the user declines, do NOT install. Warn that `uip rpa uia` commands will fail without UIA at `<MIN_VERSION>` and fall back to indication authoring — [uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first (see § Indication Fallback). Record `UI capture: indication-only` in the plan header so downstream tasks do not route to `uia-configure-target`.
+## When the `uip rpa uia` CLI is unavailable
+
+If `UiPath.UIAutomation.Activities` is below `<MIN_VERSION>` or `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md` is absent, the `uip rpa uia` CLI is unavailable — and **both** target capture and indication depend on it, so indication is *not* a fallback when the package itself is missing. Ask the user to install/upgrade per the consent table above. If they decline or the package cannot be installed, do NOT install; warn that `uip rpa uia` commands will fail without UIA at `<MIN_VERSION>` and fall back to the **Placeholder-Selector Stub Pattern** ([ui-automation-guide.md § Placeholder-Selector Stub Pattern](ui-automation-guide.md)) — real activities with `TODO Indicate` markers need no CLI. Never silently route to a non-existent skill path.
+
+Use indication capture only when a compatible UIA package *is* installed but `uia-configure-target` cannot see the element — [uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first (see § Indication Fallback). Record `UI capture: indication-only` in the plan header so downstream tasks do not route to `uia-configure-target`.
 
 ## Commands
 

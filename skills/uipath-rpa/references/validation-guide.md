@@ -134,16 +134,7 @@ C) <user-driven approach>
 
 ### Package Error Resolution
 
-```
-Read: file_path="{projectRoot}/project.json"     -> check current dependencies
-
-Bash: uip rpa packages install --packages id=UiPath.Excel.Activities```
-
-Omit `version` to automatically resolve the latest compatible version (preferred — gets newest docs and features). Only pin a specific version when you have a reason to (e.g., known compatibility constraint).
-
-**If `packages install` fails:**
-- **Package not found**: Verify the exact package ID — check spelling, use `uip rpa activities find` to discover the correct package name from an activity's assembly
-- **Network/feed error**: The user may need to check their NuGet feed configuration in Studio settings
+Missing-dependency errors (`CS0103`, unresolved activity types): check `project.json` → `dependencies`, then install with `uip rpa packages install`. Flags, version policy, and failure modes (package not found, feed errors): [cli-reference.md § packages install](cli-reference.md).
 
 ### Resolving Dynamic Activity Custom Types
 

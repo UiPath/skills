@@ -1,5 +1,7 @@
 # UiPath Project Structure
 
+Anatomy of a project: directory layout, `project.json` schema, generated files. For deciding how to split a new project into files, see [project-structure-guide.md](project-structure-guide.md).
+
 ## Directory Layout
 
 ```

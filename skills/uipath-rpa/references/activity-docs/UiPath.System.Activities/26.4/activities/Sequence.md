@@ -4,7 +4,7 @@
 
 `System.Activities.Statements.Sequence`
 
-Executes a set of contained activities in sequential order. Sequence is the canonical container for ordered execution and acts as the body wrap for every container slot in other activities (see Rule 24).
+Executes a set of contained activities in sequential order. Sequence is the canonical container for ordered execution and acts as the body wrap for every container slot in other activities (see Rule 24 — `references/xaml/critical-rules-xaml.md`).
 
 **Package:** `System.Activities` (ships in .NET; referenced via `UiPath.System.Activities`)
 **Category:** Workflow
