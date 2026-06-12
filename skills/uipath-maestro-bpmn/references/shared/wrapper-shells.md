@@ -102,7 +102,7 @@ bindings, schemas, and authorized debug/run have been verified.
 </bpmn:serviceTask>
 ```
 
-For `uip solution resource refresh`, `bindings_v2.json` must use a versioned
+For `uip solution resources refresh`, `bindings_v2.json` must use a versioned
 package resource wrapper. A process dependency usually has separate resource
 entries for the process name and folder path; do not use an unwrapped resource
 array or unversioned placeholder as the source of dependency resources:

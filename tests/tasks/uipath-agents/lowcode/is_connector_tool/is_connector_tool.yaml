@@ -5,7 +5,7 @@ description: >
   a tool. The agent under test must discover the connector via
   `uip is`, author a `type: "integration"` resource.json, create a
   `bindings_v2.json` with the connection binding, and run
-  `uip solution resource refresh` so the solution provisions the
+  `uip solution resources refresh` so the solution provisions the
   connection resource. Verifies design-time artifacts only (no
   runtime connector invocation). Cloud auth required — depends on
   the staging tenant having the `uipath-uipath-airdk` (GenAI
@@ -71,7 +71,7 @@ success_criteria:
   - type: command_executed
     description: "Agent refreshed solution resources"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+refresh'
+    command_pattern: 'uip\s+solution\s+resources\s+refresh'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -16,7 +16,7 @@ Build a Coding-Agents Scorecard Confluence page from two data sources and the ca
 
 **Output:** A new Confluence page in space **CA** under the org scorecard, titled `Coding Agents Scorecard — Eval Scores & Test Pass/Fail (run <run-date>)`. Returns the page URL.
 
-> This command **creates** a page (never overwrites the org scorecard). The numbers it fills are **derived only** — Build/Operate/Diagnose eval scores and Tests Pass/Fail come from the run; Test Coverage comes from the coverage source. It leaves Product-Coverage / Exhaustive / FDE-Golden columns blank (not derivable here).
+> This command **creates** (or, on a re-run, **updates**) a child page under the org scorecard — never overwrites the org scorecard itself. It reproduces **both** of the org card's product tables (Product Level Scorecard + Product Capability Enumeration) and fills only **derived** cells: Build/Operate/Diagnose eval scores + Tests Pass/Fail + per-tier Skills Smoke / Integration+E2E come from the run; Test Coverage / Skill Coverage come from the coverage source. It leaves Product-Coverage, CLI-* columns, Exhaustive, FDE-Golden, and Peer-Sign-off blank (not derivable here; CLI values are carried verbatim from the org card).
 
 ---
 
@@ -30,7 +30,9 @@ Build a Coding-Agents Scorecard Confluence page from two data sources and the ca
 
 Confirm these still resolve with `getConfluenceSpaces`/`getConfluencePage` before publishing.
 
-**Stale parent.** The org scorecard is re-created weekly, so the hard-coded parent id (`90748321845`) may 404. If `getConfluencePage` on it fails: search the CA space for the most recent page whose title starts with `Coding Agents Scorecard` (`searchConfluenceUsingCql`: `space=CA AND title ~ "Coding Agents Scorecard*"`, newest first), use that as parent, and tell the user which parent you picked. If none found, create the page at the space root and flag it.
+**Stale parent — always resolve the NEWEST dated scorecard, don't just trust the hard-coded id.** The org scorecard is re-created weekly. The hard-coded id is only a hint; a *stale-but-still-live* card (e.g. last week's) resolves fine via `getConfluencePage` and will NOT 404, so a 404-only check silently publishes the new child under an outdated parent. Instead, **always** run `searchConfluenceUsingCql` (`space=CA AND title ~ "Coding Agents Scorecard*" AND type=page`, newest first) and pick the most recent dated card (parse the `MM/DD/YYYY` in the title; the newest date wins, not merely the newest `lastModified`). Use that as the parent and tell the user which one you picked and its date. Only fall back to the hard-coded id if the search returns nothing; if that also 404s, create at the space root and flag it. The `--parent <pageId>` override always wins over this search.
+
+Pick the matching org-card revision as your **column/row template too** (Phase 3): the scorecard's product list and the second "Product Capability Enumeration" table drift week to week (rows added/removed, e.g. Agent Hub). Read the parent you selected, not a cached layout.
 
 **Auth / access.** If the Atlassian tools are unavailable or the CA space is not accessible, stop and report — do not write the page anywhere else.
 
@@ -57,10 +59,20 @@ tr = [t for t in tr if t.get('variant_id') == TARGET]
 
 DIAG = {'diagnose','troubleshoot'}        # both merge into the Troubleshoot column
 STD  = ['build','operate','diagnose']     # the three scorecard eval columns
-def new(): return {'pass':0,'total':0,'scores':[],'mode':defaultdict(list)}
+TIERS = ['smoke','integration','e2e']     # for the org card's 2nd table (Skills Smoke vs Int+E2E)
+def new(): return {'pass':0,'total':0,'scores':[],'mode':defaultdict(list),
+                   'tier':{ti:[0,0] for ti in TIERS+['none']}}   # tier -> [pass,total]
+def tier_of(t):
+    tags = t.get('tags') or []
+    for ti in TIERS:
+        if ti in tags: return ti
+    return 'none'                          # untiered run tasks — counted in total, not in either tier
 def add(b, t, ws):                         # fold one task_result into a bucket
     b['total'] += 1
-    if t.get('status') == 'SUCCESS': b['pass'] += 1
+    ok = t.get('status') == 'SUCCESS'
+    if ok: b['pass'] += 1
+    ti = tier_of(t); b['tier'][ti][1] += 1
+    if ok: b['tier'][ti][0] += 1
     if ws is not None:
         b['scores'].append(ws)             # None scores excluded consistently
         for tag in (t.get('tags') or []):
@@ -90,11 +102,20 @@ def cells(b):                              # per-COLUMN fallback (not per-skill)
         out[col] = (f"{pct(xs)} (n={len(xs)})" if xs                 # real mode-tagged mean
                     else (f"{mean}*" if mean is not None else None)) # else overall-mean fallback (*)
     return mean, out
+def tcell(pd): return f"{pd[0]}/{pd[1]}" if pd[1] else "—"   # [pass,total] -> "p/t" or "—"
+def tiers(b):                              # Skills Smoke vs combined Integration+E2E (2nd table)
+    sm = b['tier']['smoke']
+    ie = [b['tier']['integration'][0]+b['tier']['e2e'][0],
+          b['tier']['integration'][1]+b['tier']['e2e'][1]]
+    nn = b['tier']['none']
+    return tcell(sm), tcell(ie), (f" (+{tcell(nn)} untiered)" if nn[1] else "")
 def line(name, b):
     mean, c = cells(b)
     extra = {k: f"{pct(v)} (n={len(v)})" for k,v in b['mode'].items() if k not in STD}
+    sm, ie, unt = tiers(b)
     print(f"{name:32} {b['pass']}/{b['total']:<4} mean={mean}  "
-          f"build={c['build']}  operate={c['operate']}  troubleshoot={c['diagnose']}"
+          f"build={c['build']}  operate={c['operate']}  troubleshoot={c['diagnose']}  "
+          f"SMOKE={sm} INT+E2E={ie}{unt}"
           + (f"  NON-SCORECARD-MODES={extra}" if extra else ''))
 
 print('=== PER SKILL ===')
@@ -111,7 +132,9 @@ if nonstd:   print('NON-SCORECARD mode values seen (surface, never drop/fold):',
 if unmapped: print('UNMAPPED task_ids (no tests/tasks/<skill>/ in path):', unmapped)
 ```
 
-Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode % for `build`/`operate`/`diagnose` (each with its `(n=…)` tagged-task count), plus any `NON-SCORECARD-MODES`. The script also prints the **`uipath-platform` sub-dir breakdown** (Phase 3 platform split), the **status-code counts** (ERROR vs FAILURE vs MAX_TURNS_EXHAUSTED — use for the failures note in Phase 4), the **overall mean weighted score**, and any `NON-SCORECARD` mode values / `UNMAPPED` task_ids. Headline numbers come from this script (`run_n`, `succ`, overall mean) — **recompute for the scored variant**, do not copy `d['tasks_run']`/`experiment.md` blindly (those count all variants).
+Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode % for `build`/`operate`/`diagnose` (each with its `(n=…)` tagged-task count), the **per-tier split** (`SMOKE=` and combined `INT+E2E=` pass/total, plus any `untiered` remainder — feeds the org card's 2nd table, see Phase 4 §3b), plus any `NON-SCORECARD-MODES`. The script also prints the **`uipath-platform` sub-dir breakdown** (Phase 3 platform split — note `tiers()` works on `psub` buckets too, so each platform sub-product has its own Smoke/Int+E2E split), the **status-code counts** (ERROR vs FAILURE vs MAX_TURNS_EXHAUSTED — use for the failures note in Phase 4), the **overall mean weighted score**, and any `NON-SCORECARD` mode values / `UNMAPPED` task_ids. Headline numbers come from this script (`run_n`, `succ`, overall mean) — **recompute for the scored variant**, do not copy `d['tasks_run']`/`experiment.md` blindly (those count all variants).
+
+> **Untiered tasks.** `tier_of()` returns `none` for run tasks carrying no `smoke`/`integration`/`e2e` tag. They count in the product total but in neither tier column, so Smoke + Int+E2E will not always sum to the total — surface the `(+p/t untiered)` remainder rather than silently dropping it (it also flags tag-hygiene gaps in the source repo).
 
 **Critical nuances:**
 1. **Mode tags are sparse — fall back PER COLUMN, not per skill.** Only mode-tagged tasks feed Build/Operate/Troubleshoot. For **each** of the three columns independently: if the skill has ≥1 task tagged for that mode, show that mode's mean; otherwise fill the cell with the skill's **overall mean** marked `*` (footnote: "overall mean — no `mode:<x>` tasks"). Consequences: a skill with zero mode tags shows `mean*` in all three (the original all-or-nothing case); a skill tagged only `build` shows its real Build % and `mean*` for Operate/Troubleshoot — never leave those two blank, which would falsely read as "no signal" when the skill ran many untagged tasks. The script's `cells()` does this; the `(n=…)` count rides on every non-fallback cell. Keep the `(n=…)` counts **only in the Source Data table** (not the Product scorecard, whose columns must match the org card exactly) so reviewers can see how thin a column is — e.g. a `build 0 (n=1)` is one bad task, not a systemic failure.
@@ -125,6 +148,8 @@ Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode
 ## Phase 2 — Parse the coverage source
 
 **Prefer the structured sidecar.** If `tests/reports/coverage.json` exists (written by `/test-coverage all`), read it instead of scraping markdown — `skills.<name>.overall_pct` is the Test Coverage value, `planned` flags planned skills, and you also get `top_untested`, per-dimension counts, and contributions for free. This is the stable contract; fall back to parsing `SUMMARY.md` only when the JSON is absent (older runs). If both exist but disagree, trust `coverage.json` and note the staleness (regenerate with `/test-coverage all`).
+
+**Cross-cutting capability entries → a product row.** A coverage.json entry with `"cross_cutting": true` (e.g. `uipath-context-grounding`) is the Test-Coverage / Skill-Coverage source for the **standalone product row it maps to** — currently `uipath-context-grounding` → **ECS / Context Grounding** (see Phase 3 mapping). For that row use the entry's `overall_pct` as **Skill Coverage / Test Coverage** (instead of `—`), and its `mode_coverage` / `mode_floor` for the per-mode read. Its tasks are tag-selected and **also counted under the host skills** (`host_skills`), so the row's Tests Pass/Fail are **cross-cutting, non-additive** (footnote ⁷) — never add them into the run totals or the host-skill rows. If no cross-cutting entry exists yet (older coverage.json), the ECS row stays `—` and you re-select the `tag` from the run for its pass/fail (Phase 1).
 
 Read the coverage source (default `tests/reports/SUMMARY.md`). For each skill take the **Overall** % from the Overview table — this is the **Test Coverage vs Skills** value (coverage of taught capabilities by tests; **not** a pass-rate). Planned-but-missing skills are `0% (planned)`.
 
@@ -166,7 +191,7 @@ Do not edit this embedded table on the fly; report drift so a human updates the 
 | API Workflow | `uipath-api-workflow` | +api-workflow-tool tasks in agents |
 | Coded Apps | `uipath-coded-apps` | skill exists, 0 tests |
 | Orchestrator | `uipath-platform/orchestrator` + `uipath-platform/resources` | |
-| ECS / Context Grounding | none dedicated | exercised in agents (context_index/deeprag) |
+| ECS / Context Grounding | `uipath-context-grounding` (cross-cutting coverage entry) | no dedicated dir; tag `context-grounding` selects tasks in agents (deeprag/batch_transform) + flow. Skill Coverage from the `cross_cutting` coverage.json entry (`overall_pct`); pass/fail non-additive ⁷ |
 | Test Manager | `uipath-test` | |
 | Solutions | `uipath-solution` | +~many agent tasks publish via `uip solution` (cross-cutting only) |
 | Governance | `uipath-governance` | |
@@ -198,7 +223,13 @@ Produce these sections, in this order:
 
 1. **Source + caveat panels** — `panel-info` with run id/path, variant scored, tasks run/passed/success-rate/overall-mean score, generated date. `panel-warning` listing column semantics: Tests Pass/Fail = run outcomes; Test Coverage = SUMMARY "Overall"; Eval `*` = **per-column** overall-mean fallback (no `mode:<x>` tasks for that column); non-scorecard mode tags (e.g. `inspect`, `edit-validate`) excluded from the three columns; platform rows (³) carry per-sub-product eval/pass-fail but the platform-wide coverage; run is a snapshot whose task counts may differ from the current repo; Product-Coverage/Exhaustive/FDE blank.
 2. **Gap-to-target headline** (`panel-note`, near the top) — state run success-rate vs the `--target` bar (default 95%): e.g. `78.8% vs 95% target → 16.2pp gap; ≈ N more passing tasks needed` where `N = ceil(target/100 × run_n) − succ`. List the products **below bar** (pass-rate < target), worst first, so the page answers the org's own stated question. If success-rate ≥ target, say so plainly.
-3. **Product Level Scorecard** — reproduce the org scorecard's product table **columns exactly** (Product/Capability, Build/Operate/Troubleshoot Product Coverage, Test Coverage vs Skills, Build/Operate/Diagnose Eval %, Tests Pass/Fail, Exhaustive, FDE Golden). Fill only: Test Coverage, the three Eval %, Tests Pass/Fail. Leave the rest blank. **Do not put `(n=…)` here** — these columns must match the org card. Footnotes: platform sub-product split + platform-wide coverage (³), rpa-shared (²), per-column overall-mean fallback (*), non-scorecard mode tags (†).
+3. **Reproduce BOTH org-card tables — the scorecard has TWO product tables, fill the derivable cells in each.** The org card carries a *Product Level Scorecard* table AND a second *Product Capability Enumeration* table; reproduce both with their columns and rows **exactly as they appear on the parent revision you selected** (Stale-parent step — row sets drift, e.g. Agent Hub was added). Fill only what this run derives; leave everything else blank or carry the org card's value verbatim:
+
+   **3a. Product Level Scorecard** (first table) — columns: Product/Capability, Build/Operate/Troubleshoot Product Coverage, Test Coverage vs Skills, Build/Operate/Diagnose Eval %, Tests Pass/Fail, Exhaustive, FDE Golden. **Fill:** Test Coverage, the three Eval %, Tests Pass/Fail. **Leave blank:** Product Coverage ×3, Exhaustive, FDE Golden. **Do not put `(n=…)` here** — these columns must match the org card.
+
+   **3b. Product Capability Enumeration** (second table) — columns: Product/Capability, Product Capability Enumeration, CLI Coverage, **Skill Coverage**, CLI Smoke Tests, CLI Int and E2E Tests, CLI Test Coverage%, **Skills Smoke Tests (No.)**, **Skills Integration and E2E Tests (No.)**, Exhaustive Scenarios, Test Peer Sign-off. **Fill (the three Skills columns are the whole point of this table):** `Skill Coverage` = coverage.json Overall % per product (same value as 3a's Test Coverage, color-banded); `Skills Smoke Tests` and `Skills Integration and E2E Tests` = the per-tier `pass/total` from Phase 1's `tiers()` (combine integration+e2e; append the `(+p/t untiered)` remainder where present). **CLI columns are NOT derivable from a skills run** — carry the org card's existing CLI values verbatim (note: the org card's "CLI Smoke Tests" column is populated with coverage *percentages*, not pass/total — copy as-is, do not reinterpret) and leave CLI Coverage / CLI Int+E2E / CLI Test Coverage% / Product Capability Enumeration / Exhaustive Scenarios / Test Peer Sign-off blank. Color the Skills cells with the pass-rate bands.
+
+   Footnotes (both tables): platform sub-product split + platform-wide coverage (³), rpa-shared / under-RPA (²), per-column overall-mean fallback (*), non-scorecard mode tags (†), duplicate org-card row (⁴), skip-thinned denominator (⁵), planned/not-yet-built skill — e.g. Agent Hub (⁶), cross-cutting capability — tag-selected, already counted in host skills, non-additive — e.g. ECS / Context Grounding from `uipath-context-grounding` (⁷).
 4. **Coverage × Eval risk reads** — the analytical payoff of merging the two sources. For each product with both a coverage % and a pass-rate, classify into a quadrant (thresholds: coverage ≥ 50% = "tested", pass-rate ≥ `--target` = "passing"):
 
    | Coverage | Pass-rate | Quadrant | Read |
@@ -218,12 +249,13 @@ Keep prose terse (repo token-optimization rules). Use `—` for not-applicable, 
 
 ## Phase 5 — Publish
 
-1. Verify target with `getConfluenceSpaces keys=CA` (spaceId) and `getConfluencePage` on the parent (apply the Stale-parent fallback above if it 404s).
+1. Verify target with `getConfluenceSpaces keys=CA` (spaceId) and resolve the parent via the **Stale-parent** step above (always pick the newest dated card, not just on 404).
 2. **Duplicate-title check.** A page titled `… (run <run-date>)` may already exist from a prior run of this command (re-runs are common). Search CA for that exact title first. If found, ask the user: **update** the existing page (`updateConfluencePage` — safe, it's our child page, not the org scorecard), **create a new one** with a ` (v2)`/timestamp suffix, or **abort**. Default to update. Never blindly create a second page with an identical title.
 3. `createConfluencePage` (or `updateConfluencePage` per step 2) with `cloudId`, `spaceId`, `parentId`, `contentFormat: html`, `status: current` (or `draft` if `--draft`), title `Coding Agents Scorecard — Eval Scores & Test Pass/Fail (run <run-date>)`.
-4. **HTML rejection.** `createConfluencePage` rejects invalid ADF nesting (block elements inside inline, headings in table cells, etc.) with a descriptive error. On rejection, fix the offending markup and retry — do not fall back to markdown (it loses panels/footnotes). Common cause: stray block tags inside `<td>`.
-5. **Round-trip verification.** A successful create response does NOT guarantee the body rendered intact — HTML→ADF conversion can silently drop or merge cells/panels. Re-fetch the page (`getConfluencePage`, `contentFormat: html`) and assert: the Product Level Scorecard table has the expected **row count** (one header + one per org product row, e.g. 29 data rows) and **11 columns**; the Source Data and Product→Test tables are present with their expected row counts; and the panels survived (info/note/warning macros present). If a table was mangled, fix the markup and `updateConfluencePage` — do not leave a corrupted page live. Report the assertion result.
-6. Return the `webui` URL. Summarize what was filled, what was left blank, the gap-to-target and risk-read findings, and any drift/mismatch/skip notes surfaced in Phases 1–3.
+   - **Body is large (~30–45 KB). `createConfluencePage` echoes the full body back in its response, which can exceed the tool-result token cap.** That is not a failure — the page is still created. Recover the `id`/`webui` by grepping the persisted tool-result file for `"id"`/`"webui"` rather than re-creating. On any **`updateConfluencePage`**, always pass **`includeBody: false`** so the response stays small.
+4. **HTML rejection.** `createConfluencePage` rejects invalid ADF nesting (block elements inside inline, headings in table cells, etc.) with a descriptive error. On rejection, fix the offending markup and retry — do not fall back to markdown (it loses panels/footnotes). Common cause: stray block tags inside `<td>`. Build the body programmatically (a small Python script that emits the HTML to a file, then read it) rather than hand-writing 29×11 cells — far fewer nesting/escaping mistakes, and trivial to regenerate when a row set changes.
+5. **Round-trip verification.** A successful create/update response does NOT guarantee the body rendered intact — HTML→ADF conversion can silently drop or merge cells/panels. Re-fetch the page (`getConfluencePage`, `contentFormat: html`) and assert: the **Product Level Scorecard** table has the expected **row count** (one per org product row) and **11 columns**; the **Product Capability Enumeration** table (Phase 4 §3b) is present with its 11 columns and the same product rows, and its Skills columns are populated; the Source Data and Product→Test tables are present with their expected row counts; and the panels survived (info/note/warning macros present). If a table was mangled, fix the markup and `updateConfluencePage` (`includeBody: false`) — do not leave a corrupted page live. Report the assertion result.
+6. Return the `webui` URL. Summarize what was filled, what was left blank, the gap-to-target and risk-read findings, the parent you selected (with its date), and any drift/mismatch/skip notes surfaced in Phases 1–3.
 
 ---
 
@@ -283,15 +315,21 @@ Exclude the generic `uip … --output json` sentinel pattern (unattributable). N
 | Skipped tasks (`skip: true`) | Denominator = run tasks; authored = run + skipped (this snapshot), not current dir count; note authored vs run | 1 |
 | Run task counts differ from current repo | Expected (run is a snapshot); note divergence, don't reconcile to dir counts | 1 |
 | `tests/reports/coverage.json` present | Prefer it over scraping `SUMMARY.md` (stable contract; gives top_untested + contributions too) | 2 |
+| `cross_cutting` coverage.json entry (e.g. `uipath-context-grounding`) | Maps to its standalone product row (ECS); Skill Coverage = its `overall_pct`; pass/fail non-additive (⁷, already in host skills). Older coverage.json without it → ECS stays `—`, re-select by `tag` | 2,3 |
 | `SUMMARY.md` has multiple `\| uipath- \|` tables | Only when no `coverage.json`: parse the `## Overview` table only (header has `Overall`); naive parse double-counts | 2 |
 | Coverage cell has `~` / `(planned)` decoration | Strip bold only; keep `~` and `(planned)` verbatim | 2 |
 | `tests/reports/` missing | Run `/test-coverage all` first (it creates the folder) | 2 |
 | Coverage stale vs run date | Warn; offer regenerate | 2 |
 | Skill in run, absent from coverage | Coverage `—` (not `0%`); warn | 2 |
 | Skill in coverage, absent from run | Eval/pass `—`/`not in run` | 2 |
-| Org scorecard adds/removes a product row | Reconcile vs embedded map; emit/flag, don't drop | 3 |
+| Org scorecard adds/removes a product row (e.g. Agent Hub) | Reconcile vs the parent revision you selected; emit/flag, don't drop. Planned skill with no folder → Skill Coverage `0% (planned)`, Skills tiers `not in run` | 3 |
 | New skill folder maps to no product row | Surface in Source Data; tell user | 3 |
-| `uipath-platform` sub-product eval/pass-fail | Split from the run's `psub` breakdown by default (orchestrator+resources summed); coverage stays platform-wide unless `uipath-platform.md` splits it | 3 |
+| `uipath-platform` sub-product eval/pass-fail | Split from the run's `psub` breakdown by default (orchestrator+resources summed); coverage stays platform-wide unless `uipath-platform.md` splits it. `tiers()` also runs per sub-dir for the 2nd table | 3 |
+| Org card has TWO product tables | Reproduce both (Phase 4 §3a + §3b); the 2nd ("Product Capability Enumeration") is where Skill Coverage / Skills Smoke / Skills Int+E2E go | 3,4 |
+| 2nd table's CLI columns | Not derivable from a skills run — carry org-card values verbatim (its "CLI Smoke Tests" column holds coverage %, not pass/total); leave CLI Coverage/Int+E2E/Test-Cov% blank | 4 |
+| Untiered run tasks (no smoke/integration/e2e tag) | Counted in product total, in neither tier column; surface `(+p/t untiered)` remainder, don't drop | 1,4 |
+| Stale-but-live parent (resolves, doesn't 404) | Don't trust the hard-coded id — always search newest dated `Coding Agents Scorecard*` and prefer it | 5 |
+| `createConfluencePage` response too large (body echoed) | Page IS created; grep persisted tool-result for `id`/`webui`. Use `includeBody:false` on updates | 5 |
 | Parent page 404 (weekly rotation) | Fallback: newest `Coding Agents Scorecard*` in CA | 5 |
 | Page with same title already exists | Ask: update (default) / new-with-suffix / abort | 5 |
 | `createConfluencePage` rejects HTML | Fix ADF nesting and retry; don't downgrade to markdown | 5 |
@@ -312,3 +350,6 @@ Exclude the generic `uip … --output json` sentinel pattern (unattributable). N
 - **Don't double-count variants.** Score exactly one variant; an A/B run has N task_results per task.
 - **Don't create duplicate pages.** Same-title page exists → update it (default) or suffix the new one; never leave two identical-title pages.
 - **Don't force unmapped skills into a product row.** Aux/connector skills with no product row belong only in the Source Data table.
+- **Don't reproduce only the first product table.** The org card has two (Product Level Scorecard + Product Capability Enumeration); the second is where Skill Coverage / Skills Smoke / Skills Int+E2E live — omitting it drops the columns the platform team reads for the skills side.
+- **Don't reinterpret the org card's CLI columns.** They're not yours to compute from a skills run — carry them verbatim (its "CLI Smoke Tests" column holds coverage %, not pass/total) and leave the rest of the CLI columns blank.
+- **Don't trust the hard-coded parent id when a newer dated card exists.** A stale-but-live parent resolves without a 404; always search for and prefer the newest dated `Coding Agents Scorecard*`.

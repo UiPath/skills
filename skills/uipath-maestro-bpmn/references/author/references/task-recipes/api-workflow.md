@@ -22,7 +22,7 @@ The model may draft:
 CLI or operator must resolve:
 
 - API workflow resource identity, folder binding, and generated package resources.
-- Solution-style `bindings_v2.json` entries for `uip solution resource refresh`.
+- Solution-style `bindings_v2.json` entries for `uip solution resources refresh`.
 - Dynamic request and response schemas.
 - Fire-and-forget versus wait behavior when the product contract exposes that choice.
 

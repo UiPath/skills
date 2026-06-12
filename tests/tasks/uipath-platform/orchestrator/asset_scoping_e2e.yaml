@@ -19,7 +19,7 @@ initial_prompt: |
   Use the `uipath-platform` skill.
 
   I want to double-check that folder-scoped assets really are isolated to
-  their folder. The path to folder A is in `seed.json` along with a
+  their folder. The path to folder A is in `seed.json` (the `folder_a_path` field) along with a
   unique prefix.
 
   Spin up a second folder named `e2e-folder-b-<prefix>` directly inside

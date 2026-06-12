@@ -10,7 +10,7 @@ Contexts feed retrievable information into an agent at runtime. Three variants e
 
 ## Variants
 
-| `contextType` | Backing | Solution-level auto-gen by `uip solution resource refresh`? | Walkthrough |
+| `contextType` | Backing | Solution-level auto-gen by `uip solution resources refresh`? | Walkthrough |
 |---|---|---|---|
 | `"index"` | ECS Context Grounding index (StorageBucket-backed) | Yes — auto-writes `index/<Name>.json` + `bucket/orchestratorBucket/<Bucket>.json` + 2 debug entries | [index.md](index.md) |
 | `"attachments"` | Runtime files passed to the agent | No (no solution resource needed) | [attachments.md](attachments.md) |

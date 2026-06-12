@@ -391,7 +391,7 @@ States defined inline inside `Transition.To` need `<x:Reference>` registration a
 
 ## 5. Long Running Workflow (ProcessDiagram) Layout
 
-ProcessDiagrams use a **BPMN-style horizontal left-to-right** flow, distinct from Flowchart's vertical top-to-bottom.
+ProcessDiagrams use a **BPMN-style horizontal left-to-right** flow, distinct from Flowchart's vertical top-to-bottom. Package dependency, full node vocabulary, gateway patterns, suspend/resume: [long-running-workflow-guide.md](long-running-workflow-guide.md) — this section covers layout and ViewState only.
 
 ### Key Differences from Flowchart
 
@@ -411,6 +411,9 @@ ProcessDiagrams use a **BPMN-style horizontal left-to-right** flow, distinct fro
 | `upa:EventNode` | 40x40 | Circle | Start event (with `StartBehavior`) |
 | `upa:TaskNode` | 120x80 | Rectangle | Activity container (wraps Sequence) |
 | `upa:DecisionNode` | 60x60 | Diamond | True/False branching |
+| `upa:SwitchNode` | 60x60 | Diamond | Multi-way routing (`x:TypeArguments`) |
+| `upa:SplitNode` | 60x60 | Diamond | Parallel branch fan-out |
+| `upa:MergeNode` | 60x60 | Diamond | Parallel branch convergence |
 | `upa:EndNode` | 40x40 | Circle | End event (with `EndBehavior`) |
 | `upa:BoundaryNode` | 40x40 | Circle | Error handler attached to TaskNode |
 

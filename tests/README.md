@@ -246,6 +246,14 @@ Both processes live in folders, so `folder_path` is derived from the
 process key — no separate folder secret needed. Tests needing a second
 folder create it themselves as part of the scenario.
 
+**Keep the stub processes inside the dedicated folder
+(`Shared/uipath-platform-e2e`), not in `Shared` itself.** The seeded
+folder is derived from the process, so every resource the e2e tasks
+create (assets, queues, buckets, triggers, jobs) lands in the same
+folder — pointing the secrets at releases inside the dedicated folder
+keeps the shared parent untouched and lets `cleanup.py`'s folder sweep
+run without risk to unrelated resources.
+
 ### Cleanup
 
 There is no `post_run`. The agent creates and deletes its own ephemeral

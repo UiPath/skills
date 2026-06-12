@@ -36,13 +36,13 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
-| **Folders** | `list [--all]`, `get`, `create`, `edit`, `delete`, `move`, `runtimes` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Folders** | `list [--all]`, `get`, `create`, `update`, `delete`, `move`, `runtimes` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Jobs** | `list`, `get`, `start`, `stop`, `restart`, `resume`, `logs [--export]`, `traces`, `healing-data`, `history` | [Run Jobs](orchestrator/run-jobs.md) |
-| **Processes** | `list`, `get`, `resources`, `version-history`, `create`, `edit`, `update-version`, `rollback`, `delete` | [Run Jobs](orchestrator/run-jobs.md) |
+| **Processes** | `list`, `get`, `resources`, `version-history`, `create`, `update`, `update-version`, `rollback`, `delete` | [Run Jobs](orchestrator/run-jobs.md) |
 | **Packages** | `list`, `get`, `versions`, `entry-points`, `upload`, `download` | [Run Jobs](orchestrator/run-jobs.md) |
-| **Machines** | `list`, `get`, `create`, `edit`, `delete`, `assign`, `unassign` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `edit`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](orchestrator/setup-environment.md) |
-| **Roles** | `list`, `permissions`, `get`, `create`, `edit`, `delete`, `users list`, `users set`, `user-roles list`, `user-permissions list`, `assign` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Machines** | `list`, `get`, `create`, `update`, `delete`, `assign`, `unassign` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `update`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](orchestrator/setup-environment.md) |
+| **Roles** | `list`, `permissions`, `get`, `create`, `update`, `delete`, `users list`, `users set`, `user-roles list`, `user-permissions list`, `assign` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Sessions** | `attended list`, `unattended list`, `machines list <machine-key>`, `list-usernames`, `list-user-executors`, `toggle-debug-mode`, `delete-inactive`, `set-maintenance-mode` | [Manage Sessions](orchestrator/manage-sessions.md) |
 | **Settings** | `list`, `get`, `update`, `execution`, `timezones` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Calendars** | `list`, `get`, `create`, `update`, `delete` | [Tenant Admin](orchestrator/tenant-admin.md) |
@@ -62,7 +62,7 @@ Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset o
 |---|---|---|
 | **Assets** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare`, `get-asset-value` | [Manage Assets](orchestrator/manage-assets.md) |
 | **Queues** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `get-stats`, `share`, `unshare` | [Process Queues](orchestrator/process-queues.md) |
-| **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `delete`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](orchestrator/process-queues.md) |
+| **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `delete`, `delete-bulk`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](orchestrator/process-queues.md) |
 | **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](orchestrator/work-with-storage.md) |
 | **Bucket Files** | `list`, `list-dirs`, `get`, `download`, `upload`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](orchestrator/work-with-storage.md) |
 | **Triggers** | `list`, `get`, `create`, `update [--enabled\|--disabled]`, `delete`, `history` | [Triggers & Webhooks](orchestrator/triggers-and-webhooks.md) |

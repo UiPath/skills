@@ -45,7 +45,7 @@ What the `stub` command does internally (you don't need to call any of these by 
 uip api-workflow registry resolve "<keyword>" --output json
 ```
 
-Substring-matches `keyword` against `displayName`, `connectorKey`, `objectName`, and `fullName` of every activity in the Api-compatible TypeCache (`projectType=Api`). Returns up to 20 candidates by default; raise with `--limit <n>`.
+Sends `keyword` to the TypeCache server search (`projectType=Api`), then tokenizes it on whitespace and requires every token to match against `displayName`, `description`, `connectorKey`, `objectName`, or `fullName` — so combined queries like `"github list records"` narrow the search. Returns up to 50 candidates by default; raise with `--limit <n>`.
 
 ```json
 {
@@ -56,26 +56,37 @@ Substring-matches `keyword` against `displayName`, `connectorKey`, `objectName`,
     "ResultCount": 1,
     "Matches": [
       {
-        "uiPathActivityTypeId": "b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a",
-        "displayName": "Get Newest Email",
-        "description": "Retrieves the newest email from a folder.",
-        "connectorKey": "uipath-microsoft-outlook365",
-        "objectName": "getNewestEmail",
-        "httpMethod": "GET",
-        "activityType": "Curated"
+        "UiPathActivityTypeId": "b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a",
+        "DisplayName": "Get Newest Email",
+        "Description": "Retrieves the newest email from a folder.",
+        "ConnectorKey": "uipath-microsoft-outlook365",
+        "ObjectName": "getNewestEmail",
+        "HttpMethod": "GET",
+        "ActivityType": "Curated",
+        "Operation": null
       }
     ]
   }
 }
 ```
 
+`ActivityType` tells you which stub flow applies: `Curated` works as-is; `Generic` additionally needs `--object-name` (see [Generic activities](#generic-activities----object-name-required-list-all-records-of-what)) and reports its `Operation` (`"List"`, `"Retrieve"`, …) instead of an object.
+
 If multiple connectors offer the same operation (e.g. Gmail "Send Email" vs Outlook "Send Mail"), narrow by connector name instead of operation name: `resolve "outlook send"` vs `resolve "gmail send"`.
 
-If `ResultCount` is 0, try a different keyword. Connector activity names can differ from the vendor's marketing name — Outlook calls it "Get Newest Email", Gmail calls it "Get Latest Message".
+If `ResultCount` is 0 — or the only matches are the wrong connector — **a keyword miss is NOT proof no curated activity exists.** `resolve` AND-matches every whitespace token against `displayName`/`description`/`connectorKey`/`objectName`/`fullName`, so a marketing phrase plus a guessed verb over-narrows fast: the product is "UiPath Data Fabric" but its activities are named "Create Entity Record" on connector `uipath-uipath-dataservice` — so `resolve "data fabric insert"` returns **0** (no activity name contains all of `data` + `fabric` + `insert`), even though "Create/Query Entity Record" exist. The fix is fewer/truer tokens, not more. Recover **connector-first** instead of guessing more keywords:
+
+1. **Map the product/vendor name → connector key.** `uip is connectors list --filter "<product words>" --output json` → read `Key` (e.g. `Name: "UiPath Data Fabric"` → `Key: "uipath-uipath-dataservice"`). The friendly name lives on the connector record, not on any activity — exactly why resolving the marketing phrase can miss. Look the key up here every time; never hardcode or guess it (keys have non-obvious vendor segments).
+2. **Enumerate that connector's activities.** `uip is activities list <connector-key> --output json` lists every activity for the connector (e.g. `CreateEntityRecord_V3`, `QueryEntityRecords`). Only conclude "no curated activity exists" if this list has nothing for your operation. Note: `is activities list` confirms *what* exists but omits the editor metadata — `resolve` + `stub` are still required to author one (they supply the `UiPathActivityTypeId` and `metadata.configuration`).
+3. **Resolve/stub by a distinctive noun from the real activity name** ("entity record", "create record"), not the marketing phrase.
+
+Only fall back to a hand-built HTTP call (a big design fork — escalate to the user) once steps 1–2 confirm the connector has no activity for the operation. Connector activity names also differ from the vendor's marketing name — Outlook calls it "Get Newest Email", Gmail calls it "Get Latest Message".
 
 ### Step 2 — Verify a vendor connection (IntSvc kind only)
 
 Skip this step if `connectorKey === "uipath-uipath-http"` — the HTTP connector uses `connectionId: "ImplicitConnection"` and needs no real connection.
+
+`<connector-key>` is the full vendor identifier — **NEVER guess it from the vendor name**. `github` is not a key (`uip is connections list github` → 404 `InvalidConnectorKey`); the key is `uipath-microsoft-github`. Take it verbatim from Step 1's `ConnectorKey` field — which also means Step 2 cannot be parallelized with Step 1.
 
 ```bash
 uip is connections list <connector-key> --output json
@@ -265,12 +276,12 @@ If the workflow lives in a **Solution** (the project's folder layout is `Solutio
 uip api-workflow bindings sync --workflow Solution/<ProjectName>/Workflow.json --output json
 
 # 2. Sync resources + per-user debug overwrites via @uipath/resource-builder-sdk
-uip solution resource refresh --solution-folder Solution --output json
+uip solution resources refresh --solution-folder Solution --output json
 ```
 
 `bindings sync` is pure-local (no auth, no API calls) — it walks `Workflow.json`, extracts IntSvc connector activities, and writes the canonical `bindings_v2.json` next to the workflow (one binding per unique connection UUID — two activities sharing a connection collapse to one entry). This file is what StudioWeb computes in-memory on workflow open; emitting it offline avoids the "open in StudioWeb once first" detour.
 
-`solution resource refresh` then reads every project's `bindings_v2.json`, calls `@uipath/resource-builder-sdk`'s `addOrUpdateResourceToSolutionAsync` to write the catalogue files, and `editOverwritesAsync` to write the per-user debug overwrites. Requires `uip login` (the SDK looks up folder keys via Resource Catalog Service). Idempotent — re-runs only import new resources.
+`solution resources refresh` then reads every project's `bindings_v2.json`, calls `@uipath/resource-builder-sdk`'s `addOrUpdateResourceToSolutionAsync` to write the catalogue files, and `editOverwritesAsync` to write the per-user debug overwrites. Requires `uip login` (the SDK looks up folder keys via Resource Catalog Service). Idempotent — re-runs only import new resources.
 
 **If you must hand-author** (offline, or the connection isn't reachable via the API), the rest of this section documents the exact file shape.
 
@@ -377,6 +388,43 @@ The IntSvc kind speaks directly to the vendor connector's curated operation:
 | `multipartParameters` | Declared automatically when IS schema's `parameters` shows `"type": "multipart"` |
 
 The IS proxy URL for a IntSvc kind call to Outlook GetNewestEmail becomes `/elements_/v3/element/instances/{outlookConnId}/getNewestEmail?parentFolderId=Inbox` — a real curated endpoint on the Outlook connector. The connector itself adds the Microsoft Graph OAuth at the proxy layer. **You don't supply a Graph URL; the connector knows where the Outlook API lives.**
+
+### Generic activities — `--object-name` required ("List Records" of *what?*)
+
+Connector activities come in two flavors, visible as `ActivityType` in `resolve` output:
+
+- **Curated** — hand-designed by the connector author ("Create Issue", "Get Newest Email"). The TypeCache entry already pins the object and HTTP method; `stub` works as described above.
+- **Generic** — auto-generated record operations ("List Records", "Get Record", "Insert Record", …). The TypeCache entry carries only an `Operation` (`List`, `Retrieve`, `Create`, `Update`, `Replace`, `Delete`) and **no object** — the user chooses the target object at authoring time.
+
+To stub a Generic activity, pass the object via `--object-name`:
+
+```bash
+# 0. If you only know the vendor name, get the connector key first —
+#    'uip is connections list github' 404s; the key is 'uipath-microsoft-github'.
+#    It's in resolve output (ConnectorKey) or 'uip is connectors list --filter github'.
+
+# 1. Discover the connector's objects
+uip is resources list uipath-microsoft-github --connection-id <uuid> --output json
+
+# 2. Stub: operation comes from the activity, object from you
+uip api-workflow registry stub <list-records-guid> \
+  --object-name user_repos \
+  --connection-id <uuid> \
+  --output json
+```
+
+To find the Generic activity itself, combined keywords narrow the search (`resolve` matches every whitespace-separated token across displayName/connectorKey/objectName): `uip api-workflow registry resolve "github list records"`. Filter the matches for `ActivityType: "Generic"` and the `Operation` you want.
+
+`stub` resolves the HTTP verb and endpoint by matching the activity's operation against the object's IS Elements metadata (e.g. operation `List` on `user_repos` → `GET /user_repos`; operation `Retrieve` on `repos` → `GET /repos/{repo}`). The emitted JSON is ordinary IntSvc kind — same `call: "UiPath.IntSvc"`, same `with` shape, same `.content` response wrapping; the runtime makes no distinction between Generic and Curated.
+
+Generic-specific behavior to know:
+
+- **`--object-name` is required** unless the activity definition pins its own object (rare, proxy-style generics like `httpRequest`). Without either, `stub` fails with `"Generic activity '<name>' needs a target object"`.
+- **IS metadata is mandatory** — Curated stubs degrade to a fallback `/<objectName>` path when IS is unreachable; Generic stubs hard-fail instead (`"Could not resolve operation …"`), because without metadata there is neither verb nor path to emit. The same error fires when the object doesn't support the operation — check with `uip is resources describe <connector-key> <object-name> --connection-id <uuid> --operation <Op>`.
+- **Operation casing is normalized** — `resolve` shows the TypeCache's capitalized `Operation` (`"List"`), but the stub persists it lowercased (`"list"`) in `metadata.configuration`, matching what StudioWeb writes.
+- **Slot key carries the operation; export bucket does not**: slot `ListUserRepos_1`, export bucket `user_repos_1` (objectName-based, like every Curated example). The bucket intentionally matches the platform's own derivation — solution reconcile (`resource refresh`) regenerates `Workflow.json` and recomputes export buckets from the object name, so a divergent bucket would be renamed on regeneration. As always, copy `Data.ExportBucketKey` verbatim; and after ANY external rewrite of `Workflow.json` (reconcile, designer save), re-check that downstream `$context.outputs.<X>` reads still match the on-disk `export.as` keys — `validate` cannot catch dangling output references; they surface only at run time as `undefined`.
+- **Path-parameter value formats are connector-specific.** `Retrieve`/`Update`/`Delete` endpoints take an id path param (e.g. `/repos/{repo}`) and the expected value format (name vs full name vs numeric id) varies and is sometimes wrong in the connector's own metadata — `uip is resources describe` shows the parameter's description and lookup hints. If the run 404s, cross-check by executing the same operation via `uip is resources run get <connector-key> <object-name> --connection-id <uuid> --query <param>=<value>`; if that also 404s, the connector's auto-generated metadata is broken upstream — pick a Curated activity or the Http kind instead.
+- **Quality varies by connector.** Generic operations are auto-generated from vendor API specs and are not hand-verified the way Curated ones are. Prefer a Curated activity when one exists for the job.
 
 ## Vendor curated activity response shape — `content.X`, not `X`
 
@@ -625,22 +673,25 @@ uip is connections list --output json
 # → search Data for entries with ConnectorKey == "uipath-microsoft-outlook365",
 #   take a different Id, and re-ping it. Only abort if no UUID pings.
 
-# 3a. Stub the activity (note: without --inputs the stub emits queryParameters: {})
+# 3a. Describe the operation FIRST — learn which inputs it needs (required
+#     flags, value semantics, lookup hints) before stubbing:
+uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
+  --operation List \
+  --connection-id a8e592a5-76bb-4062-b712-3c364e4a1128 \
+  --output json
+# → Parameters[]: parentFolderId (query, required: true, "The folder to get the email from")
+
+# 3b. Stub once, passing the required inputs learned in 3a (without --inputs
+#     the stub emits queryParameters: {} and a Data.Warnings entry naming the
+#     missing required fields)
 uip api-workflow registry stub b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a \
   --connection-id a8e592a5-76bb-4062-b712-3c364e4a1128 \
   --inputs '{"parentFolderId":"Inbox"}' \
   --output json
 # → Kind: "IntSvc", SlotKey: "GetNewestEmail_1", ExportBucketKey: "getNewestEmail_1",
 #   Activity: { GetNewestEmail_1: { ... } }, ResponseFields: [...]
-
-# 3b. Cross-check required request fields — stub silently drops them
-uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
-  --operation List \
-  --connection-id a8e592a5-76bb-4062-b712-3c364e4a1128 \
-  --output json
-# → Data.queryParameters[] has parentFolderId with required: true.
-# If --inputs was omitted in Step 3a, re-run with --inputs '{"parentFolderId":"inbox"}'
-# (or edit the activity by hand) before continuing.
+# Safety net: confirm Data.Warnings is empty — a "Required field(s) not
+# provided via --inputs" entry means 3a was skipped or a value was missed.
 
 # 5. Write the Solution connection-resource file (required for Solutions-mode projects):
 #    Solution/resources/solution_folder/connection/uipath-microsoft-outlook365/<connection-name>.json
@@ -723,7 +774,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 
 ## Limits of this approach
 
-1. **`activityType` values other than `"Curated"`** (e.g. `"Generic"`, `"GenericTrigger"`, `"CuratedTrigger"`) need different `metadata.configuration` shapes — Generic activities require an explicit `operation` (`"list"`, `"create"`, etc.), Triggers require event-related fields. The current `stub` rejects non-Curated activities with `Activity type 'X' is not supported in v1`. For those, escalate to manual authoring or wait for a `stub` extension.
+1. **Trigger activity types cannot be stubbed** (`"CuratedTrigger"`, `"GenericTrigger"`, `"GenericPersistence"`, …) — they are event subscriptions, not callable tasks, and `stub` rejects them with `Activity type 'X' is not supported`. `Curated` and `Generic` activities are both supported; Generic additionally requires `--object-name` (see [Generic activities](#generic-activities----object-name-required-list-all-records-of-what)). For triggers, escalate to manual authoring.
 
 2. **Stub doesn't validate `--inputs` against the IS schema.** Field names not in `requestFields` / `parameters` are silently dropped on the way through `pickFields`. Check `Data.ResponseFields` and the IS schema if a value goes missing.
 
@@ -733,6 +784,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 
 ## Anti-patterns
 
+- **Do NOT guess connector keys.** Keys are full vendor identifiers (`uipath-microsoft-github`, `uipath-salesforce-slack` — note the vendor segment is not always what you'd expect). Guessing `github` 404s. Read `ConnectorKey` from `resolve` output, or look it up with `uip is connectors list --filter <vendor>` — and don't fire the connections lookup in parallel with `resolve`, since the key comes from `resolve`.
 - **Do NOT invent a `uiPathActivityTypeId`.** It must come from `registry resolve`. Hand-authoring or reusing a fallback default produces a generic/wrong card.
 - **Do NOT hand-write the `metadata.configuration` blob.** `registry stub` builds it from the TypeCache `Config` + IS Elements path. Any other shape risks the "block icon" rendering.
 - **Do NOT skip `uip is connections ping` for IntSvc kind.** A connection in the listing can still be in a broken state. Always ping after listing.
@@ -747,4 +799,4 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 - **Do NOT remove `multipartParameters` from a multipart endpoint** — even for an attachment-less email. The executor's multipart wrapper depends on the declaration; without it, the vendor returns `400 "Unable to parse multipart body"`.
 - **Do NOT trust `registry stub`'s `queryParameters` / `pathParameters` / `bodyParameters` as complete.** The stub drops `required: true` fields. After every stub call, cross-check via `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` (or parse `metadata.configuration.optionalConfiguration.fieldsContainer.inputFields` from the stub output itself) and fill in anything required that's missing. Symptom of skipping: workflow runs locally on stale defaults, fails in cloud with a 4xx, or the StudioWeb properties panel marks the field invalid without a clear error.
 - **Do NOT leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` (or any `<REPLACE_WITH_*>` placeholder) in a generated workflow.** StudioWeb's properties panel renders the literal placeholder string as if it were a real connection name — the connection pill shows `<REPLACE_WITH_VENDOR_C...>` with a red error, and any subsequent run 401s in cloud. The placeholder is meaningful **only** in the template file under `assets/templates/`; the moment you copy the stub's `Data.Activity` into the user's workflow, every placeholder MUST become a real value (UUID from `uip is connections ping`, URL from `--inputs` or the user's request). If you don't have a working UUID, **stop authoring** and ask the user — do not write the sentinel to disk. Re-stubbing with `--connection-id <uuid>` is the cleanest way to avoid the placeholder ever existing in the output.
-- **Do NOT skip the Solution catalogue sync in Solutions-mode projects.** Two files MUST exist: the catalogue resource (`Solution/resources/solution_folder/connection/<connector-key>/<name>.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`). Without both, the properties panel flags the activity with "to debug this resource, select a connection for it from the resource definition page" and clicking the activity nulls `with.connectionId`. Run `uip api-workflow bindings sync --workflow <Workflow.json>` followed by `uip solution resource refresh --solution-folder <path>` to write both. See [Step 5](#step-5--solutions-mode-intsvc-kind-sync-the-connection-into-the-solution-catalogue).
+- **Do NOT skip the Solution catalogue sync in Solutions-mode projects.** Two files MUST exist: the catalogue resource (`Solution/resources/solution_folder/connection/<connector-key>/<name>.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`). Without both, the properties panel flags the activity with "to debug this resource, select a connection for it from the resource definition page" and clicking the activity nulls `with.connectionId`. Run `uip api-workflow bindings sync --workflow <Workflow.json>` followed by `uip solution resources refresh --solution-folder <path>` to write both. See [Step 5](#step-5--solutions-mode-intsvc-kind-sync-the-connection-into-the-solution-catalogue).

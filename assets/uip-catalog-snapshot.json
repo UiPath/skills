@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-11T05:38:56Z",
+  "generated_at": "2026-06-12T05:38:07Z",
   "cli_version": "1.196.0-alpha.20260610.7478",
   "verbs": [
     "admin",
@@ -146,6 +146,7 @@
     "agent context add",
     "agent context list",
     "agent context remove",
+    "agent debug",
     "agent deploy",
     "agent escalation",
     "agent escalation add",

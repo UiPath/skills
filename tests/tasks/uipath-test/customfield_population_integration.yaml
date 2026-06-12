@@ -1,0 +1,82 @@
+task_id: skill-test-customfield-population-integration
+description: >
+  Integration test: agent uses the uipath-test skill to populate custom
+  field *rows* on a specific, named test case after defining the fields.
+  The distinction the skill must teach: top-level `customfield` manages
+  definitions, while the nested `value` (Text) and `label` (Label)
+  subgroups fill in per-object rows. The prompt references the target by
+  its human-readable key and description (HEALTH:11 "PHI Masking - SSN in
+  Patient Search Results") and the agent resolves it to an id live. It
+  defines two TestCase-scoped fields, writes a Text value on HEALTH:11
+  (create then update), tags HEALTH:11 with Label values, and reads the
+  label rows back. Assertions validate the complete command shape with the
+  exact field names and the case-sensitive `--object-type TestCase`.
+tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:customfield]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 55
+
+initial_prompt: |
+  I'm working in the HEALTH project in Test Manager. I'd like to add some
+  governance metadata to the test case "PHI Masking - SSN in Patient
+  Search Results" (HEALTH:11) — you'll need to find its id first.
+
+  First, define two new custom field definitions on test cases (create
+  each field definition): a free-text field called "Eval Reviewer" for who
+  signed off, and a tag/label field called "Eval Risk" for risk flags.
+  Both fields must exist before you fill anything in.
+
+  Then, on that PHI Masking test case, set its Eval Reviewer value to
+  "qa-team-lead" (create the value entry for that field on the test case),
+  and tag it under Eval Risk with "high" and "regression". When that's
+  done, show me the Eval Risk tags on it so I can confirm they stuck.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Resolved HEALTH:11's id (`uip tm testcases list --project-key HEALTH --output json`)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+list\s'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create commands defining fields scoped TestCase: `uip tm customfield create --project-key HEALTH --name <name> --data-type <Text|Label> --object-type TestCase --output json` (x2)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--data-type\s+(Text|Label))(?=.*--output\s+json)uip\s+tm\s+customfield\s+create\b'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete value row command on the Text field: `uip tm customfield value (create|update) --project-key HEALTH --object-type TestCase ... --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--output\s+json)uip\s+tm\s+customfield\s+value\s+(create|update)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete label tag command — either form: `uip tm customfield label add --project-key HEALTH --object-type TestCase --custom-field-name \"Eval Risk\" --object-ids <uuid> --values high regression --output json`, or `label create ... --values '{\"Eval Risk\":[\"high\",\"regression\"]}'`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*Eval Risk)(?=.*--values)(?=.*--output\s+json)uip\s+tm\s+customfield\s+label\s+(add|create)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete read-back command: `uip tm customfield label list --project-key HEALTH --object-type TestCase --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--output\s+json)uip\s+tm\s+customfield\s+label\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

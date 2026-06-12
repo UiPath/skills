@@ -88,11 +88,11 @@ Filter rows where `NodeType` starts with `<prefix>.` and `DisplayName` matches. 
 uip maestro flow registry get "<NodeType>" --output json
 ```
 
-For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). All four subtypes share discovery, `resource.json` shape, and refresh — only the `type` field and the schema flavor differ (see § Subtypes in `process.md`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/Sales)` → `"Shared/Sales"`) or from `uip solution resource get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resource refresh` from resolving the tool at runtime.
+For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). All four subtypes share discovery, `resource.json` shape, and refresh — only the `type` field and the schema flavor differ (see § Subtypes in `process.md`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/Sales)` → `"Shared/Sales"`) or from `uip solution resources get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resources refresh` from resolving the tool at runtime.
 
 ### Anti-pattern
 
-Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json` and let `uip solution resource refresh` materialize the solution-level files.
+Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json` and let `uip solution resources refresh` materialize the solution-level files.
 
 ## Planning Annotation
 

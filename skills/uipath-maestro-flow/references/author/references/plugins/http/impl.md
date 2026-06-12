@@ -15,7 +15,7 @@ This page is the entry point for implementing a managed HTTP node. Pick your aut
 | **Connector** | Target system has an IS connector — auth via an existing IS connection (OAuth/API key) | [impl-connector.md](impl-connector.md) |
 | **Manual** | No connector exists, public/no-auth API, or quick prototyping | [impl-manual.md](impl-manual.md) |
 
-> **Mode fallback — auto-try, then confirm.** Prefer a curated connector activity first; if none, use connector mode; if connector mode cannot be configured (connector lacks HTTP request support — `HasHttpRequest` false — or no usable IS connection), fall through to manual mode automatically. Manual changes the auth model (you supply auth yourself), so confirm the switched mode with the user via `AskUserQuestion` before finalizing. See [impl-connector.md — Step 2](impl-connector.md#step-2--identify-target-connection).
+> **Mode fallback — auto-try, then confirm.** Prefer a curated connector activity first; if none, use connector mode; if connector mode cannot be configured (connector lacks HTTP request support — `HasHttpRequest` false — or no usable IS connection), fall through to manual mode automatically. Manual changes the auth model (you supply auth yourself), so confirm the switched mode with the user before finalizing. See [impl-connector.md — Step 2](impl-connector.md#step-2--identify-target-connection).
 
 The `--detail` payload differs in two places between modes: `authentication` (`"connector"` vs `"manual"`), and the connector-binding fields `targetConnector` / `connectionId` / `folderKey` (connector mode only; `url` is then relative to the connector base, vs. an absolute URL in manual mode). Everything else (node add, dynamic values, branches, edges, debug) is shared.
 

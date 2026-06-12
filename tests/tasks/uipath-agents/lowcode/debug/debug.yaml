@@ -1,0 +1,57 @@
+task_id: skill-agent-lowcode-debug
+description: >
+  E2E: a pre-built minimal low-code agent is seeded from a fixture. Using the
+  uipath-agents skill, the agent debugs it with `uip agent debug` — which
+  uploads the enclosing solution to Studio Web and runs it on the serverless
+  runtime — and the run must finish Successful. Exercises the lowcode/debug.md
+  teaching live.
+tags: [uipath-agents, e2e, low-code, mode:operate, lifecycle:setup]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/MathSolution
+
+run_limits:
+  expected_turns: 8
+  turn_timeout: 1200
+
+initial_prompt: |
+  I have a low-code agent at MathSolution/MathAgent. Debug it with the input
+  {"input": "What is 2 plus 2? Reply with just the number."} and show me the
+  result.
+
+  Do NOT publish or deploy. Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation. Complete the entire task
+  end-to-end in a single pass. Before starting, load the uipath-agents skill and
+  follow its low-code debug workflow exactly.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent loaded the uipath-agents skill"
+    tool_name: "Skill"
+    command_pattern: "uipath-agents"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # `uip agent debug` exits non-zero unless the run reaches State:Successful, so
+  # require_success asserts the agent's own debug finished Successful. The two
+  # lookaheads require that same successful command to carry both `--inputs`
+  # (the requested input was passed) and `--output json` (the skill's convention),
+  # in any order. Only MathAgent exists in the sandbox, so the agent path is
+  # implied.
+  - type: command_executed
+    description: "Agent ran a successful `uip agent debug` with both --inputs and --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+debug\b(?=.*--inputs)(?=.*--output\s+json)'
+    min_count: 1
+    require_success: true
+    weight: 6.0
+    pass_threshold: 1.0
+
+# `uip agent debug` uploads the solution to Studio Web; delete it afterward
+# (best-effort, never affects pass/fail). Set AGENT_E2E_CLEANUP=never to keep it.
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-agents/_shared/cleanup_solutions.py"
+    timeout: 120
