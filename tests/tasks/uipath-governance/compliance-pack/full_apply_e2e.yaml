@@ -1,0 +1,124 @@
+task_id: skill-governance-compliance-full-apply-e2e
+description: >
+  End-to-end: full ISO 42001 recommended settings apply lifecycle using the
+  plugin architecture. Agent must: (1) call catalog get for pack detail,
+  (2) run state coverage for posture analysis, (3) present posture plan,
+  (4) call state enable for full pack configuration, (5) verify with state get.
+  Tests the complete Branch C flow using uip gov compliance-packs CLI only.
+
+  Platform note: all uip commands fail with auth errors in this environment.
+  Run each once, record, proceed.
+tags: [uipath-governance, e2e, lifecycle:execute, feature:compliance]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+run_limits:
+  max_turns: 40
+
+initial_prompt: |
+  Apply the ISO 42001 recommended settings to my UiPath tenant to improve my
+  posture towards the standard. Follow the complete process:
+  1. Get the pack catalog detail
+  2. Run posture analysis to see what is configured vs not yet applied
+  3. Show me the posture plan
+  4. Apply the full pack
+  5. Verify the pack is active
+
+  Use the uipath-governance skill. Save a detailed summary to report.json:
+    {
+      "pack_id": "iso-42001-2023",
+      "posture_analysis_run": true,
+      "clauses_with_gaps": <number of clauses needing controls from coverage>,
+      "controls_to_configure": <number of controls not yet configured from coverage>,
+      "enable_called": true,
+      "verify_called": true,
+      "commands_attempted": ["<all commands in sequence>"]
+    }
+
+  Important:
+  - uip CLI is not connected to a live tenant - all commands will fail with auth errors.
+  - Run each command once, capture output (even error), and proceed.
+  - Use --output json on all uip gov commands.
+  - Do NOT prompt for confirmation at any step - automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Step 1: catalog get for pack detail"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Step 2: state coverage for posture analysis"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Step 4: state enable for full pack configuration"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\s+.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Step 5: state get to verify pack is active"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Full apply does NOT call aops-policy create (wrong path for full apply)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Full apply does NOT use pack-walker.mjs (removed in plugin architecture)"
+    command_pattern: 'pack-walker\.mjs'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms full posture improvement lifecycle completed"
+    path: "report.json"
+    assertions:
+      - expression: "pack_id"
+        operator: equals
+        expected: "iso-42001-2023"
+      - expression: "posture_analysis_run"
+        operator: equals
+        expected: true
+      - expression: "enable_called"
+        operator: equals
+        expected: true
+      - expression: "controls_to_configure"
+        operator: gte
+        expected: 1
+      - expression: "length(commands_attempted)"
+        operator: gte
+        expected: 4
+    weight: 3.0
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "Report references the iso-42001-2023 pack"
+    path: "report.json"
+    includes:
+      - "iso-42001-2023"
+    excludes:
+      - "pack-walker"
+      - "deployed-policy list"
+    weight: 1.5
+    pass_threshold: 1.0

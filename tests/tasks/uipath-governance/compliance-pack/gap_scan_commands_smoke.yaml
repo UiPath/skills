@@ -1,0 +1,58 @@
+task_id: skill-governance-compliance-gap-scan-commands
+description: >
+  Skill-guided: posture analysis must use catalog get + state coverage, NOT
+  deployed-policy commands or pack-walker.mjs. Tests the correct two-command
+  sequence in the plugin architecture.
+
+  Platform note: uip commands fail with auth errors - expected.
+tags: [uipath-governance, smoke, lifecycle:validate, feature:compliance]
+
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Run a posture analysis for ISO 42001 against my tenant. Show me which
+  recommended settings are configured and which are not yet applied.
+
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - uip CLI not connected - auth errors expected. Run once, capture, move on.
+  - Use --output json on all uip gov commands.
+  - Do NOT prompt for confirmation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent called catalog get for pack detail"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called state coverage for posture analysis"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT use pack-walker.mjs (removed in plugin architecture)"
+    command_pattern: 'pack-walker\.mjs'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT use deployed-policy commands (wrong path for compliance packs)"
+    command_pattern: 'deployed-policy\s+(list|get)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

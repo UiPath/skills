@@ -1,0 +1,54 @@
+task_id: skill-governance-compliance-nonregression-branch-a
+description: >
+  Non-regression: "block ChatGPT for my Studio developers" must route to Branch A
+  (AOps product policy) and NOT Branch C (compliance packs). Tests that adding
+  Branch C signals to SKILL.md did not break Branch A routing. The agent should
+  call aops-policy create, not deployed-policy list or pack-walker.
+tags: [uipath-governance, smoke, lifecycle:activate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Block ChatGPT (Anthropic provider) for all Studio developers in my tenant.
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - uip CLI is not connected to a live tenant - auth errors expected.
+  - Run each command once, capture output, and move on. Do NOT retry.
+  - Use --output json on all uip gov commands.
+  - Do NOT prompt for confirmation.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent did NOT run deployed-policy list (Branch C behaviour)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+list\s+.*--product-name'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT invoke pack-walker.mjs"
+    command_pattern: 'node\s+.*pack-walker\.mjs'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT call compliance-packs state commands (Branch C)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called aops-policy create (Branch A behaviour)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

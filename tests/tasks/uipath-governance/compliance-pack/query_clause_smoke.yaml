@@ -1,0 +1,42 @@
+task_id: skill-governance-compliance-query-clause
+description: >
+  Skill-guided: "what does clause A.6.2.8 recommend?" must use catalog get only -
+  zero state commands, zero mutations. Tests that information-only queries stay
+  in the query plugin and never trigger apply flows.
+
+  Platform note: uip commands fail with auth errors - expected.
+tags: [uipath-governance, smoke, lifecycle:discover, feature:compliance]
+
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  What does ISO 42001 clause A.6.2.8 recommend for my UiPath tenant?
+
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - uip CLI not connected - auth errors expected. Use --output json.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent called catalog get to retrieve clause recommendations"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Query does NOT call any state commands - information only, no mutations"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+(coverage|enable|disable|get|list)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

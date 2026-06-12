@@ -1,0 +1,47 @@
+task_id: skill-governance-compliance-interactive-values
+description: >
+  Skill-guided: partial apply for Robot UIAutomation controls must detect controls
+  needing user-supplied values (synthesize-formdata.mjs notEmpty warning) and prompt
+  the user before proceeding. Tests Step 1b of partial-apply/impl.md.
+
+  Platform note: uip commands fail with auth errors - expected.
+tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
+
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Apply the Robot UIAutomation recommended settings from ISO 42001.
+  I want to configure the URL and application allowlists for UIAutomation.
+
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  When the skill asks for URL or application lists, respond with SKIP for now.
+  Important: uip CLI not connected - auth errors expected. Use --output json.
+  - The catalog get command will fail with auth errors. Still proceed to run
+    synthesize-formdata.mjs with --product Robot using the saved catalog.json.
+  - synthesize-formdata.mjs MUST be invoked even if catalog.json contains an error response.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent called catalog get for Robot UIAutomation control data"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran synthesize-formdata.mjs targeting Robot product (Bash or PowerShell)"
+    command_pattern: 'node\s+.*synthesize-formdata\.mjs.*--product\s+["\047]?Robot["\047]?'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0
