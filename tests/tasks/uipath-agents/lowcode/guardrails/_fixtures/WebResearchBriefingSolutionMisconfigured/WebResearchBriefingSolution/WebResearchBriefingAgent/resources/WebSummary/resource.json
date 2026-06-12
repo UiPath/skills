@@ -1,0 +1,142 @@
+{
+  "$resourceType": "tool",
+  "id": "dd86582a-758b-421e-a313-63baaa80288b",
+  "type": "integration",
+  "location": "external",
+  "name": "Web Summary",
+  "description": "Web summary executes a web search and returns an AI-generated summary of the results along with citation URLs.",
+  "isEnabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "title": "Search",
+        "description": "The natural language query to search the web for"
+      },
+      "provider": {
+        "type": "string",
+        "title": "Search Engine",
+        "description": "The search engine to use.",
+        "enum": [
+          "Perplexity"
+        ],
+        "oneOf": [
+          {
+            "const": "Perplexity",
+            "title": "Perplexity"
+          }
+        ]
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "query",
+      "provider"
+    ]
+  },
+  "outputSchema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "response": {
+        "title": "Search Summary",
+        "type": "string",
+        "description": "The summary of the web search results."
+      },
+      "citations[*]": {
+        "title": "Citations",
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/citations[*]"
+        }
+      }
+    },
+    "definitions": {
+      "citations[*]": {
+        "type": "string",
+        "description": "URLs used to generate the search results"
+      }
+    }
+  },
+  "iconUrl": "https://alpha.uipath.com/elements_/scaleunit_/3854d037-4ab5-4881-909b-968c433f6d88/v3/element/elements/uipath-uipath-airdk/image",
+  "settings": {},
+  "isPreview": false,
+  "properties": {
+    "toolPath": "/v1/webSummary",
+    "objectName": "v1::webSummary",
+    "toolDisplayName": "Web Summary",
+    "toolDescription": "Web summary executes a web search and returns an AI-generated summary of the results along with citation URLs.",
+    "method": "POST",
+    "bodyStructure": {
+      "contentType": "json"
+    },
+    "connection": {
+      "id": "d2e61ee5-6008-4162-8f54-eba948bbd5a0",
+      "name": "UiPath GenAI Activities",
+      "elementInstanceId": 0,
+      "apiBaseUri": "",
+      "state": "enabled",
+      "isDefault": false,
+      "connector": {
+        "key": "uipath-uipath-airdk",
+        "name": "UiPath GenAI Activities",
+        "image": "https://alpha.uipath.com/elements_/scaleunit_/3854d037-4ab5-4881-909b-968c433f6d88/v3/element/elements/uipath-uipath-airdk/image",
+        "enabled": true
+      },
+      "folder": {
+        "key": "284cd393-c966-4d00-84e6-8dadc432534f",
+        "path": "284cd393-c966-4d00-84e6-8dadc432534f"
+      },
+      "solutionProperties": {
+        "resourceKey": "d2e61ee5-6008-4162-8f54-eba948bbd5a0"
+      }
+    },
+    "parameters": [
+      {
+        "name": "query",
+        "displayName": "Search",
+        "type": "string",
+        "fieldLocation": "body",
+        "value": "{{prompt}}",
+        "description": "The natural language query to search the web for",
+        "position": "primary",
+        "sortOrder": 1,
+        "required": true,
+        "fieldVariant": "dynamic",
+        "isCascading": false,
+        "dynamic": true,
+        "enumValues": null,
+        "loadReferenceOptionsByDefault": null,
+        "dynamicBehavior": [],
+        "reference": null
+      },
+      {
+        "name": "provider",
+        "displayName": "Search Engine",
+        "type": "string",
+        "fieldLocation": "body",
+        "value": "Perplexity",
+        "description": "The search engine to use.",
+        "position": "primary",
+        "sortOrder": 2,
+        "required": true,
+        "fieldVariant": "static",
+        "isCascading": false,
+        "dynamic": false,
+        "enumValues": [
+          {
+            "name": "Perplexity",
+            "value": "Perplexity"
+          }
+        ],
+        "loadReferenceOptionsByDefault": null,
+        "dynamicBehavior": [],
+        "reference": null
+      }
+    ]
+  },
+  "guardrail": {
+    "policies": []
+  }
+}
