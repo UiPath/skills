@@ -107,6 +107,15 @@ Namespaces: `UiPath.Excel.Activities`
 - [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, `Invoke VBA` execution model, and common failure patterns
 - [activity-packages/excel-activities/summary.md](./activity-packages/excel-activities/summary.md) — All playbooks for Excel Activities issues
 
+## Word Activities
+
+Activities for automating Microsoft Word documents on Windows. Document operations run inside a `Use Word File` (`WordProcessScope`) or `Word Application Scope` container and drive Word through Office Interop (COM). Issues here involve `Add Picture` (`WordAddImage`) failures — activity placed outside a Word scope, COM interop exceptions (`0x8002801D` library-not-registered, `0x8001010A` application-busy), insertion target (text/bookmark) not found, and invalid image path / unusable image input.
+
+Namespaces: `UiPath.Word.Activities`
+
+- [activity-packages/word-activities/overview.md](./activity-packages/word-activities/overview.md) — Package overview, `Add Picture` execution model, and common failure patterns
+- [activity-packages/word-activities/summary.md](./activity-packages/word-activities/summary.md) — All playbooks for Word Activities issues
+
 
 ## Playbooks
 
