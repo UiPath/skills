@@ -8,10 +8,7 @@ Two node types implement human-in-the-loop checkpoints. Choose based on whether 
 
 This is the preferred option. No registry pull, no app publishing, no tenant dependency. Write the node directly into the `.flow` file as JSON.
 
-**Full implementation guide, JSON examples, and schema conversion rules:**
-→ [`uipath-human-in-the-loop` skill — hitl-node-quickform.md](../../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md)
-
-> **Note:** Skills are self-contained. This cross-skill reference is for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes. This implementation guide is for implementation-phase topology resolution only — not for schema design or node writing.
+Full schema contracts, conversion rules, and the app-task variant are owned by the `uipath-human-in-the-loop` skill — load it for HITL node implementation beyond this quick reference.
 
 ### Adding / Editing
 
@@ -115,7 +112,7 @@ GET {BASE_URL}/{ORG}/studio_/backend/api/resourcebuilder/solutions/{SOLUTION_ID}
   &types=VB%20Action&types=Workflow%20Action&types=Coded%20Action&types=CodedAction&types=JS%20Action
 ```
 
-Full step-by-step (app search → retrieve-configuration → resource files → reference registration → debug overwrites) → **[hitl-node-apptask.md](../../../../../../uipath-human-in-the-loop/references/hitl-node-apptask.md)**
+The full step-by-step (app search → retrieve-configuration → resource files → reference registration → debug overwrites) is owned by the `uipath-human-in-the-loop` skill's app-task reference — load it for implementation.
 
 ### Node JSON (Quick Reference)
 

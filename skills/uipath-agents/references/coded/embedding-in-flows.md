@@ -92,7 +92,7 @@ uip maestro flow registry list --local --output json
 uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output json
 ```
 
-The second command's `Data.Node` object is what the flow skill pastes into the flow's `definitions[]`. For the node instance shape and top-level `bindings[]` entries, see [agent/impl.md § In-solution variant](../../../uipath-maestro-flow/references/author/references/plugins/agent/impl.md#node-instance-inside-nodes--in-solution-variant).
+The second command's `Data.Node` object is what the flow skill pastes into the flow's `definitions[]`. The node instance shape and top-level `bindings[]` entries are owned by the `uipath-maestro-flow` skill's agent plugin — load that skill for flow-side authoring.
 
 Without `--local`, `registry list`/`get` query the tenant registry (Orchestrator-published resources only) and will not surface the sibling project.
 
@@ -100,7 +100,7 @@ Without `--local`, `registry list`/`get` query the tenant registry (Orchestrator
 
 The agent node carries one entry under `inputs.<fieldName>` for every property declared in the agent's `entry-points.json` input schema (the Pydantic `Input` model). `uip maestro flow node add` seeds each entry with an empty string; you replace that placeholder with one of two forms.
 
-> **Do NOT use `=js:` for these fields.** Agent input slots are bound by the agent activity, not evaluated by Jint. Wrapping the value in `=js:` ships the literal string `=js:...` to the agent and the runtime fails with `Cannot find name '<identifier>'`. The same rule applies to inputs on most action nodes — `=js:` is reserved for the few fields explicitly documented to take expressions (decision `expression`, variable updates, end-node output `source`, IS connector `bodyParameters` — see [variables-and-expressions.md](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md)).
+> **Do NOT use `=js:` for these fields.** Agent input slots are bound by the agent activity, not evaluated by Jint. Wrapping the value in `=js:` ships the literal string `=js:...` to the agent and the runtime fails with `Cannot find name '<identifier>'`. The same rule applies to inputs on most action nodes — `=js:` is reserved for the few fields explicitly documented to take expressions (decision `expression`, variable updates, end-node output `source`, IS connector `bodyParameters`). Full flow-variable semantics live in the `uipath-maestro-flow` skill (shared/variables-and-expressions).
 
 ### Allowed forms
 
@@ -132,4 +132,4 @@ Or, with a `variableUpdate` against an `inout` global:
 }
 ```
 
-See [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates) for the full rules around `=js:` contexts.
+Full rules around `=js:` contexts and variable updates live in the `uipath-maestro-flow` skill (shared/variables-and-expressions).

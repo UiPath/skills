@@ -20,23 +20,37 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 ## Step 0 — Resolve the `uip` binary
 
-`uip` is installed via npm. Resolve the binary (it may not be on PATH in nvm environments), capture its version, and upgrade only when the installed version is **older** than the latest published `@uipath/cli` — dev builds may be newer than the npm release, leave those alone:
+<!-- BEGIN CANONICAL: uip-cli-resolution -->
+Resolve the `uip` binary — npm global installs may not be on PATH (e.g. nvm environments):
 
 ```bash
 UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
-CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
-LATEST=$(npm view @uipath/cli version 2>/dev/null)
-OLDEST=$(printf '%s\n%s\n' "$LATEST" "$CURRENT" | sort -V | head -n1)
-if [ -z "$CURRENT" ] || { [ "$CURRENT" != "$LATEST" ] && [ "$OLDEST" = "$CURRENT" ]; }; then
-  npm install -g @uipath/cli@latest
-  UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
-fi
 $UIP --version
 ```
 
 Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` command isn't found.
 
-If `npm install -g` fails with a permission error, prompt the user to re-run it with the appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
+If `uip` is not installed:
+
+```bash
+npm install -g --@uipath:registry=https://registry.npmjs.org/ @uipath/cli@latest
+```
+
+The `--@uipath:registry` flag pins the `@uipath` scope to public npm — guards against corporate default-registry mirrors that don't host `@uipath`. If `npm install -g` fails with a permission error, prompt the user to re-run with appropriate privileges (e.g., `sudo`) — do not retry automatically.
+<!-- END CANONICAL: uip-cli-resolution -->
+
+**Case-specific version check.** Upgrade only when the installed version is **older** than the latest published `@uipath/cli` — dev builds may be newer than the npm release, leave those alone:
+
+```bash
+CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
+LATEST=$(npm view @uipath/cli version --@uipath:registry=https://registry.npmjs.org/ 2>/dev/null)
+OLDEST=$(printf '%s\n%s\n' "$LATEST" "$CURRENT" | sort -V | head -n1)
+if [ -z "$CURRENT" ] || { [ "$CURRENT" != "$LATEST" ] && [ "$OLDEST" = "$CURRENT" ]; }; then
+  npm install -g --@uipath:registry=https://registry.npmjs.org/ @uipath/cli@latest
+  UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
+fi
+$UIP --version
+```
 
 ## Step 1 — Check login and pull registry
 

@@ -9,7 +9,7 @@ The flow needs to pause for a human to review, approve, or fill in data. Two nod
 | Use case | Node type | Form source |
 | --- | --- | --- |
 | Inline form designed right now (fields + outcomes defined in the flow) | `uipath.human-in-the-loop` | Schema embedded in node inputs — no app needed |
-| Existing coded app or Action Center app | `uipath.core.human-task.{key}` | Deployed app from Orchestrator |
+| Existing coded app or Action Center app | `uipath.human-in-the-loop` with `inputs.type="custom"` (2a) or `uipath.core.human-task.{key}` resource node (2b) — see Option 2 | Deployed app from Orchestrator |
 
 **Prefer `uipath.human-in-the-loop`** for new flows. It is an OOTB node — no registry discovery, no app publishing, no tenant dependency.
 
@@ -65,9 +65,7 @@ outcomes: [Approve, Reject]
 priority: Low
 ```
 
-Full JSON format and conversion examples: see [`uipath-human-in-the-loop` skill](../../../../../../uipath-human-in-the-loop/references/hitl-node-quickform.md).
-
-> **Note:** Skills are self-contained — cross-skill references are for documentation context only. The agent uses the `uipath-human-in-the-loop` skill to implement HITL nodes; this planning guide is for topology selection only.
+Full schema contracts, conversion rules, and the app-task variant are owned by the `uipath-human-in-the-loop` skill — load it for HITL node implementation beyond this quick reference.
 
 ### Wiring Pattern
 

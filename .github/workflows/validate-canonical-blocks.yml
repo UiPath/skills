@@ -1,0 +1,26 @@
+name: Validate Canonical Blocks
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**/*.md'
+      - 'assets/canonical-blocks/**'
+      - 'scripts/check-canonical-blocks.py'
+      - '.github/workflows/validate-canonical-blocks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-canonical-blocks:
+    runs-on: ubuntu-latest
+    name: Verify canonical block copies match their source
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Check canonical blocks
+        run: python3 scripts/check-canonical-blocks.py
