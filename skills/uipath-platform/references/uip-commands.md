@@ -73,7 +73,7 @@ Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset o
 
 ## Solution (`uip solution`)
 
-`uip solution` (init/new, project add|remove|import, resource list|refresh|get|add|remove|edit, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
+`uip solution` (init/new, project add|remove|import, resource list|refresh|get|add|remove|edit, restore, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
 
 ---
 

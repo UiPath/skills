@@ -1104,6 +1104,7 @@
     "solution resources list",
     "solution resources refresh",
     "solution resources remove",
+    "solution restore",
     "solution upload",
     "tasks",
     "tasks assign",
