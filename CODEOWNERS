@@ -59,6 +59,9 @@
 /tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
+# Conversational agents (folder-level ownership)
+/tests/tasks/uipath-agents/lowcode/conversational/ @maxduu @andrewwan-uipath
+
 # Planner skill
 /skills/uipath-planner/ @RaduAna-Maria
 /tests/tasks/uipath-planner/ @RaduAna-Maria

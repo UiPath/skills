@@ -6,7 +6,7 @@ description: >
   inputSchema + `{{input.question}}` user-message template). Verifies the
   skill correctly restrains the agent: inputSchema stays empty,
   outputSchema stays empty, and messages[1].content is a static
-  placeholder — per Critical Rules 23 and 24.
+  placeholder — per Critical Rule 26 and § Input/Output Schema guidance.
 tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, feature:conversational]
 max_iterations: 1
 
@@ -86,7 +86,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_check
-    description: "messages[1] does NOT use {{input.*}} variable template (Rule 23)"
+    description: "messages[1] does NOT use {{input.*}} variable template (§ Messages guidance)"
     path: "QASol/QAAgent/agent.json"
     excludes:
       - "{{input"

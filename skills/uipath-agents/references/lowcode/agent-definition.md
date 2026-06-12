@@ -83,6 +83,8 @@ Primary configuration file for autonomous agent. Edit directly.
 ### Conversational agent.json
 Primary configuration file for conversational agent. Edit directly.
 
+> **After `uip agent init --conversational`, set `metadata.targetRuntime` to `null`.** The CLI scaffolds `"pythonAgent"` by default, but conversational agents are not yet enabled in PROD — the runtime value is intentionally left null until it is finalized.
+
 ```json
 {
   "version": "1.1.0",
@@ -103,7 +105,7 @@ Primary configuration file for conversational agent. Edit directly.
     },
     "required": ["<FIELD_NAME>"]
   },
-  "outputSchema": { // Properties should remain empty for conversational
+  "outputSchema": {
     "type": "object",
     "properties": {}
   },
@@ -111,7 +113,7 @@ Primary configuration file for conversational agent. Edit directly.
     "storageVersion": "50.0.0",
     "isConversational": true,
     "showProjectCreationExperience": false,
-    "targetRuntime": "pythonAgent"
+    "targetRuntime": null
   },
   "type": "lowCode",
   "messages": [
@@ -123,7 +125,7 @@ Primary configuration file for conversational agent. Edit directly.
       ]
     },
     {
-      "role": "user", // Content should remain empty for conversational
+      "role": "user",
       "content": "",
       "contentTokens": []
     }
@@ -219,7 +221,7 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 | `storageVersion` | Managed by `uip agent refresh` — do not edit |
 | `isConversational` | `false` for autonomous agents, `true` for conversational agents. Do not edit. |
 | `showProjectCreationExperience` | `false` |
-| `targetRuntime` | `"pythonAgent"` |
+| `targetRuntime` | `"pythonAgent"` for autonomous. **`null` for conversational** — conversational agents are not yet in PROD, so the field is intentionally left null until the runtime value is finalized. |
 
 ### Input Schema
 

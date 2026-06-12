@@ -10,14 +10,14 @@ description: >
   shell (empty schemas, conversational engine, static user message)
   differs.
 tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, context-grounding]
+max_iterations: 1
 
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
-run_limits:
   turn_timeout: 1200
+  max_turns: 50
 
 sandbox:
   driver: tempdir
