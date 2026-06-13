@@ -256,12 +256,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Pin coder_eval to the tag in version-manifest.json (coderEvalVersion)
-      # so smoke runs the same engine as run-coder-eval.yml and the nightly,
-      # instead of silently tracking coder_eval's default branch.
+      # Pin coder_eval to the tag in tests/.coder-eval-version so smoke runs the
+      # same engine as run-coder-eval.yml and the nightly, instead of silently
+      # tracking coder_eval's default branch.
       - name: Resolve coder_eval pin
         id: ceref
-        run: echo "ref=$(jq -r '.coderEvalVersion // "main"' version-manifest.json)" >> "$GITHUB_OUTPUT"
+        run: echo "ref=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
