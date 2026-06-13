@@ -256,9 +256,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pin coder_eval to the tag in tests/.coder-eval-version so smoke runs the
+      # same engine as run-coder-eval.yml and the nightly, instead of silently
+      # tracking coder_eval's default branch.
+      - name: Resolve coder_eval pin
+        id: ceref
+        run: echo "ref=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
+          ref: ${{ steps.ceref.outputs.ref }}
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
