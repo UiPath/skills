@@ -32,8 +32,8 @@ on:
         description: 'Allow >50 tasks (cost guardrail).'
         type: boolean
         default: false
-      coder_eval_version:
-        description: 'coder_eval version (blank = pinned)'
+      coder_eval_ref:
+        description: 'coder_eval ref (blank = pinned version)'
         type: string
         default: ''
       cli_version:
@@ -54,22 +54,22 @@ jobs:
       windows_globs:  ${{ steps.split.outputs.windows_globs }}
       linux_count:    ${{ steps.split.outputs.linux_count }}
       windows_count:  ${{ steps.split.outputs.windows_count }}
-      coder_eval_version: ${{ steps.ceref.outputs.version }}
+      coder_eval_ref: ${{ steps.ceref.outputs.ref }}
     steps:
       - uses: actions/checkout@v4
 
       # Single source of truth for the coder_eval version: the pinned tag in
-      # tests/.coder-eval-version. A non-blank coder_eval_version input overrides
-      # it for ad-hoc runs. Resolved once here and passed to both run jobs.
-      - name: Resolve coder_eval version (pinned; input overrides)
+      # tests/.coder-eval-version. A non-blank coder_eval_ref input overrides it
+      # for ad-hoc runs. Resolved once here and passed to both run jobs.
+      - name: Resolve coder_eval ref (pinned; input overrides)
         id: ceref
         env:
-          CE_VERSION_INPUT: ${{ inputs.coder_eval_version }}
+          CE_REF_INPUT: ${{ inputs.coder_eval_ref }}
         run: |
-          if [ -n "$CE_VERSION_INPUT" ]; then
-            echo "version=$CE_VERSION_INPUT" >> "$GITHUB_OUTPUT"
+          if [ -n "$CE_REF_INPUT" ]; then
+            echo "ref=$CE_REF_INPUT" >> "$GITHUB_OUTPUT"
           else
-            echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
+            echo "ref=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Resolve globs, split by tag, enforce large-run gate
@@ -138,7 +138,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
-          ref: ${{ needs.partition.outputs.coder_eval_version }}
+          ref: ${{ needs.partition.outputs.coder_eval_ref }}
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
@@ -286,7 +286,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
-          ref: ${{ needs.partition.outputs.coder_eval_version }}
+          ref: ${{ needs.partition.outputs.coder_eval_ref }}
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
