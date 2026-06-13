@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
   "skillsVersion": "1.196.0",
-  "targetCli": "^1.196.0"
+  "targetCli": "^1.196.0",
+  "coderEvalVersion": "v0.5.0"
 }

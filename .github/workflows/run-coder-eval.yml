@@ -33,9 +33,9 @@ on:
         type: boolean
         default: false
       coder_eval_ref:
-        description: 'coder_eval branch/SHA.'
+        description: 'coder_eval branch/SHA. Blank = pinned tag from version-manifest.json (coderEvalVersion).'
         type: string
-        default: main
+        default: ''
       cli_version:
         description: '@uipath/cli version.'
         type: string
@@ -50,12 +50,28 @@ jobs:
     runs-on: ubuntu-latest
     name: Partition globs by `windows` tag
     outputs:
-      linux_globs:   ${{ steps.split.outputs.linux_globs }}
-      windows_globs: ${{ steps.split.outputs.windows_globs }}
-      linux_count:   ${{ steps.split.outputs.linux_count }}
-      windows_count: ${{ steps.split.outputs.windows_count }}
+      linux_globs:    ${{ steps.split.outputs.linux_globs }}
+      windows_globs:  ${{ steps.split.outputs.windows_globs }}
+      linux_count:    ${{ steps.split.outputs.linux_count }}
+      windows_count:  ${{ steps.split.outputs.windows_count }}
+      coder_eval_ref: ${{ steps.ceref.outputs.ref }}
     steps:
       - uses: actions/checkout@v4
+
+      # Single source of truth for the coder_eval version: the pinned tag in
+      # version-manifest.json (coderEvalVersion). A non-blank coder_eval_ref
+      # input overrides it for ad-hoc runs. Resolved here (ubuntu has jq) and
+      # passed to both run jobs so the Windows runner needs no jq.
+      - name: Resolve coder_eval ref (manifest pin; input overrides)
+        id: ceref
+        env:
+          CE_REF_INPUT: ${{ inputs.coder_eval_ref }}
+        run: |
+          if [ -n "$CE_REF_INPUT" ]; then
+            echo "ref=$CE_REF_INPUT" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$(jq -r '.coderEvalVersion // "main"' version-manifest.json)" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Resolve globs, split by tag, enforce large-run gate
         id: split
@@ -123,7 +139,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
-          ref: ${{ inputs.coder_eval_ref }}
+          ref: ${{ needs.partition.outputs.coder_eval_ref }}
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
@@ -271,7 +287,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
-          ref: ${{ inputs.coder_eval_ref }}
+          ref: ${{ needs.partition.outputs.coder_eval_ref }}
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
