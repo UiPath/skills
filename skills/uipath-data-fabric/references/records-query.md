@@ -10,7 +10,7 @@ uip df records list <entity-id> --limit 50 --output json
 uip df records list <entity-id> --limit 50 --cursor <NextCursor> --output json
 ```
 
-Response: `{ TotalCount, Records, HasNextPage, NextCursor?, CurrentPage?, TotalPages? }`
+Response: `{ Items, TotalCount, HasNextPage, NextCursor?, CurrentPage?, TotalPages? }` (rows are under `Items`, not `Records`)
 
 - Use `HasNextPage` to check if more records exist
 - Pass the `NextCursor` string value to `--cursor` to fetch the next page
