@@ -83,8 +83,6 @@ Primary configuration file for autonomous agent. Edit directly.
 ### Conversational agent.json
 Primary configuration file for conversational agent. Edit directly.
 
-> **After `uip agent init --conversational`, set `metadata.targetRuntime` to `null`.** The CLI scaffolds `"pythonAgent"` by default, but conversational agents are not yet enabled in PROD — the runtime value is intentionally left null until it is finalized.
-
 ```json
 {
   "version": "1.1.0",
