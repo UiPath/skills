@@ -1,6 +1,6 @@
 # I/O Binding — Implementation
 
-> **Phase split.** Phase 3 only (Step 9.8). Phase 2 writes task shape (schema with empty `value` fields) but does not bind values. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Phase 3 only. Input/output binding at Step 9.8; in-expression `vars.$xref` marker resolution at Step 11.5 (after conditions + SLA). Phase 2 writes task shape (schema with empty `value` fields) but does not bind values. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are created and enriched (Step 9) and after global variable + output wiring is complete.
 
@@ -90,9 +90,9 @@ src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
 
-## In-Expression Marker Resolution (Step 9.9)
+## In-Expression Marker Resolution (Step 11.5)
 
-Whole-value `<-` (above) only resolves an input whose value IS the reference. To reference an upstream output from **inside** a `=js:` expression (composite payload, `conditionExpression`, SLA `expression`, computed `=` output, connector body field), the SDD embeds a `vars.$xref('Stage','Task','output')` marker — see [bindings-and-expressions.md § In-expression references](../../../bindings-and-expressions.md#in-expression-references-varsxref). Resolve all markers in **one pass over the whole `caseplan.json`**, run as the LAST step of Phase 3 — after every task/trigger/rule output is minted and deduped (so the marker resolves to the final, suffixed `var`), and after all input bindings are written.
+Whole-value `<-` (above) only resolves an input whose value IS the reference. To reference an upstream output from **inside** a `=js:` expression (composite payload, `conditionExpression`, SLA `expression`, computed `=` output, connector body field), the SDD embeds a `vars.$xref('Stage','Task','output')` marker — see [bindings-and-expressions.md § In-expression references](../../../bindings-and-expressions.md#in-expression-references-varsxref). Resolve all markers in **one pass over the whole `caseplan.json`** at **Step 11.5** — after conditions (Step 10) and SLA (Step 11) are written, and every task/trigger/rule output is minted and deduped (so the marker resolves to the final, suffixed `var`). This is the LAST mutation of Phase 3 before the validator; running it earlier (e.g. right after Step 9.8 input binding) misses markers in conditions / SLA and reads pre-dedup `var` ids.
 
 This single sink-blind pass replaces per-sink resolution: it walks every string value regardless of which sink holds it, so conditions, SLA, inputs, and connector bodies are all covered in one place.
 
@@ -226,7 +226,7 @@ Where a `=vars.X` reference resolves to a declaration with a different `type` th
 
 ### Check 4 — No surviving `$xref` markers
 
-Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 9.9 pass](#in-expression-marker-resolution-step-99) should have resolved them all; any survivor means its name-triple failed to resolve (typo'd stage / task / output name). Log ERROR with the unresolved triple and the available outputs on the named task — same diagnostic shape as a failed whole-value `<-`. Do not ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
+Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple failed to resolve (typo'd stage / task / output name). Log ERROR with the unresolved triple and the available outputs on the named task — same diagnostic shape as a failed whole-value `<-`. Do not ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
 
 ## Connector Tasks
 
@@ -268,7 +268,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Placeholder connector rule (no `rule.uipath.outputs[]`) | `SKIPPED` | Skip rule output bindings (nothing minted) |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
-| `$xref(...)` marker name-triple fails to resolve (Step 9.9 / Check 4) | `ERROR` | Leave token unsubstituted — log unresolved triple + available outputs |
+| `$xref(...)` marker name-triple fails to resolve (Step 11.5 / Check 4) | `ERROR` | Leave token unsubstituted — log unresolved triple + available outputs |
 | `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |
 | Out-arg formal entry has NO producer (no extraction, assignment, or bare-name match in any task outputs) AND companion has no `default` | `ERROR` | Log Out-arg pure-orphan issue (Check 2 above); AskUserQuestion |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |

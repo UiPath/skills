@@ -172,9 +172,9 @@ On continue (either `Skip publish and continue` or `Continue to phase 3` after p
 
 ---
 
-# Phase 3 — Implementation (Steps 9.6 – 11)
+# Phase 3 — Implementation (Steps 9.6 – 11.5)
 
-Steps 9.6 onwards wire connector task schemas, input/output values, conditions, and SLA. Full contract in [phased-execution.md § Phase 3](phased-execution.md#phase-3--implementation).
+Steps 9.6 onwards wire connector task schemas, input/output values, conditions, SLA, and in-expression marker resolution. Full contract in [phased-execution.md § Phase 3](phased-execution.md#phase-3--implementation).
 
 ## Step 9.6 — Phase 3 re-entry
 
@@ -187,6 +187,7 @@ Before any Phase 3 mutation:
    2. Bind task I/O values (Step 9.8)
    3. Add conditions (Step 10)
    4. Configure SLA + escalation (Step 11)
+   5. Resolve in-expression `vars.$xref` markers (Step 11.5)
 
    Inside each section, also seed per-T-entry sub-items (one per T-entry that section will Edit). Mark each `in_progress` before composing the entry's mutation in reasoning, `completed` after the Edit returns success. Per-T-entry items are the audit trail under the per-section batched contract (per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical)).
 
@@ -247,11 +248,15 @@ Skip the re-Read between sibling Edits. One validate at section end. Per-scope c
 
 One Read of `caseplan.json` at Step 11 entry. Group `tasks.md §4.8` entries by target (root or stage). For each target, one Edit replacing that target's full `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Skip the re-Read between sibling Edits. Supports per-conditional-rule escalations, ExceptionStage SLA, and multi-recipient single rules. One validate at section end.
 
+## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
+
+Runs after bindings (9.8), conditions (10), and SLA (11) — when every task / trigger / rule output is minted and deduped (the dedup pool spans tasks ∪ triggers ∪ rules, so a marker's target `var` is not final until Step 10's rule outputs are minted). Resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` in ONE pass: one Read, then Edit each string value holding a marker — substitute the source output's post-dedup `var` as bare `vars.<var>` (no leading `=`; the marker already sits inside `=js:`). Sink-blind: covers composite input payloads, `conditionExpression`, SLA `expression`, computed `=` outputs, and connector body fields in one place. An unresolved name-triple is an ERROR (Check 4 below). Algorithm + pseudocode: [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115). One validate at section end.
+
 ## Step 12 — End-of-Phase-3 validator pass
 
 > **Algorithm reference:** the per-check pseudocode + AskUserQuestion prompt templates + skill-response-per-pick details all live in [`plugins/variables/io-binding/impl-json.md § Binding Procedure`](plugins/variables/io-binding/impl-json.md#binding-procedure). This step is the orchestration hook; that doc is the algorithm. When in doubt, follow the impl-json doc.
 
-After all value bindings (Step 9.8), conditions (Step 10), and SLA (Step 11) are written, invoke the end-of-Phase-3 validator — Checks 1, 2, 3.
+After all value bindings (Step 9.8), conditions (Step 10), SLA (Step 11), and marker resolution (Step 11.5) are written, invoke the end-of-Phase-3 validator — Checks 1, 2, 3, 4.
 
 - **Check 1** — Resolve every `=vars.X` reference against `variables.{inputs, inputOutputs}[].id`. Scan all task input `value` fields, entry/exit condition expressions (stage and task), case-exit and trigger rule expressions, SLA expressions, and `=js:` expressions anywhere they appear. On unresolved → **AskUserQuestion** offering: (a) name the intended variable, (b) remove the reference, (c) continue with best-effort emit (entry logged under Open Items, runtime returns undefined).
 - **Check 2 — Out-arg producer presence** — For every formal Out-arg in `variables.outputs[]`, verify the producer/Default situation per [`io-binding/impl-json.md` § Check 2](plugins/variables/io-binding/impl-json.md):
@@ -259,6 +264,7 @@ After all value bindings (Step 9.8), conditions (Step 10), and SLA (Step 11) are
   - **No Default + producer declared in SDD on a Rule 17 placeholder task** (declared-but-unresolvable) → no prompt; silent log to `## Open Items for User` in `tasks/build-issues.md`. Rule 17 already prompted the author for this task.
   - **No Default + no producer declared anywhere (pure orphan)** → AskUserQuestion offering 4 options: (a) add producer task output, (b) add Default value, (c) recategorize as Variable / remove, (d) continue with best-effort emit (entry logged under Open Items).
 - **Check 3** — Type mismatch between `=vars.X` reference and consumer slot → log WARN inline (non-blocking; string coercion is runtime-tolerant).
+- **Check 4 — No surviving `$xref` markers** — Scan every string value in `caseplan.json` for the literal `$xref(`. Step 11.5 resolves all; any survivor means a name-triple failed (typo'd stage / task / output). Log ERROR with the unresolved triple + available outputs on the named task. Never ship to runtime — `vars.$xref(...)` throws (method call on `vars`). Detail: [`io-binding/impl-json.md` § Check 4](plugins/variables/io-binding/impl-json.md).
 
 **Build-with-best policy:** for any user pick of "continue with best-effort emit" on a Check 1 or Check 2 AskUserQuestion, append a `## Open Items for User` entry to `tasks/build-issues.md` and proceed to Phase 4. AskUserQuestion is the surface; build-with-best is the escape. The skill conservatively emits what it has; Phase 4 validate stays green (structural validity is intact); runtime concerns are listed for pre-publish review.
 
