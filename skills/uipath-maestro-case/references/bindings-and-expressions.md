@@ -127,6 +127,30 @@ target_input.value = f"=vars.{src_output['var']}"
 
 See [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md) for the full procedure.
 
+### In-expression references (`vars.$xref(...)`)
+
+Whole-value `<-` (above) resolves only when it IS the entire input value. To reference an upstream task output from **inside** a `=js:` expression — a composite payload, a `conditionExpression`, an SLA `expression`, a computed `=` output — embed a `vars.$xref(...)` marker. This eliminates the "middle variable" that would otherwise exist solely to carry one task's output into a downstream expression.
+
+**Marker form** (quote-safe — single quotes are legal inside a JSON double-quoted value):
+
+```
+vars.$xref('Stage Name','Task Name','output_name')
+```
+
+- Three args = the same name-triple as whole-value `<-`: source stage `data.label`, source task `displayName`, source output `name`.
+- Single quotes ONLY — double quotes break the enclosing JSON string. Names containing a literal `'` are unsupported (re-author the name).
+- Drop it anywhere a bare `vars.X` is legal inside an `=js:` expression. It resolves to bare `vars.<var>` (NOT `=vars.` — it is already inside `=js:`).
+
+**Example** — composite input payload, no middle variables:
+
+```json
+"value": "=js:({ approvalDecision: vars.$xref('AP Review','AP lead approval','outcome'), urgentPaymentDecision: vars.$xref('AP Review','Urgent payment','outcome') })"
+```
+
+**Resolution** — a single post-pass at end of Phase 3 (Step 9.9) walks every string value in `caseplan.json`, resolves each marker to the source output's **post-dedup** `var`, and substitutes `vars.<var>` in place. Because it runs after all outputs are minted and deduped, it reads the real suffixed id (`outcome2`, `data6`) — strictly more stable than hand-authoring `=js:vars.outcome2`. An unresolved marker is a build ERROR (and would throw at runtime — `vars.$xref` is a method call on `vars` — so it never fails silently). See [plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-99).
+
+> **Additive, not a replacement.** Whole-value `input <- "Stage"."Task".out` keeps resolving to `=vars.<var>` via the binding procedure. The `vars.$xref(...)` marker is only for the in-expression case. Use whole-value `<-` when the output IS the input; use the marker when the output is one term inside a larger `=js:` expression.
+
 ## Examples
 
 ### Literal and expression inputs

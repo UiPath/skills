@@ -90,7 +90,29 @@ src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
 
-After all bindings, run the end-of-Phase-3 validator. It performs three cross-reference checks:
+## In-Expression Marker Resolution (Step 9.9)
+
+Whole-value `<-` (above) only resolves an input whose value IS the reference. To reference an upstream output from **inside** a `=js:` expression (composite payload, `conditionExpression`, SLA `expression`, computed `=` output, connector body field), the SDD embeds a `vars.$xref('Stage','Task','output')` marker — see [bindings-and-expressions.md § In-expression references](../../../bindings-and-expressions.md#in-expression-references-varsxref). Resolve all markers in **one pass over the whole `caseplan.json`**, run as the LAST step of Phase 3 — after every task/trigger/rule output is minted and deduped (so the marker resolves to the final, suffixed `var`), and after all input bindings are written.
+
+This single sink-blind pass replaces per-sink resolution: it walks every string value regardless of which sink holds it, so conditions, SLA, inputs, and connector bodies are all covered in one place.
+
+```text
+# pseudocode — not executed. Realize via Read → reason → Write/Edit.
+TOKEN = /vars\.\$xref\('([^']+)','([^']+)','([^']+)'\)/   # global, all matches
+
+for each string value V anywhere in caseplan.json:
+    for each match (stageLabel, taskName, outputName) of TOKEN in V:
+        src_stage  = find_node_by_label(nodes, stageLabel)        # data.label
+        src_task   = find_task_by_name(src_stage, taskName)       # displayName
+        src_output = find_output_by_name(src_task, outputName)    # data.outputs[].name
+        if any lookup fails: ERROR (Check 4 below) — do NOT substitute
+        replace the matched token with "vars." + src_output["var"]   # bare, no leading "="
+    write V back
+```
+
+Resolution semantics are identical to whole-value `<-` (same name-triple, same lookup), with two differences: the substitution is **bare** `vars.<var>` (the marker already sits inside `=js:`), and it happens in a global string pass rather than against a single input's `value`. Exception-stage / adhoc scoping (reference any task across any stage) applies unchanged.
+
+After this pass and all bindings, run the end-of-Phase-3 validator. It performs the cross-reference checks below:
 
 ### Check 1 — `=vars.X` reference resolution
 
@@ -202,6 +224,10 @@ See [implementation.md § Step 12 — End-of-Phase-3 validator pass](../../../im
 
 Where a `=vars.X` reference resolves to a declaration with a different `type` than the consuming input expects, log WARNING. Proceed (string coercion is common and runtime-tolerant).
 
+### Check 4 — No surviving `$xref` markers
+
+Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 9.9 pass](#in-expression-marker-resolution-step-99) should have resolved them all; any survivor means its name-triple failed to resolve (typo'd stage / task / output name). Log ERROR with the unresolved triple and the available outputs on the named task — same diagnostic shape as a failed whole-value `<-`. Do not ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
+
 ## Connector Tasks
 
 Connector task input values are written during Step 9.7 (connector detail), not during this I/O binding step. Resolve cross-task `var` IDs before constructing the `input-values` body from `tasks.md`, then apply the canonical wrap per sink:
@@ -242,6 +268,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Placeholder connector rule (no `rule.uipath.outputs[]`) | `SKIPPED` | Skip rule output bindings (nothing minted) |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
+| `$xref(...)` marker name-triple fails to resolve (Step 9.9 / Check 4) | `ERROR` | Leave token unsubstituted — log unresolved triple + available outputs |
 | `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |
 | Out-arg formal entry has NO producer (no extraction, assignment, or bare-name match in any task outputs) AND companion has no `default` | `ERROR` | Log Out-arg pure-orphan issue (Check 2 above); AskUserQuestion |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
