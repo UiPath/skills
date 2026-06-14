@@ -1,0 +1,130 @@
+# Coverage — Posture Analysis
+
+Compares the pack's recommended settings against what is currently deployed on the tenant. Does NOT require the pack to be enabled first. Does NOT certify compliance — it identifies which settings from the standard are not yet configured.
+
+## Command
+
+**Pre-condition:** `$SESSION_TEMP/catalog.json` must exist — run `catalog get` first (see `catalog/impl.md`). Coverage joins with catalog data to display meaningful control names.
+
+```bash
+# Read the session dir written by catalog get — never create a new one here.
+SESSION_TEMP=$(cat "$HOME/.uipath-compliance-current-session")
+TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
+uip gov compliance-packs state coverage tenant $TENANT_ID <packId> --output json \
+  > "$SESSION_TEMP/coverage.json"
+```
+
+```powershell
+# Windows PowerShell
+$tmpDir = (Get-Content "$env:TEMP\uipath-compliance-current-session.txt" -Raw).Trim()
+$tenantId = (Select-String '^UIPATH_TENANT_ID=(.+)' "$env:USERPROFILE\.uipath\.auth").Matches[0].Groups[1].Value
+uip gov compliance-packs state coverage tenant $tenantId <packId> --output json |
+  Set-Content "$tmpDir\coverage.json"
+```
+
+## Parse the response
+
+CLI output is **PascalCase**. Field names below are exactly as returned by `state coverage`.
+
+`Data.DeploymentPolicies[].Status`:
+- `"new"` — this product's controls are not yet configured; `state enable` will configure them
+- `"in-place"` — controls already deployed; no change needed
+
+`Data.Clauses[].Status`:
+- `"needs-policies"` — at least one contributing policy is `"new"`
+- `"in-place"` — all contributing policies already deployed
+
+`Data.Summary.NewCount` — if 0, all recommended controls are already configured.
+
+## Posture plan presentation
+
+Join coverage API data with catalog data to resolve control names and clause names:
+- `coverage.Data.DeploymentPolicies[].Status` — `"new"` or `"in-place"` per product
+- `catalog.Data.Clauses[].EditorialPolicies[].ProductIdentifier` — maps controls to products
+- Control is ✓ if its product's `Status == "in-place"`
+- Control is ✗ if its product's `Status == "new"`
+
+Progress bar: `▓` per configured control, `░` per gap, max 5 chars (e.g. 2/5 = `▓▓░░░`, 4/4 = `▓▓▓▓▓`).
+
+**Biggest risk area:** clause with most ✗ High-impact controls.
+**Quickest win:** clause with only 1-2 gap controls AND at least one is High impact.
+
+Terminology rules:
+- Use "controls" NOT "settings" in output
+- Use plain-English clause names (from `clauses[].clauseName`) in headlines; clause IDs (e.g. A.6.2.8) as secondary reference in DETAILS only
+- Use `controls[].displayName` as control name, NOT product identifiers
+- "already configured" for ✓ rows, NOT "in-place"
+- Never say "compliance gaps" — say "controls not yet configured"
+- Never claim the tenant IS compliant
+
+Render the following format:
+
+```
+ISO 42001 Posture — <tenantName>  ·  <date>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SUMMARY
+┌─────────────────────────┬──────────────────────────────────────┐
+│ Overall coverage        │ <inPlaceCount> / <totalCount> controls  (<pct>%)  │
+│ Clauses fully covered   │ <clausesInPlace> / <totalClauses>                │
+│ Clauses with gaps       │ <clausesWithGaps> / <totalClauses>               │
+├─────────────────────────┼──────────────────────────────────────┤
+│ 🔴 High impact gaps     │ <highGapCount> controls  across <highClauseCount> clauses  │
+│ 🟡 Medium impact gaps   │ <medGapCount> controls   across <medClauseCount> clauses   │
+│ 🟢 Low impact gaps      │ <lowGapCount> controls   across <lowClauseCount> clauses   │
+├─────────────────────────┼──────────────────────────────────────┤
+│ Biggest risk area       │ <clauseName with most High-impact gaps>          │
+│ Quickest win            │ <clauseName with fewest gaps AND ≥1 High control>│
+└─────────────────────────┴──────────────────────────────────────┘
+
+Fix all gaps with: 'Apply ISO 42001 controls'
+Fix priority gaps: 'Apply High impact ISO 42001 controls'
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CLAUSES WITH GAPS  (<N> of <total>)
+
+  <clauseName>                                       <inPlace>/<total> <bar>
+  ┌───────────────────────────────────┬─────────────────────┬────────┐
+  │ Control                           │ Recommendation      │ Impact │
+  ├───────────────────────────────────┼─────────────────────┼────────┤
+  │ ✗ <controlDisplayName>            │ <recommendedSetting>│ High   │
+  │ ✓ <controlDisplayName>            │ already configured  │ Medium │
+  └───────────────────────────────────┴─────────────────────┴────────┘
+
+  [repeat per clause with gaps]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FULLY COVERED  (<N> of <total>)  ✓
+┌────────────────────────────────────────┬──────────┐
+│ Clause                                 │ Controls │
+├────────────────────────────────────────┼──────────┤
+│ <clauseName>                           │ X / X  ✓ │
+└────────────────────────────────────────┴──────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Configure all <N> remaining controls? (y/n)
+Or ask: 'Just fix the High impact gaps'
+        'Apply only <specific area> controls'
+        'What does [clause name] require?'
+```
+
+## All controls already configured
+
+If `summary.newCount == 0`:
+
+```
+All ISO 42001 controls are already configured on <tenantName>.
+42 / 42 controls  ·  14 / 14 clauses fully covered ✓
+
+To remove them: 'Remove ISO 42001 controls'
+```
+
+Do NOT call `state enable` in this case.
+
+## Never cache
+
+Always run fresh before presenting a posture plan. Coverage reflects live tenant state.

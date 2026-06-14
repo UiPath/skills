@@ -48,3 +48,19 @@
 {"id": "uipath-governance-048", "prompt": "Need to stop one specific agent from being invoked by anything in the tenant", "expected_skill": "uipath-governance"}
 {"id": "uipath-governance-049", "prompt": "Create access policy: caller must be a Maestro tagged 'prod', target must be an Agent tagged 'prod', actor must be in group prod-operators", "expected_skill": "uipath-governance"}
 {"id": "uipath-governance-050", "prompt": "Help — my agent can't call its sub-agent, I think a tool-use policy is blocking it", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-051", "prompt": "Apply the ISO 42001 compliance pack to my tenant", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-052", "prompt": "Check my ISO 42001 compliance posture", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-053", "prompt": "Am I compliant with ISO/IEC 42001?", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-054", "prompt": "Run a gap scan against the ISO 42001 pack", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-055", "prompt": "Apply the .uipolicy file at /tmp/my-pack.uipolicy to my tenant", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-056", "prompt": "What is my drift against ISO 42001 controls?", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-057", "prompt": "What compliance packs are available for my tenant?", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-058", "prompt": "Apply only the Robot UIAutomation settings from ISO 42001", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-059", "prompt": "Disable ISO 42001 recommended settings from my tenant", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-060", "prompt": "What does ISO 42001 clause A.6.2.8 recommend?", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-061", "prompt": "Show me all high-impact ISO 42001 recommended settings", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-062", "prompt": "Apply ISO 42001 organization-wide to all tenants", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-063", "prompt": "Configure allowed URLs and apps for Robot policies from ISO 42001", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-064", "prompt": "Which compliance standards are currently enabled on my tenant?", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-065", "prompt": "Is ISO 42001 configured on my tenant?", "expected_skill": "uipath-governance"}
+{"id": "uipath-governance-066", "prompt": "Show me what compliance packs are active in my organization", "expected_skill": "uipath-governance"}

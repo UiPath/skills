@@ -1,0 +1,55 @@
+task_id: skill-governance-compliance-partial-apply
+description: >
+  Skill-guided: "apply only the AI Trust Layer traceability settings from ISO 42001"
+  must use the partial apply path - catalog get + synthesize-formdata.mjs + aops-policy create.
+  Must NOT use state enable (that is full pack only).
+
+  Platform note: uip commands fail with auth errors - expected.
+tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
+
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Apply only the AI Trust Layer traceability recommended settings from ISO 42001
+  to improve my posture for that specific area.
+
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - uip CLI not connected to live tenant - auth errors expected. Run once, record, continue.
+  - Use --output json on all uip commands. Do NOT prompt for confirmation.
+  - The catalog get command will fail with auth errors. That is expected — still proceed to run
+    synthesize-formdata.mjs with clause-ids "A.6.2.8" and --product AITrustLayer using
+    the catalog.json that was saved (even if it contains an error response).
+  - The synthesize-formdata.mjs MUST be invoked to test the partial apply path.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent called catalog get for clause and control data"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran synthesize-formdata.mjs for partial formData synthesis (Bash or PowerShell)"
+    command_pattern: 'node\s+.*synthesize-formdata\.mjs.*--product\s+\S+'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Partial apply does NOT use state enable (that path is for full pack only)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0
