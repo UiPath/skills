@@ -105,7 +105,7 @@ for each string value V anywhere in caseplan.json:
         src_stage  = find_node_by_label(nodes, stageLabel)        # data.label
         src_task   = find_task_by_name(src_stage, taskName)       # displayName
         src_output = find_output_by_name(src_task, outputName)    # data.outputs[].name
-        if any lookup fails: ERROR (Check 4 below) — do NOT substitute
+        if any lookup fails: leave token unsubstituted — Check 4 (validator) surfaces it via AskUserQuestion
         replace the matched token with "vars." + src_output["var"]   # bare, no leading "="
     write V back
 ```
@@ -226,7 +226,37 @@ Where a `=vars.X` reference resolves to a declaration with a different `type` th
 
 ### Check 4 — No surviving `$xref` markers
 
-Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple failed to resolve (typo'd stage / task / output name). Log ERROR with the unresolved triple and the available outputs on the named task — same diagnostic shape as a failed whole-value `<-`. Do not ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
+Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple failed to resolve (typo'd stage / task / output name). This is the same class of failure as a Check 1 unresolved `=vars.X` — so it gets the **same interactive remediation**, NOT a silent ERROR. Never ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
+
+**On AskUserQuestion** (present the outputs that DO exist on the named task as candidates — same diagnostic shape as a failed whole-value `<-`):
+
+```
+In-expression reference $xref('<stage>','<task>','<output>') does not resolve:
+  Stage  "<stage>":  <found | NOT FOUND>
+  Task   "<task>":   <found | NOT FOUND in that stage>
+  Output "<output>": NOT FOUND on task
+  Available outputs on "<task>": <name, name, ...>
+  Used in: <sink — e.g. entry condition on stage "Approve" | input "payload" on task "Notify">
+
+Pick one:
+  (a) Name the intended output — supply the correct output name (or full Stage / Task / output triple).
+  (b) Edit the SDD expression — the marker is one term in a larger =js: expression; the upstream output genuinely does not exist.
+  (c) Continue with best-effort emit — token left unsubstituted; case builds; the =js: expression throws at runtime until fixed.
+```
+
+**Skill response per pick:**
+
+- **(a)** Rewrite the marker's triple in place in `caseplan.json` with the corrected name(s), re-run the [Step 11.5](#in-expression-marker-resolution-step-115) resolution for that token, then re-scan. If it still fails, re-prompt.
+- **(b)** Edit the SDD expression as directed, re-run the Phase 1 dispatcher from the modified SDD, then retry Step 11.5 + this check.
+- **(c)** Leave the token unsubstituted, append the build-issues entry (template below), continue to Phase 4. No re-run.
+
+**Build-issues entry template:**
+
+```markdown
+## Open Items for User
+
+- **[Unresolved `$xref` marker]** — `vars.$xref('<stage>','<task>','<output>')` in <sink> did not resolve (output not found on the named task). The `=js:` expression throws at runtime until fixed. Correct the source output name in the SDD and rebuild.
+```
 
 ## Connector Tasks
 
@@ -268,7 +298,7 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Placeholder connector rule (no `rule.uipath.outputs[]`) | `SKIPPED` | Skip rule output bindings (nothing minted) |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
-| `$xref(...)` marker name-triple fails to resolve (Step 11.5 / Check 4) | `ERROR` | Leave token unsubstituted — log unresolved triple + available outputs |
+| `$xref(...)` marker name-triple fails to resolve (Step 11.5 / Check 4) | `ERROR` | Leave token unsubstituted; AskUserQuestion (Check 4 above) — log unresolved triple + available outputs |
 | `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |
 | Out-arg formal entry has NO producer (no extraction, assignment, or bare-name match in any task outputs) AND companion has no `default` | `ERROR` | Log Out-arg pure-orphan issue (Check 2 above); AskUserQuestion |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |

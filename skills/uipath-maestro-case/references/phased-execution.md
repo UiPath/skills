@@ -147,7 +147,7 @@ After re-entry:
    - Case exit conditions
 4. **SLA + escalation** — per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Group `tasks.md §4.8` by target (root or stage); write full `slaRules[]` in one mutation per target.
 5. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped and bindings/conditions/SLA are written, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<var>` in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple → ERROR.
-6. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-4 (=vars.X resolution, Q10 II Out-arg producer presence, type mismatch, surviving `$xref` markers). AskUserQuestion for unresolved references and pure orphan Out-args; option (d) "continue with best-effort emit" preserves forward progress. Never HALT.
+6. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-4 (=vars.X resolution, Q10 II Out-arg producer presence, type mismatch, surviving `$xref` markers). AskUserQuestion for unresolved references (incl. `$xref` markers) and pure orphan Out-args; option (c)/(d) "continue with best-effort emit" preserves forward progress. Never HALT.
 
 Phase 3 produces a `caseplan.json` that should pass authoritative validation. No hard stop on Phase 3 exit — agent proceeds directly to Phase 4.
 
