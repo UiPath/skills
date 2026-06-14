@@ -19,6 +19,8 @@ run_limits:
   expected_turns: 8
 
 initial_prompt: |
+  Before starting, load the uipath-governance skill and follow its workflow.
+
   I am authoring a UiPath access policy and need three UUIDs for the
   `actorRule.values[]` array. Resolve each one and save every command's
   stdout+stderr to ./output.txt (use `> output.txt 2>&1` for the first
