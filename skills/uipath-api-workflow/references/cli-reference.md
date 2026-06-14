@@ -347,6 +347,8 @@ uip solution pack <solutionPath> <outputPath> \
 | `<outputPath>` | yes | Output directory for the `.zip`. |
 | `-n, --name <name>` | no | Package name. Defaults to solution folder name. |
 | `-v, --version <version>` | no | Package version. Default `1.0.0`. |
+| `--author <author>` | no | Package author. Default `UiPath`. |
+| `--description <text>` | no | Package description. Default `Created by UiPath`. |
 | `--login-validity <minutes>` | no | Min minutes before token refresh. Default `10`. |
 
 ### What the API workflow packager does
