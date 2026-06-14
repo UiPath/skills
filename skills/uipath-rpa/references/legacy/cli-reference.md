@@ -1,6 +1,8 @@
-# CLI Tool Reference
+# CLI Tool Reference (Legacy)
 
 Complete reference for all `uip rpa-legacy` CLI commands and error recovery patterns.
+
+> **Scope:** Legacy target-framework projects only (`targetFramework: "Legacy"`). For modern Windows/Portable projects, use `uip rpa` — see [../cli-reference.md](../cli-reference.md).
 
 **The CLI is fully self-documenting.** Append `--help` at any level to discover commands, subcommands, and parameters:
 ```bash

@@ -15,7 +15,7 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
 
 ### Adding / Editing
 
-For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `outcome-completed` port after adding the node.
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `completed` port after adding the node.
 
 ### Quick Reference
 
@@ -77,7 +77,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 
 **outputs block**: only `output` (with `properties` for output/inOut fields + `Action` outcome) and `status` (with `enum`/`default` from outcomes). No per-field `custom: true` entries.
 
-**Ports:** `input` (target) → `outcome-completed` (source, label: Completed)
+**Ports:** `input` (target) → `completed` (source, label: Completed). At the pinned `typeVersion: "1.0"` the output port serializes as `"sourcePort": "completed"` — node v1.1 renames it `outcome-completed`, but v1.1 must not be used (see `typeVersion` rule above).
 
 **Output variables:**
 - `$vars.{nodeId}.output` — object with all `output` / `inOut` field values, keyed by **field `id`**
@@ -90,6 +90,8 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 ## Option 2 — App-Based HITL (`uipath.human-in-the-loop` with `inputs.type = "custom"`)
 
 Use when there is an existing deployed Action Center app that should serve as the task form. Same node type as Option 1 — only `inputs.type`, `inputs.app`, and `inputs.appInputBindings` differ.
+
+> **Alternative mechanism — `uipath.core.human-task.{key}` resource node** (called Option 2b in [planning.md](planning.md)): a registry resource published from an app, with ports `input` → `output` (not `completed`). It is a resource node, not a `uipath.human-in-the-loop` node — follow the resource-node procedure in [editing-operations-json.md](../../editing-operations-json.md) instead of this section. Check which mechanism the plan names before authoring.
 
 ### Discovery
 
@@ -201,4 +203,4 @@ Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?)
 | Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip maestro flow registry list --local`. Otherwise: `uip login` then `uip maestro flow registry pull --force` |
 | Task never completes | Human hasn't submitted the form | Check task assignment in Orchestrator |
 | Output missing expected fields | App form doesn't match expected schema | Verify app form fields match what the flow expects |
-| `outcome-completed` port unwired (Option 1) | Missing edge on output handle | Wire the `outcome-completed` output handle — an unwired `outcome-completed` blocks the flow indefinitely |
+| `completed` port unwired (Option 1) | Missing edge on output handle | Wire the `completed` output handle — an unwired `completed` blocks the flow indefinitely |

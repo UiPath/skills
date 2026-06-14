@@ -1,6 +1,6 @@
 ---
 name: uipath-human-in-the-loop
-description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, or Coded Agents. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
+description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, or Coded Agents. For managing, reassigning, or monitoring tasks at runtime→uipath-tasks. For general .flow authoring beyond the HITL node→uipath-maestro-flow. For HITL inside coded agents (interrupts)→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 

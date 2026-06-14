@@ -1,6 +1,6 @@
 ---
 name: uipath-review
-description: "UiPath read-only reviewer — audit structure, quality, best practices for RPA (.xaml/.cs), agents (.py/agent.json), flows (.flow), BPMN (.bpmn), coded apps, solutions (.uipx). Does NOT edit files. For building/editing→domain skills."
+description: "UiPath read-only reviewer — audit structure, quality, best practices for RPA (.xaml/.cs), agents (.py/agent.json), flows (.flow), BPMN (.bpmn), coded apps, solutions (.uipx). Produces a findings report; NEVER edits files. For fixing or building: .xaml/.cs→uipath-rpa, agents→uipath-agents, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, apps→uipath-coded-apps, .uipx→uipath-solution. For runtime failure investigation→uipath-troubleshoot."
 allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion
 user-invocable: true
 ---

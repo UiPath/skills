@@ -1,6 +1,6 @@
 ---
 name: uipath-ixp
-description: "UiPath IXP (Document Understanding) — review IXP predictions with Claude, confirm valid fields, improve prompts, publish models."
+description: "UiPath IXP (Intelligent eXtraction Platform / Document Understanding) via `uip ixp` — create document-extraction projects, upload documents, label and review predictions, confirm valid fields, improve prompts and field instructions, publish model versions. For IXP/document-extraction nodes inside a `.flow`→uipath-maestro-flow. For document automation in RPA workflows (.xaml/.cs)→uipath-rpa."
 ---
 
 # UiPath IXP Document Extraction Assistant

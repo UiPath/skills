@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), and deploy. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). Excludes coded functions / Functions SDK (separate skill)."
+description: "UiPath Agents end-to-end (`agent.json`, `.py` coded agents): build, integrate with UiPath Products (Orchestrator, Flow, Maestro), design with UiPath Tools (Agent Builder/Studio Web), and deploy. Covers Coded Agents (LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). Excludes coded functions / Functions SDK (separate skill). For .xaml/.cs workflows→uipath-rpa. For JSON API workflows→uipath-api-workflow. For TypeScript coded apps→uipath-coded-apps. For .flow authoring→uipath-maestro-flow."
 when_to_use: "Must use when user mentions or implies any Agent lifecycle phase - e.g., auth, design, scaffold, Studio Web sync, flow integration, editing, pack/deploy/version bump, eval, debug, tracing, guardrails, memory spaces, bindings, attachments. Example requests: 'create/build a UiPath agent', 'build a low-code / Agent Builder agent', 'add agent memory spaces', 'build a coded / Python agent (LangGraph / LlamaIndex / OpenAI Agents)', 'scaffold an agent project', 'run / debug / evaluate / deploy my agent'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true

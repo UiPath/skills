@@ -47,7 +47,7 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 - **Auth MUST be an interactive question only when needed and values are missing.** If the session check fails and the user did not provide all of environment / organization / tenant, your ENTIRE response must be a single direct question. Do NOT wrap it in bullet points, "Next Steps" headers, or status summaries. Just ask and stop:
 
   > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
-- **In a flow, coded agents are referenced via the [`agent`](../../../uipath-maestro-flow/references/plugins/agent/) plugin** — node type `uipath.core.agent.{key}`, `Orchestrator.StartAgentJob`. See [flow-integration.md](flow-integration.md) for the three patterns: in-solution sibling folder, Orchestrator-published, tool resource.
+- **In a flow, coded agents are referenced via the `uipath-maestro-flow` skill's `agent` plugin** — node type `uipath.core.agent.{key}`, `Orchestrator.StartAgentJob`. See [flow-integration.md](flow-integration.md) for the three patterns: in-solution sibling folder, Orchestrator-published, tool resource.
 
 ## Lifecycle Stages
 
@@ -104,7 +104,7 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask, even if the us
    - Ensure importing `main.py` works without UiPath auth.
 
    See [lifecycle/build.md](lifecycle/build.md) § Additional Instructions for the detailed Build-stage rules. After implementing, re-run `uip codedagent init` to update schemas from the actual code.
-4. **Bindings** — Sync `bindings.json` with the code using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md).
+4. **Bindings** — Gate first: Grep all project `*.py` (excluding `.venv/`, `__pycache__/`, `.uipath/`) for SDK resource calls — `sdk.` service methods (`assets`, `queues`, `processes`, `buckets`, `tasks`, `context_grounding`, `connections`, `mcp`) and `interrupt(InvokeProcess|CreateTask|CreateEscalation`. **No matches** → write the empty skeleton `{"version": "2.0", "resources": []}` to `bindings.json` and skip the reference. **Any match** → sync `bindings.json` using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md).
 5. **Auth (one-shot)** — Run `uip login status --output json` once. If the user supplied environment + organization + tenant, immediately run the matching one-shot login command from [../authentication.md](../authentication.md), using both `--organization` and `--tenant` in the same `uip login` command. Do this even when `Status: Logged in`, because the existing session may be for a different tenant. If no credentials were supplied and `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
 
 > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?

@@ -35,15 +35,15 @@ Available: always — no `uip login` or registry pull required.
 
 | Input port | Output port |
 | --- | --- |
-| `input` | `outcome-completed` |
+| `input` | `completed` |
 
-**The output port must be wired.** A node with no edge on `outcome-completed` blocks the flow indefinitely.
+**The output port must be wired.** A node with no edge on `completed` blocks the flow indefinitely.
 
 ### Output Variables
 
 - `$vars.{nodeId}.output` — object containing all output and inOut fields the human filled in
 - `$vars.{nodeId}.output.{fieldName}` — individual field value
-- `$vars.{nodeId}.status` — selected outcome's action value (`"Continue"` or `"End"`)
+- `$vars.{nodeId}.status` — selected outcome name (e.g. `"Approve"`, `"Reject"`), sourced from `=result.Action`
 
 ### Schema Design
 
@@ -72,14 +72,14 @@ Full JSON format and conversion examples: see [`uipath-human-in-the-loop` skill]
 ### Wiring Pattern
 
 ```
-[Upstream] -> [HITL] ->|outcome-completed| [Continue]
+[Upstream] -> [HITL] ->|completed| [Continue]
 ```
 
 ### Common Topology Patterns
 
 **Approval gate:**
 ```
-Trigger -> Fetch Data -> HITL (review) ->|outcome-completed| Decision (approved?) ->
+Trigger -> Fetch Data -> HITL (review) ->|completed| Decision (approved?) ->
   true: Script (process) -> End
   false: Script (log rejection) -> End
 ```
@@ -88,7 +88,7 @@ Trigger -> Fetch Data -> HITL (review) ->|outcome-completed| Decision (approved?
 ```
 Trigger -> Process -> Decision (confidence ok?) ->
   true: Continue -> End
-  false: HITL (exception review) ->|outcome-completed| Script (retry with human input) -> End
+  false: HITL (exception review) ->|completed| Script (retry with human input) -> End
 ```
 
 ### Planning Annotation
@@ -100,14 +100,12 @@ In the node table:
 
 ---
 
-## Option 2 — `uipath.core.human-task.{key}` (App-Based)
+## Option 2 — App-Based
 
-Node type: `uipath.core.human-task.{key}`
-Available: tenant-specific resource — requires `uip login` + `uip maestro flow registry pull`.
+Use when there is an existing coded app or Action Center app that should be the task form. Two distinct mechanisms exist — pick one and name it in the plan so the implementer builds the same thing:
 
-### When to Select
-
-Use when there is an existing coded app or Action Center app that should be the task form.
+- **2a — `uipath.human-in-the-loop` with `inputs.type = "custom"`**: same node type and ports as Option 1 (`input` → `completed`); only `inputs.type`, `inputs.app`, and `inputs.appInputBindings` differ. Use for a deployed Action Center app. See [impl.md — Option 2](impl.md#option-2--app-based-hitl-uipathhuman-in-the-loop-with-inputstype--custom).
+- **2b — `uipath.core.human-task.{key}` resource node**: a tenant-specific registry resource — requires `uip login` + `uip maestro flow registry pull`. Ports and discovery below apply to this mechanism only.
 
 ### Ports
 

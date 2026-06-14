@@ -8,7 +8,7 @@ when_to_use: "User wants to create, edit, debug, or run a UiPath automation — 
 
 Full assistant for creating, editing, managing, and running UiPath automation projects — both coded workflows (C#) and low-code RPA workflows (XAML).
 
-> **Reading the referenced files is imperative — read each required file in full.** This SKILL.md is a router: it tells you *which* reference to open, not *what* it says. When a rule, the Task Navigation table, or a section points you to a reference for the task at hand, open it and read the **whole** file before acting — do not grep it for a keyword, skim the first screen, fall back to `--help`, or substitute prior knowledge. Most errors that slip past `validate` and surface at `build` or runtime trace back to a reference that was skipped or only partially read.
+> **Reading the referenced files is imperative — read each required file in full.** This SKILL.md is a router: it tells you *which* reference to open, not *what* it says. When a rule, the Task Navigation table, or a section points you to a reference for the task at hand, open it and read the **whole** file before acting — do not grep it for a keyword, skim the first screen, fall back to `--help`, or substitute prior knowledge. Most errors that slip past `validate` and surface at `build` or runtime trace back to a reference that was skipped or only partially read. **Exception — generated `coded-api.md` package docs** (under `.local/docs/` or `references/activity-docs/`): read only the H2 sections for the services you need; they are per-service API listings, not sequential guides.
 
 ## When to Use This Skill
 
@@ -295,7 +295,11 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 ## Coded Workflows Quick Reference
 
-Coded workflows use standard C# development: create file → write code → validate → run. Activity discovery (`activities find`, `activities get-default-xaml`) is XAML-specific — for coded mode, check `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` first for service API docs, then fall back to `packages inspect`. See [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md).
+Coded workflows use standard C# development: create file → write code → validate → run. Activity discovery (`activities find`, `activities get-default-xaml`) is XAML-specific — for coded mode, resolve service API docs in this order:
+
+1. `{projectRoot}/.local/docs/packages/{PackageId}/coded/coded-api.md` — present only after the package is installed in the project.
+2. Bundled fallback (new projects, before install): Glob `references/activity-docs/{PackageId}/*/coded-api.md` and `references/activity-docs/{PackageId}/*/coded/coded-api.md` — the version folder's layout varies by package, so match both patterns. Read only the H2 sections for the services you need.
+3. `packages inspect` — see [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md).
 
 ### Three Types of .cs Files
 

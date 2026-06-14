@@ -1,6 +1,6 @@
 ---
 name: uipath-coded-apps
-description: "Always invoke for `app.config.json` or `action-schema.json` files. UiPath Coded Web Apps & Coded Action Apps via `uip codedapp` and `@uipath/uipath-typescript` SDK. Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents."
+description: "UiPath Coded Web Apps & Coded Action Apps (`app.config.json`, `action-schema.json`) via `uip codedapp` and the `@uipath/uipath-typescript` SDK — scaffold, build, debug, deploy React/Vue/HTML frontends and Action Center forms. Always invoke for `app.config.json` or `action-schema.json` files. For .cs/XAML→uipath-rpa, Python agents→uipath-agents, solution bundling→uipath-solution."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
