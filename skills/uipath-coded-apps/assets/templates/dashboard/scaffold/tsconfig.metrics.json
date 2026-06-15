@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/metrics/**/*.ts",
+    "src/lib/metric-contract.ts",
+    "src/lib/paginate.ts",
+    "src/lib/time.ts"
+  ]
+}
