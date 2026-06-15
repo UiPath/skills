@@ -1,0 +1,98 @@
+<mxfile host="app.diagrams.net" modified="2026-06-12T00:00:00.000Z" agent="claude" version="24.0.0" type="device">
+  <diagram id="fnbody-journey" name="fnBody Journey — Step by Step">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1654" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="&lt;b&gt;Dashboard Skill — the fnBody journey (no eval, ever)&lt;/b&gt;&lt;br&gt;From prompt to live dashboard: where code is authored, where it is spliced, how it is validated, how it runs" style="text;html=1;align=center;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="120" y="20" width="900" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1" value="&lt;b&gt;1 · USER PROMPT&lt;/b&gt;&lt;br&gt;&quot;Build an agent health dashboard: failure rate %, faulted agent jobs, memory trends…&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="90" width="380" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s2" value="&lt;b&gt;2 · SKILL LOADS (parallel)&lt;/b&gt;&lt;br&gt;Reads SDK reference docs + metric catalog · checks login · fires pre-warm (npm ci) in background" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="180" width="380" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3" value="&lt;b&gt;3 · PLAN — METADATA ONLY (user-visible)&lt;/b&gt;&lt;br&gt;Widget list, time ranges, refused metrics + alternatives.&lt;br&gt;&lt;b&gt;No code. No API names.&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="280" width="380" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s4" value="&lt;b&gt;4 · USER CONFIRMS&lt;/b&gt; (free text)&lt;br&gt;Then — and only then — OAuth setup question (create app / paste client ID)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="390" width="380" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s5" value="&lt;b&gt;5 · AGENT AUTHORS intent.json (internal artifact)&lt;/b&gt;&lt;br&gt;Per metric: metadata (name, tier, displayAs, headline, columns…)&lt;br&gt;+ &lt;b&gt;fnBody = TypeScript SOURCE TEXT&lt;/b&gt; for the data fetch only — written from the SDK reference docs (read-only methods, typed fetchAll pagination)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="480" width="380" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s6" value="&lt;b&gt;6 · BUILD SCRIPT (Node, deterministic)&lt;/b&gt;&lt;br&gt;Copy scaffold → deps already pre-warmed (lockfile pins SDK ≥ 1.4.0 + runtime version guard)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="610" width="380" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s7" value="&lt;b&gt;7 · SOURCE-LEVEL SPLICE — NOT eval&lt;/b&gt;&lt;br&gt;Per widget: pick chart template, fill placeholders;&lt;br&gt;fnBody is &lt;b&gt;pasted as the body of a statically declared function&lt;/b&gt; inside the generated Widget.tsx (see snippet →)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="710" width="380" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s8" value="&lt;b&gt;8 · LAYOUT + DRILL-DOWNS GENERATED&lt;/b&gt;&lt;br&gt;Dashboard.tsx (KPIs → charts → tables), detail views, routes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="830" width="380" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s9" value="&lt;b&gt;9 · VALIDATION GATE — tsc --noEmit (whole project)&lt;/b&gt;&lt;br&gt;Every fnBody is type-checked against the &lt;b&gt;real SDK .d.ts in node_modules&lt;/b&gt;, exactly like hand-written code.&lt;br&gt;Wrong method / field / argument shape ⇒ compile error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="920" width="380" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dec" value="compiles?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="210" y="1040" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s10" value="&lt;b&gt;10 · SELF-CORRECTION LOOP&lt;/b&gt;&lt;br&gt;Script exits naming the failing widgets + the TS errors.&lt;br&gt;Agent rewrites &lt;b&gt;only those fnBodies&lt;/b&gt; in intent.json (re-reading SDK docs / .d.ts), re-runs the build.&lt;br&gt;Max 2 attempts → widget dropped, rest ships." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="1020" width="380" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s11" value="&lt;b&gt;11 · BUILD_RESULT → SERVER&lt;/b&gt;&lt;br&gt;Main chat starts npm run dev as a &lt;b&gt;tracked background job&lt;/b&gt; (script never spawns it) → opens localhost:57173" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1150" width="380" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s12" value="&lt;b&gt;12 · RUNTIME = PLAIN COMPILED APP&lt;/b&gt;&lt;br&gt;Widget calls customDataFn(sdk, getToken) — an ordinary function in the bundle.&lt;br&gt;await import('@uipath/…') = standard ESM lazy import, resolved by Vite at build.&lt;br&gt;OAuth PKCE → live tenant data.&lt;br&gt;&lt;b&gt;NO eval · NO new Function() · NO string execution&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1250" width="380" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="snippet" value="&lt;b&gt;The splice, concretely (generated Widget.tsx)&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;font face=&quot;Courier New&quot;&gt;const customDataFn = async (sdk, getToken):&lt;br&gt;&amp;nbsp;&amp;nbsp;Promise&amp;lt;any[]&amp;gt; =&amp;gt; {&lt;br&gt;&amp;nbsp;&amp;nbsp;// ← fnBody pasted HERE at generation time&lt;br&gt;&amp;nbsp;&amp;nbsp;const { Jobs } = await import(&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;'@uipath/uipath-typescript/jobs')&lt;br&gt;&amp;nbsp;&amp;nbsp;return (await new Jobs(sdk as never)&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;.getAll({ filter: &quot;State eq 'Faulted'&quot; }))&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;?.items ?? []&lt;br&gt;}&lt;br&gt;&lt;br&gt;const { data, loading, error } =&lt;br&gt;&amp;nbsp;&amp;nbsp;useWidgetData(customDataFn, [])&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="610" width="380" height="280" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wherecode" value="&lt;b&gt;WHERE THE CODE LIVES&lt;/b&gt;&lt;br&gt;&lt;br&gt;• Visible plan → &lt;b&gt;metadata only&lt;/b&gt;&lt;br&gt;• intent.json (internal) → metadata + fnBody as &lt;b&gt;source text&lt;/b&gt;&lt;br&gt;• Generated .tsx → fnBody &lt;b&gt;compiled like hand-written code&lt;/b&gt;&lt;br&gt;• Runtime → ordinary function call in the bundle&lt;br&gt;&lt;br&gt;Same layering as Terraform: the plan you read is declarative; the executable lives in the artifact." style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#ffffff;strokeColor=#666666;dashed=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="180" width="380" height="190" as="geometry" />
+        </mxCell>
+
+        <mxCell id="whycode" value="&lt;b&gt;WHY fnBody EXISTS (vs pure metadata)&lt;/b&gt;&lt;br&gt;&lt;br&gt;Catalog metrics are ~metadata already (name + tier).&lt;br&gt;Custom metrics need transforms — group by actor, bucket by day, numerator ÷ denominator, reshape a summary into donut rows. A metadata schema expressive enough for that becomes a programming language in JSON — with no tsc and no types. fnBody keeps that power &lt;b&gt;and&lt;/b&gt; the compile gate." style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#ffffff;strokeColor=#666666;dashed=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="560" y="395" width="380" height="185" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend" value="&lt;b&gt;Legend&lt;/b&gt;&amp;nbsp;&amp;nbsp; &lt;font color=&quot;#82b366&quot;&gt;■&lt;/font&gt; user · &lt;font color=&quot;#6c8ebf&quot;&gt;■&lt;/font&gt; agent (LLM) · &lt;font color=&quot;#d79b00&quot;&gt;■&lt;/font&gt; build script (deterministic Node) · &lt;font color=&quot;#d6b656&quot;&gt;■&lt;/font&gt; validation gate · &lt;font color=&quot;#b85450&quot;&gt;■&lt;/font&gt; retry loop · &lt;font color=&quot;#9673a6&quot;&gt;■&lt;/font&gt; runtime" style="text;html=1;align=left;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1390" width="860" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s1" target="s2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s2" target="s3"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s3" target="s4"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s4" target="s5"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s5" target="s6"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s6" target="s7"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s7" target="s8"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s8" target="s9"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s9" target="dec"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" value="no — TS errors" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1" source="dec" target="s10"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" value="fix fnBody → re-run build" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;strokeColor=#b85450;fontColor=#b85450;exitX=0.5;exitY=0;entryX=1;entryY=0.5;" edge="1" parent="1" source="s10" target="s7"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="750" y="980" /><mxPoint x="750" y="755" /></Array></mxGeometry></mxCell>
+        <mxCell id="e12" value="yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontColor=#82b366;" edge="1" parent="1" source="dec" target="s11"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="s11" target="s12"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;strokeColor=#666666;" edge="1" parent="1" source="s7" target="snippet"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
