@@ -33,7 +33,7 @@ Example:
 - `value` is always a JSON **string** (`"18"`, `"true"`, ISO-8601 dates) — the server parses it.
 - `in` / `not in` use `valueList`; everything else uses `value`.
 - `null` value = is-empty (`=`) / is-not-empty (`!=`).
-- Response: `{ TotalCount, Records, HasNextPage, NextCursor? }`. Page with `--limit` / `--cursor` flags, never body keys.
+- Response: `{ Items, TotalCount, HasNextPage, NextCursor?, CurrentPage, TotalPages, SupportsPageJump }` — items array is `Data.Items`, NOT `Data.Records`. `NextCursor` is `{ Value: "<opaque-token>" }` (an object) — pass `Data.NextCursor.Value` to `--cursor`, never `Data.NextCursor` itself. Page with `--limit` / `--cursor` / `--offset` flags, never body keys.
 
 ## Operator support by field type
 

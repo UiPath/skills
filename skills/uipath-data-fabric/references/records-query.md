@@ -6,28 +6,29 @@
 # First page
 uip df records list <entity-id> --limit 50 --output json
 
-# Next page — pass NextCursor value from previous response
-uip df records list <entity-id> --limit 50 --cursor <NextCursor> --output json
+# Next page — pass Data.NextCursor.Value (NOT the NextCursor object itself)
+uip df records list <entity-id> --limit 50 --cursor <NextCursor.Value> --output json
 ```
 
-Response: `{ TotalCount, Records, HasNextPage, NextCursor?, CurrentPage?, TotalPages? }`
+Response: `Data` = `{ Items, TotalCount, HasNextPage, NextCursor?, CurrentPage?, TotalPages?, SupportsPageJump? }`
 
-- Use `HasNextPage` to check if more records exist
-- Pass the `NextCursor` string value to `--cursor` to fetch the next page
+- `Items` is the array of records (NOT `Records` — verified against `data-fabric-tool@1.196.0`; both `records list` and `records query` use the same key).
+- Use `HasNextPage` to check if more records exist.
+- `NextCursor` is an **object** `{ "Value": "<opaque-token>" }`, not a bare string. Extract `Data.NextCursor.Value` (e.g. `jq -r .Data.NextCursor.Value`) and pass that to `--cursor`. Passing the whole object errors with `"cursor token is invalid"`.
 
 ## Pagination
 
 Offset-based under the hood. Available on both `records list` and `records query`:
 
 - `-l, --limit <number>` — page size, default `50`, min `1`. Keep constant across a sweep (changing it re-slices the offset and can skip/duplicate records).
-- `--cursor <NextCursor>` — opaque string from previous response. Pass verbatim; never hand-craft.
+- `--cursor <NextCursor.Value>` — opaque token. `NextCursor` in the response is an object `{ "Value": "..." }`; extract `.Value` and pass that. Passing the wrapping object errors with `"cursor token is invalid"`.
 - `-o, --offset <number>` — non-negative record index. Rounded down to the nearest page boundary (`jumpToPage = floor(offset / limit) + 1`). **Mutually exclusive with `--cursor`** — passing both errors with *"--offset and --cursor are mutually exclusive"*.
 - Stop when `HasNextPage: false`. `CurrentPage` / `TotalPages` are informational.
 
 ```bash
 # Sequential sweep
 uip df records list <entity-id> --limit 100 --output json
-uip df records list <entity-id> --limit 100 --cursor "<NextCursor>" --output json
+uip df records list <entity-id> --limit 100 --cursor "<NextCursor.Value>" --output json
 
 # Jump directly to the page containing record #250 (with --limit 100 → page 3)
 uip df records list <entity-id> --limit 100 --offset 250 --output json
@@ -137,7 +138,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response: `Data.Records` is a single row — `[{ "total": 250 }]`.
+Response: `Data.Items` is a single row — `[{ "total": 250 }]`.
 
 ```bash
 # Count per group (one result row per distinct value)
@@ -174,6 +175,7 @@ Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
 ```
 
 - `aggregates[].alias` is optional. When omitted, the server returns the column keyed as `{FUNCTION}_{field}` (for example `COUNT_Id`, `AVG_amount`). Provide an `alias` for stable, readable keys in your downstream code.
+- **Alias is normalized in the response.** The CLI runs every response through PascalCase normalization, so an alias of `total` comes back as `"Total"`, `totalCount` → `"TotalCount"`, `my_count` → `"MyCount"` (underscores stripped, each segment capitalized). Author downstream lookups against the normalized form: `result.Data.Items[0].Total`, never `.total`. This is a CLI-side transform — applies to every aggregate response, not just sometimes.
 - When `selectedFields` is present alongside `aggregates`, every entry in `selectedFields` must also appear in `groupBy` — otherwise the API rejects the request. The shortcut: use the same array for both, as in the examples above.
 - `groupBy` and `selectedFields` may reference root-entity fields only — expansions are not supported in aggregate mode.
 - The same `filterGroup`, `sortOptions`, and pagination flags (`--limit`, `--cursor`) work alongside aggregates. Filters are applied **before** grouping (SQL `WHERE`).
@@ -240,7 +242,9 @@ Batch update response: `{ Code: "RecordsBatchUpdated", Data: { SuccessCount, Fai
 ## Delete Records
 
 ```bash
-uip df records delete <entity-id> <id1> <id2> <id3> --output json
+uip df records delete <entity-id> <id1> <id2> <id3> --yes --reason "<why>" --output json
 ```
 
-Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
+Irreversible — `--yes` and `--reason` are both required. Omitting `--yes` → `"Confirmation required: this will delete N record(s) … Re-run with --yes to confirm."`; omitting `--reason` → `"Reason required for destructive operation"`. The `--reason` value is echoed back in `Data.Reason` for the caller's audit log.
+
+Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords, Reason } }`

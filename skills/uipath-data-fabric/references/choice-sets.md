@@ -12,10 +12,10 @@ Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entit
 | `uip df choice-sets list-values <choice-set-id> --output json` | Page through values; pagination `{ Items, TotalCount, HasNextPage, … }` (use `--limit` / `--cursor` / `--offset`) |
 | `uip df choice-sets create <name> [--display-name <…>] [--description <…>] --output json` | Create a choice set; response `Code: ChoiceSetCreated`, `Data.Id` |
 | `uip df choice-sets update <choice-set-id> [--display-name <…>] [--description <…>] --output json` | Rename / re-describe the set |
-| `uip df choice-sets delete <choice-set-id> --confirm --reason "<why>" --output json` | Irreversible — `--confirm` and `--reason` are required |
+| `uip df choice-sets delete <choice-set-id> --yes --reason "<why>" --output json` | Irreversible — `--yes` and `--reason` are required |
 | `uip df choice-set-values create <choice-set-id> <name> [--display-name <…>] --output json` | Add a value; server assigns `NumberId` (0-based, monotonic by creation order) |
 | `uip df choice-set-values update <choice-set-id> <value-id> "<new display name>" --output json` | Display-name only — `Name` and `NumberId` are immutable |
-| `uip df choice-set-values delete <choice-set-id> --ids <value-id>[,<value-id>…] --confirm --reason "<why>" --output json` | Irreversible — same gating as `choice-sets delete` |
+| `uip df choice-set-values delete <choice-set-id> --ids <value-id>[,<value-id>…] --yes --reason "<why>" --output json` | Irreversible — same gating as `choice-sets delete` |
 
 ## Use the IDs
 
@@ -25,9 +25,14 @@ Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entit
 
 ## Value `Name` validation
 
-A choice-set value's `Name` must be alphanumeric, start with a letter, and avoid SQL / C# / VB reserved keywords — same rule as entity / field names (**SKILL.md Rule 4**). Domain words that commonly collide: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`.
+A choice-set value's `Name` must be alphanumeric, start with a letter, and avoid **C# reserved keywords** — error: *"Choiceset member name must only contain alphanumeric characters, start with alphabetic characters and not be C# keyword."* Domain words that commonly collide: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`, `abstract`, `protected`.
 
-When a desired label is reserved, namespace the system `Name` and leave `DisplayName` unchanged: `Name: "internal_audit"` with `DisplayName: "Internal"`. The dropdown shows "Internal"; the validator sees `internal_audit`.
+> **Case-sensitivity diverges from entity/field-name validation.** Choice-value validation is **case-SENSITIVE** — only the lowercase keyword form is rejected. `new` fails; `New` and `NEW` succeed. SQL keywords (`Status`, `Order`, `From`, `Table`, `Key`) are not validated against and pass in any case. By contrast, entity/field-name validation (**SKILL.md Rule 4**) is **case-INSENSITIVE** — both `Class` and `class` are rejected as field names. Don't share a single keyword-avoidance script across the two surfaces.
+
+When a desired label is reserved, two recovery patterns:
+
+1. **PascalCase the system `Name`** — `Name: "New"` with `DisplayName: "New"`. Works only for the choice-value surface (the case-sensitive one).
+2. **Namespace the system `Name` and leave `DisplayName` unchanged** — `Name: "internal_audit"` with `DisplayName: "Internal"`. Works for both surfaces. The dropdown shows "Internal"; the validator sees `internal_audit`.
 
 ## Sourcing `NumberId` after batch value creates
 
@@ -50,7 +55,7 @@ uip df choice-sets create <name> [--display-name "<label>"] [--description "<…
 
 | Arg | Required | Notes |
 |---|---|---|
-| `<name>` | yes | System name. Alphanumeric, starts with a letter, not a C#/VB/SQL reserved keyword. |
+| `<name>` | yes | System name. Alphanumeric, starts with a letter, not a C#/VB keyword (case-insensitive — SKILL.md Rule 4). SQL keywords like `Status`/`Order`/`Key` are NOT validated. |
 | `--display-name "<label>"` | no | User-facing label in dropdowns. Defaults to `<name>` when omitted. |
 | `--description "<…>"` | no | Free text. |
 
@@ -72,7 +77,7 @@ uip df choice-set-values create <choice-set-id> <name> [--display-name "<label>"
 | Arg | Required | Notes |
 |---|---|---|
 | `<choice-set-id>` | yes | UUID from `choice-sets list` / `create`. |
-| `<name>` | yes | System name. Same alphanumeric + no-reserved-keyword rule as `<name>` above (see [Value `Name` validation](#value-name-validation)). |
+| `<name>` | yes | System name. Alphanumeric, starts with a letter. Rejects C# keywords **case-sensitively** (lowercase `new`/`class` rejected; `New`/`Class` accepted) — different from entity/field-name validation. See [Value `Name` validation](#value-name-validation). |
 | `--display-name "<label>"` | no | User-facing label. Defaults to `<name>` when omitted. |
 
 `NumberId` is assigned 0-based by creation order — order matters. See [Sourcing `NumberId` after batch value creates](#sourcing-numberid-after-batch-value-creates) for the per-value error handling rule.
@@ -132,7 +137,7 @@ Never fall back to `STRING`. Never auto-create without confirming the values.
 ## Deleting a choice set
 
 ```bash
-uip df choice-sets delete <choice-set-id> --confirm --reason "<why>" --output json
+uip df choice-sets delete <choice-set-id> --yes --reason "<why>" --output json
 ```
 
 Irreversible. Before invoking, run `entities list --output json` and find every entity whose `Fields[].ChoiceSetId == <choice-set-id>`. Surface those entities to the user and ask: *"This choice set is used by `<entity>.<field>` — delete it anyway (those fields will break), pick a replacement choice set, or stop?"* Apply only what the user confirms.
