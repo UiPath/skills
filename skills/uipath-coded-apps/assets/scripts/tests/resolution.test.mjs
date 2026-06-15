@@ -276,12 +276,8 @@ test('buildWidgetFile: throws if title is missing', () => {
   )
 })
 
-test('buildWidgetFile: throws if fnBody is missing (shell path)', () => {
-  // Chart path no longer needs fnBody; shell path (kpi-card, ranked-table, data-table)
-  // still implicitly requires it — crashes on metric.fnBody.split() until T5 adds explicit handling.
-  assert.throws(
-    () => buildWidgetFile({ name: 'x', tier: 'T3', title: 'X', displayAs: 'kpi-card' }, null),
-  )
+test('buildWidgetFile throws when title is missing', () => {
+  assert.throws(() => buildWidgetFile({ name: 'x', tier: 'T1', displayAs: 'data-table' }, null, '30d'), /missing title/)
 })
 
 test('buildWidgetFile: throws if displayAs cannot be determined', () => {
@@ -291,16 +287,18 @@ test('buildWidgetFile: throws if displayAs cannot be determined', () => {
   )
 })
 
-test('buildWidgetFile: injects fnBody into shell template for ranked-table', () => {
+test('buildWidgetFile: shell ranked-table imports fetchData from metric module', () => {
   const content = buildWidgetFile({
     name: 'faulted-queues', tier: 'T3', title: 'Faulted Queues', description: 'Queues with faults',
-    displayAs: 'ranked-table', fnBody: "const r = await sdk.queues.getAll({})\nreturn r.items ?? []"
+    displayAs: 'ranked-table',
   }, null, '30d')
   assert.ok(content.includes('FaultedQueues'), 'component name not injected')
   assert.ok(content.includes('Faulted Queues'), 'title not injected')
-  assert.ok(content.includes('sdk.queues.getAll'), 'fnBody not injected')
-  assert.ok(!content.includes('<<FN_BODY>>'), 'FN_BODY placeholder not replaced')
+  assert.ok(content.includes("import { fetchData } from '@/metrics/faulted-queues'"), 'fetchData import not injected')
+  assert.ok(content.includes('fetchData(sdk, getToken)'), 'fetchData call not injected')
+  assert.ok(!content.includes('const customDataFn = async'), 'customDataFn must not appear')
   assert.ok(!content.includes('<<COMPONENT_NAME>>'), 'COMPONENT_NAME placeholder not replaced')
+  assert.ok(!content.includes('<<METRIC_IMPORT>>'), 'METRIC_IMPORT placeholder not replaced')
 })
 
 test('buildWidgetFile: no unresolved << >> placeholders remain', () => {
@@ -637,12 +635,14 @@ test('harness: chart widget imports fetchData from metric module (no spliced Pro
   assert.ok(!content.includes('Promise<Record<string, unknown>[]>'), 'old index-signature-demanding wrapper must be gone')
 })
 
-test('harness: shell customDataFn signature accepts SDK-typed arrays', () => {
+test('harness: shell widget imports fetchData from metric module (no embedded customDataFn)', () => {
   const content = buildWidgetFile(
-    { name: 'm', tier: 'T3', title: 'M', displayAs: 'data-table', fnBody: 'return []' },
+    { name: 'm', tier: 'T3', title: 'M', displayAs: 'data-table' },
     null, '7d'
   )
-  assert.ok(content.includes('customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<any[]>'))
+  assert.ok(content.includes("import { fetchData } from '@/metrics/m'"), 'shell must import fetchData from metric module')
+  assert.ok(content.includes('fetchData(sdk, getToken)'), 'shell must call fetchData')
+  assert.ok(!content.includes('const customDataFn = async'), 'shell must not embed customDataFn')
 })
 
 test('harness: detail view customDataFn signature accepts SDK-typed arrays', () => {
@@ -732,5 +732,16 @@ test('buildWidgetFile (chart) imports fetchData and does not splice customDataFn
   )
   assert.match(out, /import \{ fetchData \} from '@\/metrics\/memory-calls-trend'/)
   assert.match(out, /useWidgetData\(fetchData, \[\]\)/)
+  assert.doesNotMatch(out, /const customDataFn = async/)
+})
+
+test('buildWidgetFile (kpi/table) imports fetchData and has no embedded customDataFn', () => {
+  const out = buildWidgetFile(
+    { name: 'job-failures', tier: 'T1', title: 'Faulted Jobs', displayAs: 'data-table',
+      columns: '[{key:"processName",label:"Process"}]' },
+    null, '30d'
+  )
+  assert.match(out, /import \{ fetchData \} from '@\/metrics\/job-failures'/)
+  assert.match(out, /fetchData\(sdk, getToken\)/)
   assert.doesNotMatch(out, /const customDataFn = async/)
 })

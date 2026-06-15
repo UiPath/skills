@@ -8,17 +8,9 @@ import { RecordsTable, type ColumnDef } from '@/dashboard/chrome/RecordsTable'
 import { fmtNumber, fmtPercent, fmtDuration, fmtTimeAgo } from '@/lib/format'
 import { toneClass } from '@/lib/widget'
 import { <<ICON_NAME>> } from 'lucide-react'
+<<METRIC_IMPORT>>
 
 type Row = Record<string, unknown>
-
-// ── Custom data function (injected at build time) ─────────────────────────────
-// Promise<any[]>: SDK response interfaces lack index signatures and are not
-// assignable to Record<string, unknown> — any[] accepts them while still
-// requiring an array return.
-const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<any[]> => {
-<<FN_BODY>>
-}
-// ─────────────────────────────────────────────────────────────────────────────
 
 const DISPLAY_AS: string = '<<DISPLAY_AS>>'
 const VALUE_FIELD = '<<VALUE_FIELD>>'
@@ -34,7 +26,7 @@ function use<<COMPONENT_NAME>>Data() {
   useEffect(() => {
     if (!sdk) return
     setLoading(true)
-    customDataFn(sdk, getToken)
+    fetchData(sdk, getToken)
       .then(rows => { setData(rows); setLoading(false) })
       .catch(err => { setError(err instanceof Error ? err : new Error(String(err))); setLoading(false) })
   }, [sdk])

@@ -784,7 +784,6 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
   if (!existsSync(T3_SHELL_TEMPLATE_PATH)) {
     throw new Error(`T3 shell template not found at ${T3_SHELL_TEMPLATE_PATH}`)
   }
-  const indentedFnBody = metric.fnBody.split('\n').map(l => '  ' + l).join('\n')
   const columns    = compileColumns(metric.columnDefs ?? metric.columns ?? defaults.columnDefs ?? defaults.columns ?? '[{key:"name",label:"Name"},{key:"value",label:"Value",align:"right" as const}]')
   const valueField = metric.valueField ?? ''
   const valueLabel = metric.valueLabel ?? ''
@@ -792,7 +791,7 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
 
   let content = readFileSync(T3_SHELL_TEMPLATE_PATH, 'utf8')
   content = content
-    .split('<<FN_BODY>>').join(indentedFnBody)
+    .split('<<METRIC_IMPORT>>').join(`import { fetchData } from '${metricModuleSpecifier(metric)}'`)
     .split('<<COMPONENT_NAME>>').join(componentName)
     .split('<<TITLE>>').join(metric.title ?? componentName)
     .split('<<DESCRIPTION>>').join(subtitle)
@@ -801,16 +800,6 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
     .split('<<COLUMNS>>').join(columns)
     .split('<<VALUE_FIELD>>').join(valueField)
     .split('<<VALUE_LABEL>>').join(valueLabel)
-
-  const lines = content.split('\n')
-  let lastImportIdx = -1
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].startsWith('import ')) lastImportIdx = i
-  }
-  if (lastImportIdx >= 0) {
-    lines.splice(lastImportIdx + 1, 0, '', TIME_CONSTANTS.trimEnd())
-    content = lines.join('\n')
-  }
   return content
 }
 
