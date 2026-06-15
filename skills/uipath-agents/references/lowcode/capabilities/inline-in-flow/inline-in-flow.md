@@ -1,6 +1,6 @@
 # Inline Agent in a Flow
 
-Walkthrough for embedding a low-code agent directly inside a flow project. The agent lives as a UUID-named subdirectory inside the flow project and is published with the parent flow.
+Walkthrough for embedding a low-code autonomous agent directly inside a flow project. The agent lives as a UUID-named subdirectory inside the flow project and is published with the parent flow.
 
 Flow authoring itself is the responsibility of the `uipath-maestro-flow` skill — this file covers only the inline-agent side (creating the agent subdirectory, configuring it, and the shape of the `uipath.agent.autonomous` flow node that references it).
 
