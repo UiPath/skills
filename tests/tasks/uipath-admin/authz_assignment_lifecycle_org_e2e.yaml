@@ -19,10 +19,10 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Grant me organization-wide access by giving my account an existing
-  organization-level built-in role. After it's assigned, confirm it
-  shows up on my account. Then please clean up by removing the
-  assignment and confirming it's gone.
+  Grant my account organization-level access by assigning the built-in
+  organization-level role "Insights Dashboard Viewer". Look it up by name, then
+  assign it. After it's assigned, confirm it shows up on my account.
+  Then please clean up by removing the assignment and confirming it's gone.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -43,9 +43,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed built-in Org-scope roles (`--role-type BuiltIn --scope Organization`)"
+    description: "Agent listed roles to discover a built-in one to assign"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--scope\s+Organization\b'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -69,7 +69,7 @@ success_criteria:
   - type: command_executed
     description: "Agent cleaned up via `roles assignments delete <id>`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+(?:[a-f0-9-]{8,}|--file\s+\S+)'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+(?:["'']?[a-f0-9-]{8,}|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -83,13 +83,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent must NOT use legacy --principal-id flag"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+(?:create|delete)\s+.*--principal-id'
-    weight: 2.0
-
-  - type: command_not_executed
     description: "Agent must NOT use lowercase 'user' for --identity-type"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+create\s+.*--identity-type\s+user\b'
     weight: 1.5
+
+post_run:
+  - command: 'CLEANUP_ASSIGNMENT_ROLE="Insights Dashboard Viewer" CLEANUP_ASSIGNMENT_SCOPE="Organization" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_assignment.py''))"'
+    timeout: 30

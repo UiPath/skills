@@ -18,9 +18,9 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  My account needs a built-in global template role that's available
-  across every tenant in the organization. Pick an appropriate
-  existing one and assign it to me. After it's assigned, confirm it
+  My account needs the built-in global template role "Tenant Administrator",
+  which is available across every tenant in the organization. Look it up
+  by name, then assign it to me. After it's assigned, confirm it
   appears on my account. Then clean up by removing the assignment
   and confirming it's gone.
 
@@ -69,7 +69,7 @@ success_criteria:
   - type: command_executed
     description: "Agent cleaned up via `roles assignments delete` (positional id or --file batch form)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+(?:[a-f0-9-]{8,}|--file\s+\S+)'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+(?:["'']?[a-f0-9-]{8,}|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -93,3 +93,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+(?:create|delete)\s+.*--principal-id'
     weight: 2.0
+
+post_run:
+  - command: 'CLEANUP_ASSIGNMENT_ROLE="Tenant Administrator" CLEANUP_ASSIGNMENT_SCOPE="Tenant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_assignment.py''))"'
+    timeout: 30

@@ -8,9 +8,8 @@ description: >
   to ids live; it also names the `objectlabel` command group explicitly so
   the agent does not confuse it with the `customfield label` subgroup. It
   attaches labels many-to-many, lists the distinct labels narrowed by
-  `--filter`, inspects one assignment row, then detaches a single label.
-  Assertions validate the complete command shape and the exact label
-  names.
+  `--filter`, then detaches a single label. Assertions validate the
+  complete command shape and the exact label names.
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:objectlabel]
 
 run_limits:
@@ -25,10 +24,9 @@ initial_prompt: |
   grab their ids first.
 
   Can you put the tags "eval-regression" and "eval-smoke" on all three?
-  Then show me the test-case labels filtered down to just "eval-regression",
-  and open one of those label rows by its id so I can see the detail. Once
-  that's done, take "eval-smoke" back off the three but keep "eval-regression"
-  on them.
+  Then show me the test-case labels filtered down to just "eval-regression".
+  Once that's done, take "eval-smoke" back off the three but keep
+  "eval-regression" on them.
 
   Then just scribble a one-liner on where the tags ended up into
   ./health-labels.md.
@@ -62,14 +60,6 @@ success_criteria:
     description: "Complete narrowed-list command: `uip tm objectlabel list --project-key HEALTH --object-type TestCase --filter eval-regression --output json`"
     tool_name: "Bash"
     command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+TestCase)(?=.*--filter\s+["\x27]?eval-regression)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+list\b'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Complete inspect command: `uip tm objectlabel get --project-key HEALTH --label-id <uuid> --output json`"
-    tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--label-id\s+\S+)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+get\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

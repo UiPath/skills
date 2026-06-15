@@ -3,7 +3,7 @@ description: >
   End-to-end test: agent performs a robot account onboarding flow.
   Creates a robot account, assigns it to a group for role-based access.
   Validates the agent follows the onboarding workflow from the skill.
-tags: [uipath-admin, e2e, onboarding]
+tags: [uipath-admin, onboarding]
 
 run_limits:
   expected_turns: 10

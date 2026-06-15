@@ -34,6 +34,8 @@ initial_prompt: |
   Step 3 for resolving the `parentFolderId` reference field against the bound
   connection. Do not reuse any folder ID you may have seen before.
 
+  Use the connection in Shared/uipath-maestro-flow folder.
+
 success_criteria:
   # ── Structural: flow builds and validates ──────────────────────────────
   - type: run_command
@@ -53,6 +55,17 @@ success_criteria:
     pass_threshold: 1.0
 
   # ── Regression: reference-ID resolution (PR #348) ──────────────────────
+  - type: command_executed
+    description: "Agent queried trigger objects for the connector's EMAIL_RECEIVED operation (connector-trigger Step 1b, mandatory)"
+    tool_name: "Bash"
+    # `[\s\S]` matches across newlines — agents often split `uip` commands with
+    # backslash line-continuation, which `.*` would miss. Quotes around the
+    # connector key / operation are optional, so match bare tokens.
+    command_pattern: 'uip\s+is\s+triggers\s+objects[\s\S]+?uipath-microsoft-outlook365[\s\S]+?EMAIL_RECEIVED'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent resolved MailFolder against the current --connection-id (PR #348 regression)"
     tool_name: "Bash"

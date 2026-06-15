@@ -1,0 +1,66 @@
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 128000,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "maxIterations": 25,
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "content": {
+        "type": "string"
+      }
+    },
+    "title": "Inputs",
+    "required": [
+      "content"
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "decision": {
+        "type": "string",
+        "description": "Output content"
+      }
+    },
+    "title": "Outputs",
+    "required": [
+      "decision"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "projectId": "6cca854b-84a3-4b83-9435-672b8ccd273c",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a content moderation agent. Evaluate the provided content and return a moderation decision.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "You are a content moderation agent. Evaluate the provided content and return a moderation decision."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "{{input.content}}",
+      "contentTokens": [
+        {
+          "type": "variable",
+          "rawString": "input.content"
+        }
+      ]
+    }
+  ]
+}
