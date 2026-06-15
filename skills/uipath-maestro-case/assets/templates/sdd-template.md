@@ -112,7 +112,8 @@ The generated SDD must start with:
 
 1. **Title** — `# SDD — {Case Name}`
 2. **Subtitle** — Case Definition Blueprint blurb
-3. **Table of Contents** — Numbered list with markdown anchor links. Use plain numbered list items with links, NOT headings (no `###`). Format:
+3. **(optional) Version / Change Log** — a single blockquote under the subtitle when the SDD is revised: `> **Version: vN** — <one-line what-changed-and-why>`. Use it to record material build-driven corrections (e.g. "rebound `caseId` to `=metadata.ExternalId` — the workflow does not return it") so a reader/coding-agent sees the rationale, not just the result. Omit on a first draft.
+4. **Table of Contents** — Numbered list with markdown anchor links. Use plain numbered list items with links, NOT headings (no `###`). Format:
    ```markdown
    ## Table of Contents
 
@@ -122,7 +123,7 @@ The generated SDD must start with:
       - [Stage 2: {Name}](#stage-2-{slug}) — {N} tasks
       ...
    3. [Personas & App Views](#section-3-personas--app-views) — {N} Personas, Process App Views
-   4. [Integrations](#section-4-integrations) — Integration Service Connectors, External Agents
+   4. [Integrations](#section-4-integrations) — IS Connectors, API Workflows, Agents, Processes & RPA, Child Cases, External Agents
    ```
    Anchor slugs must match the actual heading text: lowercase, spaces→hyphens, strip special chars (e.g., `### Stage 1: Request Intake & Triage` → `#stage-1-request-intake--triage`).
 
@@ -161,6 +162,9 @@ The generated SDD must start with:
 | Priority | Choiceset: {comma-separated values} — Default: {value} |
 | Case-Level SLA | {count} {unit: h/d/w/m} |
 | SLA Type | {time-based \| condition-based} |
+| Case App | {Enabled \| Disabled} — whether the in-product Case App UI is on (`caseAppEnabled`; default Disabled) |
+| Task-output passing | {Direct \| Shared} — `caseDirectlyPassTaskOutputs` (Direct = a task's outputs flow straight to downstream tasks; default Direct) |
+| Case Identifier source | {`=metadata.ExternalId` (platform-generated — the default) \| custom} — what every `caseId` task input binds to |
 
 ### Case-Level SLA Escalation Rules
 
@@ -268,6 +272,8 @@ If neither holds, the io-binding validator surfaces the misalignment.
   - **`-> caseVar`** (extract): the value at the runtime path in the `Field` column is extracted into the named case variable. `Field` is the **full runtime path relative to the task's root scope** — write `response.status` for a connector payload field, `Action` for an action task's top-level output, `Error.code` for a nested error sub-field, etc. The skill emits `source: "=<Field>"` verbatim; no envelope inference.
   - **`caseVar = <expression>`** (set / compute / copy): the case variable is assigned the result of the expression at task completion. The `Field` column is `—` for `=` rows. Expression can be a literal (`"InReview"`, `5`), a computed value (`=js:(vars.count + 1)`), a top-level case-var copy (`=vars.X`), or a sub-field copy via JS eval (`=js:vars.X.Y`).
 
+- **Case identity — bind `caseId` to `=metadata.ExternalId`.** The case external id is platform-generated (constant prefix or external expression) and exposed as `metadata.ExternalId`; it is NOT a task output. Every task input named `caseId` binds to `=metadata.ExternalId`. **Never** author a `-> caseId` extraction on a workflow whose result has no `caseId` key — it resolves to runtime null. (`Action` is the conventional top-level output field of an `action` task — its button result — captured via `Action -> <decisionVar>`.)
+
 **Authoring rules:**
 
 - Every target case variable on the left side of `->` or `=` MUST appear in the Case Variables table. The Outputs table doesn't declare new variables — it wires existing ones.
@@ -360,13 +366,28 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > If `WHEN` is `wait-for-connector`, add a **Connector Rule Detail** block under this table (see Key Rule 6).
 
+**Task envelope** (every task — render after the Entry Condition table):
+
+| Required | Run Only Once | Skip Condition |
+|----------|---------------|----------------|
+| {Yes \| No} | {Yes \| No} | {`=js:` expression that skips the task when truthy, or `—`} |
+
+> `Required: Yes` means the task counts toward the stage's `required-tasks-completed` exit — **at least one task per stage MUST be `Required: Yes`**, or the stage can never complete. `Skip Condition` is the task-level `skipCondition` envelope field (sibling of `data`); use it for "run this task only when X" gating that is not expressible as a task-entry `IF`.
+
 ---
 
 ###### Action Task Detail (type: `action`)
 
 > Use this block for every task of type `action`. The action plugin authors action tasks ONLY from a deployed Action App registered in `action-apps-index.json`; inline JSON-Schema HITL forms are not authored by the skill (an unresolved app falls back to a Rule-8 placeholder).
 
-**HITL Implementation:** Action App: {app name from `action-apps-index.json` — must be deployed}
+**HITL Implementation:** Action App: {`deploymentTitle` from `action-apps-index.json` — must be deployed}
+**Action App ID:** {`actionAppId` — concrete deployment id, or `<UNRESOLVED>`}
+**Deployment Folder:** {`deploymentFolder.fullyQualifiedName`}
+**actionType:** {the dispatch code the app's code-behind switches on — e.g., `GRNConfirmation`, `ApLeadApproval`. **A recognised code is REQUIRED; passing a human display name instead fails result mapping at runtime.** `—` only when the app is not a code-switched app.}
+**Recipient:** {typed prefix only: `Role:<name>` \| `User:<uuid>` \| `UserGroup:<uuid>` \| `Email:<addr>` \| `Expression:=vars.<id>`}
+**Priority:** {Low \| Medium \| High \| Critical} · **Task Title:** {one-line Action Center prompt} · **Labels:** {csv or `—`}
+
+> `Action App ID` + `Deployment Folder` make the SDD replicable standalone (a reader can locate the exact deployed app). `actionType` is the human-decision app's behaviour selector — treat it as a closed enum sourced from the app, not a free-text label.
 
 **Input Schema:**
 
@@ -400,12 +421,15 @@ The runtime engine resolves the binding when the task completes, writing the res
 > - **Account/Endpoint is not stored** in the compact cache. Render `—` unless the user spec supplies it explicitly.
 > If a cache is unavailable or no enabled connection is found, render `—` rather than inventing values.
 
-**Connector:** {connector name from Integration Service, e.g., "Salesforce"}
-**Connection:** {connection instance `name` from `connections.json`, e.g., "Salesforce-Prod" — or "Tenant default (connection ID {id})" when `isDefault: true`}
+**Connector:** {connector name from Integration Service, e.g., "Salesforce"} · **Connector Key:** {`connectorKey`, e.g. `salesforce`}
+**Connection:** {connection instance `name` from `connections.json`, e.g., "Salesforce-Prod" — or "Tenant default" when `isDefault: true`} · **Connection ID:** {`connectionId` — concrete, or `<UNRESOLVED>`}
+**Activity Type ID:** {`activityTypeId` from the typecache} · **Service Type:** {`serviceType`, e.g. `Intsvc.WaitForEvent`}
 **Auth Method:** {`defaultAuthenticationType` from `connectors.json`, e.g., OAuth2 \| API Key \| Basic \| Service Account}
 **Account / Endpoint:** {explicit endpoint if supplied — or "—" (not stored in the CLI cache)}
 **Operation:** {`displayName` / `operation` from `activities.json`}
 **Trigger / Event:** {trigger display name for `wait-for-connector`, or "—" for `execute-connector-activity`}
+
+> `Connection ID` + `Activity Type ID` are the concrete identities Phase 1 binds — without them the connector cannot resolve at build time; surface them here so the SDD is replicable standalone (missing either → `<UNRESOLVED>` + a high review item).
 
 **Inputs:**
 
@@ -458,6 +482,14 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > Use this block for `process`, `agent`, `rpa`, and `api-workflow` tasks. These tasks do NOT support SLA — SLA column in the task summary should be "—".
 
+**Resolved Resource:** {the deployed resource's `name` — e.g. `AgedInvoiceMockIntegrationApi` (api-workflow), `InvoiceTriageAgent` (agent), `AgedInvoice_StatementReconciliation` (rpa). This is the `name`-binding default — REQUIRED so the SDD names which resource the task invokes.}
+**Folder Path:** {resolved `folders[0].fullyQualifiedName` — the `folderPath`-binding default. MUST be the resource's exact folder (never a parent path, or the job faults at runtime).}
+**Resource Identity:** {resolved id (+version) — `apiWorkflowId` / `agentId` / `processOrchestrationId` — or `<UNRESOLVED>`. Recommended in the SDD body so it is replicable standalone; also carried in `tasks/registry-resolved.json`.}
+**Binding Sub-Type:** {`Api` (api-workflow) \| `Agent` (agent) \| `ProcessOrchestration` (process) \| `—` (rpa) — the `resourceSubType` on the name/folderPath bindings. Omitting it makes Studio Web report the resource as not found.}
+**Dispatch / Operation:** {when the resource is a shared façade dispatched by a parameter, name the selector and value — e.g. `requestSource = "RegisterCaseShell"`. Render `—` for single-purpose resources. The selector itself is also an Inputs row (a literal binding).}
+
+> The resource **name + folder** make this task replicable from the SDD alone; without them a reader knows the I/O contract but not which deployed resource to bind. When one façade resource (e.g. a generic mock-integration API, or a code-switched action app) backs many tasks, the **Dispatch / Operation** value is what distinguishes their behaviour — capture it explicitly, not just as an opaque input.
+
 **Inputs:**
 
 | Field | Type | Binding |
@@ -497,13 +529,15 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 ## Section 4: Integrations
 
-**Purpose:** External systems and how they connect to the case. Covers Integration Service connectors with their operations and external agent configurations.
+**Purpose:** The complete inventory of every deployed resource and external system the case binds — **one subsection per resource family**, so the full integration/resource footprint is visible and replicable from the SDD alone. Render only the subsections whose task type appears in the case; for a family with no tasks, either omit the subsection or render the heading with `> None.`. Every resource row carries the **folder** and **resource id** so a reader can locate the exact deployed artifact (mirrors the per-task `Resolved Resource` / `Folder Path` cells in Section 2 — this section is the de-duplicated roll-up).
 
 ### Integration Service Connectors
 
-| Connector | System | Auth Method | Operations Used | Used By Tasks |
-|-----------|--------|-------------|-----------------|---------------|
-| {connector name} | {target system name} | {OAuth2 \| API Key \| Basic \| Service Account \| ...} | {comma-separated operation names} | {comma-separated task names} |
+> For `execute-connector-activity` and `wait-for-connector` tasks. `> None.` when the case has neither.
+
+| Connector | Connector Key | System | Connection (ID) | Auth Method | Operations Used | Used By Tasks |
+|-----------|---------------|--------|-----------------|-------------|-----------------|---------------|
+| {connector name} | {connectorKey} | {target system} | {connection name (connectionId)} | {OAuth2 \| API Key \| Basic \| Service Account \| ...} | {comma-separated operation names} | {comma-separated task names} |
 
 > For each connector, provide operation detail. If CLI registry data is available, include actual I/O fields from the registry.
 
@@ -511,13 +545,47 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 **Operations:**
 
-| Operation | Method | Input Fields | Output Fields |
-|-----------|--------|-------------|---------------|
-| {operation name} | {GET \| POST \| PUT \| DELETE \| PATCH \| EVENT} | {field: type, field: type, ...} | {field: type, field: type, ...} |
+| Operation | Activity Type ID | Method | Input Fields | Output Fields |
+|-----------|------------------|--------|-------------|---------------|
+| {operation name} | {activityTypeId} | {GET \| POST \| PUT \| DELETE \| PATCH \| EVENT} | {field: type, ...} | {field: type, ...} |
+
+### API Workflows
+
+> For `api-workflow` tasks. One row per **distinct** workflow (de-duplicate across tasks).
+
+| Workflow | Folder | Resource ID (+version) | Inputs → Outputs | Used By Tasks |
+|----------|--------|------------------------|------------------|---------------|
+| {workflow name} | {folders[0].fullyQualifiedName} | {apiWorkflowId (+version)} | {in fields → out fields} | {comma-separated task names} |
+
+> **Shared-façade note:** when one workflow backs multiple tasks via a dispatch parameter, list the distinct selector values in the `Used By Tasks` cell, e.g. `Start case (requestSource=StartAgedInvoiceCase), Register shell (requestSource=RegisterCaseShell)`.
+
+### Agents
+
+> First-class UiPath `agent` tasks (NOT externally-hosted agents — those go under **External Agents** below). One row per distinct agent.
+
+| Agent | Folder | Resource ID (+version) | Inputs → Outputs (or shared contract) | Used By Tasks |
+|-------|--------|------------------------|----------------------------------------|---------------|
+| {agent name} | {folders[0].fullyQualifiedName} | {agentId (+version)} | {in fields → out fields, or "shared agent contract"} | {comma-separated task names} |
+
+### Processes & RPA
+
+> For `process` and `rpa` tasks. One row per distinct resource.
+
+| Resource | Type | Folder | Resource ID (+version) | Used By Tasks |
+|----------|------|--------|------------------------|---------------|
+| {resource name} | {process \| rpa} | {folders[0].fullyQualifiedName} | {processOrchestrationId (+version)} | {comma-separated task names} |
+
+### Child Cases
+
+> For `case-management` tasks. Render only if the case launches a child case.
+
+| Child Case | Identifier Prefix | Wait for Completion | Used By Tasks |
+|------------|-------------------|---------------------|---------------|
+| {child case name} | {2-4 char prefix} | {Yes \| No} | {comma-separated task names} |
 
 ### External Agents
 
-> Include this table only if the case uses external agent tasks.
+> Externally-hosted AI agents (CrewAI, Salesforce Einstein, Databricks, LangChain, …), modeled as `api-workflow` / `execute-connector-activity` tasks (the skill has no first-class `external-agent` type). Include this table only if the case uses such an agent.
 
 | Agent | Service Type | Endpoint | Used By Tasks |
 |-------|-------------|----------|---------------|
