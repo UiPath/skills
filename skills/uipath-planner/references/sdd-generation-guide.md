@@ -8,6 +8,22 @@ Step-by-step instructions for transforming a PDD into an SDD. Follow the 3-phase
 
 Before reading the PDD, ask **one `AskUserQuestion` call containing two question objects** — execution mode and delivery model. Batching keeps the prompt budget flat: the delivery model gates every product decision (see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate)) and asking it later costs a second interruption.
 
+**Delivery-model CLI preflight — run first, best-effort.** Before composing the questions, try to resolve the delivery model from the active CLI session:
+
+```bash
+uip login status --output json
+```
+
+Map `Data.BaseUrl`'s host:
+
+| BaseUrl host | Record | Question 2 |
+|---|---|---|
+| `alpha.uipath.com`, `staging.uipath.com`, `cloud.uipath.com` | **cloud** | skip |
+| any other (custom) host | **automation-suite**, version unknown | skip — apply the AS-version-unknown rule below |
+| `Status` ≠ `Logged in`, call errors, or no `BaseUrl` | nothing | ask (leave as is) |
+
+Precedence: an explicit user-stated delivery model or a PDD signal **wins over** the preflight — never override an explicit statement with the detected value. The preflight is **best-effort and never blocks** (Rule G-8): on any CLI failure, fall back to asking Question 2.
+
 *Question 1 — Execution mode:*
 
 > How should I handle this SDD generation?
@@ -24,7 +40,7 @@ Before reading the PDD, ask **one `AskUserQuestion` call containing two question
 > 3. **Standalone Orchestrator (MSI)** — most restrictive; modern platform products unavailable
 > 4. **Not sure** — I will proceed assuming Automation Cloud and flag the assumption as `[SME REVIEW]`
 
-**Skip Question 2** when the delivery model is already resolved — the user's request states it, or the PDD carries a delivery-model signal (see [PDD Analysis Guide → Environment & Constraint Signals](pdd-analysis-guide.md#environment--constraint-signals)). Record the detected value instead of asking. If the answer is Automation Suite and the version is unknown, do not ask a follow-up — gate against the latest matrix column and add an `[SME REVIEW]` row for the version in §16 Deployment Environment.
+**Skip Question 2** when the delivery model is already resolved — the user's request states it, the PDD carries a delivery-model signal (see [PDD Analysis Guide → Environment & Constraint Signals](pdd-analysis-guide.md#environment--constraint-signals)), or the CLI preflight above resolved it. Record the resolved value instead of asking. If the answer is Automation Suite and the version is unknown, do not ask a follow-up — gate against the latest matrix column and add an `[SME REVIEW]` row for the version in §16 Deployment Environment.
 
 **Skip Question 1 symmetrically** when the request already states the execution mode ("autonomous", "don't pause for checkpoints", "interactive review"). When both questions are resolved from context, skip the `AskUserQuestion` call entirely and record both values.
 
