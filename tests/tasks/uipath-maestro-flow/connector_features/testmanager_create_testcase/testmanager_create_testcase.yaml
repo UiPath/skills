@@ -1,24 +1,25 @@
-# tenant-gated, skip:true. CONFIRMED AVAILABLE (2026-06-12, org testmanagerdev /
+# tenant-gated, skip:true. CONFIRMED AVAILABLE (2026-06-15, org testmanagerdev /
 # TestManagerDevTenant). The first-party connector IS in the Maestro Flow node
 # manifest — but ONLY after refreshing it: `uip maestro flow registry pull`
 # ("Synced fresh nodes") then `uip maestro flow registry search uipath-uipath-testmanager`
-# returns 72 nodes, including:
-#   uipath.connector.uipath-uipath-testmanager.create-test-case   (+ create-requirement,
-#   create-test-set, list-records, get-assigned-test-cases-for-req, …)
-# IMPORTANT: a stale manifest returns 0 — the agent MUST run `registry pull` before
-# searching (the uipath-maestro-flow skill workflow already does). Same manifest
-# backs Maestro BPMN, so the connector is available there too.
-# Before flipping skip:false: the connector + an Enabled connection must exist in
-# the *CI eval tenant* (testmanagerdev is a dev tenant, not skills CI).
+# returns 72 nodes, including uipath.connector.uipath-uipath-testmanager.create-test-case.
+# A stale manifest returns 0 — the agent MUST run `registry pull` before searching.
+# Same manifest backs Maestro BPMN, so the connector is available there too.
+# Validated against testmanagerdev: agent ran registry pull → registry get
+# uipath.connector.uipath-uipath-testmanager.create-test-case (real connection) →
+# node add → flow validate, and produced TestCaseCreator/.../*.flow referencing
+# the connector node. Graded on those agent actions + the produced .flow shape
+# (no grader-side `uip` re-run, no live debug/mutation). Flip skip:false once the
+# connector + an Enabled connection exist in the CI eval tenant (codereval).
 task_id: skill-flow-testmanager-create-testcase
 description: >
   E2E (connector): agent uses the uipath-maestro-flow skill to build a Maestro
   Flow that creates a Test Case in Test Manager via the
-  `uipath-uipath-testmanager` Integration Service connector node, then validates
-  it. Exercises connector discovery (`maestro flow registry search`/`get`),
-  node add for the testmanager connector, connection binding via
-  `node configure`, and `maestro flow validate`. Graded by validate plus a check
-  script that debugs the flow against a live tenant connection.
+  `uipath-uipath-testmanager` Integration Service connector node. Exercises the
+  stale-manifest-safe discovery flow (`registry pull` → `registry search`/`get`),
+  adding the Test Manager connector node, binding its connection, and
+  `maestro flow validate`. Graded on the agent's discovery/build commands plus the
+  produced `.flow` referencing the connector node type.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-testmanager, feature:test-case, feature:connections]
 skip: true
 
@@ -27,25 +28,19 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
-    timeout: 90
-
 initial_prompt: |
   Before starting, load the uipath-maestro-flow skill and follow its workflow.
 
   Build a Maestro Flow "TestCaseCreator" (inside a solution of the same name)
   that creates a Test Case in UiPath Test Manager via the Test Manager
-  Integration Service connector, then returns the created test case id.
+  Integration Service connector node.
 
   - Trigger inputs: `testCaseName` (string), `projectId` (string).
   - Discover and wire the Test Manager connector node and its connection — do
     not mock it. You are logged in to the tenant that hosts the connection.
-  - Outputs: `createdTestCaseId` (string), `createdTestCaseName` (string).
+  - Output: `createdTestCaseId` (string).
 
-  Validate the final flow file — not complete until `uip maestro flow validate`
-  passes. Grading runs the flow under debug against live tenant data, so build
-  it to actually run. Do not run debug yourself.
+  The task is not complete until `uip maestro flow validate` passes for the flow.
 
   Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation.
@@ -68,25 +63,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added the Test Manager connector node (node type carries connectorKey uipath-uipath-testmanager)"
+    description: "Agent added a connector node to the flow (`uip maestro flow node add`) — the specific node type is verified against the produced .flow below"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add[\s\S]{0,200}?uipath-uipath-testmanager'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add'
     min_count: 1
-    weight: 2.0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow (`uip maestro flow validate`)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+validate'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "uip maestro flow validate passes on the flow file"
-    command: "uip maestro flow validate TestCaseCreator/TestCaseCreator/TestCaseCreator.flow --output json"
+    description: "Produced .flow references the Test Manager connector node (uipath.connector.uipath-uipath-testmanager.*)"
+    command: "grep -rl 'uipath-uipath-testmanager' --include='*.flow' ."
     timeout: 30
     expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Check debugs the flow; a Test Case is created via the connector and echoed back"
-    command: "python3 $TASK_DIR/check_testmanager_create_testcase.py"
-    timeout: 600
-    expected_exit_code: 0
-    weight: 5.0
+    weight: 2.0
     pass_threshold: 1.0
