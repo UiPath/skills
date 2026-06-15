@@ -11,7 +11,7 @@ description: >
   Uses an existing built-in role — no new role created.
 
   Command-construction only — no live tenant available.
-tags: [uipath-admin, e2e, authz, assignment-lifecycle, scope:organization]
+tags: [uipath-admin, e2e, mode:build, authz, assignment-lifecycle, scope:organization]
 
 run_limits:
   expected_turns: 16

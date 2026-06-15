@@ -16,7 +16,7 @@ description: >
 
   A post_run safety net (`cleanup_role.py`) deletes the role by id so an
   incomplete run leaves no orphan template on the tenant.
-tags: [uipath-admin, e2e, authz, role-lifecycle, scope:tenant-global]
+tags: [uipath-admin, e2e, mode:build, authz, role-lifecycle, scope:tenant-global]
 
 run_limits:
   expected_turns: 18

@@ -10,7 +10,7 @@ description: >
   (`--identity-id`/`--identity-type User`); cleanup.
 
   Command-construction only — no live tenant available.
-tags: [uipath-admin, e2e, authz, assignment-lifecycle, scope:tenant-global]
+tags: [uipath-admin, e2e, mode:build, authz, assignment-lifecycle, scope:tenant-global]
 
 run_limits:
   expected_turns: 18

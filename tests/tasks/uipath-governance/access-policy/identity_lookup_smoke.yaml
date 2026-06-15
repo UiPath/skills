@@ -13,7 +13,7 @@ description: >
   `uip admin` commands that hit Identity Server will fail with an auth
   error. That is acceptable — what matters is that the agent invokes the
   correct commands with the correct flags.
-tags: [uipath-governance, smoke, access-policy, identity-lookup]
+tags: [uipath-governance, smoke, mode:diagnose, access-policy, identity-lookup]
 
 run_limits:
   expected_turns: 8

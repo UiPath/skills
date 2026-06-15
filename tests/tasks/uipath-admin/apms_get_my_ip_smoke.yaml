@@ -7,7 +7,7 @@ description: >
   Platform note: runs without an authenticated tenant — commands will
   fail with auth errors. That is acceptable; what matters is correct
   command invocation with correct flags.
-tags: [uipath-admin, smoke, get, apms]
+tags: [uipath-admin, smoke, mode:diagnose, get, apms]
 
 run_limits:
   expected_turns: 4

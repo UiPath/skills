@@ -9,7 +9,7 @@ description: >
   Validates: `--scope Organization`, the `roles update` step, actions.json
   uses permission `name` strings (not UUIDs), positional id on
   get/update/delete, cleanup at end of test.
-tags: [uipath-admin, e2e, authz, role-lifecycle, scope:organization]
+tags: [uipath-admin, e2e, mode:build, authz, role-lifecycle, scope:organization]
 
 run_limits:
   expected_turns: 13
