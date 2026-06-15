@@ -1,0 +1,121 @@
+task_id: skill-platform-is-testmanager-execution-results
+description: >
+  Coverage test: agent uses the uipath-platform skill to exercise every UiPath
+  Test Manager connector activity related to test executions and results through
+  the `uip is` surface — get/delete a test execution, read its test case logs,
+  read a test case log, robot logs, assertions, download an assertion, and read
+  test steps and step logs. Offline (command-shape) grading; runs in CI without a
+  live connection.
+tags: [uipath-platform, integration-service, resources, execute]
+
+run_limits:
+  expected_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Exercise the UiPath Test Manager execution/results operations through UiPath
+  Integration Service, using connector `uipath-uipath-testmanager`. Run the
+  matching `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
+
+  - Get a test execution                 (object `TestExecution`)
+  - Delete a test execution              (object `TestExecution`)
+  - Get test case logs of a test execution (object `GetTestCaseLogsOfTestExecution`)
+  - Get a test case log                  (object `TestCaseLog`)
+  - Get robot logs                       (object `GetRobotLogs`)
+  - Get assertions                       (object `GetAssertions`)
+  - Download an assertion                (object `DownloadAssertion`)
+  - Get test steps                       (object `GetTestSteps`)
+  - Get test step logs                   (object `GetTestStepLogs`)
+
+  Important:
+  - The `uip` CLI is available but NOT connected to a live tenant. Commands will
+    fail with auth errors — expected. Run each once; do NOT retry or login.
+  - Use `--output json` and `--connection-id` (placeholder if needed); placeholder
+    ids where a real id would be needed.
+
+success_criteria:
+  - type: command_executed
+    description: "Get Test Execution (`... run get uipath-uipath-testmanager TestExecution`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+TestExecution'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Delete Test Execution (`... run delete uipath-uipath-testmanager TestExecution`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+uipath-uipath-testmanager\s+TestExecution'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Test Case Logs of Test Execution (`... run list uipath-uipath-testmanager GetTestCaseLogsOfTestExecution`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetTestCaseLogsOfTestExecution'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Test Case Log (`... run get uipath-uipath-testmanager TestCaseLog`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+TestCaseLog'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Robot Logs (`... run list uipath-uipath-testmanager GetRobotLogs`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetRobotLogs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Assertions (`... run list uipath-uipath-testmanager GetAssertions`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetAssertions'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Download Assertion (`... run get uipath-uipath-testmanager DownloadAssertion`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+DownloadAssertion'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Test Steps (`... run list uipath-uipath-testmanager GetTestSteps`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetTestSteps'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Test Step Logs (`... run list uipath-uipath-testmanager GetTestStepLogs`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetTestStepLogs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json on resource commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,74 @@
+task_id: skill-platform-is-testmanager-attachments
+description: >
+  Coverage test: agent uses the uipath-platform skill to exercise every UiPath
+  Test Manager connector attachment activity through the `uip is` surface —
+  upload, get (list), download, and delete attachments. Offline (command-shape)
+  grading; runs in CI without a live connection.
+tags: [uipath-platform, integration-service, resources, execute]
+
+run_limits:
+  expected_turns: 20
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Exercise the UiPath Test Manager attachment operations through UiPath
+  Integration Service, using connector `uipath-uipath-testmanager`. Run the
+  matching `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
+
+  - Upload an attachment    (object `UploadAttachment`)
+  - Get attachments         (object `GetAttachments`)
+  - Download an attachment  (object `DownloadAttachment`)
+  - Delete an attachment    (object `DeleteAttachment`)
+
+  Important:
+  - The `uip` CLI is available but NOT connected to a live tenant. Commands will
+    fail with auth errors — expected. Run each once; do NOT retry or login.
+  - Use `--output json` and `--connection-id` (placeholder if needed); placeholder
+    ids where a real id would be needed.
+
+success_criteria:
+  - type: command_executed
+    description: "Upload Attachment (`... run create uipath-uipath-testmanager UploadAttachment`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+UploadAttachment'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Attachments (`... run list uipath-uipath-testmanager GetAttachments`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetAttachments'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Download Attachment (`... run get uipath-uipath-testmanager DownloadAttachment`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+DownloadAttachment'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Delete Attachment (`... run delete uipath-uipath-testmanager DeleteAttachment`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+uipath-uipath-testmanager\s+DeleteAttachment'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json on resource commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

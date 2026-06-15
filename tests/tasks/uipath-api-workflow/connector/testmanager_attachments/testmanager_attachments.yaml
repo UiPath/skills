@@ -1,0 +1,93 @@
+# skip:true, tenant-gated. CONFIRMED available in API Workflow (2026-06-15).
+# Covers all 4 attachment activities. Flip skip:false once codereval has a
+# TM connection.
+task_id: skill-api-workflow-testmanager-attachments
+description: >
+  Coverage (API Workflow connector): agent authors an API Workflow using every
+  UiPath Test Manager connector attachment activity — Upload Attachment, Get
+  Attachments, Download Attachment, Delete Attachment. Drives registry resolve →
+  connection ping → stub per activity → validate for `uipath-uipath-testmanager`.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, uipath-uipath-testmanager, feature:registry, feature:connections]
+skip: true
+
+sandbox:
+  python: {}
+
+run_limits:
+  task_timeout: 2400
+  max_turns: 120
+  turn_timeout: 1200
+
+initial_prompt: |
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
+
+  Build a UiPath API Workflow at Workflow.json that uses the UiPath Test Manager
+  Integration Service connector (connection in the Shared folder). Add one
+  connector activity for each of these attachment operations:
+
+  - Upload Attachment
+  - Get Attachments
+  - Download Attachment
+  - Delete Attachment
+
+  Discover each activity through the registry (resolve + stub), verify the
+  connection pings, cross-check required fields. Not complete until
+  `uip api-workflow validate ./Workflow.json` passes.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent loaded the uipath-api-workflow skill"
+    tool_name: "Skill"
+    command_pattern: "uipath-api-workflow"
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Discovered connector activities via the registry"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+resolve\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed or pinged the testmanager connection"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+is\s+connections\s+(list[\s\S]{0,200}?uipath-uipath-testmanager|ping)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Stubbed each attachment activity (4) with a real connection id"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+stub[\s\S]+?--connection-id'
+    min_count: 4
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Validated the workflow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Workflow.json was created"
+    path: "Workflow.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Workflow uses the testmanager IntSvc connector"
+    path: "Workflow.json"
+    includes: ["uipath-uipath-testmanager", "UiPath.IntSvc"]
+    excludes: ["<REPLACE_WITH_"]
+    weight: 2.0
+    pass_threshold: 1.0

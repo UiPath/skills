@@ -1,0 +1,102 @@
+task_id: skill-platform-is-testmanager-testset-lifecycle
+description: >
+  Coverage test: agent uses the uipath-platform skill to exercise every UiPath
+  Test Manager connector activity on the TestSet object through the `uip is`
+  surface — create, get, update, delete a test set, assign test cases to it, read
+  its assigned test cases, and execute the test set. Offline (command-shape)
+  grading; runs in CI without a live connection.
+tags: [uipath-platform, integration-service, resources, execute]
+
+run_limits:
+  expected_turns: 32
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Exercise the full set of UiPath Test Manager TestSet operations through UiPath
+  Integration Service, using connector `uipath-uipath-testmanager`. Run the
+  matching `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
+
+  - Create a Test Set    (object `TestSet`)
+  - Get the Test Set     (object `TestSet`)
+  - Update the Test Set  (object `TestSet`)
+  - Delete the Test Set  (object `TestSet`)
+  - Assign test cases to a test set (object `AssignTestCasesToTestSet`)
+  - List the test cases assigned to a test set (object `GetAssignedTestCasesForTestSet`)
+  - Execute the test set (object `ExecuteTestSet`)
+
+  Important:
+  - The `uip` CLI is available but NOT connected to a live tenant. Commands will
+    fail with auth errors — expected. Run each once; do NOT retry or login.
+  - Use `--output json` and `--connection-id` (placeholder if needed); placeholder
+    ids/bodies where prior output would be needed.
+
+success_criteria:
+  - type: command_executed
+    description: "Create Test Set (`... run create uipath-uipath-testmanager TestSet`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+TestSet'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Test Set (`... run get uipath-uipath-testmanager TestSet`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+TestSet'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Update Test Set (`... run update uipath-uipath-testmanager TestSet`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+uipath-uipath-testmanager\s+TestSet'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Delete Test Set (`... run delete uipath-uipath-testmanager TestSet`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+uipath-uipath-testmanager\s+TestSet'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Assign Test Cases to Test Set (`... run create uipath-uipath-testmanager AssignTestCasesToTestSet`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+AssignTestCasesToTestSet'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Assigned Test Cases for Test Set (`... run list uipath-uipath-testmanager GetAssignedTestCasesForTestSet`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetAssignedTestCasesForTestSet'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Execute Test Set (`... run create uipath-uipath-testmanager ExecuteTestSet`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+ExecuteTestSet'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json on resource commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

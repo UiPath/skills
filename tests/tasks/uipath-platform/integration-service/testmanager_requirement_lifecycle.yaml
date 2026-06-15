@@ -1,0 +1,99 @@
+task_id: skill-platform-is-testmanager-requirement-lifecycle
+description: >
+  Coverage test: agent uses the uipath-platform skill to exercise every UiPath
+  Test Manager connector activity on the Requirement object through the `uip is`
+  surface — create, get, update, delete a requirement, plus assign test cases to
+  it and read the assigned test cases. Offline (command-shape) grading like the
+  sibling Salesforce execute task: it does not need a live connection, so it runs
+  in CI without the connector being provisioned in the eval tenant. Verified
+  against a live tenant (2026-06-15): connectorKey uipath-uipath-testmanager,
+  Requirement.Create = POST /v2/{ProjectId}/requirements.
+tags: [uipath-platform, integration-service, resources, execute]
+
+run_limits:
+  expected_turns: 28
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Exercise the full set of UiPath Test Manager Requirement operations through
+  UiPath Integration Service, using connector `uipath-uipath-testmanager`. For
+  each, run the matching `uip is resources run <verb> uipath-uipath-testmanager
+  <Object>` command:
+
+  - Create a Requirement   (object `Requirement`)
+  - Get the Requirement    (object `Requirement`)
+  - Update the Requirement (object `Requirement`)
+  - Delete the Requirement (object `Requirement`)
+  - Assign test cases to a requirement (object `AssignTestCasesToRequirement`)
+  - List the test cases assigned to a requirement (object `GetAssignedTestCasesForRequirement`)
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands will fail with auth errors — that is expected. Run each
+    command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command, and `--connection-id` (placeholder
+    UUID if needed) on every resource command.
+  - Use placeholder ids / bodies where a previous step's output would be needed.
+
+success_criteria:
+  - type: command_executed
+    description: "Create Requirement (`uip is resources run create uipath-uipath-testmanager Requirement`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+Requirement'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Requirement (`uip is resources run get uipath-uipath-testmanager Requirement`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+Requirement'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Update Requirement (`uip is resources run update uipath-uipath-testmanager Requirement`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+uipath-uipath-testmanager\s+Requirement'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Delete Requirement (`uip is resources run delete uipath-uipath-testmanager Requirement`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+uipath-uipath-testmanager\s+Requirement'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Assign Test Cases to Requirement (`... run create uipath-uipath-testmanager AssignTestCasesToRequirement`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+AssignTestCasesToRequirement'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Assigned Test Cases for Requirement (`... run list uipath-uipath-testmanager GetAssignedTestCasesForRequirement`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetAssignedTestCasesForRequirement'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json on resource commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

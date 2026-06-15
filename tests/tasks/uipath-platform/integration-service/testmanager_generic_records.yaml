@@ -1,0 +1,86 @@
+task_id: skill-platform-is-testmanager-generic-records
+description: >
+  Coverage test: agent uses the uipath-platform skill to exercise the UiPath
+  Test Manager connector's generic record activities through the `uip is`
+  surface — Insert, Get, Update, Delete, and List Record (the non-curated CRUD
+  the connector exposes for any object). Offline (command-shape) grading; runs in
+  CI without a live connection. Completes the 36-activity coverage set alongside
+  the per-object lifecycle tasks.
+tags: [uipath-platform, integration-service, resources, execute]
+
+run_limits:
+  expected_turns: 24
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Exercise the UiPath Test Manager connector's generic record operations through
+  UiPath Integration Service, using connector `uipath-uipath-testmanager`. Pick
+  any one object (e.g. `TestCase`) and run each generic data operation via
+  `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
+
+  - Insert a record  (`run create`)
+  - Get a record     (`run get`)
+  - Update a record  (`run update`)
+  - Delete a record  (`run delete`)
+  - List records     (`run list`)
+
+  Important:
+  - The `uip` CLI is available but NOT connected to a live tenant. Commands will
+    fail with auth errors — expected. Run each once; do NOT retry or login.
+  - Use `--output json` and `--connection-id` (placeholder if needed); placeholder
+    ids/bodies where a real value would be needed.
+
+success_criteria:
+  - type: command_executed
+    description: "Insert Record (`uip is resources run create uipath-uipath-testmanager <Object>`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Record (`uip is resources run get uipath-uipath-testmanager <Object>`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Update Record (`uip is resources run update uipath-uipath-testmanager <Object>`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+uipath-uipath-testmanager\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Delete Record (`uip is resources run delete uipath-uipath-testmanager <Object>`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+uipath-uipath-testmanager\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "List Records (`uip is resources run list uipath-uipath-testmanager <Object>`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json on resource commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
