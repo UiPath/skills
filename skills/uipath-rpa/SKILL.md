@@ -92,8 +92,6 @@ If target configuration is unavailable, fall back to the documented UIA indicati
 
 The full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope are in [ui-automation-guide.md](references/ui-automation-guide.md) § Mandatory: Generate Targets Before Writing Any UI Code — read it in full per Rule 7 before any UIA work.
 
-**Running a UIA workflow.** Use `uip rpa debug start` throughout development, not `run` — a debug session pauses on error and leaves the UI state inspectable. During capture, advance app state with the UIA interact CLI, never `run` (a finishing `run` can close the target app). Switch to `run --skip-build` only as the final, non-interactive smoke test once the workflow is stable and `build` has passed. The full procedure — window baseline → `debug start` → cancel → window diff → selector-failure recovery — is in [ui-automation-guide.md](references/ui-automation-guide.md) § Running UI Automation Workflows.
-
 ### Placeholder-Selector Stub Pattern (when live app access is unavailable)
 
 When generating a UI automation workflow **without** live app access (target capture cannot be run because the app is not installed, the agent has no UI, or the user explicitly deferred capture to a developer), emit **real UIA activities with placeholder selectors and `TODO Indicate` markers** — never `Log` stubs.
