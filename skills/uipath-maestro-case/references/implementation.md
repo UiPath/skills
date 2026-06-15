@@ -294,7 +294,7 @@ Optional CLI debug run. Full contract — report fields, prompt options, debug c
 
 ## Step 13 — Completion report + Debug prompt + session
 
-Print report fields and run AskUserQuestion + debug command per [phased-execution.md § Phase 5](phased-execution.md#phase-5--debug). On `Run debug session` → run `uip solution resource refresh` then `uip maestro case debug`, loop until `Skip to Publish`. On `Skip to Publish` → Phase 6. Never auto-run (Rule 12).
+Print report fields and run AskUserQuestion + debug command per [phased-execution.md § Phase 5](phased-execution.md#phase-5--debug). On `Run debug session` → run `uip solution resources refresh` then `uip maestro case debug`, loop until `Skip to Publish`. On `Skip to Publish` → Phase 6. Never auto-run (Rule 12).
 
 ## Step 13a — Troubleshoot failed case
 
@@ -324,4 +324,4 @@ Run AskUserQuestion per [phased-execution.md § Phase 6](phased-execution.md#pha
 
 ## Step 15 — Publish to Studio Web
 
-Run `uip solution resource refresh` then `uip solution upload` per [phased-execution.md § Publish notes](phased-execution.md#publish-notes). Print `DesignerUrl`. Exit skill.
+Run `uip solution resources refresh` then `uip solution upload` per [phased-execution.md § Publish notes](phased-execution.md#publish-notes). Print `DesignerUrl`. Exit skill.

@@ -18,7 +18,7 @@ uip admin audit
     └── export
 ```
 
-`org` and `tenant` are **subject subgroups**. Same three verbs under each. The two trees are 100% verb-symmetric — any flag valid on `tenant events` is also valid on `org events` (except `--tenant-id`, which is tenant-only).
+`org` and `tenant` are **subject subgroups** — pass scope as this **positional segment** (`uip admin audit org sources`, `uip admin audit tenant export`), **never as a `--scope` flag** (there is no `--scope` option; `audit sources --scope organization` is invalid). Same three verbs under each. The two trees are 100% verb-symmetric — any flag valid on `tenant events` is also valid on `org events` (except `--tenant-id`, which is tenant-only).
 
 ## Output `Data` shape varies by verb — quick reference
 
@@ -26,7 +26,7 @@ uip admin audit
 |---|---|
 | `audit <scope> sources` | array of `AuditEventSourceDto` |
 | `audit <scope> events` | object `{auditEvents, next, previous}` |
-| `audit <scope> export` | object `{Path, Bytes, Format, Days, NonEmptyDays}` |
+| `audit <scope> export` | object `{Path, Bytes, Format, Days, NonEmptyDays}` (+ `Events` when `--file-format csv`) |
 
 `events` is the one verb that legitimately returns an object — pagination cursors live alongside the rows. Full shape detail per verb in the sections below.
 
@@ -138,13 +138,22 @@ uip admin audit tenant events --from-date 2026-04-22T00:00:00Z --to-date 2026-04
 
 ## uip admin audit `<scope>` export
 
-Stream a ZIP from the long-term audit store covering `[--from-date, --to-date]`.
+Export the long-term audit store covering `[--from-date, --to-date]` — as a ZIP of day-wise JSON files (default) or a single merged CSV.
 
 ```bash
+# Default — ZIP of one JSON file per UTC day
 uip admin audit tenant export \
   --from-date 2026-01-01 \
   --to-date 2026-02-01 \
   --output-file ./audit-jan.zip \
+  --output json
+
+# Single merged CSV of every event
+uip admin audit tenant export \
+  --from-date 2026-01-01 \
+  --to-date 2026-02-01 \
+  --file-format csv \
+  --output-file ./audit-jan.csv \
   --output json
 ```
 
@@ -152,17 +161,19 @@ uip admin audit tenant export \
 
 | Flag | Required | Description |
 |---|---|---|
-| `--output-file <path>` | **yes** | Where to write the ZIP. Parent dir is created if missing; existing file is overwritten. Resolved to absolute internally. |
+| `--output-file <path>` | **yes** | Where to write the export. Parent dir is created if missing; existing file is overwritten. Resolved to absolute internally. Match the extension to `--file-format` (`.zip` / `.csv`). |
 | `--from-date <iso>` | **yes** | Start of time interval. Both bounds are required by Commander before any HTTP call. |
 | `--to-date <iso>` | **yes** | End of time interval. |
+| `--file-format <zip\|csv>` | no | Output shape. `zip` (default) = one JSON file per UTC day inside a ZIP. `csv` = every event merged into a single RFC 4180 CSV under a shared header. Invalid values fail before any HTTP call with `Invalid --file-format '<v>'. Use 'zip' or 'csv'.` |
 | `--login-validity <minutes>` | no | Token-refresh hint. |
 | `--tenant-id <guid>` | no | **Tenant scope only.** Override the active tenant. |
 
 **Output `Code`:** `AuditOrgExport` / `AuditTenantExport`.
 
-**Output `Data`:**
+**Output `Data`:** `Format` echoes the chosen `--file-format`. The CSV path adds `Events` (total rows written, excluding the header); the ZIP path omits it.
 
 ```json
+// --file-format zip (default)
 {
   "Path": "C:\\absolute\\path\\to\\audit-jan.zip",
   "Bytes": 1841,
@@ -170,14 +181,25 @@ uip admin audit tenant export \
   "Days": 31,
   "NonEmptyDays": 27
 }
+
+// --file-format csv
+{
+  "Path": "C:\\absolute\\path\\to\\audit-jan.csv",
+  "Bytes": 98765,
+  "Format": "csv",
+  "Days": 31,
+  "NonEmptyDays": 27,
+  "Events": 1234
+}
 ```
 
 **Implementation notes (worth knowing for diagnostic conversations):**
 
-- The CLI issues **one HTTP call per UTC day** inside `[from, to]` and aggregates the per-day responses into a single output ZIP. Mirrors the `audit-dowload-from-longterm-store.sh` pattern in the AuditService repo.
-- Per-day entries land at the **root of the output ZIP** named `<YYYY-MM-DD>.txt` (no folder prefix). Each `.txt` is a JSON array of events with PascalCase keys (`Id`, `CreatedOn`, `EventType`, …).
-- On any single-day HTTP failure, **no file is written** and the error message identifies which day failed. Earlier successful chunks are not preserved.
-- `Days` reports the total number of UTC days requested; `NonEmptyDays` reports how many actually had events. A long export with `NonEmptyDays: 0` means the window was entirely idle, not that the export failed.
+- Both formats share the same fetch: the CLI issues **one HTTP call per UTC day** inside `[from, to]` and aggregates the per-day responses. Mirrors the `audit-dowload-from-longterm-store.sh` pattern in the AuditService repo.
+- **ZIP (default):** per-day entries land at the **root of the output ZIP** named `<YYYY-MM-DD>.txt` (no folder prefix). Each `.txt` is a JSON array of events with PascalCase keys (`Id`, `CreatedOn`, `EventType`, …).
+- **CSV:** the same per-day JSON arrays are parsed and merged into **one** RFC 4180 CSV (CRLF line endings, header row first). Columns follow the long-term-store field order — `Id, CreatedOn, OrganizationId, TenantId, ActorId, ActorName, ActorEmail, ActorDetails, EventType, EventSource, EventTarget, EventDetails, Status, ClientInfo` — with any extra server fields appended (union across events) so no data is dropped. `Status` is the numeric enum (`0`=Success, `1`=Failure); nested objects (e.g. `ClientInfo`) are JSON-stringified into the cell. String cells beginning with `= + - @` (or TAB/CR) are prefixed with a single quote to neutralize spreadsheet formula injection.
+- On any single-day HTTP failure (or, for CSV, a day whose payload is not valid JSON), **no file is written** and the error message identifies which day failed. Earlier successful chunks are not preserved (atomic export).
+- `Days` reports the total number of UTC days requested; `NonEmptyDays` reports how many actually had data. A long export with `NonEmptyDays: 0` means the window was entirely idle, not that the export failed. For CSV, `Events: 0` yields a header-only file.
 
 ---
 
@@ -187,7 +209,7 @@ These appear on every command (not just audit) — set at the program level by t
 
 | Flag | Description |
 |---|---|
-| `--output <table\|json\|yaml\|plain>` | Format of the success/failure envelope on stdout. Defaults to `json`. The ZIP body of `export` is unaffected — `--output` only controls the metadata envelope. |
+| `--output <table\|json\|yaml\|plain>` | Format of the success/failure envelope on stdout. Defaults to `json`. The export file body (ZIP or CSV) is unaffected — `--output` only controls the metadata envelope, NOT `--file-format`. |
 | `--output-filter <jmespath>` | JMESPath query applied to the envelope before printing. Useful for `events`/`sources`. Less useful for `export` (envelope is small). |
 | `--log-level <debug\|info\|warn\|error>` | Logger threshold. Logs go to stderr. |
 | `--log-file <path>` | Redirect logs from stderr to a file. |

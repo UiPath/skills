@@ -95,7 +95,7 @@ Use **AskUserQuestion** with three options:
 
 #### On `Publish for review`
 
-1. Run `uip solution resource refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Capture full upload response.
+1. Run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Capture full upload response.
 2. Parse `DesignerUrl` from response.
 3. **MUST emit DesignerUrl as plain-text output to user BEFORE invoking AskUserQuestion**, on its own line:
    `Skeleton published. Review at: <DesignerUrl>`
@@ -180,7 +180,7 @@ On Phase 4 success → proceed to Phase 5.
 
 After Phase 4 success, report results then ask user via **AskUserQuestion**:
 
-- `Run debug session` — run `uip solution resource refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
+- `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
 - `Skip to Publish` — proceed to Phase 6 without debugging.
 
 > **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never auto-run** (Rule 12).
@@ -199,20 +199,20 @@ After debug completes, return to Phase 5 prompt so user can re-run or move on. P
 
 ### Debug notes
 
-- `uip solution resource refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
+- `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
 - Debug verifies the build actually runs end-to-end before the user commits to a publish. If debug surfaces a fixable issue, see [Step 13a — Troubleshoot failed case](implementation.md#step-13a--troubleshoot-failed-case) and re-run.
 
 ## Phase 6 — Publish
 
 After Phase 5 (whether debugged or skipped), prompt via **AskUserQuestion**:
 
-- `Publish to Studio Web` — run `uip solution resource refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Print returned `DesignerUrl` on its own line. Exit skill.
+- `Publish to Studio Web` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip solution upload "<SolutionDir>" --output json`. Print returned `DesignerUrl` on its own line. Exit skill.
 - `Done` — exit skill without publishing.
 
 ### Publish notes
 
 - `uip solution upload` accepts solution directory (folder containing `.uipx`) directly — no intermediate bundling step.
-- `uip solution resource refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
+- `uip solution resources refresh` MUST run before upload — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 14).
 - Do **NOT** run `uip maestro case pack` + `uip solution publish` unless user explicitly asks for Orchestrator deployment. That path puts case directly into Orchestrator, bypassing Studio Web. Default is always Studio Web.
 
 For further authoring changes (add task, tweak condition, etc.), user updates `sdd.md` and re-runs skill from Phase 1 — skill does not offer in-place incremental edits.

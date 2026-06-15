@@ -454,7 +454,15 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `isRequired` | boolean? | Whether the task must complete for the stage to complete |
 | `description` | string? | Task description |
 
-> **Envelope fields are top-level, not `data`.** Every field above except `data` lives directly on the task object — `skipCondition`, `entryConditions`, `shouldRunOnlyOnce`, `isRequired`, etc. are siblings of `data`, never nested inside it. `data` holds only the type-specific config defined by the task's plugin.
+> **Envelope fields are top-level, not `data`.** Every field above except `data` lives directly on the task object — `skipCondition`, `entryConditions`, `shouldRunOnlyOnce`, `isRequired`, etc. are siblings of `data`, never nested inside it. `data` holds only the type-specific config defined by the task's plugin. An envelope field misplaced inside `data` passes `validate` silently (extra `data` keys aren't rejected) but is dead config the platform never reads.
+>
+> ```json
+> // WRONG — skipCondition nested in data, never applied:
+> { "displayName": "Hold", "data": { "timerType": "timeDuration", "timeDuration": "PT1H", "skipCondition": "=js:vars.skip === true" } }
+>
+> // RIGHT — skipCondition is a sibling of data:
+> { "displayName": "Hold", "skipCondition": "=js:vars.skip === true", "data": { "timerType": "timeDuration", "timeDuration": "PT1H" } }
+> ```
 
 **Positioning:** tasks have no `x`/`y`. They live in `stageNode.data.tasks[laneIndex][]` — a 2D array where the outer index is the lane (rendering column) and the inner index is the order within the lane. Default convention: one task per lane. Exception: within a `runs-sequentially` group, tasks that should run in parallel share the same lane (shared lane = parallel siblings, carries execution semantics).
 

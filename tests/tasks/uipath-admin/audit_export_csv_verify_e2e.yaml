@@ -1,0 +1,90 @@
+task_id: skill-admin-audit-export-csv-verify-e2e
+description: >
+  End-to-end test (artifact verification tier): agent drives
+  `uip admin audit tenant export --file-format csv` to produce a real
+  single CSV, then verifies (a) the CSV exists, (b) it is a well-formed
+  CSV with a header row carrying the documented PascalCase columns, and
+  (c) every data row has the same column count as the header.
+
+  This is the CSV counterpart to `audit_export_verify_e2e.yaml` (which
+  validates the default ZIP). The underlying long-term-store data is the
+  same; this task asserts the CSV-specific serialization is correct
+  (single merged file, shared header, aligned rows). The format-agnostic
+  "export IDs are a subset of live events" fidelity check is already
+  covered by the ZIP verify task and is not duplicated here.
+
+  Whole-day granularity note: `uip admin audit ... export` issues one
+  HTTP call per UTC day inside [--from-date, --to-date]. For CSV those
+  per-day events are merged into one file, so the row count is the sum
+  across the window's days.
+
+  LTS lag note: the export reads from the long-term store, which lags
+  the live `events` endpoint. We pin the window to dates at least 48h in
+  the past so LTS has caught up.
+
+  Blocker: this task requires the `--file-format` option to exist in the
+  published `@uipath/cli` (UiPath/cli#2438 must ship + publish first, on
+  top of #1372 which adds `uip admin audit`). Until then the export step
+  fails with `unknown option '--file-format'` (or `unknown command
+  'audit'`).
+tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
+
+initial_prompt: |
+  Export tenant audit events for the 3-day window from 5 days ago
+  through 2 days ago (UTC, whole days) to ./audit-window.csv in the
+  current working directory, as a single merged CSV (not a ZIP).
+  Resolve the dates with `date -u -d '5 days ago' +%Y-%m-%d` and
+  `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the run
+  date.
+
+  Important:
+  - The `uip` CLI is available and connected via env-var auth to a real
+    tenant. The export should produce a real CSV file at the requested
+    path.
+  - Use the canonical `--from-date YYYY-MM-DD` / `--to-date YYYY-MM-DD`
+    bounds (no inline `T00:00:00Z` for these flags — the CLI treats them
+    as whole-day boundaries) and select the single-file CSV shape with
+    `--file-format csv`.
+  - The 2-days-ago upper bound preserves the >48h LTS-lag buffer.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked tenant export with bounded window, --output-file, and --file-format csv"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-file\s+\S+)(?=.*--file-format\s+csv\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Export produced ./audit-window.csv"
+    path: "./audit-window.csv"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Export is a well-formed CSV: header carries the documented PascalCase columns and every data row matches the header width (a header-only file is acceptable for a quiet tenant)"
+    command: |
+      python3 -c "
+      import csv, sys
+      REQUIRED = ['Id','CreatedOn','OrganizationId','ActorId','EventType','EventSource','EventTarget']
+      with open('./audit-window.csv', newline='', encoding='utf-8-sig') as f:
+          rows = list(csv.reader(f))
+      assert rows, 'CSV is empty — no header row'
+      header = rows[0]
+      missing = [c for c in REQUIRED if c not in header]
+      assert not missing, f'header missing required columns: {missing}; header={header}'
+      for i, r in enumerate(rows[1:], 1):
+          assert len(r) == len(header), f'row {i} has {len(r)} cols, header has {len(header)}'
+      print(f'OK: header has {len(header)} columns, {len(rows) - 1} data rows')
+      "
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 10
+  max_turns: 40
+  turn_timeout: 600

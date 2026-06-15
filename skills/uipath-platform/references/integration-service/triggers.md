@@ -11,6 +11,7 @@ Triggers are event-based activities that fire when something happens in an exter
 - [List Trigger Activities](#list-trigger-activities)
 - [Trigger Objects](#trigger-objects)
   - [`parameters[]` — canonical event-parameter input fields](#parameters--canonical-event-parameter-input-fields)
+- [Object Name Resolution](#object-name-resolution)
 - [Trigger Metadata (Describe)](#trigger-metadata-describe)
 - [CRUD vs Non-CRUD Triggers](#crud-vs-non-crud-triggers)
 - [Response Fields](#response-fields)
@@ -24,11 +25,13 @@ Triggers are event-based activities that fire when something happens in an exter
 
 ```
 [ ] 1. List trigger activities  →  pick one  →  note its **Operation**
-[ ] 2. If Operation is CREATED/UPDATED/DELETED  →  get objects  →  pick one
-[ ] 3. Get metadata (fields) for the chosen object + operation
+[ ] 2. If Operation is CREATED/UPDATED/DELETED  →  get objects  →  resolve object name (ask user if unclear)
+[ ] 3. Describe the resolved object + operation  →  field metadata
 ```
 
 **Decision point at step 2**: CREATED, UPDATED, and DELETED operations require an intermediate "objects" step. For other trigger operations, skip to step 3 using the activity's **ObjectName**.
+
+> **Source of truth:** Event-parameter inputs come from `triggers objects` → `parameters[]`. Field metadata comes from `triggers describe`. Configure trigger nodes exclusively from these two responses — do not invent parameters or fields, and do not substitute metadata from other commands.
 
 ---
 
@@ -60,19 +63,32 @@ uip is triggers objects "<connector-key>" "<OPERATION>" \
 
 ---
 
+## Object Name Resolution
+
+`triggers describe` requires an exact object name. Resolve it from the `triggers objects` response (`Data[].Name`):
+
+1. Match the user's intent against each object's `Name` / `DisplayName` (case-insensitive).
+2. Exactly one match → use its `Name` verbatim.
+3. No match or ambiguous → **ask the user** — present candidate objects by `displayName`. Do NOT guess or fabricate an object name; `triggers describe` with a wrong name returns empty or wrong field metadata.
+
+For non-CRUD operations there is no objects step — use the trigger activity's **ObjectName** field directly.
+
+---
+
 ## Trigger Metadata (Describe)
 
 Get field metadata for a trigger object:
 
 ```bash
-uip is triggers describe "<connector-key>" "<OPERATION>" "<object-name>" --output json
-
-# With connection (includes custom fields):
 uip is triggers describe "<connector-key>" "<OPERATION>" "<object-name>" \
   --connection-id "<id>" --output json
 ```
 
 Returns field definitions with names, types, and descriptions. Always requests `allFields=true` from the API.
+
+- `<object-name>` comes from [Object Name Resolution](#object-name-resolution) above
+- Always pass `--connection-id` — without it, results omit custom/connection-specific fields
+- The returned fields are the **source of truth** for the trigger's field metadata. Use them verbatim — do not guess field names
 
 ---
 

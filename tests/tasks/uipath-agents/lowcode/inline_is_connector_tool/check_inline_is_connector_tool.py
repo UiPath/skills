@@ -18,7 +18,7 @@ the F2 (inline agent) flow-wiring assertions. Specifically:
      under-asserted until the canonical shape locks in.
   5. At least one `bindings_v2.json` was authored somewhere under the
      flow project (outside `.agent-builder/`). The agent creates this
-     manually as the source for `uip solution resource refresh`. Shape
+     manually as the source for `uip solution resources refresh`. Shape
      under-asserted for now — we just verify presence and valid JSON.
   6. After refresh, at least one connection resource file exists under
      `ResearchFlowSol/resources/solution_folder/connection/`.
@@ -147,7 +147,7 @@ def assert_bindings_v2_authored() -> None:
         sys.exit(
             f"FAIL: no bindings_v2.json authored under {FLOW_PROJECT} (outside "
             ".agent-builder/). Agent must create it manually as the source "
-            "for `uip solution resource refresh`."
+            "for `uip solution resources refresh`."
         )
     path = authored[0]
     try:

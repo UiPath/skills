@@ -71,7 +71,7 @@ A request is **single-skill** when:
 3. uipath-solution     → publish and deploy to Orchestrator via `uip solution`
 ```
 
-`uipath-maestro-flow` follows the plan's `Solution scope` (SW or local); Orchestrator deploy of the wrapping solution requires `uipath-solution`.
+`uipath-maestro-flow` follows the plan's `Solution scope` (SW or local); Orchestrator deploy of the wrapping `.uipx` solution requires `uipath-solution`. For a non-solution single package (no `.uipx` wrapper), route the deploy step to `uipath-platform` instead.
 
 ## Pattern 5 — Agent that uses RPA processes as tools
 
@@ -86,7 +86,7 @@ A request is **single-skill** when:
 6. uipath-agents   → deploy
 ```
 
-## Pattern 8 — Build an AgentHub MCP server
+## Pattern 6 — Build an AgentHub MCP server
 
 **When it applies:** the request is to register an AgentHub MCP server that wraps a coded agent or uses Orchestrator-asset-backed auth that does not exist yet. Pure `uipath-mcp-servers` work — `uipath` / `command` / `platform` servers, `remote`/`swagger` with auth assets already in place, or any `is-activity` tool authoring against existing IS connections — is single-skill; go straight to `uipath-mcp-servers`.
 
@@ -118,7 +118,7 @@ When deriving tasks from an SDD, the planner picks a pattern based on the SDD's 
 | Solution with Flow + RPA + Agents, components built fresh in this session | Pattern 2 expanded across all included products |
 | Solution with Flow consuming pre-published Orchestrator resources | Pattern 3 |
 | Solution overview SDD | Compose multiple patterns; respect cross-product integration order from §Cross-Project Data Flow |
-| API Workflow (single product) | API Workflow specialist + `uipath-solution` for deploy + testing |
+| API Workflow (single product) | `uipath-api-workflow` + `uipath-solution` for deploy + testing |
 | Agent with RPA tools in §3 Tools | Pattern 5 |
 
 Cross-project integration order (general rule): **dependencies before dependents**. Build callable resources (RPA processes, API Workflows, agents-as-tools) before the products that consume them (Flows, Cases, parent agents).

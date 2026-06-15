@@ -1,6 +1,6 @@
 ---
 name: uipath-admin
-description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets), Authorization (custom roles, role assignments, permission catalog, effective-access via check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async operation polling), IP Restriction (allowlist, enforcement switch, bypass rules, lockout safety), Audit (event sources, paginated queries, ZIP exports — login history, compliance dumps, who-did-what-when-where on a resource). For Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
+description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets), Authorization (custom roles, role assignments, permission catalog, effective-access via check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async operation polling), IP Restriction (allowlist, enforcement switch, bypass rules, lockout safety), Audit (event sources, paginated queries, ZIP or single-CSV exports — login history, compliance dumps, who-did-what-when-where on a resource). For Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -51,7 +51,7 @@ Activate on both **explicit audit requests** and **natural-language investigatio
 
 - **Explicit** — `uip admin audit` commands; list sources / targets / types; query, filter, paginate, or export events; CSV/ZIP dump of audit history for a window.
 - **Query audit events** — list event sources, filter events by source / target / type / user / status / time window at org or tenant scope
-- **Export audit events** — chunked ZIP download from the long-term store, per UTC day, with atomic abort on any chunk failure
+- **Export audit events** — chunked download from the long-term store (one call per UTC day, atomic abort on any chunk failure) as a ZIP of day-wise JSON files (default) or a single merged CSV via `--file-format csv`
 - **Membership / license phrasings** — "who joined / left the organization", "who was made an admin", "license changes", "cross-tenant audit"
 - **Sign-in / authentication phrasings** — "failed/successful logins", "login history for user X", "who's been signing in"
 - **Tenant-activity phrasings** — "what happened on tenant X", "asset/queue/folder edits", "queue items processed", "job failures", "Action Center task changes", "Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity"
@@ -100,14 +100,14 @@ Each rule is the agent contract. Per-area detail is in the linked reference file
 
 ### Audit
 
-23. **Disambiguate `org` vs `tenant` scope before querying.** If the prompt is vague AND no prior turn fixed the scope, **stop and ask once** — never silently default to `tenant`. Routing table (user-phrasing → scope + why it lives where) and investigation playbooks: [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#audit-scope-disambiguation--route-by-user-phrasing).
+23. **Disambiguate `org` vs `tenant` scope before querying.** If the prompt is vague AND no prior turn fixed the scope, **stop and ask once** — never silently default to `tenant`. **Scope is a positional subgroup, NOT a flag:** write `uip admin audit org sources` / `uip admin audit tenant events` — there is no `--scope` option (`audit sources --scope organization` is invalid). Routing table (user-phrasing → scope + why it lives where) and investigation playbooks: [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#audit-scope-disambiguation--route-by-user-phrasing).
 24. **`audit <scope> events` returns an object, not a bare array.** Shape is `{auditEvents, next, previous}`. Do not index `Data[0]`; read `Data.auditEvents[]`. **Cursor semantics are chronological**: `next` = newer events, `previous` = older events. The default newest-backward walk follows `previous`.
 25. **`--limit` paginates internally — never loop on `--from-date` / `--to-date` to "paginate".** The server clamps `maxCount` to `[10, 200]` per request; when the user wants more than 200, the CLI fetches `ceil(N/200)` pages under the hood. Pass `--limit 500` (or larger) — do NOT re-implement pagination in the agent.
 26. **Discover via `audit <scope> sources` first — never invent source / target / type GUIDs.** The catalog response gives the GUIDs you pass to `events --source / --target / --type`.
 27. **Bound the time window, ISO 8601 in UTC.** Don't call `audit <scope> events` without `--from-date` and `--to-date` on a noisy tenant. Accepted formats: date-only (`2026-04-01`) or with time (`2026-04-01T14:30:00Z`). **`--to-date` is inclusive of the exact instant** — to capture a full final day, pass the start of the next day or `T23:59:59.999Z`.
 28. **`--tenant-id` is silently ignored on `org`-scoped audit commands.** If you find yourself reaching for it on `audit org events`, switch to `audit tenant` instead.
 29. **On 401 from audit, do NOT retry.** The token is missing the `Audit.Read` scope; tell the user to `uip logout && uip login`.
-30. **`audit <scope> export` writes a ZIP from the long-term store.** `--from-date`, `--to-date`, and `--output-file` are all required; dates per Rule 27. **Never overwrite a path the user did not explicitly approve** — surface the resolved `--output-file` and confirm before running.
+30. **`audit <scope> export` writes a ZIP (default) or a single merged CSV from the long-term store.** `--from-date`, `--to-date`, and `--output-file` are all required; dates per Rule 27. **`--file-format <zip|csv>`** selects the shape: `zip` (default) is one JSON file per UTC day; `csv` merges every event into one CSV — pick `csv` when the user wants a flat spreadsheet/Excel-friendly dump and `zip` for archival or per-day JSON. Match the `--output-file` extension to the format (`.zip` / `.csv`). **Never overwrite a path the user did not explicitly approve** — surface the resolved `--output-file` and confirm before running.
 
 ### IP Restriction
 

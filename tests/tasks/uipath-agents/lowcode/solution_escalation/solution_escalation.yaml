@@ -1,54 +1,61 @@
 task_id: skill-agent-solution-escalation-tool
 description: >
-  Add escalation app tools (solution resource). End-to-end test:
-  scaffold a standalone low-code agent that escalates uncertain cases
-  to a human reviewer via an ActionCenter app provisioned inside this
-  same solution. Verifies the `$resourceType: "escalation"`
+  Add escalation app tools to an existing agent inside an existing
+  solution (brownfield). The fixture ships a `ReviewSol` solution that
+  already contains a registered low-code `ModerationAgent` project. The
+  agent must add a `HumanReview` escalation resource to the pre-existing
+  `ModerationAgent` — reusing it, NOT re-creating it and NOT
+  re-initializing the solution. Verifies the `$resourceType: "escalation"`
   resource.json format, the ActionCenter channel wiring, and that
   `uip agent validate` accepts the escalation after refresh regenerates
-  derived files. Distinct from `external_escalation` which targets
-  an ActionCenter app that lives externally in Orchestrator.
+  derived files.
 tags: [uipath-agents, e2e, mode:build, low-code]
 
 run_limits:
-  expected_turns: 19
+  expected_turns: 18
   turn_timeout: 1200
 
-initial_prompt: |
-  Create a UiPath low-code agent "ModerationAgent" that accepts a required
-  `content` (string) and returns a `decision` (string). When the agent
-  is uncertain, it must be able to escalate to a human reviewer via
-  UiPath ActionCenter — model this as an escalation resource called
-  "HumanReview" on the agent. The solution should be named "ReviewSol".
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/solution_escalation/_fixtures/ReviewSol ."
+    timeout: 10
 
-  When writing the escalation resource.json, set `isEnabled` to true so
-  the escalation is active for the agent.
+initial_prompt: |
+  Add a "HumanReview" escalation resource to the existing "ModerationAgent"
+  agent inside the existing "ReviewSol" solution (in the current directory).
+  When the agent is uncertain, it must be able to escalate to a human
+  reviewer via UiPath ActionCenter. Set `isEnabled` to true so the
+  escalation is active for the agent.
+
+  Reuse ModerationAgent as-is — do NOT re-create it, and do NOT
+  re-initialize the solution.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent created the solution with uip solution init"
+  # Brownfield: the solution already exists in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+init'
-    min_count: 1
-    weight: 1.5
+    exclude_pattern: '--help'
+    weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent scaffolded the agent project with uip agent init"
+  # Brownfield: ModerationAgent ships in the fixture. The agent must
+  # reuse it, not scaffold a fresh copy over it.
+  - type: command_not_executed
+    description: "Agent did NOT re-create the existing ModerationAgent project"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+init'
-    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
-  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
-  # `uip solution project add` both populate Projects[] in the .uipx).
+  # Outcome-based check: the fixture .uipx already has ModerationAgent
+  # registered. No new project is added, so Projects[] stays at 1.
   - type: json_check
-    description: "Project is registered in the parent solution .uipx"
+    description: "ModerationAgent is registered in the parent solution .uipx"
     path: "ReviewSol/ReviewSol.uipx"
     assertions:
       - expression: "length(Projects)"
@@ -82,17 +89,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "ModerationAgent/agent.json was created"
-    path: "ReviewSol/ModerationAgent/agent.json"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
     description: "HumanReview escalation resource.json was created"
     path: "ReviewSol/ModerationAgent/resources/HumanReview/resource.json"
     weight: 2.5
     pass_threshold: 1.0
-
 
   - type: run_command
     description: "Escalation resource shape and ActionCenter channel wiring"

@@ -183,7 +183,7 @@ Reach for `jq` / `python3` only when JMESPath cannot express the operation (mult
 }
 ```
 
-**Layout rule:** Don't compute coordinates by hand — run `uip maestro flow format <ProjectName>.flow` after edits. Format arranges nodes horizontally, sets size to `{ "width": 96, "height": 96 }`, and recurses into subflows.
+**Layout rule:** Don't compute coordinates by hand — run `uip maestro flow format <ProjectName>.flow` after edits. Format arranges nodes horizontally, sets each node's size by its canvas shape (inline agents → 288×96, containers → 560×320, everything else → 96×96), and recurses into subflows.
 
 ### Delete a node
 

@@ -3,7 +3,7 @@ description: >
   Loop over 3 cities, fetch weather from open-meteo for each, classify warm/cold
   with a script, collect results. Exercises Loop → HTTP → Script chaining with
   data flowing between nodes across iterations.
-tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:loop, feature:http]
+tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:loop, feature:http, ipe]
 
 run_limits:
   expected_turns: 43

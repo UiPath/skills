@@ -25,7 +25,7 @@ def uip_json(*args: str) -> dict:
 
 
 def list_asset_names(folder_path: str) -> list[str]:
-    env = uip_json("resource", "assets", "list", "--folder-path", folder_path)
+    env = uip_json("or", "assets", "list", "--folder-path", folder_path)
     if env.get("Result") != "Success":
         sys.exit(f"FAIL: assets list {folder_path!r}: {env.get('Result')!r}")
     items = env.get("Data") or []

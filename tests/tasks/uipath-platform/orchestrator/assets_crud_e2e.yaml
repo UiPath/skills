@@ -20,8 +20,9 @@ initial_prompt: |
   Use the `uipath-platform` skill.
 
   I need three assets set up inside one of my folders. The folder path
-  and a unique prefix are in `seed.json` — use the prefix in the asset
-  names so they don't clash with anything else.
+  (the `folder_a_path` field) and a unique prefix (`uuid8`) are in
+  `seed.json` — use the prefix in the asset names so they don't clash
+  with anything else.
 
   - `e2e-asset-<prefix>-text` — a Text asset
   - `e2e-asset-<prefix>-int` — an Integer asset, value `42`

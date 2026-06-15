@@ -51,7 +51,7 @@ if src_sha != dl_sha:
     sys.exit(f"FAIL: sha256 mismatch — source={src_sha[:12]}… downloaded={dl_sha[:12]}…")
 
 # 2) Tenant: bucket exists in folder
-env = uip_json("resource", "buckets", "list", "--folder-path", folder_path)
+env = uip_json("or", "buckets", "list", "--folder-path", folder_path)
 if env.get("Result") != "Success":
     sys.exit(f"FAIL: buckets list Result={env.get('Result')!r}")
 items = env.get("Data") or []
@@ -64,7 +64,7 @@ if not match:
 bucket_key = _pick(match, "Identifier") or _pick(match, "Key")
 
 # 3) Tenant: bucket contains ≥1 file
-flist = uip_json("resource", "bucket-files", "list", bucket_key, "--folder-path", folder_path)
+flist = uip_json("or", "bucket-files", "list", bucket_key, "--folder-path", folder_path)
 if flist.get("Result") != "Success":
     sys.exit(f"FAIL: bucket-files list Result={flist.get('Result')!r}")
 fdata = flist.get("Data") or []

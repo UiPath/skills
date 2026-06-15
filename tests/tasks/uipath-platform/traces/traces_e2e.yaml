@@ -15,7 +15,7 @@ run_limits:
 initial_prompt: |
   Use the `uipath-platform` skill.
 
-  Verify that the published agent at process key `$TRACES_SMOKE_PROCESS_KEY` produces LLM trace spans. Save the raw spans output to spans.json.
+  Start a new job for the published agent at process key `$TRACES_SMOKE_PROCESS_KEY` and wait for it to finish. Then verify the run produced LLM trace spans and save the raw spans output to spans.json.
 
   Use `--output json` on all uip commands.
 

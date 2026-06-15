@@ -169,10 +169,10 @@ Creates a task in an Action Center app for human review.
 "action": {
   "$actionType": "escalate",
   "app": {
-    "id": "<Key from uip solution resource list --kind App>",
+    "id": "<Key from uip solution resources list --kind App>",
     "name": "<app Name>",
     "version": "0",
-    "folderName": "<Folder from uip solution resource list --kind App>"
+    "folderName": "<Folder from uip solution resources list --kind App>"
   },
   "recipient": {
     "type": 3,
@@ -184,11 +184,11 @@ Creates a task in an Action Center app for human review.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `$actionType` | `"escalate"` | Yes | Action discriminator |
-| `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resource list --kind App` |
-| `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resource list --kind App` |
+| `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resources list --kind App` |
+| `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resources list --kind App` |
 | `app.version` | string | Yes | Always `"0"` for solution-embedded apps |
 | `app.folderId` | string | No | Omit — not used by validate |
-| `app.folderName` | string | Yes | Literal Orchestrator folder — the `Folder` field from `uip solution resource list --kind App` (e.g., `"Shared"`, `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
+| `app.folderName` | string | Yes | Literal Orchestrator folder — the `Folder` field from `uip solution resources list --kind App` (e.g., `"Shared"`, `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
 | `app.appProcessKey` | string | No | Omit — only used in advanced scenarios |
 | `recipient.type` | integer | Yes | Recipient kind — see shapes below: 1=UserId, 2=GroupId, 3=UserEmail, 4=AssetUserEmail, 5=GroupName, 6=AssetGroupName, 7=ArgumentEmail, 8=ArgumentGroupName |
 | `recipient.*` | — | — | Remaining fields depend on `type` — see recipient shapes below |
@@ -250,7 +250,7 @@ Confirm the target validator is listed. Record the exact parameter `id` values a
 **Step 1 — Discover the app** using `--kind App` from the solution root:
 
 ```bash
-uip solution resource list --kind App --source remote --search "<app-name>" --output json
+uip solution resources list --kind App --source remote --search "<app-name>" --output json
 ```
 
 Filter results for `"Type": "Workflow Action"`. Use these three fields from the result:
@@ -358,12 +358,12 @@ Run from the solution root:
 ```bash
 uip agent refresh   <AgentName> --output json
 uip agent validate  <AgentName> --output json
-uip solution resource refresh   --output json
+uip solution resources refresh   --output json
 ```
 
 - `refresh` regenerates `entry-points.json` and `bindings_v2.json` with a `resource: "app"` binding for the escalation app. The binding carries both `name` (from `app.name`) and `folderPath` (translated from `app.folderName`).
 - `validate` is a read-only check. Fails with `AgentValidationOutdated` if refresh is needed.
-- `solution resource refresh` reads `bindings_v2.json`, fetches the app from the Resource Catalog Service using the joint `(name, folderPath)` key, and generates all 4 solution-level resource files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus the `debug_overwrites.json` entries for both the app and its code-behind process.
+- `solution resources refresh` reads `bindings_v2.json`, fetches the app from the Resource Catalog Service using the joint `(name, folderPath)` key, and generates all 4 solution-level resource files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus the `debug_overwrites.json` entries for both the app and its code-behind process.
 
 **Step 5 — Upload:**
 
@@ -826,7 +826,7 @@ PostExecution only — no content exists to check before the LLM generates outpu
 
 ### Example 8: Escalate PII Violations to Action Center — Multiple Tool Targets
 
-Escalates to an Action Center app when email or credit card PII is detected at the agent level. `app.id`, `app.name`, and `app.folderName` come from `uip solution resource list --kind App`.
+Escalates to an Action Center app when email or credit card PII is detected at the agent level. `app.id`, `app.name`, and `app.folderName` come from `uip solution resources list --kind App`.
 
 ```json
 {
@@ -993,9 +993,9 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
 8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
 9. **Do not add a built-in validator without first running `uip agent guardrails list --output json`** — always fetch the list, verify the validator exists, and confirm `Status` is `"Available"`. Adding an `Unauthorised` or non-existent validator causes runtime failures.
-10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resource list --kind App` results by this type.
+10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resources list --kind App` results by this type.
 11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
-12. **Do not put `"solution_folder"` into `app.folderName`** — set it to the literal `Folder` from `uip solution resource list --kind App` (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Omit `app.folderId`. `FolderKey` from `resource list` is NOT used in any `app.*` field — it IS correct in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
+12. **Do not put `"solution_folder"` into `app.folderName`** — set it to the literal `Folder` from `uip solution resources list --kind App` (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Omit `app.folderId`. `FolderKey` from `resource list` is NOT used in any `app.*` field — it IS correct in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
 13. **Do not hardcode the auth-file path for Apps API calls in guardrail setup.** `source <(grep = ...)` fails to export variables to the surrounding shell in some environments, and `~/.uipath/.auth` is wrong when the sandbox writes auth at the filesystem root. Use the HOME-robust prelude: `A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a`.
 14. **Do not add a Tool-scoped guardrail before the tool is added to the agent** — every name in `selector.matchNames` must match an existing tool resource under `<AGENT_NAME>/resources/<ToolName>/resource.json`. A guardrail referencing a non-existent tool will be caught by `uip agent validate` and fail with an error. Always run `uip agent tool list` first (Step 2) and confirm target tools are present.
 15. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).

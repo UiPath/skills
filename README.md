@@ -14,7 +14,7 @@ npm -g install @uipath/cli
 uip skills install
 ```
 
-Select the skills you need from the wizard. Skills are installed into your coding agent's directory and ready to use.
+`uip skills install` finds the AI coding agents installed on your machine and installs the skills for all of them, into each agent's directory, ready to use. If it can't find any agent, it asks which one to target. To install for just one agent, pass `--agent <name>` (e.g. `--agent claude`).
 
 <details>
 <summary>Don't have Node.js installed?</summary>
@@ -62,9 +62,8 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-design** | PDD → SDD authoring — turn a Process Design Document into an implementation-ready Solution Design Document. |
+| **uipath-planner** | Solution planner & designer — turn a Process Design Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
 | **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
-| **uipath-planner** | Multi-skill task planner — reads SDDs or non-PDD requests and derives an executable task list across the other skills. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
 
 ### Platform & Operations
@@ -92,9 +91,9 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-admin` | In-development |
 | `uipath-agents` | In-development |
 | `uipath-api-workflow` | In-development |
+| `uipath-automation-discovery` | Preview |
 | `uipath-coded-apps` | Preview |
 | `uipath-data-fabric` | In-development |
-| `uipath-design` | Preview |
 | `uipath-feedback` | Stable |
 | `uipath-governance` | In-development |
 | `uipath-human-in-the-loop` | In-development |
@@ -148,7 +147,7 @@ The command prints the recommended JSON and offers to merge it into your setting
 
 ### Google Gemini CLI
 
-Gemini CLI is supported by `uip skills install` — pick **Gemini CLI** when the wizard prompts for a target and skills are wired up automatically.
+Gemini CLI is supported by `uip skills install`. If the Gemini CLI is on your PATH, it's detected automatically and skills are wired up. If no agent is detected, pick **Gemini CLI** when prompted.
 
 ### OpenAI Codex CLI
 

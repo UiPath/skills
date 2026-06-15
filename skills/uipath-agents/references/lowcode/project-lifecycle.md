@@ -141,6 +141,16 @@ uip agent memory item remove SupportRecall customer-tier --path "<AGENT_PROJECT_
 
 For discovery, retrieval settings, memory item types, and troubleshooting, see [capabilities/memory/memory.md](capabilities/memory/memory.md).
 
+### `uip agent debug`
+
+Run the agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules.md](critical-rules.md) Rule 8: consent before upload/publish/deploy).
+
+```bash
+uip agent debug <AGENT_PROJECT_DIR> --inputs '{"input":"..."}' --output json
+```
+
+Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, and `Data.TraceId`. A `Faulted` run returns `Result: "Failure"` (exit 1); inspect it with `uip traces spans get <TraceId> --output json`. Full options and reporting in [debug.md](debug.md).
+
 ## Solution Commands
 
 ### Create Solution
@@ -226,16 +236,16 @@ uip solution bundle . -d ./dist --output json
 
 ## Resource Discovery
 
-`uip solution resource list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.
+`uip solution resources list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.
 
 Two supported invocations:
 
 ```bash
 # Local (in-solution): --kind and --search not allowed.
-uip solution resource list [solutionPath] --source local --output json
+uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
 
 # Remote (Orchestrator / RCS): --kind and --search supported.
-uip solution resource list [solutionPath] --source remote [--kind <kind>] [--search <term>] --output json
+uip solution resources list --solution-folder <SOLUTION_DIR> --source remote [--kind <kind>] [--search <term>] --output json
 ```
 
 **Flags:**
@@ -273,7 +283,7 @@ uip solution resource list [solutionPath] --source remote [--kind <kind>] [--sea
 | `Connection` | `uipath-<connector-key>` | Integration Service connection — the `Type` IS the connector key |
 | `Bucket` | `orchestratorBucket` | Orchestrator storage bucket |
 
-**What `resource list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For `Process` and `Index` resources, follow up with `uip solution resource get <KEY> --output json` and read `Data.spec` for the full configuration. For other kinds (`App`, `Connection`, `Bucket`), see the kind-specific capability files. `resource list` is the identification step — it tells you *that* a resource exists and *where*.
+**What `resources list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For `Process` and `Index` resources, follow up with `uip solution resources get <KEY> --output json` and read `Data.spec` for the full configuration. For other kinds (`App`, `Connection`, `Bucket`), see the kind-specific capability files. `resources list` is the identification step — it tells you *that* a resource exists and *where*.
 
 ## End-to-End Example — New Standalone Agent
 
@@ -400,14 +410,15 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Register project (fallback) | `uip solution project add "<PATH>" --output json` — when `agent init` returned `NotInSolution` / `Skipped` / `Failed` | Solution directory | — |
 | Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |
 | Validate (strict read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
+| Debug / run end-to-end on Studio Web | `uip agent debug <AgentDir> --inputs '{...}' --output json` | Agent dir | `Successful`, `Faulted`, `Stopped` |
 | Add memory space feature | `uip agent memory add <FeatureName> --memory-space <Name> --folder-path <Folder> --path <AgentDir> --output json` | Any directory | Writes `features/<FeatureName>/feature.json`; run refresh/validate after |
 | Seed memory item | `uip agent memory item add <FeatureName> <key> <value> --memory-type episodic --feedback-id <FEEDBACK_ID> --path <AgentDir> --output json` | Any directory | Updates existing item with same key |
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
-| Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
-| Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |
-| Add one resource (local stub or remote import) | `uip solution resource add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
-| Remove one resource by key | `uip solution resource remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
-| Edit one resource's spec | `uip solution resource edit <KEY> --patch '{...}' --output json` | Solution directory | Only command that mutates an existing resource; `refresh` never overwrites. Unknown/reference/read-only props silently ignored. JSON is the only input — types preserved verbatim |
+| Discover resources | `uip solution resources list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
+| Refresh resources | `uip solution resources refresh --output json` | Solution directory | — |
+| Add one resource (local stub or remote import) | `uip solution resources add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
+| Remove one resource by key | `uip solution resources remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
+| Edit one resource's spec | `uip solution resources edit <KEY> --patch '{...}' --output json` | Solution directory | Only command that mutates an existing resource; `refresh` never overwrites. Unknown/reference/read-only props silently ignored. JSON is the only input — types preserved verbatim |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory | — |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |

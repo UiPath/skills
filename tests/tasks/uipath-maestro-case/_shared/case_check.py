@@ -8,7 +8,7 @@ case definition. ``case-management`` tasks are allowed to land as skeletons
 
 For tasks whose referenced resource is published on the tenant (e.g. the
 RPA / Agent / API-workflow single-node tests), this module also provides
-``run_debug``: runs ``uip solution resource refresh`` then
+``run_debug``: runs ``uip solution resources refresh`` then
 ``uip maestro case debug`` and returns the parsed JSON payload so callers
 can assert on declared output values. Mirrors the uipath-maestro-flow
 ``flow_check.run_debug`` shape.
@@ -348,7 +348,7 @@ def find_project_dir(pattern: str = "**/project.uiproj") -> str:
 
 def find_solution_dir(pattern: str = "**/*.uipx") -> str:
     """Return the directory holding the ``*.uipx`` solution manifest.
-    Used as ``--solution-folder`` for ``uip solution resource refresh``.
+    Used as ``--solution-folder`` for ``uip solution resources refresh``.
     """
     matches = sorted(
         p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
@@ -410,14 +410,14 @@ def start_debug(
     solution_dir = find_solution_dir(solution_glob)
 
     refresh_cmd = [
-        "uip", "solution", "resource", "refresh",
+        "uip", "solution", "resources", "refresh",
         "--solution-folder", solution_dir,
         "--output", "json",
     ]
     r = subprocess.run(refresh_cmd, capture_output=True, text=True, timeout=refresh_timeout)
     if r.returncode != 0:
         _fail(
-            f"solution resource refresh exit {r.returncode}\n"
+            f"solution resources refresh exit {r.returncode}\n"
             f"stdout: {r.stdout}\nstderr: {r.stderr}"
         )
 

@@ -68,7 +68,7 @@ To create a project, see [environment-setup.md](environment-setup.md); `--target
 
 `uip rpa` connects to one of two Studio flavors behind the same IPC contract:
 
-- **Headless Studio (Helm) — default.** Ships as a NuGet package and auto-launches on first use. **No Studio Desktop install needed.** First call on a cold NuGet cache may sit near-silent for 30–90 s while `dotnet restore` runs — raise `--timeout` to ≥ 180 for that call.
+- **Headless Studio (Helm) — default.** Ships as a NuGet package and auto-launches on first use. **No Studio Desktop install needed.** First call on a cold NuGet cache may sit near-silent for 30–90 s while `dotnet restore` runs — the default shell timeout covers this; raise `timeoutSeconds` only behind a slow feed.
 - **Studio Desktop.** The interactive UI. Used automatically only by verbs with **UI side effects** — those that open a window or highlight something in the designer (discover them via `--help`; they don't work headless). For such a verb, ensure Desktop is up first (`uip rpa studio start --project-dir "<PROJECT_DIR>"`), then run it. Force Desktop for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1` (not recommended for the standard authoring loop).
 
 `--studio-dir` is consulted **only when Studio Desktop is in use**; headless ignores it. When Desktop auto-detection fails, resolution falls back to `UIPATH_STUDIO_DIR`, then the default install path, then a dev build output. Errors like `"does not have interop support"` / `"Requires Studio 26.2+"` mean the detected Desktop is too old — tell the user to update it; this affects only the Desktop-only verbs.
@@ -91,7 +91,7 @@ When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/
 
 ## Reading run / debug results
 
-`uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Discover flags (input arguments, log level, skip-build, profiling) via `--help`.
+`uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Pass workflow inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags (log level, skip-build, profiling) via `--help`.
 
 Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {runResult: "<json-string>"}, ...}`. `Data.runResult` is a **JSON string** — parse it separately. It has three fields (plus optional `Profiling`):
 
@@ -103,6 +103,26 @@ Both `run` and `debug start` return the same envelope: `{Result, Code, Data: {ru
 Workflow log output (`Log Message`, system traces) does **not** appear in `runResult` — logs stream in real time on a separate channel; the envelope carries only the verdict and output data.
 
 > **Single source of truth for success/failure: outer `Result` (equivalently `HasErrors` inside `runResult`).** `Result: "Success"` already accounts for compile failures, validation failures, and unhandled exceptions — the CLI propagates them. **DO NOT infer failure from a streamed log entry's `Level`.** A successful workflow may emit `Log Message` at `Error`/`Warning` level as observability — that is workflow data, not a CLI failure. Treating log levels as a verdict flips green runs to "failed" and burns retries.
+
+---
+
+## Passing structured inputs
+
+`--input-arguments` and `--input-variables` may be supplied as repeatable `key=value` pairs (`key:=value` for raw JSON, `key=@file` to read a value from a file), as an inline JSON string, or from a JSON file using `'@file'` or `--<flag>-file`. `--packages` takes one item per occurrence as comma-joined fields.
+
+```bash
+uip rpa run --file-path Main.xaml --input-arguments name=John --input-arguments retries:=3
+uip rpa run --file-path Main.xaml --input-arguments 'message=Hello, world!'
+uip rpa debug test-activity --input-variables greeting=@expression.txt
+uip rpa run --file-path Main.xaml --input-arguments '@args.json'      # or: --input-arguments-file args.json
+uip rpa packages install --packages 'id=UiPath.System.Activities,version=23.10.1' --packages id=UiPath.Excel.Activities
+```
+
+Rules:
+
+- **`=` vs `:=`**: `count=42` sends the string `"42"`; `count:=42` sends the number `42`. For `debug test-activity` / `debug start-from-here`, values are VB/C# expression **strings** — always `=`.
+- **Quoting**: single-quote any token containing spaces, commas, or a leading `@`; bare identifiers and numbers need no quotes. Values containing double quotes cannot be passed inline on Windows PowerShell 5.1 (it strips them) — write them to a UTF-8 file (`Set-Content -Encoding UTF8`) and use `key=@file`, `'@file'`, or `--<flag>-file`.
+- **Inline JSON**: a single JSON blob (`--input-arguments '{"k":"v"}'`) remains accepted for backward compatibility, but is unreliable on PowerShell 5.1 — prefer pairs or files.
 
 ---
 
@@ -126,13 +146,13 @@ Workflow log output (`Log Message`, system traces) does **not** appear in `runRe
 
 `uip rpa analyzer-rules list` reports the Workflow Analyzer rules **enabled** for the project — the best-practice rules `validate` and `build` enforce. Reports rules, not violations. Each rule returns `severity` (`error`/`warning`/`info`), rule ID, scope, title, and (when available) `recommendation` and `docs` URL. Prefix convention: `ST-*` = built-in Studio rule, `MA-*` = package-shipped rule.
 
-> **Performance:** the unscoped call enumerates every rule across every package and can take a minute or more. If the default 60 s shell timeout fires, narrow with `--scope` (`Activity`, `Workflow`, `Project`, or `Coded Workflow`) — scoped calls return in seconds. See `--help` for accepted scope values.
+> **Performance:** the unscoped call enumerates every rule across every package and can take a minute or more. Narrow with `--scope` (`Activity`, `Workflow`, `Project`, or `Coded Workflow`) — scoped calls return in seconds. See `--help` for accepted scope values.
 
 ---
 
 ## packages install
 
-`uip rpa packages install` installs or updates NuGet packages (canonical way to add dependencies — **do not hand-edit `project.json`**; there is no `add-dependency` verb). Discover the `--packages` shape and version flags via `uip rpa packages install --help`.
+`uip rpa packages install` installs or updates NuGet packages (canonical way to add dependencies — **do not hand-edit `project.json`**; there is no `add-dependency` verb). Repeat `--packages` once per package with comma-joined `key=value` fields — `--packages 'id=<PackageId>,version=<Version>'` or just `--packages id=<PackageId>` (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags via `uip rpa packages install --help`.
 
 - **Omit the version** to resolve the latest compatible automatically (preferred). Pin only for a known compatibility constraint.
 - **Discover available versions** with `uip rpa packages versions --package-id <Id> --include-prerelease`. **Default to `--include-prerelease`** — activity packages frequently ship `-preview` between stable releases, carrying the freshest activity surface and `.local/docs`. When a newer stable or preview exists over the installed version, inform the user and offer the upgrade — never force.
@@ -174,7 +194,7 @@ Diagnose by error category, apply the recovery, retry **once** — do not loop t
 | Error pattern | Cause | Recovery |
 |---------------|-------|----------|
 | `connection refused`, `EPIPE`, `pipe not found` | Studio IPC unavailable. Headless: NuGet restore failed or process exited. Desktop: not running. | Re-run — headless relaunches automatically. If persistent, raise `--timeout` and check Helm restore output for NuGet errors. Run `uip rpa studio start` only for Desktop-only verbs or when `UIPATH_RPA_TOOL_USE_STUDIO=1`. |
-| `timeout`, `ETIMEDOUT` | Cold Helm NuGet restore (30–90 s) or long operation. | Raise timeout: `uip rpa --timeout 600 <command>`. For `validate`, also try `--skip-validation`. |
+| `timeout`, `ETIMEDOUT` | Cold Helm NuGet restore (30–90 s) or long operation. | Raise both limits together: shell `timeoutSeconds` toward its documented max, and `uip rpa --timeout <timeoutSeconds − 30> <command>` — the shell timeout must exceed `--timeout` by ≥ 30 s or the shell kills the CLI before it can cancel cleanly. For `validate`, also try `--skip-validation`. |
 | `not authenticated`, `401`, `403` | Auth required for cloud features. | `uip login`, then retry. |
 | `package not found`, `version not available` | Wrong package ID or version. | Verify via `uip rpa activities find`; omit `version` to auto-resolve latest. |
 | `project not found`, `no project open` | Wrong `--project-dir` or project not open. | Verify the path points at the `project.json` folder. |

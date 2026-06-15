@@ -1,0 +1,49 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "name": "Workflow",
+    "tags": {
+      "projectId": "36127f49-9047-4d37-945b-d2fb16eb0a05",
+      "solutionId": "c4c5d099-7249-484e-0de2-08dec66143ea"
+    },
+    "version": "0.0.1",
+    "namespace": "default",
+    "metadata": {
+      "variables": []
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
+              "output": {
+                "as": "${$input}"
+              },
+              "export": {
+                "as": "{ ...$context, variables: { ...$context.variables, ...$output } }"
+              },
+              "metadata": {
+                "activityType": "Assign",
+                "displayName": "Workflow start",
+                "fullName": "Assign",
+                "isTransparent": true
+              }
+            }
+          }
+        ],
+        "metadata": {
+          "activityType": "Sequence",
+          "displayName": "Sequence",
+          "fullName": "Sequence"
+        }
+      }
+    }
+  ],
+  "evaluate": {
+    "mode": "strict",
+    "language": "javascript"
+  }
+}

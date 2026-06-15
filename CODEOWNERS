@@ -2,7 +2,7 @@
 * @gabrielavaduva @AlvinStanescu @marius-bughiu @RaduAna-Maria @uipreliga @dmetzgar @rockymadden @gozhang2 @smflorentino
 
 # CI workflows and review config
-/.github/ @uipreliga
+/.github/ @uipreliga @bai-uipath @akshaylive
 
 # Hooks
 /hooks/ @DragosUnguru @RaduAna-Maria
@@ -39,7 +39,7 @@
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
-/tests/tasks/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
+/tests/tasks/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip @maxduu @andrewwan-uipath
 
 # Context grounding capabilities (DeepRAG + BatchTransform) — now part of uipath-agents
 /skills/uipath-agents/references/coded/capabilities/deeprag/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
@@ -59,20 +59,13 @@
 /tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 
-# Conversational agents (folder-level ownership)
-/tests/tasks/uipath-agents/lowcode/conversational/ @maxduu @andrewwan-uipath
-
-# Planner skill
+# Planner skill (PDD → SDD design + multi-skill task planning)
 /skills/uipath-planner/ @RaduAna-Maria
 /tests/tasks/uipath-planner/ @RaduAna-Maria
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange
-
-# Design skill (PDD → SDD authoring)
-/skills/uipath-design/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
-/tests/tasks/uipath-design/ @RaduAna-Maria @UiPath/team-merlot @UiPath/team-orange
 
 # Flow skill
 /skills/uipath-maestro-flow/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
@@ -88,8 +81,8 @@
 /skills/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 /tests/tasks/uipath-maestro-bpmn/ @bai-uipath @rockymadden @gozhang2 @tmatup @akshaylive @jiyangzh @nikhil-maryala @baishalighosh
 # API Workflow skill
-/skills/uipath-api-workflow/ @rares-baesu-uipath
-/tests/tasks/uipath-api-workflow/ @rares-baesu-uipath
+/skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
+/tests/tasks/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
 
 # HITL skill
 /skills/uipath-human-in-the-loop/ @dushyant-uipath
@@ -153,3 +146,6 @@
 # MCP skill (UiPath AgentHub MCP server registration + tool authoring)
 /skills/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
 /tests/tasks/uipath-mcp-servers/ @cosminpaunel @UiPath/team-coded-agents
+
+# Automation Discovery skill
+/skills/uipath-automation-discovery/ @uisherif

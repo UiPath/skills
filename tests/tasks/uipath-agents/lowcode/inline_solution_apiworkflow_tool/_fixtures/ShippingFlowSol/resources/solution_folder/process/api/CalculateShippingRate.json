@@ -1,0 +1,56 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CalculateShippingRate",
+    "kind": "process",
+    "type": "api",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "df62b010-0b1d-46ad-8405-afce731b6d65",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "name": "CalculateShippingRate",
+        "kind": "package"
+      }
+    ],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "entryPointUniqueId": null,
+      "inputArgumentsSchema": null,
+      "outputArgumentsSchema": null,
+      "inputArgumentsSchemaV2": null,
+      "outputArgumentsSchemaV2": null,
+      "type": "Api",
+      "name": "CalculateShippingRate",
+      "description": null,
+      "package": {
+        "key": "20a0e69d-15f5-47e9-b49d-bd95f88044ef"
+      },
+      "packageName": "ShippingFlowSol.api.CalculateShippingRate",
+      "packageVersion": null,
+      "entryPointName": null,
+      "inputArguments": null,
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "retentionBucketRef": null,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "staleRetentionBucketRef": null,
+      "entryPoints": null,
+      "connections": null,
+      "tags": []
+    },
+    "locks": [],
+    "key": "979aebbb-47fb-4006-958e-6e012da8a56b"
+  }
+}

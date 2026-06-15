@@ -93,7 +93,7 @@ Run `uip maestro flow node configure` with a `--detail` JSON. The CLI builds the
 
 - `uip login` required (for both modes — node type comes from registry)
 - For connector mode: connector must support the HTTP request activity — verify the `HasHttpRequest` flag via `uip is connectors get "<connector-key>"`. If false, fall back to manual mode — confirm the switch with the user before finalizing. See [impl-connector.md Step 2](impl-connector.md#step-2--identify-target-connection).
-- For connector mode: a healthy IS connection must exist for the **target connector**. If none exists, auto-fall-through to manual mode is the recommended fallback — but confirm the mode switch with the user before finalizing. See [impl-connector.md Step 2 — HTTP-specific recovery](impl-connector.md#step-2--identify-target-connection) for the `AskUserQuestion` flow (switch-to-manual / create-now / skip).
+- For connector mode: a healthy IS connection must exist for the **target connector**. If none exists, auto-fall-through to manual mode is the recommended fallback — but confirm the mode switch with the user before finalizing. See [impl-connector.md Step 2 — HTTP-specific recovery](impl-connector.md#step-2--identify-target-connection) for the user-confirmation flow (switch-to-manual / create-now / skip).
 - `uip maestro flow registry pull` to cache the `core.action.http.v2` definition
 
 ## Planning Annotation

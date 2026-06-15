@@ -2,8 +2,8 @@ task_id: skill-planner-smoke-skill-activation
 description: >
   Smoke test: a non-trivial UiPath planning prompt loads the uipath-planner
   skill body. Verifies activation only — no SDD analysis, no task generation,
-  no AskUserQuestion. The agent echoes the two lane names defined in the
-  skill, which appear verbatim in SKILL.md and cannot be fabricated without
+  no AskUserQuestion. The agent echoes the three entry-guard paths the skill
+  defines, which appear verbatim in SKILL.md and cannot be fabricated without
   loading the skill.
 tags: [uipath-planner, smoke, lifecycle:plan]
 
@@ -17,23 +17,24 @@ initial_prompt: |
   Do NOT analyze any document. Do NOT generate any plan or tasks file. Do
   NOT ask me clarifying questions. Do NOT call AskUserQuestion.
 
-  After loading the skill, write to `lanes.txt` the EXACT names of the two
-  lanes the planner defines, one per line. Use the names exactly as they
-  appear in the skill body.
+  After loading the skill, write to `paths.txt` the EXACT names of the three
+  paths the entry guard routes to (one design phase plus two lanes), one per
+  line. Use the names exactly as they appear in the skill body.
 
-  Stop after writing `lanes.txt`.
+  Stop after writing `paths.txt`.
 
 success_criteria:
   - type: file_exists
-    description: "Agent produced lanes.txt"
-    path: "lanes.txt"
+    description: "Agent produced paths.txt"
+    path: "paths.txt"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "lanes.txt lists the two lane names (verbatim from SKILL.md)"
-    path: "lanes.txt"
+    description: "paths.txt lists the three entry-guard paths (verbatim from SKILL.md)"
+    path: "paths.txt"
     includes:
+      - "Phase D"
       - "Lane A"
       - "PDD-driven"
       - "Lane B"

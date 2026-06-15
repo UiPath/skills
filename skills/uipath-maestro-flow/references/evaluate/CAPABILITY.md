@@ -4,7 +4,7 @@ Capability index for `uip maestro flow eval` — evaluator CRUD (7 types), eval 
 
 > **Where you came from / where to go next.** Evaluate is downstream of Operate (ship the flow → evaluate it on Studio Web) and feeds back into Author (failing eval → fix the `.flow` → re-ship → re-evaluate). Build/edit lives in [author/CAPABILITY.md](../author/CAPABILITY.md); publish/deploy lives in [operate/CAPABILITY.md](../operate/CAPABILITY.md); fault triage on a debug or process run lives in [diagnose/CAPABILITY.md](../diagnose/CAPABILITY.md).
 >
-> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, AskUserQuestion dropdown pattern, **plain-English narration + granular `TodoWrite` (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are evaluate-scoped and apply on top.
+> **Inherits universal rules from [SKILL.md](../../SKILL.md)** — `--output json` + prefer `--output-filter` for extraction, no `flow debug` without consent, never invoke other skills automatically, dropdown question pattern, **plain-English narration + granular progress list (opt-in — silent by default; engage when the user asks for verbosity)**. The rules below are evaluate-scoped and apply on top.
 
 ## When to use this capability
 

@@ -1,0 +1,110 @@
+task_id: skill-sdd-integration-gap-detection
+description: >
+  Skill-guided evaluation: agent uses the uipath-planner skill to
+  analyze a deliberately incomplete PDD. Tests whether the skill correctly
+  applies [DEFAULT] markers for standard gaps and [SME REVIEW] markers for
+  business-knowledge gaps, per Critical Rule 10 and the Gap Detection Checklist.
+tags: [uipath-planner, integration, lifecycle:generate]
+
+run_limits:
+  expected_turns: 25
+  turn_timeout: 1200
+
+initial_prompt: |
+  Analyze the following Process Design Document and generate a Solution Design
+  Document (SDD). Use Autonomous mode — do not pause for checkpoints.
+
+  This PDD is deliberately incomplete. Apply [DEFAULT] and [SME REVIEW] markers
+  as the skill instructs. For any [SME REVIEW] items, keep them as-is in the
+  SDD — do NOT resolve them.
+
+  --- BEGIN PDD ---
+
+  # Process Design Document: Payment Reconciliation
+
+  ## Process Overview
+  - **Process Name:** Payment Reconciliation
+  - **Department:** Finance
+  - **Objective:** Match payments from the bank statement against invoices
+    in the ERP system and flag discrepancies.
+
+  ## In Scope
+  - Download bank statement CSV from banking portal
+  - Compare each payment against open invoices in SAP
+  - Flag unmatched payments
+
+  ## Out of Scope
+  - Dispute resolution
+  - Refund processing
+
+  ## Detailed Process Steps
+  | Step | Action | Application |
+  |------|--------|-------------|
+  | 1.1 | Log into banking portal | Browser |
+  | 1.2 | Download today's statement | Browser |
+  | 1.3 | Open SAP and navigate to open invoices | SAP GUI |
+  | 1.4 | For each payment row, search by amount and reference | SAP GUI |
+  | 1.5 | If match found, mark invoice as reconciled | SAP GUI |
+  | 1.6 | If no match, add to discrepancy report | Excel |
+
+  ## Application Details
+  | Application | Interface |
+  |-------------|-----------|
+  | Banking Portal | Web |
+  | SAP GUI | Desktop |
+  | Excel | Desktop |
+
+  --- END PDD ---
+
+  Note: This PDD has NO business exceptions section, NO system errors section,
+  NO schedule/frequency, NO volume/throughput, NO credentials section, and NO
+  notification recipients. The skill should fill these gaps appropriately.
+
+success_criteria:
+  - type: file_exists
+    description: "SDD file was created"
+    path: "payment-reconciliation-sdd.md"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD contains [DEFAULT] markers for standard gaps"
+    path: "payment-reconciliation-sdd.md"
+    includes:
+      - "[DEFAULT]"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD contains [SME REVIEW] markers for business-knowledge gaps"
+    path: "payment-reconciliation-sdd.md"
+    includes:
+      - "[SME REVIEW]"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD still has exception and error handling sections despite missing PDD data"
+    path: "payment-reconciliation-sdd.md"
+    includes:
+      - "Exception Handling"
+      - "Error Handling"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Autonomous-mode SDD carries the ## Decisions Made block (sdd-generation-guide.md Phase 3 Step 2 item 3)"
+    path: "payment-reconciliation-sdd.md"
+    includes:
+      - "Decisions Made"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD with unresolved [SME REVIEW] items carries the ## Action Required block (sdd-generation-guide.md Phase 3 Step 2 item 4)"
+    path: "payment-reconciliation-sdd.md"
+    includes:
+      - "Action Required"
+    weight: 1.0
+    pass_threshold: 1.0
+

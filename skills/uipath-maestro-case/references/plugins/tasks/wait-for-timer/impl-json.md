@@ -16,12 +16,15 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
   "elementId": "Stage_aB3kL9-tWm4Vx9Tp",
   "isRequired": false,
   "shouldRunOnlyOnce": true,
+  "skipCondition": "=js:vars.skipReview === true",
   "data": {
     "timerType": "timeDuration",
     "timeDuration": "PT3M"
   }
 }
 ```
+
+> **`data` holds ONLY `timerType` + the duration field.** `skipCondition` and all other envelope fields are top-level siblings of `data`, never nested inside it (a misplaced one passes `validate` silently but is never applied). See [case-schema.md](../../../case-schema.md) §7 Tasks — BaseTask shape.
 
 ## Procedure
 
