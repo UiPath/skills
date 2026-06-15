@@ -1,0 +1,77 @@
+task_id: skill-agents-context-grounding-diagnose-missing-ingestion
+description: >
+  Diagnose-mode coverage for the context-grounding CLI. The reference's #1
+  anti-pattern is "create does not ingest" — a freshly created index has no
+  searchable content until ingestion is triggered separately. The symptom is
+  given in the prompt (index exists, `last_ingestion_status` null, search
+  returns nothing); the agent must diagnose the missing ingestion step and
+  write the remediation commands to a fix script. Graded on the script's
+  contents (deterministic) and on NOT mutating the tenant — not on executing
+  commands against a tenant, which would fail against the example index yet
+  still satisfy a command_executed check (false pass).
+tags: [uipath-agents, integration, mode:diagnose, lifecycle:generate, context-grounding]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  I created a context-grounding index named `support-kb` in the "Shared"
+  folder, backed by the "SupportDocs" bucket:
+
+      uip context-grounding create --index-name support-kb --bucket-source SupportDocs --folder-path Shared
+
+  The command succeeded, but searching the index returns no results. When I
+  inspect it:
+
+      uip context-grounding retrieve --index-name support-kb --folder-path Shared --output json
+
+  the response shows `"last_ingestion_status": null` — it has never been
+  ingested.
+
+  Diagnose what step I missed, then write the exact UiPath CLI commands that
+  fix it to a shell script `fix.sh` — the remediation that gets `support-kb`
+  into a searchable state, including a way to confirm the index is ready before
+  searching. Use machine-readable JSON output where the script reads status.
+
+  Only WRITE `fix.sh` — do NOT run any index create/ingest/delete commands
+  against the tenant. Do NOT ask for approval or pause between steps. Before
+  starting, load the uipath-agents skill and follow its context-grounding CLI
+  workflow.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote the remediation script"
+    path: "fix.sh"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Remediation triggers the missing ingestion step"
+    path: "fix.sh"
+    includes:
+      - "context-grounding ingest"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Remediation re-checks index status with retrieve before searching"
+    path: "fix.sh"
+    includes:
+      - "context-grounding retrieve"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Remediation reads status as JSON so readiness can be parsed"
+    path: "fix.sh"
+    includes:
+      - "--output json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent diagnosed and scaffolded the fix rather than mutating the tenant"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+context-grounding\s+(create|ingest|delete)\b'
+    weight: 2.0
+    pass_threshold: 1.0
