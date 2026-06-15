@@ -99,10 +99,33 @@ uip rpa activities get-default-xaml \
 
 The response contains the complete `ConnectorActivity` element with:
 - A real `Configuration` blob for that specific connector+operation combo.
-- A complete `FieldObjects` list enumerating every input/output field name.
+- A `FieldObjects` list with one entry per field of the operation's resolved schema (older CLI versions emit only the curated/visible-by-default subset).
 - A real `ConnectionId` (uses the supplied one, or auto-resolves a tenant default).
 
 **Without `--activity-type-id`**, the default comes back essentially empty (`Configuration={x:Null}`, no fields). That generic default is not runnable.
+
+#### Pass field values with `--field-values`
+
+`get-default-xaml` accepts literal input-field values as repeatable key=value pairs:
+
+```bash
+uip rpa activities get-default-xaml \
+    --activity-type-id "<TYPE_ID>" \
+    --connection-id "<CONNECTION_ID>" \
+    --field-values project=JTD --field-values issuetype=Bug \
+    --project-dir "<PROJECT_DIR>" --output json
+```
+
+Two effects:
+
+1. **Values are pre-bound** as literals in the returned `FieldObjects` — no hand-editing of `InArgument`/`CSharpValue` needed for literal values (expressions still go through Step 6).
+2. **Schema expansion.** Some operations reveal additional fields only after prerequisite "criteria" fields have values — e.g. Jira "Update Issue" exposes the full body schema (description, custom fields) only once `project` and `issuetype` are set; generic record operations expand after the record `Type`. In Studio's designer this re-resolve fires when the user commits those fields in the canvas. Headlessly, passing the criteria values via `--field-values` triggers the same re-resolve: the returned `Configuration` blob carries the **expanded** schema and the new fields appear as `FieldObjects`.
+
+Field names use the encoded form from § FieldObject Name Encoding Rules (e.g. `fields_sub_description`). An unknown field name fails fast with the list of available input fields — use that error as field-name discovery rather than guessing.
+
+**Usage pattern:** call once without `--field-values` to get the operation's default surface; if the field you need is missing from `FieldObjects` (criteria-gated), call again with the criteria values and author against the expanded result. When you already know the values upfront, a single call with `--field-values` does both.
+
+**Older CLI fallback:** if `--field-values` is not recognized, upgrade `uip`. Until then the expansion is not reachable headlessly — bind only fields present in the returned XAML and treat missing ones per § Hidden Secondary Fields.
 
 ### Step 5 — Read the operation's field schema
 
@@ -122,6 +145,8 @@ The response includes a `metadataFile` path like:
 Read that file directly for the full schema — `parameters`, `requestFields`, `responseFields`, each with `name`, `dataType`, `required`, `description`, and any enum values. **Never guess field names from memory** — the schema is the source of truth, and guessed names trigger a `Configuration contains a breaking change` runtime error.
 
 ### Step 6 — Bind values using `InArgument` + `CSharpValue`
+
+Only needed for **expression** values or when editing an existing XAML — literal values are better passed via `--field-values` in Step 4, which pre-binds them in the returned XAML.
 
 For each field you want populated:
 
@@ -154,7 +179,7 @@ Schema field names from `describe` / the cached JSON (`message.toRecipients`, `s
 
 Apply rules in order; translate every segment for nested paths (`collaborator_ids[*]` → `collaborator_ids_array`).
 
-Default XAML reflects correct encoded names for fields it returns — **copy verbatim**. Default is **not exhaustive**: Secondary fields (arrays especially) are often absent — see [Hidden Secondary Fields](#hidden-secondary-fields).
+Default XAML reflects correct encoded names for fields it returns — **copy verbatim**. With current CLI versions the returned `FieldObjects` cover the blob schema exhaustively; a schema-documented field that is still absent is criteria-gated or a query parameter — see [Hidden Secondary Fields](#hidden-secondary-fields).
 
 #### Matching `x:TypeArguments` to the Field's Data Type
 
@@ -185,15 +210,15 @@ Example — boolean field:
 
 #### Hidden Secondary Fields
 
-Default `FieldObjects` is **not exhaustive**. Schema-defined Secondary fields — arrays especially (`tags[*]`, `collaborator_ids[*]`, `fields[*].id`) — appear in `requestFields` / `optionalFields` / `parameters` but not in the default. Validators all report clean while the connector silently drops the unbound field. Detect via live API result or Studio designer comparison.
+A field is only honored at runtime if it exists in the **`Configuration` blob's schema** — the blob, not the `FieldObjects` list, is the contract. A hand-added `FieldObject` whose field is missing from the blob's schema passes `validate` and `build` clean and is **silently dropped** by the connector at runtime — the API call goes out without it, typically surfacing as a confusing backend error (e.g. Jira's `one of 'fields' or 'update' required`, HTTP 400).
 
-When a requested field is absent from default `FieldObjects`:
+When a schema-documented field is absent from the returned `FieldObjects`:
 
-1. Read schema from `~/.uipath/cache/integrationservice/<connector>/_static/<operation>.Create.json` (or re-run `uip is resources describe`). Confirm field exists in `requestFields` / `optionalFields` / `parameters`.
-2. Read its `type` / `dataType` (includes `[*]` suffix for arrays).
-3. Translate schema name through every encoding rule in order: `.` → `_sub_`, `-` → `minus_sign`, `[*]` → `_array`. Example: `tags[*]` → `tags_array`, `fields[*].id` → `fields_array_sub_id`.
-4. Emit `<isactr:FieldObject Name="<encoded>" Type="FieldArgument">` with `x:TypeArguments` matching the schema `type`.
-5. Insert into `<isactr:ConnectorActivity.FieldObjects>` alongside default entries. Do not reorder or remove existing entries.
+1. **Criteria-gated field** (most common — body/custom fields revealed by prerequisite values): re-run `get-default-xaml` with `--field-values <criteria>=<value> ...` (Step 4) and author against the returned XAML — its blob carries the expanded schema and the field now has a `FieldObject`. Do **not** graft the field into the previous XAML; the old blob does not know it.
+2. **Query parameter**: check the schema's `queryParameters` — those never appear as `FieldObjects` and have no per-field XAML override (see Gotchas).
+3. **Older CLI without `--field-values`**: the expansion is not reachable headlessly. Have a developer commit the criteria fields once in Studio's designer and copy the resulting `Configuration` + `FieldObjects`, or upgrade `uip`.
+
+The name-encoding rules above still apply when referencing expanded fields in `--field-values` (e.g. `fields.description` → `fields_sub_description`) and when binding expression values to them in Step 6.
 
 ### Step 7 — Validate and run
 
@@ -268,6 +293,21 @@ Resulting `ConnectorActivity` body (truncated — preserve the full FieldObject 
 </isactr:ConnectorActivity>
 ```
 
+## Worked Example: Jira "Update Issue" (criteria-gated expansion)
+
+Jira's Update Issue surfaces only `project`, `issuetype`, `issueIdOrKey` by default; the full body schema (e.g. `fields_sub_description`, custom fields) exists only once `project` + `issuetype` are known:
+
+```bash
+# One call: criteria values trigger the schema expansion AND get pre-bound as literals.
+uip rpa activities get-default-xaml \
+    --activity-type-id "<UPDATE_ISSUE_TYPE_ID>" \
+    --connection-id "<JIRA_CONNECTION_ID>" \
+    --field-values project=JTD --field-values issuetype=Bug --field-values issueIdOrKey=JTD-9 \
+    --project-dir "$P" --output json
+```
+
+The returned XAML's `Configuration` blob now carries the expanded schema, and `fields_sub_description` (plus the project's custom fields) appears in `FieldObjects`. Bind remaining values there directly in the same call (literal) or via Step 6 (expression). Authoring `fields_sub_description` against the *unexpanded* blob is the silent-drop failure described in § Hidden Secondary Fields.
+
 ## Gotchas
 
 1. **JIT OutArgument corruption** — When Studio's designer modifies an IS XAML, it can inject a `<OutArgument x:TypeArguments="uiascb:...<op>_Create" />` into the `Jit_<operation>` FieldObject that references a dynamically-compiled Studio-local assembly. Fresh loads (new Studio session, CI) can't resolve that type and fail to compile with `Unable to create activity builder`. **Strip the offending OutArgument back to `<isactr:FieldObject Name="Jit_<op>" Type="FieldArgument" />`** before shipping or running headlessly. Also remove the `xmlns:uiascb` namespace declaration from the root `<Activity>` element if nothing else references it. Tracked as PILOT-4812.
@@ -285,6 +325,7 @@ Resulting `ConnectorActivity` body (truncated — preserve the full FieldObject 
 - **Do not** hand-edit the `Configuration` blob. It's base64 + gzip of an internal serialization — any edit triggers a `breaking change` runtime rejection.
 - **Do not** use `activities get-default-xaml` without `--activity-type-id` for IS activities — the generic default is empty and unusable.
 - **Do not** drop FieldObjects from the default. The full list is part of the schema contract.
+- **Do not** hand-add a `FieldObject` for a field absent from the returned XAML — it validates clean and is silently dropped at runtime. Re-run `get-default-xaml` with `--field-values` to expand the schema instead (§ Hidden Secondary Fields).
 - **Do not** put values in the `FieldObject Value=""` attribute — use `<FieldObject.Value><InArgument><CSharpValue>` elements.
 
 ## Related References
