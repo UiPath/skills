@@ -105,6 +105,8 @@ Verify that the solution has proper environment isolation for safe deployment.
 
 Score each principle on a 1-5 scale. Report scores in the review.
 
+> These six scores are the primary input to **G_jud**, the non-deterministic half of the Step 4.5 letter grade. Their average maps to a base letter (`4.5–5.0`→A … `1.0–1.49`→F); see [grading-rubric.md](grading-rubric.md). Exclude a principle only when it genuinely does not apply to the project type (e.g. queue-style Scalability for a one-shot utility) and state the exclusion. Score honestly — a generous score here inflates the grade.
+
 ### Modularity (1-5)
 
 | Score | Criteria |
