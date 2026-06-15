@@ -73,9 +73,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent retrieved execution history (`executions list --project-key` + `--output json`)"
+    description: "Agent retrieved execution history — either `executions list --project-key` or the per-test-case `testcases list-result-history --project-key` (both with `--output json`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+executions\s+list\s+.*--output\s+json.*--project-key'
+    command_pattern: 'uip\s+tm\s+executions\s+list\s+.*--project-key.*--output\s+json|uip\s+tm\s+executions\s+list\s+.*--output\s+json.*--project-key|uip\s+tm\s+testcases\s+list-result-history\s+.*--project-key.*--output\s+json|uip\s+tm\s+testcases\s+list-result-history\s+.*--output\s+json.*--project-key'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

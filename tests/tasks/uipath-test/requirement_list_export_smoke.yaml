@@ -49,9 +49,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete list command: `uip tm requirements list --project-key HEALTH --labels eval-export --output json`"
+    description: "List HEALTH requirements carrying the eval-export label, server-side — either `uip tm requirements list --project-key HEALTH --labels eval-export --output json` or the equivalent `uip tm objectlabel list --project-key HEALTH --object-type Requirement --filter eval-export --output json`"
     tool_name: "Bash"
-    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--labels\s+["\x27]?eval-export)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+list\s'
+    command_pattern: '(?:(?=.*--project-key\s+HEALTH)(?=.*--labels\s+["\x27]?eval-export)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+list\s)|(?:(?=.*--project-key\s+HEALTH)(?=.*--object-type\s+Requirement)(?=.*(?:--filter|--labels)\s+["\x27]?eval-export)(?=.*--output\s+json)uip\s+tm\s+objectlabel\s+list\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
