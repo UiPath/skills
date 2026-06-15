@@ -32,7 +32,7 @@ Review UiPath solutions and individual artifacts for structural validity, qualit
 10. **Rule findings are authoritative as emitted.** Carry review-CLI findings (`Data.Issues[]`) into the report verbatim — `RuleId`, `Severity`, `Description`, `File`, `SuggestedFix` unchanged. For the judgment catalog, use its `rule_id`, `severity`, `trigger`, and `suggested_fix` verbatim. Map severity to the report's bands: `error` → Critical, `warning` → Warning, `info` → Info. `judgment` severity rows default to Warning; the agent may escalate or de-escalate with reasoning logged in the finding's `description`. Do not re-rank otherwise.
 11. **Report rules that could not be applied** (missing tooling, missing file, review CLI unavailable, `status: deferred`) in a dedicated "Rules Skipped" subsection of the report — never silently skip.
 12. **Never invent `rule_id` values.** Every `rule_id` cited in the report MUST appear verbatim in EITHER a loaded judgment-catalog file (`references/agents/agents-*-rules.md`) OR the `uip agent review` / `uip codedagent review` JSON output. `rule_id` is a stable contract identifier — consumers grep for it, dashboards aggregate by it, audits trace it. An invented identifier looks authoritative but cannot be looked up, doesn't aggregate, and produces a different name for the same observation on the next run. If you observe a real issue covered by neither source, the finding is still valid — report it as a normal Critical / Warning / Info finding **without** a `rule_id` (no `` `RULE_ID` `` backtick token in the line). **Before emitting the report, scan every cited `rule_id` and confirm it appears verbatim in a loaded catalog file or the review-CLI output; demote any that don't to `rule_id`-less findings.**
-13. **Grade every review by the rubric — derived, never asserted.** Produce a letter grade (`A`/`B`/`C`/`D`/`F`, no `+`/`-`) per project and overall, computed in Step 4.5 as `min(G_det, G_jud)`. G_det comes from deterministic findings (Step 2 + 2.5a); G_jud from judgment (architecture scores + Step 2.5b + Step 3). Classify each finding to exactly one sub-grade — never both. Show the binding constraint for every grade; a grade with no shown derivation is invalid. A security or data-integrity Critical forces **F** regardless of design quality (hard gate, not a blend). When `uip agent review` / `uip codedagent review` returns `Data.Grade`, report it alongside — never overwrite it with the skill grade. See [references/grading-rubric.md](references/grading-rubric.md).
+13. **Grade every agent project by the rubric — derived, never asserted.** For **agent projects** (phase 1), produce a letter grade (`A`/`B`/`C`/`D`/`F`, no `+`/`-`) per agent and overall, computed in Step 4.5 as `min(G_det, G_jud)`. G_det comes from deterministic findings (Step 2 `agent validate` + 2.5a review CLI); G_jud from judgment (architecture scores + Step 2.5b + Step 3). Classify each finding to exactly one sub-grade — never both. Show the binding constraint for every grade; a grade with no shown derivation is invalid. A security or data-integrity Critical forces **F** regardless of design quality (hard gate, not a blend). When `uip agent review` / `uip codedagent review` returns `Data.Grade`, report it alongside — never overwrite it with the skill grade. Do **not** grade non-agent projects (RPA, flows, coded apps) — that rubric is a future phase. See [references/agents/agent-grading-rubric.md](references/agents/agent-grading-rubric.md).
 
 ## Review Workflow
 
@@ -445,16 +445,16 @@ Read [references/review-workflow-guide.md](references/review-workflow-guide.md) 
 
 Read [references/architecture-assessment-guide.md](references/architecture-assessment-guide.md) for the architecture-level evaluation framework — process suitability, complexity classification, environment separation, and architecture principles scoring.
 
-### Step 4.5 — Compute the Letter Grade (A–F)
+### Step 4.5 — Compute the Agent Letter Grade (A–F)
 
-Grade every project, and the review overall, on an A–F scale. The grade is **derived** from Steps 2–4 — never a fresh judgment. Compute two sub-grades independently, then take the worse:
+**Agent projects only** (phase 1) — matching the Step 2.5 judgment catalog, which is agent-only today. Grade every **agent** project, and (for a multi-agent solution) the agent set overall, on an A–F scale. Non-agent projects are **not** graded yet (RPA, flows, coded apps are future phases) — report their findings without a grade. The grade is **derived** from Steps 2–4 — never a fresh judgment. Compute two sub-grades independently, then take the worse:
 
 ```
 Final grade = min(G_det, G_jud)
 ```
 
-- **G_det (deterministic)** — from objective findings only: `validate` / `build` / `analyze` (Step 2) + `uip agent review` / `uip codedagent review` (Step 2.5a). Byte-reproducible.
-- **G_jud (non-deterministic)** — from judgment: the six architecture-principle scores (1–5) in [architecture-assessment-guide.md §4](references/architecture-assessment-guide.md) + judgment-catalog (2.5b) + manual-checklist (Step 3) findings.
+- **G_det (deterministic)** — from objective findings only: `uip agent validate` (Step 2) + `uip agent review` / `uip codedagent review` (Step 2.5a). Byte-reproducible.
+- **G_jud (non-deterministic)** — from judgment: the architecture-principle scores (1–5) in [architecture-assessment-guide.md §4](references/architecture-assessment-guide.md) + judgment-catalog (2.5b) + manual agent-checklist (Step 3) findings.
 
 **Classify each finding by source** so it feeds exactly one sub-grade (no double-counting): Step 2 + 2.5a findings → G_det; Step 2.5b + Step 3 findings + architecture scores → G_jud.
 
@@ -462,19 +462,19 @@ Final grade = min(G_det, G_jud)
 
 | Deterministic findings | G_det |
 |---|---|
-| 0 Critical, builds + validates clean, 0–1 Warnings | A |
+| 0 Critical, `agent validate` clean, 0–1 Warnings | A |
 | 0 Critical, 2–3 Warnings | B |
 | 0 Critical, 4–7 Warnings | C |
 | 1 Critical (clear non-security fix), OR 8+ Warnings | D |
-| ≥2 Criticals, OR any security/data-integrity Critical, OR fails build/validate | F |
+| ≥2 Criticals, OR any security/data-integrity Critical, OR `agent validate` fails | F |
 
-**G_jud band** — average the six architecture-principle scores (exclude N/A principles, state which): `4.5–5.0`→A, `3.5–4.49`→B, `2.5–3.49`→C, `1.5–2.49`→D, `1.0–1.49`→F. Then cap: any unmitigated judgment Critical → at most D; security/data-integrity judgment Critical → F.
+**G_jud band** — average the applicable architecture-principle scores (Scalability is usually N/A for a single agent — exclude it and any other that does not apply, state which): `4.5–5.0`→A, `3.5–4.49`→B, `2.5–3.49`→C, `1.5–2.49`→D, `1.0–1.49`→F. Then cap: any unmitigated judgment Critical → at most D; security/data-integrity judgment Critical → F.
 
-**Overall grade:** single project → the project grade. Solution/multi-project → `min(worst project grade, solution-level G_det)`. Never average grades.
+**Overall Agent Grade:** single agent → its grade. Multiple agents → the **worst** per-agent grade. Never average grades.
 
-Report the **binding constraint** in one line (e.g. "B — gated by G_det, 3 Warnings; design strong (G_jud A)"). When the review CLI returns `Data.Grade` (agents), report it alongside the skill grade — never overwrite it.
+Report the **binding constraint** in one line (e.g. "B — gated by G_det, 3 Warnings; design strong (G_jud A)"). When the review CLI returns `Data.Grade`, report it alongside the skill grade — never overwrite it.
 
-Full rubric, edge cases (Legacy / no-PDD / CLI-unavailable), CLI-grade alignment, and worked examples: [references/grading-rubric.md](references/grading-rubric.md).
+Full rubric, agent-principle scoring, edge cases (no-PDD / CLI-unavailable / no-eval-set), CLI-grade alignment, and worked examples: [references/agents/agent-grading-rubric.md](references/agents/agent-grading-rubric.md).
 
 ### Step 5 — Produce the Review Report
 
@@ -503,7 +503,8 @@ Output a structured report in chat (do NOT create a file):
 ## Review Report: <Project or Solution Name>
 
 ### Summary
-- **Overall Grade:** <A–F> — <verdict label> (<binding constraint, e.g. "B — gated by G_det: 3 Warnings; design strong (G_jud A, arch avg 4.5)">)
+- **Overall Quality:** Good / Needs Improvement / Critical Issues
+- **Agent Grade:** <A–F> — <verdict label> (<binding constraint, e.g. "B — gated by G_det: 3 Warnings; design strong (G_jud A, arch avg 4.5)">) — *agent projects only; omit this line if the review has no agent projects*
 - **Business Value:** <1-2 sentence description of what this automation does>
 - **Review Scope:** Single project / Solution (N projects) / Multi-project repo (N executables + M libraries)
 - **Project Types Found:** <list with type and language, e.g., "RPA (XAML, VisualBasic)", "Agent (Coded, Python)">
@@ -563,13 +564,14 @@ Output a structured report in chat (do NOT create a file):
 1. [I-001] <concise title> — `<project/file>` — <what to improve>
 
 ### Per-Project Summary
-| Project | Type | Language | Size | Validation | Grade | Key Findings |
-|---|---|---|---|---|---|---|
-| ProjectA | RPA (Coded) | CSharp | 42 methods, 1,300 statements | 1 error, 2 warnings | D | V-E-001, W-001 |
-| ProjectB | Flow | — | 18 nodes, 3 gateways, depth 5 | Pass | B | I-001 |
-| ProjectC | RPA (XAML) | VisualBasic | 84 activities, 50 vars, depth 12 | Via uipath-rpa (Legacy mode) | C | C-002, W-003 |
+| Project | Type | Language | Size | Validation | Quality | Grade | Key Findings |
+|---|---|---|---|---|---|---|---|
+| ClassifierAgent | Agent (Coded) | Python | 14 functions, 220 statements | Pass | Good | B | W-D-002 |
+| ProjectA | RPA (Coded) | CSharp | 42 methods, 1,300 statements | 1 error, 2 warnings | Needs Improvement | — | V-E-001, W-001 |
+| ProjectB | Flow | — | 18 nodes, 3 gateways, depth 5 | Pass | Good | — | I-001 |
+| ProjectC | RPA (XAML) | VisualBasic | 84 activities, 50 vars, depth 12 | Via uipath-rpa (Legacy mode) | Needs Improvement | — | C-002, W-003 |
 
-> The **Grade** column is the per-project `min(G_det, G_jud)` from Step 4.5. For agent projects, append the review CLI's `Data.Grade` when it differs, e.g. `C (CLI: A)`.
+> The **Grade** column is the per-agent `min(G_det, G_jud)` from Step 4.5 — **agent projects only** (`—` for other types, phase 1). Append the review CLI's `Data.Grade` when it differs, e.g. `B (CLI: A)`. The **Quality** column (Good / Needs Improvement / Critical Issues) applies to every project type.
 
 ### Recommended Next Steps
 
@@ -593,27 +595,33 @@ Route each fix to the appropriate skill:
 ```
 
 **Finding severity labels (never "Mismatch"/"Aligned"):**
-- Overall Grade: `A` / `B` / `C` / `D` / `F` (no `+`/`-`) — see Step 4.5 and [grading-rubric.md](references/grading-rubric.md)
+- Overall Quality: `Good` / `Needs Improvement` / `Critical Issues` (all project types)
+- Agent Grade: `A` / `B` / `C` / `D` / `F` (no `+`/`-`) — agent projects only; see Step 4.5 and [agent-grading-rubric.md](references/agents/agent-grading-rubric.md)
 - Transaction Shape: `one-to-one` / `one-to-many` / `unclear`
 - Findings: `Critical` / `Warning` / `Info`
 
-**Grade → verdict label** (the headline reads "B — Good", consistent with the count-based bands):
+**Overall Quality thresholds** (all project types):
+- **Good** — 0 Critical, 0–3 Warnings
+- **Needs Improvement** — 0 Critical, 4+ Warnings OR 1 Critical with clear fix
+- **Critical Issues** — 2+ Critical OR 1 Critical with security/data-integrity implications
 
-| Grade | Verdict label | Count-based band (sanity check) |
+**Agent Grade → verdict label** (agent projects only; the line reads "B — Good", consistent with the thresholds above):
+
+| Grade | Verdict label | Cross-check |
 |---|---|---|
 | **A** | Good | 0 Critical, 0–1 deterministic Warnings, strong design |
 | **B** | Good | 0 Critical, 2–3 deterministic Warnings |
-| **C** | Needs Improvement | 0 Critical, 4–7 Warnings OR design avg 2.5–3.49 |
+| **C** | Needs Improvement | 4–7 Warnings OR design avg 2.5–3.49 |
 | **D** | Needs Improvement | 1 Critical (clear fix) OR 8+ Warnings OR design avg 1.5–2.49 |
-| **F** | Critical Issues | 2+ Critical OR security/data-integrity Critical OR fails build/validate |
+| **F** | Critical Issues | 2+ Critical OR security/data-integrity Critical OR `agent validate` fails |
 
-The grade is the **`min(G_det, G_jud)`** computed in Step 4.5 — the table above is a cross-check, not a separate calculation.
+The agent grade is the **`min(G_det, G_jud)`** computed in Step 4.5 — the table above is a cross-check, not a separate calculation.
 
 ## Task Navigation
 
 | I need to... | Read this |
 |---|---|
-| Compute the A–F letter grade (Step 4.5) | [grading-rubric.md](references/grading-rubric.md) |
+| Compute the A–F letter grade for an agent (Step 4.5) | [agent-grading-rubric.md](references/agents/agent-grading-rubric.md) |
 | Understand the rule row schema | [rule-format.md](references/rule-format.md) |
 | Run the review CLI + judgment catalog (Step 2.5) | [rule-catalog-workflow.md](references/rule-catalog-workflow.md) |
 | Apply common rules for agents (both formats) | [agents-common-rules.md](references/agents/agents-common-rules.md) |

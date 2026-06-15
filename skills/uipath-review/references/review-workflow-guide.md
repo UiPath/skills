@@ -311,7 +311,8 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 ## Review Report: <Solution/Project Name>
 
 ### Summary
-- **Overall Grade:** <A–F> — <verdict label> (<binding constraint>) — see Step 4.5 + [grading-rubric.md](grading-rubric.md)
+- **Overall Quality:** Good / Needs Improvement / Critical Issues
+- **Agent Grade:** <A–F> — <verdict label> (<binding constraint>) — *agent projects only; see SKILL.md Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md). Omit if no agent projects.*
 - **Business Value:** <1-2 sentence description of what this solution does>
 - **Project Types Found:** <list with counts>
 - **Validation Status:** <pass/fail per project>
@@ -342,10 +343,11 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 2. [I-002] ...
 
 ### Per-Project Summary
-| Project | Type | Validation | Grade | Key Findings |
-|---|---|---|---|---|
-| ProjectA | RPA (Coded) | Pass | B | W-001 |
-| ProjectB | Flow | 2 errors | F | C-001, W-002 |
+| Project | Type | Validation | Quality | Grade | Key Findings |
+|---|---|---|---|---|---|
+| ClassifierAgent | Agent (Coded) | Pass | Good | B | W-D-002 |
+| ProjectA | RPA (Coded) | Pass | Good | — | W-001 |
+| ProjectB | Flow | 2 errors | Critical Issues | — | C-001, W-002 |
 
 ### Recommended Next Steps
 1. Fix [C-001] using `uipath-rpa` skill
@@ -358,7 +360,12 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 - Transaction handling: <observation and recommendation>
 ```
 
-**Grade determination:** the letter is `min(G_det, G_jud)` computed in SKILL.md Step 4.5 (full rubric, bands, edge cases, and worked examples in [grading-rubric.md](grading-rubric.md)). The legacy count-based verdict (`Good` / `Needs Improvement` / `Critical Issues`) survives only as the verdict **label** beside the grade — A/B = Good, C/D = Needs Improvement, F = Critical Issues.
+**Overall Quality determination** (all project types):
+- **Good** — 0 Critical findings, 0-3 Warnings
+- **Needs Improvement** — 0 Critical findings, 4+ Warnings OR 1 Critical with clear fix
+- **Critical Issues** — 2+ Critical findings OR 1 Critical with security implications
+
+**Agent Grade** (agent projects only): the A–F letter is `min(G_det, G_jud)` computed in SKILL.md Step 4.5 — full rubric, bands, edge cases, and worked examples in [agent-grading-rubric.md](agents/agent-grading-rubric.md). It maps to the same verdict labels (A/B = Good, C/D = Needs Improvement, F = Critical Issues). Non-agent projects carry the Quality verdict only (grading for RPA / flows / coded apps is a future phase).
 
 ## Optimization Evaluation Framework
 
