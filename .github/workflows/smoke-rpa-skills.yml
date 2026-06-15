@@ -90,9 +90,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pin coder_eval to tests/.coder-eval-version so RPA smoke runs the same
+      # engine as the skills smoke, ad-hoc, and nightly paths. shell: bash
+      # because windows-latest defaults to PowerShell (no `tr`).
+      - name: Resolve coder_eval pin
+        id: ceref
+        shell: bash
+        run: echo "ref=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
+          ref: ${{ steps.ceref.outputs.ref }}
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 

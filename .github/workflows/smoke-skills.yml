@@ -598,7 +598,8 @@ jobs:
           PY
 
   # Advisory consistency gate. Does every task YAML in the repo still load
-  # under coder_eval@main's TaskDefinition schema? This is the skills-side
+  # under the pinned coder_eval's TaskDefinition schema (tests/.coder-eval-version
+  # — the same engine smoke/ad-hoc/nightly run)? This is the skills-side
   # mirror of coder_eval's `validate-skills-yamls` gate: it catches the class
   # of bug where a task YAML uses a criterion type/field coder_eval's schema
   # doesn't accept, surfacing it here at authoring time instead of weeks later
@@ -620,9 +621,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pin coder_eval to tests/.coder-eval-version so schema validation runs
+      # against the same engine that actually executes the tasks.
+      - name: Resolve coder_eval pin
+        id: ceref
+        run: echo "ref=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
         with:
           repository: UiPath/coder_eval
+          ref: ${{ steps.ceref.outputs.ref }}
           token: ${{ secrets.GH_PAT }}
           path: .coder_eval
 
@@ -638,7 +646,7 @@ jobs:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system .
 
-      - name: Validate every task YAML against coder_eval@main schema
+      - name: Validate every task YAML against the pinned coder_eval schema
         # `coder-eval plan` exits non-zero if any file fails to load under the
         # current TaskDefinition schema. Job-level continue-on-error keeps a
         # failure here non-blocking.
