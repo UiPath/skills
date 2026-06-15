@@ -109,7 +109,7 @@ Namespaces: `UiPath.Excel.Activities`
 
 ## Word Activities
 
-Activities for automating Microsoft Word on Windows. The classic `Word Application Scope` drives a real WINWORD.EXE via Microsoft Word Interop (COM) and requires desktop Word installed on the execution host. Issues here involve COM init failures (`make sure Word application is installed`, `REGDB_E_CLASSNOTREG`, bitness mismatch), corrupted-file errors from orphaned WINWORD.EXE locks or in-place template overwrites, indefinite hangs on background modal dialogs, missing-package "cannot create unknown type" load errors, and document-path resolution failures.
+Activities for automating Microsoft Word on Windows. The classic `Word Application Scope` drives a real WINWORD.EXE via Microsoft Word Interop (COM) and requires desktop Word installed on the execution host. Issues here involve COM init failures (`make sure Word application is installed`, `REGDB_E_CLASSNOTREG`, bitness mismatch), corrupted-file errors from orphaned WINWORD.EXE locks or in-place template overwrites, indefinite hangs on background modal dialogs, missing-package "cannot create unknown type" load errors, and document-path resolution failures. `Replace Text in Document` (`WordReplaceText` / `ReplaceTextInDocument`) adds COM-busy retries (`RPC_E_SERVERCALL_RETRYLATER`), file-lock/read-only save failures, silent no-substitution from run-split placeholders, the classic 256-character input limit, and design-time `TargetInvocationException` / Studio crashes from version mismatch.
 
 Namespaces: `UiPath.Word.Activities`
 

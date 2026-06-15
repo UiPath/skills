@@ -4,7 +4,7 @@
 
 Before using any fetched data, verify it matches the user's reported problem:
 
-- **Activity** — the faulted activity's namespace and class match the reported failure (`UiPath.Word.Activities.WordApplicationScope`). Classic `Word Application Scope` (Interop) and the modern `Use Word File` surface share intent but run different code paths — treat them as different.
+- **Activity** — the faulted activity's namespace and class match the reported failure (`UiPath.Word.Activities.WordApplicationScope`, `UiPath.Word.Activities.WordReplaceText` / `ReplaceTextInDocument`). Classic activities (inside `Word Application Scope`, Interop) and modern activities (inside `Use Word File`) share display names but run different code paths — treat them as different. A `Replace Text in Document` fault is distinct from a scope-level fault: the scope opened fine and the failure is in the substitution.
 - **Document** — the document path in evidence matches the file the user is asking about. A scope pointed at a different document is unrelated data.
 - **Robot / machine identity** — the robot account and the machine where Word is installed match the one the user reports. Word installation, bitness, activation state, and Trust Center settings are per-user-per-machine, so evidence from a different host is not transferable.
 - **Office version and bitness** — the Word/Office version and bitness installed on the robot machine match what the user reports. Bitness mismatch with the robot process is a known COM-interop cause; multiple Office installs produce dispatcher ambiguity.
@@ -21,6 +21,7 @@ If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy.
 4. **Process state at failure time** — whether WINWORD.EXE was already running or orphaned, and whether any modal dialog (password, recovery sidebar, Safe Mode, activation, Protected View) was open. Without `Visible = True`, dialogs are invisible but still block COM calls.
 5. **Document path resolution** — the concrete path the dynamic expression resolves to on the robot host (not the developer machine), whether the file exists there, and whether it is held open by a sync client, antivirus, or a concurrent job.
 6. **Package version** — `UiPath.Word.Activities` version in `project.json` versus the version restored on the execution host, especially for remote/Orchestrator runs.
+7. **Replace Text inputs + outcome** — for `Replace Text in Document` faults, capture the `Search` and `Replace` expressions (and their runtime lengths — 256 chars is the classic cap), whether the activity threw or succeeded-with-no-change, and whether it sits inside a loop with `Auto Save` enabled. For a silent miss, inspect the template's placeholder for run-splitting / mixed formatting; trace the **output document content**, not just the absence of an exception.
 
 ## Testing Prerequisites
 
@@ -31,3 +32,11 @@ When testing hypotheses for `Word Application Scope` issues, gather and verify t
 3. **Word installation + bitness** — desktop Word present on the robot machine and its bitness relative to the robot process. The user (or someone with desktop access) must check; it cannot be inferred from job logs.
 4. **Interactive state** — whether a background dialog was blocking. Reproduce with the scope visible to confirm.
 5. **Package version** — `UiPath.Word.Activities` version available on the execution host, compared against `project.json`.
+
+When testing hypotheses for `Replace Text in Document` issues:
+
+1. **Activity surface** — classic `WordReplaceText` (inside `Word Application Scope`) vs modern `ReplaceTextInDocument` (inside `Use Word File`). The 256-char limit is a classic-version constraint.
+2. **Search / Replace values** — the literal expressions and their .NET string lengths at run time; confirm an exact character-for-character match against the on-screen placeholder for a silent miss, and check >256 chars for the length-limit hypothesis.
+3. **Throw vs no-op** — whether the activity raised an exception (COM busy, file lock, ArgumentException) or completed with the document unchanged (run-split placeholder). A clean run with no substitution points at the template, not an exception path.
+4. **Loop + Auto Save** — whether the scope/save runs inside a loop over the same path with `Auto Save` on (the file-lock cause).
+5. **Studio vs package version** — for a design-time `TargetInvocationException` / crash on drop, the Studio version against the installed `UiPath.Word.Activities` version (distinct from a runtime package gap).

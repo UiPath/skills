@@ -16,6 +16,7 @@ Failures originate at distinct layers — COM/Interop availability (step 1), fil
 ## Key Activities
 
 - **Word Application Scope** (`WordApplicationScope`, display name "Word Application Scope") — open a Word document via Interop and run child activities against it. **COM-only** — requires desktop Word. Properties include the document `Path`, `CreateIfNotExists` (generate the file when absent), and `Password`.
+- **Replace Text in Document** (display name "Replace Text in Document" / classic "Replace Text"; modern `ReplaceTextInDocument` inside `Use Word File`, classic `WordReplaceText` inside `Word Application Scope`) — find a `Search` string in the open document and substitute `Replace`. Runs against the document held by the surrounding scope. Classic versions cap `Search`/`Replace` at 256 characters.
 
 ## Common Failure Patterns
 
@@ -24,6 +25,14 @@ Failures originate at distinct layers — COM/Interop availability (step 1), fil
 - **Workflow hangs / freezes indefinitely** — WINWORD.EXE is up but unresponsive because Word opened a background modal prompt (password, document-recovery sidebar, Safe Mode, activation, trust-this-file). When the scope runs invisibly, the dialog still wedges the COM calls.
 - **"Cannot create unknown type WordApplicationScope"** — load/compile-time failure: the execution host lacks the `UiPath.Word.Activities` package dependency, or runs a version without the type. Common when a process works in Studio but fails on a remote robot with a different/missing package version.
 - **File path verification errors** — the document path does not resolve at runtime. Causes: opening a file that should be created (`Create if not exists` unset), a relative path resolved against the wrong working directory, a dynamically built path constructed incorrectly, or an unavailable mapped drive / unhydrated cloud placeholder.
+
+### Replace Text in Document
+
+- **"Application is busy" / COM interop retry** — the activity's COM call is rejected because WINWORD.EXE is busy: open in the background, locked by another session, or stalled on a hidden modal dialog. Surfaces as `RPC_E_SERVERCALL_RETRYLATER` (`0x8001010A`) or `RPC_E_CALL_REJECTED` (`0x80010001`), often intermittent.
+- **File lock / read-only on save** — the scope cannot persist the edit: `The process cannot access the file because it is being used by another process` or `the file is read-only`. Causes: `Auto Save` racing another access inside a loop, a `Save As`/rename to the same still-open path, a concurrent job/sync client, or the read-only attribute set.
+- **Placeholder not replaced (silent)** — no exception, but the placeholder is unchanged because Word split it across internal XML runs (the token was edited/backspaced/reformatted in place), so the exact-string search never matches the contiguous term.
+- **Input string length limit** — classic versions enforce a hard 256-character cap on `Search`/`Replace`; longer values raise `ArgumentException` or truncate silently. Relaxed in current package versions.
+- **TargetInvocationException / Studio crash on drop** — design-time failure when the activity is dropped or the workflow opened, from a Studio↔package version mismatch that cannot construct the designer. Distinct from the runtime "Cannot create unknown type" package gap.
 
 ## Package
 
