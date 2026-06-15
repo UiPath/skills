@@ -11,6 +11,8 @@ The only channel type currently supported end-to-end by `uip solution resources 
 
 **Key pattern:** the skill writes only the agent-level `resources/{EscalationName}/resource.json`. `uip solution resources refresh` emits an App binding into `bindings_v2.json` and then hand-writes the four solution-level files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus two `debug_overwrites.json` entries (`kind: "app"`, `kind: "process"`) automatically. No manual solution-level authoring is required for `actionCenter` channels.
 
+**Inline agents (escalation inside a flow):** authoring the escalation `resource.json` is **not enough** — an inline agent's escalation must also be wired as a `uipath.agent.resource.escalation` flow node connected to the autonomous node's `escalation` handle. Do the full discovery below (including `uip solution resources list --kind App`), author the resource, fetch the node manifest with `uip maestro flow registry get <…>uipath.agent.resource.escalation<…>`, then hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16). Without the flow node the escalation is never reachable at runtime. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+
 ## Discovery
 
 ### Step 1 — Scaffold solution and agent (if not already done)
@@ -133,7 +135,7 @@ Escalations hand off agent control to a human via a channel. Generate fresh UUID
   "storageBucketName": null,                        // only used when escalationType = 1
   "properties": {},
   "governanceProperties": { "isEscalatedAtRuntime": false },
-  "isEnabled": true,
+  "isEnabled": true,                                // REQUIRED — must be true, or the escalation is inactive (not defaulted; always set it explicitly)
   "channels": [
     {
       "id": "<uuid-v4>",                            // channel id — generate a new one per channel
@@ -255,6 +257,7 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 See [../../critical-rules.md](../../critical-rules.md) Critical Rules. Escalation-specific gotchas:
 
 - `properties.folderName` MUST be the literal `Folder` from `uip solution resources list --kind App` (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do NOT use `"solution_folder"` — escalation apps are always external. See [../../critical-rules.md](../../critical-rules.md) Rule 11 and Anti-pattern 18.
+- `isEnabled` MUST be `true` — it is not defaulted. An escalation written without it (or with `null`) is inactive and fails validation.
 - `recipients` array MUST have at least one entry. Empty uploads but routes nowhere.
 - For `type: 3` (email) recipients, do NOT set `displayName`.
 - Generate fresh UUIDs for the top-level `id` AND each channel `id`.
