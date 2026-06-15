@@ -23,6 +23,8 @@ uip agent init "<AGENT_NAME>" --output json
 
 The `<path>` argument is relative or absolute; the command can run from any directory. Creates agent.json, entry-points.json, project.uiproj, and default eval directories inside the target path. Run `uip agent refresh` after editing to regenerate `entry-points.json` and `bindings_v2.json`.
 
+**Solution placement** (standalone mode): inside a solution directory the project auto-registers with the parent `.uipx`; **outside any solution it auto-scaffolds one** — creates `<Name>Solution/<Name>Solution.uipx` and nests the project at `<Name>Solution/<Name>/` (response adds `Data.AutoCreatedSolution`). Pass `--skip-solution-registration` to opt out of both — the project then lands at the bare path with `SolutionRegistration.Status: OptedOut`. See [§ Register Project with Solution](#register-project-with-solution).
+
 **Options:**
 - `--conversational` - Pass to initialize a conversational agent. When not passed, an autonomous agent is initialized.
 - `--model <model>` — LLM model to use (default: `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
@@ -163,16 +165,22 @@ uip solution init "<SOLUTION_NAME>" --output json
 
 ### Register Project with Solution
 
-`uip agent init` **auto-registers** the project with the parent `.uipx` when run from inside a solution directory (pass `--skip-solution-registration` to skip auto-registration). Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
+`uip agent init` always lands the project inside a solution — no manual `solution init` needed:
+
+- **Inside a solution directory** — auto-registers the project with the parent `.uipx`.
+- **Outside any solution** — auto-scaffolds a parent solution: creates `<Name>Solution/<Name>Solution.uipx` and nests the project at `<Name>Solution/<Name>/`. The response adds `Data.AutoCreatedSolution` (`{ Name, Path, SolutionFile }`) and reports `SolutionRegistration.Status: Registered`. Idempotent — re-running reuses the existing `.uipx` (`AlreadyRegistered`).
+- **`--skip-solution-registration`** — opts out of **both** auto-scaffold and registration. No discovery, no sibling solution dir; the project lands at the bare path with `Status: OptedOut`.
+
+Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The full set of statuses:
 
 - `Registered` / `AlreadyRegistered` — registered (added now / already present). **You are done.**
-- `OptedOut` — `--skip-solution-registration` was passed; registration was intentionally skipped. No action needed (register later with the fallback if you change your mind).
-- `NotInSolution` — no parent `.uipx` was found (`init` ran outside a solution). Use the fallback if you want it in a solution.
+- `OptedOut` — `--skip-solution-registration` was passed; auto-scaffold and registration were intentionally skipped. No action needed (register later with the fallback if you change your mind).
 - `Skipped` — a candidate solution was found but registration wasn't safe (e.g. multiple `.uipx`, or project outside the solution dir). Resolve, then use the fallback.
 - `Failed` — registration was attempted but errored (`.uipx` read/parse/write). Use the fallback.
+- `NotInSolution` — no parent `.uipx` and auto-scaffold did not run (rare outside `--skip-solution-registration`). Use the fallback if you want it in a solution.
 
 ```bash
-# Fallback — when Status is NotInSolution / Skipped / Failed (not needed for OptedOut).
+# Fallback — when Status is Skipped / Failed / NotInSolution (not needed for OptedOut or Registered).
 uip solution project add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
 ```
 
@@ -323,6 +331,8 @@ uip agent init "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 # uip solution project add "<SOLUTION_NAME>/<AGENT_NAME>" --output json
 ```
 
+The explicit `uip solution init` is optional: running `uip agent init "<AGENT_NAME>"` alone outside any solution auto-scaffolds `<AGENT_NAME>Solution/<AGENT_NAME>/` and registers the project (response carries `Data.AutoCreatedSolution`). Keep the explicit `solution init` when you want a solution name distinct from the agent name.
+
 When the fallback is needed, `uip solution project add` automatically finds the nearest `.uipx` by searching up from the agent path.
 
 ### Step 3 — Configure agent.json
@@ -406,10 +416,10 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 |------|---------|----------|-----------------|
 | Login check | `uip login status --output json` | Any directory | — |
 | Create solution | `uip solution init "<NAME>" --output json` | Any directory | — |
-| Scaffold agent | `uip agent init "<NAME>" --output json` | Solution directory | — |
+| Scaffold agent | `uip agent init "<NAME>" --output json` | Any directory (auto-scaffolds `<NAME>Solution/` if outside a solution) | — |
 | Scaffold inline agent | `uip agent init "<FLOW_PROJECT_DIR>" --inline-in-flow --output json` | Any directory | — |
 | Verify project registration | Check `Data.SolutionRegistration.Status` from `agent init` response (`Registered` / `AlreadyRegistered` = done; `OptedOut` = `--skip-solution-registration` passed) | Solution directory | — |
-| Register project (fallback) | `uip solution project add "<PATH>" --output json` — when `agent init` returned `NotInSolution` / `Skipped` / `Failed` | Solution directory | — |
+| Register project (fallback) | `uip solution project add "<PATH>" --output json` — when `agent init` returned `Skipped` / `Failed` / `NotInSolution` | Solution directory | — |
 | Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |
 | Validate (strict read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | Debug / run end-to-end on Studio Web | `uip agent debug <AgentDir> --inputs '{...}' --output json` | Agent dir | `Successful`, `Faulted`, `Stopped` |

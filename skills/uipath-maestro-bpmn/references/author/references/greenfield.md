@@ -5,7 +5,7 @@ Use this journey when creating a new Maestro BPMN Process Orchestration project.
 ## Steps
 
 1. Confirm the requested process goal, trigger, major steps, external systems, and resources that already exist.
-2. Create the canonical project scaffold using the available Maestro BPMN scaffolding command or the repository's current Maestro project template.
+2. Scaffold the project with `uip maestro bpmn init <ProjectName> --output json`. Inside a solution directory it auto-registers the project with the parent `.uipx`; **outside any solution it auto-scaffolds one** — creates `<ProjectName>Solution/<ProjectName>Solution.uipx` and nests the project at `<ProjectName>Solution/<ProjectName>/` (response adds `Data.AutoCreatedSolution` = `{ Name, Path, SolutionFile }`, `SolutionRegistration.Status: Registered`). Re-running is idempotent (reuses the `.uipx`, `AlreadyRegistered`). Pass `--skip-solution-registration` to opt out of **both** auto-scaffold and registration — the project then lands at the bare `<ProjectName>/` path with `Status: OptedOut`.
 3. Create or edit the primary `.bpmn` file as the source of record.
 4. **Pass 1: build the standard BPMN skeleton** from [planning-arch.md](planning-arch.md): root process, starts, tasks, gateways, subprocesses, events, error paths, sequence flows, and BPMN DI.
 5. Summarize the process shape and ask the operator to confirm it before filling executable UiPath metadata when the process is non-trivial.

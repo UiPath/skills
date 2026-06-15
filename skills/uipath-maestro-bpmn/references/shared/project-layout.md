@@ -12,8 +12,21 @@ Maestro BPMN Process Orchestration projects use BPMN XML as source and generated
   directory as the main BPMN file: `InvoiceTriageBpmn/project.uiproj`, not next
   to the project directory.
 
-For a new local project, create a single project directory and place source
-files under it:
+For a new local project, place source files under a single project directory.
+`uip maestro bpmn init` nests that directory inside a solution — when run
+outside any solution it auto-scaffolds `<ProjectName>Solution/` (see
+[../author/references/greenfield.md](../author/references/greenfield.md) Step 2):
+
+```text
+ProjectNameSolution/             ← auto-scaffolded when init runs outside a solution
+  ProjectNameSolution.uipx
+  ProjectName/
+    ProjectName.bpmn
+    project.uiproj
+```
+
+With `--skip-solution-registration`, the project lands bare instead, with no
+solution wrapper:
 
 ```text
 ProjectName/
