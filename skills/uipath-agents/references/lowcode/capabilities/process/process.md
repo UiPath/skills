@@ -14,7 +14,7 @@ For Integration Service connector tools (separate capability), see [../integrati
 | `type` (resource.json) | Calls | Process declaration directory | Schema flavor |
 |---|---|---|---|
 | `process` | RPA process (XAML) | `process/process/` | Raw .NET — `inputArgumentsSchema` / `outputArgumentsSchema` |
-| `agent` | Low-code / coded agent | `process/agent/` | JSON Schema — `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` |
+| `agent` | Low-code autonomous agent / coded agent | `process/agent/` | JSON Schema — `inputArgumentsSchemaV2` / `outputArgumentsSchemaV2` |
 | `api` | API workflow | `process/api/` | JSON Schema — V2 fields |
 | `processOrchestration` | Agentic process / process orchestration | `process/processOrchestration/` | JSON Schema — V2 fields |
 
@@ -248,7 +248,7 @@ UUID cross-references between `SolutionStorage.Projects[].ProjectId`, `package/<
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Critical Rules 11, 12, 13. Anti-patterns 7, 8, 19 also apply.
+See [../../critical-rules.md](../../critical-rules.md) Critical Rules 11, 12, 13. Anti-patterns 7, 8, 19, and 30 also apply.
 
 ## References
 
