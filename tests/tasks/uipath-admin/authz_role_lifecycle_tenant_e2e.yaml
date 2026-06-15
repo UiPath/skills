@@ -1,36 +1,48 @@
 task_id: skill-admin-authz-role-lifecycle-tenant-e2e
 description: >
-  End-to-end test: full lifecycle of a Tenant-scope custom role bound
-  to one specific tenant — discovers Tenant-shape permissions,
-  resolves the login tenant's UUID, creates with `--scope Tenant`
-  AND `--tenant-id <UUID>`, verifies, deletes.
+  End-to-end test: full CRUD lifecycle (create, update, get, delete) of a
+  Tenant-scope custom role bound to one specific tenant (the login tenant) —
+  carrying the "Administration Page" View permission
+  (`CENTRALIZEDACCESS.ADMINISTRATIONPAGE.VIEW`, a Tenant-shape Centralized
+  Access permission). Discovers the permission via `permissions list`,
+  resolves the login tenant's UUID, creates with `--scope Tenant` AND
+  `--tenant-id <UUID>`, updates the role, verifies via `roles get`, then
+  deletes and confirms removal.
 
-  Validates: `--scope Tenant`, presence of `--tenant-id` (binding to
-  one tenant), tenant resolution before create, cleanup.
+  Validates: `--scope Tenant` with `--tenant-id` binding to one tenant,
+  tenant resolution before create, the `roles update` step, no
+  `--scope TenantGlobal` (this role is bound to one tenant, not a template),
+  no `--service centralizedaccess` (the CLI rejects it — Centralized Access
+  is the no-`--service` umbrella), no `--scope Organization` (the permission
+  is Tenant-shape, not org-wide).
 
-  Command-construction only — no live tenant available.
+  A post_run safety net (`cleanup_role.py`) deletes the role by id so an
+  incomplete run leaves no orphan role on the tenant.
 tags: [uipath-admin, e2e, authz, role-lifecycle, scope:tenant]
 
 run_limits:
-  expected_turns: 14
+  expected_turns: 18
   max_turns: 40
   turn_timeout: 600
 
 initial_prompt: |
-  Create a read-only Studio role called "TenantStudioReader" that
-  only applies to the tenant I'm currently logged into — not the
-  whole organization, not other tenants.
+  Set up a read-only role called "AdminPageViewer_clie2e" that applies only
+  to the tenant I'm currently logged into — not the whole organization, not
+  other tenants. It should grant view-only access to the Administration page
+  (read-only admin-page access, nothing else).
 
-  After it's created, show me the role's contents so I can verify it.
-  Then please remove it and confirm it's gone.
+  Walk the full lifecycle:
+    1. First confirm no role named "AdminPageViewer_clie2e" already exists,
+       then create it bound to my current tenant.
+    2. Update it — change its description to note it is read-only.
+    3. Show me the role's details so I can confirm the update.
+    4. Remove the role and confirm it's gone.
 
   Important:
-  - The `uip` CLI is available but the `admin` subcommand may not be
-    installed and/or the CLI is not connected to a live tenant.
-    Commands WILL fail — that is expected and acceptable.
-    Run each command exactly once regardless of errors.
-    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
-    do NOT troubleshoot errors.
+  - If the `uip admin` subcommand is unavailable or a command fails, that
+    is acceptable — run each command exactly once and continue. Do NOT
+    retry, do NOT attempt to login, do NOT try to install tools, do NOT
+    troubleshoot errors.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -43,9 +55,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed Tenant-shape Studio permissions"
+    description: "Agent listed Tenant-shape permissions to discover the Administration Page permission"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\s+.*--service\s+studio'
+    command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -53,29 +65,29 @@ success_criteria:
   - type: command_executed
     description: "Agent checked name collision via `roles list --filter`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--filter\s+\S*TenantStudioReader'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--filter\s+\S*AdminPageViewer_clie2e'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent wrote an actions.json file"
-    tool_name: "Write"
-    command_pattern: 'actions\.json'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent created the role with --scope Tenant, --tenant-id <UUID>, and --name TenantStudioReader"
+    description: "Agent created the role with --scope Tenant, --tenant-id <UUID>, and --name AdminPageViewer_clie2e"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Tenant\b.*--tenant-id\s+[a-f0-9-]{8,}.*--name\s+\S*TenantStudioReader.*--file\s+\S+'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Tenant\b.*--tenant-id\s+[a-f0-9-]{8,}.*--name\s+\S*AdminPageViewer_clie2e.*--file\s+\S+'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified the new role via `roles get <id>`"
+    description: "Agent updated the role via `roles update <id>` re-passing the actions file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+update\s+[a-f0-9-]{8,}.*--file\s+\S+'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the updated role via `roles get <id>`"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+authorization\s+roles\s+get\s+[a-f0-9-]{8,}'
     min_count: 1
@@ -91,15 +103,31 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent verified the role was removed"
+    description: "Agent verified the role was removed (second `roles get` or `roles list --filter`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:get\s+[a-f0-9-]{8,}|list\s+.*--filter\s+\S*TenantStudioReader)'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:get\s+[a-f0-9-]{8,}|list\s+.*--filter\s+\S*AdminPageViewer_clie2e)'
     min_count: 2
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent must NOT use --scope TenantGlobal when binding to one specific tenant"
+    description: "Agent must NOT use --scope TenantGlobal (this role is bound to one specific tenant, not a template)"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+TenantGlobal\b'
     weight: 1.5
+
+  - type: command_not_executed
+    description: "Agent must NOT pass --service centralizedaccess (CLI rejects it; Centralized Access is the no---service umbrella)"
+    tool_name: "Bash"
+    command_pattern: '--service\s+centralizedaccess\b'
+    weight: 1.5
+
+  - type: command_not_executed
+    description: "Agent must NOT create the role with --scope Organization (the Administration Page permission is Tenant-shape)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Organization\b'
+    weight: 1.0
+
+post_run:
+  - command: 'CLEANUP_ROLE_NAME="AdminPageViewer_clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_role.py''))"'
+    timeout: 30

@@ -86,3 +86,7 @@ success_criteria:
     min_count: 3
     weight: 1.0
     pass_threshold: 1.0
+
+post_run:
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="lifecycle-test-aitl-policy" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 30

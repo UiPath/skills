@@ -43,7 +43,7 @@ Administrative operations on UiPath via `uip admin` — Identity Server, Authori
 - **Manage IP allowlisting** — add / update / delete CIDR entries that gate inbound access
 - **Toggle IP-restriction enforcement** — turn the org-wide allowlist switch on or off (with lockout safety)
 - **Manage bypass rules** — URL-pattern exceptions to IP allowlisting
-- **Look up the caller's public IP** — sanity check before enabling enforcement
+- **Look up the caller's public IP** — answer "what's my IP?" / "what public IP does the platform see for me?" directly with `ip-restriction my-ip`; also the safety pre-flight before enabling enforcement
 
 ### Audit
 
@@ -144,6 +144,7 @@ One row per common goal. Per-area workflows are in the reference files.
 | **See what a principal can do** | `uip admin authorization check-access <USER_GUID_OR_EMAIL> --scope <Tenant\|Folder> --output json` (Rule 15) |
 | **Create a tenant** | [tenant-management.md](references/tenant-management.md) — region + default-services resolution, file-body shape, operation polling (Rule 18) |
 | **Add a tenant service** | `tenants services list-available --region <R>` → `tenants services add --tenant-id <TID> --service <SVC>` (verify post-state per Rule 22) |
+| **Look up my public IP** ("what's my IP?", "what public IP does the platform see for me?") | `ip-restriction my-ip --output json` → return `Data.ipAddress`. Standalone — no enforcement context required |
 | **Enable IP allowlist enforcement** | `ip-restriction my-ip` → verify covered by `ip-ranges list` → `ip-restriction enforcement enable --confirm` (Rule 31) |
 | **Query audit events / export** | [audit-workflow-guide.md](references/audit-workflow-guide.md) — scope disambiguation + 4 investigation playbooks (who-did-X, login history, date-range dump, overview) |
 
