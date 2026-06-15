@@ -407,7 +407,7 @@ The `validate` command reads these files and resolves `referenceKey` for solutio
 | `"solution"` | Typically `"solution_folder"` (the in-solution declared folder) | `Folder` field from `uip solution resources list` |
 | `"external"` | Literal Orchestrator folder, slash-separated (e.g., `"Shared/Sales"`) | `Folder` field from `uip solution resources list` |
 
-The author writes the value verbatim into `resource.json` (or into the guardrail action under `agent.json`); `uip agent refresh` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules.md](critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
+The author writes the value verbatim into `resource.json` (or into the guardrail action under `agent.json`); `uip agent refresh` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
 
 For each resource type's full schema, see the relevant capability file:
 

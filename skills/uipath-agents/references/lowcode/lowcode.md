@@ -37,7 +37,7 @@ Although most of the lifecycle and capabilities are shared between both autonomo
 
 ## Critical Rules
 
-[critical-rules.md](critical-rules.md) is the canonical source for low-code agent rules and anti-patterns. Read it every session. The rules below are the operational must-knows; the rest live in the canonical file.
+[critical-rules/critical-rules.md](critical-rules/critical-rules.md) is the canonical source for low-code agent rules and anti-patterns. Read it every session. The rules below are the operational must-knows; the rest live in the canonical file.
 
 1. **Edit JSON files directly, except CLI-managed memory features.** The CLI provides `init` (scaffold), `refresh` (apply migrations + regenerate derived files), `validate` (strict read-only check), and `memory` (writes memory feature files). Resources live in `resources/{Name}/resource.json`; memory features live in `features/{Name}/feature.json`.
 2. **Use `--output json`** on every `uip` command.
@@ -109,7 +109,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 
 ## Anti-patterns
 
-See [critical-rules.md](critical-rules.md) § What NOT to Do for the canonical list. Most expensive to get wrong:
+See [critical-rules/critical-rules.md](critical-rules/critical-rules.md) § What NOT to Do for the canonical list. Most expensive to get wrong:
 
 - Editing `content` without updating `contentTokens` (causes silent rendering failures)
 - Skipping `uip solution resources refresh` after adding external tools (`bindings_v2.json` never reaches the solution)

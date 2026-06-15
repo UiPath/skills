@@ -14,7 +14,7 @@ Two types exist:
 
 **Status: Tool-scoped only, per-tool resource files are authoritative.** Conversational agents support guardrails with `selector.scopes: ["Tool"]` only — `"Agent"` and `"Llm"` scopes are not honored by the conversational runtime, even though `uip agent validate` accepts them.
 
-This restriction is enforced as [../../critical-rules.md](../../critical-rules.md) Rule 23.
+This restriction is enforced as [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1.
 
 ## Guardrail Schema (Base Fields)
 
@@ -100,7 +100,7 @@ Each entry in the `Data` array contains:
 
 Do not hardcode assumptions about scope/stage support or availability.
 
-> **Conversational override (Rule 23).** `AllowedScopes` describes what the validator's schema accepts — it is **not** the set of scopes valid for the runtime you're targeting. For conversational agents (`metadata.isConversational: true` / `settings.engine: "conversational-v1"`), **intersect `AllowedScopes` with `["Tool"]`** before writing `selector.scopes`. If the validator does not list `"Tool"` in `AllowedScopes`, it cannot be used in a conversational agent — do not substitute `"Agent"` or `"Llm"` as a workaround; the conversational runtime ignores those scopes silently.
+> **Conversational override** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1)**.** `AllowedScopes` describes what the validator's schema accepts — it is **not** the set of scopes valid for the runtime you're targeting. For conversational agents (`metadata.isConversational: true` / `settings.engine: "conversational-v1"`), **intersect `AllowedScopes` with `["Tool"]`** before writing `selector.scopes`. If the validator does not list `"Tool"` in `AllowedScopes`, it cannot be used in a conversational agent — do not substitute `"Agent"` or `"Llm"` as a workaround; the conversational runtime ignores those scopes silently.
 
 ## Actions
 
@@ -578,7 +578,7 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 
 ### Validators Quick Reference
 
-> **For conversational agents (Rule 23): use `"Tool"` only — ignore the `Agent` and `Llm` entries below.** The Scopes column is the validator's schema-level support, not the conversational runtime's support. Conversational runtime silently ignores `Agent` and `Llm` scopes.
+> **For conversational agents (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1): use `"Tool"` only — ignore the `Agent` and `Llm` entries below.** The Scopes column is the validator's schema-level support, not the conversational runtime's support. Conversational runtime silently ignores `Agent` and `Llm` scopes.
 
 | Validator | Scopes (autonomous) | Conversational | Stages | Supported Actions |
 |-----------|---------------------|----------------|--------|-------------------|
@@ -595,7 +595,7 @@ Run `uip agent guardrails list --output json` to get the authoritative list. Onl
 |-----------|---------|
 | `Status` | Gate check — only proceed if `"Available"` |
 | `Validator` | `validatorType` value |
-| `AllowedScopes` | Valid values for `selector.scopes` (autonomous). **Conversational: intersect with `["Tool"]`** — see Rule 23. |
+| `AllowedScopes` | Valid values for `selector.scopes` (autonomous). **Conversational: intersect with `["Tool"]`** — see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1. |
 | `GuardrailStages[scope]` | Valid execution stages for that scope |
 | `Parameters[].Id` | `validatorParameters[].id` |
 | `Parameters[].Type` | `validatorParameters[].$parameterType` |
@@ -982,7 +982,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 
 ## What NOT to Do
 
-> Canonical guardrail anti-patterns — discriminator omission (`$actionType` / `$parameterType` / `$ruleType` / `$selectorType`), lowercase scope values, populating `guardrail.policies` on tool resources, and UUID reuse — live in [../../critical-rules.md](../../critical-rules.md) § What NOT to Do. The validator-specific anti-patterns below extend (do not repeat) that canonical list.
+> Canonical guardrail anti-patterns — discriminator omission (`$actionType` / `$parameterType` / `$ruleType` / `$selectorType`), lowercase scope values, populating `guardrail.policies` on tool resources, and UUID reuse — live in [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) § What NOT to Do. The validator-specific anti-patterns below extend (do not repeat) that canonical list.
 
 1. **Do not use snake_case for PII entity names** — use PascalCase: `"Email"` not `"email_address"`, `"PhoneNumber"` not `"phone_number"`, `"USSocialSecurityNumber"` not `"us_ssn"`.
 2. **Do not add `prompt_injection` to Tool or Agent scope** — it only works with `"Llm"` scope, PreExecution stage.
@@ -1114,7 +1114,7 @@ Confirm the guardrails appear in the validated output without errors. Refresh re
 
 ## References
 
-- [../../critical-rules.md](../../critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, populating `guardrail.policies` on tool resources, UUID reuse)
+- [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, populating `guardrail.policies` on tool resources, UUID reuse)
 - [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
 

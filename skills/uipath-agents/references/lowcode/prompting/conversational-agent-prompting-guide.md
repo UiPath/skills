@@ -102,22 +102,22 @@ User message: `""` — left blank. The Conversational Service injects the user t
 
 | Field | Default | Change when |
 |-------|---------|-------------|
-| `inputSchema` | `{ "properties": {} }` | Add fields only when per-exchange, variable-based context beyond conversation history is genuinely needed. Reserved names: `messages`, `uipath__*` ([critical-rules.md](../critical-rules.md) Anti-pattern 29). |
-| `outputSchema` | `{ "type": "object", "properties": {} }` | **Never populate** — runtime streams events, does not fill output ([critical-rules.md](../critical-rules.md) Anti-pattern 26). |
-| `messages[1].content` | `""` | **Keep blank** — Conversational Service injects the user turn at runtime ([critical-rules.md](../critical-rules.md) Anti-pattern 28). |
+| `inputSchema` | `{ "properties": {} }` | Add fields only when per-exchange, variable-based context beyond conversation history is genuinely needed. Reserved names: `messages`, `uipath__*` ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 4). |
+| `outputSchema` | `{ "type": "object", "properties": {} }` | **Never populate** — runtime streams events, does not fill output ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 1). |
+| `messages[1].content` | `""` | **Keep blank** — Conversational Service injects the user turn at runtime ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 3). |
 | `settings.temperature` | `0` | Raise for open-ended brainstorming or casual chats. Keep `0` for factual support flows. |
 | `settings.maxTokens` | `64000` | Set ≤ the model's `MaxTokens` cap — see [model-selection-guide.md](../model-selection-guide.md#1-discover-primary-path). |
 | `settings.model` | `anthropic.claude-sonnet-4-5-20250929-v1:0` | **Always verify** — discover + select per [model-selection-guide.md](../model-selection-guide.md). |
-| `guardrails` | `[]` | Tool-scope only; mirror in tool `resource.json`. See [capabilities/guardrails/guardrails.md](../capabilities/guardrails/guardrails.md) ([critical-rules.md](../critical-rules.md) Rule 23). |
+| `guardrails` | `[]` | Tool-scope only; mirror in tool `resource.json`. See [capabilities/guardrails/guardrails.md](../capabilities/guardrails/guardrails.md) ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Critical Rule 1). |
 
 ## Anti-patterns
 
 - **Vague role** — "You are a helpful agentic assistant." Name the role and bound the scope.
 - **No tool-call criteria** — agent over-calls or under-calls tools.
 - **Long tool-call loops** - agent runtime may stop and require the user to confirm continuation after a single agent run (turn) consists of a series of over 8 steps that each involve tool-call(s). Note that this is not a limitation on total parallel tool-calls on any individual step, so aim to parallelize tool-calls when possible and/or ask for user-confirmation to break up long loops of sequential steps.
-- **Populating `outputSchema`** — runtime streams events; populated schemas never get filled and confuse the agent ([critical-rules.md](../critical-rules.md) Anti-pattern 26).
+- **Populating `outputSchema`** — runtime streams events; populated schemas never get filled and confuse the agent ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 1).
 - **Templating data into the user message** — the user message content stays blank; per-exchange context goes into the **system prompt** via `inputSchema` templating.
-- **Adding `messages` or `uipath__*` to `inputSchema`** — reserved names; runtime injects ([critical-rules.md](../critical-rules.md) Anti-pattern 29).
-- **Using `Agent` or `Llm` guardrail scopes** — silently ignored; only Tool-scope guardrails apply ([critical-rules.md](../critical-rules.md) Rule 23).
+- **Adding `messages` or `uipath__*` to `inputSchema`** — reserved names; runtime injects ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 4).
+- **Using `Agent` or `Llm` guardrail scopes** — silently ignored; only Tool-scope guardrails apply ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Critical Rule 1).
 - **Defining citation-generation format in the system prompt** — agent runtime wraps citation formatting around the prompt; redefining it conflicts or confuses citation generation (see § 1 callout).
 - **Cargo-culted `temperature`** — copying a nonzero temperature into a deterministic, factual-based conversation task.

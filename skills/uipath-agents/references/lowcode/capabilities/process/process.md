@@ -248,7 +248,7 @@ UUID cross-references between `SolutionStorage.Projects[].ProjectId`, `package/<
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Critical Rules 11, 12, 13. Anti-patterns 7, 8, 19, and 30 also apply.
+See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 11, 12, 13. Anti-patterns 7, 8, 18, and 24 also apply.
 
 ## References
 

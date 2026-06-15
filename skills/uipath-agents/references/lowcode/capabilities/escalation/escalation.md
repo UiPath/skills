@@ -252,9 +252,9 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Critical Rules. Escalation-specific gotchas:
+See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules. Escalation-specific gotchas:
 
-- `properties.folderName` MUST be the literal `Folder` from `uip solution resources list --kind App` (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do NOT use `"solution_folder"` — escalation apps are always external. See [../../critical-rules.md](../../critical-rules.md) Rule 11 and Anti-pattern 18.
+- `properties.folderName` MUST be the literal `Folder` from `uip solution resources list --kind App` (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do NOT use `"solution_folder"` — escalation apps are always external. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Rule 11 and Anti-pattern 18.
 - `recipients` array MUST have at least one entry. Empty uploads but routes nowhere.
 - For `type: 3` (email) recipients, do NOT set `displayName`.
 - Generate fresh UUIDs for the top-level `id` AND each channel `id`.

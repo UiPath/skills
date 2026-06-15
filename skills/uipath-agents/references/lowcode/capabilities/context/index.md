@@ -95,7 +95,7 @@ Wrapper-level `apiVersion` is `"ecs.uipath.com/v2"` — matches what refresh wri
 
 **`folderPathPrefix.variant`:** `"static"` (no prefix) or `"argument"` (scope by a folder path provided at runtime).
 
-**Casing matters.** All `contextType` and `retrievalMode` values are lowercase. See [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.
+**Casing matters.** All `contextType` and `retrievalMode` values are lowercase. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
 
 ## Solution-Level Files
 
@@ -254,7 +254,7 @@ The upload response includes a `Data.DesignerUrl` — open it to verify the cont
 
 ## Gotchas
 
-`contextType` and `retrievalMode` values MUST be lowercase — see [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.
+`contextType` and `retrievalMode` values MUST be lowercase — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
 
 ## References
 
