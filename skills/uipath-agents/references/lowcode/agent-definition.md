@@ -111,7 +111,7 @@ Primary configuration file for conversational agent. Edit directly.
     "storageVersion": "50.0.0",
     "isConversational": true,
     "showProjectCreationExperience": false,
-    "targetRuntime": null
+    "targetRuntime": "pythonAgent"
   },
   "type": "lowCode",
   "messages": [
