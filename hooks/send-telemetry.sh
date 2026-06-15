@@ -131,7 +131,9 @@ printf '%s' "$payload" | grep -q '"interrupted"[[:space:]]*:[[:space:]]*true'  &
 printf '%s' "$payload" | grep -q '"success"[[:space:]]*:[[:space:]]*false'     && outcome="failure"
 
 duration_ms="$(printf '%s' "$payload" | grep -oE '"duration_ms"[[:space:]]*:[[:space:]]*[0-9]+' | head -1 | grep -oE '[0-9]+$')"
-[ -z "$duration_ms" ] && duration_ms=0
+# Measurement fallback: emit JSON null (not 0) when absent, so a missing value
+# doesn't skew latency aggregations. Must stay unquoted in the JSON.
+case "$duration_ms" in ''|*[!0-9]*) dur_json="null" ;; *) dur_json="$duration_ms" ;; esac
 
 session_id="$(json_str session_id)"
 tool_use_id="$(json_str tool_use_id)"   # unique per call: correlation key + ordering tiebreaker
@@ -154,7 +156,7 @@ hash_of() {
   elif command -v shasum    >/dev/null 2>&1; then printf '%s' "$1" | shasum -a 256 | cut -c1-16
   else printf '%s' "$1" | cksum | tr -d ' '; fi
 }
-workspace_id="$(hash_of "$cwd")"
+if [ -n "$cwd" ]; then workspace_id="$(hash_of "$cwd")"; else workspace_id=""; fi
 
 # Sanitize free-ish text to keep the hand-built JSON valid and bounded.
 san() { printf '%s' "$1" | tr -c 'A-Za-z0-9:._/ -' '_' | cut -c1-120; }
@@ -181,8 +183,12 @@ endpoint="${endpoint%/}"
 
 ts_iso="$(date -u +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null)"
 
+# Field-fallback contract: every key below is always emitted. Properties whose
+# payload source was missing carry an empty string "" (NOT JSON null — App
+# Insights drops null-valued properties, which would make the field vanish).
+# The lone measurement carries JSON null when absent (see $dur_json above).
 body="$(cat <<JSON
-{"name":"Microsoft.ApplicationInsights.Event","time":"$ts_iso","iKey":"$ikey","tags":{"ai.cloud.role":"uipath-skills-plugin","ai.cloud.roleInstance":"$env_name","ai.session.id":"$session_id","ai.user.id":"$workspace_id","ai.application.ver":"$plugin_ver"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"ToolUse","properties":{"toolName":"$tool","toolUseId":"$tool_use_id","skillName":"$skill_name","uipSubcommand":"$uip_subcommand","fileExt":"$file_ext","environment":"$env_name","baseUrl":"$base_url","outcome":"$outcome","permissionMode":"$permission_mode","effortLevel":"$effort_level","os":"$os_name","pluginVersion":"$plugin_ver","cliVersion":"$cli_ver"},"measurements":{"durationMs":$duration_ms}}}}
+{"name":"Microsoft.ApplicationInsights.Event","time":"$ts_iso","iKey":"$ikey","tags":{"ai.cloud.role":"uipath-skills-plugin","ai.cloud.roleInstance":"$env_name","ai.session.id":"$session_id","ai.user.id":"$workspace_id","ai.application.ver":"$plugin_ver"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"ToolUse","properties":{"toolName":"$tool","toolUseId":"$tool_use_id","skillName":"$skill_name","uipSubcommand":"$uip_subcommand","fileExt":"$file_ext","environment":"$env_name","baseUrl":"$base_url","outcome":"$outcome","permissionMode":"$permission_mode","effortLevel":"$effort_level","os":"$os_name","pluginVersion":"$plugin_ver","cliVersion":"$cli_ver"},"measurements":{"durationMs":$dur_json}}}}
 JSON
 )"
 

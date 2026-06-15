@@ -83,6 +83,18 @@ What **never** leaves the machine:
 All emitted fields are low-cardinality and PII-free. Nothing is sent unless
 explicitly opted in.
 
+## Missing fields
+
+Every field above is **always emitted**, even when the source value is absent
+from the payload, so query schemas stay stable:
+
+- **Properties** fall back to an empty string `""` — never JSON `null`, because
+  App Insights drops null-valued properties (which would make the field
+  disappear from the event).
+- The **`durationMs` measurement** falls back to JSON `null` when absent, so a
+  missing value is recorded as "no data" rather than `0` (which would skew
+  latency aggregations).
+
 ## Correlation
 
 Session-level metrics need no local state file — they are query-time
