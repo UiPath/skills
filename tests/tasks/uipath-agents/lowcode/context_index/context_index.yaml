@@ -106,13 +106,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "UiPathAgentsProductKnowledge context resource.json was created"
-    path: "KnowledgeSol/ProductSupportAgent/resources/UiPathAgentsProductKnowledge/resource.json"
-    weight: 2.5
-    pass_threshold: 1.0
-
-
   - type: run_command
     description: "Context resource shape, retrievalMode, and schema sync"
     command: "python3 $TASK_DIR/check_context_index.py"

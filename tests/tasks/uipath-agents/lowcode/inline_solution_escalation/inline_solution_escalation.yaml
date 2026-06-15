@@ -20,12 +20,16 @@ pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/inline_solution_escalation/_fixtures/ReviewFlowSol ."
     timeout: 10
 
+# An agent left to itself often models "escalate to a human" as a human-in-the-loop
+# flow node — fine in general, but this task specifically exercises the agent
+# Escalation capability, so the prompt asks for it explicitly.
 initial_prompt: |
   Create a new UiPath Flow project named "ReviewFlow" inside the existing
   "ReviewFlowSol" solution (in the current directory). The flow must use
-  an inline low-code agent to moderate user content and escalate
-  uncertain cases to a human reviewer via a UiPath ActionCenter app
-  provisioned inside this same solution.
+  an inline low-code agent to moderate user content and escalate uncertain
+  cases to a human reviewer via a UiPath Action Center app in this same
+  solution. Set this up using the agent's Escalation capability, wired into the flow — not a standalone
+  human-in-the-loop node.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and

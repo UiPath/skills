@@ -15,12 +15,16 @@ run_limits:
   expected_turns: 66
   turn_timeout: 1200
 
+# An agent left to itself often models "escalate to a human" as a human-in-the-loop
+# flow node — fine in general, but this task specifically exercises the agent
+# Escalation capability, so the prompt asks for it explicitly.
 initial_prompt: |
   Create a UiPath Flow project "FraudFlow" that runs an inline low-code agent
   which triages transactions and, when it isn't confident, escalates the case to
   a human reviewer through our existing "FraudEscalation" Action Center app —
-  it's already running in Orchestrator, not part of this solution. Wire that
-  into the flow. The solution should be named "FraudFlowSol".
+  it's already running in Orchestrator, not part of this solution. Set this up
+  using the agent's Escalation capability, wired into the flow — not a standalone human-in-the-loop node. The
+  solution should be named "FraudFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
