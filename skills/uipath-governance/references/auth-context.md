@@ -56,9 +56,15 @@ On mismatch, halt with:
 ⚠ Your prompt says 'staging tenant' but you are logged into 'DefaultTenant' on
   https://cloud.uipath.com (organization: procodeapps).
 
-  To apply on the tenant you named, run one of:
-    uip login                                      # interactive pick
-    uip login --authority https://alpha.uipath.com # non-prod authority
+  To switch to the tenant you named:
+
+  If the tenant is in the same org — faster, no browser needed:
+    uip login tenant list --output json         # see available tenants
+    uip login tenant set <TENANT_NAME>          # switch to the right one
+
+  If you need a different org or authority:
+    uip login                                   # interactive (cloud.uipath.com)
+    uip login --authority https://alpha.uipath.com  # non-prod alpha
 
   Or, if this IS the tenant you meant, reply 'yes, continue on <currentTenantName>'.
 ```
@@ -66,3 +72,30 @@ On mismatch, halt with:
 Accept a literal yes-with-tenant-name to proceed; anything else halts with no side effects. This prevents the most expensive category of mistakes — applying a pack or a policy update to the wrong tenant.
 
 **Diagnose and Check are read-only** and still perform this validation. Read-only operations against the wrong tenant waste time and pollute caches with mismatched state; better to catch it upfront.
+
+## Switching tenants
+
+When the user is logged in to the right **org** but needs a different **tenant** within that org:
+
+```bash
+# 1. List available tenants in the current org
+uip login tenant list --output json
+# → returns Data[].TenantName
+
+# 2. Switch to the target tenant (no browser auth needed)
+uip login tenant set <TENANT_NAME> --output json
+
+# 3. Verify
+uip login status --output json
+# → Data.Tenant should now show the new tenant
+```
+
+When the user needs a different **org** or **authority** (e.g. alpha vs cloud.uipath.com):
+
+```bash
+# Full re-login — browser OAuth flow
+uip login                                       # cloud.uipath.com (default)
+uip login --authority https://alpha.uipath.com  # non-prod alpha
+```
+
+**Show this to the user** when the mismatch block fires — the tenant set path is much faster than a full re-login when they're already in the right org.

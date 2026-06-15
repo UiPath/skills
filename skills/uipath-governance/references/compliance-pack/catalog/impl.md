@@ -50,7 +50,7 @@ CLI output is **PascalCase**. Field names below are exactly as returned by `cata
 | `Data.Clauses[].EditorialPolicies[].Contributions[].Key` | formData property key (dotted path) |
 | `Data.Clauses[].EditorialPolicies[].Contributions[].Required` | Operator → synthesize-formdata.mjs |
 
-## List currently configured packs
+## List currently configured standards
 
 ```bash
 TENANT_ID=$(grep '^UIPATH_TENANT_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
@@ -60,18 +60,18 @@ uip gov compliance-packs state list tenant $TENANT_ID --output json
 Parse `Data[]` — each entry has `packId`, `packVersion`, `active` (bool), `lastToggledAt`. Present active packs to the user:
 
 ```
-Compliance packs configured on <tenantName>:
+Compliance standards configured on <tenantName>:
 
   ISO 42001 (iso-42001-2023 v3.0.0) — Active since <lastToggledAt>
 
-No other compliance packs are currently active.
+No other compliance standards are currently active.
 ```
 
-If the array is empty: "No compliance packs are currently configured on this tenant."
+If the array is empty: "No compliance standards are currently configured on this tenant."
 
 ## Pack ID lookup
 
 | User says | packId |
 |---|---|
 | "ISO 42001" / "ISO/IEC 42001" / "AI Management System" | `iso-42001-2023` |
-| Unrecognised standard | Run `catalog list`, present options, ask user to choose |
+| Any other standard | ISO 42001 is the only available standard at this time. Inform the user and offer to proceed with ISO 42001. |

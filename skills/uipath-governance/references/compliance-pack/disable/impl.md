@@ -1,6 +1,6 @@
 # Disable — Remove Recommended Settings
 
-Removes all policy deployments configured by the compliance pack.
+Removes all policy deployments configured by the compliance standard.
 
 ## Check current state first
 

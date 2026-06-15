@@ -39,19 +39,19 @@ For each matched clause:
 
 ```
 <clauseName>  (<clauseId>)
-<N> controls  ·  <highCount> High  ·  <medCount> Medium  ·  <lowCount> Low
+<N> settings  ·  <highCount> High  ·  <medCount> Medium  ·  <lowCount> Low
 
 ┌──────────────────────────────┬─────────────────────────┬────────┬──────────────────────────────────────┐
-│ Control                      │ Recommendation          │ Impact │ Where to configure                   │
+│ Setting                      │ Recommendation          │ Impact │ Where to configure                   │
 ├──────────────────────────────┼─────────────────────────┼────────┼──────────────────────────────────────┤
 │ <controlDisplayName>         │ <recommendedSetting>    │ High   │ <configLocation>                     │
 │ <controlDisplayName>         │ <recommendedSetting>    │ Medium │ <configLocation>                     │
 └──────────────────────────────┴─────────────────────────┴────────┴──────────────────────────────────────┘
 [repeat per matched clause]
 
-Current posture on <tenantName>: <inPlaceCount> / <totalCount> controls configured
+Current posture on <tenantName>: <inPlaceCount> / <totalCount> settings Applied
 → 'Check my ISO 42001 posture'  to see all gaps
-→ 'Apply <clauseName> controls'  to configure these
+→ 'Apply <clauseName> settings'  to configure these
 ```
 
 **Data sources:**
@@ -61,4 +61,4 @@ Current posture on <tenantName>: <inPlaceCount> / <totalCount> controls configur
 - `controls[].configLocation` → Where to configure column
 - Current posture line: from `state coverage` if SESSION_TEMP/coverage.json exists, otherwise omit the line
 
-**Terminology:** "controls" NOT "settings". Plain-English clause name in headline, clause ID as secondary reference in parentheses.
+**Terminology:** "settings" for configured items. Plain-English clause name in headline, clause ID as secondary reference in parentheses.

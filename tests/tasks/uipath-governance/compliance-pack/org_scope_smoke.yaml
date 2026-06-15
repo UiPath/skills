@@ -1,8 +1,8 @@
 task_id: skill-governance-compliance-org-scope
 description: >
-  Skill-guided: "apply ISO 42001 organization-wide" must use scopeLevel "organization"
-  with UIPATH_ORGANIZATION_ID - NOT tenant scope. Tests that the org-scope routing
-  signal is detected and the correct positional argument is used.
+  Skill-guided: "apply ISO 42001 compliance standard organization-wide" must use scopeLevel
+  "organization" with UIPATH_ORGANIZATION_ID - NOT tenant scope. Tests that the org-scope
+  routing signal is detected and the correct positional argument is used.
 
   Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
@@ -13,7 +13,7 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Apply ISO 42001 recommended settings organization-wide to all tenants.
+  Apply ISO 42001 compliance standard recommended settings organization-wide to all tenants.
 
   Use the uipath-governance skill. Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
@@ -25,14 +25,14 @@ initial_prompt: |
 success_criteria:
   - type: command_executed
     description: "Agent ran coverage at organization scope (not tenant)"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+organization\s+.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+organization\s+\S+.*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent called state enable at organization scope"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\s+organization\s+.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\s+organization\s+\S+.*--output\s+json'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

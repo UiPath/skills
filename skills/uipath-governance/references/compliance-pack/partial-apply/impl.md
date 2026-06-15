@@ -1,6 +1,6 @@
 # Partial Apply — Implementation
 
-Synthesizes and deploys AOPS policies for the NLP-matched clause/product subset only. Used when the user asked for specific controls rather than the full pack.
+Synthesizes and deploys AOPS policies for the NLP-matched clause/product subset only. Used when the user asked for specific settings rather than the full standard.
 
 **Note:** This configures a subset of ISO 42001 recommended settings. Your organization's auditor determines compliance status.
 
@@ -35,7 +35,7 @@ Exit 3 = no contributions for this product in these clauses → skip it, continu
 
 ## Step 1b: Collect user-specific values (if any)
 
-After running `synthesize-formdata.mjs`, check stdout for `⚠` warning lines indicating controls that need org-specific values.
+After running `synthesize-formdata.mjs`, check stdout for `⚠` warning lines indicating settings that need org-specific values.
 
 For each warned key, ask the user before proceeding:
 
@@ -50,7 +50,7 @@ Some recommended settings require values specific to your organization.
 
 Accept responses:
 - Non-empty list → write the parsed array into `$SESSION_TEMP/overrides/<product>.json` at the warned key path before moving to Step 2
-- `SKIP` → leave the key absent from overrides; surface it in the AOps review gate (Step 4) as a setting that needs manual configuration, with the control's `configLocation` from catalog
+- `SKIP` → leave the key absent from overrides; surface it in the AOps review gate (Step 4) as a setting that needs manual configuration, with the setting's `configLocation` from catalog
 
 **Writing collected values into overrides (example for URL list):**
 
@@ -115,33 +115,33 @@ The compliance pack is the source of what values to set. The AOps plugin is the 
 3. **Skip form.io traversal** — policy data is already composed. Copy `$SESSION_TEMP/merged/<product>.json` to `$SESSION_TEMP/aops-policy-data.json`.
 4. **Policy name:** `iso-42001-2023-<scopeToken>-<product-kebab>` — see Internal policy naming note below.
 5. **Proceed to review gate** (AOps Critical Rules #15/#16):
-   - AOps compares `aops-policy-data.json` against `products/<product>/form-data.json` defaults — the diff is exactly the compliance pack-recommended controls for the targeted clauses, nothing more.
+   - AOps compares `aops-policy-data.json` against `products/<product>/form-data.json` defaults — the diff is exactly the compliance standard-recommended settings for the targeted clauses, nothing more.
    - Show the confirmation gate using this template:
 
 ```
-Configure ISO 42001 controls on <tenantName>?
+Configure ISO 42001 settings on <tenantName>?
 
 <clauseName>  (<clauseId>)
 ┌───────────────────────────────────┬─────────────────────┬────────┐
-│ Control                           │ Recommendation      │ Impact │
+│ Setting                           │ Recommendation      │ Impact │
 ├───────────────────────────────────┼─────────────────────┼────────┤
 │ <controlDisplayName>              │ <recommendedSetting>│ High   │
 │ <controlDisplayName>              │ <recommendedSetting>│ Medium │
 └───────────────────────────────────┴─────────────────────┴────────┘
 [repeat table per clause if multiple clauses matched]
 
-<N> controls  ·  <productDisplayName> only
+<N> settings  ·  <productDisplayName> only
 Other products will NOT be affected.
 
-⚠ Some controls need manual configuration after apply:
+⚠ Some settings need manual configuration after apply:
   • <controlDisplayName>  →  <configLocation from catalog>
-(omit ⚠ block if no SKIPped controls)
+(omit ⚠ block if no SKIPped settings)
 
-These controls improve your posture towards ISO 42001 requirements.
+These settings improve your posture towards ISO 42001 requirements.
 Proceed? (y/n)
 ```
 
-Build control rows from: `catalog.clauses[].editorialPolicies[].controls[]` filtered to `targetClauseIds` and `targetProducts`. Use `controls[].displayName` as control name, `controls[].recommendedSetting` as recommendation, `controls[].impact` as impact.
+Build setting rows from: `catalog.clauses[].editorialPolicies[].controls[]` filtered to `targetClauseIds` and `targetProducts`. Use `controls[].displayName` as setting name, `controls[].recommendedSetting` as recommendation, `controls[].impact` as impact.
 
 Require y. Halt on anything else.
 
@@ -229,12 +229,12 @@ uip gov aops-policy deployment tenant configure $TENANT_ID \
 ## Report (after successful apply)
 
 ```
-ISO 42001 controls configured on <tenantName>.
+ISO 42001 settings configured on <tenantName>.
 
 ┌───────────────────────────────────┬───────────┐
-│ Controls configured               │ <N>       │
+│ Settings configured               │ <N>       │
 │ Clauses addressed                 │ <N>       │
-│ High impact controls              │ <N>       │
+│ High impact settings              │ <N>       │
 └───────────────────────────────────┴───────────┘
 
 ⚠ Manual configuration needed:
@@ -243,11 +243,11 @@ ISO 42001 controls configured on <tenantName>.
 ├──────────────────────┼──────────────────────────────────────────────┤
 │ <controlDisplayName> │ <configLocation>                             │
 └──────────────────────┴──────────────────────────────────────────────┘
-(omit ⚠ table if no SKIPped controls)
+(omit ⚠ table if no SKIPped settings)
 
 Applied by: <UIPATH_USER from ~/.uipath/.auth>  ·  <tenantName>  ·  <date>
 
-To configure all ISO 42001 controls: 'Apply the full ISO 42001 pack'
+To configure all ISO 42001 settings: 'Apply the full ISO 42001 standard'
 ```
 
 ## Error handling

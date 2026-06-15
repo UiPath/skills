@@ -2,7 +2,7 @@ task_id: skill-governance-compliance-partial-apply
 description: >
   Skill-guided: "apply only the AI Trust Layer traceability settings from ISO 42001"
   must use the partial apply path - catalog get + synthesize-formdata.mjs + aops-policy create.
-  Must NOT use state enable (that is full pack only).
+  Must NOT use state enable (that is full compliance standard only).
 
   Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
@@ -13,8 +13,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Apply only the AI Trust Layer traceability recommended settings from ISO 42001
-  to improve my posture for that specific area.
+  Apply only the AI Trust Layer traceability recommended settings from the ISO 42001
+  compliance standard to improve my posture for that specific area.
 
   Use the uipath-governance skill. Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
@@ -43,7 +43,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Partial apply does NOT use state enable (that path is for full pack only)"
+    description: "Partial apply does NOT use state enable (that path is for full compliance standard only)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
     weight: 3.0
     pass_threshold: 1.0

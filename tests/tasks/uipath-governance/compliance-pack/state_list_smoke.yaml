@@ -1,6 +1,6 @@
 task_id: skill-governance-compliance-state-list
 description: >
-  Skill-guided: "what compliance packs are configured on my tenant?" must call
+  Skill-guided: "what compliance standards are configured on my tenant?" must call
   state list only — a read-only operation. No mutations. Tests that an informational
   query stays in the list/get path and never triggers apply or disable flows.
 
@@ -12,8 +12,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  What compliance packs are currently configured on my tenant?
-  Show me which standards have been applied.
+  What compliance standards are currently configured on my tenant?
+  Show me which compliance standards have been applied.
 
   Use the uipath-governance skill. Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
@@ -26,8 +26,8 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent called state list to discover configured packs"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+list\s+.*--output\s+json'
+    description: "Agent called state list to discover configured compliance standards"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+list\s+(?:tenant|organization)\s+\S+.*--output\s+json'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

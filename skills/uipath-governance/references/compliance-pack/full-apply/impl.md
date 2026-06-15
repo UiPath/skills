@@ -1,8 +1,8 @@
-# Full Apply — Configure All Recommended Controls
+# Full Apply — Configure All Recommended Settings
 
-Applies the entire compliance pack in one command. Backend creates and deploys all recommended controls.
+Applies the entire compliance standard in one command. Backend creates and deploys all recommended settings.
 
-**Note:** This configures controls recommended by ISO 42001. Your organization's auditor determines compliance status — UiPath does not certify compliance.
+**Note:** This configures settings recommended by ISO 42001. Your organization's auditor determines compliance status — UiPath does not certify compliance.
 
 ## Pre-condition
 
@@ -10,15 +10,15 @@ Coverage (posture analysis) has been run and presented. At least one policy has 
 
 ## Confirmation
 
-Build this table from `catalog.clauses[].editorialPolicies[].controls[]` filtered to products where `coverage.deploymentPolicies[].status == "new"`. Group controls by impact. For controls needing user-supplied values (flagged by `synthesize-formdata` notEmpty warnings), list them with a plain-English prompt.
+Build this table from `catalog.clauses[].editorialPolicies[].controls[]` filtered to products where `coverage.deploymentPolicies[].status == "new"`. Group settings by impact. For settings needing user-supplied values (flagged by `synthesize-formdata` notEmpty warnings), list them with a plain-English prompt.
 
 ```
-Configure ISO 42001 controls on <tenantName>?
+Configure ISO 42001 settings on <tenantName>?
 
 ┌──────────┬─────────────────────────────────────────────────────┐
-│ Impact   │ Controls                                            │
+│ Impact   │ Settings                                            │
 ├──────────┼─────────────────────────────────────────────────────┤
-│ High     │ <comma-separated displayNames of High controls,     │
+│ High     │ <comma-separated displayNames of High settings,     │
 │ (<N>)    │ truncated to first 3 + "N more">                    │
 ├──────────┼─────────────────────────────────────────────────────┤
 │ Medium   │ <comma-separated displayNames, first 3 + "N more">  │
@@ -27,10 +27,10 @@ Configure ISO 42001 controls on <tenantName>?
 │ Low (<N>)│ <comma-separated displayNames>                      │
 └──────────┴─────────────────────────────────────────────────────┘
 
-⚠ <N> controls need values from you:
+⚠ <N> settings need values from you:
   • <controlDisplayName>  — <plain-English prompt for the value>
   • ...
-(omit the ⚠ section if no controls need user-supplied values)
+(omit the ⚠ section if no settings need user-supplied values)
 
 Proceed? (y/n)
 ```
@@ -57,13 +57,13 @@ Parse `Data.active` (must be `true`) and `Data.policies[]` (policy UUIDs created
 ## Report
 
 ```
-ISO 42001 controls configured on <tenantName> ✓
+ISO 42001 settings configured on <tenantName> ✓
 
 SUMMARY
 ┌───────────────────────────────────┬───────────┐
-│ Controls before                   │ <N> / <T> │
-│ Controls after                    │ <T> / <T> │
-│ High impact controls configured   │ <N>       │
+│ Settings before                   │ <N> / <T> │
+│ Settings after                    │ <T> / <T> │
+│ High impact settings configured   │ <N>       │
 └───────────────────────────────────┴───────────┘
 
 ⚠ Manual configuration needed:
@@ -80,7 +80,7 @@ Note: compliance status is determined by your auditor, not this tool.
 
 ## Org-scope deployment (all tenants)
 
-When the user says "apply to all tenants", "organization-wide", or "entire org", use the organization scope. One command configures recommended controls across every tenant in the organization.
+When the user says "apply to all tenants", "organization-wide", or "entire org", use the organization scope. One command configures recommended settings across every tenant in the organization.
 
 ```bash
 ORG_ID=$(grep '^UIPATH_ORGANIZATION_ID=' ~/.uipath/.auth | cut -d'=' -f2-)
@@ -95,12 +95,12 @@ uip gov compliance-packs state enable organization $ORG_ID <packId> --output jso
 **Confirmation for org-scope:**
 
 ```
-Configure ISO 42001 controls across ALL tenants in your organization?
+Configure ISO 42001 settings across ALL tenants in your organization?
 Organization: <UIPATH_ORGANIZATION_NAME from ~/.uipath/.auth>
 
 <posture plan from coverage>
 
-This configures controls on every tenant. Your auditor determines compliance status.
+This configures settings on every tenant. Your auditor determines compliance status.
 Continue? (y/n)
 ```
 
@@ -113,9 +113,9 @@ uip gov compliance-packs state list organization $ORG_ID --output json
 
 Report for org-scope:
 ```
-ISO 42001 controls configured across all tenants in <UIPATH_ORGANIZATION_NAME> ✓
+ISO 42001 settings configured across all tenants in <UIPATH_ORGANIZATION_NAME> ✓
 
-Controls configured: <N> per tenant
+Settings configured: <N> per tenant
 Applied by: <UIPATH_USER from ~/.uipath/.auth>  ·  <UIPATH_ORGANIZATION_NAME>  ·  <date>
 Note: compliance status is determined by your auditor, not this tool.
 ```
