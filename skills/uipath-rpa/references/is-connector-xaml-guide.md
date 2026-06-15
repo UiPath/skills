@@ -106,39 +106,29 @@ The response contains the complete `ConnectorActivity` element with:
 
 #### Pass field values with `--field-values`
 
-`get-default-xaml` accepts literal input-field values as repeatable key=value pairs:
+`get-default-xaml` accepts literal input-field values as repeatable `key=value` pairs (one `--field-values` per field). Two effects:
 
-```bash
-uip rpa activities get-default-xaml \
-    --activity-type-id "<TYPE_ID>" \
-    --connection-id "<CONNECTION_ID>" \
-    --field-values project=JTD --field-values issuetype=Bug \
-    --project-dir "<PROJECT_DIR>" --output json
-```
+1. **Values are pre-bound** as literals in the returned `FieldObjects` — no hand-editing of `InArgument`/`CSharpValue` for literal values (expressions still go through Step 6).
+2. **Schema expansion.** Many operations expose only a few "criteria" fields by default and reveal the rest of the schema only once those criteria have values. In Studio's designer the re-resolve fires when the user commits a criteria field in the canvas; headlessly, passing the criteria via `--field-values` triggers the same re-resolve, and the `Configuration` blob comes back with the **expanded** field set as new `FieldObjects`.
 
-Two effects:
+**Run it twice — discover, then expand.** You won't know a connector's criteria fields ahead of time, so make two calls:
 
-1. **Values are pre-bound** as literals in the returned `FieldObjects` — no hand-editing of `InArgument`/`CSharpValue` needed for literal values (expressions still go through Step 6).
-2. **Schema expansion.** Some operations reveal additional fields only after prerequisite "criteria" fields have values — e.g. Jira "Update Issue" exposes the full body schema (description, custom fields) only once `project` and `issuetype` are set; generic record operations expand after the record `Type`. In Studio's designer this re-resolve fires when the user commits those fields in the canvas. Headlessly, passing the criteria values via `--field-values` triggers the same re-resolve: the returned `Configuration` blob carries the **expanded** schema and the new fields appear as `FieldObjects`.
-
-**Run it twice — discover, then expand.** You usually don't know a connector's criteria fields up front, so make two calls:
-
-1. **First call — no `--field-values`.** The returned `FieldObjects` are the operation's curated/prerequisite fields (e.g. `project`, `issuetype`, `issueIdOrKey` for Jira "Update Issue"). **These are your criteria candidates** — the connector gates the rest of the schema on them.
-2. **Second call — feed those criteria back inline** with `--field-values`. The response now carries the **expanded** schema: the full body + custom fields appear as new `FieldObjects` (e.g. `fields_sub_description`, `fields_sub_summary`, custom `fields_sub_*_Customfield*`). Author against this expanded XAML.
+1. **First call — no `--field-values`.** Whatever `FieldObjects` come back are the operation's prerequisite fields. **Those returned field names _are_ your criteria candidates** — there is no separate place to look them up; the curated baseline is the list.
+2. **Second call — feed those same field names back inline** with `--field-values`. The response now carries the expanded schema; author against it.
 
 ```bash
 # 1. discover the criteria fields (curated baseline)
 uip rpa activities get-default-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN>" --project-dir "<P>" --output json
-# 2. feed them back inline to expand everything else
+# 2. feed those field names back inline to expand the rest
 uip rpa activities get-default-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN>" \
-    --field-values project=JTD --field-values issuetype=Bug --project-dir "<P>" --output json
+    --field-values <fieldFromStep1>=<value> --project-dir "<P>" --output json
 ```
 
-When you already know valid criteria values up front, the second call alone does both (discover + expand).
+When you already know valid criteria values up front, the second call alone does both.
 
-**The criteria values must be valid in the connected system, and the connection must be live.** Expansion is a cloud round-trip to the connector's createmeta-style API. If a value doesn't exist there (wrong project key, or a dead / foreign-tenant connection), the call returns the **curated set unchanged with no error** — not a visible failure, just no new fields. So if expansion "does nothing", suspect the values or the connection (does it resolve on your current `uip` login?), not the flag.
+> **Expansion requires a LIVE connection and real values — there is no offline path.** It is a design-time cloud round-trip to the connector. `--connection-id` must be an enabled connection that resolves on your current `uip login` (correct org + tenant), and each value must actually exist in that system. If the connection is dead / wrong-tenant, or a value is invalid, the call returns the **curated baseline unchanged, with no error and no new fields** — a silent no-op, not a visible failure. So when expansion "does nothing", suspect the connection or the values, never the flag; re-confirm the connection is live (Step 3) before concluding the activity has no more fields.
 
-Criteria names you pass are normally plain (`project`, `issuetype`). When you later target a nested/expanded field, use its encoded name **exactly as it appears in the returned `FieldObjects`** (e.g. `fields_sub_description`) — see § FieldObject Name Encoding Rules. An unknown field name fails fast with the list of available input fields — use that error as field-name discovery rather than guessing.
+**Field-name encoding.** Pass names **exactly as they appear in the returned `FieldObjects`** — copy them verbatim from the previous call's output. Don't hand-encode or invent names: the connector's encoding (nested paths, arrays — see § FieldObject Name Encoding Rules) is already applied in what it hands you. An unknown name fails fast with the list of available fields, so use that error as discovery rather than guessing.
 
 **Older CLI fallback:** if `--field-values` is not recognized, upgrade `uip`. Until then the expansion is not reachable headlessly — bind only fields present in the returned XAML and treat missing ones per § Hidden Secondary Fields.
 
@@ -225,7 +215,7 @@ Example — boolean field:
 
 #### Hidden Secondary Fields
 
-A field is only honored at runtime if it exists in the **`Configuration` blob's schema** — the blob, not the `FieldObjects` list, is the contract. A hand-added `FieldObject` whose field is missing from the blob's schema passes `validate` and `build` clean and is **silently dropped** by the connector at runtime — the API call goes out without it, typically surfacing as a confusing backend error (e.g. Jira's `one of 'fields' or 'update' required`, HTTP 400).
+A field is only honored at runtime if it exists in the **`Configuration` blob's schema** — the blob, not the `FieldObjects` list, is the contract. A hand-added `FieldObject` whose field is missing from the blob's schema passes `validate` and `build` clean and is **silently dropped** by the connector at runtime — the API call goes out without it, typically surfacing later as a confusing connector/runtime error (a 4xx about missing or invalid fields) far from the XAML that caused it.
 
 When a schema-documented field is absent from the returned `FieldObjects`:
 
@@ -233,7 +223,7 @@ When a schema-documented field is absent from the returned `FieldObjects`:
 2. **Query parameter**: check the schema's `queryParameters` — those never appear as `FieldObjects` and have no per-field XAML override (see Gotchas).
 3. **Older CLI without `--field-values`**: the expansion is not reachable headlessly. Have a developer commit the criteria fields once in Studio's designer and copy the resulting `Configuration` + `FieldObjects`, or upgrade `uip`.
 
-The name-encoding rules above still apply when referencing expanded fields in `--field-values` (e.g. `fields.description` → `fields_sub_description`) and when binding expression values to them in Step 6.
+The name-encoding rules above apply to expanded fields too — reference them by the encoded name **exactly as the expanded XAML returns it**, both in `--field-values` and when binding expression values in Step 6.
 
 ### Step 7 — Validate and run
 
@@ -308,20 +298,20 @@ Resulting `ConnectorActivity` body (truncated — preserve the full FieldObject 
 </isactr:ConnectorActivity>
 ```
 
-## Worked Example: Jira "Update Issue" (criteria-gated expansion)
+## Worked Example: criteria-gated expansion
 
-Jira's Update Issue surfaces only `project`, `issuetype`, `issueIdOrKey` by default; the full body schema (e.g. `fields_sub_description`, custom fields) exists only once `project` + `issuetype` are known:
+Some "edit/update record" operations surface only their prerequisite fields by default (e.g. a record's project + type + key) and reveal the full body schema only once those criteria have values — the headless equivalent of committing those fields in the designer canvas:
 
 ```bash
-# One call: criteria values trigger the schema expansion AND get pre-bound as literals.
+# Criteria values trigger the schema expansion AND get pre-bound as literals in one call.
 uip rpa activities get-default-xaml \
-    --activity-type-id "<UPDATE_ISSUE_TYPE_ID>" \
-    --connection-id "<JIRA_CONNECTION_ID>" \
-    --field-values project=JTD --field-values issuetype=Bug --field-values issueIdOrKey=JTD-9 \
+    --activity-type-id "<TYPE_ID>" \
+    --connection-id "<LIVE_CONNECTION_ID>" \
+    --field-values <criteria1>=<value> --field-values <criteria2>=<value> \
     --project-dir "$P" --output json
 ```
 
-The returned XAML's `Configuration` blob now carries the expanded schema, and `fields_sub_description` (plus the project's custom fields) appears in `FieldObjects`. Bind remaining values there directly in the same call (literal) or via Step 6 (expression). Authoring `fields_sub_description` against the *unexpanded* blob is the silent-drop failure described in § Hidden Secondary Fields.
+The returned `Configuration` blob now carries the expanded schema, and the previously hidden body/custom fields appear in `FieldObjects`. Bind remaining values there directly in the same call (literal) or via Step 6 (expression). Authoring one of those expanded fields against the *unexpanded* blob is the silent-drop failure in § Hidden Secondary Fields. Needs a live connection and valid criteria values — see the silent-no-op note in Step 4.
 
 ## Gotchas
 
