@@ -338,11 +338,18 @@ When you finish building the flow, report to the user:
 
 Authoring terminates here. Each option below hands off to Operate — read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) for the command sequence.
 
+> **Conditional option visibility — gate before rendering.** Before calling `AskUserQuestion`, count the `core.action.http.v2` nodes in the flow. The result decides the dropdown's shape:
+>
+> - **Flow has ≥ 1 `core.action.http.v2` node** → show **all 4 options** below (Publish / Debug / Make reusable / Just leave as is).
+> - **Flow has 0 HTTP nodes** → drop "Make actions reusable" and present **only 3 options** (Publish / Debug / Just leave as is). The make-reusable path is meaningless when there's nothing to promote into a connector.
+>
+> The "Make actions reusable" row in the table below is hard-gated by HTTP node presence. The agent must NOT render it in any other case. Counting is mechanical — `jq '[.nodes[] | select(.type=="core.action.http.v2")] | length' <flow-file>` or equivalent in-context inspection of the workflow JSON.
+
 | Option | What it does |
 | --- | --- |
-| **Publish to Studio Web** (default) | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. |
+| **Publish to Studio Web** (default) | Push the solution to Studio Web so the user can visualize, edit, and publish from the browser. Also covers Orchestrator deploy — Studio Web is the front door; users who explicitly want to bypass Studio Web and pack-+-publish directly to Orchestrator pick "Just leave as is" → free-text "deploy to orchestrator". |
 | **Debug the solution** | Execute the flow end-to-end against real systems. Confirm consent first — debug has real side effects (see the consent-before-debug rule in [SKILL.md](../../../SKILL.md)). |
-| **Deploy to Orchestrator** | Pack and publish directly to Orchestrator (bypasses Studio Web). Only when explicitly chosen — see [/uipath:uipath-platform](/uipath:uipath-platform). |
-| **Something else** | Last option. Accept free-form string input and act on it (e.g., "just leave it", "pack but don't publish", "upload to a different tenant"). |
+| **Make actions reusable as custom connectors** *(only when ≥ 1 `core.action.http.v2` node present)* | Promote each `core.action.http.v2` node in the flow into a tenant-wide `custom-{org}-{vendor}` connector via the POC's background-publish pipeline. The flow file itself is NOT modified — the HTTP nodes keep their current connections; the connectors are a parallel side-effect output that future flows in the tenant can reuse. Pre-requisite: the SR cache must hold request + response fields per the [mandatory sequencing](../../../SKILL.md) rule. Pipeline: scaffold → sync-from-cache → resource create → auth set → validate → remote import → remote publish --background, per vendor. See [plugins/http/sr-cache-authoring.md — "From flow to published connector"](plugins/http/sr-cache-authoring.md#from-flow-to-published-connector) for the state-aware Shape A/B/C prompts and multi-vendor batching. |
+| **Just leave as is** | No publish, no debug, no connector promotion. The flow stays on disk untouched. Also functions as the "Something else" escape hatch — user may type free-form input (e.g., "pack but don't publish", "upload to a different tenant", "deploy to orchestrator") and the agent acts on the free text. |
 
-Do not run any of these actions without explicit user selection. Once the user picks an option, read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc.
+Do not run any of these actions without explicit user selection. Once the user picks an option, read [operate/CAPABILITY.md](../../operate/CAPABILITY.md) and follow that capability's flow — do not run operate commands from inside this doc. For the "Make actions reusable" option, the agent runs the per-vendor pipeline asynchronously (`remote publish --background`) and reports the publish IDs; it does NOT wait for the 5-10 min registry propagation before returning.

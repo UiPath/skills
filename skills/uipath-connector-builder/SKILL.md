@@ -60,6 +60,42 @@ uip is connectors builder hook create --resource-name contacts --method GET --ho
 uip is connectors builder connector validate
 ```
 
+### Pull resources from the SR cache
+When the cache already holds StandardResource artifacts for this connector (authored by `uip is resources standardize`, or seeded from a flow via `uip maestro flow extract-http-nodes`), pull them onto disk in one call instead of rebuilding by hand.
+
+> **Standard entry point for HTTP-node-derived connectors** is the maestro-flow background-publish loop — fire-and-forget after the user picks their primary destination (Studio Web / Orchestrator). It runs the triage + scaffold + sync + publish in one shot without touching the .flow file. The steps below are the underlying primitives — invoke them directly only when authoring a connector that isn't being seeded from a flow.
+
+**Triage before mutating.** If a connector with this key already exists on the tenant, pull it first and compare against the cached SRs so the user can pick add / rename / replace per activity:
+```bash
+uip is connectors builder remote get --key <elementKey> --output json
+#   404 → net-new connector. Run scaffold + the pipeline below.
+#   200 → existing connector. Pull files and inspect before any mutation:
+uip is connectors builder remote get <elementKey> --include files --output json
+uip is connectors builder resource list --output json    # the activities already on it
+# For each cached object whose name matches one in the list, ask the user
+# (AskUserQuestion): keep both (rename to <name>_v2) / replace / skip.
+# Replacing risks dropping fields the existing activity had — diff fields first
+# and surface the deltas in a follow-up prompt.
+```
+
+Then run the pipeline:
+```bash
+uip is connectors builder connector inspect                      # confirm scaffold + element.json:key
+uip is connectors builder resource sync-from-cache --output json
+#   add --connection-id <id> | --object-name <obj> to scope
+#   --dry-run to preview; --overwrite ONLY when the user confirmed Replace in triage
+# sync-from-cache writes ONLY app/element/standard-resources/*.json — it does NOT touch element.json.
+# Run resource create for each NEW object (skip ones marked Replace; resource create errors on duplicates):
+uip is connectors builder resource create --name <object> --methods <VERBS> \
+  --vendor-path <relative-vendor-path-from-the-SR>
+uip is connectors builder connector validate
+# Push design-state to tenant:
+uip is connectors builder remote import --output json
+# Background-promote design → tenant-wide CUSTOM (the published-publish step):
+uip is connectors builder remote publish --background --output json
+#   Returns { PublishId }. Studio Web shows the connector ~5-10 min later.
+```
+
 ### Add a curated activity (a method shown as a standalone Studio activity)
 ```bash
 uip is connectors builder connector inspect

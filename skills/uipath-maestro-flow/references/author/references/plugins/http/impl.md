@@ -60,6 +60,40 @@ Correct shape for the same intent — connector mode + the Slack IS connection:
 
 Read URL + body shape + reference resolution rules from `uip is resources sr <connector> <object>` after running `uip is resources standardize` once. Full loop in [sr-cache-authoring.md](sr-cache-authoring.md).
 
+### Anti-pattern — running `node configure` with an empty SR cache
+
+```bash
+# WRONG — skipping the SR cache loop and jumping straight to node configure
+uip maestro flow node add <ProjectName>.flow core.action.http.v2 --label "Send Slack"
+uip maestro flow node configure <ProjectName>.flow <id> --detail '{"authentication":"connector",...}'
+# Cache for (connector, connection, object) is empty.
+# The HTTP node WORKS at runtime — the connection proxy calls the vendor with whatever
+# request shape the agent typed by hand into --detail.
+# But the eventual `custom-{org}-{vendor}` connector built by the POC publish loop has
+# NO response field metadata and is missing whatever request fields the agent omitted.
+# This breaks the POC's "publish once, reuse everywhere" value proposition.
+```
+
+Why it fails: the publish-time pipeline reads from the SR cache, not from the .flow file. The flow node's `--detail` is the runtime payload — it has no response-shape information, and any request fields the agent didn't explicitly type are lost. The cache is the place where both request + response field metadata lives. An empty cache at publish time is an unrecoverable defect — the published connector has the wrong contract and consumers depending on it will see missing fields.
+
+Correct sequence (mandatory per [SKILL.md Critical Rule #3 — POC override](../../../../../SKILL.md)):
+
+```bash
+# 1. Cache check first
+uip is resources sr "<targetConnector>" "<object>" --connection-id "<id>" --output json
+
+# 2. Cache miss → WebFetch vendor docs, build SR JSON with request + response
+#    fields per the 10-field budget (see sr-cache-authoring.md)
+# 3. Persist
+uip is resources standardize "<targetConnector>" "<object>" --connection-id "<id>" \
+  --from-sr /tmp/<vendor>.sr.json --output json
+
+# 4. THEN configure the HTTP node
+uip maestro flow node configure <ProjectName>.flow <id> --detail '{...}'
+```
+
+The agent does NOT call `node configure` for an HTTP node until step 1 returns a cache hit (either pre-existing or just-populated via step 3). No exceptions.
+
 ## Registry validation
 
 ```bash
@@ -98,9 +132,30 @@ Record the chosen connection's `Id` and `FolderKey` for Step 3.
 
 > **HTTP-specific recovery — no usable connection.** If platform-skill recovery yields nothing (empty after `--all-folders` + `--refresh`, user declines to create one), the HTTP node has unique fallback options. **STOP** and use `AskUserQuestion`: **Create a new connection now** (`uip is connections create "<target-connector-key>"` starts the OAuth flow — user completes browser auth, then re-run list) / **Switch this node to manual mode** / **Skip this node** / **Something else**. Do not fall back to manual mode silently, do not invent a placeholder ID, do not skip the node without explicit user selection. See the AskUserQuestion dropdown rule in [SKILL.md](../../../../../SKILL.md).
 
+### Step 2.5 — Populate the SR cache (mandatory before Step 3)
+
+**Hard stop.** Do NOT proceed to Step 3 (`node configure`) until the SR cache holds an entry for this `(targetConnector, connectionId, object)` triple containing **both request and response fields**. The cache is the source of truth the publish-time pipeline reads from when promoting the HTTP node into a `custom-{org}-{vendor}` connector. Skipping this step leaves the published connector with input-only schemas (no documented response shape), forcing a second rebuild later.
+
+Run the cache loop per [sr-cache-authoring.md — Lazy cache loop](sr-cache-authoring.md#lazy-cache-loop):
+
+```bash
+KEY="<targetConnector>"          # uipath-uipath-http for generic-proxy connections
+OBJ="<operation-slug>"           # e.g. list_inbox_emails, create_lead, post_message
+CID="<connection-id>"
+
+uip is resources sr "$KEY" "$OBJ" --connection-id "$CID" --output json
+# Cache hit → done. Proceed to Step 3.
+# Cache miss → build the SR (WebFetch docs, capture request + response fields per
+#              the 10-field budget heuristic), then:
+# uip is resources standardize "$KEY" "$OBJ" --connection-id "$CID" --from-sr /tmp/<vendor>.sr.json
+# uip is resources sr "$KEY" "$OBJ" --connection-id "$CID" --output json  # confirm hit
+```
+
+The SR's `elementKey` MUST be set to the design-side key for the eventual custom connector — `design-{org}-{vendor}` (e.g. `design-acmecorp-outlook`), NOT `uipath-uipath-http`. The agent derives the vendor identity from the connection's name / base URL during this step; that same identity becomes the published `custom-{org}-{vendor}` key after publish. See [sr-cache-authoring.md — Build an SR on cache miss](sr-cache-authoring.md#build-an-sr-on-cache-miss) for the full SR JSON shape including the response-field budget heuristic.
+
 ### Step 3 — Configure the node
 
-> **Find missing values first.** Before composing `url` / `query` / `body`, resolve any values the agent doesn't have (IDs from names, required body fields, response shape, …). See [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md). When the action exists as a known IS resource (e.g. Slack `send_message`, Outlook `send_email`), prefer the SR-cache loop — see [sr-cache-authoring.md](sr-cache-authoring.md).
+> **Step 2.5 must be green before this step runs.** `node configure` reads request shape from the cached SR (via the user's `--detail`); the response shape lives in the cache for the publish-time pipeline. Running Step 3 with an empty cache works at runtime (the connection proxy doesn't care) but breaks the POC's connector-publish loop — the resulting `custom-*` connector has no documented response fields. There is no recovery path other than rebuilding the cache and re-publishing the connector.
 
 **Connector mode** (IS connection auth):
 

@@ -176,9 +176,11 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 
 When the flow needs to call an external service, use this decision order — prefer higher tiers:
 
-1. **Pre-built Integration Service connector** — Use when a connector exists and covers the use case. See [connector](plugins/connector/planning.md).
-2. **Managed HTTP Request** (`core.action.http.v2`) — connector mode: use when a connector exists but lacks the specific curated activity. Manual mode: use for one-off API calls to services without connectors. See [http](plugins/http/planning.md).
+1. **Managed HTTP Request** (`core.action.http.v2`) — default for any vendor REST API call. Use connector mode when a catalog `uipath-{vendor}-{product}` connector exists (set it as `targetConnector` so auth + base URL are managed at runtime); manual mode for services without a catalog connector. See [http](plugins/http/planning.md).
+2. **Native catalog-connector node** (`uipath.connector.<key>.<activity>`) — use ONLY when the user explicitly names the catalog connector by key or explicitly asks for the curated Studio-Web activity experience. See [connector](plugins/connector/planning.md).
 3. **RPA workflow node** — Use only when the target system has no API (legacy desktop apps, terminals). See [rpa](plugins/rpa/planning.md).
+
+> **Why managed HTTP is the default**: while the HTTP-node → custom-connector POC is active, HTTP nodes get promoted into reusable custom connectors via the background-publish loop ([plugins/http/sr-cache-authoring.md — From flow to published connector](plugins/http/sr-cache-authoring.md#from-flow-to-published-connector)). Native catalog-connector nodes can't be extracted by `flow extract-http-nodes` and skip the POC pipeline. Connector mode preserves the catalog connector's auth + base URL while keeping the node extractable.
 
 ---
 
