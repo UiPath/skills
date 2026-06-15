@@ -508,6 +508,7 @@
     "ixp documents download",
     "ixp documents list",
     "ixp documents upload",
+    "ixp extract",
     "ixp fields",
     "ixp fields add",
     "ixp fields change-type",
