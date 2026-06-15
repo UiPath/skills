@@ -605,17 +605,15 @@ Route each fix to the appropriate skill:
 - **Needs Improvement** — 0 Critical, 4+ Warnings OR 1 Critical with clear fix
 - **Critical Issues** — 2+ Critical OR 1 Critical with security/data-integrity implications
 
-**Agent Grade → verdict label** (agent projects only; the line reads "B — Good", consistent with the thresholds above):
+**Agent Grade → verdict label** (agent projects only; the line reads "B — Good"):
 
-| Grade | Verdict label | Cross-check |
-|---|---|---|
-| **A** | Good | 0 Critical, 0–1 deterministic Warnings, strong design |
-| **B** | Good | 0 Critical, 2–3 deterministic Warnings |
-| **C** | Needs Improvement | 4–7 Warnings OR design avg 2.5–3.49 |
-| **D** | Needs Improvement | 1 Critical (clear fix) OR 8+ Warnings OR design avg 1.5–2.49 |
-| **F** | Critical Issues | 2+ Critical OR security/data-integrity Critical OR `agent validate` fails |
+| Grade | Verdict label |
+|---|---|
+| **A** / **B** | Good |
+| **C** / **D** | Needs Improvement |
+| **F** | Critical Issues |
 
-The agent grade is the **`min(G_det, G_jud)`** computed in Step 4.5 — the table above is a cross-check, not a separate calculation.
+This maps the letter to the verdict word only. The bands that **produce** each letter (G_det / G_jud) live solely in Step 4.5 — do not restate them here. The agent grade is the `min(G_det, G_jud)` computed in Step 4.5.
 
 ## Task Navigation
 
