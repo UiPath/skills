@@ -49,7 +49,7 @@ Express the choice as **selection criteria over the discovered list**, not a fix
 | Reasoning / judgment / multi-step tool use | Newest GA Anthropic Sonnet or Opus, or newest GA flagship OpenAI | Strongest instruction-following + tool-call discipline |
 | Fast / cheap / high-volume classification or extraction | Newest GA `*-mini` (e.g. an OpenAI `*-mini`) or GA Haiku | Lower latency + cost; sufficient for narrow deterministic tasks |
 | Long-context (large documents, big tool outputs) | GA model with the highest `MaxTokens` | Avoids truncated output |
-| Conversational | Newest GA Anthropic Sonnet or user preference | Strongest conversational responses without long latency |
+| Conversational | Newest GA Anthropic Sonnet or user preference | Strongest conversational responses and instruction-following |
 
 Concrete GA examples observed on a live tenant — **illustrative only; verify against `uip agent model list`**:
 
