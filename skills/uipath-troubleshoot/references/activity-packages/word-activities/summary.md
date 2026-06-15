@@ -1,0 +1,11 @@
+# Word Activities Playbooks
+
+**Investigation guide:** [investigation_guide.md](./investigation_guide.md) — data correlation rules and testing prerequisites for Word Activities investigations
+
+| Issue | Confidence | Description | Playbook |
+|-------|:---:|-------------|----------|
+| Word Application Scope — Error Opening Document / Word Not Installed | High | COM Interop cannot create the `Word.Application` instance — no desktop Word (web-only Office, Linux/container robot), 32-bit/64-bit Office–robot bitness mismatch, or damaged Office COM registration (`make sure Word application is installed`, `REGDB_E_CLASSNOTREG`) | [word-scope-com-not-installed.md](./playbooks/word-scope-com-not-installed.md) |
+| Word Application Scope — "The file appears to be corrupted" | Medium | Opening/saving reports corruption — orphaned WINWORD.EXE holding the lock, in-place template overwrite leaving a half-written source, or Protected View / Mark-of-the-Web blocking the write | [word-scope-file-corrupted.md](./playbooks/word-scope-file-corrupted.md) |
+| Word Application Scope — Workflow Hangs / Freezes Indefinitely | Medium | WINWORD.EXE is up but unresponsive because Word opened a background modal prompt (password, document-recovery sidebar, Safe Mode, activation, trust-this-file) that blocks COM calls; invisible when the scope runs unattended | [word-scope-hangs-background-prompt.md](./playbooks/word-scope-hangs-background-prompt.md) |
+| Word Application Scope — "Cannot create unknown type WordApplicationScope" | High | Load/compile-time failure: the execution host lacks the `UiPath.Word.Activities` dependency or runs a version without the type; common when a process works in Studio but fails on a remote robot with a different/missing package version | [word-scope-cannot-create-unknown-type.md](./playbooks/word-scope-cannot-create-unknown-type.md) |
+| Word Application Scope — File Path Verification Errors / Document Not Found | Medium | The document path does not resolve at runtime — opening a file that should be created (`Create if not exists` unset), a relative path resolved against the wrong working directory, a malformed dynamic path, or an unavailable mapped drive / unhydrated cloud placeholder | [word-scope-file-path-not-found.md](./playbooks/word-scope-file-path-not-found.md) |

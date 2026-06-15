@@ -107,6 +107,15 @@ Namespaces: `UiPath.Excel.Activities`
 - [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, `Invoke VBA` execution model, and common failure patterns
 - [activity-packages/excel-activities/summary.md](./activity-packages/excel-activities/summary.md) — All playbooks for Excel Activities issues
 
+## Word Activities
+
+Activities for automating Microsoft Word on Windows. The classic `Word Application Scope` drives a real WINWORD.EXE via Microsoft Word Interop (COM) and requires desktop Word installed on the execution host. Issues here involve COM init failures (`make sure Word application is installed`, `REGDB_E_CLASSNOTREG`, bitness mismatch), corrupted-file errors from orphaned WINWORD.EXE locks or in-place template overwrites, indefinite hangs on background modal dialogs, missing-package "cannot create unknown type" load errors, and document-path resolution failures.
+
+Namespaces: `UiPath.Word.Activities`
+
+- [activity-packages/word-activities/overview.md](./activity-packages/word-activities/overview.md) — Package overview, `Word Application Scope` execution model, and common failure patterns
+- [activity-packages/word-activities/summary.md](./activity-packages/word-activities/summary.md) — All playbooks for Word Activities issues
+
 
 ## Playbooks
 
