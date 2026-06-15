@@ -3,11 +3,6 @@
 
 # CI workflows and review config
 /.github/ @uipreliga @bai-uipath @akshaylive
-
-# coder_eval engine version pin — single source of truth for the version the
-# smoke, ad-hoc, and nightly eval paths all run against (consumed by the
-# /.github/ workflows above and coder_eval_uipath's daily.sh). A bump changes
-# the engine everywhere, so it's owned by the eval-CI team, not the default set.
 /tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive
 
 # Hooks
