@@ -10,18 +10,20 @@
 # a detached subshell so it never delays the observed tool call.
 # Cross-platform (macOS, Linux, Windows via Git Bash / MSYS).
 #
-# Configuration (env only — nothing is sent unless the connection string is set):
+# Configuration (env only):
+#   UIPATH_TELEMETRY_ENABLED             Opt-in switch. Telemetry is OFF unless
+#                                        this is exactly "1". Unset or "0" -> no send.
 #   UIPATH_TELEMETRY_CONNECTION_STRING   App Insights connection string
 #       (InstrumentationKey=...;IngestionEndpoint=https://<region>.in.applicationinsights.azure.com/)
 #   APPLICATIONINSIGHTS_CONNECTION_STRING  Fallback if the above is unset.
-#   UIPATH_TELEMETRY_DISABLE=1           Hard off-switch.
 
 set +e
 
-[ "${UIPATH_TELEMETRY_DISABLE:-}" = "1" ] && exit 0
+# Opt-in: send only when explicitly enabled (default off).
+[ "${UIPATH_TELEMETRY_ENABLED:-0}" = "1" ] || exit 0
 
 conn="${UIPATH_TELEMETRY_CONNECTION_STRING:-${APPLICATIONINSIGHTS_CONNECTION_STRING:-}}"
-[ -z "$conn" ] && exit 0   # not configured -> no-op
+[ -z "$conn" ] && exit 0   # enabled but no endpoint configured -> nothing to send to
 
 payload="$(cat)"
 
@@ -132,7 +134,14 @@ duration_ms="$(printf '%s' "$payload" | grep -oE '"duration_ms"[[:space:]]*:[[:s
 [ -z "$duration_ms" ] && duration_ms=0
 
 session_id="$(json_str session_id)"
+tool_use_id="$(json_str tool_use_id)"   # unique per call: correlation key + ordering tiebreaker
 permission_mode="$(json_str permission_mode)"
+
+# Plugin (skills) version — designed to track the CLI version, so send both and
+# let drift surface in queries. Read from the plugin manifest, NOT git.
+plugin_ver="$(grep -oE '"skillsVersion"[[:space:]]*:[[:space:]]*"[^"]*"' \
+  "${CLAUDE_PLUGIN_ROOT:-.}/version-manifest.json" 2>/dev/null \
+  | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
 effort_level="$(printf '%s' "$payload" \
   | grep -oE '"effort"[[:space:]]*:[[:space:]]*\{[^}]*"level"[[:space:]]*:[[:space:]]*"[^"]*"' \
   | grep -oE '"level"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
@@ -159,6 +168,8 @@ outcome="$(san "$outcome")"
 permission_mode="$(san "$permission_mode")"
 effort_level="$(san "$effort_level")"
 cli_ver="$(san "$cli_ver")"
+plugin_ver="$(san "$plugin_ver")"
+tool_use_id="$(san "$tool_use_id")"
 os_name="$(san "$os_name")"
 
 # --- emit to Application Insights ------------------------------------------
@@ -171,7 +182,7 @@ endpoint="${endpoint%/}"
 ts_iso="$(date -u +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null)"
 
 body="$(cat <<JSON
-{"name":"Microsoft.ApplicationInsights.Event","time":"$ts_iso","iKey":"$ikey","tags":{"ai.cloud.role":"uipath-skills-plugin","ai.cloud.roleInstance":"$env_name","ai.session.id":"$session_id","ai.user.id":"$workspace_id","ai.application.ver":"$cli_ver"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"ToolUse","properties":{"toolName":"$tool","skillName":"$skill_name","uipSubcommand":"$uip_subcommand","fileExt":"$file_ext","environment":"$env_name","baseUrl":"$base_url","outcome":"$outcome","permissionMode":"$permission_mode","effortLevel":"$effort_level","os":"$os_name","cliVersion":"$cli_ver"},"measurements":{"durationMs":$duration_ms}}}}
+{"name":"Microsoft.ApplicationInsights.Event","time":"$ts_iso","iKey":"$ikey","tags":{"ai.cloud.role":"uipath-skills-plugin","ai.cloud.roleInstance":"$env_name","ai.session.id":"$session_id","ai.user.id":"$workspace_id","ai.application.ver":"$plugin_ver"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"ToolUse","properties":{"toolName":"$tool","toolUseId":"$tool_use_id","skillName":"$skill_name","uipSubcommand":"$uip_subcommand","fileExt":"$file_ext","environment":"$env_name","baseUrl":"$base_url","outcome":"$outcome","permissionMode":"$permission_mode","effortLevel":"$effort_level","os":"$os_name","pluginVersion":"$plugin_ver","cliVersion":"$cli_ver"},"measurements":{"durationMs":$duration_ms}}}}
 JSON
 )"
 
