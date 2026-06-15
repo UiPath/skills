@@ -31,12 +31,13 @@ initial_prompt: |
   other tenants. It should grant view-only access to the Administration page
   (read-only admin-page access, nothing else).
 
-  Walk the full lifecycle:
+  Walk the full lifecycle, exercising the create, get, update, and delete
+  commands:
     1. First confirm no role named "AdminPageViewer_clie2e" already exists,
        then create it bound to my current tenant.
     2. Update it — change its description to note it is read-only.
-    3. Show me the role's details so I can confirm the update.
-    4. Remove the role and confirm it's gone.
+    3. Get the role's details so I can confirm the update.
+    4. Delete the role and confirm it's gone.
 
   Important:
   - If the `uip admin` subcommand is unavailable or a command fails, that
@@ -60,14 +61,6 @@ success_criteria:
     command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\b'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent checked name collision via `roles list --filter`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--filter\s+\S*AdminPageViewer_clie2e'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed

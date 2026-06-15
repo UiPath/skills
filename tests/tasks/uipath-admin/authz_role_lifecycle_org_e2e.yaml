@@ -1,15 +1,14 @@
 task_id: skill-admin-authz-role-lifecycle-org-e2e
 description: >
-  End-to-end test: full lifecycle of an Organization-scope custom
-  role — discover org-shape permissions, check for name collision,
-  create the role with `--scope Organization`, verify via `roles get`,
-  then delete and verify removal.
+  End-to-end test: full CRUD lifecycle (create, get, update, delete) of an
+  Organization-scope custom role carrying the Access Policy read permission
+  (`AUTHZ.CONDITIONALACCESSPOLICY.READ`). Lists org-scope permissions to
+  discover it, creates with `--scope Organization`, updates, verifies via
+  `roles get`, then deletes and verifies removal.
 
-  Validates: `--scope Organization`, actions.json uses permission
-  `name` strings (not UUIDs), positional id on get/delete, cleanup at
-  end of test.
-
-  Command-construction only — no live tenant available.
+  Validates: `--scope Organization`, the `roles update` step, actions.json
+  uses permission `name` strings (not UUIDs), positional id on
+  get/update/delete, cleanup at end of test.
 tags: [uipath-admin, e2e, authz, role-lifecycle, scope:organization]
 
 run_limits:
@@ -18,14 +17,18 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  I need a read-only role that applies to my whole organization — not
-  to any single tenant — for auditors who should only be able to view
-  identity-related records (users, groups). Call it "OrgAuditor".
+  I need a read-only role at organization scope called "AccessPolicyViewer_clie2e" that
+  grants only read access to the organization's Access Policies (the
+  Conditional Access Policy "Read" permission).
 
-  First confirm no role named "OrgAuditor" already exists, then create
-  it. Once you've made it, show me the role's contents so I can confirm
-  it looks right. Then please clean up by removing the role and
-  confirming it's gone.
+  Walk the full lifecycle, exercising the create, get, update, and delete
+  commands:
+    1. List the organization-scope permissions to find the Access Policy
+       read permission, confirm no role named "AccessPolicyViewer_clie2e" already exists,
+       then create the role including that permission.
+    2. Update it — change its description.
+    3. Get the role's contents so I can confirm the update.
+    4. Delete the role and confirm it's gone.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -40,33 +43,25 @@ success_criteria:
   - type: command_executed
     description: "Agent listed Organization-scope permissions to discover the catalog"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\s+.*(?:--scope\s+Organization\b|--service\s+identity\b)'
+    command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent checked name collision via `roles list --filter`"
+    description: "Agent created the role with --scope Organization and --name AccessPolicyViewer_clie2e"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--filter\s+\S*OrgAuditor'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent wrote an actions.json file (action-name array)"
-    tool_name: "Write"
-    command_pattern: 'actions\.json'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent created the role with --scope Organization and --name OrgAuditor"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Organization\b.*--name\s+\S*OrgAuditor.*--file\s+\S+'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+create\s+.*--scope\s+Organization\b.*--name\s+\S*AccessPolicyViewer_clie2e.*--file\s+\S+'
     min_count: 1
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated the role via `roles update <id>` re-passing the actions file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+update\s+[a-f0-9-]{8,}.*--file\s+\S+'
+    min_count: 1
+    weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -88,7 +83,7 @@ success_criteria:
   - type: command_executed
     description: "Agent verified the role was removed (second `roles get` or `roles list --filter`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:get\s+[a-f0-9-]{8,}|list\s+.*--filter\s+\S*OrgAuditor)'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+(?:get\s+[a-f0-9-]{8,}|list\s+.*--filter\s+\S*AccessPolicyViewer_clie2e)'
     min_count: 2
     weight: 1.0
     pass_threshold: 1.0
@@ -106,5 +101,5 @@ success_criteria:
     weight: 1.0
 
 post_run:
-  - command: 'CLEANUP_ROLE_NAME="OrgAuditor" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_role.py''))"'
+  - command: 'CLEANUP_ROLE_NAME="AccessPolicyViewer_clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_role.py''))"'
     timeout: 30

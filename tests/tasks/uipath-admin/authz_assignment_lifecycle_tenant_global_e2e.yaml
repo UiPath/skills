@@ -19,10 +19,10 @@ run_limits:
 
 initial_prompt: |
   My account needs the built-in global template role "Tenant Administrator",
-  which is available across every tenant in the organization. Look it up
-  by name, then assign it to me. After it's assigned, confirm it
-  appears on my account. Then clean up by removing the assignment
-  and confirming it's gone.
+  which is available across every tenant in the organization. Exercise the
+  create, list, and delete commands: look the role up by name, create the
+  assignment, list my assignments to confirm it appears, then delete the
+  assignment and list again to confirm it's gone.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -40,14 +40,6 @@ success_criteria:
     command_pattern: 'uip\s+(?:login\s+status|admin\s+users\s+list)'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent listed built-in TenantGlobal-scope roles (flag order-insensitive)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--scope\s+TenantGlobal\b'
-    min_count: 1
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

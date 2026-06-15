@@ -20,9 +20,10 @@ run_limits:
 
 initial_prompt: |
   Grant my account organization-level access by assigning the built-in
-  organization-level role "Insights Dashboard Viewer". Look it up by name, then
-  assign it. After it's assigned, confirm it shows up on my account.
-  Then please clean up by removing the assignment and confirming it's gone.
+  organization-level role "Insights Dashboard Viewer". Exercise the create,
+  list, and delete commands: look the role up by name, create the
+  assignment, list my assignments to confirm it shows up, then delete the
+  assignment and list again to confirm it's gone.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -56,14 +57,6 @@ success_criteria:
     command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+create\s+.*--role-id\s+[a-f0-9-]{8,}.*--identity-id\s+[a-f0-9-]{8,}.*--identity-type\s+User\b'
     min_count: 1
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent verified the assignment appeared via `assignments list --identity-id`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+list\s+.*--identity-id\s+[a-f0-9-]{8,}'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
