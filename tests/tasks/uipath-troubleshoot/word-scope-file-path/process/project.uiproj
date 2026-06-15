@@ -1,0 +1,6 @@
+{
+  "Name": "OfferLetterGen",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Word Application Scope file-path failure where a relative document path resolves against the robot working directory and is not found at runtime.",
+  "MainFile": "Main.xaml"
+}
