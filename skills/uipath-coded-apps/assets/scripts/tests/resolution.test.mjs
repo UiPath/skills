@@ -196,7 +196,7 @@ test('resolveMetric: unknown T1 name throws with "not found in registry"', () =>
 
 // ── buildWidgetFile tests (unified path for all tiers) ────────────────────────
 
-test('buildWidgetFile: T1 metric uses fnBody from agent (not hardcoded SDK)', () => {
+test('buildWidgetFile: T1 chart metric imports fetchData from metric module (not spliced fnBody)', () => {
   const entry = registry.t1['memory-calls-trend']
   const content = buildWidgetFile(
     {
@@ -206,13 +206,13 @@ test('buildWidgetFile: T1 metric uses fnBody from agent (not hardcoded SDK)', ()
       displayAs: 'area-chart',
       xKey: 'timeSlice',
       yKey: 'memoryCallsCount',
-      fnBody: "const { AgentMemory } = await import('@uipath/uipath-typescript/agent-memory')\nreturn await new AgentMemory(sdk as never).getCallsTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })"
     },
     entry,
     '30d'
   )
-  assert.ok(content.includes('customDataFn'))
-  assert.ok(content.includes('getCallsTimeline'))
+  assert.ok(content.includes("import { fetchData } from '@/metrics/memory-calls-trend'"))
+  assert.ok(content.includes('useWidgetData(fetchData, [])'))
+  assert.ok(!content.includes('customDataFn'))
   // No hardcoded type params from registry
   assert.ok(!content.includes('useWidgetData<'))
 })
@@ -228,7 +228,7 @@ test('buildWidgetFile: uses registry defaults for xKey/yKey when not in metric',
   assert.ok(content.includes('timeSlice'))
 })
 
-test('buildWidgetFile: T2 metric with fnBody uses chart path', () => {
+test('buildWidgetFile: T2 chart metric imports fetchData from metric module', () => {
   const entry = registry.t2['jobs-duration-threshold']
   const content = buildWidgetFile(
     {
@@ -238,13 +238,13 @@ test('buildWidgetFile: T2 metric with fnBody uses chart path', () => {
       displayAs: 'bar-chart',
       xKey: 'name',
       yKey: 'duration',
-      fnBody: "const { Jobs } = await import('@uipath/uipath-typescript/jobs')\nconst svc = new Jobs(sdk as never)\nconst result = await svc.getAll({ filter: \"State eq 'Running'\" })\nreturn result?.items ?? []"
     },
     entry,
     '30d'
   )
-  assert.ok(content.includes('customDataFn'))
-  assert.ok(content.includes('Jobs'))
+  assert.ok(content.includes("import { fetchData } from '@/metrics/jobs-duration-threshold'"))
+  assert.ok(content.includes('useWidgetData(fetchData, [])'))
+  assert.ok(!content.includes('customDataFn'))
   assert.ok(!content.includes('useWidgetData<'))
 })
 
@@ -276,10 +276,11 @@ test('buildWidgetFile: throws if title is missing', () => {
   )
 })
 
-test('buildWidgetFile: throws if fnBody is missing', () => {
+test('buildWidgetFile: throws if fnBody is missing (shell path)', () => {
+  // Chart path no longer needs fnBody; shell path (kpi-card, ranked-table, data-table)
+  // still implicitly requires it — crashes on metric.fnBody.split() until T5 adds explicit handling.
   assert.throws(
     () => buildWidgetFile({ name: 'x', tier: 'T3', title: 'X', displayAs: 'kpi-card' }, null),
-    /missing fnBody/
   )
 })
 
@@ -538,15 +539,17 @@ test('validateIntent: rejects detailColumns entry with bad format', () => {
   assert.ok(errors.some(e => e.includes('invalid format')))
 })
 
-test('buildWidgetFile: every chart type generates with no leftover placeholders', () => {
+test('buildWidgetFile: every chart type generates with no leftover placeholders and imports fetchData', () => {
   for (const displayAs of ['line-chart', 'area-chart', 'bar-chart', 'donut-chart', 'multi-line-chart', 'rate-chart']) {
     const metric = {
       name: 'm', tier: 'T3', title: 'M', displayAs,
-      xKey: 'date', yKey: 'value', rateNum: 'num', rateDen: 'den', fnBody: 'return []',
+      xKey: 'date', yKey: 'value', rateNum: 'num', rateDen: 'den',
     }
     const content = buildWidgetFile(metric, null, '30d')
     assert.equal(content.match(/<[A-Z][A-Z_]*>|<<[A-Z_]+>>/g), null, `${displayAs} has leftover placeholders`)
-    assert.ok(content.includes('customDataFn'), `${displayAs} missing customDataFn`)
+    assert.ok(content.includes("import { fetchData } from '@/metrics/m'"), `${displayAs} missing fetchData import`)
+    assert.ok(content.includes('useWidgetData(fetchData, [])'), `${displayAs} missing useWidgetData(fetchData, [])`)
+    assert.ok(!content.includes('customDataFn'), `${displayAs} should not splice customDataFn`)
   }
 })
 
@@ -623,12 +626,14 @@ test('1.4.0: agent-health shell build compiles formatted/colored columnDefs', ()
 // to Record<string, unknown>[]. The injected customDataFn must be Promise<any[]>
 // so `return result?.items ?? []` typechecks without casts. (Repro: TS2322.)
 
-test('harness: chart customDataFn signature accepts SDK-typed arrays (Promise<any[]>)', () => {
+test('harness: chart widget imports fetchData from metric module (no spliced Promise<any[]> wrapper)', () => {
   const content = buildWidgetFile(
-    { name: 'm', tier: 'T3', title: 'M', displayAs: 'line-chart', yKey: 'v', fnBody: 'return []' },
+    { name: 'm', tier: 'T3', title: 'M', displayAs: 'line-chart', yKey: 'v' },
     null, '7d'
   )
-  assert.ok(content.includes('Promise<any[]>'), 'chart wrapper must be Promise<any[]>')
+  assert.ok(content.includes("import { fetchData } from '@/metrics/m'"), 'chart must import fetchData from metric module')
+  assert.ok(content.includes('useWidgetData(fetchData, [])'), 'chart must use useWidgetData(fetchData, [])')
+  assert.ok(!content.includes('customDataFn'), 'chart must not splice customDataFn')
   assert.ok(!content.includes('Promise<Record<string, unknown>[]>'), 'old index-signature-demanding wrapper must be gone')
 })
 
@@ -718,4 +723,14 @@ test('validateIntent rejects intent missing schemaVersion 2', () => {
     metrics: [{ name: 'm', tier: 'T3', title: 'M', displayAs: 'kpi-card' }],
   })
   assert.ok(errors.some(e => /schemaVersion/.test(e)))
+})
+
+test('buildWidgetFile (chart) imports fetchData and does not splice customDataFn', () => {
+  const out = buildWidgetFile(
+    { name: 'memory-calls-trend', tier: 'T1', title: 'Memory Calls', displayAs: 'area-chart', xKey: 'timeSlice', yKey: 'memoryCallsCount' },
+    null, '30d'
+  )
+  assert.match(out, /import \{ fetchData \} from '@\/metrics\/memory-calls-trend'/)
+  assert.match(out, /useWidgetData\(fetchData, \[\]\)/)
+  assert.doesNotMatch(out, /const customDataFn = async/)
 })

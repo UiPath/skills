@@ -740,7 +740,6 @@ export function buildViewSpec(componentName, metric, entry, timeRange) {
  */
 export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d') {
   if (!metric.title)   throw new Error(`metric "${metric.name}" missing title`)
-  if (!metric.fnBody)  throw new Error(`metric "${metric.name}" missing fnBody — agent must provide the SDK call`)
 
   const defaults    = registryEntry?.defaults ?? {}
   const componentName = metric.componentName ?? toPascalCase(metric.name)
@@ -753,21 +752,7 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
 
   // ── Chart path ─────────────────────────────────────────────────────────────
   if (CHART_TYPES.has(displayAs)) {
-    const indented = metric.fnBody.split('\n').map(l => '  ' + l).join('\n')
-    // Promise<any[]> (not Record<string, unknown>[]): SDK response types are
-    // interfaces, which lack implicit index signatures — they are NOT assignable
-    // to Record<string, unknown>. any[] keeps the "must return an array" check
-    // while letting fnBody return SDK-typed arrays directly, no casts.
-    const customFnBlock = [
-      '',
-      '// ── Custom data function ──────────────────────────────────────────────────────',
-      'const customDataFn = async (sdk: any, getToken: () => Promise<string>): Promise<any[]> => {',
-      indented,
-      '}',
-      '// ────────────────────────────────────────────────────────────────────────────',
-      '',
-    ].join('\n')
-
+    const moduleSpecifier = metricModuleSpecifier(metric)
     const spec = {
       componentName,
       template:          displayAs,
@@ -775,8 +760,11 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
       icon:              iconName,
       title:             metric.title,
       subtitle:          autoSubtitle(metric, defaults, timeRange),
-      dataHook:          'useWidgetData(customDataFn, [])',
-      hookImport:        "import { useWidgetData } from '@/hooks/useWidgetData'",
+      dataHook:          'useWidgetData(fetchData, [])',
+      hookImport:        [
+                           "import { useWidgetData } from '@/hooks/useWidgetData'",
+                           `import { fetchData } from '${moduleSpecifier}'`,
+                         ].join('\n'),
       sdkImportLine:     '',
       responseTypeImport: '',
       dataSelector:      'data ?? []',
@@ -789,10 +777,7 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
       series:            metric.series ?? defaults.series ?? '[{key:"value",color:"hsl(var(--chart-1))"}]',
       pivotExpression:   metric.pivotExpression ?? defaults.pivotExpression ?? 'rawData',
     }
-
-    let content = applyTemplate(spec.template, specToSubs(spec))
-    content = content.replace(/\nexport function /, customFnBlock + '\nexport function ')
-    return content
+    return applyTemplate(spec.template, specToSubs(spec))
   }
 
   // ── KPI / table path (shell template) ──────────────────────────────────────
@@ -855,7 +840,7 @@ function specToSubs(spec) {
     PIVOT_EXPRESSION: spec.pivotExpression,
     SDK_IMPORT_LINE: spec.sdkImportLine ?? '',
     RESPONSE_TYPE_IMPORT: spec.responseTypeImport ?? '',
-    HOOK_IMPORT: "import { useWidgetData } from '@/hooks/useWidgetData'",
+    HOOK_IMPORT: spec.hookImport ?? "import { useWidgetData } from '@/hooks/useWidgetData'",
   }
 }
 
