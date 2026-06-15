@@ -11,20 +11,20 @@
 # Cross-platform (macOS, Linux, Windows via Git Bash / MSYS).
 #
 # Configuration (env only):
-#   UIPATH_TELEMETRY_DISABLED            Opt-out switch, SAME var + semantics as the
-#                                        uip CLI (packages/common/src/telemetry/
-#                                        telemetry-init.ts): "1" or "true" disables.
-#                                        A user who silenced CLI telemetry silences
-#                                        this hook too. Unset -> telemetry attempted.
+#   UIPATH_TELEMETRY_DISABLED            Gate. Reuses the uip CLI's variable name.
+#                                        Send ONLY when explicitly set to "0".
+#                                        Unset (default) or "1" -> do not send.
+#                                        Privacy-first default-off; absent is
+#                                        treated as disabled.
 #   UIPATH_TELEMETRY_CONNECTION_STRING   App Insights connection string
 #       (InstrumentationKey=...;IngestionEndpoint=https://<region>.in.applicationinsights.azure.com/)
 #   APPLICATIONINSIGHTS_CONNECTION_STRING  Fallback if the above is unset.
 
 set +e
 
-# Opt-out, mirroring the uip CLI: "1" or "true" disables. Default is enabled,
-# but nothing transmits unless a connection string is also configured (below).
-case "${UIPATH_TELEMETRY_DISABLED:-}" in 1|true) exit 0 ;; esac
+# Send only when telemetry is explicitly NOT disabled (=0). Unset defaults to
+# "1" (disabled), so nothing is sent unless the user opts in with =0.
+[ "${UIPATH_TELEMETRY_DISABLED:-1}" = "0" ] || exit 0
 
 conn="${UIPATH_TELEMETRY_CONNECTION_STRING:-${APPLICATIONINSIGHTS_CONNECTION_STRING:-}}"
 [ -z "$conn" ] && exit 0   # no endpoint configured -> nothing to send to

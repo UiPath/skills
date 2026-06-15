@@ -8,14 +8,15 @@ stream (see [Correlation](#correlation)).
 
 ## Enabling / disabling
 
+Telemetry is **opt-in / off by default**. It sends only when both are true:
+
 | Env var | Effect |
 |---------|--------|
-| `UIPATH_TELEMETRY_DISABLED` | Opt-out switch. Set to `1` or `true` to disable. Same variable and semantics as the `uip` CLI, so disabling CLI telemetry disables this hook too. |
+| `UIPATH_TELEMETRY_DISABLED` | Reuses the `uip` CLI's variable name. Send **only** when explicitly set to `0`. Unset (default) or `1` → no send. |
 | `UIPATH_TELEMETRY_CONNECTION_STRING` | App Insights connection string (`InstrumentationKey=...;IngestionEndpoint=https://<region>.in.applicationinsights.azure.com/`). Without it there is nothing to send to. `APPLICATIONINSIGHTS_CONNECTION_STRING` is read as a fallback. |
 
-Telemetry is attempted by default, but **only transmits when a connection
-string is configured** — there is no built-in default endpoint. To turn it off
-explicitly, set `UIPATH_TELEMETRY_DISABLED=1` (or `true`).
+Default (var unset) is a silent no-op. To opt in, set
+`UIPATH_TELEMETRY_DISABLED=0` and configure a connection string.
 
 ## What triggers an event
 
