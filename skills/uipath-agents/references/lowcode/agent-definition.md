@@ -145,7 +145,7 @@ Primary configuration file for conversational agent. Edit directly.
 | `maxIterations` | Max autonomous agent loop iterations. Default 25. Keep as omitted for conversational. |
 | `mode` | Use `"standard"` |
 
-> Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [agent-prompting-guide.md](agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
+> Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
 
 ### Schema Types
 
@@ -243,7 +243,7 @@ For **conversational agents**, the `outputSchema` should not be modified, and th
 
 ## Messages
 
-This section covers message **structure** and `contentTokens` mechanics. For prompt **quality** — system-prompt skeleton, tool-call criteria, output contract, worked examples — see [agent-prompting-guide.md](agent-prompting-guide.md).
+This section covers message **structure** and `contentTokens` mechanics. For prompt **quality** — system-prompt skeleton, tool-call criteria, output contract, worked examples — see [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md).
 
 ### System Message
 

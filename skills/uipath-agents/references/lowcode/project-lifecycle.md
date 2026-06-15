@@ -329,7 +329,7 @@ Read [agent-definition.md](agent-definition.md) for the full schema, which diffe
 
 1. Set `settings.model` — discover with `uip agent model list`, select per [model-selection-guide.md](model-selection-guide.md) (override the scaffold default `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational)
 2. Set `settings.temperature` (0 for deterministic)
-3. Write system prompt in `messages[0].content` + rebuild `contentTokens` — structure it per [agent-prompting-guide.md](agent-prompting-guide.md) (skeleton, tool-call criteria, output contract), not a placeholder
+3. Write system prompt in `messages[0].content` + rebuild `contentTokens` — structure it per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) (skeleton, tool-call criteria, output contract), not a placeholder
 4. For autonomous agents, write user message template in `messages[1].content` using `{{input.fieldName}}` + rebuild `contentTokens`. Conversational agents should always have the user message template left blank since each user message is received during the actual conversation.
 
 ### Step 4 — Define input/output schemas

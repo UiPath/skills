@@ -52,7 +52,7 @@ Although most of the lifecycle and capabilities are shared between both autonomo
 Standard workflow for any low-code agent task:
 
 1. **Scaffold** — `uip solution init` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
-2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md). **Override the scaffold model** (`gpt-4o-2024-11-20`) per [model-selection-guide.md](model-selection-guide.md) and write robust prompts per [agent-prompting-guide.md](agent-prompting-guide.md) — the scaffold ships a stale model and toy prompts.
+2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md). **Override the scaffold model** (`gpt-4o-2024-11-20`) per [model-selection-guide.md](model-selection-guide.md) and write robust prompts per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) — the scaffold ships a stale model and toy prompts.
 3. **Add capabilities** — pick from the Capability Registry below. Most add `resources/{Name}/resource.json`; memory uses `uip agent memory` and writes `features/{Name}/feature.json`.
 4. **Refresh** — `uip agent refresh --output json`. Applies pending migrations and regenerates `entry-points.json` and `bindings_v2.json`. Confirm `MigrationApplied`, `StorageVersion`.
 5. **Validate** — `uip agent validate --output json`. Strict read-only. Confirm `Status: "Valid"`, `Validated` counts.
@@ -73,7 +73,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Debugging / running a low-code agent end-to-end to test it | [debug.md](debug.md) |
 | Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
 | Choosing the LLM (`settings.model`) — discover tenant models, override the scaffold default | [model-selection-guide.md](model-selection-guide.md) |
-| Writing a robust system/user prompt — skeleton, tool-call criteria, output contract, production checklist | [agent-prompting-guide.md](agent-prompting-guide.md) |
+| Writing a robust system/user prompt — skeleton, tool-call criteria, output contract, production checklist | [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) |
 | External tools / IS tools / index contexts / memory spaces / escalations behave unexpectedly after `uip solution resources refresh` | [solution-resources.md](solution-resources.md) |
 | Running evaluations, adding test cases, managing evaluators | [evaluations/evaluate.md](evaluations/evaluate.md) |
 
@@ -82,7 +82,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | I need to... | Read first | Then |
 |--------------|------------|------|
 | Understand agent.json schema | [agent-definition.md](agent-definition.md) | |
-| Edit system prompt or user message | [agent-prompting-guide.md](agent-prompting-guide.md) (quality) | [agent-definition.md](agent-definition.md) § Messages, § contentTokens (mechanics) |
+| Edit system prompt or user message | [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) (quality) | [agent-definition.md](agent-definition.md) § Messages, § contentTokens (mechanics) |
 | Choose or change the model | [model-selection-guide.md](model-selection-guide.md) | [agent-definition.md](agent-definition.md) § Change Model Settings |
 | Add/remove input or output fields | [agent-definition.md](agent-definition.md) § entry-points.json | |
 | Scaffold a new agent project | [project-lifecycle.md](project-lifecycle.md) § End-to-End Example | [agent-definition.md](agent-definition.md) |
