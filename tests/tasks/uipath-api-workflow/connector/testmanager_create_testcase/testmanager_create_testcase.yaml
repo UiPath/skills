@@ -61,9 +61,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Resolved the Test Manager connector activity from the registry (`uip api-workflow registry resolve testmanager`)"
+    description: "Discovered the connector activity via the registry (`uip api-workflow registry resolve <keyword>`). Keyword is the agent's choice; TM-specificity is enforced by the stub + shape checks."
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+resolve\s+["\x27]?testmanager'
+    command_pattern: '(uip|\$UIP)\s+api-workflow\s+registry\s+resolve\s'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
