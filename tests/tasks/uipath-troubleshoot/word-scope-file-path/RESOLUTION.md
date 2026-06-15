@@ -51,11 +51,13 @@ change (and one optional host check).
 
 ### Workflow fix
 1. Make the document path **absolute** so it resolves the same on every
-   host. Either:
-   - `Path.Combine(Environment.CurrentDirectory, "Output\OfferLetter.docx")`
-     if the file ships inside the published project, or
-   - an explicit absolute root / UNC path the robot can reach
-     (e.g. `\\fileserver\share\Offer Letters\OfferLetter.docx`).
+   host — an explicit absolute root or a UNC path the robot can reach
+   (e.g. `\\fileserver\share\Offer Letters\OfferLetter.docx`), or a base
+   folder stored in an Orchestrator asset with the filename combined onto
+   it. Do **not** use `Path.Combine(Environment.CurrentDirectory, ...)`: on
+   an unattended robot `Environment.CurrentDirectory` is the robot working
+   directory (`...\systemprofile`) — the same root that just failed — so it
+   resolves to the same missing path.
 2. If the document is meant to be **generated** by this run rather than
    opened, enable the activity's **Create if not exists** option instead of
    pointing at a pre-existing file.

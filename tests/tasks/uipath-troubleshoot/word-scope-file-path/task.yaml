@@ -92,10 +92,14 @@ success_criteria:
             working-directory / relative-path resolution gap, not a missing
             file or a Word defect.
         The reference fix:
-          - Build an ABSOLUTE path - e.g.
-            Path.Combine(Environment.CurrentDirectory, "Output\OfferLetter.docx")
-            or an explicit absolute root / UNC path - so it resolves
-            deterministically on every host.
+          - Build an ABSOLUTE path - an explicit absolute root / UNC path,
+            or an Orchestrator-asset-anchored base with the filename
+            combined onto it - so it resolves deterministically on every
+            host. NOT Path.Combine(Environment.CurrentDirectory, ...): on an
+            unattended robot that is the systemprofile working directory,
+            the same root that just failed, so it resolves to the same
+            missing path. An agent that explicitly steers off
+            Environment.CurrentDirectory is MORE correct, not less.
           - If the document is meant to be GENERATED rather than opened,
             enable "Create if not exists" instead.
           - (If a mapped drive / OneDrive placeholder were involved, use a
@@ -111,12 +115,16 @@ success_criteria:
         1.0  Agent matched word-scope-file-path-not-found AND identified the
              relative-path-resolving-against-the-robot-working-directory
              cause (or equivalently, a non-absolute path that resolves
-             wrong on the robot) AND recommended an absolute path /
-             Path.Combine (or Create if not exists when the doc is
-             generated), without fabricating actions or editing content.
+             wrong on the robot) AND recommended an explicit absolute path /
+             UNC / asset-anchored base (or Create if not exists when the doc
+             is generated), without fabricating actions or editing content.
+             Steering OFF Environment.CurrentDirectory earns full marks - it
+             resolves to the same failing root - so do not dock for it.
         0.8  Correct playbook and cause, but the fix is vague (e.g., "fix
-             the path" without naming absolute path / Path.Combine / Create
-             if not exists).
+             the path" without naming an absolute/UNC/asset-anchored path or
+             Create if not exists), OR recommends
+             Path.Combine(Environment.CurrentDirectory, ...) as the primary
+             fix (resolves to the same failing systemprofile root).
         0.5  Recognized a path / file-not-found problem but did not tie it
              to relative-path resolution (e.g., only said "the file is
              missing, put it back"), or matched a sibling Word playbook.
