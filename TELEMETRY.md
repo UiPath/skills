@@ -27,7 +27,7 @@ plugin; everything else exits silently. A call qualifies when:
 |------|----------------|
 | `Skill` | skill name starts with `uipath:` / `uipath-` |
 | `Bash` / `PowerShell` | command invokes the `uip` CLI or `rpa-tool` |
-| `Edit` / `Write` / `Read` / `Glob` / `Grep` | path targets `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.json`, `project.json`, `app.config.json`, `action-schema.json` |
+| `Edit` / `Write` / `Read` / `Glob` / `Grep` | path targets `.cs` (coded workflows), `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.json`, `project.json`, `app.config.json`, `action-schema.json` |
 
 ## What is collected
 

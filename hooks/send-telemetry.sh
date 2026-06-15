@@ -59,7 +59,7 @@ case "$tool" in
     ;;
   Edit|Write|Read|Glob|Grep)
     printf '%s' "$payload" \
-      | grep -Eiq '\.(flow|xaml|uipx|bpmn)"|/(agent|caseplan|project|app\.config|action-schema)\.json"' && is_uipath=1
+      | grep -Eiq '\.(cs|flow|xaml|uipx|bpmn)"|/(agent|caseplan|project|app\.config|action-schema)\.json"' && is_uipath=1
     ;;
 esac
 [ "$is_uipath" = "1" ] || exit 0
