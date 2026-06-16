@@ -225,14 +225,10 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 
 For **autonomous agents**, the `inputSchema` defines the input properties of the agent which can be templated into the system-prompt and user-prompt.
 
-For **conversational agents**, the `inputSchema` defines custom "per-exchange" inputs to provide the agent (in addition to the conversation-history which is implicitly passed-in). These inputs can be templated into the system-prompt.
+For **conversational agents**, each agent run handles one conversational exchange - a single run corresponds to a single turn of messages/tool-calls taken in response to a user-initiated message. The runtime supplies the following inputs per run:
+- **`messages`** (reserved, implicit) — current conversation history, including user's latest message. Always present; never declare it (or other fields representing conversation-history) in `inputSchema`, per [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) Rule 4.
+- **Custom `inputSchema` fields** — additional per-exchange context variables which can be templated into the system-prompt Leave `inputSchema` blank unless the use case genuinely needs per-exchange context beyond conversation history.
 
-For more context:
-We define a conversational "exchange" as a user/agent back-and-forth consisting of the user's initiating message and the series of agent-response messages. Conversational agents run within a single exchange; the agent is initiated by the Conversational Service upon exchange-start, performs its loop of messages and tool-calls, then ends after its turn. 
-
-The input-schema of all conversational agents (no matter what `inputSchema` is defined on the `agent.json`) contains a hidden/reserved `messages` input field which represents the current conversation-history that is passed in by the service for each exchange's execution. Through the `inputSchema`, one can define additional inputs to template into the system-prompt on each agent execution (and thus exchange). These agent inputs can also be modified throughout the conversation (across exchanges).
-
-It is generally recommended to only define `inputSchema` fields for conversational agents when there is a clear use-case for passing in additional inputs beyond just the conversation history. Otherwise, leave the `inputSchema` blank. Also note that due to the implicit `messages` input, there should never be a need to define any `inputSchema` field to represent the conversation history.
 
 ### Output Schema
 
