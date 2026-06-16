@@ -40,7 +40,7 @@ Pre-warm is already running at `<PROJECT_DIR>`. Do not re-fire it.
 
 Classify each metric using `tier-resolution.md` and `capability-registry.json`.
 
-**SDK validation (do this before writing the plan):** For every requested metric, apply the three-step check in `tier-resolution.md § SDK validation`. Every metric in the plan must be backed by a method in the SDK service reference. Metrics with no SDK path are refused inline (strikethrough + alternative). Write `intent.json` in memory (do not save it yet). Then output the plan.
+**SDK validation (do this before writing the plan):** For every requested metric, apply the three-step check in `tier-resolution.md § SDK validation`. Every metric in the plan must be backed by a method in the SDK service reference. Metrics with no SDK path are refused inline (strikethrough + alternative). Resolve each metric in memory (which SDK method serves it) so the plan is credible — but do NOT write `intent.json` or any `metrics/*.ts` file yet; the build subagent authors all files in Phase 4. Then output the plan.
 
 ### Plan format
 
@@ -194,9 +194,9 @@ export const fetchDetail: MetricFn = async (sdk) => {
 - Confirmation → Stage 2
 
 **Stage 2 — setup details (only what the confirmation didn't already answer):**
-- Confirmation already contains a client ID → write it into intent.json, continue to Phase 4
+- Confirmation already contains a client ID → carry it as the plan's `clientId`, continue to Phase 4
 - Confirmation already says to create one (e.g. "build it, create the app") → create the OAuth app (below), continue to Phase 4
-- `clientId` already in intent.json from a prior session → continue to Phase 4, ask nothing
+- `clientId` already known (provided earlier, or in an existing project's `intent.json`) → continue to Phase 4, ask nothing
 - Otherwise → ask ONE short structured-choice question (SKILL.md Rule 17 — this is a short turn, safe for the question tool):
 
   *"How should I set up the OAuth app this dashboard signs in with?"*
@@ -220,7 +220,7 @@ uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
   --output json
 ```
 
-Read `ClientId` from the JSON response and write it to intent.json. Tell the user: "OAuth app created — building now."
+Read `ClientId` from the JSON response and carry it as the plan's `clientId` (the build subagent writes it into intent.json). Tell the user: "OAuth app created — building now."
 
 **If the command fails** (invalid scopes for this environment): retry with the minimal set:
 
@@ -240,7 +240,7 @@ If both fail: direct the user to `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalAp
 
 `tsc` validates the *shape* of a query (do the fields exist?) but never its *meaning* (does this filter actually match the rows the user wants?). A query can compile green and return zero rows — the most common way a dashboard ships empty, because the agent filtered on a plausible-but-wrong field.
 
-You wrote each `metrics/<name>.ts` module from the SDK references. Before committing, cross-check every one against the **Example response** and **semantics notes** in the relevant `references/sdk/*.md` file (already loaded in the parallel blast). For each metric, confirm:
+**The build subagent (Phase 4) authors these modules and applies this check — it is NOT done in the main thread.** When the subagent writes each `metrics/<name>.ts` from the SDK references, it cross-checks every one against the **Example response** and **semantics notes** in the relevant `references/sdk/*.md` file (already loaded in the parallel blast). For each metric, confirm:
 
 1. **The field you filter or read on appears in the example response** — with the value you expect. Not just "the field exists in the type" (both `sourceType` and `packageType` exist) — the example shows the real *value*.
 2. **No semantics note warns against your choice.** The references flag the traps types can't express.
@@ -263,35 +263,36 @@ return (await new Jobs(sdk as never).getAll({ filter: "ProcessType eq 'Agent'" }
 
 If a metric's correctness depends on data you genuinely can't determine from the references, prefer a simpler, well-documented query over a guess — and tell the user what you simplified.
 
-**After cross-checking:** write the verified `metrics/<name>.ts` modules to disk alongside `intent.json` in Phase 4.
+**After cross-checking:** the build subagent writes the verified `metrics/<name>.ts` modules and `intent.json` itself (Phase 4). No metric files or `intent.json` are written in the main thread — so none of those file edits surface to the user.
 
 ---
 
 ## Phase 4 — Build (runs in a build subagent)
 
-To keep the experience seamless, Phase 4 executes inside a **build subagent** (the `Task` tool). The subagent runs the build script, handles the type-error retry loop, and returns one short milestone block. The bash command, raw event stream, tsc/npm output, and retries all stay inside the subagent — they never surface in the main thread.
+To keep the experience seamless, Phase 4 executes inside a **build subagent** (the `Task` tool). The subagent **authors `intent.json` and the metric modules**, runs the build script, handles the type-error retry loop, and returns one short milestone block. Every file write, the bash command, the raw event stream, tsc/npm output, and retries stay inside the subagent — none surface in the main thread. **The user sees only your one-line "Building…" and the final milestone — never the `intent.json` or `metrics/*.ts` writes.**
 
-`SKILL_BASE_DIR` is the directory shown in "Base directory for this skill:" from your activation message — it contains `SKILL.md` and ends in `/skills/uipath-coded-apps`.
+`SKILL_BASE_DIR` is the directory shown in "Base directory for this skill:" from your activation message — it contains `SKILL.md` and ends in `/skills/uipath-coded-apps`. `INTENT_DIR` is the directory the subagent writes `intent.json` + `metrics/` into; `INTENT_JSON_PATH` is `<INTENT_DIR>/intent.json`.
 
-**Step 1 — Write `intent.json` and `metrics/*.ts` modules to disk** (verified in Phase 3.5). `intent.json` is pure metadata (`schemaVersion: 2`, no `fnBody`). Each module file sits sibling to `intent.json` at `metrics/<name>.ts`.
-
-**Step 2 — Show one line, then spawn the build subagent.** Print only:
+**Step 1 — Show one line, then spawn the build subagent.** Print only:
 
 ```
 Building **[Dashboard Name]**…
 ```
 
-Then call the `Task` tool with this prompt (substitute the two paths):
+Do NOT write `intent.json` or any `metrics/*.ts` in the main thread — the subagent writes them, so those edits stay hidden. Call the `Task` tool with this prompt, pasting the APPROVED PLAN (it is the subagent's authoring spec — give it everything needed to write the files):
 
-> You are the dashboard build executor. You NEVER surface raw output — your final message is the only thing shown.
-> 1. Read `<SKILL_BASE_DIR>/references/dashboards/plugins/build/impl.md` § "Build subagent — execution" and follow it exactly.
-> 2. Run: `node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" "<INTENT_JSON_PATH>"`
-> 3. On `METRICS_RETRY`, fix the named `src/metrics/*.ts` files using the SDK references and the reported errors, then re-run — at most 2 attempts, then drop the metric.
-> 4. Return ONLY the milestone block defined in § "Build subagent — returns".
+> You are the dashboard build executor. You NEVER surface raw output or file edits — your final message is the only thing shown.
+> 1. Read `<SKILL_BASE_DIR>/references/dashboards/plugins/build/impl.md` §§ "Phase 3.5" and "Build subagent — execution" and follow them exactly.
+> 2. Author `<INTENT_DIR>/intent.json` (pure metadata — `schemaVersion: 2`, no `fnBody`) and one `<INTENT_DIR>/metrics/<name>.ts` per metric (`export const fetchData: MetricFn`), writing each module from the SDK references and applying the Phase 3.5 cross-check. Implement exactly this approved plan:
+>    - Project: dashboardName=`<NAME>`, routingName=`<ROUTING>`, projectDir=`<PROJECT_DIR>`, orgName=`<ORG>`, tenantName=`<TENANT>`, cloudUrl=`<CLOUD_URL>`, apiUrl=`<API_URL>`, timeRange=`<RANGE>`, clientId=`<CLIENT_ID or empty>`
+>    - Widgets (one metric each): [per widget — name, tier, title, displayAs, presentation hints, and the SDK service/method it resolves to]
+> 3. Run: `node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" "<INTENT_JSON_PATH>"`
+> 4. On `METRICS_RETRY`, fix the named `src/metrics/*.ts` files using the SDK references + the reported errors, then re-run — at most 2 attempts, then drop the metric.
+> 5. Return ONLY the milestone block defined in § "Build subagent — returns".
 
-**Step 3 — Relay the subagent's returned block verbatim.** Add nothing else — no commentary about the subagent, no raw output.
+**Step 2 — Relay the subagent's returned block verbatim.** Add nothing else — no commentary about the subagent, no raw output, no mention of the files it wrote.
 
-**Step 4 — Start the dev server as a background job in the MAIN thread** (the build script deliberately does not start it — a server spawned inside the script outlives the session and leaks). Run with the background option on the shell tool call (same mechanism as pre-warm):
+**Step 3 — Start the dev server as a background job in the MAIN thread** (the build script deliberately does not start it — a server spawned inside the script outlives the session and leaks). Run with the background option on the shell tool call (same mechanism as pre-warm):
 
 ```bash
 cd "<PROJECT_DIR>" && npm run dev -- --port 57173
@@ -300,7 +301,7 @@ cd "<PROJECT_DIR>" && npm run dev -- --port 57173
 - If a dev-server background job from THIS session is already running for this project (e.g. after an incremental edit): do NOT start another — Vite hot-reloads; just open the URL.
 - If the start fails with a port-in-use error: a stale server from an earlier session is still holding 57173 — tell the user and ask before killing anything (Windows: `netstat -ano | findstr :57173` then `taskkill /PID <pid> /F`; macOS/Linux: `lsof -ti:57173 | xargs kill`).
 
-**Step 5 — Open `http://localhost:57173` in the browser.**
+**Step 4 — Open `http://localhost:57173` in the browser.**
 
 If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface its message and stop (no server start).
 
@@ -310,7 +311,11 @@ If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface
 
 > Everything in this section and the next is what the **build subagent** does. The main thread never runs these steps; it only spawns the subagent and relays its result.
 
-Run the build script once. Most events are silent — translate the rest to milestones for the return block.
+**Step A — Author the inputs** (these writes stay inside you — they never reach the main thread):
+- Write `<INTENT_DIR>/intent.json` — pure metadata: `schemaVersion: 2`, `dashboardName`, `routingName`, `projectDir`, `orgName`, `tenantName`, `cloudUrl`, `apiUrl`, `timeRange`, `clientId`, and a `metrics` array of metadata entries (NO `fnBody`).
+- Write one `<INTENT_DIR>/metrics/<name>.ts` per metric — `export const fetchData: MetricFn = async (sdk) => { … }` written from the SDK references; import time windows from `@/lib/time` and `fetchAll` from `@/lib/paginate`; read-only methods only. Cross-check each against its documented example response (§ "Phase 3.5"). For a record-grain drill-down, also export `fetchDetail` and set `"detail": true` on that metric.
+
+**Step B — Run the build script once.** Most events are silent — translate the rest to milestones for the return block.
 
 **Silent (never report):** `PREWARM_START`, `PREWARM_DONE`, `SCAFFOLD_READY`, `ENV_WRITTEN`, `PARTIAL_BUILD_DETECTED`.
 
