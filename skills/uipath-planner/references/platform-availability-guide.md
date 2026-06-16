@@ -16,6 +16,8 @@ Product × delivery-model availability matrix. Consulted by the [Constraint Gate
 
 ## Availability Matrix
 
+> **Scope.** Lists products the planner can route to a skill, plus the few skill-less products that serve as a documented fallback or manual deliverable (e.g. UiPath Apps low-code → Coded Apps fallback). Document Understanding / IXP route through `uipath-ixp`. Pure platform/analytics features with no planner build path (Insights, AI Center, Task Mining, Autopilot for Everyone, Studio Web) are intentionally omitted — gate those manually if a PDD names them.
+
 | Product | Cloud | Automation Suite | AS notes | Alternative when blocked |
 |---|---|---|---|---|
 | RPA (Studio, Robot, Orchestrator) | ✅ | ✅ since first AS (2021.10) | No serverless/cloud robots on AS — capacity via Automation Suite Robots or provisioned unattended robots | — |
@@ -31,16 +33,11 @@ Product × delivery-model availability matrix. Consulted by the [Constraint Gate
 | Document Understanding (classic) | ✅ | ✅ | — | — |
 | Document Understanding (modern projects) | ✅ | ✅ since 2024.10 | Needs GPU allocation; unsupported on OpenShift / offline installs (per 2024.10 docs — ⚠ Verify for newer) | Classic DU; rule-based extraction for fixed-format generated documents |
 | IXP | ✅ | ❌ Not available (⚠ Verify — on-prem delivery announced for late 2026) | — | DU modern/classic on AS; rule-based extraction for generated PDFs |
-| Studio Web | ✅ | ✅ since 2024.10 | Web app projects + Agent Builder hosting since 2.2510 | Studio Desktop |
 | Test Manager | ✅ | ✅ since 2021.10 (full Test Cloud since 2.2510) | — | — |
-| Insights | ✅ | ✅ since 2021.10 | — | — |
-| AI Center | ✅ (OOTB ML packages being phased out) | ✅ | Sunset trajectory — do not base new designs on AI Center OOTB models | IXP (cloud) / DU modern (AS) / GenAI activities |
-| Task Mining | ✅ | ❌ Removed in 2.2510 (last AS version: 2024.10) | — | Manual process discovery |
-| Autopilot for Everyone | ✅ | ✅ since 2024.10 | AS feature set lags cloud baseline | — |
 
 ## Standalone (MSI Orchestrator) Note
 
-Standalone delivery is Orchestrator + Studio/Robot (+ standalone Test Manager, Insights, AI Center) only. **No** Apps, Integration Service, Studio Web, Data Service, API Workflows, Maestro, Agents, Solutions. ⚠ Verify before relying on any product beyond core RPA + Orchestrator. Default architecture: RPA projects + Orchestrator queues/assets/triggers, deployed as individual packages via `uipath-platform`.
+Standalone delivery is Orchestrator + Studio/Robot (+ standalone Test Manager) only. **No** Apps, Integration Service, Studio Web, Data Service, API Workflows, Maestro, Agents, Solutions. ⚠ Verify before relying on any product beyond core RPA + Orchestrator. Default architecture: RPA projects + Orchestrator queues/assets/triggers, deployed as individual packages via `uipath-platform`.
 
 ## Maintenance
 
