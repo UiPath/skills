@@ -2,8 +2,8 @@ task_id: skill-platform-licensing-consumables-summary
 description: >
   Smoke test: agent uses the uipath-platform skill to fetch a consumables
   summary report (default mode). Verifies the agent calls `uip platform
-  licenses consumables get --mode summary --output json`. CLI auth failure
-  is expected offline.
+  licenses consumables get --output json` (summary is the default `--mode`,
+  so the flag is optional). CLI auth failure is expected offline.
 tags: [uipath-platform, smoke, licensing, consumables]
 
 initial_prompt: |
