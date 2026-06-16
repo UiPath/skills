@@ -12,29 +12,25 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "MemorySol" containing a single low-code
-  agent "SupportMemoryAgent". The agent accepts a required
-  `userQuestion` string and returns an `answer` string.
+  Create a UiPath solution "MemorySol" with a single low-code agent
+  "SupportMemoryAgent" that takes a required `userQuestion` string and
+  returns an `answer` string.
 
-  Attach the existing UiPath memory space named
-  "UiPathAgentsSupportMemory" from the Orchestrator folder
-  "Shared/uipath-agents" as an agent memory feature named
-  `SupportRecall`. Enable dynamic few-shot retrieval with hybrid
-  search, threshold 0.25, result count 5, and field weighting
-  `userQuestion=1`.
+  I want the agent to get better over time by drawing on past support
+  cases. Connect it to our existing UiPath memory space
+  "UiPathAgentsSupportMemory" (in the Orchestrator folder
+  "Shared/uipath-agents") as a memory feature called `SupportRecall`, and
+  set it up for dynamic few-shot recall: hybrid search, a 0.25 similarity
+  threshold, up to 5 results, weighting matches on `userQuestion`.
 
-  Add one seed memory item to `SupportRecall`: key
-  `refund-policy-tone`, value `Use empathetic wording and cite the
-  remembered support precedent when a refund case resembles a prior
-  escalation.`, memory type `episodic`, feedback ID
+  Seed `SupportRecall` with one example so I can see it working — an
+  episodic memory with key `refund-policy-tone`, value `Use empathetic
+  wording and cite the remembered support precedent when a refund case
+  resembles a prior escalation.`, feedback ID
   `d640fe25-3c05-4f2e-bd8d-42bdb20704c1`, and metadata
   `{"source":"seed","scenario":"support"}`.
 
-  Use the full low-code memory CLI workflow for memory features:
-  discover the memory space before attaching it and refresh solution
-  resources after migration, even though the memory name and folder
-  are provided. Do not hand-create memory feature JSON. Do NOT
-  publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation.
   Complete the entire task end-to-end in a single pass.
 

@@ -12,15 +12,13 @@ run_limits:
   max_turns: 60
 
 initial_prompt: |
-  Build a UiPath coded agent named `greeter` using `uip codedagent new`.
-  The agent takes a name and returns "Hello, <name>!". No LLM — purely
-  deterministic Python.
+  Build a small UiPath coded agent named `greeter` that takes a name and
+  returns "Hello, <name>!" — no LLM, just deterministic Python.
 
-  Once the agent runs locally, scaffold a custom evaluator using
-  `uip codedagent add evaluator` that checks the agent execution time is
-  under 500ms. Register it with `uip codedagent register evaluator`, wire
-  it into an eval set with at least 2 test cases, and run it with
-  `uip codedagent eval main <eval-set> --no-report --output-file eval-results.json`.
+  Once it runs locally, I want a custom evaluation that fails the agent
+  whenever a run takes longer than 500ms. Give it at least two test cases,
+  run the evaluation locally (no Studio Web reporting), and save the
+  results to `eval-results.json`.
 
   Do NOT publish, upload, or deploy. Do NOT call `uip login`. Complete
   the entire task end-to-end in a single pass.
