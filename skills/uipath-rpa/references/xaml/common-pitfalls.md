@@ -438,7 +438,7 @@ Guessed names (e.g. `method`/`path`/`body` for an HTTP operation that actually e
 
 ### `Configuration` Attribute Is Opaque
 
-The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa activities get-default-xaml --activity-type-id <GUID> --connection-id <GUID>`.
+The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa activities get-default-xaml --activity-type-id <GUID> --connection-id <GUID>`. When an operation's full schema is gated behind prerequisite criteria fields (Jira `project`/`issuetype`, generic record `Type`), re-run that command with `--field-values <criteria>=<value>` to obtain the expanded blob — never splice extra fields into an old blob (see [is-connector-xaml-guide.md § Hidden Secondary Fields](../is-connector-xaml-guide.md)).
 
 ### `FieldObject.Value` Attribute Does Nothing
 

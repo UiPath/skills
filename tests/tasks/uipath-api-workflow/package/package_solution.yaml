@@ -1,0 +1,43 @@
+task_id: skill-api-workflow-package-solution
+description: >
+  Skill-guided evaluation: agent authors an API workflow and packages it into a
+  deployable solution artifact via the solution packager. Tests whether the
+  skill teaches the build/publish path (rule 19 — API workflows pack via
+  `uip solution pack`, not a non-existent `uip api-workflow build`) and the
+  Phase 4 packaging step. Local-only (pack does not publish, needs no auth).
+tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate]
+
+initial_prompt: |
+  Make a simple UiPath API Workflow (it can just return a constant), then
+  package the project into a deployable solution artifact (.nupkg / .zip).
+  Confirm a package artifact is produced.
+  Before starting, load the uipath-api-workflow skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent packaged via the solution packager (rule 19)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A package artifact (.nupkg or .zip) was produced"
+    command: "find . -name '*.nupkg' -o -name '*.zip' | grep -q ."
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Packager invoked with --output json (rule 18)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+pack.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+# Packaging is a multi-step lifecycle task (scaffold solution -> Type: Api -> pack);
+# it inherits the experiment's generous turn budget rather than a tight smoke cap.
+# Tiered integration (not smoke) so it runs on the nightly runner, not the PR gate.
