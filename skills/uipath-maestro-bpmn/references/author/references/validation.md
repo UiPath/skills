@@ -61,6 +61,29 @@ python3 -c "import xml.etree.ElementTree as ET; ET.parse('ProjectName/ProjectNam
 Do not treat reading the file or visually inspecting generated metadata as a
 validation step; the validation command must run and succeed before `pack`.
 
+### Bundled offline semantic validator
+
+When the `uip` CLI is unavailable or you want a fast local gate that catches the
+most common authoring breakers before packaging, run the bundled validator under
+`skills/uipath-maestro-bpmn/validator/`. It parses the BPMN with `bpmn-moddle`
+using the UiPath extension descriptor and runs the canvas validation rules
+ported from the PO.Frontend rule engine (conditional flows, undeclared `vars.X`
+references, required fields, missing scope variables, fake joins, superfluous
+gateways, error end/boundary events, timer durations, single blank start event,
+and missing resource bindings).
+
+```bash
+cd skills/uipath-maestro-bpmn/validator
+npm install            # one-time: pulls bpmn-moddle
+node validate-bpmn.mjs ../../../ProjectName/ProjectName.bpmn
+```
+
+It prints `VALID` and exits `0` when there are no blocking errors; otherwise it
+lists each error with its rule code and exits non-zero. WARNING-severity findings
+(e.g. CLI-owned Integration Service enrichment gaps) are printed but do not gate.
+Passing the bundled validator does not replace `uip maestro bpmn validate`; it is
+a local fast check, and the CLI/Health Analyzer remain the authoritative gates.
+
 ## Package checks
 
 Before executing `uip maestro bpmn pack`, ensure the project directory contains

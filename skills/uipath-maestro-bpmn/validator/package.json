@@ -1,0 +1,12 @@
+{
+  "name": "uipath-maestro-bpmn-validator",
+  "private": true,
+  "type": "module",
+  "description": "Offline semantic validator for UiPath Maestro BPMN XML. Ports the PO.Frontend canvas validation rule engine onto a bpmn-moddle parse tree.",
+  "bin": {
+    "validate-bpmn": "./validate-bpmn.mjs"
+  },
+  "dependencies": {
+    "bpmn-moddle": "^9.0.2"
+  }
+}
