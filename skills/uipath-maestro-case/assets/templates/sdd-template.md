@@ -219,9 +219,9 @@ DO NOT include in Configuration:
 
 ### Case Variables
 
-> Complete inventory of all case-level variables and arguments. Every row's `Category` column is REQUIRED — drives classification at build time. Inference from other columns is no longer supported.
+> This table holds **only**: `In` / `Out` arguments; trigger-payload `Variable`s (`sourceTriggers` + `sourceFields`); and case-level state read by a condition (`IF`) or consumed in **≥ 2 places**. An input that is simply one upstream task's output is **referenced directly** — whole-value `<- "Stage"."Task".out`, or in-expression `vars.$xref('Stage','Task','out')` — and is **NOT** a row here (the emitting task self-declares the output and is its own producer). Minting a row to relay one task's output into one downstream consumer is the **case-var relay anti-pattern**: declare a row for an output only to rename it, set a custom `Default` / `Type` / `Description`, or expose it as case-level state read in multiple places. Every row's `Category` column is REQUIRED — drives classification at build time. Inference from other columns is no longer supported.
 >
-> For worked patterns by use case (single-trigger, multi-trigger, In / Out / Variable, Pattern C, etc.), see [`sdd-template-examples.md`](sdd-template-examples.md).
+> For worked patterns by use case (single-trigger, multi-trigger, In / Out / Variable, task-local-only via direct xref), see [`sdd-template-examples.md`](sdd-template-examples.md).
 
 | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
 |------|----------|------|----------------|--------------|---------|-------------|
@@ -324,7 +324,8 @@ The runtime engine resolves the binding when the task completes, writing the res
 #### Stage Exit Conditions
 
 > **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
-> Completion (`Yes`) and routing (`No`) rows share this one table. **Stage-to-stage routing is expressed by the destination stages' Entry Conditions** (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`) — one stage can fan out to N stages, each declaring it as their entry trigger. `return-to-origin` returns to the origin stage automatically.
+> Completion (`Yes`) and routing (`No`) rows share this one table. **Regular stage-to-stage routing is expressed by the destination stages' Entry Conditions** (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`) — one stage can fan out to N stages, each declaring it as their entry trigger. `return-to-origin` returns to the origin stage automatically.
+> **Exception carve-out:** to route this stage INTO a decision/signal-routed exception lane, add a gated divert row here — `Marks Stage Complete: No`, `selected-tasks-completed("<decider>")`, `IF =js:(<signal> === <exception-value>)`, `exit-only`, with `exitToStageId` → the exception stage — AND gate this stage's `Yes` completion row with the inverse `IF`. The lane returns via `return-to-origin`. Omitting the divert row → dual-fire or deadlock. See sdd-generation-rules § Logical integrity step 5.
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
@@ -505,6 +506,8 @@ The runtime engine resolves the binding when the task completes, writing the res
 | — | {case variable} = {literal, =js:expression, or =js:vars.X.Y for dotted access} |
 
 > Target case variable MUST exist in Case Variables table. See Section 2 I/O bindings explainer for `->` vs `=` operator semantics.
+
+> **I/O completeness (resolved resources).** Once this task binds a deployed resource, every **required** input the resource declares MUST appear as an Inputs row with a value (or `<UNRESOLVED>` + a high review item), and every `-> caseVar` output `Field` MUST be a field the resource actually emits. **An input fed by an upstream task's output is bound directly — `<- "Stage"."Task".out` (whole value) or `vars.$xref('Stage','Task','out')` (inside a `=js:` expression) — and is NOT declared as a Case Variable.** Declare a Case Variable only to rename, default, retype, or expose case-level state.
 
 ---
 
