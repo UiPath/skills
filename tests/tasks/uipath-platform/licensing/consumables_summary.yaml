@@ -24,3 +24,9 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "Agent invoked the uipath-platform skill"
+    skill_name: "uipath-platform"
+    expected_skill: "uipath-platform"
+    weight: 1.0
