@@ -267,6 +267,12 @@ If a metric's correctness depends on data you genuinely can't determine from the
 
 ---
 
+## Offer-on-detect upgrade
+
+If a build or edit against an existing project emits `UPGRADE_AVAILABLE:{from,to}`, the dashboard was built on an older scaffold than the one now shipped. Tell the user a newer dashboard scaffold is available and offer to upgrade — same plan→confirm ethos, **never automatic**. On confirm, run a lone `UPGRADE` edit-intent (`{ projectDir, op: "UPGRADE" }`) — it preserves their metrics (`intent.json` + `src/metrics`) and regenerates the app against the current scaffold. See `primitives/incremental-editor.md`.
+
+---
+
 ## Phase 4 — Build (runs in a build subagent)
 
 To keep the experience seamless, Phase 4 executes inside a **build subagent** (the `Task` tool). The subagent **authors `intent.json` and the metric modules**, runs the build script, handles the type-error retry loop, and returns one short milestone block. Every file write, the bash command, the raw event stream, tsc/npm output, and retries stay inside the subagent — none surface in the main thread. **The user sees only your one-line "Building…" and the final milestone — never the `intent.json` or `metrics/*.ts` writes.**

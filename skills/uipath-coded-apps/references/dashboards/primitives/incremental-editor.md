@@ -1,6 +1,6 @@
 # Incremental Editor
 
-Handles ADD / REMOVE / CHANGE / REBUILD requests on existing dashboards.
+Handles ADD / REMOVE / CHANGE / REBUILD / UPGRADE requests on existing dashboards.
 
 ## Trigger
 
@@ -28,6 +28,7 @@ Op shapes:
 - **REMOVE** — `target` is the widget component name from state.json. Also delete the corresponding `metrics/<name>.ts` module.
 - **CHANGE** — `delta` merges over the widget's persisted `intentMetric`. Metadata-only changes (e.g. `displayAs`, `title`) leave the existing module in place. Changing query logic requires shipping a new `metrics/<name>.ts` module alongside the op.
 - **REBUILD** — no fields; regenerates every widget from persisted `intentMetric` + the on-disk `metrics/*.ts` modules (e.g. after template updates). No module changes needed unless also updating queries.
+- **UPGRADE** — `{ "projectDir": "...", "op": "UPGRADE" }` (no target/metric; run it as a lone op, never batched). Refreshes the disposable scaffold framework to the current version, migrates `intent.json`, regenerates all widgets/views from persisted metadata + on-disk modules, re-validates (Stage A + full tsc), and re-stamps `state.versions`. Preserves `intent.json`, `src/metrics/*.ts`, `.env.local`, and the deploy `clientId`. See "Offer-on-detect upgrade" below.
 
 A single-op shorthand (`{ "op": "ADD", "projectDir": "...", "metric": ... }`) is also accepted.
 
@@ -58,7 +59,13 @@ Before applying any op, the build type-checks all affected `metrics/*.ts` module
 - `METRICS_RETRY:{"files":[...],"errors":[...]}` — fix named module files and re-run
 - `TSC_PASS` — edit validated clean
 - `TSC_FAIL:{"errors":"..."}` — surface to user
-- `INCREMENTAL_READY:{"count":N,"ops":[{"op":"ADD","widget":"X"},…]}` — done; the running dev server hot-reloads automatically. If no dev-server background job is running, start one per `plugins/build/impl.md` Phase 4 Step 4 (the script never starts servers).
+- `INCREMENTAL_READY:{"count":N,"ops":[{"op":"ADD","widget":"X"},…]}` — done; the running dev server hot-reloads automatically. If no dev-server background job is running, start one per `plugins/build/impl.md` Phase 4 Step 3 (the script never starts servers).
+- `UPGRADE_AVAILABLE:{"from":"1.0.0","to":"1.1.0"}` — the shipped scaffold is newer than this dashboard's. Offer to upgrade (below) — never auto-upgrade.
+- `UPGRADE_DONE:{"to":"1.1.0","widgets":[...]}` — upgrade complete; the dev server hot-reloads.
+
+## Offer-on-detect upgrade
+
+Any build or edit against an existing project emits `UPGRADE_AVAILABLE:{from,to}` when its stamped `scaffold` version differs from the one now shipped. Tell the user a newer dashboard scaffold is available and offer to upgrade — same plan→confirm ethos, **never automatic**. On confirm, run a lone `UPGRADE` op. It preserves their metrics (`intent.json` + `src/metrics`) and regenerates the app framework against the current scaffold.
 
 ## Rules
 

@@ -6,7 +6,8 @@ Per-project metadata. Read at every build start. Written by build script on succ
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "versions": { "skill": "2.0.0", "scaffold": "1.0.0", "intentSchema": 2, "sdk": "1.4.0" },
   "app": {
     "name": "Operations Health Dashboard",
     "routingName": "operations-health-x7k2",
@@ -50,7 +51,7 @@ Per-project metadata. Read at every build start. Written by build script on succ
 
 ## Key rules
 
-1. `schemaVersion` stays at `1` — unchanged in this phase.
+1. `schemaVersion` is `2`. The `versions` block (`skill`/`scaffold`/`intentSchema`/`sdk`) records what the dashboard was built against; a `scaffold` mismatch with the shipped version drives the offer-on-detect upgrade.
 2. `widgets` is a map of `{ hash, tier, metric, template, module, intentMetric }` — not a string array.
    - `intentMetric` is pure metadata (no `fnBody`) — title, display hints, tier, name. Used by CHANGE/REBUILD to regenerate without the original `intent.json`.
    - `module` is the relative path to the durable data-fetch code (e.g. `"metrics/agent-health.ts"`). The live source lives at `src/metrics/<name>.ts` in the project.
