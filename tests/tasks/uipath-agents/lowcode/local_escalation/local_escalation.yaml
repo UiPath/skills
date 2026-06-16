@@ -1,0 +1,90 @@
+task_id: skill-agent-local-escalation-tool
+description: >
+  Add escalation wired to a solution-internal Action Center app
+  (brownfield). The fixture ships an `AgentWithLocalEscalation` solution
+  that already contains a registered low-code `Agent` project and a
+  `SimpleApprovalApp` project (workflow Action) inside the same solution.
+  The agent must discover the local app via `uip solution resources list`
+  and add an escalation resource to `Agent` — reusing both projects,
+  NOT re-creating them and NOT re-initializing the solution. Verifies the
+  escalation resource.json shape, the ActionCenter channel wiring bound
+  to the solution-internal app (`folderName: "solution_folder"`), and
+  that `uip agent validate` accepts the escalation after refresh.
+tags: [uipath-agents, e2e, mode:build, low-code, feature:escalation]
+
+run_limits:
+  expected_turns: 24
+  turn_timeout: 1200
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/local_escalation/_fixtures/AgentWithLocalEscalation ."
+    timeout: 10
+
+initial_prompt: |
+  Add an escalation resource named "ApprovalEscalation" to the existing
+  "Agent" agent inside the existing "AgentWithLocalEscalation" solution
+  (in the current directory). The escalation should use the Action Center
+  app that is already part of this solution. Set `isEnabled` to true.
+
+  Reuse both projects as-is — do NOT re-create any projects and do NOT
+  re-initialize the solution.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  # Brownfield: the solution already exists in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Brownfield: Agent ships in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-create the existing Agent project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "ApprovalEscalation escalation resource.json was created"
+    path: "AgentWithLocalEscalation/Agent/resources/ApprovalEscalation/resource.json"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Local escalation resource shape: ActionCenter channel wired to solution-internal SimpleApprovalApp"
+    command: "python3 $TASK_DIR/check_local_escalation.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
