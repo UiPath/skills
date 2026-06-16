@@ -7,11 +7,11 @@ description: >
   (c) every data row has the same column count as the header.
 
   This is the CSV counterpart to `audit_export_verify_e2e.yaml` (which
-  validates the default ZIP). The underlying long-term-store data is the
-  same; this task asserts the CSV-specific serialization is correct
-  (single merged file, shared header, aligned rows). The format-agnostic
-  "export IDs are a subset of live events" fidelity check is already
-  covered by the ZIP verify task and is not duplicated here.
+  validates the default json folder). The underlying long-term-store data
+  is the same; this task asserts the CSV-specific serialization is correct
+  (single merged file, shared header, aligned rows). The per-day file
+  structure is already covered by the json folder verify task and is not
+  duplicated here.
 
   Whole-day granularity note: `uip admin audit ... export` issues one
   HTTP call per UTC day inside [--from-date, --to-date]. For CSV those
@@ -32,7 +32,8 @@ tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
 initial_prompt: |
   Export tenant audit events for the 3-day window from 5 days ago
   through 2 days ago (UTC, whole days) to ./audit-window.csv in the
-  current working directory, as a single merged CSV (not a ZIP).
+  current working directory, as a single merged CSV (not the default
+  per-day JSON folder).
   Resolve the dates with `date -u -d '5 days ago' +%Y-%m-%d` and
   `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the run
   date.

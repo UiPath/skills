@@ -2,9 +2,9 @@ task_id: skill-admin-audit-export-e2e
 description: >
   End-to-end skill-guided evaluation: agent uses the uipath-admin skill
   to drive a complete investigation — discover sources, query events
-  in a window, then export the same window to a ZIP. Validates the
-  full sources → events → export chain plus the export's required
-  --from-date / --to-date / --output-file flags.
+  in a window, then export the same window as day-wise JSON files.
+  Validates the full sources → events → export chain plus the export's
+  required --from-date / --to-date / --output-file flags.
 
   Platform note: commands fail with auth errors in this environment.
   E2e tests still validate the CLI invocation surface — the agent must
@@ -19,9 +19,9 @@ initial_prompt: |
     1. See what audit event sources are visible (so they know what's
        being captured).
     2. Get a quick preview of the most recent events for context.
-    3. Get the entire 7-day window as a ZIP for offline review.
+    3. Get the entire 7-day window as day-wise JSON files for offline review.
 
-  Output the ZIP to ./audit-last-7d.zip in the current working
+  Output them to the ./audit-last-7d folder in the current working
   directory.
 
   Do NOT ask for approval, confirmation, or feedback.
@@ -60,11 +60,11 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  # 4. export written to the requested path
+  # 4. export written to the requested folder (json default; no .zip/.csv extension)
   - type: command_executed
-    description: "Agent's export targeted ./audit-last-7d.zip"
+    description: "Agent's export targeted the ./audit-last-7d folder"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-file\s+\S*audit-last-7d\.zip'
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-file\s+\S*audit-last-7d(?![\w.])'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

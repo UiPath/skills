@@ -172,9 +172,9 @@ For each event:
 
 ## Investigation 3 — "Give me an audit dump for January"
 
-**User asks:** "Export everything for compliance for Q4." / "I need the full audit log for January for the security review." / "Pull last month's events for tenant X as a ZIP."
+**User asks:** "Export everything for compliance for Q4." / "I need the full audit log for January for the security review." / "Pull last month's events for tenant X as JSON files."
 
-**Approach:** `export` straight to a file. Default is a ZIP of day-wise JSON files; add `--file-format csv` for a single merged CSV when the user wants a flat, spreadsheet/Excel-friendly dump. No need to query `events` first unless the user wants a preview. Match the `--output-file` extension to the format (`.zip` / `.csv`).
+**Approach:** `export` straight to disk. Default (`json`) writes a **folder** of day-wise JSON files; add `--file-format csv` for a single merged CSV when the user wants a flat, spreadsheet/Excel-friendly dump. No need to query `events` first unless the user wants a preview. Give `--output-file` a folder path (no extension) for `json`, or a `.csv` path for `csv`.
 
 ### Step 1 — Confirm scope and window
 
@@ -183,11 +183,11 @@ If the user is ambiguous about scope, ask once. For compliance reviews, **both**
 ### Step 2 — Export
 
 ```bash
-# Tenant scope — most events (default ZIP of day-wise JSON files)
+# Tenant scope — most events (default json: a folder of day-wise JSON files)
 uip admin audit tenant export \
   --from-date 2026-01-01 \
   --to-date   2026-02-01 \
-  --output-file ./audit-tenant-2026-01.zip \
+  --output-file ./audit-tenant-2026-01 \
   --output json
 
 # Tenant scope as a single merged CSV (flat, Excel-friendly)
@@ -202,31 +202,31 @@ uip admin audit tenant export \
 uip admin audit org export \
   --from-date 2026-01-01 \
   --to-date   2026-02-01 \
-  --output-file ./audit-org-2026-01.zip \
+  --output-file ./audit-org-2026-01 \
   --output json
 ```
 
-The CLI issues one HTTP call per UTC day under the hood. ZIP aggregates the daily responses into a flat ZIP; CSV parses the same daily JSON and merges every event into one CSV. `Days` and `NonEmptyDays` in the result tell you how many calendar days had data; for CSV, `Events` reports the total row count.
+The CLI issues one HTTP call per UTC day under the hood. `json` writes one JSON file per UTC day into the output folder; `csv` parses the same daily JSON and merges every event into one CSV. `Days` and `NonEmptyDays` in the result tell you how many calendar days had data; `json` reports `Files` (files written) and `csv` reports `Events` (total rows).
 
 ### Step 3 — Verify the export
 
-**ZIP** — list the per-day entries:
+**JSON (default)** — list the folder's per-day files:
 
 ```bash
-unzip -l ./audit-tenant-2026-01.zip
+ls ./audit-tenant-2026-01
 ```
 
-Typical layout (one entry per UTC day with events):
+Typical layout (one file per UTC day with events):
 
 ```
-audit-tenant-2026-01.zip
-├── 2026-01-01.txt
-├── 2026-01-02.txt
+audit-tenant-2026-01/
+├── 2026-01-01.json
+├── 2026-01-02.json
 ├── ...
-└── 2026-01-31.txt
+└── 2026-01-31.json
 ```
 
-Each `.txt` is a JSON array of audit events with **PascalCase** keys (`Id`, `CreatedOn`, `OrganizationId`, `ActorId`, `ActorName`, `EventType`, …) — different from the camelCase shape returned by the live `events` endpoint. Note this in the user's hand-off if they're going to feed the dump into other tooling.
+Each `.json` file is a JSON array of audit events with **PascalCase** keys (`Id`, `CreatedOn`, `OrganizationId`, `ActorId`, `ActorName`, `EventType`, …) — different from the camelCase shape returned by the live `events` endpoint. Note this in the user's hand-off if they're going to feed the dump into other tooling.
 
 **CSV** — inspect the header and row count:
 
@@ -235,12 +235,12 @@ head -1 ./audit-tenant-2026-01.csv          # shared header (PascalCase columns)
 python3 -c "import csv; print(sum(1 for _ in csv.reader(open('./audit-tenant-2026-01.csv'))) - 1, 'rows')"
 ```
 
-One header row, then every event across all days as a data row (same PascalCase column names as the ZIP's JSON keys). The row count should match `Events` in the result envelope.
+One header row, then every event across all days as a data row (same PascalCase column names as the JSON files' keys). The row count should match `Events` in the result envelope.
 
 Edge cases the CLI handles automatically — surface in your hand-off only if they appear:
 
-- **Nested ZIPs**: when a single day's response is itself a ZIP-of-ZIPs, inner files are renamed `<inner>_<outer>.txt` rather than collapsed.
-- **Same-name collisions**: duplicate basenames across days get an `_<YYYY-MM-DD>` suffix (and `_<YYYY-MM-DD>_2`, `_3`, … if needed) to keep entries unique.
+- **Nested ZIPs**: when a single day's server response is itself a ZIP-of-ZIPs, inner files are flattened into the folder as `<inner>_<outer>.json` rather than collapsed.
+- **Same-name collisions**: duplicate basenames across days get an `_<YYYY-MM-DD>` suffix (and `_<YYYY-MM-DD>_2`, `_3`, … if needed) to keep filenames unique.
 
 ### Step 4 — Hand off
 
@@ -291,7 +291,7 @@ If the user wants more depth on any one event type, drill in with Investigation 
 |---|---|
 | "who" / "did" + a verb on a resource | **1** — Who did X to Y |
 | "logged in" / "login" / "authenticated" / a user's email | **2** — Login history |
-| "export" / "dump" / "ZIP" / "CSV" / a date range | **3** — Date-range dump |
+| "export" / "dump" / "JSON" / "CSV" / a date range | **3** — Date-range dump |
 | "overview" / "what's happening" / "recent activity" / "audit summary" | **4** — Overview |
 
 Two or more signals? Run them in sequence and stitch the results in the final report. Don't make the user re-ask.
@@ -301,14 +301,14 @@ Two or more signals? Run them in sequence and stitch the results in the final re
 - **`tenant` events without an active tenant fail loudly.** If `uip login` has no tenant selected, every tenant-scoped command throws. Either re-`uip login` and pick a tenant, or pass `--tenant-id <guid>` on every call.
 - **`events` cursor pagination is chronologically reversed from intuition.** `next` = newer (often null), `previous` = older (the typical "load more"). The CLI tool follows `previous` automatically when you bump `--limit > 200` — don't re-implement this in the agent.
 - **Date-only ISO strings are interpreted as UTC midnight.** `--from-date 2026-01-01` means `2026-01-01T00:00:00Z`. To capture the full final day in `--to-date`, use `2026-02-01` (exclusive next day) or `2026-01-31T23:59:59.999Z`.
-- **Export format depends on `--file-format`.** The default `zip` holds one **JSON** file per UTC day (not CSV) with **PascalCase** keys; `--file-format csv` produces a single merged **CSV** whose header uses those same PascalCase field names. Both differ from the camelCase live `events` endpoint — don't paste an export into a parser expecting the live shape. In the CSV, `Status` is numeric (`0`/`1`) and `ClientInfo` is a JSON-stringified cell.
+- **Export format depends on `--file-format`.** The default `json` writes one **JSON** file per UTC day (named `<YYYY-MM-DD>.json`) into the `--output-file` **folder**, with **PascalCase** keys; `--file-format csv` produces a single merged **CSV** whose header uses those same PascalCase field names. Both differ from the camelCase live `events` endpoint — don't paste an export into a parser expecting the live shape. In the CSV, `Status` is numeric (`0`/`1`) and `ClientInfo` is a JSON-stringified cell.
 - **Org sources and tenant sources are different sets.** Don't reuse a GUID from `org sources` in a `tenant events` query — the filter will silently match nothing.
 
 ## Output Etiquette — after an audit query or export
 
 After every `events` or `export` call, surface the following before waiting for the user's next-step choice. Do not chain mutations.
 
-1. **Operation & result** — e.g. `Found 47 audit events on tenant T in the last 7 days`, `Wrote 123,456 bytes to /path/to/audit.zip (3 days, 2 non-empty)`, or for CSV `Wrote 98,765 bytes to /path/to/audit.csv (1,234 events across 3 days, 2 non-empty)`.
+1. **Operation & result** — e.g. `Found 47 audit events on tenant T in the last 7 days`, `Wrote 27 JSON files (123,456 bytes) to /path/to/audit-jan/ (31 days, 27 non-empty)`, or for CSV `Wrote 98,765 bytes to /path/to/audit.csv (1,234 events across 31 days, 27 non-empty)`.
 2. **Scope used** (`org` or `tenant`) and any `--tenant-id` override.
 3. **Time window** — explicit ISO bounds, even if they came from a relative phrase ("last 7 days").
 4. **Filters applied** — sources, types, users, status.
