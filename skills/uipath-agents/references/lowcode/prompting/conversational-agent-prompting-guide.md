@@ -40,7 +40,7 @@ Slot rules (flexible):
 - **Response style** — Set default length and format.
 - **Grounding** — State what the agent must not invent and which sources are authoritative for the domain. Cuts hallucination.
 
-> For conversational agents, you may also template per-exchange `inputSchema` fields into the **system prompt** (not the user message, which stays blank for conversational agents). See [agent-definition.md § Input Schema](../agent-definition.md#input-schema). Only add `inputSchema` fields when the use case needs variable-based context beyond conversation history. Reference them as `{{input.<field>}}` and mirror in `messages[0].contentTokens` per [agent-definition.md § contentTokens Construction](../agent-definition.md#contenttokens-construction).
+> For conversational agents, you may also template per-exchange `inputSchema` fields into the **system prompt** (not the user message, which stays blank for conversational agents). See [agent-definition.md § Input Schema](../agent-definition.md#input-schema). Only add `inputSchema` fields when the use case needs variable-based context from the chat-UI beyond the conversation history and the user's input messages (which are already captured in the implicit `messages` field for all conversational-agents). Reference them as `{{input.<field>}}` and mirror in `messages[0].contentTokens` per [agent-definition.md § contentTokens Construction](../agent-definition.md#contenttokens-construction).
 
 > For low-code conversational agents, the above defined system-prompt within the `agent.json` will be wrapped by more prompt details in the agent-runtime which describes citation generation behavior (e.g. for web-urls and context-grounding results). Do not define citation-generation format in the system-prompt.
 
@@ -102,7 +102,7 @@ User message: `""` — left blank. The Conversational Service injects the user t
 
 | Field | Default | Change when |
 |-------|---------|-------------|
-| `inputSchema` | `{ "properties": {} }` | Add fields only when per-exchange, variable-based context beyond conversation history is genuinely needed. Reserved names: `messages`, `uipath__*` ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 4). |
+| `inputSchema` | `{ "properties": {} }` | Add fields only when per-exchange, variable-based context beyond conversation history is genuinely needed. Reserved names: `messages`, `uipath__*` ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-patterns 4 and 5). |
 | `outputSchema` | `{ "type": "object", "properties": {} }` | **Never populate** — runtime streams events, does not fill output ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 1). |
 | `messages[1].content` | `""` | **Keep blank** — Conversational Service injects the user turn at runtime ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 3). |
 | `settings.temperature` | `0` | Raise for open-ended brainstorming or casual chats. Keep `0` for factual support flows. |
@@ -117,7 +117,7 @@ User message: `""` — left blank. The Conversational Service injects the user t
 - **Long tool-call loops** - agent runtime may stop and require the user to confirm continuation after a single agent run (turn) consists of a series of over 8 steps that each involve tool-call(s). Note that this is not a limitation on total parallel tool-calls on any individual step, so aim to parallelize tool-calls when possible and/or ask for user-confirmation to break up long loops of sequential steps.
 - **Populating `outputSchema`** — runtime streams events; populated schemas never get filled and confuse the agent ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 1).
 - **Templating data into the user message** — the user message content stays blank; per-exchange context goes into the **system prompt** via `inputSchema` templating.
-- **Adding `messages` or `uipath__*` to `inputSchema`** — reserved names; runtime injects ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-pattern 4).
+- **Adding `messages` or `uipath__*` to `inputSchema`** — reserved names; runtime injects ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Anti-patterns 4 and 5).
 - **Using `Agent` or `Llm` guardrail scopes** — silently ignored; only Tool-scope guardrails apply ([critical-rules/conversational-critical-rules.md](../critical-rules/conversational-critical-rules.md) Critical Rule 1).
 - **Defining citation-generation format in the system prompt** — agent runtime wraps citation formatting around the prompt; redefining it conflicts or confuses citation generation (see § 1 callout).
 - **Cargo-culted `temperature`** — copying a nonzero temperature into a deterministic, factual-based conversation task.

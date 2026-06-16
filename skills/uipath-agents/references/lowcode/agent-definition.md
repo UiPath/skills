@@ -226,8 +226,8 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 For **autonomous agents**, the `inputSchema` defines the input properties of the agent which can be templated into the system-prompt and user-prompt.
 
 For **conversational agents**, each agent run handles one conversational exchange - a single run corresponds to a single turn of messages/tool-calls taken in response to a user-initiated message. The runtime supplies the following inputs per run:
-- **`messages`** (reserved, implicit) — current conversation history, including user's latest message. Always present; never declare it (or other fields representing conversation-history) in `inputSchema`, per [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 4.
-- **Custom `inputSchema` fields** — additional per-exchange context variables which can be templated into the system-prompt Leave `inputSchema` blank unless the use case genuinely needs per-exchange context beyond conversation history.
+- **`messages`** (reserved, implicit) — current conversation history, including user's latest message. Always present; never declare it (or other fields representing conversation-history or user's input message) in `inputSchema`, per [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 4.
+- **Custom `inputSchema` fields** — additional per-exchange context variables which can be templated into the system-prompt. Leave `inputSchema` blank unless the use case genuinely needs per-exchange context variables from the chat-surface beyond the conversation history and user's input messages, which are already captured in `messages`.
 
 
 ### Output Schema
