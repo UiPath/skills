@@ -637,10 +637,10 @@ Same rules as Flowchart — nodes defined inline within property elements (e.g.,
 
 ---
 
-## 7. When to Skip ViewState
+## 7. ViewState Is Mandatory for These Canvases
 
-If generating XAML for **execution only** (not for visual display), you can omit all ViewState properties. The workflow will execute correctly. Studio will auto-arrange nodes when the file is first opened.
+Always generate ViewState for **every** node in a Flowchart, State Machine, or ProcessDiagram. Do **not** skip it, even for "execution-only" workflows.
 
-**Trade-off:** The initial layout will be messy — all nodes may overlap at (0,0). For a professional-looking layout, always include ViewState.
+Omitting ViewState does not break execution, but Studio places every node at (0,0). They overlap into what looks like **a single node** — and Studio does **not** auto-arrange on open. The stacked layout persists until a user manually right-clicks → Auto Arrange. A generated workflow that opens as one overlapping node reads as broken.
 
-**Recommended approach:** Generate ViewState for all Flowchart, State Machine, and ProcessDiagram workflows. It adds bulk but produces immediately usable designs.
+The only ViewState you skip: **Sequences** (Studio stacks their children vertically without coordinates) and **nodes you are not editing** in an existing file (leave their ViewState untouched).
