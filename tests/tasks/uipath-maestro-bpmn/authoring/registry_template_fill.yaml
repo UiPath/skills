@@ -1,0 +1,63 @@
+task_id: skill-bpmn-registry-template-fill
+description: >
+  Registry-driven authoring eval: agent authors a single Orchestrator.StartJob
+  node by fetching its registry xmlTemplate, filling the placeholders, binding
+  the process resource from the template's bindingInfo, and generating the
+  diagram — without hand-authoring any uipath:* element. Proves the core
+  registry-template authoring loop end to end.
+tags: [uipath-maestro-bpmn, e2e, lifecycle:generate, "node:service-task", "feature:registry", resource]
+
+run_limits:
+  expected_turns: 26
+  turn_timeout: 1200
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Create a UiPath Maestro BPMN Process Orchestration project at:
+    RunJobFromRegistry/RunJobFromRegistry
+
+  The main BPMN file must be:
+    RunJobFromRegistry/RunJobFromRegistry/RunJobFromRegistry.bpmn
+
+  Model a public-safe "kick off an RPA job" process:
+  - Manual start, one node that starts an Orchestrator job, one success end event.
+  - The job node MUST be authored from the `Orchestrator.StartJob` registry
+    template: run `uip maestro bpmn registry get Orchestrator.StartJob --output json`
+    and fill that template's `{placeholders}`. Do NOT hand-write the
+    `uipath:activity` block from memory.
+  - Bind the process (release) resource from the template's `bindingInfo`
+    (resource `process`, contextField `releaseKey`). Use a synthetic placeholder
+    key only — never fabricate a real GUID.
+  - Declare any process variables using the `BPMN.Variables` registry template.
+  - Generate BPMN DI: a shape per visible node and an edge per sequence flow.
+
+  Also create the standard local package files next to the BPMN:
+    project.uiproj, operate.json, entry-points.json, bindings_v2.json,
+    package-descriptor.json
+
+  Do not upload, publish, deploy, debug, run, or call cloud-side UiPath
+  commands. Do not ask for approval or pause for feedback.
+
+success_criteria:
+  - type: file_exists
+    description: "Registry-driven BPMN file was created"
+    path: "RunJobFromRegistry/RunJobFromRegistry/RunJobFromRegistry.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the Orchestrator.StartJob registry template"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?bpmn\s+registry\s+get\s+Orchestrator\.StartJob'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Node uses Orchestrator.StartJob registry template, bindingInfo binding, diagram, no fabricated IDs"
+    command: "python3 $TASK_DIR/check_registry_template_fill.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

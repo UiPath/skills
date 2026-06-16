@@ -49,10 +49,12 @@ def main() -> None:
     if not scripts:
         fail("missing bpmn:scriptTask")
     script_task = scripts[0]
-    if attr(script_task, "scriptFormat").lower() != "javascript":
-        fail('script task must set scriptFormat="JavaScript"')
-    if not has_uipath_extension(script_task, "scriptVersion"):
-        fail("script task missing uipath:scriptVersion metadata")
+    # The script payload must come from the BPMN.ScriptTask registry template:
+    # a uipath:mapping carrying uipath:type value="BPMN.ScriptTask". Do NOT
+    # assert hand-made scriptFormat / uipath:scriptVersion attributes — those
+    # are not part of the registry template.
+    if not has_uipath_extension(script_task, "BPMN.ScriptTask"):
+        fail("script task must use the BPMN.ScriptTask registry template (uipath:mapping/uipath:type)")
 
     process = root.find("bpmn:process", NS)
     if process is None:
@@ -65,13 +67,6 @@ def main() -> None:
     for required in ("expenseId", "amount", "decision"):
         if required not in variable_names:
             fail(f"missing root variable named {required!r}")
-
-    migration_versions = {
-        elem.attrib.get("version") for elem in root.findall(".//uipath:migrationVersion", NS)
-    }
-    numeric_versions = {v for v in migration_versions if v and any(ch.isdigit() for ch in v)}
-    if not numeric_versions:
-        fail('missing numeric uipath:migrationVersion (e.g. version="11" or "11.5")')
 
     require_no_private_connector_values(root)
     require_sequence_integrity(root)

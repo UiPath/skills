@@ -22,16 +22,24 @@ initial_prompt: |
   - A manual start event, one script task named "Prepare approval summary",
     one user task named "Manager approval", an exclusive gateway for approved
     vs rejected outcomes, and two end events.
-  - Valid BPMN DI diagram geometry for each visible node and sequence flow.
+  - Valid BPMN DI diagram geometry for each visible node and sequence flow
+    (the registry does not supply geometry — you generate it).
   - Public-safe synthetic IDs, labels, variables, and any generated metadata.
 
+  Author every `uipath:*` payload by filling that type's registry `xmlTemplate`
+  (`uip maestro bpmn registry get <type> --output json`), including the script
+  task (`BPMN.ScriptTask`) and the human task (`Actions.HITL`). Do not hand-write
+  any `uipath:*` element from memory, and never fabricate an ID.
+
   Keep the scope local:
-  - Validate the BPMN source with `uip maestro bpmn validate PurchaseApproval/PurchaseApproval.bpmn --output json`.
+  - There is no `uip maestro bpmn validate` command. Validate the BPMN source
+    with a well-formed-XML parse, e.g.
+    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('PurchaseApproval/PurchaseApproval.bpmn')"`.
   - Package the project with `uip maestro bpmn pack PurchaseApproval dist --output json`.
   - Do not upload, publish, deploy, debug, run a process, ask for approval, or
     call cloud-side UiPath commands.
 
-  The task is not complete until validation passes and a local package artifact
+  The task is not complete until the BPMN parses and a local package artifact
   exists under dist.
 
 success_criteria:
@@ -61,11 +69,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent validated the BPMN project locally"
+    description: "Agent validated the BPMN project locally (bundled validator or XML parse), not a fake validate command"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+validate\s+PurchaseApproval/PurchaseApproval\.bpmn\s+--output\s+json'
+    command_pattern: '(validate-bpmn\.mjs|ET\.parse|xml\.etree)'
     min_count: 1
     weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used the registry to fetch templates"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+(maestro\s+)?bpmn\s+registry\s+get'
+    min_count: 1
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -77,8 +93,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "BPMN project validates successfully in the scored workspace"
-    command: "uip maestro bpmn validate PurchaseApproval/PurchaseApproval.bpmn --output json"
+    description: "BPMN source is well-formed XML in the scored workspace"
+    command: "python3 -c \"import xml.etree.ElementTree as ET; ET.parse('PurchaseApproval/PurchaseApproval.bpmn')\""
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

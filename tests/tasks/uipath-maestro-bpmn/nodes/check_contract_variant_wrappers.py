@@ -37,28 +37,15 @@ def require_wrapper(root: ET.Element, wrapper: str, extension_name: str, type_va
         fail(f"missing bpmn:{wrapper} with {type_value} uipath:{extension_name} shell")
 
 
-def require_uipath_element(root: ET.Element, local_name: str, description: str) -> None:
-    if not root.findall(f".//uipath:{local_name}", NS):
-        fail(f"missing {description}")
-
-
-def require_uipath_attr_value(
-    root: ET.Element, local_name: str, attr_name: str, expected_value: str, description: str
-) -> None:
-    values = {elem.attrib.get(attr_name) for elem in root.findall(f".//uipath:{local_name}", NS)}
-    if expected_value not in values:
-        fail(f"missing {description}: {expected_value}")
-
-
 def main() -> None:
     path, root = parse_bpmn("Contract")
 
-    # Representative coverage for public-safe model-authored or preserve-only XML
-    # shells. This is intentionally not an exhaustive mirror of
-    # supported-elements.md: CLI-owned Intsvc.* enrichment is covered by the
-    # integration-service fixture, while this fixture keeps one wait shell to
-    # assert the model/CLI boundary stays explicit.
-    expected_model_or_preserve_shells = [
+    # Each node must use its registry `bpmnElement` and carry a registry-template
+    # `uipath:*` payload whose `uipath:type value` matches the extension type.
+    # Every (wrapper, extension, type) tuple below is grounded in the registry
+    # bpmn-spec (maestro-sdk/src/manifest/bpmn-spec.json); no preserve-only,
+    # migration, or non-registry types are asserted.
+    expected_registry_wrappers = [
         ("serviceTask", "activity", "Orchestrator.StartAgentJob"),
         ("serviceTask", "activity", "A2A.AgentExecution"),
         ("serviceTask", "activity", "Orchestrator.ExecuteApiWorkflowAsync"),
@@ -70,27 +57,17 @@ def main() -> None:
         ("callActivity", "activity", "Orchestrator.StartCaseMgmtProcess"),
         ("callActivity", "activity", "Orchestrator.StartCaseMgmtProcessAsync"),
         ("intermediateThrowEvent", "event", "Maestro.SendMessageEvent"),
-        ("serviceTask", "activity", "Maestro.CasePlanScheduler"),
         ("serviceTask", "activity", "Maestro.CaseManagerGuardrails"),
         ("serviceTask", "activity", "Maestro.CaseRulesEvaluator"),
         ("receiveTask", "event", "Intsvc.WaitForEvent"),
     ]
-    for wrapper, extension_name, type_value in expected_model_or_preserve_shells:
+    for wrapper, extension_name, type_value in expected_registry_wrappers:
         require_wrapper(root, wrapper, extension_name, type_value)
-
-    for version in {"5", "11", "11.5"}:
-        require_uipath_attr_value(root, "migrationVersion", "version", version, "migration version")
-
-    require_uipath_attr_value(
-        root, "scriptVersion", "value", "v2", "preserved legacy scriptVersion"
-    )
-    require_uipath_element(root, "caseManagement", "preserve-only uipath:caseManagement payload")
-    require_uipath_element(root, "Activity", "preserve-only generic uipath:Activity payload")
 
     require_no_private_connector_values(root)
     require_sequence_integrity(root)
     require_di_for_visible_elements(root)
-    print(f"OK: {path} contains public-safe Maestro BPMN XML contract variants")
+    print(f"OK: {path} nodes use registry bpmnElement + registry-template payloads")
 
 
 if __name__ == "__main__":

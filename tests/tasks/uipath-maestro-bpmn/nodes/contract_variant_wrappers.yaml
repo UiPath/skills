@@ -1,9 +1,10 @@
 task_id: skill-bpmn-contract-variant-wrappers
 description: >
-  XML contract eval: agent authors public-safe Maestro BPMN wrappers for
-  documented Orchestrator, A2A, queue, business-rule, call-activity,
-  message-event, case-management, wait-event, migration, and preserve-only
-  extension variants.
+  Registry wrapper-coverage eval: agent authors public-safe Maestro BPMN
+  nodes for a spread of registry extension types (Orchestrator, A2A, queue,
+  business-rule, call-activity, message-event, wait-event), filling each
+  type's registry xmlTemplate so every node lands on the correct registry
+  bpmnElement.
 tags: [uipath-maestro-bpmn, integration, lifecycle:generate, contract:xml, node:service-task, node:call-activity, connector]
 
 run_limits:
@@ -18,38 +19,31 @@ initial_prompt: |
   folder keys, connection IDs, queue IDs, release keys, real process names, or
   real user names.
 
-  The BPMN must include a public-safe process that manually starts, visits each
-  wrapper below, and ends:
-  - `bpmn:serviceTask` with `Orchestrator.StartAgentJob`.
-  - `bpmn:serviceTask` with `A2A.AgentExecution`.
-  - `bpmn:serviceTask` with `Orchestrator.ExecuteApiWorkflowAsync`.
-  - `bpmn:businessRuleTask` with `Orchestrator.BusinessRules`.
-  - `bpmn:sendTask` with `Orchestrator.CreateQueueItem`.
-  - `bpmn:serviceTask` with `Orchestrator.CreateAndWaitForQueueItem`.
-  - `bpmn:callActivity` with `Orchestrator.StartAgenticProcess`.
-  - `bpmn:callActivity` with `Orchestrator.StartAgenticProcessAsync`.
-  - `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcess`; if a
-    case-management payload is needed, mark it preserve-only and synthetic.
-  - `bpmn:callActivity` with `Orchestrator.StartCaseMgmtProcessAsync`; keep it
-    synthetic and do not invent deployment identifiers.
-  - `bpmn:receiveTask` with `Intsvc.WaitForEvent`; keep connector details
-    placeholder-safe and do not hand-author private connection metadata.
-  - `bpmn:intermediateThrowEvent` with `Maestro.SendMessageEvent`; keep the
-    message name and payload synthetic.
-  - `bpmn:serviceTask` with `Maestro.CasePlanScheduler`; mark it draft-only or
-    preserve-only and keep all payloads synthetic.
-  - `bpmn:serviceTask` with `Maestro.CaseManagerGuardrails`; mark it
-    preserve-only and keep all payloads synthetic.
-  - `bpmn:serviceTask` with `Maestro.CaseRulesEvaluator`; mark it preserve-only
-    and keep all payloads synthetic.
-  - Preserve numeric `uipath:migrationVersion` values `5`, `11`, and `11.5`.
-  - Preserve a legacy `uipath:scriptVersion` value `v2` on a script task while
-    still following the skill guidance that new scripts should prefer `v3`.
-  - Preserve a generic unsupported `uipath:Activity` payload instead of
-    rewriting or deleting it.
+  Author each node below by filling that type's registry xmlTemplate
+  (`uip maestro bpmn registry get <type> --output json`) — do not hand-write any
+  `uipath:*` element. Each node's BPMN element must be the type's registry
+  `bpmnElement`. The BPMN must manually start, visit each node, and end:
+  - `Orchestrator.StartAgentJob` (serviceTask).
+  - `A2A.AgentExecution` (serviceTask).
+  - `Orchestrator.ExecuteApiWorkflowAsync` (serviceTask).
+  - `Orchestrator.BusinessRules` (businessRuleTask).
+  - `Orchestrator.CreateQueueItem` (sendTask).
+  - `Orchestrator.CreateAndWaitForQueueItem` (serviceTask).
+  - `Orchestrator.StartAgenticProcess` (callActivity).
+  - `Orchestrator.StartAgenticProcessAsync` (callActivity).
+  - `Orchestrator.StartCaseMgmtProcess` (callActivity).
+  - `Orchestrator.StartCaseMgmtProcessAsync` (callActivity).
+  - `Intsvc.WaitForEvent` (receiveTask); keep connector details placeholder-safe
+    and do not hand-author private connection metadata.
+  - `Maestro.SendMessageEvent` (intermediateThrowEvent); keep the message name
+    and payload synthetic.
+  - `Maestro.CaseManagerGuardrails` (serviceTask).
+  - `Maestro.CaseRulesEvaluator` (serviceTask).
 
-  Include BPMN DI for every visible node and sequence flow. Do not upload,
-  publish, deploy, debug, or run the process.
+  Bind process/queue-backed nodes from each template's `bindingInfo` using only
+  synthetic placeholder values; never fabricate a real GUID. Generate BPMN DI
+  for every visible node and sequence flow. Do not upload, publish, deploy,
+  debug, or run the process.
 
 success_criteria:
   - type: file_exists
