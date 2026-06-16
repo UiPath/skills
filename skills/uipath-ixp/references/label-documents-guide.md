@@ -131,11 +131,11 @@ Use `labellings mark-missing` only as a fallback when `confirm --fields` is a no
 ```bash
 # All predicted fields in occurrence 0:
 uip ixp labellings confirm <project-name> <document-id> \
-  --field-group "Line Items" --occurrence 0 --output json
+  --group "Line Items" --occurrence 0 --output json
 
 # Just Quantity in occurrence 2:
 uip ixp labellings confirm <project-name> <document-id> \
-  --field-group "Line Items" --occurrence 2 --fields f005000000000001 --output json
+  --group "Line Items" --occurrence 2 --fields f005000000000001 --output json
 ```
 
 Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated). For batching many occurrences in one call, use `--updates '[…]'` — see [CLI Reference § Labellings](cli-reference.md#labellings). See Critical Rule 13.
