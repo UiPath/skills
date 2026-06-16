@@ -45,7 +45,7 @@ Respond that the operation is not supported. Do not try to work around it.
 | Change a field's data type | Not supported; type is fixed at creation |
 | Create a federated entity | Not supported via CLI or UiPath portal |
 | Write records to a federated entity | Federated entities are read-only |
-| Name a field with a SQL / language reserved keyword | API rejects with `RESERVED_LANGUAGE_KEYWORDS` — pick a domain-specific name (see Rule 4) |
+| Name a field with a C# / VB language keyword (`class`, `for`, `static`, `Sub`, `Dim`, …) | API rejects with `RESERVED_LANGUAGE_KEYWORDS` — pick a domain-specific name (see Rule 4). SQL reserved words like `Status` / `Order` / `Key` / `Type` are NOT in the check and are accepted. |
 | **Upload a file to a `FILE` field via `uip df files upload`** | The CLI insists on `referenceEntityId` / `referenceFieldId` on `FILE` field create and then uploads fail with *"Relationship violation"* against arbitrary or placeholder targets. No public attachment-storage entity is documented for FILE fields. **FILE field upload is currently unusable via CLI** — surface this gap to the user; do not attempt without a confirmed target-entity contract. |
 
 ---
@@ -58,11 +58,28 @@ Respond that the operation is not supported. Do not try to work around it.
 
 3. **Always resolve entity ID first.** Use `entities list` before any operation. Never assume an entity ID.
 
-4. **Entity and field names must pass validation**: start with a letter, contain only letters/digits/underscores (`[a-zA-Z0-9_]`), 3–100 characters. No hyphens or spaces. Reserved field names that will error: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`. Also never use **SQL, C#, or VB reserved keywords** — common rejections: `Case`, `Class`, `If`, `Then`, `Else`, `New`, `Object`, `Public`, `Return`, `Select`, `From`, `Where`, `Table`, `Order`, `Group`, `Index`, `Key`, `User`, `Role`, `Type`, `Status`. The API surfaces these as *"cannot be a reserved word in C# or VB"* (or `RESERVED_LANGUAGE_KEYWORDS`). Pick domain-specific names: `Case` → `WorkItem`; `Status` → `OrderStatus`; `Order` → `PurchaseOrder`; `Key` → `ItemKey`.
+4. **Entity, field, choice-set, and choice-value names share one validation rule.** Names must:
+    - Match `^[a-zA-Z][a-zA-Z0-9_]*$` — start with a letter, then any mix of letters / digits / underscores. **Underscores are allowed** even though the error message confusingly says *"must only contain alphanumeric characters"*; `my_field` is valid.
+    - Be 3–100 characters long (entity / field / choice-set names; choice-value names have no documented length cap).
+
+    Two name-collision rejections:
+
+    - **System column names are reserved as field names.** The exact list is: `Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner`. Note these are **not** `CreatedOn` / `UpdatedOn` — the system columns are spelled with `Time`, not `On`. `TenantId` is **not** reserved. Pick a different name: `Id` → `RecordId`, `CreatedBy` → `Author`, `CreateTime` → `CreatedDate`, `RecordOwner` → `Owner`.
+    - **C# / VB language keywords are rejected.** The check is literally `CodeDomProvider.CreateProvider("C#").IsValidIdentifier(name)` plus the VisualBasic variant. That covers actual language keywords: `class`, `for`, `static`, `void`, `namespace`, `return`, `if`, `else`, `null`, `true`, `false`, `Sub`, `Dim`, `Case`, `Do`, `While`, `End`, `Me`, etc. The error string is `RESERVED_LANGUAGE_KEYWORDS` / *"cannot be a reserved word in C# or VB"*. Pick a domain-specific name: `Class` → `Category`, `Case` → `WorkItem`, `Return` → `ReturnReason`.
+
+    **SQL reserved words are NOT in the check.** Names like `Status`, `Order`, `Group`, `Key`, `Type`, `Select`, `From`, `Where`, `Table`, `Index`, `User`, `Role` are accepted — the platform brackets column identifiers in generated SQL so they don't collide. Prefer domain-specific names anyway for read-clarity (`OrderStatus` over `Status`), but the API will not block them.
+
+    If a `RESERVED_LANGUAGE_KEYWORDS` error comes back, surface the rejected name to the user and offer a domain-specific rename — never silently substitute.
 
 5. **All updates require `Id` in the body.** The CLI routes single vs batch by whether the body is a JSON object (1 record) or array (multiple). Both require `"Id"` in the record. Use `records list` or `records query` to retrieve record IDs before updating.
 
-6. **File fields are separate from record data.** Use `files upload`/`download`, not `records insert`. Field must be type `FILE`.
+6. **File fields cannot be written through `records insert` or `records update` — they require a separate `files upload` call.** The two-step flow:
+    1. **Insert / update the record without the file field** in the body. Putting a file path, URL, or base64 blob under a FILE-typed field key in `records insert/update` is rejected or silently ignored; the FILE field value is managed by the attachment service, not the record-data service.
+    2. **Upload the file** to the FILE field on that record: `uip df files upload <entity-id> <record-id> <field-name> --file <path>`. Use `files download` to retrieve, `files delete` to remove. See [`references/file-attachments.md`](references/file-attachments.md).
+
+    The same applies to `records import` (CSV) — FILE columns are silently dropped on import. Load complex records via `records insert --file <json>` for everything else, then `files upload` per row for any attachments.
+
+    Image / binary upload over the CLI is currently unusable for general FILE-field targets — see *Not Supported* below for the workaround (upload from the UiPath Data Fabric web UI).
 
 7. **CSV headers must match exact field names** (case-sensitive). Use `entities get` to discover field names before importing.
 
@@ -148,7 +165,7 @@ For Complex types  field shapes and value formats, see [`references/entity-schem
 | Read records (first page) | `records list <entity-id> --limit 50` |
 | Read records (next page) | `records list <entity-id> --cursor <NextCursor>` |
 | Get one record | `records get <entity-id> <record-id>` |
-| Insert one record | `records insert <entity-id> --body '{...}'` (or `--file`). Choice / relationship value formats: see [`references/records-query.md`](references/records-query.md#writing-choice-set-and-relationship-values) |
+| Insert one record | `records insert <entity-id> --body '{...}'` (or `--file`). **Do NOT include FILE-typed field keys in the body** — file content uploads via a separate `files upload` call after the record is created (Rule 6). Choice / relationship value formats: see [`references/records-query.md`](references/records-query.md#writing-choice-set-and-relationship-values) |
 | Batch insert | `records insert <entity-id> --body '[{...},{...}]'` |
 | Update one record | `records update <entity-id> --body '{"Id":"<record-id>","field":"val"}'` |
 | Batch update | `records update <entity-id> --body '[{"Id":"<id1>","field":"val"},{"Id":"<id2>","field":"val"}]'` |
@@ -219,12 +236,13 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 | Import errors in CSV | Header mismatch | Run `entities get` and check exact field names (case-sensitive) |
 | `records import` succeeded but choice / relationship / file column is `null` on every row | `records import` silently drops complex field types (Basic only) | Re-seed via `records insert` with a JSON body — see [`references/bulk-import.md`](references/bulk-import.md) |
 | Write to federated entity | Entity is read-only | Use `--native-only`; federated entities cannot be written to |
-| `cannot be a reserved word in C# or VB` (alias: `RESERVED_LANGUAGE_KEYWORDS`) | Entity or field name collides with a C# / VB / SQL reserved keyword (e.g. `Case`, `Class`, `Status`, `Order`) | Surface the rejected name + the error to the user. Offer concrete renames: `Case` → `WorkItem` / `Matter`; `Status` → `OrderStatus` / `ItemStatus`; `Order` → `RecordOrder` / `PurchaseOrder`; `Key` → `ItemKey`. Apply only the user-confirmed rename. See Rule 4. |
+| `cannot be a reserved word in C# or VB` (alias: `RESERVED_LANGUAGE_KEYWORDS`) | Entity or field name is a C# or VB language keyword (e.g. `Class`, `Case`, `For`, `Sub`, `Dim`, `Return`). SQL keywords (`Status`, `Order`, `Key`, etc.) are NOT in the check — if one of those is the rejected name, look for another cause. | Surface the rejected name + the error to the user. Offer concrete renames: `Class` → `Category`; `Case` → `WorkItem` / `Matter`; `Return` → `ReturnReason`. Apply only the user-confirmed rename. See Rule 4. |
 | `Choiceset member name must only contain alphanumeric characters, start with alphabetic characters and not be C# keyword` | Choice-set value `Name` violates the keyword rule that also gates entity / field names (Rule 4) | Namespace the system `Name` and keep `DisplayName` unchanged. Full rule + the related `NumberId`-ordering caveat for batch creates: [`references/choice-sets.md` → Value `Name` validation](references/choice-sets.md#value-name-validation). |
 | Constraint violation (`"outside of allowed range"`, `"exceeds lengthLimit"`, etc.) | Write value broke `minValue` / `maxValue` / `lengthLimit` / `decimalPrecision` | Surface the full error to the user, show the allowed range from `entities get`, and ask what value to use — never silently clamp. See Rule 18. |
 | `referenceEntityId` missing on RELATIONSHIP/FILE field | Field defined with names instead of UUIDs | Pass `referenceEntityId` + `referenceFieldId` (UUIDs from `entities list` / `entities get`). See Rule 12. |
 | `Cannot read properties of undefined (reading 'sqlTypeName')` | Field `type` value didn't match a known `EntityFieldDataType` enum — almost always lowercase / mixed-case (e.g. `"boolean"` instead of `"BOOLEAN"`) | Case-fold to the UPPERCASE enum from the type table — see [`references/entity-schema.md` → Normalizing user-facing type names](references/entity-schema.md#normalizing-user-facing-type-names) |
 | `Update entity data failed. Relationship violation` (on `files upload`) | The `FILE` field was created with `referenceEntityId`/`referenceFieldId` pointing at an unrelated entity; the server enforces it as a real FK and the file's UUID isn't a record of that entity | FILE upload via CLI is currently unusable for general targets — see Not Supported table. Tell the user: the FILE field exists, but uploads fail until the right target-entity contract is known. |
+| FILE field shows as `null` after `records insert` even though the body included a value for it | The record-data service does not accept content for FILE-typed columns (Rule 6). Whatever was put under the FILE key was ignored. | Insert the record without the FILE key, then attach the file separately: `uip df files upload <entity-id> <record-id> <field-name> --file <path>`. CSV `records import` has the same drop behavior. |
 | `Each field in removeFields must include a non-empty 'fieldName' string` | `removeFields` was called with `{"id": "..."}` (the shape `updateFields` uses) instead of `{"fieldName": "..."}` | Re-emit with `{"fieldName": "<exact field name>"}` — see Rule 11 |
 
 ---

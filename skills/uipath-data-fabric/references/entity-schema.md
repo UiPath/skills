@@ -90,9 +90,9 @@ Both entity names and field names must:
 - Start with a letter (`[a-zA-Z]`)
 - Contain only letters, digits, and underscores (`[a-zA-Z0-9_]`)
 - Be 3–100 characters long
-- **Not** be a SQL, C#, or VB reserved keyword — full list, error string (`"cannot be a reserved word in C# or VB"` / `RESERVED_LANGUAGE_KEYWORDS`), and rename examples are in **SKILL.md Rule 4**.
+- **Not** be a C# or VB language keyword — the validator literally calls `CodeDomProvider("C#").IsValidIdentifier(name)` and the VisualBasic variant. SQL reserved words (`Status`, `Order`, `Group`, `Key`, `Type`, …) are NOT in this check. Full rule, error string (`"cannot be a reserved word in C# or VB"` / `RESERVED_LANGUAGE_KEYWORDS`), and rename examples are in **SKILL.md Rule 4**.
 
-**Reserved field names** (will error if used): `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`
+**Reserved field names** (will error if used as a column name): `Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner`. Note the spelling — `CreateTime` / `UpdateTime` (NOT `CreatedOn` / `UpdatedOn`). `TenantId` is not reserved.
 
 ### All Field Options
 
@@ -260,7 +260,7 @@ Before invoking, surface the impact to the user:
 
 - **RELATIONSHIP / FILE fields** — confirm no flow / coded app reads the value. The FK column disappears entirely.
 - **CHOICE_SET_* fields** — the choice set itself is shared and isn't affected; only this entity's link to it is removed.
-- **System fields** (`Id`, `CreatedBy`, …) can't be removed regardless.
+- **System fields** (`Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner`) can't be removed regardless.
 
 Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reason } }`.
 
@@ -269,7 +269,7 @@ Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reaso
 | Operation | Action |
 |-----------|--------|
 | Change a field's data type | Not supported — type is fixed at creation and cannot be changed via `updateFields` |
-| Field name matching a SQL / language keyword | API returns `RESERVED_LANGUAGE_KEYWORDS` — rename before retrying (see Name Validation above) |
+| Field name matching a C# or VB language keyword (`class`, `for`, `static`, `Sub`, `Dim`, …) | API returns `RESERVED_LANGUAGE_KEYWORDS` — rename before retrying. SQL keywords (`Status`, `Order`, `Key`, etc.) are NOT in this check. See Name Validation above. |
 | Upload a file to a `FILE` field via `uip df files upload` | CLI insists on `referenceEntityId`/`referenceFieldId` at field create, then uploads fail with *"Relationship violation"* against arbitrary targets. No public attachment-storage entity is documented. Treat FILE upload as unusable via CLI until the target-entity contract is clarified — surface the gap to the user; don't attempt. |
 
 ---
@@ -328,7 +328,7 @@ uip df entities update <entity-id> \
 
 ## System Fields
 
-Every entity has auto-created system fields: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`. These are read-only and must not be included in field definitions or CSV imports.
+Every entity has auto-created system fields: `Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner`. These are read-only and must not be included in field definitions or CSV imports. (Note: the system columns are spelled `CreateTime` / `UpdateTime`, **not** `CreatedOn` / `UpdatedOn`.)
 
 ## Listing and Inspecting Entities
 

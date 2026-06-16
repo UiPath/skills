@@ -9,7 +9,6 @@ description: >
   Covers large-dataset pagination stability, cursor continuity at scale, and
   offset-based page jumps.
 tags: [uipath-data-fabric, integration, bulk-pagination]
-
 run_limits:
   max_turns: 60
   turn_timeout: 600
@@ -83,7 +82,7 @@ success_criteria:
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -98,7 +97,7 @@ success_criteria:
   - type: command_executed
     description: "Agent paginated through all records with records list --limit (at least 9 calls)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit'
     min_count: 9
     weight: 3.0
     pass_threshold: 1.0

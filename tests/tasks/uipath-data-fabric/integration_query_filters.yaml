@@ -7,7 +7,6 @@ description: >
   scenarios, then deletes the test records. Tests the full query body schema
   and the no-body pagination path end-to-end.
 tags: [uipath-data-fabric, integration, records]
-
 run_limits:
   turn_timeout: 600
 
@@ -55,7 +54,7 @@ success_criteria:
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 

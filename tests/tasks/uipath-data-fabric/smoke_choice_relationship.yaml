@@ -12,12 +12,8 @@ tags: [uipath-data-fabric, smoke, complex-fields]
 run_limits:
   max_turns: 35
 
-sandbox:
-  driver: docker
 
 initial_prompt: |
-  Heads-up — I'm just sketching this out before I've actually logged in, so every command will error on auth. Don't worry about that, and please don't retry or try to log in — I just want to see the right steps in order.
-
   Help us set up an expense list that links to employees and projects
   and uses two dropdowns — one for category and one for tags.
 

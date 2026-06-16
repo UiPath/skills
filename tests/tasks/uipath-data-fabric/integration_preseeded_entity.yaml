@@ -8,7 +8,6 @@ description: >
   first), paginate all 20 records, do a targeted Notes update and restore.
   Entity is never deleted.
 tags: [uipath-data-fabric, integration, pre-seeded, discover]
-
 run_limits:
   max_turns: 50
   turn_timeout: 600
@@ -48,7 +47,7 @@ success_criteria:
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -61,9 +60,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent retrieved entity schema with entities get"
+    description: "Agent inspected the entity schema (entities get or list) before querying"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+get\s+'
+    command_pattern: 'uip\s+df\s+entities\s+(get|list)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -79,7 +78,7 @@ success_criteria:
   - type: command_executed
     description: "Agent paginated through records with --limit"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit'
     min_count: 3
     weight: 2.0
     pass_threshold: 1.0

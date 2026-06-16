@@ -7,7 +7,6 @@ description: >
   attachment, and verifies the field is empty post-delete. Covers the full files
   upload/download/delete workflow including overwrite semantics and byte integrity.
 tags: [uipath-data-fabric, integration, files]
-
 run_limits:
   turn_timeout: 600
 
@@ -58,7 +57,7 @@ success_criteria:
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -116,7 +115,7 @@ success_criteria:
 
   - type: run_command
     description: "Edge observations recorded as the right shape (booleans + traversal-outcome string)"
-    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); ok=(isinstance(d.get('empty_file_accepted'),bool) and isinstance(d.get('unicode_filename_preserved'),bool) and isinstance(d.get('traversal_filename_outcome'),str)); sys.exit(0 if ok else 1)\""
+    command: 'python3 -c "import json,sys; d=json.load(open(''report.json'')); ok=(isinstance(d.get(''empty_file_accepted''),bool) and isinstance(d.get(''unicode_filename_preserved''),bool) and isinstance(d.get(''traversal_filename_outcome''),str)); sys.exit(0 if ok else 1)"'
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

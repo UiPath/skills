@@ -5,7 +5,6 @@ description: >
   must match exact entity field names (case-sensitive), system fields must be
   excluded, and records import --file is the correct command (not records insert).
 tags: [uipath-data-fabric, smoke, records, import]
-
 run_limits:
   max_turns: 30
 

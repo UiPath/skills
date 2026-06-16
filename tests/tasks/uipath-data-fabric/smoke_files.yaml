@@ -7,7 +7,6 @@ description: >
   syntax: positional args (entity-id record-id field-name), --file flag for
   upload, --destination flag for download, and --output json on all commands.
 tags: [uipath-data-fabric, smoke, files]
-
 run_limits:
   max_turns: 30
 
@@ -64,4 +63,3 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-

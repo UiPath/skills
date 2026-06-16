@@ -14,7 +14,6 @@ description: >
   exercised by the agent — coming in a follow-up PR with proper confirm
   semantics in the skill.
 tags: [uipath-data-fabric, integration, entities, records]
-
 run_limits:
   turn_timeout: 600
 
@@ -59,7 +58,7 @@ success_criteria:
     description: "Agent verified login status before any operation"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 

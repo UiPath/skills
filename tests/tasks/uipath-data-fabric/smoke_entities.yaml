@@ -8,7 +8,6 @@ description: >
   existing field's metadata and constraints (updateFields with id key). Tests
   all entity command syntax in a single pass.
 tags: [uipath-data-fabric, smoke, entities]
-
 run_limits:
   max_turns: 30
 
@@ -130,4 +129,3 @@ success_criteria:
     min_count: 2
     weight: 1.0
     pass_threshold: 1.0
-

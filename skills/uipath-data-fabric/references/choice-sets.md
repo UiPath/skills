@@ -25,9 +25,15 @@ Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entit
 
 ## Value `Name` validation
 
-A choice-set value's `Name` must be alphanumeric, start with a letter, and avoid SQL / C# / VB reserved keywords — same rule as entity / field names (**SKILL.md Rule 4**). Domain words that commonly collide: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`.
+A choice-set value's `Name` must:
+- Match `^[a-zA-Z][a-zA-Z0-9_]*$` — start with a letter, then any mix of letters / digits / **underscores**. The validator's error message says *"must only contain alphanumeric characters"* — that's misleading; underscores ARE valid (`internal_audit` works).
+- Not be a C# or VB language keyword. The validator runs `CodeDomProvider("C#").IsValidIdentifier(name)` plus the VisualBasic variant. SQL reserved words are NOT in this check.
+- Be unique within the choice set, case-insensitive (`Internal` and `internal` collide).
+- No documented length cap (unlike entity / field / choice-set names, which are 3–100).
 
-When a desired label is reserved, namespace the system `Name` and leave `DisplayName` unchanged: `Name: "internal_audit"` with `DisplayName: "Internal"`. The dropdown shows "Internal"; the validator sees `internal_audit`.
+Common C# / VB keyword collisions: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`, `for`, `if`, `return`, `Sub`, `Dim`.
+
+When a desired label is a C# / VB keyword, namespace the system `Name` and leave `DisplayName` unchanged: `Name: "internal_audit"` with `DisplayName: "Internal"`. The dropdown shows "Internal"; the validator sees `internal_audit`.
 
 ## Sourcing `NumberId` after batch value creates
 
@@ -50,7 +56,7 @@ uip df choice-sets create <name> [--display-name "<label>"] [--description "<…
 
 | Arg | Required | Notes |
 |---|---|---|
-| `<name>` | yes | System name. Alphanumeric, starts with a letter, not a C#/VB/SQL reserved keyword. |
+| `<name>` | yes | System name. Letters / digits / underscores, starts with a letter, 3–100 chars, not a C#/VB language keyword (SKILL.md Rule 4). |
 | `--display-name "<label>"` | no | User-facing label in dropdowns. Defaults to `<name>` when omitted. |
 | `--description "<…>"` | no | Free text. |
 
@@ -72,7 +78,7 @@ uip df choice-set-values create <choice-set-id> <name> [--display-name "<label>"
 | Arg | Required | Notes |
 |---|---|---|
 | `<choice-set-id>` | yes | UUID from `choice-sets list` / `create`. |
-| `<name>` | yes | System name. Same alphanumeric + no-reserved-keyword rule as `<name>` above (see [Value `Name` validation](#value-name-validation)). |
+| `<name>` | yes | System name. Letters / digits / underscores, starts with a letter, not a C#/VB language keyword. No documented length cap (unlike entity / field / choice-set names). See [Value `Name` validation](#value-name-validation). |
 | `--display-name "<label>"` | no | User-facing label. Defaults to `<name>` when omitted. |
 
 `NumberId` is assigned 0-based by creation order — order matters. See [Sourcing `NumberId` after batch value creates](#sourcing-numberid-after-batch-value-creates) for the per-value error handling rule.

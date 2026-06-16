@@ -1,6 +1,23 @@
 # File Attachments Reference
 
-Data Fabric supports file-type fields on entities. Files are stored per-record per-field.
+Data Fabric supports file-type fields on entities. Files are stored per-record per-field, and **are not part of record data** — `records insert` / `records update` / `records import` cannot accept file content for a FILE-typed column. Uploading a file always requires its own `files upload` call against an existing record.
+
+## Two-Step Pattern: Record Then Upload
+
+```bash
+# 1. Insert the record WITHOUT the file field
+RECORD_ID=$(uip df records insert <entity-id> \
+  --body '{"Name":"ACME Receipt","Amount":129.99}' \
+  --output json | python3 -c "import json,sys; print(json.load(sys.stdin)['Data']['Records'][0]['Id'])")
+
+# 2. Upload the file to the FILE field on that record
+uip df files upload <entity-id> "$RECORD_ID" Receipt \
+  --file ./receipt.pdf \
+  --output json
+```
+
+- Putting the file path / URL / base64 under a FILE field key in step 1's body is **ignored** by the record-data service — the FILE field value will read as `null` afterwards.
+- The same applies to CSV: `records import` drops FILE columns silently. Use `records insert --file <json>` for the non-file columns, then loop `files upload` per row.
 
 > **⚠ `files upload` is unsupported via the CLI.** The server returns `"Update entity data failed. Relationship violation"`. Upload via the UiPath Data Fabric UI instead. The `download` / `delete` commands below are documented for completeness, but require the file to have been uploaded through the UI.
 

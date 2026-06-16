@@ -11,12 +11,8 @@ tags: [uipath-data-fabric, smoke, complex-fields]
 run_limits:
   max_turns: 25
 
-sandbox:
-  driver: docker
 
 initial_prompt: |
-  Heads-up — I'm just sketching this out before I've actually logged in, so every command will error on auth. Don't worry about that, and please don't retry or try to log in — I just want to see the right steps in order.
-
   Setup — there's an Expense list (ID `exp-ent-001`) with a tags
   column where each expense can be marked with one or more of these
   tags: travel, meals, lodging. Internally those are tag numbers

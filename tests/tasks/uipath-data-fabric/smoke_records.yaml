@@ -8,7 +8,6 @@ description: >
   and records delete. Tests the full records command surface and the
   array-body routing rule in a single pass.
 tags: [uipath-data-fabric, smoke, records]
-
 run_limits:
   max_turns: 50
 
@@ -82,7 +81,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed records with --limit (cursor pagination)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -160,4 +159,3 @@ success_criteria:
     min_count: 2
     weight: 1.0
     pass_threshold: 1.0
-

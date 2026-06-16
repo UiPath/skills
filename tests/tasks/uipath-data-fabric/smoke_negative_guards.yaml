@@ -8,7 +8,6 @@ description: >
   it. Tests enforcement of the Not Supported section of the skill without
   requiring a live tenant.
 tags: [uipath-data-fabric, smoke, entities, records]
-
 run_limits:
   max_turns: 30
 

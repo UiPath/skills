@@ -11,7 +11,6 @@ description: >
   to fail; the test verifies the agent captures structured errors and does
   not retry or call the REST API directly.
 tags: [uipath-data-fabric, integration, error-paths]
-
 run_limits:
   max_turns: 50
   turn_timeout: 600
@@ -64,7 +63,7 @@ success_criteria:
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 

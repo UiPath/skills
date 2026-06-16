@@ -11,12 +11,8 @@ tags: [uipath-data-fabric, smoke, complex-fields, bulk-import]
 run_limits:
   max_turns: 25
 
-sandbox:
-  driver: docker
 
 initial_prompt: |
-  Heads-up — I'm just sketching this out before I've actually logged in, so every command will error on auth. Don't worry about that, and please don't retry or try to log in — I just want to see the right steps in order.
-
   Could you load 3 expense rows into the Expense list (ID
   `exp-ent-001`)? Each expense has an amount, a description, a
   category picked from a dropdown (ID `cs-cat-001`), tags picked from
