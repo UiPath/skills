@@ -33,7 +33,7 @@ on:
         type: boolean
         default: false
       coder_eval_version:
-        description: 'coder_eval version to test (blank = pinned). A published release, e.g. 0.6.3 — dry-run a candidate before bumping the pin.'
+        description: 'coder_eval version to test (blank = pinned).'
         type: string
         default: ''
       cli_version:
