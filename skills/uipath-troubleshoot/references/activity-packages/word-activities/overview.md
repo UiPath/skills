@@ -33,6 +33,9 @@ Failures originate at distinct layers — COM/Interop availability (step 1), fil
 - **Placeholder not replaced (silent)** — no exception, but the placeholder is unchanged because Word split it across internal XML runs (the token was edited/backspaced/reformatted in place), so the exact-string search never matches the contiguous term.
 - **Input string length limit** — classic versions enforce a hard 256-character cap on `Search`/`Replace`; longer values raise `ArgumentException` or truncate silently. Relaxed in current package versions.
 - **TargetInvocationException / Studio crash on drop** — design-time failure when the activity is dropped or the workflow opened, from a Studio↔package version mismatch that cannot construct the designer. Distinct from the runtime "Cannot create unknown type" package gap.
+- **Placeholder replaced once, then missing in a loop** — succeeds on iteration 1, then later rows have nothing to replace because the workflow edits the template in place and the first replacement consumed the placeholder. Fix: copy the template to a fresh temp file per iteration.
+- **Headers / footers / text boxes skipped** — no error, but placeholders outside the main body (headers, footers, floating text boxes/shapes) survive because older package versions scan only body text. Fix: update `UiPath.Word.Activities`.
+- **Multi-line replacement loses formatting** — styled/multi-paragraph replacement collapses to one line because the `Replace` value carries raw `Environment.NewLine` breaks. Use Bookmarks / Form Fields + `Set Bookmark Text` for rich content.
 
 ## Package
 

@@ -26,4 +26,5 @@ What to look for:
 
 - **If the replacement text exceeds 256 characters** — update the `UiPath.Word.Activities` dependency to the latest version (the limit is relaxed in current releases), then rebuild.
 - **If you cannot upgrade the package** — do the substitution in code instead: read the document text into a `String`, replace with `myString.Replace(...)` / regex in an `Assign`, and write the result back, which has no 256-character cap.
+- **If the replacement text is long by nature** (e.g. a legal clause, a multi-sentence paragraph) — don't use `Replace Text` at all. Place a **Bookmark or Form Field** at the insertion point in the template and fill it with the `Set Bookmark Text` activity, which has no length cap and preserves the bookmark's formatting. Keep `Search` placeholder keys short.
 - **If the value is being truncated silently** — same fix; verify the output document content after the write rather than trusting a no-error run.
