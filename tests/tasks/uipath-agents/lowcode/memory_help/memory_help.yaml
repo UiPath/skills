@@ -1,9 +1,9 @@
-task_id: skill-agent-memory-smoke-help
+task_id: skill-agents-memory-smoke-help
 description: >
-  Smoke test: agent should trigger the uipath-agent-memory skill for a
-  low-code agent memory request and verify the `uip agent memory` CLI
-  surface without mutating project files.
-tags: [uipath-agent-memory, smoke, mode:build, lifecycle:discover, low-code]
+  Smoke test: agent should trigger the uipath-agents skill for a low-code
+  agent memory request and verify the `uip agent memory` CLI surface without
+  mutating project files.
+tags: [uipath-agents, smoke, mode:build, lifecycle:discover, low-code]
 
 run_limits:
   expected_turns: 5
@@ -17,9 +17,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-agent-memory skill"
-    expected_skill: "uipath-agent-memory"
-    skill_name: "uipath-agent-memory"
+    description: "Agent invoked the uipath-agents skill"
+    expected_skill: "uipath-agents"
+    skill_name: "uipath-agents"
     weight: 3.0
     pass_threshold: 1.0
 
