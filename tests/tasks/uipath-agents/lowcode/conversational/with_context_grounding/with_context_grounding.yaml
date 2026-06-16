@@ -24,25 +24,11 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a low-code conversational agent named "SupportBot" 
-  inside a UiPath solution named "SupportSol". 
-  
-  The agent answers customer product support questions by retrieving relevant
-  info from the existing Context Grounding semantic index named
-  "UiPathAgentsProductKnowledge" already deployed in the tenant.
-
-  Users will ask product questions over chat; the
-  agent should query the knowledge base index and ground its answers.
-
-  Use the real folder, index name, and backing storage bucket from the
-  tenant — do not hard-code or guess these values. Name the agent's
-  context resource `UiPathAgentsProductKnowledge` (matching the index).
-
-  Validate the agent successfully at the end.
-
-  Do NOT publish, upload, or deploy. Do NOT ask for approval,
-  confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire build end-to-end in a single pass.
+  Create a UiPath low-code conversational agent "SupportBot" that
+  answers customer product support questions. It should base its
+  answers on our existing "UiPathAgentsProductKnowledge" knowledge
+  index, which is already set up in our tenant, instead of answering
+  from general knowledge. The solution should be named "SupportSol".
 
 success_criteria:
   - type: command_executed

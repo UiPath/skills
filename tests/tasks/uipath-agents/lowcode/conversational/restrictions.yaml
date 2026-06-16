@@ -22,15 +22,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath solution "QASol" containing a low-code conversational
-  agent "QAAgent" that answers user questions. The user types a question
-  and the agent responds with an answer.
-
-  Make sure it validates successfully.
-
-  Do NOT publish, upload, or deploy. Do NOT ask for approval,
-  confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire task end-to-end in a single pass.
+  Create a UiPath low-code conversational agent "QAAgent" that answers
+  users' questions in chat. The solution should be named "QASol".
 
 success_criteria:
   - type: command_executed

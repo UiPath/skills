@@ -21,12 +21,8 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Create a UiPath solution "ChatSol" containing a low-code conversational
-  agent "ChatAgent" and make sure it validates successfully.
-
-  Do NOT publish, upload, or deploy. Do NOT ask for approval,
-  confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire task end-to-end in a single pass.
+  Create a UiPath low-code conversational agent "ChatAgent" that users
+  can chat with. The solution should be named "ChatSol".
 
 success_criteria:
   - type: command_executed

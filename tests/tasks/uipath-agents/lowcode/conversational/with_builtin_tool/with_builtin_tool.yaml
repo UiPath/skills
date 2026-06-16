@@ -23,21 +23,10 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a low-code conversational agent named "DocAgent" 
-  inside a UiPath solution named "DocSol". 
-  
-  The agent helps users analyze uploaded files — users attach a document 
-  or image and ask questions about its content (extract key points, 
-  summarize, describe an image, etc.).
-
-  Add the built-in Analyze Attachments tool so the agent has a way to
-  read and process file contents.
-
-  Validate the agent successfully at the end.
-
-  Do NOT publish, upload, or deploy. Do NOT ask for approval,
-  confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire build end-to-end in a single pass.
+  Create a UiPath low-code conversational agent "DocAgent" that lets
+  users upload documents or images and ask questions about their
+  content (extract key points, summarize, describe an image, etc.).
+  The solution should be named "DocSol".
 
 success_criteria:
   - type: command_executed

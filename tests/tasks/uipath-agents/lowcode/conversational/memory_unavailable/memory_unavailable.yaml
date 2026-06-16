@@ -24,21 +24,11 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a low-code conversational agent named "MemoryAgent" inside a 
-  UiPath solution named "MemorySol". 
-
-  The agent helps users plan trips and should remember the user's preferences
+  Create a UiPath low-code conversational agent "MemoryAgent" that
+  helps users plan trips. The agent should remember user preferences
   (preferred airlines, dietary restrictions, past destinations) across
-  sessions so it can give personalized recommendations on return visits.
-
-  Add a memory space so the agent can recall prior conversations and
-  user preferences across sessions.
-
-  Validate the agent successfully at the end.
-
-  Do NOT publish, upload, or deploy. Do NOT ask for approval,
-  confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire build end-to-end in a single pass.
+  sessions so it can give personalized recommendations on return
+  visits. The solution should be named "MemorySol".
 
 success_criteria:
   - type: command_executed
