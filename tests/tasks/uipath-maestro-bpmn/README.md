@@ -29,8 +29,6 @@ The layout mirrors the Flow eval suite:
   `uip maestro bpmn registry list/search/get` for documented agent, queue,
   and connector wrapper types and falls back to a static-coverage note when
   the CLI subcommand is unavailable.
-- `operate-diagnose/` covers public-safe operate and diagnosis paths with
-  synthetic runtime responses.
 - `_shared/` contains small Python helpers for durable XML shape assertions.
 
 ## Contributor Commands
@@ -62,9 +60,5 @@ Run all tests for this skill:
 cd tests
 make test-uipath-maestro-bpmn
 ```
-
-The `operate-diagnose/minimal_fault_triage.yaml` task uses the shared mock
-`uip` dispatcher and public-safe synthetic BPMN runtime responses to cover the
-Operate -> Diagnose lifecycle without cloud-side mutations.
 
 CI should run the two maintenance commands before evals so malformed fixture or documentation drift fails before an agent run starts.
