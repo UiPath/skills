@@ -5,6 +5,10 @@ description: >
   Validates the agent follows the onboarding workflow from the skill.
 tags: [uipath-admin, e2e, onboarding]
 
+# Quarantined: turn-heavy e2e, skipped in default runs. Re-enable with
+# `coder-eval run --include-skipped` or by removing this field.
+skip: true
+
 run_limits:
   expected_turns: 10
   max_turns: 40

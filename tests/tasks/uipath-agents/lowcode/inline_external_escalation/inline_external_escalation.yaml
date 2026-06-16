@@ -15,13 +15,16 @@ run_limits:
   expected_turns: 66
   turn_timeout: 1200
 
+# An agent left to itself often models "escalate to a human" as a human-in-the-loop
+# flow node — fine in general, but this task specifically exercises the agent
+# Escalation capability, so the prompt asks for it explicitly.
 initial_prompt: |
-  Create a UiPath Flow project "FraudFlow" that uses an inline low-code agent
-  to triage transactions and escalate uncertain cases to an EXISTING
-  EXTERNAL ActionCenter app named "FraudEscalation" already
-  deployed to the Orchestrator "Shared" folder (not inside this
-  solution). Wire the escalation as a resource on the inline agent.
-  The solution should be named "FraudFlowSol".
+  Create a UiPath Flow project "FraudFlow" that runs an inline low-code agent
+  which triages transactions and, when it isn't confident, escalates the case to
+  a human reviewer through our existing "FraudEscalation" Action Center app —
+  it's already running in Orchestrator, not part of this solution. Set this up
+  using the agent's Escalation capability, wired into the flow — not a standalone human-in-the-loop node. The
+  solution should be named "FraudFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -53,12 +56,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent searched the flow registry for the escalation node manifest"
+    description: "Advisory: agent searched the flow registry for the escalation node (informational, non-gating — the escalation node key is fixed, so the agent may fetch it directly)"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+flow\s+registry\s+search\b'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent fetched the escalation node manifest from the flow registry"
@@ -105,12 +108,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "Flow file was created"

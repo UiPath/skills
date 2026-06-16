@@ -10,7 +10,7 @@ description: >
   `uip gov aops-policy` commands that hit the service will fail with an
   auth error. That is acceptable — what matters is that the agent invokes
   the correct commands with the correct flags.
-tags: [uipath-governance, smoke, deployment, discovery]
+tags: [uipath-governance, smoke, mode:diagnose, deployment, discovery]
 
 run_limits:
   expected_turns: 7

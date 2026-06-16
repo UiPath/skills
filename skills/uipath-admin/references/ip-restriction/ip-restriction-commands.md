@@ -289,7 +289,7 @@ uip admin ip-restriction bypass-rules delete <RULE_ID> --output json
 
 ### `my-ip`
 
-Return the public IP the platform sees for the current caller. Use before `enforcement enable` to verify the allowlist covers your IP.
+Return the public IP the platform sees for the current caller. This is the direct answer whenever a user asks what their public IP is or what IP the platform sees for them ("what's my IP?", "what public IP does the platform see for me right now?") — run it standalone, no enforcement context needed. It is also the safety pre-flight before `enforcement enable` (verify the allowlist covers your IP).
 
 ```bash
 uip admin ip-restriction my-ip --output json

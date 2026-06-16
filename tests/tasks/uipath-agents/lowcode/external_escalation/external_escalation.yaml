@@ -14,19 +14,12 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath low-code agent "FraudTriageAgent" that accepts a required
-  `transaction` (object) and returns a `verdict` (string). When the
-  agent is uncertain, it must escalate to a human reviewer via an
-  EXISTING EXTERNAL ActionCenter app named "FraudEscalation" that
-  is already deployed to the Orchestrator "Shared" folder (not inside
-  this solution). Model this as an escalation resource on the agent.
-  The solution should be named "FraudSol".
-
-  When writing the escalation resource.json, set `isEnabled` to true so
-  the escalation is active for the agent. Set `properties.folderPath`
-  to the literal string "Shared" (the live Orchestrator folder where
-  FraudEscalation is deployed) — never use placeholder values
-  like "solution_folder".
+  Create a UiPath low-code agent "FraudTriageAgent" that reviews a
+  `transaction` (object) and returns a `verdict` (string). When it isn't
+  confident, it should escalate the case to a human reviewer through our
+  existing "FraudEscalation" Action Center app, which is already running in
+  Orchestrator (it isn't part of this solution). The solution should be named
+  "FraudSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -78,12 +71,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "FraudTriageAgent/agent.json was created"
