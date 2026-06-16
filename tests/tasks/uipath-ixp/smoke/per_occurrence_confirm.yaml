@@ -2,7 +2,7 @@ task_id: skill-ixp-per-occurrence-confirm-smoke
 description: >
   Smoke: a repeatable field group has 4 line-item extractions; only
   some are correct. Agent must target the right occurrence(s) with
-  `--field-group + --occurrence` (or `--updates`), NOT plain `--fields`
+  `--group + --occurrence` (or `--updates`), NOT plain `--fields`
   (which would confirm across every occurrence — wrong for partial
   validation). Locks in Critical Rule 13.
 
@@ -49,9 +49,9 @@ success_criteria:
   # Per-occurrence confirm via --occurrence (or batched --updates) is
   # required for partial validation. Either shape satisfies this check.
   - type: command_executed
-    description: "Agent used --field-group + --occurrence (or --updates) for per-occurrence selection"
+    description: "Agent used --group + --occurrence (or --updates) for per-occurrence selection"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?\s+.*--field-group\s+["'']?Line Items["'']?.*(--occurrence|--updates)'
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?\s+.*--group\s+["'']?Line Items["'']?.*(--occurrence|--updates)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -68,13 +68,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Anti-pattern guard: plain --fields without --field-group would
+  # Anti-pattern guard: plain --fields without --group would
   # confirm the listed field_ids in every occurrence — including
   # occurrence 2. Forbidden for this task.
   - type: command_not_executed
-    description: "Agent did NOT use plain `--fields` without --field-group (would confirm across every occurrence, including the hallucinated row)"
+    description: "Agent did NOT use plain `--fields` without --group (would confirm across every occurrence, including the hallucinated row)"
     tool_name: "Bash"
-    command_pattern: '^(?!.*--field-group).*uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?\s+.*--fields'
+    command_pattern: '^(?!.*--group).*uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?\s+.*--fields'
     weight: 2.0
     pass_threshold: 1.0
 
