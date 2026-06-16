@@ -22,8 +22,6 @@ sandbox:
     - mocks
 
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   A BPMN process run failed. Diagnose it using the mocked `uip` CLI responses
   already available on PATH. Public-safe identifiers:
   - job key: job-triage-001

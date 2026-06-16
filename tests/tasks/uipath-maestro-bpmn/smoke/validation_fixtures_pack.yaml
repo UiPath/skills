@@ -15,8 +15,6 @@ sandbox:
       path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Package each validation fixture project locally without cloud-side effects.
 
   Each fixture lives in its own subdirectory under `fixtures/validation/`:

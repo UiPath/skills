@@ -11,8 +11,6 @@ run_limits:
   expected_turns: 14
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   I want to register my own OpenAI key for the `agenthub-llm-call` feature
   (product=agenthub). I want the model gpt-4o-2024-08-06 mapped onto my own
   OpenAI connection, using the OpenAI Responses api-flavor.

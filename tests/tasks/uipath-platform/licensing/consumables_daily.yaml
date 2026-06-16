@@ -8,8 +8,6 @@ description: >
 tags: [uipath-platform, smoke, licensing, consumables]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Give me a day-by-day consumption breakdown for the period 2026-04-01
   through 2026-04-30.
 

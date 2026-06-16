@@ -10,8 +10,6 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a UiPath Maestro BPMN Process Orchestration project at:
     BusinessRuleDecision/BusinessRuleDecision
 
