@@ -8,7 +8,7 @@ description: >
   in CI without the connector being provisioned in the eval tenant. Verified
   against a live tenant (2026-06-15): connectorKey uipath-uipath-testmanager,
   Requirement.Create = POST /v2/{ProjectId}/requirements.
-tags: [uipath-platform, integration-service, resources, execute]
+tags: [uipath-platform, smoke, integration-service, resources, execute]
 
 run_limits:
   expected_turns: 28

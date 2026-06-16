@@ -6,7 +6,7 @@ description: >
   Offline (command-shape) grading; runs in CI without a live connection. Verified
   against a live tenant (2026-06-15): TestCase.Create = POST /v2/{ProjectId}/testcases
   (required `name`).
-tags: [uipath-platform, integration-service, resources, execute]
+tags: [uipath-platform, smoke, integration-service, resources, execute]
 
 run_limits:
   expected_turns: 24

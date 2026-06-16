@@ -4,7 +4,7 @@ description: >
   Test Manager connector attachment activity through the `uip is` surface —
   upload, get (list), download, and delete attachments. Offline (command-shape)
   grading; runs in CI without a live connection.
-tags: [uipath-platform, integration-service, resources, execute]
+tags: [uipath-platform, smoke, integration-service, resources, execute]
 
 run_limits:
   expected_turns: 20

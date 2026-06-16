@@ -6,7 +6,7 @@ description: >
   the connector exposes for any object). Offline (command-shape) grading; runs in
   CI without a live connection. Completes the 36-activity coverage set alongside
   the per-object lifecycle tasks.
-tags: [uipath-platform, integration-service, resources, execute]
+tags: [uipath-platform, smoke, integration-service, resources, execute]
 
 run_limits:
   expected_turns: 24

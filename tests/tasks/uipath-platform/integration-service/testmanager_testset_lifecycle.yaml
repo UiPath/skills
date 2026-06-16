@@ -5,7 +5,7 @@ description: >
   surface — create, get, update, delete a test set, assign test cases to it, read
   its assigned test cases, and execute the test set. Offline (command-shape)
   grading; runs in CI without a live connection.
-tags: [uipath-platform, integration-service, resources, execute]
+tags: [uipath-platform, smoke, integration-service, resources, execute]
 
 run_limits:
   expected_turns: 32
