@@ -13,68 +13,51 @@ description: >
 tags: [uipath-data-fabric, integration, error-paths]
 
 run_limits:
-  expected_turns: 33
   max_turns: 50
   turn_timeout: 600
 
 initial_prompt: |
   Use --output json on every uip df command.
 
-  The harness has pre-seeded an `CE_ErrorPathsTest` entity with two records:
-    SEED-001 / Score 10 / Tag "tag-unique"
-    SEED-002 / Score 20 / Tag "tag-other"
-  Schema: Code (STRING, isRequired, lengthLimit 50), Score (INTEGER),
-  Tag (STRING, isUnique, lengthLimit 50). The harness resets the entity to
-  this seed state in post_run.
+  There's a list called `CE_ErrorPathsTest` already set up with two
+  rows in it:
+    - SEED-001, score 10, tag "tag-unique"
+    - SEED-002, score 20, tag "tag-other"
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login.
+  The list has three columns: `Code` (required, no longer than 50
+  characters), `Score` (whole number), and `Tag` (unique, no longer
+  than 50 characters). First find the IDs of those two rows by
+  searching on Code — remember them as `seed_id` and `seed_id2`.
 
-  2. Resolve the entity ID: list native-only entities and capture the ID of
-     `CE_ErrorPathsTest`.
+  Then please try each of these (they'll all fail, that's the point):
 
-  3. Resolve seed IDs: query records on Code = "SEED-001" → capture Id as
-     `seed_id`; query records on Code = "SEED-002" → capture Id as `seed_id2`.
+  Adding / changing / removing rows:
+    - Try to add a new row that skips the Code (just Score = 5).
+    - Try to add a row with Tag "tag-unique" — the first seed row
+      already has that tag, so it should reject the duplicate.
+    - Try to add a row with Score set to "not-a-number" (text where
+      a number is expected).
+    - Try to update a row without saying which row.
+    - Try to update a row with the made-up ID "does-not-exist-aaa".
+    - Try to update seed_id2 by changing its tag to "tag-unique" —
+      same uniqueness problem.
+    - Try to update seed_id by setting its Score to "bad-value".
+    - Try to delete a made-up row "does-not-exist-bbb".
 
-  Now attempt each error scenario below. Run each command once, do NOT retry
-  or attempt to fix the error, and do NOT call the DataFabric REST API.
-
-  5. Required field missing: insert { "Score": 5 } (omit Code).
-
-  6. Unique constraint on insert: insert { "Code": "DUP", "Score": 1, "Tag": "tag-unique" }
-     (Tag "tag-unique" is already taken by the seed record).
-
-  7. Type mismatch on insert: insert { "Code": "TM-INS", "Score": "not-a-number" }.
-
-  8. Update missing Id: records update with body { "Score": 99 } (no Id key).
-
-  9. Update record not found: records update with body { "Id": "does-not-exist-aaa", "Score": 1 }.
-
-  10. Unique constraint on update: update seed_id2 — set Tag to "tag-unique"
-      (already held by seed record 1).
-
-  11. Type mismatch on update: update seed_id with { "Id": "<seed_id>", "Score": "bad-value" }.
-
-  12. Delete record not found: records delete <entity-id> does-not-exist-bbb.
-
-  13. CSV header mismatch: create wrong_headers.csv with header "WrongField,Score"
-      and one row "val,10". Import it into CE_ErrorPathsTest.
-
-  14. Malformed CSV: create malformed.csv with content:
+  Loading data from a file:
+    - Make a file `wrong_headers.csv` with header "WrongField,Score"
+      and one row "val,10". Try to load it.
+    - Make a file `malformed.csv` with this exact content:
         Code,Score
         "unclosed-quote,5
-      Import it into CE_ErrorPathsTest.
+      Try to load it.
 
-  15. File upload to non-FILE field: create a temp file temp.txt with content "x".
-      Run: uip df files upload <entity-id> <seed_id> Score --file temp.txt
-      (Score is INTEGER, not FILE — expect a field-type error).
+  Attaching files (make a tiny `temp.txt` as the source):
+    - Try to attach it to the Score column (Score isn't a file column).
+    - Try to attach it to a made-up row ID "does-not-exist-ccc".
+    - Try to attach a file that doesn't exist (`./no-such-file.bin`).
 
-  16. File upload record not found: run:
-      uip df files upload <entity-id> does-not-exist-ccc Score --file temp.txt
-
-  17. File upload local file not found:
-      uip df files upload <entity-id> <seed_id> Score --file ./no-such-file.bin
-
-  Do NOT delete the entity — the test harness handles cleanup.
+  Leave everything in place when you're done — I'll sweep it later.
 
 success_criteria:
   - type: command_executed

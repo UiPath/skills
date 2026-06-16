@@ -8,34 +8,27 @@ description: >
 tags: [uipath-data-fabric, integration, records, import]
 
 run_limits:
-  expected_turns: 9
   turn_timeout: 600
 
 initial_prompt: |
   1. Check login: run `uip login status --output json`. Do NOT re-login — use
      whatever tenant is currently active.
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login.
+  Could you load 4 rows of realistic inventory into it from a CSV?
 
-  2. Resolve the entity ID: list native-only entities and capture the ID of
-     `CE_IntegrationInventory`.
+  Things to keep in mind:
+    - The column headers in your CSV need to match the field names
+      exactly (uppercase/lowercase matters) — check the list before
+      you start.
+    - Every SKU in your file has to be unique.
+    - Don't include system columns (Id, CreatedBy, CreateTime,
+      UpdatedBy, UpdateTime) — those get filled in automatically.
 
-  3. Get the entity schema using entities get to confirm the exact field
-     names (case-sensitive) before creating the CSV.
+  Save the file as `inventory.csv`, load it, and then quickly list
+  the records to confirm everything came through (tell me how many
+  rows got inserted and how many are now in the list).
 
-  4. Create a file named inventory.csv with:
-     - A header row using the exact field names from the schema.
-     - 4 data rows of realistic inventory data with UNIQUE SKU values
-       (`SKU` is isUnique-constrained).
-     - Do NOT include system fields (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime).
-
-  5. Run the bulk import: records import --file inventory.csv
-
-  6. Verify the import: list records and check that rows were added.
-     Note InsertedRecords and TotalRecords from the import response.
-
-  Use --output json on every uip df command.
-  CSV headers must match entity field names exactly — case-sensitive.
+  I'll clean up the rows myself afterwards — just leave them in place.
 
 success_criteria:
   - type: command_executed

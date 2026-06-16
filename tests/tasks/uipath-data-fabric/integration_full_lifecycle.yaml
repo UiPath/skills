@@ -16,66 +16,43 @@ description: >
 tags: [uipath-data-fabric, integration, entities, records]
 
 run_limits:
-  expected_turns: 31
   turn_timeout: 600
 
 initial_prompt: |
   Perform a complete Data Fabric lifecycle. Use --output json on every uip df command.
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login — use
-     whatever tenant is currently active.
+  Check if a list called `CE_LifecycleTest` already exists. If it
+  does, reuse it. If not, set it up with these columns:
+    - Label — short text, no longer than 200 characters
+    - Score — whole number, between 0 and 1000
+    - Active — yes/no
 
-  2. List native-only entities. If an entity named "CE_LifecycleTest" already
-     exists, use its ID. If not, create it with fields and advanced
-     constraints:
-       - Label  (STRING,  lengthLimit 200)
-       - Score  (INTEGER, minValue 0, maxValue 1000)
-       - Active (BOOLEAN)
+  Once it's there:
+    - Read the list's settings back, find the ID of the Score column,
+      and print the limits we set on it (the max length, the min and
+      the max) so I can see them — that confirms the server saved
+      them properly.
+    - Add a long-text column called `Notes_<EPOCH>` (where <EPOCH> is
+      the current Unix epoch seconds), with a 2000-character limit.
+      The epoch suffix keeps the column name unique each run.
+    - Tighten up the Score column: rename it "Test Score", mark it
+      required, and drop the max from 1000 to 500.
+    - Change the list itself: rename it "Lifecycle Test Entity" with
+      description "Lifecycle test fixture (created and destroyed each
+      run)." Then read the list back and confirm both stuck.
 
-  3. Retrieve the full schema for CE_LifecycleTest using entities get.
-     From the Fields array, note the ID (Fields[].ID) for the Score field.
-     Confirm the response echoes the constraints back under
-     Fields[].fieldDataType.{lengthLimit,minValue,maxValue} — print them so
-     they are visible in the transcript.
+  Then add some data:
+    - Add row "alpha" with score 10 and Active = yes.
+    - Add row "beta" with score 5 and Active = no.
+    - Find all rows where Active is yes — at least one should come back.
+    - Update alpha so its score is 99.
+    - Read alpha back to confirm.
+    - Remove just those two rows — leave the list itself in place.
 
-  4. Add a new field to the entity using a unique name: `Notes_<EPOCH>`
-     (MULTILINE_TEXT, lengthLimit 2000), where `<EPOCH>` is the current
-     Unix epoch seconds. The epoch suffix guarantees the field does not
-     yet exist on the reused entity, so the `addFields` call always
-     applies a fresh field.
-     # Operational note: each successful run leaves one Notes_<EPOCH> field
-     # on the shared CE_LifecycleTest entity. Periodic cleanup will land once
-     # entity-delete + removeFields support is properly modeled in the
-     # skill (follow-up PR).
-
-  5. Update the Score field: set displayName to "Test Score", isRequired to
-     true, and tighten maxValue from 1000 to 500. Use the field ID from
-     step 3 in the updateFields body — the payload key is "id" (lowercase),
-     not "ID".
-
-  6. Edit the entity-level metadata: run `entities update <entity-id>` with
-     a body that sets `displayName` and `description` at the top level (NOT
-     under addFields/updateFields):
-       {"displayName":"Lifecycle Test Entity","description":"Lifecycle test fixture (created and destroyed each run)."}
-     Re-fetch with `entities get` and confirm the new displayName/description
-     are echoed in the response.
-
-  7. Insert two records:
-       - { "Label": "alpha", "Score": 10, "Active": true }
-       - { "Label": "beta",  "Score": 5,  "Active": false }
-     Save both record IDs from the insert responses.
-
-  8. Query records where Active = true. Confirm at least one result is returned.
-
-  9. Update the "alpha" record: set Score to 99.
-     Use the record ID from step 6 in the update body as "Id".
-
-  10. Verify the update: fetch the record with `records get` and confirm Score = 99.
-
-  11. Delete only the two records inserted in step 7 via `records delete`.
-      Do NOT delete the entity.
-
-  Do NOT use removeFields. Do NOT delete the entity.
+  Don't try to remove any columns and don't delete the list. (Note: each
+  successful run will leave one `Notes_<EPOCH>` column behind on the
+  shared list — that's a known issue and gets sorted out once
+  column-removal lands in the skill.)
 
 success_criteria:
   - type: command_executed

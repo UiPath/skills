@@ -10,51 +10,41 @@ description: >
 tags: [uipath-data-fabric, smoke, records]
 
 run_limits:
-  expected_turns: 13
   max_turns: 50
 
 initial_prompt: |
-  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
-  Every uip df command will fail with an auth error — that is expected and normal.
-  Run each command exactly once, ignore the auth error, and continue to the next step.
-  Do NOT retry any command. Do NOT attempt to login.
+  Heads-up — I'm just sketching this out before I've actually logged in, so every command will error on auth. Don't worry about that, and please don't retry or try to log in — I just want to see the right steps in order.
 
   There is a "Tasks" entity with entity ID "task-001-ent".
   Fields: Title (STRING), Priority (INTEGER), Done (BOOLEAN).
 
-  Do the following in order:
-  1. Insert a single record using a JSON object body:
-       { "Title": "Write tests", "Priority": 1, "Done": false }
-  2. Batch-insert 2 more records in one command using a JSON array (2+ elements
-     routes to the batch endpoint):
-       - { "Title": "Review PR",  "Priority": 2, "Done": false }
-       - { "Title": "Deploy",     "Priority": 3, "Done": false }
-  3. Retrieve the single record from step 1 by ID using records get.
-     Use placeholder record ID "id-single" since the CLI is offline.
-  4. Query all records where Done = false with --limit 50 and --offset 100
-     on the same command (filterGroup body + offset CLI flag).
-  5. List the first page of all records with --limit 10.
-  6. Fetch the next page by passing the previous response's NextCursor
-     verbatim via --cursor. Use placeholder cursor "cursor-page-2".
-  7. Jump directly to the page containing record index 200 using --offset 200
-     with --limit 10. (--offset and --cursor are mutually exclusive — pick
-     one per command, never both.)
-  8. Update the record from step 1: set Done = true.
-     Use placeholder record ID "id-single" in the "Id" field of the body.
-  9. Batch-update the 2 records from step 2: set Done = true for each.
-     Use placeholder IDs "id-2" and "id-3".
-  10. Delete the record from step 1 using records delete.
-      Use placeholder record ID "id-single".
+  Could you walk through these for me? Each one needs to be its own
+  separate command — please don't chain multiple `uip df` calls
+  together with `&&`, `;`, or `|`.
 
-  Additional constraints:
-  - Each of the 10 steps MUST be its OWN Bash tool call. Do NOT batch
-    multiple `uip df` invocations into a single shell command using `&&`,
-    `;`, or `|` — the criterion checker counts Bash tool calls, not
-    invocations inside a chained shell command.
-  - Pagination MUST use CLI flags (--limit, --cursor, --offset). Do NOT put
-    "start", "limit", "offset", or "pageSize" inside any --body JSON.
-  - Never pass both --offset and --cursor on the same command.
-  - Use --output json on every uip df command.
+    - Add a single row: "Write tests", priority 1, not done.
+    - Add two more rows in one shot (the system handles batches when
+      you pass multiple at once): "Review PR" priority 2 and "Deploy"
+      priority 3, both not done.
+    - Pull the first row back up by its ID — use placeholder
+      `id-single`.
+    - Find every row that's not done, page size 50, starting at
+      position 100.
+    - Show me the first page of everything, 10 at a time.
+    - Get the next page using the next-page cursor `cursor-page-2`
+      (pretend that's what came back from the previous response).
+    - Jump straight to the page that holds row number 200 with a
+      page size of 10. Don't combine a position jump with a next-page
+      cursor on the same command — pick one.
+    - Mark the first row done.
+    - Mark the other two rows (placeholder IDs `id-2` and `id-3`)
+      done in one shot.
+    - Delete the first row.
+
+  When paging, control it with command-line options (page size,
+  next-page cursor, starting position) — never put paging fields
+  like `start`, `limit`, `offset`, or `pageSize` inside the search
+  body.
 
 success_criteria:
   - type: command_executed

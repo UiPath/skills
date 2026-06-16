@@ -10,66 +10,38 @@ description: >
 tags: [uipath-data-fabric, integration, pre-seeded, discover]
 
 run_limits:
-  expected_turns: 32
   max_turns: 50
   turn_timeout: 600
 
 initial_prompt: |
   Use --output json on every uip df command.
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login.
+  Walk through these for me:
 
-  2. Resolve the entity ID: list native-only entities and capture the ID of
-     `CodeEvalTestEntity`. Do NOT create or seed it — the harness handles that.
+  First, read the list's settings back and confirm all 7 columns are
+  there with the right types.
 
-  3. Retrieve the full schema with entities get.
-     Confirm the entity has exactly 7 fields:
-       Title (STRING), Score (DECIMAL), Active (BOOLEAN), ReleaseDate (DATE),
-       Email (STRING), Notes (MULTILINE_TEXT), Poster (FILE).
+  Then run these searches and tell me how many rows came back from
+  each:
+    - All the active rows (expect 12)
+    - Score above 7 (expect 6 — scores 7.5 through 10.0)
+    - Title is exactly "The Matrix" (expect 1)
+    - Title contains "Matrix" (expect 3)
+    - Score at least 7 AND active (expect 7)
 
-  4. Run the following queries. Record the count of records returned by each.
+  Sort everything by score, highest first — the top score should be 10.0.
 
-     a. Active = true
-        Expected: 12 records.
+  Page through every row in chunks of 5. Each page has to be its own
+  separate command (looping inside one Python process doesn't count).
+  Use the next-page cursor from each response to move forward; stop
+  when there isn't one. You should see 4 pages and 20 unique IDs.
 
-     b. Score > 7
-        Expected: 6 records (7.5, 8.0, 8.5, 9.0, 9.5, 10.0).
+  Pick any one of the active rows, set its notes to
+  "test-annotation-by-agent", read it back to confirm, then clear the
+  notes (set them to nothing) and read it back once more. Tell me
+  which row's ID you touched.
 
-     c. Title = "The Matrix" (exact equality)
-        Expected: 1 record.
-
-     d. Title contains "Matrix"
-        Expected: 3 records.
-
-     e. Score >= 7 AND Active = true  (AND logic: logicalOperator=0)
-        Expected: 7 records (7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0 — all Active=true in seed data).
-
-  5. Sort all records by Score descending.
-     Confirm records[0].Score == 10.0 (the highest seed value).
-
-  6. Paginate through ALL records with `uip df records list --limit 5`.
-     Each page MUST be a separate `uip df records list` Bash invocation —
-     subprocess loops inside a single Python call do not satisfy the
-     per-page rule.
-
-       Page 1 (no cursor):
-         uip df records list <entity-id> --limit 5 --output json
-
-       Subsequent pages: add `--cursor "<NextCursor from prior response>"`.
-       Stop when `HasNextPage` is false. Expected: 4 pages (3 × 5 + 1 × 5
-       = 20 records).
-
-     Collect each page's record IDs and confirm total == 20 with no
-     duplicates.
-
-  7. Pick any one record returned by the Active=true query (step 4a).
-     Update its Notes field to "test-annotation-by-agent".
-     Verify the update with records get (confirm Notes == "test-annotation-by-agent").
-     Then restore Notes to null (update with Notes: null).
-     Verify the restore (confirm Notes == null).
-     Save the record ID you modified.
-
-  Do NOT delete any records. Do NOT delete the entity.
+  Don't delete any rows and don't delete the list.
 
 success_criteria:
   - type: command_executed

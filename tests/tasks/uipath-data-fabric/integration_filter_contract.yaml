@@ -1,16 +1,19 @@
-task_id: skill-datafabric-smoke-filter-contract
+task_id: skill-datafabric-integration-filter-contract
 description: >
-  Smoke test: validates the records-query filter contract end-to-end against a
-  live tenant. The agent constructs documented filter shapes (supported
-  operators, logicalOperator forms, valueList, nested filterGroups, sortOptions,
-  aggregates, is-empty/is-not-empty), returns all fields by default (no
-  gratuitous `selectedFields`), and avoids the anti-pattern shapes the skill
-  warns against (`filters`/`field`/`==`/`Equals`, comparison on Text). An
-  independent run_command oracle
+  Integration test: validates the records-query filter contract end-to-end
+  against a live tenant. The agent constructs documented filter shapes
+  (supported operators, logicalOperator forms, valueList, nested
+  filterGroups, sortOptions, aggregates, is-empty/is-not-empty), returns
+  all fields by default (no gratuitous `selectedFields`), and avoids the
+  anti-pattern shapes the skill warns against (`filters`/`field`/`==`/
+  `Equals`, comparison on Text). An independent run_command oracle
   (verify_filter_contract.py) then probes every documented shape directly
-  against the CLI and asserts each is accepted — or, for anti-patterns, silently
-  dropped. Asserts command-shape validity, not record counts.
-tags: [uipath-data-fabric, smoke, records]
+  against the CLI and asserts each is accepted — or, for anti-patterns,
+  silently dropped. Asserts command-shape validity, not record counts.
+  Previously named `smoke_filter_contract.yaml` — re-tagged because it
+  hits the live tenant and uses a pre-seeded entity, so the `smoke`
+  (offline) classification was incorrect.
+tags: [uipath-data-fabric, integration, records]
 
 agent:
   type: claude-code
@@ -20,48 +23,40 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Before starting, load the uipath-data-fabric skill and follow its workflow.
+  Load the uipath-data-fabric skill and follow its workflow.
 
-  The harness has pre-seeded `CodeEvalTestEntity` with the canonical 20 records
-  (see `_shared/seeds/codeeval_test_entity.records.json`). Schema:
-  Title (STRING), Score (DECIMAL), Active (BOOLEAN), ReleaseDate (DATE),
-  Email (STRING, unique), Notes (MULTILINE_TEXT), Poster (FILE). The harness
-  reverts the entity to seed state in post_run — run read-only queries only.
+  There's a movie list called `CodeEvalTestEntity` already set up with
+  20 rows in it. Columns: title, score, an active flag, release date,
+  email (unique), notes (long text), and a poster image. Please only
+  read from it — don't add, change, or delete anything.
 
-  Use --output json on every uip df command. Do NOT insert, update, or delete
-  records, and do NOT delete the entity.
+  Could you run a quick search of each kind below so we can confirm
+  searching works the way the skill describes? Use only the canonical
+  search shape the skill teaches.
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login —
-     use whatever tenant is currently active.
+    - Exact match — title is "Inception"
+    - Comparison — score is at least 7
+    - Substring — title contains "Matrix"
+    - Set match — title is one of "Inception" or "Star Wars"
+    - AND group — score at least 7 AND active is yes
+    - OR group — active is no OR score below 2
+    - Nested — either (one combined AND condition) or (another)
+    - Sort — by score, highest first, with no filter
+    - Group + count — count of rows grouped by the active flag
+      (each group's count aliased `total`)
+    - Empty check — notes is empty
+    - Non-empty check — notes is not empty
 
-  2. Resolve the entity ID: list native-only entities and capture the ID of
-     `CodeEvalTestEntity`.
+  Every search should come back successful. If one gets rejected,
+  fix the shape against the skill's filter docs and run it again.
 
-  3. Run each of these `records query --body` calls. Use ONLY the documented
-     filter shape: `filterGroup` → `queryFilters` array → each item has
-     `fieldName`, `operator`, and `value` (or `valueList` for set operators).
-     Use the `=` operator symbol — never the aliases `==`, `Equals`, or `eq`.
-
-     a. Equality:    Title = "Inception"
-     b. Comparison:  Score >= "7"
-     c. Substring:   Title contains "Matrix"
-     d. Set:         Title in ["Inception","Star Wars"]   (use valueList)
-     e. AND group:   Score >= "7" AND Active = "true"     (logicalOperator 0)
-     f. OR group:    Active = "false" OR Score < "2"       (logicalOperator 1)
-     g. Nested:      outer OR over two inner AND groups
-     h. Sort:        sortOptions Score isDescending true (no filter)
-     i. Aggregate:   groupBy ["Active"] + aggregates COUNT(Id) alias "total"
-     j. Is empty:     Notes is empty      (operator "=",  value null)
-     k. Is not empty: Notes is not empty  (operator "!=", value null)
-
-  Every query must return Result == "Success". If any is rejected, fix the
-  body shape against the skill's filter contract and re-run it.
-
-  Comparison operators (<, >, <=, >=) are valid only on Number/Date/Unique ID
-  fields — do NOT use them on the STRING fields Title or Email.
-
-  Return ALL fields — do NOT add `selectedFields` to any query. The aggregate
-  query (step i) is the only one that uses it, because `groupBy` requires it.
+  Two things to avoid:
+    - Don't use comparison (less-than / greater-than) on the text
+      columns (title, email) — only numbers, dates, and IDs support
+      that.
+    - By default, return every column — don't ask for a subset of
+      columns. The grouped-count search is the only exception (it
+      needs to say which column it's grouping by).
 
 success_criteria:
   - type: command_executed

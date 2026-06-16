@@ -10,86 +10,65 @@ description: >
 tags: [uipath-data-fabric, smoke, complex-fields]
 
 run_limits:
-  expected_turns: 36
   max_turns: 35
 
 sandbox:
   driver: docker
 
 initial_prompt: |
-  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
-  Every uip df command will fail with an auth error — that is expected and normal.
-  Run each command exactly once, ignore the auth error, and continue to the next step.
-  Do NOT retry any command. Do NOT attempt to login.
+  Heads-up — I'm just sketching this out before I've actually logged in, so every command will error on auth. Don't worry about that, and please don't retry or try to log in — I just want to see the right steps in order.
 
-  This scenario exercises three field types — `CHOICE_SET_SINGLE`,
-  `CHOICE_SET_MULTIPLE`, and `RELATIONSHIP`. On the schema side each one needs
-  an extra config key (`choiceSetId` for the choice fields; `referenceEntityId`
-  + `referenceFieldId` for relationship — both are UUIDs, never names). On
-  records, choice values use the `NumberId` integer (or array for multi-select)
-  and relationship values use the target record's UUID `Id`.
+  Help us set up an expense list that links to employees and projects
+  and uses two dropdowns — one for category and one for tags.
 
-  Pre-seeded placeholders (treat as real values for command construction):
-  - Choice set "ExpenseCategories"   ID: "cs-cat-001"
-      values: travel (NumberId 1), meals (NumberId 2), lodging (NumberId 3)
-  - Choice set "ExpenseTags"         ID: "cs-tag-002"
-      values: urgent (NumberId 1), reimbursable (NumberId 2), client (NumberId 3)
-  - Existing entity "Employee"       ID: "emp-ent-100"  (technical Name: "Employee")
-      one employee record ID: "emp-rec-500"
-      Id-field UUID:               "emp-idfield-700"
-  - Existing entity "Project"        ID: "proj-ent-200" (technical Name: "Project")
-      Id-field UUID:               "proj-idfield-800"
+  Treat these as real things in the tenant:
+    - A category dropdown (ID `cs-cat-001`) with options
+      travel (1), meals (2), lodging (3)
+    - A tags dropdown (ID `cs-tag-002`) with options
+      urgent (1), reimbursable (2), client (3)
+    - An Employees list (ID `emp-ent-100`, ID column's internal ID is
+      `emp-idfield-700`) with one employee already in it: ID
+      `emp-rec-500`
+    - A Projects list (ID `proj-ent-200`, ID column's internal ID is
+      `proj-idfield-800`)
 
-  Do the following in order. Use --output json on every uip df command.
+  Walk through these for me:
 
-  1. List native-only entities to discover what already exists.
+    - See what lists are already set up, and see what dropdowns exist.
+      Then look up the available options on the category dropdown
+      so you have the option numbers.
 
-  2. List all choice sets to confirm "ExpenseCategories" and "ExpenseTags"
-     exist and capture their IDs (use the placeholder values above).
+    - Set up a new Expense list with these columns:
+        - amount — decimal, two places, required
+        - category — pick one from the category dropdown, required
+        - tags — pick one or more from the tags dropdown
+        - submitter — links to an employee, required
+        - project — links to a project
 
-  3. Get the values for the "ExpenseCategories" choice set so you know the
-     NumberId for each category. Use placeholder choice set ID "cs-cat-001".
+    - Add a single-pick status column to the Employees list using the
+      tags dropdown (`cs-tag-002`).
 
-  4. Create a new entity "Expense" with these fields:
-       - amount      (DECIMAL, decimalPrecision 2, required)
-       - category    (CHOICE_SET_SINGLE   pointing at choice set "cs-cat-001", required)
-       - tags        (CHOICE_SET_MULTIPLE pointing at choice set "cs-tag-002")
-       - submitter   (RELATIONSHIP to Employee — referenceEntityId "emp-ent-100",
-                      referenceFieldId "emp-idfield-700", required)
-       - project     (RELATIONSHIP to Project  — referenceEntityId "proj-ent-200",
-                      referenceFieldId "proj-idfield-800")
+    - Add one expense to the Expense list (pretend it has ID
+      `exp-ent-300`):
+        amount $250, category travel, tags urgent + reimbursable,
+        submitter is employee `emp-rec-500`.
 
-  5. Add a CHOICE_SET_SINGLE field "status" to the existing Employee entity
-     using entities update with addFields. Point it at choice set "cs-tag-002".
+    - Find expenses in the travel category.
 
-  6. Insert one Expense record using a JSON object body. Use placeholder
-     entity ID "exp-ent-300". Choice values MUST be passed as NumberId
-     integers (NOT the display label string). Relationship values MUST be
-     the target record's UUID Id:
-       - amount:    250
-       - category:  1                   (travel — NumberId)
-       - tags:      [1, 2]              (NumberId array for CHOICE_SET_MULTIPLE)
-       - submitter: "emp-rec-500"       (Employee record UUID)
+    - Find expenses submitted by employee `emp-rec-500`.
 
-  7. Filter Expense records on category == "travel" (NumberId 1) using a
-     filterGroup query. Pass the NumberId as a string in the filter value.
+    - Finally, I'll ask you to make a brand-new dropdown called
+      "PaymentStatus" from the command line. Please refuse — dropdowns
+      can only be authored in the web UI. Explain that in your reply
+      and don't run any create/update/delete on a dropdown.
 
-  8. Filter Expense records linked to a specific Employee using a filterGroup
-     query — fieldName "submitter", value "emp-rec-500" (the target UUID).
-
-  9. The user then asks you to *create* a brand-new choice set called
-     "PaymentStatus" via the CLI. Refuse: the CLI is read-only for choice
-     sets — they must be authored in the Data Fabric web UI. Explain this in
-     your final message. Do NOT run any uip df choice-sets create / update /
-     delete command.
-
-  Additional constraints:
-  - NEVER write a choice value as a display label (e.g. "category":"travel")
-    or as the value's UUID Id — only NumberId integers.
-  - NEVER write a relationship value as anything other than the target
-    record's UUID Id (e.g. do not pass an email or a Name).
-  - Do NOT use removeFields. Do NOT delete any entity. Do NOT create or modify
-    a choice set via the CLI.
+  Things to keep in mind:
+    - For category and tags values, use the option numbers — not the
+      label text, not the option's internal ID.
+    - For the submitter and project fields, use the linked row's ID —
+      not an email, not a name.
+    - Please don't try to remove any columns and don't delete any
+      lists.
 
 success_criteria:
   - type: command_executed

@@ -9,73 +9,46 @@ description: >
 tags: [uipath-data-fabric, integration, records]
 
 run_limits:
-  expected_turns: 26
   turn_timeout: 600
 
 initial_prompt: |
   1. Check login: run `uip login status --output json`. Do NOT re-login — use
      whatever tenant is currently active.
 
-  Schema: Code (STRING), Value (DECIMAL), Status (STRING).
-  Do NOT insert or delete records — the harness reverts the entity to seed
-  state in post_run. Read-only queries only.
+  It has three columns: code, value, and status. Please don't change
+  anything — we just need a bunch of searches run on it.
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login —
-     use whatever tenant is currently active.
+  Run each of these searches and remember the answer:
 
-  2. Resolve the entity ID: list native-only entities and capture the ID of
-     `CE_IntegrationOrders`.
+  1) Active orders worth more than $300. Should be just ORD-002.
+     Save the count as `and_query_count`.
 
-  3. AND query: records query with filterGroup logicalOperator 0 (AND):
-       Status = "Active" AND Value > "300"
-     Expected: exactly 1 result (ORD-002; ORD-003 is Active but Value 250 fails).
-     Save count as and_query_count.
+  2) Orders that are Pending OR Closed. Should be ORD-001 and ORD-004
+     (2 rows). Save as `or_query_count`.
 
-  4. OR query: records query with filterGroup logicalOperator 1 (OR):
-       Status = "Pending" OR Status = "Closed"
-     Expected: exactly 2 results (ORD-001, ORD-004).
-     Save count as or_query_count.
+  3) Either (Active AND worth more than $200) OR Pending. Should be
+     ORD-001, ORD-002, ORD-003 (3 rows). Save as `nested_query_count`.
 
-  5. Nested filterGroups query — outer logicalOperator 1 (OR) over two inner AND groups:
-       Group 1: Status = "Active" AND Value > "200"
-       Group 2: Status = "Pending"
-     Expected: exactly 3 results (ORD-001, ORD-002, ORD-003; ORD-004 fails both).
-     Save count as nested_query_count.
+  4) Sort everything by value, highest first — tell me the top row's
+     value. Save as `sort_first_value` (should be 750.0).
 
-  6. Sort query: records query with sortOptions Value isDescending true, no filter.
-     Save the Value field of Records[0] as sort_first_value (expected: 750.0).
+  5) Return just the Code column for every row — confirm value and
+     status are nowhere in the response. Save
+     `projection_value_absent` and `projection_status_absent`.
 
-  7. Projection query: records query with selectedFields ["Code"], no filter.
-     Verify that the Value and Status fields are absent from every record returned.
-     Save projection_value_absent and projection_status_absent as true/false.
+  6) Page through all the rows two at a time, without any filter.
+     Walk forward using next-page cursors until there are no more.
+     Confirm you got 4 unique IDs with no duplicates. Save
+     `pagination_total_ids` and `pagination_no_duplicates`.
 
-  8. Paginate all records using records query with --limit 2 and no --body:
-       uip df records query <entity-id> --limit 2 --output json
-     If HasNextPage is true, repeat with --cursor <NextCursor> until exhausted.
-     Collect all record IDs across pages.
-     Use Python to verify: total unique IDs == 4 and no duplicates.
-     Save pagination_total_ids and pagination_no_duplicates.
+  7) Find orders whose status is in the set {Pending, Active}. Should
+     be ORD-001, ORD-002, ORD-003 (3 rows). Save as `in_query_count`.
 
-  9. `in`-operator query with `valueList` — records query with filterGroup:
-       Status in ["Pending","Active"]
-     Build the queryFilter with `"operator": "in"` and a `"valueList"` array
-     (NOT a comma-separated `value` string — the `in` operator requires
-     `valueList`). Expected: exactly 3 results (ORD-001, ORD-002, ORD-003).
-     Save count as in_query_count.
+  8) Count of orders grouped by status. Should give: Pending → 1,
+     Active → 2, Closed → 1. Save as `agg_by_status` keyed by status.
 
-  10. Aggregate query — count of records grouped by Status. Build the body
-      with `selectedFields`, `groupBy`, and `aggregates`:
-        {
-          "selectedFields": ["Status"],
-          "groupBy":        ["Status"],
-          "aggregates":     [{"function":"COUNT","field":"Id","alias":"total"}]
-        }
-      Expected: 3 result rows, one per Status:
-        Pending → total 1, Active → total 2, Closed → total 1.
-      Save the result as agg_by_status (object keyed by Status).
-
-  Use --output json on every uip df command.
-  Pagination must use --limit and --cursor CLI flags — never body keys.
+  Paging should be controlled by command-line options (page size,
+  next-page cursor) — never put paging fields inside the search body.
 
 success_criteria:
   - type: command_executed

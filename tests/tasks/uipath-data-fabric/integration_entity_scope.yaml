@@ -9,52 +9,34 @@ description: >
 tags: [uipath-data-fabric, integration, entity-scope]
 
 run_limits:
-  expected_turns: 24
   turn_timeout: 600
 
 initial_prompt: |
   Use --output json on every uip df command.
 
-  1. Check login: run `uip login status --output json`. From the response
-     note the active tenant ID. Also note at least two folder IDs if
-     available (folder_a_id and folder_b_id). If the tenant has only one
-     folder, record that limitation in the report and skip folder-isolation
-     checks (mark them null).
+  First, see if the tenant has at least two folders. If it does,
+  remember them as `folder_a_id` and `folder_b_id`. If there's only
+  one folder, just note that — we'll skip the folder-isolation parts
+  (record them as null).
 
-  The harness has pre-seeded a tenant-level entity `CE_TenantScopeTest`
-  (Name STRING isRequired lengthLimit 100). The harness wipes its records
-  in post_run. Do NOT call `entities create` for this entity.
+  There's already a tenant-wide list called `CE_TenantScopeTest` with
+  one required name column (no longer than 100 characters). Please
+  don't recreate it.
 
-  The folder-scoped entity `CE_FolderScopeTest` is created by the agent
-  each run and deleted by the harness in post_run via
-  `cleanup_entities_by_name.py --name-prefix CE_FolderScopeTest`.
+  Check these:
+    - List everything without specifying a folder — `CE_TenantScopeTest`
+      should be there.
+    - List everything from folder A — `CE_TenantScopeTest` should
+      still show up, because tenant lists are visible everywhere.
+    - Make a new list called `CE_FolderScopeTest` (one name column)
+      and put it specifically in folder A.
+    - List everything from folder B — `CE_FolderScopeTest` should
+      NOT appear, because it belongs to folder A only.
+    - Try making one more list called `CE_FolderScopeTest_Invalid`
+      using a fake folder ID like `00000000-0000-0000-0000-000000000000`.
+      Just tell me what error comes back.
 
-  2. Resolve the entity ID: list native-only entities and capture the ID of
-     `CE_TenantScopeTest`.
-
-  3. Run entities list (--native-only) without a folder flag. Confirm
-     "CE_TenantScopeTest" appears in the response.
-
-  4. If folder_a_id is available, run entities list with --folder <folder_a_id>.
-     Confirm "CE_TenantScopeTest" still appears (tenant entities are visible
-     from all folder contexts).
-
-  5. If folder_a_id is available, create a folder-scoped entity
-     `CE_FolderScopeTest` with field Name (STRING) scoped to folder_a_id.
-     Save the entity ID.
-
-  6. If both folder_a_id and folder_b_id are available, run:
-       uip df entities list --native-only --folder <folder_b_id> --output json
-     Confirm `CE_FolderScopeTest` does NOT appear (it is scoped to folder_a only).
-
-  7. Attempt to create an entity named `CE_FolderScopeTest_Invalid` with a
-     non-existent folder ID:
-       uip df entities create CE_FolderScopeTest_Invalid --folder 00000000-0000-0000-0000-000000000000 --body '{"fields":[{"fieldName":"Name","type":"STRING"}]}' --output json
-     Record the error response. The harness's post_run cleanup matches
-     `CE_FolderScopeTest_*` so even if this somehow succeeded against a
-     fallback folder, it would still be cleaned up.
-
-  Do NOT delete entities yourself — the test harness handles cleanup.
+  Leave the lists in place — I'll clean them up myself later.
 
 success_criteria:
   - type: command_executed
