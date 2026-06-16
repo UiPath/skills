@@ -25,13 +25,11 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a low-code conversational (multi-turn chat) agent named
-  "ChatGuardAgent" inside a UiPath solution named "PiiGuardSol". The
-  agent answers user questions about customer accounts and must include
-  a PII detection guardrail configured to block Email and PhoneNumber.
+  Build a low-code conversational agent named "ChatGuardAgent" inside 
+  a UiPath solution named "PiiGuardSol".
 
-  This is a conversational (multi-turn chat) agent — not an autonomous
-  single-turn agent.
+  The agent answers user questions about customer accounts and must include
+  a PII detection guardrail configured to block Email and PhoneNumber.
 
   Validate the agent successfully at the end.
 

@@ -23,17 +23,15 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a low-code conversational (multi-turn chat) agent named
-  "DocAgent" inside a UiPath solution named "DocSol". The agent helps
-  users analyze uploaded files — users attach a document or image and
-  ask questions about its content (extract key points, summarize,
-  describe an image, etc.).
+  Build a low-code conversational agent named "DocAgent" 
+  inside a UiPath solution named "DocSol". 
+  
+  The agent helps users analyze uploaded files — users attach a document 
+  or image and ask questions about its content (extract key points, 
+  summarize, describe an image, etc.).
 
   Add the built-in Analyze Attachments tool so the agent has a way to
   read and process file contents.
-
-  This is a conversational (multi-turn chat) agent — not an autonomous
-  single-turn agent.
 
   Validate the agent successfully at the end.
 

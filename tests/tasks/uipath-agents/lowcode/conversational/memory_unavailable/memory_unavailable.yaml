@@ -24,17 +24,15 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a low-code conversational (multi-turn chat) agent named
-  "MemoryAgent" inside a UiPath solution named "MemorySol". The agent
-  helps users plan trips and should remember the user's preferences
+  Build a low-code conversational agent named "MemoryAgent" inside a 
+  UiPath solution named "MemorySol". 
+
+  The agent helps users plan trips and should remember the user's preferences
   (preferred airlines, dietary restrictions, past destinations) across
   sessions so it can give personalized recommendations on return visits.
 
   Add a memory space so the agent can recall prior conversations and
   user preferences across sessions.
-
-  This is a conversational (multi-turn chat) agent — not an autonomous
-  single-turn agent.
 
   Validate the agent successfully at the end.
 

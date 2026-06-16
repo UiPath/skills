@@ -28,9 +28,6 @@ initial_prompt: |
 
   Make sure it validates successfully.
 
-  This is a conversational (multi-turn chat) agent — not an autonomous
-  single-turn agent.
-
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
   implementation. Complete the entire task end-to-end in a single pass.

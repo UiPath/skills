@@ -24,14 +24,14 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  Build a low-code conversational (multi-turn chat) agent named
-  "SupportBot" inside a UiPath solution named "SupportSol". The agent
-  answers customer product support questions by retrieving relevant
+  Build a low-code conversational agent named "SupportBot" 
+  inside a UiPath solution named "SupportSol". 
+  
+  The agent answers customer product support questions by retrieving relevant
   info from the existing Context Grounding semantic index named
   "UiPathAgentsProductKnowledge" already deployed in the tenant.
 
-  This is a conversational (multi-turn chat) agent — not an autonomous
-  single-turn agent. Users will ask product questions over chat; the
+  Users will ask product questions over chat; the
   agent should query the knowledge base index and ground its answers.
 
   Use the real folder, index name, and backing storage bucket from the
