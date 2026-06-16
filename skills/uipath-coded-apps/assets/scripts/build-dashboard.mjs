@@ -146,7 +146,7 @@ const KNOWN_EVENTS = new Set([
   'HAND_EDIT_DETECTED', 'T2_SCHEMA_ERROR', 'INCREMENTAL_READY', 'UPGRADE_AVAILABLE', 'UPGRADE_DONE',
 ])
 
-const VALID_EDIT_OPS = ['ADD', 'REMOVE', 'CHANGE', 'REBUILD']
+export const VALID_EDIT_OPS = ['ADD', 'REMOVE', 'CHANGE', 'REBUILD', 'UPGRADE']
 
 /**
  * Display types supported for all widget tiers.
@@ -198,6 +198,27 @@ export function buildVersions(sdkVersion = null) {
 export function scaffoldDrift(state) {
   const stamped = state?.versions?.scaffold ?? null
   return stamped === SCAFFOLD_VERSION ? null : { from: stamped, to: SCAFFOLD_VERSION }
+}
+
+/**
+ * Apply intent-schema migrations in sequence from intent.schemaVersion up to target.
+ * Registry: assets/scripts/migrations/intent-v<N>-to-v<N+1>.mjs (empty today — framework
+ * so a future schema bump is a drop-in file, not a refactor). Pure migrate(intent) functions.
+ * @param {object} intent
+ * @param {string} migrationsDir
+ * @param {number} [targetVersion=INTENT_SCHEMA_VERSION]
+ */
+export async function runIntentMigrations(intent, migrationsDir, targetVersion = INTENT_SCHEMA_VERSION) {
+  let v = intent.schemaVersion ?? 1
+  while (v < targetVersion) {
+    const file = join(migrationsDir, `intent-v${v}-to-v${v + 1}.mjs`)
+    if (!existsSync(file)) break
+    const { migrate } = await import(pathToFileURL(file).href)
+    intent = migrate(intent)
+    v++
+  }
+  intent.schemaVersion = Math.max(intent.schemaVersion ?? 1, v)
+  return intent
 }
 
 /**

@@ -1,9 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, buildViewSpec, compileColumns, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, SCAFFOLD_VERSION, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift } from '../build-dashboard.mjs'
+import { tmpdir } from 'node:os'
+import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, buildViewSpec, compileColumns, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, SCAFFOLD_VERSION, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift, runIntentMigrations, VALID_EDIT_OPS } from '../build-dashboard.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REGISTRY_PATH = resolve(__dirname, '../capability-registry.json')
@@ -38,6 +39,31 @@ test('scaffoldDrift: detected when stamped differs', () => {
 
 test('scaffoldDrift: detected for a pre-versioning project (no versions block)', () => {
   assert.deepEqual(scaffoldDrift({ widgets: {} }), { from: null, to: SCAFFOLD_VERSION })
+})
+
+// ── Phase 2: migrations + UPGRADE op ──────────────────────────────────────────
+test('runIntentMigrations: no-op when already at target', async () => {
+  const out = await runIntentMigrations({ schemaVersion: 2, metrics: [] }, '/no/such/dir', 2)
+  assert.equal(out.schemaVersion, 2)
+})
+
+test('runIntentMigrations: applies a sequenced migration from a dir', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'mig-'))
+  writeFileSync(join(dir, 'intent-v2-to-v3.mjs'), 'export function migrate(i){ return { ...i, bumped: true } }')
+  try {
+    const out = await runIntentMigrations({ schemaVersion: 2, metrics: [] }, dir, 3)
+    assert.equal(out.bumped, true)
+    assert.equal(out.schemaVersion, 3)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('VALID_EDIT_OPS includes UPGRADE', () => {
+  assert.ok(VALID_EDIT_OPS.includes('UPGRADE'))
+})
+
+test('classifyEditIntent accepts a no-target UPGRADE op', () => {
+  const plan = classifyEditIntent({ projectDir: '/p', op: 'UPGRADE' })
+  assert.equal(plan.ops[0].op, 'UPGRADE')
 })
 
 function resolveT1(metricName) {
