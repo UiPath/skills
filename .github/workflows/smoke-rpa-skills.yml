@@ -96,14 +96,7 @@ jobs:
       - name: Resolve coder_eval pin
         id: ceref
         shell: bash
-        run: echo "ref=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/coder_eval
-          ref: ${{ steps.ceref.outputs.ref }}
-          token: ${{ secrets.GH_PAT }}
-          path: .coder_eval
+        run: echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
         with:
@@ -119,11 +112,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
+      # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
       - name: Install coder-eval
-        working-directory: .coder_eval
+        shell: bash
         env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system .
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash

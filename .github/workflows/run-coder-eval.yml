@@ -32,8 +32,8 @@ on:
         description: 'Allow >50 tasks (cost guardrail).'
         type: boolean
         default: false
-      coder_eval_ref:
-        description: 'coder_eval ref (blank = pinned version)'
+      coder_eval_version:
+        description: 'coder_eval version to test (blank = pinned). A published release, e.g. 0.6.3 — dry-run a candidate before bumping the pin.'
         type: string
         default: ''
       cli_version:
@@ -54,22 +54,23 @@ jobs:
       windows_globs:  ${{ steps.split.outputs.windows_globs }}
       linux_count:    ${{ steps.split.outputs.linux_count }}
       windows_count:  ${{ steps.split.outputs.windows_count }}
-      coder_eval_ref: ${{ steps.ceref.outputs.ref }}
+      coder_eval_version: ${{ steps.ceref.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
-      # Single source of truth for the coder_eval version: the pinned tag in
-      # tests/.coder-eval-version. A non-blank coder_eval_ref input overrides it
-      # for ad-hoc runs. Resolved once here and passed to both run jobs.
-      - name: Resolve coder_eval ref (pinned; input overrides)
+      # Single source of truth for the coder_eval version: the pin in
+      # tests/.coder-eval-version. A non-blank coder_eval_version input overrides
+      # it for ad-hoc runs. Resolved once here and passed to both run jobs as the
+      # wheel version (host CLI) + agent image tag (sandbox).
+      - name: Resolve coder_eval version (pinned; input overrides)
         id: ceref
         env:
-          CE_REF_INPUT: ${{ inputs.coder_eval_ref }}
+          CE_VERSION_INPUT: ${{ inputs.coder_eval_version }}
         run: |
-          if [ -n "$CE_REF_INPUT" ]; then
-            echo "ref=$CE_REF_INPUT" >> "$GITHUB_OUTPUT"
+          if [ -n "$CE_VERSION_INPUT" ]; then
+            echo "version=$CE_VERSION_INPUT" >> "$GITHUB_OUTPUT"
           else
-            echo "ref=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
+            echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Resolve globs, split by tag, enforce large-run gate
@@ -135,38 +136,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/coder_eval
-          ref: ${{ needs.partition.outputs.coder_eval_ref }}
-          token: ${{ secrets.GH_PAT }}
-          path: .coder_eval
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
       - uses: astral-sh/setup-uv@v4
 
+      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
+      # deps). No source checkout.
       - name: Install coder-eval
-        working-directory: .coder_eval
         env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system .
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
 
-      - name: Build coder-eval Docker image
-        working-directory: .coder_eval
-        env:
-          UV_INDEX_UIPATH_USERNAME: ${{ secrets.UV_INDEX_UIPATH_USERNAME }}
-          UV_INDEX_UIPATH_PASSWORD: ${{ secrets.UV_INDEX_UIPATH_PASSWORD }}
-        run: make docker-image
+      # Pull the pinned agent image from GHCR (never built from source); the
+      # skills image extends it below. GH_PAT needs read:packages.
+      - name: Pull pinned coder-eval-agent image
+        run: |
+          echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_version }}
 
       # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
       # on top of coder-eval-agent). Matches smoke-skills.yml + daily.sh.
       - name: Build skills Docker image
         run: |
           docker build \
-            --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
+            --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_version }} \
             --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             -t skills-image:latest \
@@ -283,13 +278,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/coder_eval
-          ref: ${{ needs.partition.outputs.coder_eval_ref }}
-          token: ${{ secrets.GH_PAT }}
-          path: .coder_eval
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -304,11 +292,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
+      # deps). Windows tasks run under the tempdir driver -- no agent image.
       - name: Install coder-eval
-        working-directory: .coder_eval
+        shell: bash
         env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system .
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
