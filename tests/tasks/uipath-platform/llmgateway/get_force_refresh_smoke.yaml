@@ -11,10 +11,10 @@ run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  My BYO LLM configuration `f7c93a8d-2b14-49e7-a013-08dc7f6e1234` was working
-  yesterday but agent calls started failing this morning with auth errors from
-  OpenAI. Help me figure out whether the underlying Integration Service
-  connection is still healthy.
+  Re-probe my BYO LLM configuration `f7c93a8d-2b14-49e7-a013-08dc7f6e1234` in
+  UiPath LLM Gateway to re-resolve whether its underlying Integration Service
+  connection is still healthy. Agent calls against it started returning OpenAI
+  auth errors today.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
