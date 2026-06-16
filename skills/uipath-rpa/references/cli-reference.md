@@ -174,12 +174,13 @@ Read the project's UI **Object Repository** — the saved hierarchy of applicati
 
   | Parameter | Required | Description |
   |-----------|----------|-------------|
-  | `--library-paths` | yes | Absolute path(s) to the library `.nupkg` file(s) to read. Repeatable, one path per occurrence. |
+  | `--library-paths` | yes | Absolute path(s) to the library `.nupkg` file(s) to read. Pass a single flag with the paths **comma-separated** (e.g. `"a.nupkg,b.nupkg"`) — it is not a repeatable flag. Avoid paths containing commas. |
 
   ```bash
+  # multiple libraries: one --library-paths flag, comma-separated
   uip rpa object-repository get-library \
     --project-dir "<PROJECT_DIR>" \
-    --library-paths "C:\libs\Acme.UiLib.1.2.0.nupkg" \
+    --library-paths "C:\libs\Acme.UiLib.1.2.0.nupkg,C:\libs\Other.UiLib.2.0.0.nupkg" \
     --output json
   ```
 
