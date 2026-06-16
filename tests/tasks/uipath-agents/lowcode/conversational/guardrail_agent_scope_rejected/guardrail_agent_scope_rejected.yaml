@@ -35,9 +35,7 @@ initial_prompt: |
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire build (solution + agent +
-  guardrail + validation) end-to-end in a single pass without stopping
-  for a summary until all four are done.
+  implementation. Complete the entire build end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
