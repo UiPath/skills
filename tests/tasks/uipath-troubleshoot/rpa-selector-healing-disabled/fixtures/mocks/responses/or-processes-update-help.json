@@ -2,9 +2,9 @@
   "Result": "Success",
   "Code": "Help",
   "Data": {
-    "Command": "edit",
-    "Description": "Edit process settings by key (GUID). No folder needed — resolves cross-folder. Only provided fields are updated (PATCH). Use 'processes get' to see current values.",
-    "Usage": "uip or processes edit [options] <process-key>",
+    "Command": "update",
+    "Description": "Update process settings by key (GUID). No folder needed — resolves cross-folder. Only provided fields are updated (PATCH). Use 'processes get' to see current values.",
+    "Usage": "uip or processes update [options] <process-key>",
     "Arguments": [
       {
         "Name": "process-key",
@@ -93,9 +93,9 @@
     "Examples": [
       {
         "Description": "Change a process description",
-        "Command": "uip or processes edit c3d4e5f6-0000-0000-0000-000000000001 --description \"Monthly invoice batch\"",
+        "Command": "uip or processes update c3d4e5f6-0000-0000-0000-000000000001 --description \"Monthly invoice batch\"",
         "Output": {
-          "Code": "ProcessEdited",
+          "Code": "ProcessUpdated",
           "Data": {
             "Key": "c3d4e5f6-0000-0000-0000-000000000001",
             "Name": "InvoiceProcessing",
