@@ -17,6 +17,7 @@ Failures originate at distinct layers — COM/Interop availability (step 1), fil
 
 - **Word Application Scope** (`WordApplicationScope`, display name "Word Application Scope") — open a Word document via Interop and run child activities against it. **COM-only** — requires desktop Word. Properties include the document `Path`, `CreateIfNotExists` (generate the file when absent), and `Password`.
 - **Replace Text in Document** (display name "Replace Text in Document" / classic "Replace Text"; modern `ReplaceTextInDocument` inside `Use Word File`, classic `WordReplaceText` inside `Word Application Scope`) — find a `Search` string in the open document and substitute `Replace`. Runs against the document held by the surrounding scope. Classic versions cap `Search`/`Replace` at 256 characters.
+- **Read Text** (display name "Read Text") — extract the document's text. Two surfaces: the **Word-pack** `Read Text` reads the document held open by a surrounding `Use Word File` / `Word Application Scope` (no file input of its own); the **standalone** `Read Text` under `System > File > Word Document` takes a file path directly (no container) but is OpenXML `.docx`-only.
 
 ## Common Failure Patterns
 
@@ -36,6 +37,13 @@ Failures originate at distinct layers — COM/Interop availability (step 1), fil
 - **Placeholder replaced once, then missing in a loop** — succeeds on iteration 1, then later rows have nothing to replace because the workflow edits the template in place and the first replacement consumed the placeholder. Fix: copy the template to a fresh temp file per iteration.
 - **Headers / footers / text boxes skipped** — no error, but placeholders outside the main body (headers, footers, floating text boxes/shapes) survive because older package versions scan only body text. Fix: update `UiPath.Word.Activities`.
 - **Multi-line replacement loses formatting** — styled/multi-paragraph replacement collapses to one line because the `Replace` value carries raw `Environment.NewLine` breaks. Use Bookmarks / Form Fields + `Set Bookmark Text` for rich content.
+
+### Read Text
+
+- **Activity outside its container** — the modern Word-pack `Read Text` warns at design time / faults at runtime as invalid because it has no file input of its own and was dropped outside a `Use Word File` / `Word Application Scope`. Fix: nest it in a container, or use the standalone `System > File > Word Document` `Read Text` (takes a file path).
+- **Standalone System Read Text fails on .doc** — the `System > File > Word Document` `Read Text` is OpenXML `.docx`-only and errors / returns nothing on legacy binary `.doc`. Fix: read `.doc` through a `Use Word File` (Interop reads both formats), or convert to `.docx` first.
+- **Protected View blocks an externally-sourced file** — reading a file from email / internet / external share faults or hangs because Word opens it in Protected View (Mark-of-the-Web). Fix: unblock the file, add the folder to Trusted Locations, or disable Protected View on the host.
+- **"Application is busy" / COM interop** — same `RPC_E_SERVERCALL_RETRYLATER` (`0x8001010A`) busy-Word failure as Replace Text; the cause and fix are shared (see the Replace Text COM-busy playbook).
 
 ## Package
 

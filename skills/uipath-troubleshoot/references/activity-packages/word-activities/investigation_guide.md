@@ -4,7 +4,7 @@
 
 Before using any fetched data, verify it matches the user's reported problem:
 
-- **Activity** — the faulted activity's namespace and class match the reported failure (`UiPath.Word.Activities.WordApplicationScope`, `UiPath.Word.Activities.WordReplaceText` / `ReplaceTextInDocument`). Classic activities (inside `Word Application Scope`, Interop) and modern activities (inside `Use Word File`) share display names but run different code paths — treat them as different. A `Replace Text in Document` fault is distinct from a scope-level fault: the scope opened fine and the failure is in the substitution.
+- **Activity** — the faulted activity's namespace and class match the reported failure (`UiPath.Word.Activities.WordApplicationScope`, `UiPath.Word.Activities.WordReplaceText` / `ReplaceTextInDocument`, and `Read Text`). Classic activities (inside `Word Application Scope`, Interop) and modern activities (inside `Use Word File`) share display names but run different code paths — treat them as different. For `Read Text`, also distinguish the **Word-pack** activity (needs a container) from the **standalone** `System > File > Word Document` `Read Text` (takes a file path, `.docx`-only) — they fail for different reasons. A substitution/extraction fault is distinct from a scope-level fault: the scope opened fine and the failure is in the activity.
 - **Document** — the document path in evidence matches the file the user is asking about. A scope pointed at a different document is unrelated data.
 - **Robot / machine identity** — the robot account and the machine where Word is installed match the one the user reports. Word installation, bitness, activation state, and Trust Center settings are per-user-per-machine, so evidence from a different host is not transferable.
 - **Office version and bitness** — the Word/Office version and bitness installed on the robot machine match what the user reports. Bitness mismatch with the robot process is a known COM-interop cause; multiple Office installs produce dispatcher ambiguity.
@@ -41,3 +41,11 @@ When testing hypotheses for `Replace Text in Document` issues:
 4. **Loop behaviour** — whether the scope runs inside a loop over the **same path**: with `Auto Save` on it's the file-lock cause; editing the template **in place** (no per-iteration copy) is the placeholder-consumed cause (first iteration succeeds, rest don't).
 5. **Where the unreplaced text lives** — body vs header / footer / text box / shape; non-body misses point at an older `UiPath.Word.Activities` version. And whether the `Replace` value carries `Environment.NewLine` (multi-line formatting loss).
 6. **Studio vs package version** — for a design-time `TargetInvocationException` / crash on drop, the Studio version against the installed `UiPath.Word.Activities` version (distinct from a runtime package gap).
+
+When testing hypotheses for `Read Text` issues:
+
+1. **Which Read Text surface** — Word-pack `Read Text` (requires a `Use Word File` / `Word Application Scope` container) vs standalone `System > File > Word Document` `Read Text` (own file path, `.docx`-only). The container vs format failures are surface-specific.
+2. **Container placement** — whether the Word-pack `Read Text` is nested inside a scope; a design-time validation warning / runtime invalid-context fault points at missing-container.
+3. **File format** — `.doc` (legacy binary) vs `.docx` (OpenXML); the standalone System activity fails on `.doc`. Check the real format, not just the extension.
+4. **File origin** — downloaded / email / external-share (Mark-of-the-Web → Protected View) vs locally created. A read that fails only on externally-sourced files points at Protected View.
+5. **Word busy** — for a `0x8001010A` / `RPC_E_SERVERCALL_RETRYLATER` on the read, the same busy-WINWORD checks as the Replace Text COM-busy case apply.
