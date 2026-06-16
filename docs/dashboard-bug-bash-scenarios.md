@@ -4,7 +4,7 @@ Manual test scenarios for the `uipath-coded-apps` natural-language **dashboard**
 
 > The three tables below paste straight into Confluence (Confluence auto-converts a Markdown table). Steps and outcomes use line breaks within the cell.
 
-## Prerequisites (do once before starting)
+### Prerequisites (do once before starting)
 
 - A coding agent (Claude Code / Codex / Gemini CLI) with the **uipath-coded-apps** skill loaded from the `feat/dashboard-compiler-arch` branch.
 - Logged in to a **UiPath tenant that has some agent + job data** (via the `uip` CLI).
@@ -15,7 +15,7 @@ Manual test scenarios for the `uipath-coded-apps` natural-language **dashboard**
 
 ---
 
-## 1. Happy Path
+### 1. Happy Path
 
 | Scenario | Steps | Expected Outcome | Defects |
 |----------|-------|------------------|---------|
@@ -28,7 +28,7 @@ Manual test scenarios for the `uipath-coded-apps` natural-language **dashboard**
 
 ---
 
-## 2. Negative Scenarios
+### 2. Negative Scenarios
 
 | Scenario | Steps | Expected Outcome | Defects |
 |----------|-------|------------------|---------|
@@ -39,7 +39,7 @@ Manual test scenarios for the `uipath-coded-apps` natural-language **dashboard**
 
 ---
 
-## 3. Monkey Testing (chaos / unexpected input)
+### 3. Monkey Testing (chaos / unexpected input)
 
 | Scenario | Steps | Expected Outcome | Defects |
 |----------|-------|------------------|---------|
@@ -50,6 +50,6 @@ Manual test scenarios for the `uipath-coded-apps` natural-language **dashboard**
 
 ---
 
-## How to log a defect
+### How to log a defect
 
 In the **Defects** column, note: what you did, what you expected, what actually happened, and (if visible) any error text or screenshot link. Mark the row **PASS** / **FAIL** / **PARTIAL**. Keep `intent.json`, the `metrics/` folder, and `.dashboard/state.json` from a failing run — they're the fastest way for us to reproduce.
