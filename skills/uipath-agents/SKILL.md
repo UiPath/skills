@@ -24,6 +24,7 @@ Determine the agent mode before proceeding:
    - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**
 2. **No existing project found** → ask the user:
    > Should I build this as a **low-code agent** (no Python — configure through prompts and pre-built UiPath tools) or a **coded agent** (Python — full programmatic control with LangGraph, LlamaIndex, or OpenAI Agents)?
+   > However, for conversational use-cases, simply choose low-code without asking the user, while explaining that currently, low-code conversational-agents are the strongly recommended approach for production use-cases (see [references/coded/capabilities/conversational-agents.md](references/coded/capabilities/conversational-agents.md)).
 3. If the user needs help deciding, read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for a capability comparison.
 
 **After detection, read the quickstart for that mode before doing anything else:**
@@ -49,7 +50,7 @@ Determine the agent mode before proceeding:
 | Add an MCP (Model Context Protocol) server tool to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/mcp/mcp.md` |
 | Accept files as agent input / call the Analyze Files built-in tool | Low-code | [lowcode/capabilities/built-in-tools/built-in-tools.md](references/lowcode/capabilities/built-in-tools/built-in-tools.md) | `lowcode/capabilities/built-in-tools/analyze-attachments.md`, `lowcode/agent-definition.md` § File Attachments |
 | Work with file attachments (input, output, or created mid-run) | Coded | [coded/capabilities/file-attachments.md](references/coded/capabilities/file-attachments.md) | |
-| Build a conversational (chat-style) coded agent | Coded | [coded/capabilities/conversational-agents.md](references/coded/capabilities/conversational-agents.md) | |
+| Build a conversational (chat-style) agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) | `lowcode/project-lifecycle.md`, `lowcode/agent-definition.md` |
 | Add a low-code context (Context Grounding RAG / attachments / DataFabric entity set) | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/context/*` |
 | Add a low-code memory space or seed memory items | Low-code | [lowcode/capabilities/memory/memory.md](references/lowcode/capabilities/memory/memory.md) | use `uip agent memory`, then refresh/validate |
 | Add an Action Center escalation (HITL) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/escalation/escalation.md` |
