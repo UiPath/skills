@@ -222,6 +222,93 @@ export async function runIntentMigrations(intent, migrationsDir, targetVersion =
 }
 
 /**
+ * Regenerate every widget + chart view from each widget's persisted intentMetric
+ * (metadata) against the on-disk metric modules. Used by the REBUILD op and by upgrade.
+ * @param {string} P  resolved project dir
+ * @param {object} state  parsed state.json (widget hashes refreshed in place)
+ * @param {string} timeRange
+ */
+export function rebuildAllWidgets(P, state, timeRange) {
+  for (const [componentName, info] of Object.entries(state.widgets ?? {})) {
+    const m = info.intentMetric
+    if (!m) {
+      log(`⚠ Cannot rebuild "${componentName}" — built before intent persistence. Re-run a fresh build to refresh it.`)
+      continue
+    }
+    const { entry } = resolveMetric(m)
+    const content = buildWidgetFile(m, entry, timeRange)
+    writeAtomic(join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`), content)
+    info.hash = hashContent(content)
+    const viewPath = join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`)
+    if (widgetLayoutGroup(info.template ?? '') === 'chart') {
+      writeAtomic(viewPath, generateViewFile(buildViewSpec(componentName, m, entry, timeRange)))
+    } else if (existsSync(viewPath)) {
+      unlinkSync(viewPath)
+    }
+  }
+}
+
+/**
+ * Upgrade an existing dashboard to the current scaffold: refresh the disposable
+ * framework, migrate intent.json, regenerate widgets/views from durable intent +
+ * on-disk metric modules, re-validate, and re-stamp versions. The durable set
+ * (intent.json, src/metrics, .dashboard, .env.local, uipath.json's clientId) is
+ * preserved. Phase 3 will replace copyDir(SCAFFOLD_DIR) with zip-extraction.
+ * @param {string} P  resolved project dir
+ * @param {object} state  parsed state.json
+ * @param {string} intentPath  edit-intent path (for the migrations dir + retry signal)
+ */
+async function runUpgrade(P, state, intentPath) {
+  // Best-effort dirty-tree warning — upgrade regenerates disposable files.
+  try {
+    const dirty = execSync(`git -C "${P}" status --porcelain`, { stdio: 'pipe' }).toString().trim()
+    if (dirty) log('⚠ Project has uncommitted changes — upgrade regenerates disposable files (your intent.json + src/metrics are preserved).')
+  } catch { /* not a git repo — nothing to check */ }
+
+  // 1. Refresh the disposable scaffold framework (Phase 3: extract the zip instead),
+  //    preserving the deploy clientId in uipath.json (the scaffold ships a template one).
+  const uipathJsonPath = join(P, 'uipath.json')
+  const prevClientId = existsSync(uipathJsonPath) ? (JSON.parse(readFileSync(uipathJsonPath, 'utf8')).clientId ?? null) : null
+  copyDir(SCAFFOLD_DIR, P)
+  try { rmSync(join(P, 'node_modules'), { recursive: true, force: true }) } catch { /* ignore */ }
+  if (prevClientId && existsSync(uipathJsonPath)) {
+    const uj = JSON.parse(readFileSync(uipathJsonPath, 'utf8'))
+    uj.clientId = prevClientId
+    writeAtomic(uipathJsonPath, JSON.stringify(uj, null, 2))
+  }
+
+  // 2. Migrate intent.json if present (no-op today — empty registry).
+  const intentJsonPath = join(P, 'intent.json')
+  if (existsSync(intentJsonPath)) {
+    const migrated = await runIntentMigrations(
+      JSON.parse(readFileSync(intentJsonPath, 'utf8')),
+      join(dirname(intentPath), 'migrations'),
+    )
+    writeAtomic(intentJsonPath, JSON.stringify(migrated, null, 2))
+  }
+
+  // 3. Ensure deps, then regenerate from durable intent + on-disk metric modules.
+  const LOCK_SIGNAL = join(P, 'node_modules', '.package-lock.json')
+  if (!existsSync(LOCK_SIGNAL)) { log('⚙ Installing dependencies…'); await runPrewarm(P) }
+  rebuildAllWidgets(P, state, state.timeRange ?? '30d')
+  const widgetMeta = Object.entries(state.widgets ?? {}).map(([name, info]) => ({ componentName: name, template: info.template ?? 'ranked-table' }))
+  generateDashboardFiles(P, widgetMeta, state.app?.name ?? 'Dashboard', state.app?.description ?? '')
+  injectAppRoutes(P, Object.keys(state.widgets ?? {}).filter(n => existsSync(join(P, 'src', 'dashboard', 'views', `${n}View.tsx`))))
+
+  // 4. Validate: Stage A (metric modules in isolation) then the full app.
+  const stageA = runMetricsTypecheck(P)
+  if (!stageA.ok) { emit('METRICS_RETRY', { files: stageA.files, errors: stageA.errors, intentPath }); process.exit(2) }
+  try { execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' }) }
+  catch (e) { emit('TSC_FAIL', { errors: (e.stdout?.toString() || '').slice(0, 1000) }); fail('Upgrade produced TypeScript errors') }
+
+  // 5. Re-stamp + persist.
+  state.schemaVersion = STATE_SCHEMA_VERSION
+  state.versions = buildVersions(checkSdkVersion(P).version)
+  writeAtomic(join(P, '.dashboard', 'state.json'), JSON.stringify(state, null, 2))
+  emit('UPGRADE_DONE', { to: SCAFFOLD_VERSION, widgets: Object.keys(state.widgets ?? {}) })
+}
+
+/**
  * Check the installed @uipath/uipath-typescript version in a project.
  * @param {string} projectPath
  * @returns {{ ok: boolean, version: string|null }}
@@ -1253,6 +1340,12 @@ async function runIncrementalEdit(editIntent, intentPath) {
   const { ops } = classifyEditIntent(editIntent)
   const timeRange = state.timeRange ?? '30d'
 
+  // Project-wide upgrade — runs instead of the per-widget batch loop.
+  if (ops.length === 1 && ops[0].op === 'UPGRADE') {
+    await runUpgrade(P, state, intentPath)
+    return
+  }
+
   // ── Pre-validate the whole batch — fail BEFORE any write ────────────────────
   const violations = []
   for (const [i, o] of ops.entries()) {
@@ -1342,23 +1435,7 @@ async function runIncrementalEdit(editIntent, intentPath) {
   } else if (op === 'REBUILD') {
     // Regenerate every widget (and chart detail view) from the persisted intentMetric.
     // Useful after scaffold/template updates. Legacy entries without intentMetric are skipped.
-    for (const [componentName, info] of Object.entries(state.widgets ?? {})) {
-      const m = info.intentMetric
-      if (!m) {
-        log(`⚠ Cannot rebuild "${componentName}" — built before intent persistence. Re-run a fresh build to refresh it.`)
-        continue
-      }
-      const { entry } = resolveMetric(m)
-      const content = buildWidgetFile(m, entry, timeRange)
-      writeAtomic(join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`), content)
-      info.hash = hashContent(content)
-      const rebuildViewPath = join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`)
-      if (widgetLayoutGroup(info.template ?? '') === 'chart') {
-        writeAtomic(rebuildViewPath, generateViewFile(buildViewSpec(componentName, m, entry, timeRange)))
-      } else if (existsSync(rebuildViewPath)) {
-        unlinkSync(rebuildViewPath)
-      }
-    }
+    rebuildAllWidgets(P, state, timeRange)
   }
 
   applied.push({ op, widget: target ?? (metric ? (metric.componentName ?? toPascalCase(metric.name)) : undefined) })
