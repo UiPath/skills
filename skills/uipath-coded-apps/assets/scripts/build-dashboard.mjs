@@ -189,6 +189,18 @@ export function buildVersions(sdkVersion = null) {
 }
 
 /**
+ * Compare a project's stamped scaffold version to the shipped one. Returns
+ * { from, to } when they differ (including a pre-versioning project with no
+ * versions block), or null when current. Forward-only — any mismatch means
+ * "a newer scaffold is available".
+ * @param {object} state - parsed .dashboard/state.json
+ */
+export function scaffoldDrift(state) {
+  const stamped = state?.versions?.scaffold ?? null
+  return stamped === SCAFFOLD_VERSION ? null : { from: stamped, to: SCAFFOLD_VERSION }
+}
+
+/**
  * Check the installed @uipath/uipath-typescript version in a project.
  * @param {string} projectPath
  * @returns {{ ok: boolean, version: string|null }}
@@ -975,6 +987,8 @@ async function runDashboardBuild(intent, intentPath) {
     mkdirSync(stateDir, { recursive: true })
     const statePath = join(stateDir, 'state.json')
     const existingState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {}
+    const buildDrift = existsSync(statePath) ? scaffoldDrift(existingState) : null
+    if (buildDrift) emit('UPGRADE_AVAILABLE', buildDrift)
     const partialState = {
       schemaVersion: STATE_SCHEMA_VERSION,
       versions: buildVersions(null),
@@ -1210,6 +1224,8 @@ async function runIncrementalEdit(editIntent, intentPath) {
   const statePath = join(P, '.dashboard', 'state.json')
   if (!existsSync(statePath)) fail('No .dashboard/state.json found. Run a fresh build first.')
   const state = JSON.parse(readFileSync(statePath, 'utf8'))
+  const editDrift = scaffoldDrift(state)
+  if (editDrift) emit('UPGRADE_AVAILABLE', editDrift)
   if (state.buildStatus === 'in-progress') {
     log('⚠ Warning: Previous build did not complete — widgets may be missing. Consider running a full build first.')
   }

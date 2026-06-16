@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, buildViewSpec, compileColumns, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, SCAFFOLD_VERSION, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION } from '../build-dashboard.mjs'
+import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, buildViewSpec, compileColumns, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, SCAFFOLD_VERSION, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift } from '../build-dashboard.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REGISTRY_PATH = resolve(__dirname, '../capability-registry.json')
@@ -25,6 +25,19 @@ test('buildVersions tolerates a missing sdk version', () => {
 
 test('STATE_SCHEMA_VERSION is 2', () => {
   assert.equal(STATE_SCHEMA_VERSION, 2)
+})
+
+// ── Phase 2: scaffold drift ───────────────────────────────────────────────────
+test('scaffoldDrift: none when stamped scaffold equals current', () => {
+  assert.equal(scaffoldDrift({ versions: { scaffold: SCAFFOLD_VERSION } }), null)
+})
+
+test('scaffoldDrift: detected when stamped differs', () => {
+  assert.deepEqual(scaffoldDrift({ versions: { scaffold: '0.9.0' } }), { from: '0.9.0', to: SCAFFOLD_VERSION })
+})
+
+test('scaffoldDrift: detected for a pre-versioning project (no versions block)', () => {
+  assert.deepEqual(scaffoldDrift({ widgets: {} }), { from: null, to: SCAFFOLD_VERSION })
 })
 
 function resolveT1(metricName) {
