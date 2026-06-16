@@ -18,6 +18,13 @@ import { execFileSync } from "child_process";
 
 const SEVERITY = { ERROR: "ERROR", WARNING: "WARNING" };
 
+// Built-in namespaces that look like variable references but are NOT user
+// variables: loop iterators (`iterator.`), node metadata (`metadata.`), and the
+// boundary-error context (`error.` / `vars.error`). The `vars.X` regex below
+// only matches the `error` case (iterator./metadata. do not start with `vars.`),
+// so it is listed here and skipped during variable-existence checks.
+const BUILTIN_NON_VARIABLE_REFS = new Set(["error"]);
+
 // --- IS connector types that must use the connector framework pattern ---
 const IS_CONNECTOR_TYPES_LIST = [
   "Intsvc.ActivityExecution",
@@ -417,7 +424,10 @@ function collectVariableIds(process, ids) {
       ...(varsEl.input || []),
       ...(varsEl.output || []),
     ]) {
+      // Real BPMN expressions reference variables by either id or name
+      // (e.g. `vars.requestType` while id is `Var_RequestType`), so accept both.
       if (v.id) ids.add(v.id);
+      if (v.name) ids.add(v.name);
     }
   }
   for (const el of process.flowElements || []) {
@@ -432,6 +442,9 @@ function checkVarsInText(text, declared, element, out) {
   if (!refs) return;
   for (const ref of refs) {
     const varId = ref.substring(5);
+    // `iterator.` and `metadata.` never start with `vars.`, so they are not
+    // matched here; the error context (`vars.error`) is matched and skipped.
+    if (BUILTIN_NON_VARIABLE_REFS.has(varId)) continue;
     if (!declared.has(varId)) {
       out.push({
         code: "VARIABLE_DOES_NOT_EXIST",
@@ -913,7 +926,7 @@ function validateEventTriggerConfig(element, eventExt, out) {
           severity: SEVERITY.WARNING,
           message: `Email trigger "${label}" is missing the email folder (parentFolderId)`,
           description:
-            'Discover folder IDs with "uip is resources execute list uipath-microsoft-outlook365 MailFolder --connection-id <id> --format json", or ask the user.',
+            'Discover folder IDs with "uip is resources execute list uipath-microsoft-outlook365 MailFolder --connection-id <id> --output json", or ask the user.',
           elementId: element.id,
         });
       } else if (!folderId.startsWith("AAMk")) {
@@ -956,7 +969,7 @@ async function validateConnectionHealth(defs) {
         // BPMN binding) cannot inject shell metacharacters.
         const output = execFileSync(
           uipBin,
-          ["is", "connections", "ping", connId, "--format", "json"],
+          ["is", "connections", "ping", connId, "--output", "json"],
           { encoding: "utf8", timeout: 15000, stdio: "pipe" }
         );
         const r = JSON.parse(output);
@@ -1028,7 +1041,7 @@ function fetchReleaseNames(folderId) {
   if (!uipBin) throw new Error("uip CLI not found");
   const output = execFileSync(
     uipBin,
-    ["or", "releases", "list", folderId, "--format", "json"],
+    ["or", "releases", "list", folderId, "--output", "json"],
     { encoding: "utf8", timeout: 30000 }
   );
   const parsed = JSON.parse(output);

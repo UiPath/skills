@@ -242,6 +242,11 @@
           "name": "output",
           "type": "Output",
           "isMany": true
+        },
+        {
+          "name": "skipCondition",
+          "isAttr": true,
+          "type": "String"
         }
       ]
     },
@@ -331,6 +336,17 @@
       ]
     },
     {
+      "name": "IntsvcActivityConfig",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
       "name": "Type",
       "properties": [
         {
@@ -357,6 +373,10 @@
         {
           "name": "inputSchema",
           "type": "InputSchema"
+        },
+        {
+          "name": "outputSchema",
+          "type": "OutputSchema"
         }
       ]
     },
@@ -393,6 +413,11 @@
           "name": "body",
           "type": "String",
           "isBody": true
+        },
+        {
+          "name": "options",
+          "isAttr": true,
+          "type": "String"
         }
       ]
     },
@@ -443,6 +468,21 @@
           "name": "target",
           "isAttr": true,
           "type": "String"
+        },
+        {
+          "name": "action",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "options",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "originalVar",
+          "isAttr": true,
+          "type": "String"
         }
       ]
     },
@@ -483,6 +523,17 @@
     },
     {
       "name": "InputSchema",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "body",
+          "type": "String",
+          "isBody": true
+        }
+      ]
+    },
+    {
+      "name": "OutputSchema",
       "superClass": ["Element"],
       "properties": [
         {
@@ -561,6 +612,61 @@
       ]
     },
     {
+      "name": "ErrorMapping",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "error",
+          "type": "Error",
+          "isMany": true,
+          "xml": {
+            "name": "error"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "id",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "errorRef",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "priority",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "condition",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "detail",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "retryable",
+          "isAttr": true,
+          "type": "String"
+        }
+      ]
+    },
+    {
       "name": "Tags",
       "superClass": ["Element"],
       "properties": [
@@ -586,6 +692,22 @@
           "name": "value",
           "type": "String",
           "isBody": true
+        }
+      ]
+    },
+    {
+      "name": "IsTransactionRoot",
+      "superClass": ["Element"],
+      "properties": [
+        {
+          "name": "version",
+          "isAttr": true,
+          "type": "String"
+        },
+        {
+          "name": "value",
+          "type": "Boolean",
+          "isAttr": true
         }
       ]
     }
