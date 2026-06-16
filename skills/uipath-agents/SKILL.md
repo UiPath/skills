@@ -74,7 +74,7 @@ Determine the agent mode before proceeding:
 | Summarize / research / synthesize over PDF or TXT (DeepRAG, low-code) | Low-code | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [lowcode/capabilities/built-in-tools/deeprag/planning.md](references/lowcode/capabilities/built-in-tools/deeprag/planning.md) |
 | Process CSV rows with LLM per row (BatchTransform, coded) | Coded | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [coded/capabilities/batch-transform/planning.md](references/coded/capabilities/batch-transform/planning.md) |
 | Process CSV rows with LLM per row (BatchTransform, low-code) | Low-code | [context-grounding-patterns.md](references/context-grounding-patterns.md) | [lowcode/capabilities/built-in-tools/batch-transform/planning.md](references/lowcode/capabilities/built-in-tools/batch-transform/planning.md) |
-| Manage context-grounding indexes from the CLI (list, create, ingest, poll status, search, delete) | Both | [context-grounding-index-management.md](references/context-grounding-index-management.md) | `uip context-grounding <command> --output json` |
+| Manage context-grounding indexes from the CLI (list / create / ingest / search) | Platform | [`uipath-platform/references/context-grounding/index-management.md`](../uipath-platform/references/context-grounding/index-management.md) | `uip context-grounding` — cross-cutting CLI, owned by `uipath-platform` |
 
 ## Resources
 

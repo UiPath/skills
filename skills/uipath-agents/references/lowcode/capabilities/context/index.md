@@ -7,7 +7,7 @@ For other context variants, see [context.md](context.md).
 ## When to Use
 
 - Agent needs to retrieve from a knowledge base of indexed documents
-- The index already exists in Context Grounding and is backed by an Orchestrator storage bucket
+- The index already exists in Context Grounding and is backed by an Orchestrator storage bucket. To create or manage that index from the CLI, see [uipath-platform/references/context-grounding/index-management.md](../../../../../uipath-platform/references/context-grounding/index-management.md)
 
 `uip solution resources refresh` emits an `index` binding into `bindings_v2.json`, resolves the backing storage bucket via ECS + Orchestrator, and writes all three artifacts automatically: `resources/solution_folder/index/<IndexName>.json`, `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`, and two `debug_overwrites.json` entries (`kind: "index"`, `kind: "bucket"`). No manual solution-level authoring is required.
 

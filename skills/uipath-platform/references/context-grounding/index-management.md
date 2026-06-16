@@ -1,6 +1,6 @@
 # Managing Context Grounding Indexes — `uip context-grounding` CLI
 
-Operate context-grounding indexes from the terminal: list, create, ingest, poll status, search, delete. For picking a grounding *mode* (BatchTransform / DeepRAG / index search), see [context-grounding-patterns.md](context-grounding-patterns.md). For consuming an index from agent code, see [coded/capabilities/context-grounding.md](coded/capabilities/context-grounding.md).
+Operate context-grounding indexes from the terminal: list, create, ingest, poll status, search, delete. Context-grounding indexes back semantic search / RAG over your organization's documents; agents and flows consume them as tools.
 
 ## Folder Targeting
 
