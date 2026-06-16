@@ -22,6 +22,7 @@ UiPath low-code agents come in **two variants**, both sharing this skill.
    
 2. Conversational agents are intended for use-cases involving multi-turn conversations / fast latency with real-time user-interaction / streamed responses. 
 
+After deployment, conversational agents are served through the UiPath Conversation Service, which manages conversation history and exposes a CLI/SDK for client UIs. Each user-initiated exchange invokes the agent for a single turn, streaming events back to the client.
 
 In summary:
 | Signal | Variant |
