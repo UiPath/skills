@@ -134,7 +134,6 @@ const errors = [];
 
 // --- Run ported semantic rules ---
 errors.push(...validateConditionalFlows(definitions)); // ConditionalFlowRule.ts
-errors.push(...validateRequiredFields(definitions)); // RequiredFieldsRule.ts
 errors.push(...validateVariableReferences(definitions)); // variable-reference checks
 errors.push(...validateMissingRootVariables(definitions)); // MissingRootVariableRule.ts
 errors.push(...validateFakeJoins(definitions)); // FakeJoinRule.ts
@@ -325,48 +324,11 @@ function validateConditionalFlows(defs) {
   return out;
 }
 
-// =====================================================================
-// Ported rule: RequiredFieldsRule.ts + ValidateRequiredFieldsInData.ts
-//   -> EMPTY_REQUIRED_FIELD
-// Any context/input/output field marked required="true" must have a value.
-// =====================================================================
+// Shared helper used by the error-boundary checks below.
+// (The EMPTY_REQUIRED_FIELD rule was removed: the moddle descriptor carries no
+//  `required` attribute on inputs/outputs, so the rule could never fire.)
 function isNilOrEmpty(v) {
   return v === undefined || v === null || String(v).trim() === "";
-}
-
-function validateRequiredFields(defs) {
-  const out = [];
-  for (const process of getProcesses(defs)) {
-    for (const element of getAllFlowElements(process)) {
-      for (const ext of getUiPathExtensions(element)) {
-        const fieldGroups = [
-          ext.context?.input || [],
-          ext.input || [],
-          ext.output || [],
-        ];
-        for (const fields of fieldGroups) {
-          const offending = fields.find(
-            (f) => isTruthyAttr(f.required) && isNilOrEmpty(f.value ?? f.body)
-          );
-          if (offending) {
-            out.push({
-              code: "EMPTY_REQUIRED_FIELD",
-              severity: SEVERITY.ERROR,
-              message: `Required field "${offending.name || "unnamed"}" in node "${nodeLabel(element)}" is empty`,
-              description: `The field "${offending.name || "unnamed"}" is marked required but has no value.`,
-              elementId: element.id,
-            });
-            break; // frontend reports the first required-field error per node
-          }
-        }
-      }
-    }
-  }
-  return out;
-}
-
-function isTruthyAttr(v) {
-  return v === true || v === "true";
 }
 
 // =====================================================================
