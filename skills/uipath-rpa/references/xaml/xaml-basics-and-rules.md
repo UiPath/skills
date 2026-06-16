@@ -212,7 +212,7 @@ ViewState controls how activities appear in the visual designer. Rules differ by
 - When adding new nodes to a Flowchart/StateMachine, read existing node positions first to avoid overlap
 
 **When generating new Flowchart/StateMachine/ProcessDiagram files:**
-- Generate ViewState (ShapeLocation, ShapeSize, ConnectorLocation) for every node to produce a usable layout
+- Generate ViewState for every node to produce a usable layout: `ShapeLocation` + `ShapeSize` are required; `ConnectorLocation` is optional (Studio auto-routes connectors from node positions)
 - See [canvas-layout-guide.md](canvas-layout-guide.md) for coordinate systems, standard sizes, and layout recipes
 
 > **Why the distinction?** Sequences stack children vertically on their own, so coordinates are unnecessary. Flowcharts, State Machines, and ProcessDiagrams are 2D canvases with no implicit ordering — Studio cannot place nodes it has no coordinates for, so it leaves them all at (0,0). The result reads as one overlapping node. Generate ViewState for every node so the workflow renders as separate, connected nodes.
