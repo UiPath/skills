@@ -590,20 +590,10 @@ Route each fix to the appropriate skill:
 - Transaction Shape: `one-to-one` / `one-to-many` / `unclear`
 - Findings: `Critical` / `Warning` / `Info`
 
-**Overall Quality thresholds** (all project types):
+**Quality determination thresholds:**
 - **Good** — 0 Critical, 0–3 Warnings
 - **Needs Improvement** — 0 Critical, 4+ Warnings OR 1 Critical with clear fix
 - **Critical Issues** — 2+ Critical OR 1 Critical with security/data-integrity implications
-
-**Agent Grade → verdict label** (agent projects only; the line reads "B — Good"):
-
-| Grade | Verdict label |
-|---|---|
-| **A** / **B** | Good |
-| **C** / **D** | Needs Improvement |
-| **F** | Critical Issues |
-
-This maps the letter to the verdict word only. The agent grade is `min(G_det, G_jud)` from Step 4.5, where **G_det is the review CLI's `Data.Grade`** and the G_jud band lives in Step 4.5 — do not restate either here.
 
 ## Task Navigation
 
