@@ -89,14 +89,6 @@
       },
       "last_synced": null
     },
-    "uipath-ixp": {
-      "status": "in-development",
-      "confluence": {
-        "page_id": null,
-        "url": null
-      },
-      "last_synced": null
-    },
     "uipath-maestro-bpmn": {
       "status": "in-development",
       "confluence": {
