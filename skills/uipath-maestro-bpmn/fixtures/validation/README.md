@@ -18,7 +18,7 @@ Public-safe fixture corpus for the `uipath-maestro-bpmn` skill maintenance check
 
 ## Contract Coverage Scope
 
-The `contract-variants/` fixture is representative coverage for public-safe XML shells and preservation boundaries; it is not a claim that every row in `references/author/references/supported-elements.md` has a static fixture. Coverage is split as follows:
+The `contract-variants/` fixture is representative coverage for public-safe XML shells; it is not a claim that every registry extension type has a static fixture (the registry, queried via `uip maestro bpmn registry`, is the authoritative type list). Coverage is split as follows:
 
 | Bucket | Static fixture coverage |
 | --- | --- |

@@ -1,8 +1,8 @@
 # Expression Authoring
 
-Use this reference whenever pass 2 writes Maestro runtime expressions in BPMN
-XML. Pass 1 may use business-readable placeholder conditions; pass 2 replaces
-them with expressions only after the variables and scopes exist.
+Use this reference whenever you write Maestro runtime expressions into BPMN XML
+(gateway conditions, mapping values, error-mapping conditions). Write expressions
+only after the variables and scopes they reference exist.
 
 ## Stored expression shape
 
@@ -13,9 +13,10 @@ them with expressions only after the variables and scopes exist.
 - Do not use bare variable names such as `=requestId` in generated runtime XML.
 - Context bindings use `=bindings.<bindingId>`.
 - Current element outputs use `result` only in output mappings for that
-  element. Script task return values are exposed under `result.response`; use
-  `source="=result.response"` for scalar returns or
-  `source="=result.response.<field>"` for object fields.
+  element. A node's output-mapping shape (including how a script's return value
+  is surfaced) comes from that type's registry `xmlTemplate` via
+  `uip maestro bpmn registry get <type> --output json` — fill the template's
+  `var` / `source` placeholders rather than assuming a fixed shape.
 - Multi-instance task bodies read the current item from `iterator.item`.
 - Multi-instance subprocess bodies read the current item from
   `iterator[0].item`. Use `iterator[1].item` (and so on) inside nested

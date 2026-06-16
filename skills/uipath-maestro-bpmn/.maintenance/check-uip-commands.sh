@@ -83,7 +83,7 @@ SKILL_ROOT = Path(os.environ["SKILL_ROOT"])
 files = [Path(p) for p in sys.argv[1:]]
 
 # Cache value: (subcommands_set, takes_positional_args) or None for invalid prefix
-_help_cache: dict[tuple, tuple[set, bool] | None] = {}
+_help_cache = {}
 
 
 def get_help(prefix):
