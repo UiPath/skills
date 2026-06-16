@@ -18,9 +18,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent ran `uip platform licenses consumables get --mode summary` with --output json"
+    description: "Agent ran `uip platform licenses consumables get` for a summary report (summary is the default --mode) with --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get.*--mode\s+summary.*--output\s+json'
+    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get(?!.*--mode\s+(?:daily|folders)).*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

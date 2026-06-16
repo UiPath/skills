@@ -51,9 +51,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran consumables get --mode summary"
+    description: "Agent ran consumables get for a summary (summary is the default --mode)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get.*--mode\s+summary.*--output\s+json'
+    command_pattern: 'uip\s+platform\s+licenses\s+consumables\s+get(?!.*--mode\s+(?:daily|folders)).*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
