@@ -18,6 +18,13 @@ Read the SKILL.md, then execute each step of the internal procedure yourself. On
 
 The `uia-configure-target` skill lives at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/` — read `SKILL.md` for the internal procedure and `USAGE.md` for invocation modes (TargetAnchorable, TargetApp, and the batch `|` pattern for multiple elements on the same screen). These are **reference docs to read and follow** — they are NOT invocable as slash commands via the Skill tool.
 
+**Locating the skill file.** The package ID is constant, so the path above is fixed — the reliable way to open it is a direct `Read` of `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md`. If you use `Glob` to find it instead, the pattern **must start with** `**/` — `Glob` matches the pattern against each hit's path relative to the working directory, not relative to the `path` argument, so a pattern that begins with a literal folder name matches nothing:
+
+- ✅ `Glob(path=".../UiPath.UIAutomation.Activities", pattern="**/uia-configure-target/SKILL.md")`
+- ❌ `Glob(path=".../UiPath.UIAutomation.Activities", pattern="skills/uia-configure-target/SKILL.md")` — returns "No files found" even though the file exists.
+
+A `Glob` miss is not evidence the skill is absent; never infer availability from it — the installed package version in `project.json` is the source of truth (see [uia-prerequisites.md](uia-prerequisites.md)).
+
 Before invoking, check the unsupported-activities list in `USAGE.md`. If the activity you need to target is on that list, skip `uia-configure-target` for it and use the [Indication Fallback](#indication-fallback) instead.
 
 ## Rules
