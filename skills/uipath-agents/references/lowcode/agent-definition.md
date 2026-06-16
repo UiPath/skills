@@ -226,15 +226,15 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 For **autonomous agents**, the `inputSchema` defines the input properties of the agent which can be templated into the system-prompt and user-prompt.
 
 For **conversational agents**, each agent run handles one conversational exchange - a single run corresponds to a single turn of messages/tool-calls taken in response to a user-initiated message. The runtime supplies the following inputs per run:
-- **`messages`** (reserved, implicit) — current conversation history, including user's latest message. Always present; never declare it (or other fields representing conversation-history) in `inputSchema`, per [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) Rule 4.
+- **`messages`** (reserved, implicit) — current conversation history, including user's latest message. Always present; never declare it (or other fields representing conversation-history) in `inputSchema`, per [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 4.
 - **Custom `inputSchema` fields** — additional per-exchange context variables which can be templated into the system-prompt Leave `inputSchema` blank unless the use case genuinely needs per-exchange context beyond conversation history.
 
 
 ### Output Schema
 
-For **autonomous agents**, the `outputSchema` is straightforward in that it defines the output properties of the agent.
+For **autonomous agents**, the `outputSchema` defines the output properties of the agent.
 
-For **conversational agents**, the `outputSchema` should not be modified, and thus always left empty. The runtime streams responses/tool-call events during the execution, so the final output of the agent is not relevant for the user and the agent loop will not attempt to fill any fields defined there.
+For **conversational agents**, the `outputSchema` should not be modified, and thus always left empty. See [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 1.
 
 
 ## Messages
