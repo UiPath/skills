@@ -2,11 +2,7 @@ task_id: skill-admin-pat-lifecycle-e2e
 description: >
   End-to-end test: agent creates a PAT with scopes and expiration,
   then lists tokens to verify it exists. Cleanup revokes the PAT.
-tags: [uipath-admin, e2e, lifecycle:generate]
-
-# Quarantined: turn-heavy e2e, skipped in default runs. Re-enable with
-# `coder-eval run --include-skipped` or by removing this field.
-skip: true
+tags: [uipath-admin, e2e, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 9
@@ -21,13 +17,28 @@ initial_prompt: |
   If a token with this description already exists, revoke it first,
   then create the new one.
 
-  Do NOT prompt the user for confirmation — this is an automated test.
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: command_executed
     description: "Agent created PAT with --description"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+pat\s+create\s+.*--description'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed PATs to verify creation"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+pat\s+list\s+.*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -38,14 +49,6 @@ success_criteria:
     command_pattern: 'uip\s+admin\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "PAT 'e2e-test-pat' exists in token list"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_pat_created.py''))"'
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
 post_run:

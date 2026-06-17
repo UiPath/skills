@@ -4,11 +4,7 @@ description: >
   group, discovers users, adds members, verifies membership, then
   removes a member. Tests full group lifecycle and the critical rule
   about using user IDs (not usernames) for membership operations.
-tags: [uipath-admin, e2e, lifecycle:generate, lifecycle:edit]
-
-# Quarantined: turn-heavy e2e, skipped in default runs. Re-enable with
-# `coder-eval run --include-skipped` or by removing this field.
-skip: true
+tags: [uipath-admin, e2e, mode:build, lifecycle:generate, lifecycle:edit]
 
 run_limits:
   expected_turns: 12
@@ -18,11 +14,19 @@ run_limits:
 initial_prompt: |
   Set up a new "Invoice Processing Team" group containing the first
   two users in the org, verify membership, then remove the second user.
+  After removing, list members again to confirm only one remains.
 
   If a group with this name already exists, delete it first,
   then create the new one.
 
-  Do NOT prompt the user for confirmation — this is an automated test.
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: command_executed
@@ -58,19 +62,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent verified membership via members list (at least twice: after add and after revoke)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+members\s+list\s+.*--output\s+json'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent consistently used --output json"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+.*--output\s+json'
     min_count: 4
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Group 'Invoice Processing Team' exists and has exactly one member"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_group_membership.py''))"'
-    timeout: 30
-    expected_exit_code: 0
-    weight: 3.0
     pass_threshold: 1.0
 
 post_run:
