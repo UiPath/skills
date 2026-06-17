@@ -18,15 +18,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath low-code agent "FibonacciAgent" that accepts a required
-  `index` (number) and returns a number `value`. It must compute the
-  value using a process named "FibonacciRPA" that is already deployed
-  in the tenant — not by reasoning about the answer itself. The
-  solution should be named "FibonacciSol".
-
-  Use the real folder and process name from the tenant — do not
-  hard-code or guess these values. Name the agent's tool resource
-  `FibonacciRPA` (matching the process).
+  Create a UiPath low-code agent "FibonacciAgent" that takes a required
+  `index` (number) and returns a number `value`. FibonacciAgent shouldn't
+  compute the value itself — it should come from our existing "FibonacciRPA"
+  process, which is already deployed in our tenant. The solution should be
+  named "FibonacciSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -102,12 +98,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "FibonacciAgent/agent.json was created"

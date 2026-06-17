@@ -15,10 +15,10 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  An admin needs a ZIP of all ORGANIZATION-level audit events
-  (memberships, license changes, tenant lifecycle) from yesterday for
-  compliance archival. Write the ZIP to ./audit-org-yesterday.zip in
-  the current working directory.
+  An admin needs all ORGANIZATION-level audit events (memberships,
+  license changes, tenant lifecycle) from yesterday exported as day-wise
+  JSON files for compliance archival. Write them to the
+  ./audit-org-yesterday folder in the current working directory.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -39,9 +39,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent's export targeted the requested ./audit-org-yesterday.zip path"
+    description: "Agent's export targeted the requested ./audit-org-yesterday folder (json default; no .zip/.csv extension)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b.*--output-file\s+\.?/?audit-org-yesterday\.zip'
+    # Match the audit-org-yesterday folder path; the negative lookahead rejects a .zip/.csv
+    # file (the retired ZIP shape) so this confirms the json-folder default is used.
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b.*--output-file\s+\S*audit-org-yesterday(?![\w.])'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

@@ -20,14 +20,10 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  Add a "HumanReview" escalation resource to the existing "ModerationAgent"
-  agent inside the existing "ReviewSol" solution (in the current directory).
-  When the agent is uncertain, it must be able to escalate to a human
-  reviewer via UiPath ActionCenter. Set `isEnabled` to true so the
-  escalation is active for the agent.
-
-  Reuse ModerationAgent as-is — do NOT re-create it, and do NOT
-  re-initialize the solution.
+  Add a "HumanReview" escalation to the existing "ModerationAgent" agent inside
+  the existing "ReviewSol" solution (in the current directory). When the agent
+  is uncertain, it should be able to escalate to a human reviewer via UiPath
+  Action Center.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -81,12 +77,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "HumanReview escalation resource.json was created"

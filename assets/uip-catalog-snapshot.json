@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-14T05:37:28Z",
-  "cli_version": "1.196.0-alpha.20260614.7519",
+  "generated_at": "2026-06-17T05:43:05Z",
+  "cli_version": "1.197.0-alpha.20260616.7543",
   "verbs": [
     "admin",
     "admin audit",
@@ -1101,6 +1101,7 @@
     "solution resources list",
     "solution resources refresh",
     "solution resources remove",
+    "solution restore",
     "solution upload",
     "tasks",
     "tasks assign",

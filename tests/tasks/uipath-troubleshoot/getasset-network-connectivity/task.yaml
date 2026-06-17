@@ -1,4 +1,4 @@
-task_id: skill-troubleshooting-getasset-network-connectivity
+task_id: skill-troubleshoot-getasset-network-connectivity
 description: >
   UiPath troubleshooting agent must troubleshoot a Get Credential failure where
   the asset, folder, robot license, and robot roles are all correctly
