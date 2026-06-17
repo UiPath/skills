@@ -18,6 +18,7 @@ When `sdd.md` is absent, **Phase 0 interview** generates one interactively (list
 - User asks to create new case management project but has no `sdd.md` (Phase 0 interview generates one)
 - User asks to create new case management project or definition
 - User asks to generate implementation tasks from `sdd.md` or convert spec to plan
+- User asks to edit, modify, or update an existing `caseplan.json` (add/remove a stage or task, change a condition, swap a trigger) — targeted edits skip planning; see [references/brownfield.md](references/brownfield.md)
 - User asks about case management JSON schema — nodes, transitions, tasks, rules, SLA
 - User wants to manage runtime case instances (list, pause, resume, cancel) — see [references/case-commands.md](references/case-commands.md)
 
@@ -124,7 +125,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 | Execute tasks.md into a case | [references/implementation.md](references/implementation.md) |
 | Edit an existing caseplan.json (targeted edits) | [references/brownfield.md](references/brownfield.md) |
 | Phase 2 → 3 → 4 → 5 → 6 split + hard stop contracts | [references/phased-execution.md](references/phased-execution.md) |
-| Edit caseplan.json directly | [references/case-editing-operations.md](references/case-editing-operations.md) |
+| Cross-cutting edit mechanics (IDs, anchoring, batch contract) | [references/case-editing-operations.md](references/case-editing-operations.md) |
 | Case JSON schema | [references/case-schema.md](references/case-schema.md) |
 | Surviving CLI commands (registry, validate, debug, runtime) | [references/case-commands.md](references/case-commands.md) |
 | Troubleshoot a failed case | [references/troubleshooting-guide.md](references/troubleshooting-guide.md) |
