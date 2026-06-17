@@ -1,0 +1,137 @@
+task_id: skill-troubleshoot-read-text-missing-container
+description: >
+  UiPath troubleshooting agent must diagnose a Read Text failure where the
+  modern Word-pack Read Text activity is dropped outside a Use Word File /
+  Word Application Scope and faults as invalid (it has no file input of its
+  own and reads the container's open document). Success = agent matches the
+  read-text-missing-container playbook AND recommends nesting Read Text in a
+  Use Word File container OR switching to the standalone System > File > Word
+  Document Read Text that takes a file path, not blaming the file/format.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, read-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ContractTextExtract process faults in Orchestrator (folder "Doc
+  Extract", machine MOCK-ROBOT-10) the moment it runs. The error mentions
+  the Read Text activity not being valid. I just want to pull the text out
+  of a Word document.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-text-missing-container playbook AND recommended a container or the standalone activity"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My ContractTextExtract process faults in Orchestrator (folder 'Doc
+         Extract', machine MOCK-ROBOT-10) the moment it runs, with an error
+         that the Read Text activity is not valid. I just want to pull text
+         out of a Word document."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/read-text-missing-container.md
+        because the error "The 'Read Text' activity must be placed inside a
+        'Use Word File' or 'Word Application Scope'" is the signature of the
+        modern Word-pack Read Text being dropped outside a container.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Main.xaml has the modern Word-pack Read Text activity sitting
+            loose in the sequence, NOT inside a Use Word File / Word
+            Application Scope.
+          - That activity has no file input of its own; it reads the
+            document held open by a surrounding container. Outside one it is
+            invalid, so the run faults immediately.
+        The reference fix (either path):
+          - Move Read Text INSIDE a Use Word File (or Word Application Scope)
+            container that opens the target document, OR
+          - Use the standalone Read Text under System > File > Word Document,
+            which takes the file path directly in its own properties (no
+            container).
+
+      DIMENSION C -- Right target
+        The agent must tie the fault to the missing container / wrong
+        Read Text surface, NOT blame the file path, the file format, a
+        missing Word install, or a lock, and NOT fabricate a host action.
+
+      SCORING RUBRIC:
+        1.0  Agent matched read-text-missing-container AND identified the
+             Word-pack Read Text being outside a Use Word File / Word
+             Application Scope as the cause AND recommended a valid fix
+             (nest it in a container, OR switch to the standalone System >
+             File > Word Document Read Text) — without blaming the
+             file/format/install or fabricating actions.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "add a
+             scope" without naming Use Word File / the standalone activity).
+        0.5  Recognized the Read Text activity is invalid but attributed it
+             to the wrong cause (file path, format, package), or matched a
+             sibling playbook.
+        0.2  Restated the error without a cause.
+        0.0  Wrong cause (file format, Word not installed, file lock,
+             corrupt file), or fabricated a host action.
+
+      Reward either valid fix path equally.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. It faults
+    immediately with an error that the Read Text activity is not valid; you
+    just want to extract text from a Word document. You are away from the
+    robot host and only have Orchestrator access. You trust the agent and
+    want a diagnosis plus the fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the fix at the end."
+    - "If asked whether the Read Text activity is inside a Use Word File or other scope, say you are not sure - you just dragged the activity in and pointed it at the document."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
