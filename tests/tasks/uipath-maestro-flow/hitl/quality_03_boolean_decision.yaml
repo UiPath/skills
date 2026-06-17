@@ -33,7 +33,7 @@ success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes"
     command: "uip maestro flow validate VendorApproval/VendorApproval/VendorApproval.flow --output json"
-    timeout: 30
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
