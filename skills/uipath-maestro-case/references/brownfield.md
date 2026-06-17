@@ -10,6 +10,12 @@ Targeted changes to an existing `caseplan.json`. Skips the Phase 0–6 build pip
 
 > **Do NOT regenerate from scratch.** SKILL.md Rule 6 ("always regenerate from scratch") is a greenfield/planning rule. Brownfield edits the file in place and preserves every node `id` / `elementId` — re-minting IDs breaks `=vars.*` references, conditions, and `entry-points.json`.
 
+## Large or sweeping edits
+
+Edit size never changes the journey — many edits still stay brownfield (in-place, IDs preserved). No complexity threshold escalates to greenfield. Batch multi-edit passes per [case-editing-operations.md § Per-section batch write contract](case-editing-operations.md#per-section-batch-write-contract--canonical): one `validate` at the end, not per edit.
+
+When an edit touches many nodes or reads like "rebuild this case", confirm scope first via AskUserQuestion — `Edit in place` (default) vs `Rebuild from an updated spec` (greenfield via [planning.md](planning.md), re-mints IDs). Only an explicit rebuild choice or a new/updated `sdd.md` escalates to greenfield.
+
 ## Read this first
 
 - **All mutations via Read/Write/Edit only** (Rule 13). CLI is read-only here: metadata fetches (`uip maestro case tasks describe`, `uip maestro case spec`, `is resources/triggers describe`), `uip maestro case validate`, and (on handoff) `uip solution resources refresh` / `uip solution upload` / `uip maestro case debug`. No `python`/`node`/`jq`/`sed`/`awk`/helper scripts touching the file.
