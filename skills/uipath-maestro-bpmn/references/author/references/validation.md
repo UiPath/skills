@@ -51,8 +51,24 @@ uip maestro bpmn validate ProjectName/ProjectName.bpmn --output json
 ```
 
 Only validate a project directory if the installed CLI explicitly supports that
-shape. If the installed CLI does not expose validation, run an explicit XML
-parse command against the BPMN source, for example:
+shape. If the installed CLI does not expose validation, or when you want full
+19-rule semantic parity with the PO.Frontend canvas validator, run the bundled
+offline validator that ships with this skill against the BPMN source:
+
+```bash
+node validator/validate-bpmn.mjs ProjectName/ProjectName.bpmn
+```
+
+It parses the BPMN with the UiPath extension descriptor, runs all 19
+PO.Frontend semantic rules plus a Maestro variable-existence check, prints
+`VALID` and exits `0` when there are no blocking errors, and exits non-zero
+(listing each rule code and message) otherwise. WARNING-severity findings are
+printed but do not gate. See [validator/README.md](../../../validator/README.md)
+for the full rule list and the documented RequiredFields parity caveat. Run
+`npm install` once in the `validator/` directory before first use.
+
+If neither the CLI validator nor the bundled validator is available, run an
+explicit XML parse command against the BPMN source, for example:
 
 ```bash
 python3 -c "import xml.etree.ElementTree as ET; ET.parse('ProjectName/ProjectName.bpmn')"
