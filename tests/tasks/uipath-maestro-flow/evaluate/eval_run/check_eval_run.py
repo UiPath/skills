@@ -112,8 +112,9 @@ def _status_summary(doc: dict) -> str:
 
 
 def _extract_rows(doc: dict) -> list[dict]:
-    """The CLI envelope is `{ Code, Data: { Results: [...] } }`. Tolerate
-    minor key-name drift by walking common containers.
+    """The results envelope is `{ Code, Data: ... }`. The current CLI returns
+    `Data` as a flat list of per-data-point row objects; older shapes nested
+    the rows under `Data.Results` / `DataPoints` / `Rows`. Tolerate both.
     """
     code = doc.get("Code")
     if code not in RESULTS_CODES:
@@ -121,14 +122,21 @@ def _extract_rows(doc: dict) -> list[dict]:
             f'eval-results.json `Code` should be one of {RESULTS_CODES}, '
             f'got {code!r}'
         )
-    data = doc.get("Data") or {}
-    for key in ("Results", "DataPoints", "Rows"):
-        rows = data.get(key)
-        if isinstance(rows, list) and rows:
-            return rows
+    data = doc.get("Data")
+    if isinstance(data, list) and data:
+        return data
+    if isinstance(data, dict):
+        for key in ("Results", "DataPoints", "Rows"):
+            rows = data.get(key)
+            if isinstance(rows, list) and rows:
+                return rows
+        _fail(
+            f'eval-results.json has no Results/DataPoints/Rows list under Data. '
+            f'Top-level keys: {list(doc.keys())}, Data keys: {list(data.keys())}'
+        )
     _fail(
-        f'eval-results.json has no Results/DataPoints/Rows list under Data. '
-        f'Top-level keys: {list(doc.keys())}, Data keys: {list(data.keys())}'
+        f'eval-results.json Data is empty or an unexpected type '
+        f'({type(data).__name__}); top-level keys: {list(doc.keys())}'
     )
     return []  # unreachable
 
