@@ -7,7 +7,7 @@ description: >
   single update (Id required), batch update (Id required in every element),
   and records delete. Tests the full records command surface and the
   array-body routing rule in a single pass.
-tags: [uipath-data-fabric, smoke, records]
+tags: [uipath-data-fabric, smoke, records, mode:build, lifecycle:setup]
 run_limits:
   max_turns: 50
 

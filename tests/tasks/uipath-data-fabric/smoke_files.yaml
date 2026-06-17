@@ -6,7 +6,7 @@ description: >
   and delete the attachment using files delete. Tests correct files command
   syntax: positional args (entity-id record-id field-name), --file flag for
   upload, --destination flag for download, and --output json on all commands.
-tags: [uipath-data-fabric, smoke, files]
+tags: [uipath-data-fabric, smoke, files, mode:build, lifecycle:setup]
 run_limits:
   max_turns: 30
 

@@ -12,7 +12,7 @@ description: >
   and NOT silently substitute or retry — captured in report.json. End
   state is validated via assert_record_count.py to confirm only the
   positive attempts landed.
-tags: [uipath-data-fabric, integration, constraints, error-paths]
+tags: [uipath-data-fabric, integration, constraints, error-paths, mode:diagnose, lifecycle:setup]
 
 run_limits:
   max_turns: 70

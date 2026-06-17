@@ -11,7 +11,7 @@ description: >
   scenario has an expected outcome captured in report.json; an
   independent record-count oracle verifies the entity ended up in the
   expected state.
-tags: [uipath-data-fabric, integration, records, filter-edges]
+tags: [uipath-data-fabric, integration, records, filter-edges, mode:operate, lifecycle:discover]
 
 run_limits:
   max_turns: 60

@@ -7,7 +7,7 @@ description: >
   fields, and refuse to author / modify a choice set from the CLI (read-only).
   Exercises the same entity / record / query commands as the other smoke
   tests, but on fields whose value form requires lookup tokens.
-tags: [uipath-data-fabric, smoke, complex-fields]
+tags: [uipath-data-fabric, smoke, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
   max_turns: 35

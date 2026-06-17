@@ -6,7 +6,7 @@ description: >
   verified server behavior in BulkUploadCSVHelper. The agent must use
   `records insert --file <json>` instead and must NOT put complex-field
   columns in a CSV file.
-tags: [uipath-data-fabric, smoke, complex-fields, bulk-import]
+tags: [uipath-data-fabric, smoke, complex-fields, bulk-import, mode:build, lifecycle:setup]
 
 run_limits:
   max_turns: 25

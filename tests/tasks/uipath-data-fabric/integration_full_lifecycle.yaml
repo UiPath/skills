@@ -13,7 +13,7 @@ description: >
   record CRUD in one multi-step run. Entity delete is intentionally NOT
   exercised by the agent — coming in a follow-up PR with proper confirm
   semantics in the skill.
-tags: [uipath-data-fabric, integration, entities, records]
+tags: [uipath-data-fabric, integration, entities, records, mode:build, lifecycle:setup]
 run_limits:
   turn_timeout: 600
 

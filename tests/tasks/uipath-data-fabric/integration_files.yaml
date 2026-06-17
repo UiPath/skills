@@ -6,7 +6,7 @@ description: >
   via SHA-256 hash, uploads a second version to confirm overwrite, deletes the
   attachment, and verifies the field is empty post-delete. Covers the full files
   upload/download/delete workflow including overwrite semantics and byte integrity.
-tags: [uipath-data-fabric, integration, files]
+tags: [uipath-data-fabric, integration, files, mode:build, lifecycle:setup]
 run_limits:
   turn_timeout: 600
 

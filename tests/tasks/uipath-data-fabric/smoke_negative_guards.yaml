@@ -7,7 +7,7 @@ description: >
   each operation and explain why it is not supported, rather than attempting
   it. Tests enforcement of the Not Supported section of the skill without
   requiring a live tenant.
-tags: [uipath-data-fabric, smoke, entities, records]
+tags: [uipath-data-fabric, smoke, entities, records, mode:diagnose, lifecycle:discover]
 run_limits:
   max_turns: 30
 

@@ -4,7 +4,7 @@ description: >
   from a CSV file. Tests that the skill teaches correct CSV format: header row
   must match exact entity field names (case-sensitive), system fields must be
   excluded, and records import --file is the correct command (not records insert).
-tags: [uipath-data-fabric, smoke, records, import]
+tags: [uipath-data-fabric, smoke, records, import, mode:build, lifecycle:setup]
 run_limits:
   max_turns: 30
 

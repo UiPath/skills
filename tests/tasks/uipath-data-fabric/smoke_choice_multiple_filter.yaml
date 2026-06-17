@@ -6,7 +6,7 @@ description: >
   HTTP 400 failure modes (bare value with `=`, bracket value with `contains`).
   Verified server behavior — see references/records-query.md §
   "Filtering on Choice-Set Fields".
-tags: [uipath-data-fabric, smoke, complex-fields]
+tags: [uipath-data-fabric, smoke, complex-fields, mode:operate, lifecycle:discover]
 
 run_limits:
   max_turns: 25

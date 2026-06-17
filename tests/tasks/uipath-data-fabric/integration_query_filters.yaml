@@ -6,7 +6,7 @@ description: >
   using records query (no body). Creates test records first, runs 5 query
   scenarios, then deletes the test records. Tests the full query body schema
   and the no-body pagination path end-to-end.
-tags: [uipath-data-fabric, integration, records]
+tags: [uipath-data-fabric, integration, records, mode:operate, lifecycle:discover]
 run_limits:
   turn_timeout: 600
 

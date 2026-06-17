@@ -7,7 +7,7 @@ description: >
   identify field IDs from Fields[].ID, add new fields (addFields), and update an
   existing field's metadata and constraints (updateFields with id key). Tests
   all entity command syntax in a single pass.
-tags: [uipath-data-fabric, smoke, entities]
+tags: [uipath-data-fabric, smoke, entities, mode:build, lifecycle:setup]
 run_limits:
   max_turns: 30
 

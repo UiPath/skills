@@ -8,7 +8,7 @@ description: >
   (limit=60) to verify the 300-record Active=true subset across 5 pages.
   Covers large-dataset pagination stability, cursor continuity at scale, and
   offset-based page jumps.
-tags: [uipath-data-fabric, integration, bulk-pagination]
+tags: [uipath-data-fabric, integration, bulk-pagination, mode:operate, lifecycle:setup]
 run_limits:
   max_turns: 60
   turn_timeout: 600

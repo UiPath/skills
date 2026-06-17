@@ -6,7 +6,7 @@ description: >
   folder-scoped entity and confirms it is absent when listing from a
   different folder; and attempts to create an entity with a non-existent
   folder ID and verifies the error. Covers S-SC-01 through S-SC-05.
-tags: [uipath-data-fabric, integration, entity-scope]
+tags: [uipath-data-fabric, integration, entity-scope, mode:operate, lifecycle:setup]
 run_limits:
   turn_timeout: 1200
 

@@ -7,7 +7,7 @@ description: >
   → 1, Title contains "Matrix" → 3), verify sort order (Score desc → 10.0
   first), paginate all 20 records, do a targeted Notes update and restore.
   Entity is never deleted.
-tags: [uipath-data-fabric, integration, pre-seeded, discover]
+tags: [uipath-data-fabric, integration, pre-seeded, discover, mode:operate, lifecycle:discover]
 run_limits:
   max_turns: 50
   turn_timeout: 600

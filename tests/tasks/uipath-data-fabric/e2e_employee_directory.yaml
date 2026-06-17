@@ -12,7 +12,7 @@ description: >
   addFields-with-constraints after insert, FILE-field schema (no upload —
   CLI upload is in Not Supported), batch updates, and filter+sort queries
   in a single end-to-end run.
-tags: [uipath-data-fabric, e2e, employee-directory]
+tags: [uipath-data-fabric, e2e, employee-directory, mode:build, lifecycle:setup]
 
 run_limits:
   max_turns: 50

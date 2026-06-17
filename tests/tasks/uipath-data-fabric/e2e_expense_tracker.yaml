@@ -14,7 +14,7 @@ description: >
   authored only in the web UI — if none exists in the tenant, the agent
   records the gap and finishes the relationship + FILE + constraint
   workflow.
-tags: [uipath-data-fabric, e2e, expense-tracker, complex-fields]
+tags: [uipath-data-fabric, e2e, expense-tracker, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
   max_turns: 60

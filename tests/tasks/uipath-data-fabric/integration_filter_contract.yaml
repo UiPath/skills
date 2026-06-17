@@ -13,7 +13,7 @@ description: >
   Previously named `smoke_filter_contract.yaml` — re-tagged because it
   hits the live tenant and uses a pre-seeded entity, so the `smoke`
   (offline) classification was incorrect.
-tags: [uipath-data-fabric, integration, records]
+tags: [uipath-data-fabric, integration, records, mode:operate, lifecycle:discover]
 
 agent:
   type: claude-code

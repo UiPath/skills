@@ -16,7 +16,7 @@ description: >
   is not supported). Choice sets are authored only in the web UI — if
   none exists in the tenant, the test records the gap and still
   completes the relationship + FILE-field + constraint workflow.
-tags: [uipath-data-fabric, integration, complex-fields]
+tags: [uipath-data-fabric, integration, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
   max_turns: 65

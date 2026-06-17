@@ -12,7 +12,7 @@ description: >
   agent must NOT silently rename a rejected keyword without asking.
   end state checked via a row-count oracle confirming only the
   positive list survived.
-tags: [uipath-data-fabric, integration, entities, naming]
+tags: [uipath-data-fabric, integration, entities, naming, mode:diagnose, lifecycle:setup]
 
 run_limits:
   max_turns: 60
