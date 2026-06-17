@@ -8,7 +8,7 @@
 import BpmnModdle from "bpmn-moddle";
 import descriptor from "../uipath-moddle.v1.json" with { type: "json" };
 import { buildModel, collectKnownVariableIds, allNodes, allEdges } from "../model.mjs";
-import { validateDiagram, validateVariableExistence } from "../rules.mjs";
+import { validateDiagram, validateVariableExistence, validateVariableNotSet } from "../rules.mjs";
 
 const moddle = new BpmnModdle({ uipath: descriptor });
 
@@ -21,6 +21,7 @@ async function findingsFor(xml) {
     out.push(...validateDiagram(d, cs, { enableMissingRootVariableValidation: true }));
   }
   out.push(...validateVariableExistence(allNodes(cs), allEdges(cs), knownIds));
+  out.push(...validateVariableNotSet(allNodes(cs), allEdges(cs), knownIds, cs));
   return out;
 }
 
@@ -248,6 +249,25 @@ ${FLOW("S", "T", "S_T")}`,
   ),
 );
 
+// 12b EMPTY_REQUIRED_FIELD (absent): HttpExecution missing required 'method'/'mode'
+// entirely (only 'url' present+valid). Frontend treats an unbound required field
+// as present-with-empty-value, so an absent required field must fire too.
+add(
+  "EMPTY_REQUIRED_FIELD",
+  DEFS(
+    PROC(
+      `    <bpmn:startEvent id="S"><bpmn:outgoing>S_T</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:serviceTask id="T" name="HTTP"><bpmn:incoming>S_T</bpmn:incoming>
+      <bpmn:extensionElements><uipath:activity version="v1"><uipath:type value="Intsvc.HttpExecution" version="v1" />
+        <uipath:context><uipath:input name="url" value="https://example.com" /></uipath:context>
+      </uipath:activity></bpmn:extensionElements>
+    </bpmn:serviceTask>
+${FLOW("S", "T", "S_T")}`,
+    ),
+  ),
+  "absent required field",
+);
+
 // 13 CROSSING_POOL_BOUNDARY: sequence flow between two pools (non-start target)
 add(
   "CROSSING_POOL_BOUNDARY",
@@ -388,6 +408,27 @@ ${COND("G", "A", '=vars.DoesNotExist == "x"')}
 ${FLOW("G", "B", "G_B")}`,
     ),
   ),
+);
+
+// 21 VARIABLE_NOT_SET: task A references vars.fromB, produced by B downstream
+// (so it is declared/known but NOT reachable at A). WARNING-severity; mirrors
+// the frontend's flow-order check distinct from VARIABLE_DOES_NOT_EXIST.
+add(
+  "VARIABLE_NOT_SET",
+  DEFS(
+    PROC(
+      `    <bpmn:startEvent id="S"><bpmn:outgoing>S_A</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:serviceTask id="A"><bpmn:incoming>S_A</bpmn:incoming><bpmn:outgoing>A_B</bpmn:outgoing>
+      <bpmn:extensionElements><uipath:activity version="v1"><uipath:type value="x" version="v1" /><uipath:input name="i" value="=vars.fromB" /></uipath:activity></bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="B"><bpmn:incoming>A_B</bpmn:incoming>
+      <bpmn:extensionElements><uipath:activity version="v1"><uipath:type value="x" version="v1" /><uipath:output name="o" var="fromB" custom="true" source="x" /></uipath:activity></bpmn:extensionElements>
+    </bpmn:serviceTask>
+${FLOW("S", "A", "S_A")}
+${FLOW("A", "B", "A_B")}`,
+    ),
+  ),
+  "declared but unreachable",
 );
 
 // ---- Run: 1) crafted-invalid XML coverage harness -----------------------

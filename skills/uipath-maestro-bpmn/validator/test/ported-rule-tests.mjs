@@ -34,6 +34,8 @@ import {
   validateSuperfluousGateway,
   validateTaskTimerRange,
   validateTimerDuration,
+  validateVariableExistence,
+  validateVariableNotSet,
 } from "../rules.mjs";
 import { node, edge, canvasState, maps } from "./model-helpers.mjs";
 
@@ -166,13 +168,15 @@ suite("ConnectionRule");
     expectCodeCount("self loop -> INVALID_CONNECTION", f, "INVALID_CONNECTION", 1);
   }
 
-  // FE: "should validate node type compatibility" — EndEvent -> Task is disallowed.
-  // (FE test uses non-bpmn "output"/"input" types; on real BPMN the equivalent
-  //  invalid edge is EndEvent->Task, which our concrete-type allow-map rejects.)
+  // FE: "should validate node type compatibility" — verbatim frontend input:
+  // unknown source type "output" → unknown target "input". canNodeTypesBeConnected
+  // (BPMNTypesUtils.ts:51-82) finds no matching rule and returns false, so the
+  // edge is INVALID_CONNECTION_TYPE. (Restored from a prior doctored EndEvent->Task
+  // substitute; matches ConnectionRule.test.ts:33-43.)
   {
-    const nodes = [node("1", "bpmn:EndEvent"), node("2", "bpmn:Task")];
+    const nodes = [node("1", "output"), node("2", "input")];
     const f = run(validateConnections, nodes, [edge("e1", "1", "2")]);
-    expectCodeCount("endevent->task -> INVALID_CONNECTION_TYPE", f, "INVALID_CONNECTION_TYPE", 1);
+    expectCodeCount("unknown output->input -> INVALID_CONNECTION_TYPE", f, "INVALID_CONNECTION_TYPE", 1);
   }
 }
 
@@ -618,6 +622,29 @@ suite("RequiredFieldsRule");
     const f = validateRequiredFields([n("1", { context: [{ required: true, name: "field1", value: "" }], inputs: [{ required: true, name: "input1", value: null }], outputs: [{ required: true, name: "output1", value: undefined }] })]);
     expectCodeCount("per-node single finding", f, "EMPTY_REQUIRED_FIELD", 1);
   }
+  // PORT PARITY (absent required field): On canvas, every required field exists
+  // in node data, so an unbound one is present-with-empty-value and the frontend
+  // fires `field.required && isNilOrEmpty(field.value)` (ValidateRequiredFieldsInData.ts:15-16).
+  // Offline, an unbound required field is ABSENT from the serialized data; the
+  // model attaches the serviceType's required-field names as `requiredFieldNames`
+  // so the rule treats an absent name as present-with-empty (same observable result).
+  {
+    // 'method' required by registry but not serialized at all → fires.
+    const node1 = n("1", { context: [{ name: "url", value: "https://x" }], requiredFieldNames: ["method", "url"] });
+    expectCodeCount("absent required field fires", validateRequiredFields([node1]), "EMPTY_REQUIRED_FIELD", 1);
+  }
+  {
+    // All registry-required names present and non-empty → no finding.
+    const node1 = n("1", { context: [{ name: "method", value: "GET" }, { name: "url", value: "https://x" }], requiredFieldNames: ["method", "url"] });
+    expectEmpty("all required present", validateRequiredFields([node1]));
+  }
+  {
+    // No requiredFieldNames (dynamic IS-connector type, required-ness only known
+    // after registry enrichment) → conservative: absence not flagged (frontend
+    // shares this — it also needs the enrichment to know the field is required).
+    const node1 = n("1", { context: [{ name: "someField", value: "v" }] });
+    expectEmpty("no requiredFieldNames → conservative", validateRequiredFields([node1]));
+  }
 }
 
 // ===========================================================================
@@ -851,6 +878,106 @@ suite("TimerDurationRule");
   expectCodeCount("malformed P5X", validateTimerDuration([timer("P5X")]), "TIMER_DURATION_INVALID", 1);
   // FE: "week designator -> TIMER_DURATION_WEEK_UNSUPPORTED (WARNING)"
   expectCodeCount("week P5W", validateTimerDuration([timer("P5W")]), "TIMER_DURATION_WEEK_UNSUPPORTED", 1);
+}
+
+// ===========================================================================
+// 20. Variable existence — result.X element-local validity
+// (VariableUtil.isResultVariableValidForElement:166-178; the non-existing split
+//  at :758-782; getVariablesInExpression treating an unresolved result ref as
+//  non-existing at :263). result.X is valid ONLY if X names one of the
+//  referencing element's OWN outputs; otherwise VARIABLE_DOES_NOT_EXIST fires.
+// ===========================================================================
+suite("ResultVariableExistence");
+{
+  // FE: "should not return a validation error for result namespace when it matches current element outputs"
+  // node1 declares output var "outputVar" → result.outputVar is valid.
+  {
+    const n1 = node("node1", "bpmn:ServiceTask", { uipath: { outputs: [{ name: "outputVar", var: "outputVar", custom: true, source: "=result.outputVar", type: "string" }] } });
+    const f = validateVariableExistence([n1], [], new Set());
+    expectNone("result.X matches own output → no DOES_NOT_EXIST", f, "VARIABLE_DOES_NOT_EXIST");
+  }
+  // FE: "should return a validation error for result namespace when it does not match current element outputs"
+  // node1 has output "outputVar" but references result.missingVar → invalid.
+  {
+    const n1 = node("node1", "bpmn:ServiceTask", { uipath: { inputs: [{ name: "i", value: "=result.missingVar" }], outputs: [{ name: "outputVar", var: "outputVar" }] } });
+    const f = validateVariableExistence([n1], [], new Set());
+    expectCodeCount("result.X not an output → DOES_NOT_EXIST", f, "VARIABLE_DOES_NOT_EXIST", 1);
+  }
+  // FE: getVariablesInExpression "should return the correct result variable in the expression"
+  // An edge condition has no element-local outputs → result.myVar is non-existing.
+  {
+    const e1 = edge("edge1", "a", "b", { data: { conditionExpression: "=result.myVar" } });
+    const f = validateVariableExistence([], [e1], new Set());
+    expectCodeCount("edge result.X → DOES_NOT_EXIST", f, "VARIABLE_DOES_NOT_EXIST", 1);
+  }
+}
+
+// ===========================================================================
+// 21. VARIABLE_NOT_SET — flow-order reachability (WARNING)
+// Port of validateVariablesInExpression:758-866 (the reachability half). A
+// DECLARED variable referenced where no flow path reaches its producer fires
+// VARIABLE_NOT_SET. Tested at the model level (allNodes/allEdges/knownIds/cs),
+// mirroring validateVariablesInAllNodesAndEdges.
+// ===========================================================================
+suite("VariableNotSet");
+{
+  // Helper: canvasState with given root vars + diagram nodes/edges.
+  const csFor = (rootInputOutputs, nodes, edges) => canvasState({ rootVariables: { inputs: [], inputOutputs: rootInputOutputs, outputs: [] }, diagramNodes: nodes, diagramEdges: edges });
+
+  // FE: "should return a validation error if a variable is used before it is set"
+  // edge node1->node2 references vars.myVar; myVar is declared (known) but not
+  // produced on any path reaching the edge → exactly 1 VARIABLE_NOT_SET.
+  {
+    const n1 = node("node1", "bpmn:Task", {});
+    const n2 = node("node2", "bpmn:Task", {});
+    const e1 = edge("edge1", "node1", "node2", { data: { conditionExpression: "=vars.myVar" } });
+    const known = new Set(["myVar"]); // declared somewhere, but not reachable here
+    const cs = csFor([], [n1, n2], [e1]);
+    const f = validateVariableNotSet([n1, n2], [e1], known, cs);
+    expectCodeCount("used before set → NOT_SET", f, "VARIABLE_NOT_SET", 1);
+  }
+  // FE: "should not return a validation error if a variable used is a root variable"
+  // Same graph but myVar is a ROOT variable → globally available → no NOT_SET.
+  {
+    const n1 = node("node1", "bpmn:Task", {});
+    const n2 = node("node2", "bpmn:Task", {});
+    const e1 = edge("edge1", "node1", "node2", { data: { conditionExpression: "=vars.myVar" } });
+    const known = new Set(["myVar"]);
+    const cs = csFor([{ id: "myVar", name: "myVarName", type: "string" }], [n1, n2], [e1]);
+    const f = validateVariableNotSet([n1, n2], [e1], known, cs);
+    expectNone("root variable → no NOT_SET", f, "VARIABLE_NOT_SET");
+  }
+  // Reachable producer → no NOT_SET: node A produces var, node B (downstream)
+  // references it; B's backward walk reaches A.
+  {
+    const a = node("A", "bpmn:ServiceTask", { uipath: { outputs: [{ name: "o", var: "produced", custom: true, source: "x", type: "string" }] } });
+    const b = node("B", "bpmn:ServiceTask", { uipath: { inputs: [{ name: "i", value: "=vars.produced" }] } });
+    const e1 = edge("A_B", "A", "B", { data: {} });
+    const known = new Set(["produced"]);
+    const cs = csFor([], [a, b], [e1]);
+    const f = validateVariableNotSet([a, b], [e1], known, cs);
+    expectNone("reachable producer → no NOT_SET", f, "VARIABLE_NOT_SET");
+  }
+  // Producer downstream → NOT_SET: node A (upstream) references a var produced by
+  // node B (downstream), unreachable at A.
+  {
+    const a = node("A", "bpmn:ServiceTask", { uipath: { inputs: [{ name: "i", value: "=vars.fromB" }] } });
+    const b = node("B", "bpmn:ServiceTask", { uipath: { outputs: [{ name: "o", var: "fromB", custom: true, source: "x", type: "string" }] } });
+    const e1 = edge("A_B", "A", "B", { data: {} });
+    const known = new Set(["fromB"]);
+    const cs = csFor([], [a, b], [e1]);
+    const f = validateVariableNotSet([a, b], [e1], known, cs);
+    expectCodeCount("downstream producer → NOT_SET at A", f, "VARIABLE_NOT_SET", 1);
+  }
+  // Case Management is skipped entirely (VariableUtil.ts:826-828).
+  {
+    const n1 = node("node1", "bpmn:Task", {});
+    const n2 = node("node2", "bpmn:Task", {});
+    const e1 = edge("edge1", "node1", "node2", { data: { conditionExpression: "=vars.myVar" } });
+    const cs = csFor([], [n1, n2], [e1]);
+    const f = validateVariableNotSet([n1, n2], [e1], new Set(["myVar"]), cs, { isCaseManagement: true });
+    expectEmpty("case management skipped", f);
+  }
 }
 
 export default results;

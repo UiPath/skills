@@ -151,7 +151,12 @@ function buildNodeUiPath(el, requiredFieldIndex) {
     uipath = uipath ?? {};
     uipath.variables = mapVariables(vars);
   }
-  // Mark required fields from the registry onto serialized fields by name match.
+  // Mark required fields from the registry onto serialized fields by name match,
+  // and attach the full required-name set so RequiredFieldsRule can also detect
+  // required fields that are entirely ABSENT from the serialized data (frontend
+  // RequiredFieldsRule iterates every field in the node's data and fires on
+  // `field.required && isNilOrEmpty(field.value)` — an unbound required field is
+  // present-with-empty-value on canvas, which corresponds to absent-in-XML here).
   const st = uipath?.serviceType;
   const requiredNames = st ? requiredFieldIndex.get(st) : undefined;
   if (requiredNames) {
@@ -159,6 +164,7 @@ function buildNodeUiPath(el, requiredFieldIndex) {
       if (!Array.isArray(group)) continue;
       for (const f of group) if (requiredNames.has(f.name)) f.required = true;
     }
+    uipath.requiredFieldNames = [...requiredNames];
   }
   return uipath;
 }

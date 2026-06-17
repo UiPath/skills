@@ -104,31 +104,55 @@ export function expressionHasAssignment(expression) {
 
 /**
  * Collect every `vars.X` / `result.X` reference in an expression that does NOT
- * resolve against the supplied set of known variable identifiers. Resolution
- * matches against BOTH variable ids and names (see model: each variable
- * contributes id + name + canonicalId). Built-in segments (error) are skipped.
+ * resolve. Mirrors VariableUtil.getVariablesInExpression (the `nonExisting`
+ * half) + the result-validity split in validateVariablesInExpression:758-782.
+ *
+ *  - `vars.X` resolves against `knownIds` (variable ids/names/canonicalIds,
+ *    declared anywhere) — matches `existingIdsSet` semantics in the frontend.
+ *  - `result.X` resolves ONLY against the referencing element's OWN output
+ *    identifiers (`resultIds`); a `result.X` that names no output of this
+ *    element is flagged, exactly like `isResultVariableValidForElement`
+ *    (VariableUtil.ts:166-178) pushing it onto the non-existing set
+ *    (VariableUtil.ts:263 treats the unresolved result ref as non-existing).
+ *
+ * `resultIds` defaults to an empty set: in contexts where result refs are not
+ * element-local (e.g. edge conditions, which have no own outputs) every
+ * `result.X` is unresolved, matching the frontend.
  */
-export function findUnknownVariableRefs(expression, knownIds) {
+export function findUnknownVariableRefs(expression, knownIds, resultIds = new Set()) {
   if (!expression) return [];
   const out = [];
+  const resolvesAgainst = (seg, ids) => {
+    if (ids.has(seg)) return true;
+    // Nested-path tolerance: foo.bar resolves if `foo` is known.
+    for (const id of ids) {
+      if (seg === id || seg.startsWith(`${id}.`)) return true;
+    }
+    return false;
+  };
   for (const match of expression.matchAll(VAR_REFS_REGEX)) {
     const prefix = match[2];
     const seg = match[3] ?? match[4];
     if (!seg) continue;
-    if (prefix === "result") continue; // `result.` is a node-local output alias, not a declared var
-    if (BUILTIN_NON_VARIABLE_VARS_SEGMENTS.has(seg)) continue;
-    if (knownIds.has(seg)) continue;
-    // Nested-path tolerance: vars.foo.bar resolves if `foo` is known.
-    let resolved = false;
-    for (const id of knownIds) {
-      if (seg === id || seg.startsWith(`${id}.`)) {
-        resolved = true;
-        break;
-      }
+    if (prefix === "result") {
+      // `result.X` is a node-local output alias; valid only if X names one of
+      // this element's own outputs (frontend isResultVariableValidForElement).
+      if (!resolvesAgainst(seg, resultIds)) out.push(match[0]);
+      continue;
     }
-    if (!resolved) out.push(match[0]);
+    if (BUILTIN_NON_VARIABLE_VARS_SEGMENTS.has(seg)) continue;
+    if (!resolvesAgainst(seg, knownIds)) out.push(match[0]);
   }
   return [...new Set(out)];
+}
+
+// ---------------------------------------------------------------------------
+// Port of Tools.getAccessorFromType — selects which field of a custom output
+// carries the user expression to validate.
+function getAccessorFromType(type) {
+  if (type === "json" || type === "jsonSchema" || type === "array") return "body";
+  if (type === "file" || type === "octet-stream") return "target";
+  return "source";
 }
 
 // ---------------------------------------------------------------------------
@@ -236,9 +260,14 @@ function canNodeTypesBeConnected(sourceNode, targetNode) {
   const t = targetNode?.type;
   if (!sourceNode || !s || !targetNode || !t) return false;
   const allowed = allowedTargetNodeTypesForSourceNodeType[s];
-  // Unknown source type: be permissive (frontend falls back to abstract-type
-  // inheritance which we cannot fully model offline; do not invent failures).
-  if (!allowed) return true;
+  // No matching rule for the source type → frontend `canNodeTypesBeConnected`
+  // returns false (BPMNTypesUtils.ts:51-82: after the explicit-rule and
+  // inherited-rule loops exhaust with no match it `return false`). The
+  // abstract-type inheritance the frontend additionally walks is already folded
+  // into our concrete allow-map (every concrete activity/event type has an
+  // explicit entry above), so an unknown source type genuinely has no rule and
+  // must be rejected as INVALID_CONNECTION_TYPE.
+  if (!allowed) return false;
   return allowed.has(t);
 }
 
@@ -740,34 +769,52 @@ export function validateNoAssignmentsInExpressions(nodes, edges) {
 //   for each field in context, then inputs, then outputs (frontend order),
 //   if (field.required && isNilOrEmpty(field.value)) → first error.
 //
-// On canvas, `field.required` is attached to each live node field by the
-// actions-service-enriched node data. Offline we recover that flag from the
-// bundled registry (bpmn-spec.json): the model marks a serialized field
-// `required` ONLY when its name matches a registry-required field name for the
-// node's serviceType (model.mjs). Required fields that are simply ABSENT from
-// the serialized data are NOT flagged — offline, absence is ambiguous (the
-// value may be bound elsewhere, serialized under a different canonical name, or
-// supplied by design-time enrichment that exported BPMN does not carry). This
-// keeps the rule a true subset of the canvas behavior with no false positives.
+// On canvas, EVERY field a serviceType declares is present in the node data with
+// its `required` flag set; an unbound required field is present-with-empty-value
+// and the frontend fires on it. In exported BPMN an unbound required field is
+// simply ABSENT. To reach parity, we treat an absent required field exactly as
+// the frontend treats an unbound one: present with an empty value. The required-
+// field names come from the bundled registry (bpmn-spec.json) per serviceType
+// (model.mjs attaches them as `uipath.requiredFieldNames`).
+//
+// BOUNDARY: For dynamic IS-connector activity types whose required-ness is NOT
+// in the static spec — it only materializes after a `registry get` enrichment —
+// `requiredFieldNames` is undefined and absence cannot be judged offline, so we
+// stay conservative (only present-but-empty fires). The frontend needs the same
+// enrichment to know those fields are required, so this is shared, not a gap.
 export function validateRequiredFields(nodes) {
   if (!nodes) return []; // frontend RequiredFieldsRule guards null inputs
   const errors = [];
   for (const node of nodes) {
     const uipath = node.data?.uipath;
     if (!uipath) continue;
-    const validateFields = (fields) => {
+    // First (frontend order): present fields flagged when required + empty value.
+    const firstEmptyPresent = (fields) => {
       if (!Array.isArray(fields)) return undefined;
       for (const field of fields) {
-        if (field.required && isNilOrEmpty(field.value ?? field.body)) return field;
+        if (field.required && isNilOrEmpty(field.value)) return field;
       }
       return undefined;
     };
-    const bad = validateFields(uipath.context) ?? validateFields(uipath.inputs) ?? validateFields(uipath.outputs);
-    if (bad) {
+    let badName;
+    const present = firstEmptyPresent(uipath.context) ?? firstEmptyPresent(uipath.inputs) ?? firstEmptyPresent(uipath.outputs);
+    if (present) badName = present.name;
+    else if (Array.isArray(uipath.requiredFieldNames)) {
+      // No present-but-empty required field; check for an entirely ABSENT one
+      // (treated by the frontend as present-with-empty, hence required+empty).
+      const presentNames = new Set();
+      for (const group of [uipath.context, uipath.inputs, uipath.outputs]) {
+        if (!Array.isArray(group)) continue;
+        for (const f of group) if (f.name) presentNames.add(f.name);
+      }
+      const absent = uipath.requiredFieldNames.find((name) => !presentNames.has(name));
+      if (absent) badName = absent;
+    }
+    if (badName !== undefined) {
       const label = node.data?.label ?? node.id;
       errors.push({
         code: "EMPTY_REQUIRED_FIELD",
-        message: `The field '${bad.name}' in node '${label}' is required but has no value.`,
+        message: `The field '${badName}' in node '${label}' is required but has no value.`,
         severity: SEVERITY.ERROR,
         elementId: node.id,
       });
@@ -985,8 +1032,8 @@ export function validateTimerDuration(nodes) {
 // ---------------------------------------------------------------------------
 export function validateVariableExistence(allNodes, allEdges, knownIds) {
   const errors = [];
-  const flag = (expr, elementId, extra = {}) => {
-    const unknown = findUnknownVariableRefs(expr, knownIds);
+  const flag = (expr, elementId, resultIds, extra = {}) => {
+    const unknown = findUnknownVariableRefs(expr, knownIds, resultIds);
     for (const ref of unknown) {
       errors.push({
         code: "VARIABLE_DOES_NOT_EXIST",
@@ -997,14 +1044,23 @@ export function validateVariableExistence(allNodes, allEdges, knownIds) {
       });
     }
   };
+  // Edge conditions have no element-local outputs → result.X never resolves.
   for (const edge of allEdges) {
     if (edge.data?.conditionExpression) {
-      flag(edge.data.conditionExpression, edge.id, { sourceId: edge.source, targetId: edge.target });
+      flag(edge.data.conditionExpression, edge.id, new Set(), { sourceId: edge.source, targetId: edge.target });
     }
   }
   for (const node of allNodes) {
     const uipath = node.data?.uipath;
     if (!uipath) continue;
+    // result.X is validated against THIS element's own output identifiers
+    // (var/name/canonicalId), per VariableUtil.isResultVariableValidForElement.
+    const resultIds = new Set();
+    for (const o of uipath.outputs ?? []) {
+      if (o.var) resultIds.add(o.var);
+      if (o.name) resultIds.add(o.name);
+      if (o.canonicalId) resultIds.add(o.canonicalId);
+    }
     const exprs = [];
     for (const c of uipath.context ?? []) {
       if (typeof c.value === "string") exprs.push(c.value);
@@ -1014,14 +1070,268 @@ export function validateVariableExistence(allNodes, allEdges, knownIds) {
       if (typeof i.value === "string") exprs.push(i.value);
       if (typeof i.body === "string") exprs.push(i.body);
     }
+    // Custom-output expressions: gate the field by accessor type, mirroring
+    // VariableUtil.ts:952-968 (source only when accessor is `source`, body only
+    // when accessor is `body`).
     for (const o of uipath.outputs ?? []) {
-      if (o.custom && typeof o.source === "string") exprs.push(o.source);
-      if (o.custom && typeof o.body === "string") exprs.push(o.body);
+      if (!o.custom) continue;
+      const accessor = getAccessorFromType(o.type);
+      if (accessor === "source" && typeof o.source === "string") exprs.push(o.source);
+      else if (accessor === "body" && typeof o.body === "string") exprs.push(o.body);
     }
     for (const m of uipath.errorMapping ?? []) {
       if (typeof m.condition === "string") exprs.push(m.condition);
     }
-    for (const expr of exprs) flag(expr, node.id);
+    for (const expr of exprs) flag(expr, node.id, resultIds);
+  }
+  return errors;
+}
+
+// ---------------------------------------------------------------------------
+// VARIABLE_NOT_SET — port of the flow-reachability half of
+// VariableUtil.validateVariablesInExpression (VariableUtil.ts:758-866).
+//
+// A variable can be DECLARED (exists in the known-id set) yet NOT SET at a given
+// element because no flow path reaches that element from the node that produces
+// it. The frontend computes, per element, the set of variables available via a
+// backward walk over sequence-flow edges (+ scope/parent chain, boundary
+// re-parenting, event-subprocess shared scope, subprocess EndEvent exposure),
+// then warns on every referenced+declared variable not in that set.
+//
+// Faithful port of:
+//   getSourceEdgeMappings              (VariableUtil.ts:121-130)
+//   mapNodeOutputsToVariables          (VariableUtil.ts:539-579, uipath outputs)
+//   getVariablesForSubProcess          (VariableUtil.ts:495-525)
+//   getAvailableVariablesFromSourceNodes (VariableUtil.ts:303-389)
+//   getAvailableVariablesForElement    (VariableUtil.ts:401-481)
+// Skipped entirely for Case Management (VariableUtil.ts:826-828).
+// ---------------------------------------------------------------------------
+
+// A node output declares a variable whose identifier is `var` (falling back to
+// `value` when shouldIdFallbackToValue, per the frontend mapNodeOutputsToVariables).
+// Returns id + canonicalId + name. The frontend's availability match keys on
+// id/canonicalId; this port additionally includes `name`, consistent with the
+// rest of the port's variable resolution (collectKnownVariableIds /
+// findUnknownVariableRefs resolve by id AND name AND canonicalId), because
+// exported BPMN expressions may reference a variable by its serialized name.
+function nodeOutputVariableIds(node, idFallbackToValue) {
+  const ids = [];
+  for (const o of node?.data?.uipath?.outputs ?? []) {
+    const id = o.var ?? (idFallbackToValue ? (o.value ?? "") : "");
+    if (id) ids.push(id);
+    if (o.canonicalId) ids.push(o.canonicalId);
+    if (o.name) ids.push(o.name);
+  }
+  return ids;
+}
+
+// Port of getVariablesForSubProcess: the variables a subprocess EXPOSES to a
+// sibling selection (the subprocess node's own outputs + its EndEvent children's
+// outputs). `isSelfSelected` is always false here (the selection is never the
+// subprocess being traversed past), matching the edge-traversal path.
+function subProcessExposedVarIds(subProcessId, nodes) {
+  const ids = [];
+  for (const node of nodes) {
+    const outs = nodeOutputVariableIds(node, false);
+    if (!outs.length) continue;
+    if (node.id === subProcessId) {
+      for (const i of outs) ids.push(i);
+      continue;
+    }
+    if (node.parentId === subProcessId || node.data?.parentElement?.id === subProcessId) {
+      if (node.type === "bpmn:EndEvent") for (const i of outs) ids.push(i);
+    }
+  }
+  return ids;
+}
+
+// Backward BFS over sequence-flow edges from `selectionElementId`, collecting
+// every available variable id. Port of getAvailableVariablesFromSourceNodes.
+function availableVarIdsFromSourceNodes(selectionElementId, selectionElementType, nodes, edges, rootVarIds, nodeById) {
+  const edgeToSource = new Map();
+  const sourceToEdges = new Map();
+  for (const edge of edges) {
+    edgeToSource.set(edge.id, edge.source);
+    const arr = sourceToEdges.get(edge.target) ?? [];
+    arr.push(edge.id);
+    sourceToEdges.set(edge.target, arr);
+  }
+
+  const available = new Set(rootVarIds); // root variables are globally available
+  const visitedEdges = new Set();
+
+  // The selected element's own outputs are available.
+  const selected = nodeById.get(selectionElementId);
+  if (selected) for (const i of nodeOutputVariableIds(selected, true)) available.add(i);
+
+  const edgesToVisit = [];
+  let currentEdgeId = selectionElementId;
+  if (selectionElementType === "node") {
+    edgesToVisit.push(...(sourceToEdges.get(selectionElementId) ?? []));
+    currentEdgeId = edgesToVisit.shift();
+  }
+
+  while (currentEdgeId) {
+    let sourceNode = nodeById.get(edgeToSource.get(currentEdgeId) ?? "");
+    // Boundary events have no incoming edge; re-parent to their host.
+    if (sourceNode?.type === "bpmn:BoundaryEvent" && sourceNode?.id) {
+      const parentId = sourceNode.parentId;
+      sourceNode = parentId ? nodeById.get(parentId) : undefined;
+    }
+    if (sourceNode?.type !== "bpmn:SubProcess" && sourceNode?.id) {
+      for (const i of nodeOutputVariableIds(sourceNode, true)) available.add(i);
+    }
+    if (sourceNode?.type === "bpmn:SubProcess" && sourceNode?.id) {
+      for (const i of subProcessExposedVarIds(sourceNode.id, nodes)) available.add(i);
+    }
+    visitedEdges.add(currentEdgeId);
+
+    let nextEdge = sourceToEdges.get(sourceNode?.id ?? "");
+    if (!nextEdge && sourceNode?.parentId) {
+      const sourceParent = nodeById.get(sourceNode.parentId);
+      if (sourceParent?.type === "bpmn:SubProcess") nextEdge = sourceToEdges.get(sourceParent.id);
+    }
+    edgesToVisit.push(...(nextEdge ?? []).filter((e) => !visitedEdges.has(e)));
+    currentEdgeId = edgesToVisit.shift();
+  }
+  return available;
+}
+
+// Port of getAvailableVariablesForElement: source-node BFS + subprocess scope +
+// parent chain (with event-subprocess shared-scope handling).
+function availableVarIdsForElement(selectionElementId, selectionElementType, nodes, edges, rootVarIds, nodeById) {
+  const available = availableVarIdsFromSourceNodes(selectionElementId, selectionElementType, nodes, edges, rootVarIds, nodeById);
+
+  const selected = nodeById.get(selectionElementId);
+  if (selected?.type === "bpmn:SubProcess") {
+    // Self-selected: expose all child variables.
+    for (const node of nodes) {
+      if (node.parentId === selectionElementId || node.data?.parentElement?.id === selectionElementId) {
+        for (const i of nodeOutputVariableIds(node, false)) available.add(i);
+      }
+    }
+  }
+
+  let parentElementId = selected?.data?.parentElement?.id;
+  if (!parentElementId) return available;
+
+  const visitedParentIds = new Set();
+  while (parentElementId && !visitedParentIds.has(parentElementId)) {
+    visitedParentIds.add(parentElementId);
+    const parentNode = nodeById.get(parentElementId);
+    if (!parentNode) break;
+
+    const isParentEventSubprocess = parentNode.type === "bpmn:SubProcess" && parentNode.data?.triggeredByEvent === true;
+    if (isParentEventSubprocess) {
+      const grandparentNodeId = parentNode.data?.parentElement?.id;
+      if (!grandparentNodeId) break;
+      for (const node of nodes) {
+        const nodeScope = node.data?.parentElement?.id;
+        if (nodeScope === grandparentNodeId && node.id !== parentElementId) {
+          if (node.type === "bpmn:SubProcess") {
+            for (const i of subProcessExposedVarIds(node.id, nodes)) available.add(i);
+          } else {
+            for (const i of nodeOutputVariableIds(node, true)) available.add(i);
+          }
+        }
+      }
+      parentElementId = grandparentNodeId;
+      continue;
+    }
+
+    for (const i of availableVarIdsFromSourceNodes(parentElementId, "node", nodes, edges, rootVarIds, nodeById)) available.add(i);
+    parentElementId = parentNode.data?.parentElement?.id;
+  }
+  return available;
+}
+
+// Collect the `vars.X` identifiers in an expression that are DECLARED (resolve
+// against the model's known ids) — these are the candidates for VARIABLE_NOT_SET.
+function declaredVarRefsInExpression(expression, knownIds) {
+  if (!expression) return [];
+  const out = new Set();
+  for (const match of expression.matchAll(VAR_REFS_REGEX)) {
+    const prefix = match[2];
+    if (prefix !== "vars") continue;
+    const seg = match[3] ?? match[4];
+    if (!seg || BUILTIN_NON_VARIABLE_VARS_SEGMENTS.has(seg)) continue;
+    let resolvedId;
+    if (knownIds.has(seg)) resolvedId = seg;
+    else {
+      for (const id of knownIds) {
+        if (seg.startsWith(`${id}.`)) {
+          resolvedId = id;
+          break;
+        }
+      }
+    }
+    if (resolvedId) out.add(resolvedId);
+  }
+  return [...out];
+}
+
+// `varExpressionsForElement` mirrors getInputExpressions + the output accessor
+// gate used by the frontend node loop (VariableUtil.ts:949-971).
+function varExpressionsForNode(uipath) {
+  const exprs = [];
+  for (const c of uipath.context ?? []) {
+    if (typeof c.value === "string") exprs.push(c.value);
+    if (typeof c.body === "string") exprs.push(c.body);
+  }
+  for (const i of uipath.inputs ?? []) {
+    if (typeof i.value === "string") exprs.push(i.value);
+    if (typeof i.body === "string") exprs.push(i.body);
+  }
+  for (const o of uipath.outputs ?? []) {
+    if (!o.custom) continue;
+    const accessor = getAccessorFromType(o.type);
+    if (accessor === "source" && typeof o.source === "string") exprs.push(o.source);
+    else if (accessor === "body" && typeof o.body === "string") exprs.push(o.body);
+  }
+  return exprs;
+}
+
+// Emit VARIABLE_NOT_SET (WARNING) for declared variables referenced at an
+// element that are not reachable in flow order. Skipped for Case Management.
+export function validateVariableNotSet(allNodes, allEdges, knownIds, canvasState, options = {}) {
+  if (options.isCaseManagement) return []; // frontend skips (VariableUtil.ts:826-828)
+  const errors = [];
+  const nodeById = new Map(allNodes.map((n) => [n.id, n]));
+
+  // Root variable identifiers (id + canonicalId + name) — globally available.
+  // `name` included for the same port-consistency reason as nodeOutputVariableIds.
+  const rootVarIds = [];
+  const rv = canvasState?.root?.data?.uipath?.variables;
+  for (const v of [...(rv?.inputs ?? []), ...(rv?.inputOutputs ?? [])]) {
+    if (v.id) rootVarIds.push(v.id);
+    if (v.canonicalId) rootVarIds.push(v.canonicalId);
+    if (v.name) rootVarIds.push(v.name);
+  }
+
+  const check = (elementId, elementType, expression) => {
+    const declared = declaredVarRefsInExpression(expression, knownIds);
+    if (!declared.length) return;
+    const available = availableVarIdsForElement(elementId, elementType, allNodes, allEdges, rootVarIds, nodeById);
+    for (const ref of declared) {
+      if (!available.has(ref)) {
+        errors.push({
+          code: "VARIABLE_NOT_SET",
+          message: `Variable '${ref}' is not set at this point in the flow.`,
+          severity: SEVERITY.WARNING,
+          elementId,
+        });
+      }
+    }
+  };
+
+  for (const edge of allEdges) {
+    if (typeof edge.data?.conditionExpression === "string") check(edge.id, "edge", edge.data.conditionExpression);
+  }
+  for (const node of allNodes) {
+    const uipath = node.data?.uipath;
+    if (!uipath) continue;
+    const expr = varExpressionsForNode(uipath).join(" ; ");
+    if (expr) check(node.id, "node", expr);
   }
   return errors;
 }
@@ -1089,4 +1399,5 @@ export const RULE_CODES = [
   "TIMER_DURATION_INVALID",
   "TIMER_DURATION_WEEK_UNSUPPORTED",
   "VARIABLE_DOES_NOT_EXIST",
+  "VARIABLE_NOT_SET",
 ];

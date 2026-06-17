@@ -21,7 +21,7 @@ import descriptor from "./uipath-moddle.v1.json" with { type: "json" };
 import { readFileSync, existsSync } from "fs";
 import { execFileSync } from "child_process";
 import { buildModel, collectKnownVariableIds, allNodes, allEdges } from "./model.mjs";
-import { validateDiagram, validateVariableExistence, SEVERITY } from "./rules.mjs";
+import { validateDiagram, validateVariableExistence, validateVariableNotSet, SEVERITY } from "./rules.mjs";
 
 // --- uip CLI resolution (cached) — used only for the liveness-ping extra. ---
 let _uipBin;
@@ -100,6 +100,7 @@ for (const diagram of Object.values(canvasState.diagramsById)) {
   findings.push(...validateDiagram(diagram, canvasState, { enableMissingRootVariableValidation: true }));
 }
 findings.push(...validateVariableExistence(allNodes(canvasState), allEdges(canvasState), knownIds));
+findings.push(...validateVariableNotSet(allNodes(canvasState), allEdges(canvasState), knownIds, canvasState));
 
 // Optional connection liveness ping (Maestro-original extra).
 if (resourceArg) {

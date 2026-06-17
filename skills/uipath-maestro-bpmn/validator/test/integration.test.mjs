@@ -24,7 +24,7 @@ import { dirname, join } from "path";
 import BpmnModdle from "bpmn-moddle";
 import descriptor from "../uipath-moddle.v1.json" with { type: "json" };
 import { buildModel, collectKnownVariableIds, allNodes, allEdges } from "../model.mjs";
-import { validateDiagram, validateVariableExistence } from "../rules.mjs";
+import { validateDiagram, validateVariableExistence, validateVariableNotSet } from "../rules.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const moddle = new BpmnModdle({ uipath: descriptor });
@@ -36,6 +36,9 @@ async function errorCodesFor(xml) {
   const out = [];
   for (const d of Object.values(cs.diagramsById)) out.push(...validateDiagram(d, cs, { enableMissingRootVariableValidation: true }));
   out.push(...validateVariableExistence(allNodes(cs), allEdges(cs), knownIds));
+  // VARIABLE_NOT_SET is WARNING-only; included so its topology walk runs on real
+  // files (filtered out of the ERROR set below, so it can't break known-good).
+  out.push(...validateVariableNotSet(allNodes(cs), allEdges(cs), knownIds, cs));
   return [...new Set(out.filter((f) => f.severity === "ERROR").map((f) => f.code))].sort();
 }
 
