@@ -18,6 +18,7 @@ Failures originate at distinct layers — COM/Interop availability (step 1), fil
 - **Word Application Scope** (`WordApplicationScope`, display name "Word Application Scope") — open a Word document via Interop and run child activities against it. **COM-only** — requires desktop Word. Properties include the document `Path`, `CreateIfNotExists` (generate the file when absent), and `Password`.
 - **Replace Text in Document** (display name "Replace Text in Document" / classic "Replace Text"; modern `ReplaceTextInDocument` inside `Use Word File`, classic `WordReplaceText` inside `Word Application Scope`) — find a `Search` string in the open document and substitute `Replace`. Runs against the document held by the surrounding scope. Classic versions cap `Search`/`Replace` at 256 characters.
 - **Read Text** (display name "Read Text") — extract the document's text. Two surfaces: the **Word-pack** `Read Text` reads the document held open by a surrounding `Use Word File` / `Word Application Scope` (no file input of its own); the **standalone** `Read Text` under `System > File > Word Document` takes a file path directly (no container) but is OpenXML `.docx`-only.
+- **Export to PDF** (`WordExportToPdf`, display name "Export to PDF" / "Save Document as PDF") — export the open document to a PDF at a target path, via Word **Interop** inside a `Word Application Scope`. Does **not** auto-create the output directory.
 
 ## Common Failure Patterns
 
@@ -44,6 +45,13 @@ Failures originate at distinct layers — COM/Interop availability (step 1), fil
 - **Standalone System Read Text fails on .doc** — the `System > File > Word Document` `Read Text` is OpenXML `.docx`-only and errors / returns nothing on legacy binary `.doc`. Fix: read `.doc` through a `Use Word File` (Interop reads both formats), or convert to `.docx` first.
 - **Protected View blocks an externally-sourced file** — reading a file from email / internet / external share faults or hangs because Word opens it in Protected View (Mark-of-the-Web). Fix: unblock the file, add the folder to Trusted Locations, or disable Protected View on the host.
 - **"Application is busy" / COM interop** — same `RPC_E_SERVERCALL_RETRYLATER` (`0x8001010A`) busy-Word failure as Replace Text; the cause and fix are shared (see the Replace Text COM-busy playbook).
+
+### Export to PDF
+
+- **"Command Failed" — output directory missing** — `Export to PDF` faults with a generic `Command Failed` because the target folder doesn't exist; the activity won't auto-create it. Fix: `Create Folder` before the export.
+- **Malformed output path / missing `.pdf`** — the File Path is built from unformatted concatenation (no `.pdf` suffix, missing/doubled separator, empty variable segment). Fix: `Path.Combine(folder, name & ".pdf")` and validate the pieces.
+- **COM interop hang / crash / `COMException`** — an orphaned `WINWORD.EXE` or a locked input document blocks the export's COM call. Fix: Kill Process WINWORD before the scope, ensure the input is free; persistent → an Invoke Code C# `ExportAsFixedFormat` fallback.
+- **`TargetInvocationException` / outdated package** — same design-time version-mismatch signature as Replace Text; update `UiPath.Word.Activities` (see the Replace Text version-mismatch playbook).
 
 ## Package
 
