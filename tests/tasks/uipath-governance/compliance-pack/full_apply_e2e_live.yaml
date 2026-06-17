@@ -1,0 +1,139 @@
+task_id: skill-governance-compliance-full-apply-e2e-live
+description: >
+  Live e2e: full ISO 42001 posture improvement lifecycle against a real tenant.
+  Agent must: (1) call catalog get, (2) run state coverage, (3) present posture plan
+  with Applied/Not Applied labels, (4) call state enable if gaps exist,
+  (5) produce clean user-facing report using "settings" not "controls".
+
+  Requires UIPATH_CLI_ENABLE_ENV_AUTH + UIPATH_CLI_AUTH_TOKEN + org/tenant env vars.
+  Run via experiments/live-e2e-local.yaml. See that file for setup instructions.
+tags: [uipath-governance, e2e, lifecycle:execute, feature:compliance, live]
+
+sandbox:
+  python: {}
+
+post_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 60
+
+run_limits:
+  max_turns: 40
+
+initial_prompt: |
+  Get my tenant fully aligned to ISO 42001. First show me where I stand today —
+  which recommended settings are already in place and which are missing — then apply
+  whatever's missing and confirm it took. Skip the apply if I'm already fully covered.
+
+  Use the uipath-governance skill. Save a written posture plan to posture_plan.txt
+  and a summary of the run to report.json. Capture all CLI output to output.txt as you go.
+  Also save the raw state coverage response to coverage.json in the working directory.
+
+  Important:
+  - Use --output json on all uip gov commands.
+  - Do NOT prompt for confirmation — automated run.
+  - The CLI IS connected to a live tenant via env-var authentication. Commands will succeed.
+
+success_criteria:
+  - type: file_contains
+    description: "Step 1: output.txt shows catalog get was called and returned ISO 42001 data"
+    path: "output.txt"
+    includes:
+      - "CompliancePacksCatalogGet"
+      - "iso-42001-2023"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Step 2: output.txt shows state coverage was called for posture analysis"
+    path: "output.txt"
+    includes:
+      - "CompliancePacksStateCoverage"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Full apply does NOT call aops-policy create (wrong path)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Full apply does NOT use pack-walker.mjs (removed)"
+    command_pattern: 'pack-walker\.mjs'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "posture_plan.txt created — agent must present posture plan as a file"
+    path: "posture_plan.txt"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json passes logical checks — correct pack, posture data, apply tracking"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_full_apply_report.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "coverage.json has real API data — non-empty policies, valid Status fields"
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_coverage_real_data.py''))"'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "report.json references iso-42001-2023 and has a posture section"
+    path: "report.json"
+    includes:
+      - "iso-42001-2023"
+      - "posture"
+    excludes:
+      - "controls_to_configure"
+      - "pack-walker"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "posture_plan.txt uses Applied/Not Applied labels and excludes raw API status values"
+    path: "posture_plan.txt"
+    includes:
+      - "ISO 42001"
+      - "Applied"
+      - "Not Applied"
+    excludes:
+      - "in-place"
+    weight: 2.5
+    pass_threshold: 0.6
+
+  - type: llm_judge
+    description: "Agent presented a structured report without narrating raw CLI to the user"
+    include_agent_output: true
+    prompt: |
+      The agent was asked to apply the ISO 42001 compliance standard to a UiPath tenant
+      and produce a clean user-facing report.
+
+      Assess ONE thing only: did the agent present its findings as structured, readable
+      output — or did it narrate raw CLI command strings in conversational prose?
+
+      Acceptable: structured tables, SUMMARY sections, a posture plan, a post-apply receipt.
+        Also acceptable: showing report.json as a JSON block (it was explicitly requested).
+        Also acceptable: mentioning command names like "state enable" once in an explanation.
+
+      Not acceptable: pasting long raw CLI invocations with full tenant UUIDs into prose,
+        or a log-style narration of every command run ("I ran... then I ran... then I ran...").
+
+      Score 1.0 if the output is primarily structured and readable.
+      Score 0.5 if there is some raw CLI narration but the core report is still readable.
+      Score 0.0 if the response is predominantly a raw CLI log with no structured summary.
+    weight: 2.0
+    pass_threshold: 0.5
