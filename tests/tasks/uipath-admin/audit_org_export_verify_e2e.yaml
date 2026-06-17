@@ -28,17 +28,19 @@ description: >
   and should not fail the test — the assertion is structural correctness
   of the per-day JSON files, not a minimum event count.
 
-  Blocker: this task requires the json-folder export behavior in the
-  published `@uipath/cli` (UiPath/cli#2534 must ship + publish, on top of
-  #1372 which adds `uip admin audit`). Until then the default export
-  still emits the older single-file shape and the folder assertions fail.
+  Blocker: this task requires the base-directory + generated-name export
+  behavior in the published `@uipath/cli` (UiPath/cli#2585 must ship +
+  publish, on top of #2534 (json folder) + #1372 (adds `uip admin audit`)).
+  Until then `--output-path` is treated as the exact output folder (no
+  generated subfolder) and the `audit_*` glob finds nothing.
 tags: [uipath-admin, e2e, mode:operate, audit, export, scope-org, real-artifact]
 
 initial_prompt: |
   Export ORGANIZATION-level audit events (memberships, license changes,
   tenant lifecycle) for the single UTC day **2 days ago** as day-wise
-  JSON files into the ./audit-org-window folder in the current working
-  directory. Resolve the date with `date -u -d '2 days ago' +%Y-%m-%d`
+  JSON files under the ./audit-org-window base directory in the current
+  working directory (the CLI creates a uniquely-named subfolder inside it).
+  Resolve the date with `date -u -d '2 days ago' +%Y-%m-%d`
   so the window slides with the run date — use the same value for both
   `--from-date` and `--to-date`.
 
@@ -49,7 +51,8 @@ initial_prompt: |
   - Use the canonical `--from-date YYYY-MM-DD` / `--to-date YYYY-MM-DD`
     bounds (no inline `T00:00:00Z` for these flags — the CLI treats
     them as whole-day boundaries). json is the default format;
-    `--output-file` is the destination folder.
+    `--output-path` is a base directory — the CLI creates a uniquely-named
+    `audit_<from>_<to>_<generated-at>` subfolder inside it.
   - The 2-days-ago boundary preserves the >48h LTS-lag buffer.
   - This is ORG scope, not tenant. Do NOT pass `--tenant-id` (org
     silently ignores it).
@@ -57,21 +60,21 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip admin audit org export` (org scope) with bounded window + --output-file folder"
+    description: "Agent invoked `uip admin audit org export` (org scope) with bounded window + --output-path folder"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-file\s+\S+)'
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-path\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Org export produced the ./audit-org-window folder (a directory, not a file)"
+    description: "Org export created exactly one uniquely-named folder (audit_<from>_<to>_<generatedAt>) under the ./audit-org-window base directory"
     command: |
       python3 -c "
-      import os, sys
-      assert os.path.isdir('./audit-org-window'), './audit-org-window is not a directory'
-      names = os.listdir('./audit-org-window')
-      print(f'OK: output folder exists with {len(names)} file(s)')
+      import glob, os
+      subs = [p for p in glob.glob('./audit-org-window/audit_*') if os.path.isdir(p)]
+      assert len(subs) == 1, f'expected one generated export folder under ./audit-org-window, found {subs}'
+      print(f'OK: generated export folder {subs[0]} with {len(os.listdir(subs[0]))} file(s)')
       "
     timeout: 10
     expected_exit_code: 0
@@ -79,13 +82,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Org folder contains well-formed events: each per-day .json file is a JSON array; events use the documented PascalCase schema (empty window acceptable for a quiet org)"
+    description: "Generated org folder contains well-formed events: each per-day .json file is a JSON array; events use the documented PascalCase schema (empty window acceptable for a quiet org)"
     command: |
       python3 -c "
-      import json, os, sys
+      import glob, json, os, sys
       REQUIRED = ['Id','CreatedOn','OrganizationId','ActorId','EventType','EventSource','EventTarget']
-      d = './audit-org-window'
-      assert os.path.isdir(d), f'{d} is not a directory'
+      subs = [p for p in glob.glob('./audit-org-window/audit_*') if os.path.isdir(p)]
+      assert subs, 'no generated export folder under ./audit-org-window'
+      d = subs[0]
       day_files = [f for f in os.listdir(d) if f.endswith('.json')]
       if not day_files:
           print('OK: org export window is empty (no per-day files) — structural assertion trivially holds')

@@ -19,16 +19,18 @@ description: >
   the live `events` endpoint. We pin the window to dates at least 48h in
   the past so LTS has caught up.
 
-  Blocker: this task requires the json-folder export behavior in the
-  published `@uipath/cli` (UiPath/cli#2534 must ship + publish, on top of
-  #1372 which adds `uip admin audit`). Until then the default export
-  still emits the older single-file shape and the folder assertions fail.
+  Blocker: this task requires the base-directory + generated-name export
+  behavior in the published `@uipath/cli` (UiPath/cli#2585 must ship +
+  publish, on top of #2534 (json folder) + #1372 (adds `uip admin audit`)).
+  Until then `--output-path` is treated as the exact output folder (no
+  generated subfolder) and the `audit_*` glob finds nothing.
 tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
 
 initial_prompt: |
   Export tenant audit events for the 3-day window from 5 days ago
-  through 2 days ago (UTC, whole days) as day-wise JSON files into the
-  ./audit-window folder in the current working directory. Resolve the
+  through 2 days ago (UTC, whole days) as day-wise JSON files under the
+  ./audit-window base directory in the current working directory (the CLI
+  creates a uniquely-named subfolder inside it). Resolve the
   dates with `date -u -d '5 days ago' +%Y-%m-%d` and
   `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the run
   date.
@@ -39,28 +41,29 @@ initial_prompt: |
     requested path.
   - Use the canonical `--from-date YYYY-MM-DD` / `--to-date YYYY-MM-DD`
     bounds (no inline `T00:00:00Z` for these flags — the CLI treats them
-    as whole-day boundaries). json is the default format; `--output-file`
-    is the destination folder.
+    as whole-day boundaries). json is the default format; `--output-path`
+    is a base directory — the CLI creates a uniquely-named
+    `audit_<from>_<to>_<generated-at>` subfolder inside it.
   - The 2-days-ago upper bound preserves the >48h LTS-lag buffer.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked tenant export with bounded window + --output-file folder"
+    description: "Agent invoked tenant export with bounded window + --output-path folder"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-file\s+\S+)'
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-path\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Export produced the ./audit-window folder (a directory, not a file)"
+    description: "Export created exactly one uniquely-named folder (audit_<from>_<to>_<generatedAt>) under the ./audit-window base directory"
     command: |
       python3 -c "
-      import os, sys
-      assert os.path.isdir('./audit-window'), './audit-window is not a directory'
-      names = os.listdir('./audit-window')
-      print(f'OK: output folder exists with {len(names)} file(s)')
+      import glob, os
+      subs = [p for p in glob.glob('./audit-window/audit_*') if os.path.isdir(p)]
+      assert len(subs) == 1, f'expected one generated export folder under ./audit-window, found {subs}'
+      print(f'OK: generated export folder {subs[0]} with {len(os.listdir(subs[0]))} file(s)')
       "
     timeout: 10
     expected_exit_code: 0
@@ -68,13 +71,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Folder contains well-formed events: each per-day .json file is a JSON array; events use the documented PascalCase schema (empty window acceptable for a quiet tenant)"
+    description: "Generated folder contains well-formed events: each per-day .json file is a JSON array; events use the documented PascalCase schema (empty window acceptable for a quiet tenant)"
     command: |
       python3 -c "
-      import json, os, sys
+      import glob, json, os, sys
       REQUIRED = ['Id','CreatedOn','OrganizationId','ActorId','EventType','EventSource','EventTarget']
-      d = './audit-window'
-      assert os.path.isdir(d), f'{d} is not a directory'
+      subs = [p for p in glob.glob('./audit-window/audit_*') if os.path.isdir(p)]
+      assert subs, 'no generated export folder under ./audit-window'
+      d = subs[0]
       day_files = [f for f in os.listdir(d) if f.endswith('.json')]
       if not day_files:
           print('OK: export window is empty (no per-day files) — structural assertion trivially holds')
