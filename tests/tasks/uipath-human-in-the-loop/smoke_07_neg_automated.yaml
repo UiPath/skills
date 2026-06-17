@@ -7,6 +7,8 @@ tags: [uipath-human-in-the-loop, smoke]
 
 run_limits:
   expected_turns: 2
+  max_turns: 5
+  turn_timeout: 120
 
 initial_prompt: |
   Our automated invoice pipeline handles all invoices from a single verified
@@ -15,6 +17,10 @@ initial_prompt: |
   PO numbers, post to SAP. There are no exceptions and no edge cases — the
   business has signed off on full automation with no human review steps for
   this supplier.
+
+  Do not build or scaffold any project. Respond with a brief explanation
+  (3-5 sentences) of whether a human review checkpoint is appropriate for
+  this pipeline.
 
 success_criteria:
   - type: llm_judge
