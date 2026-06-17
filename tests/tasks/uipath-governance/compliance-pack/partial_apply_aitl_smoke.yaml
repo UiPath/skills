@@ -1,0 +1,56 @@
+task_id: skill-governance-compliance-partial-apply-aitl
+description: >
+  Skill-guided: partial apply for AI Trust Layer model governance settings must
+  detect settings needing user-supplied values (synthesize-formdata.mjs notEmpty
+  warning for allowed models list / BYOM endpoint) and prompt before proceeding.
+  Companion to interactive_values_smoke.yaml which covers Robot UIAutomation —
+  this covers the AI Trust Layer model governance path for the ISO 42001 compliance standard.
+
+  Platform note: uip commands fail with auth errors - expected.
+tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Apply the AI Trust Layer model governance recommended settings from ISO 42001.
+  I want to configure which AI model providers are approved for my organization.
+
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  When the skill asks which AI model providers to approve, respond with SKIP for now.
+  Important:
+  - uip CLI not connected — auth errors expected. Run each command once and continue.
+  - Use --output json on all uip gov commands. Do NOT prompt for confirmation.
+  - Write any helper scripts to the current working directory using relative paths
+    (e.g. ./synthesize-formdata.mjs, ./compliance-session/), not to AppData or TEMP paths.
+
+success_criteria:
+  - type: file_contains
+    description: "output.txt shows catalog get was called (CompliancePacksCatalogGet response code)"
+    path: "output.txt"
+    includes:
+      - "CompliancePacksCatalogGet"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked synthesize-formdata.mjs for AI Trust Layer model governance"
+    command_pattern: 'synthesize-formdata\.mjs'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Partial apply does NOT use state enable (full compliance standard path only)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

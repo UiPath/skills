@@ -1,0 +1,58 @@
+task_id: skill-governance-compliance-org-scope
+description: >
+  Skill-guided: "apply ISO 42001 organization-wide" must iterate over tenants
+  using tenant scope — NOT call state enable organization (backend not implemented).
+  Agent must: (1) list tenants via uip login tenant list, (2) run state coverage
+  per tenant, (3) call state enable tenant for each tenant with gaps.
+
+  Platform note: uip commands fail with auth errors - expected.
+tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Apply ISO 42001 recommended settings organization-wide to all tenants.
+
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - uip CLI not connected - auth errors expected. Run each command once and continue regardless.
+  - If uip login tenant list fails, read the tenant ID from ~/.uipath/.auth (line starting with UIPATH_TENANT_ID=).
+  - Use --output json on all uip gov commands. Do NOT prompt for confirmation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed tenants in the org to discover all targets"
+    command_pattern: 'uip\s+login\s+tenant\s+list.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran state coverage at tenant scope (per-tenant iteration)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+tenant\s+\S+\s+iso-42001.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called state enable at tenant scope (not organization scope)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\s+tenant\s+\S+\s+iso-42001.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT use organization scope for state enable (backend not implemented)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable\s+organization'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

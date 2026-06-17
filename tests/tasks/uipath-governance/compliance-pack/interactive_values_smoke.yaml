@@ -1,0 +1,49 @@
+task_id: skill-governance-compliance-interactive-values
+description: >
+  Skill-guided: partial apply for Robot UIAutomation settings must detect settings
+  needing user-supplied values (synthesize-formdata.mjs notEmpty warning) and prompt
+  the user before proceeding. Tests Step 1b of partial-apply/impl.md for the ISO 42001
+  compliance standard.
+
+  Platform note: uip commands fail with auth errors - expected.
+tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
+
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Apply the Robot UI Automation recommended settings from ISO 42001 — I want to
+  set the URL and application allowlists for UIAutomation.
+
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  When the skill asks for URL or application lists, respond with SKIP for now.
+  Important:
+  - uip CLI not connected — auth errors expected. Run each command once and continue.
+  - Use --output json on all uip gov commands. Do NOT prompt for confirmation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent called catalog get for Robot UIAutomation settings data"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "output.txt confirms synthesize-formdata was called for Robot product"
+    path: "output.txt"
+    includes:
+      - "synthesize-formdata"
+      - "Robot"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

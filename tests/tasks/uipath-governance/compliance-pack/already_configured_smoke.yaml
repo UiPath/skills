@@ -1,0 +1,55 @@
+task_id: skill-governance-compliance-already-configured
+description: >
+  Skill-guided: edge case where all ISO 42001 settings are already Applied on the tenant
+  (coverage returns NewCount == 0). The skill must present "all settings Applied" message
+  and NOT call state enable. Tests the newCount=0 branch of the full-apply flow.
+
+  Platform note: uip commands fail with auth errors - expected. The agent
+  must handle auth-error output from state coverage and still correctly
+  determine (from context) not to proceed with state enable.
+tags: [uipath-governance, smoke, lifecycle:discover, feature:compliance]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  Check the ISO 42001 posture for my tenant. My tenant has already had all
+  ISO 42001 settings configured previously — I expect the posture check to
+  show everything as Applied. I am not looking to make any changes, just
+  want to verify the current state.
+
+  Use the uipath-governance skill. Capture all command output to ./output.txt
+  (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
+
+  Important:
+  - uip CLI is not connected to a live tenant — auth errors expected.
+  - Run each command once, capture output, and move on. Do NOT retry.
+  - Use --output json on all uip gov commands.
+  - Do NOT prompt for confirmation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran state coverage to check current posture"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+(?:tenant|organization)\s+\S+\s+iso-42001.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT call state enable — all settings already Applied"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT call aops-policy create (wrong path)"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0
