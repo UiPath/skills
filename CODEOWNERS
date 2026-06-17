@@ -3,6 +3,7 @@
 
 # CI workflows and review config
 /.github/ @uipreliga @bai-uipath @akshaylive
+/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive
 
 # Hooks
 /hooks/ @DragosUnguru @RaduAna-Maria
