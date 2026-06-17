@@ -14,15 +14,6 @@ initial_prompt: |
      whatever tenant is currently active.
 
   Could you load 4 rows of realistic inventory into it from a CSV?
-
-  Things to keep in mind:
-    - The column headers in your CSV need to match the field names
-      exactly (uppercase/lowercase matters) — check the list before
-      you start.
-    - Every SKU in your file has to be unique.
-    - Don't include system columns (Id, CreatedBy, CreateTime,
-      UpdatedBy, UpdateTime) — those get filled in automatically.
-
   Save the file as `inventory.csv`, load it, and then quickly list
   the records to confirm everything came through (tell me how many
   rows got inserted and how many are now in the list).

@@ -22,28 +22,21 @@ initial_prompt: |
   together with `&&`, `;`, or `|`.
 
     - Add a single row: "Write tests", priority 1, not done.
-    - Add two more rows in one shot (the system handles batches when
-      you pass multiple at once): "Review PR" priority 2 and "Deploy"
-      priority 3, both not done.
+    - Add two more rows in one shot: "Review PR" priority 2 and
+      "Deploy" priority 3, both not done.
     - Pull the first row back up by its ID — use placeholder
       `id-single`.
-    - Find every row that's not done, page size 50, starting at
-      position 100.
-    - Show me the first page of everything, 10 at a time.
-    - Get the next page using the next-page cursor `cursor-page-2`
+    - Find every row that's not done, 50 rows per page, skipping the
+      first 100 rows.
+    - Show me the first page of everything, 10 rows per page.
+    - Pull the next page using the next-page cursor `cursor-page-2`
       (pretend that's what came back from the previous response).
-    - Jump straight to the page that holds row number 200 with a
-      page size of 10. Don't combine a position jump with a next-page
-      cursor on the same command — pick one.
+    - Jump straight to the page that holds row number 200 with 10
+      rows per page.
     - Mark the first row done.
     - Mark the other two rows (placeholder IDs `id-2` and `id-3`)
       done in one shot.
     - Delete the first row.
-
-  When paging, control it with command-line options (page size,
-  next-page cursor, starting position) — never put paging fields
-  like `start`, `limit`, `offset`, or `pageSize` inside the search
-  body.
 
 success_criteria:
   - type: command_executed

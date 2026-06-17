@@ -42,12 +42,7 @@ initial_prompt: |
     - On the Departments list, bump the department-name length limit
       to 200. Use placeholder column ID `field-deptname-id`.
 
-  Couple things to avoid:
-    - Don't try to put a character limit on a number column, and
-      don't try to set decimal places on a text or whole-number
-      column — those combinations get rejected.
-    - Please don't try to remove any columns and don't delete any
-      lists.
+  Please don't try to remove any columns and don't delete any lists.
 
 success_criteria:
   - type: command_executed

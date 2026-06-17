@@ -14,11 +14,6 @@ initial_prompt: |
   There is a "Products" entity with entity ID "prod-002-ent".
   Its fields are: ProductName (STRING), UnitPrice (DECIMAL), InStock (BOOLEAN).
 
-  Take a quick look at the list's settings first so your CSV header
-  matches the column names exactly (uppercase/lowercase matters).
-  Don't include any of the auto-managed columns (Id, CreatedBy,
-  CreateTime, UpdatedBy, UpdateTime) — those fill in on their own.
-
   Save the file as `products.csv` and load it.
 
 success_criteria:

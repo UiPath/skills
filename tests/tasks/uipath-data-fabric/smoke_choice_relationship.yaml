@@ -19,14 +19,12 @@ initial_prompt: |
 
   Treat these as real things in the tenant:
     - A category dropdown (ID `cs-cat-001`) with options
-      travel (1), meals (2), lodging (3)
+      travel, meals, lodging
     - A tags dropdown (ID `cs-tag-002`) with options
-      urgent (1), reimbursable (2), client (3)
-    - An Employees list (ID `emp-ent-100`, ID column's internal ID is
-      `emp-idfield-700`) with one employee already in it: ID
-      `emp-rec-500`
-    - A Projects list (ID `proj-ent-200`, ID column's internal ID is
-      `proj-idfield-800`)
+      urgent, reimbursable, client
+    - An Employees list (ID `emp-ent-100`) with one employee already
+      in it: ID `emp-rec-500`
+    - A Projects list (ID `proj-ent-200`)
 
   Walk through these for me:
 
@@ -59,10 +57,6 @@ initial_prompt: |
       and don't run any create/update/delete on a dropdown.
 
   Things to keep in mind:
-    - For category and tags values, use the option numbers — not the
-      label text, not the option's internal ID.
-    - For the submitter and project fields, use the linked row's ID —
-      not an email, not a name.
     - Please don't try to remove any columns and don't delete any
       lists.
 

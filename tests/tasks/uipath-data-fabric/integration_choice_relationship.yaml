@@ -99,9 +99,6 @@ initial_prompt: |
       uploads from the command line aren't working right now. The
       field just needs to exist.
     - Please don't create or change any dropdown lists.
-    - Please don't name a field `Status`, `Order`, `Key`, `Type`, or
-      anything else the database reserves — pick a more descriptive
-      name.
     - Leave the lists and rows in place — I'll sweep them later.
 
 success_criteria:

@@ -24,8 +24,7 @@ initial_prompt: |
     - A poster image attachment (call this field `Poster`)
 
   Then bulk-load 15 products from a CSV file you generate
-  (`products.csv`) — 5 per category. Leave the poster column out;
-  images can't go in via CSV.
+  (`products.csv`) — 5 per category.
 
   Once the data is in, do a few quick things:
     - Show me just the Electronics — there should be exactly 5.

@@ -13,11 +13,10 @@ run_limits:
 
 
 initial_prompt: |
-  Setup — there's an Expense list (ID `exp-ent-001`) with a tags
-  column where each expense can be marked with one or more of these
-  tags: travel, meals, lodging. Internally those are tag numbers
-  1, 2, and 3 respectively. The list is backed by a tag dropdown
-  with ID `cs-tags-001`.
+  There's an Expense list (ID `exp-ent-001`) with a tags column where
+  each expense can be marked with one or more of these tags: travel,
+  meals, lodging. The list is backed by a tag dropdown with ID
+  `cs-tags-001`.
 
   Could you run these four searches? One search per request — just
   run each one once, no retries:
@@ -28,11 +27,6 @@ initial_prompt: |
     3. Find every expense that's NOT tagged with meals.
     4. Show me how many expenses there are for each unique tag
        combination.
-
-  The skill will tell you which operator and value shape works for
-  each case — pick the right one. Don't pass the dropdown labels
-  ("travel", "meals", "lodging") in your search values; use the tag
-  numbers.
 
 success_criteria:
   - type: command_executed

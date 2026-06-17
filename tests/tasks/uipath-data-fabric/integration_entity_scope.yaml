@@ -22,15 +22,16 @@ initial_prompt: |
   one required name column (no longer than 100 characters). Please
   don't recreate it.
 
-  Check these:
-    - List everything without specifying a folder — `CE_TenantScopeTest`
-      should be there.
-    - List everything from folder A — `CE_TenantScopeTest` should
-      still show up, because tenant lists are visible everywhere.
+  Walk through these and tell me, in each case, whether the list does
+  or doesn't show up:
+    - List everything without picking a folder. Does
+      `CE_TenantScopeTest` show up?
+    - List everything from folder A. Does `CE_TenantScopeTest` still
+      show up there?
     - Make a new list called `CE_FolderScopeTest` (one name column)
       and put it specifically in folder A.
-    - List everything from folder B — `CE_FolderScopeTest` should
-      NOT appear, because it belongs to folder A only.
+    - List everything from folder B. Does `CE_FolderScopeTest` show
+      up there?
     - Try making one more list called `CE_FolderScopeTest_Invalid`
       using a fake folder ID like `00000000-0000-0000-0000-000000000000`.
       Just tell me what error comes back.

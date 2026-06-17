@@ -99,10 +99,6 @@ initial_prompt: |
     }
 
   Couple of things to keep in mind:
-    - For categories and tags, use the dropdown's value numbers — not
-      the label text.
-    - For the submitter field, use the employee's ID — not their email
-      or their name.
     - Please don't try to upload an actual receipt file — uploads from
       the command line aren't working right now. The field just needs
       to exist.

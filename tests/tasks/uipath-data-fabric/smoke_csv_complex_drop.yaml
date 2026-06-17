@@ -24,20 +24,13 @@ initial_prompt: |
     R2 — amount 250, description "dinner", category meals,  tags meals,            customer `c-uuid-A`
     R3 — amount 400, description "hotel",  category lodging, tags lodging,         customer `c-uuid-B`
 
-  One important thing — CSV files don't work for this list. CSV imports
-  only handle plain-text and number columns; anything fancier
-  (dropdowns, links to other rows, attachments, auto-numbers) gets
-  silently dropped. The column header is accepted but the value comes
-  through as empty with no warning. So please use the non-CSV bulk
-  load path instead, which handles every column type.
+  Bulk-load all 3 rows in one go using whichever uip df bulk path is
+  the right one for this list's column types. Write the file in
+  whatever format your chosen command needs.
 
-  Do this:
-    - Write the 3 rows out to a single file in the right format for a
-      list with dropdowns and links — not a CSV.
-    - Load the file.
-    - Then write a short note in `decision.md` (one paragraph) saying
-      which bulk-load command you picked and why — specifically
-      calling out that CSV silently drops dropdown / link columns.
+  When you're done, jot a short note in `decision.md` (one paragraph)
+  saying which uip df command you used to load the rows and why it is
+  the correct choice for a list shaped like this one.
 
 success_criteria:
   - type: command_executed
