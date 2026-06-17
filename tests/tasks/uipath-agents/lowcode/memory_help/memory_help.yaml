@@ -9,11 +9,10 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  I have a UiPath low-code Agent Builder project and need to attach an
-  existing Memory Space for dynamic few-shot retrieval. Use the applicable
-  UiPath skill. Before giving the command sequence, verify the memory CLI
-  surface with `uip agent memory --help --output json`. Do NOT scaffold or
-  edit files.
+  I've got a low-code Agent Builder project and want to wire up one of our
+  existing Memory Spaces so the agent can pull few-shot examples at runtime.
+  What's the command for that? Don't touch any of my files yet — just walk me
+  through the steps first.
 
 success_criteria:
   - type: skill_triggered
