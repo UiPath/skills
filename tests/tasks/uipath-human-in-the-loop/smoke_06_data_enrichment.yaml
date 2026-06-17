@@ -19,7 +19,7 @@ initial_prompt: |
     "pattern": "<which business pattern applies>",
     "proposed_schema": {
       "inputs": ["<what the human sees — already extracted fields>"],
-      "fill_in_fields": ["<fields the human fills in and returns>"],
+      "inOuts": ["<fields the human fills in and returns>"],
       "outcomes": ["<button names>"]
     }
   }
