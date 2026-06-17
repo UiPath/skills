@@ -44,7 +44,7 @@ Three ingredients:
 |---|---|---|
 | `ConnectorActivity` | A connector operation (create / get / update …) | `typeId` + connection; criteria fields fed back via `--field-values` expand the rest (Step 4). |
 | `ConnectorTriggerActivity` | Fires when a connector event occurs | `typeId` already encodes the event; fields resolve from `typeId` + connection. |
-| `ConnectorPersistenceActivity` | Suspends the workflow until a connector event | `--event-operation <op>` selects the event and resolves its fields (Step 4). |
+| `ConnectorPersistenceActivity` | Suspends the workflow until a connector event | Discover events with `uip is activities list <connector> --triggers`, then `--event-operation <op>` resolves the event's fields (Step 4). |
 | `ConnectorHttpActivity` | Generic HTTP-request escape hatch | Standard request fields (`method`, `url`, `headers`, `query`, `body`) — author them directly; they are the same for every connector. |
 
 Same principle throughout: **pass the selector the activity needs, get back its resolved schema.** A bare call (no selector) returns the correctly-typed activity with its baseline fields.
@@ -147,14 +147,36 @@ When you already know valid criteria values up front, the second call alone does
 
 #### Resolve persistence event fields with `--event-operation`
 
-A `ConnectorPersistenceActivity` ("suspend until an event") exposes no event fields until an **event operation** is chosen — the headless equivalent of picking the event in the designer before its fields appear. Pass it explicitly:
+A `ConnectorPersistenceActivity` ("suspend until an event") exposes no event fields until an **event operation** is chosen — the headless equivalent of picking the event in the designer before its fields appear. The event operation is a connector-specific value (e.g. `TICKET_UPDATED`, never the prose "ticket updated"), so **discover it — do not guess it.**
+
+**Step A — list the connector's events** (the same catalog the designer's dropdown uses; no connection needed):
+
+```bash
+uip is activities list <connector-key> --triggers --output json
+```
+
+Each entry's **`Name`** is the value for `--event-operation`; its **`ObjectName`** tells you the kind:
+
+```
+Name            DisplayName      ObjectName   IsCurated
+TICKET_UPDATED  Ticket Updated   tickets      Yes        ← named event: object is built in
+CREATED         Record Created   N/A          No         ← generic op: choose an object too
+```
+
+- **Named event** (`ObjectName` populated, e.g. `TICKET_UPDATED`) — pass its `Name` directly.
+- **Generic op** (`CREATED` / `UPDATED` / `DELETED`, `ObjectName` is `N/A`) — also pick the object it applies to:
+  ```bash
+  uip is triggers objects <connector-key> CREATED --output json
+  ```
+
+**Step B — resolve the activity** with the chosen operation:
 
 ```bash
 uip rpa activities get-default-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN>" \
-    --event-operation "<eventOperation>" --project-dir "<P>" --output json
+    --event-operation "TICKET_UPDATED" --project-dir "<P>" --output json
 ```
 
-The returned `Configuration` carries the resolved event fields as `FieldObjects`. Without `--event-operation` you get the bare activity (correct default, no event fields). It is the persistence analogue of `--field-values` criteria — a selector that unlocks the schema — and needs a live connection (same cloud round-trip and silent-no-op caveat as above). Combine the two to also pre-bind values.
+The returned `Configuration` carries the resolved event fields as `FieldObjects`. Without `--event-operation` you get the bare activity (correct default, no event fields). It is the persistence analogue of `--field-values` criteria — a selector that unlocks the schema — and the resolution needs a live connection (same cloud round-trip and silent-no-op caveat as above). Combine with `--field-values` to also pre-bind values.
 
 ### Step 5 — Read the operation's field schema
 
