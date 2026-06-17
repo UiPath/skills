@@ -25,7 +25,7 @@ initial_prompt: |
   TaskCreate/TaskUpdate planning. just bang it out end-to-end and stop
   after the second turn.
 
-  this agent will only be run locally so use LlamaIndex - 
+  this agent will only be run locally so use LangGraph - 
   do not use a low-code conversational agent.
 
 success_criteria:
