@@ -141,4 +141,4 @@ Used by: CI/CD pipelines, external API integrations, service-to-service calls, a
 | Non-confidential + `--app-scope` | Public apps can't use app scopes | Use `--user-scope` only |
 | User scopes without redirect URI | OAuth2 auth code flow needs redirect | Add `--redirect-uri` |
 
-> **Troubleshoot:** For OAuth2 flow failures (scope mismatches, expired secrets, grant type confusion), see [troubleshooting/identity-auth-failures.md → Playbook 2](troubleshooting/identity-auth-failures.md#playbook-2-external-app-oauth2-flow-failing).
+> **Diagnose:** For OAuth2 flow failures (scope mismatches, expired secrets, grant type confusion), see [diagnose/references/failure-modes.md → External App OAuth2](diagnose/references/failure-modes.md#external-app-oauth2-flow-failing).

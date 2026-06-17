@@ -72,4 +72,4 @@ uip admin smtp delete --output json
 | SMTP test fails | Incorrect settings | Verify host, port, credentials, and SSL settings |
 | `HTTP 403` | Insufficient permissions | Needs admin role |
 
-> **Troubleshoot:** For email delivery failures (connection refused, auth errors, SSL mismatch), see [troubleshooting/identity-auth-failures.md → Playbook 5](troubleshooting/identity-auth-failures.md#playbook-5-smtp-emails-not-delivering).
+> **Diagnose:** For email delivery failures (connection refused, auth errors, SSL mismatch), see [diagnose/references/failure-modes.md → SMTP](diagnose/references/failure-modes.md#smtp-emails-not-delivering).

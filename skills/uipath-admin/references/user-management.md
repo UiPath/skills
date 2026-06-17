@@ -104,4 +104,4 @@ uip admin users list --sort-by "UserName" --sort-order "asc" --output json
 | `user not found` | Invalid user ID | Run `users list` to find the correct ID |
 | `HTTP 403` | Insufficient permissions | User needs admin role in the organization |
 
-> **Troubleshoot:** For login failures, see [troubleshooting/identity-auth-failures.md → Playbook 1](troubleshooting/identity-auth-failures.md#playbook-1-user-cannot-log-in). For permission denied, see [troubleshooting/permission-denied-troubleshooting.md → Playbook 6](troubleshooting/permission-denied-troubleshooting.md#playbook-6-user-gets-http-403-permission-denied).
+> **Diagnose:** For login failures, see [diagnose/references/failure-modes.md → User Cannot Log In](diagnose/references/failure-modes.md#user-cannot-log-in). For permission denied, see [diagnose/references/failure-modes.md → HTTP 403](diagnose/references/failure-modes.md#user-gets-http-403-permission-denied).

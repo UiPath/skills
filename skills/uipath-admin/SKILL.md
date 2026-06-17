@@ -60,20 +60,22 @@ Activate on both **explicit audit requests** and **natural-language investigatio
 
 > **Scope routing** (which phrasing → `org` vs `tenant`, and why) lives in [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#audit-scope-disambiguation--route-by-user-phrasing). Critical Rule 23 governs the stop-and-ask requirement when scope is ambiguous.
 
-### Troubleshoot
+### Diagnose
 
-Activate on identity/auth failure investigation — users describe symptoms, not CLI commands.
+**Diagnose** — investigating identity/auth failures, permission denials, IP restriction lockouts, and tenant operation issues. Read [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
 
-- **Login failures** — "user can't log in", "login rejected", "authentication error" → [identity-auth-failures.md → Playbook 1](references/troubleshooting/identity-auth-failures.md#playbook-1-user-cannot-log-in)
-- **External app / OAuth2 failures** — "CI/CD auth failing", "client_credentials error", "not allowed to access User scopes" → [identity-auth-failures.md → Playbook 2](references/troubleshooting/identity-auth-failures.md#playbook-2-external-app-oauth2-flow-failing)
-- **Robot account auth issues** — "robot not authenticated", "no client secret for robot" → [identity-auth-failures.md → Playbook 3](references/troubleshooting/identity-auth-failures.md#playbook-3-robot-account-not-authenticating)
-- **PAT rejected** — "token not working", "PAT returns 401/403" → [identity-auth-failures.md → Playbook 4](references/troubleshooting/identity-auth-failures.md#playbook-4-pat-rejected--not-working)
-- **Email delivery failures** — "invitations not sending", "SMTP broken" → [identity-auth-failures.md → Playbook 5](references/troubleshooting/identity-auth-failures.md#playbook-5-smtp-emails-not-delivering)
-- **Permission denied / HTTP 403** — "user can't access", "permission denied", "403 error" → [permission-denied-troubleshooting.md → Playbook 6](references/troubleshooting/permission-denied-troubleshooting.md#playbook-6-user-gets-http-403-permission-denied)
-- **Role assignment not working** — "assigned role but still can't do X" → [permission-denied-troubleshooting.md → Playbook 7](references/troubleshooting/permission-denied-troubleshooting.md#playbook-7-role-assignment-not-taking-effect)
-- **IP restriction lockout** — "locked out after enabling enforcement", "colleague can't access org" → [ip-restriction-lockout.md → Playbook 9](references/troubleshooting/ip-restriction-lockout.md#playbook-9-ip-restriction-lockout)
-- **Tenant operation stuck** — "tenant create not completing", "operation stuck" → [tenant-operations-troubleshooting.md → Playbook 11](references/troubleshooting/tenant-operations-troubleshooting.md#playbook-11-tenant-operation-stuck-or-failed)
-- **Service provisioning no-op** — "disabled service but it's still enabled" → [tenant-operations-troubleshooting.md → Playbook 12](references/troubleshooting/tenant-operations-troubleshooting.md#playbook-12-service-provisioning-no-op)
+Activate on failure investigation — users describe symptoms, not CLI commands.
+
+- **Login failures** — "user can't log in", "login rejected", "authentication error"
+- **External app / OAuth2 failures** — "CI/CD auth failing", "client_credentials error", "not allowed to access User scopes"
+- **Robot account auth issues** — "robot not authenticated", "no client secret for robot"
+- **PAT rejected** — "token not working", "PAT returns 401/403"
+- **Email delivery failures** — "invitations not sending", "SMTP broken"
+- **Permission denied / HTTP 403** — "user can't access", "permission denied", "403 error"
+- **Role assignment not working** — "assigned role but still can't do X"
+- **IP restriction lockout** — "locked out after enabling enforcement", "colleague can't access org"
+- **Tenant operation stuck** — "tenant create not completing", "operation stuck"
+- **Service provisioning no-op** — "disabled service but it's still enabled"
 
 ## Critical Rules
 
@@ -229,7 +231,6 @@ For per-area full checklists, follow the table's inline links: Identity → [ide
 | Audit CLI reference | [references/audit-commands.md](references/audit-commands.md) |
 | Audit investigation workflows (scope disambiguation, who-did-X, login history, date-range dump, overview) | [references/audit-workflow-guide.md](references/audit-workflow-guide.md) |
 | Paginate audit events beyond 200 | [references/audit-commands.md](references/audit-commands.md) + Rule 25 |
-| Troubleshoot identity/auth failures (login, OAuth, PAT, SMTP, robot auth) | [references/troubleshooting/identity-auth-failures.md](references/troubleshooting/identity-auth-failures.md) |
-| Troubleshoot permission denied / role assignment issues | [references/troubleshooting/permission-denied-troubleshooting.md](references/troubleshooting/permission-denied-troubleshooting.md) |
-| Recover from IP restriction lockout / enforcement issues | [references/troubleshooting/ip-restriction-lockout.md](references/troubleshooting/ip-restriction-lockout.md) |
-| Troubleshoot tenant operations / service provisioning | [references/troubleshooting/tenant-operations-troubleshooting.md](references/troubleshooting/tenant-operations-troubleshooting.md) |
+| Diagnose identity/auth/platform failures (entry point) | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
+| Triage a failure (sequential ladder) | [references/diagnose/references/troubleshooting-guide.md](references/diagnose/references/troubleshooting-guide.md) |
+| Recognize a known failure pattern (lookup) | [references/diagnose/references/failure-modes.md](references/diagnose/references/failure-modes.md) |

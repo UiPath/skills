@@ -35,4 +35,4 @@ uip admin robot-accounts update <ROBOT_ACCOUNT_ID> --display-name "<NEW_DISPLAY_
 | `No fields to update` | No `--display-name` flag | Provide `--display-name` |
 | `not found` | Invalid robot account ID | Run `robot-accounts list` to find the correct ID |
 
-> **Troubleshoot:** For robot authentication issues (credential model confusion, missing API access), see [troubleshooting/identity-auth-failures.md → Playbook 3](troubleshooting/identity-auth-failures.md#playbook-3-robot-account-not-authenticating).
+> **Diagnose:** For robot authentication issues (credential model confusion, missing API access), see [diagnose/references/failure-modes.md → Robot Account](diagnose/references/failure-modes.md#robot-account-not-authenticating).
