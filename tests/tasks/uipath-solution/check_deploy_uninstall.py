@@ -39,18 +39,34 @@ parent = seed.get("parent_folder_path") or "Shared"
 folder_path = f"{parent}/e2e-deploy-folder-{uuid8}"
 
 
-def folder_present() -> bool:
-    # A missing folder returns a non-Success envelope (or nothing) — that's the pass case.
+def folder_status() -> str:
+    """A genuinely-missing folder returns a structured Failure envelope
+    (verified: Result=Failure, "Folder not found: ..."). A present folder
+    returns Result=Success. Anything else (empty/unparseable stdout) is a
+    transient/ambiguous response — do NOT treat it as "absent", or a flaky
+    `folders get` could false-pass the uninstall check."""
     fg = uip_json("or", "folders", "get", folder_path, required=False)
-    return fg.get("Result") == "Success"
+    result = fg.get("Result")
+    if result == "Success":
+        return "present"
+    if result == "Failure":
+        return "absent"
+    return "unknown"
 
 
 # Poll for the folder teardown to complete (uninstall is eventually-consistent).
+# Pass only on a definitive "absent" (a real Failure envelope); never on an
+# ambiguous/empty response.
+last = "unknown"
 for attempt in range(1, POLL_ATTEMPTS + 1):
-    if not folder_present():
+    last = folder_status()
+    if last == "absent":
         print(f"OK: uninstall removed folder {folder_path!r} (after {attempt} poll(s))")
         sys.exit(0)
     if attempt < POLL_ATTEMPTS:
         time.sleep(POLL_INTERVAL_S)
 
-sys.exit(f"FAIL: folder {folder_path!r} still present ~{POLL_ATTEMPTS * POLL_INTERVAL_S}s after uninstall")
+sys.exit(
+    f"FAIL: folder {folder_path!r} not confirmed removed ~{POLL_ATTEMPTS * POLL_INTERVAL_S}s "
+    f"after uninstall (last status={last!r}; 'present'=still there, 'unknown'=ambiguous CLI response)"
+)

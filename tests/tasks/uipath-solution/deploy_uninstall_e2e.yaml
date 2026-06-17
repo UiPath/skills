@@ -1,9 +1,11 @@
 task_id: skill-solution-deploy-uninstall
 description: >
   E2E (operate): agent publishes + deploys the committed e2e-stub solution,
-  confirms it is live, then UNINSTALLS it. Final state: the deploy is gone
-  from `deploy list` and its provisioned folder is removed. Covers the
-  `deploy uninstall` operate surface (cleanup lifecycle).
+  confirms it is live, then UNINSTALLS it. Final state: the deployment's
+  provisioned Orchestrator folder and the resources inside it are removed.
+  (Uninstall de-provisions; the deployment RECORD persists in `deploy list`
+  — it is not deleted. Verified against the live CLI + activate-and-manage.md.)
+  Covers the `deploy uninstall` operate surface (cleanup lifecycle).
 
   Requires a tenant — runs in CI (run-coder-eval.yml) or against a local
   `uip login`, not the tempdir gate. cleanup.py is a backstop if the agent's
@@ -39,9 +41,9 @@ initial_prompt: |
      provisioning a folder named `e2e-deploy-folder-<uuid8>` under
      `parent_folder_path` (activate it so it goes live).
   2. Confirm it is deployed.
-  3. Then completely UNINSTALL the deployment `e2e-deploy-<uuid8>` — remove
-     the deployment and its provisioned folder.
-  4. Confirm it is gone.
+  3. Then UNINSTALL the deployment `e2e-deploy-<uuid8>` — this tears down
+     its provisioned folder and the resources inside it.
+  4. Confirm the provisioned folder has been removed.
 
   Do NOT ask for approval. Do NOT pause.
 
@@ -63,7 +65,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Tenant: deploy is gone from the list and its folder is removed (polls; uninstall is eventually-consistent)"
+    description: "Tenant: the deployment's provisioned folder is removed (polls; uninstall is eventually-consistent and keeps the deploy-list record)"
     command: "python3 $TASK_DIR/check_deploy_uninstall.py"
     timeout: 180
     expected_exit_code: 0

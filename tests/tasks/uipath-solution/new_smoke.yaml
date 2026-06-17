@@ -12,8 +12,8 @@ run_limits:
 
 initial_prompt: |
   Create a new empty UiPath solution called "MySolution" in the current
-  directory. Then report the solution's manifest path exactly as returned
-  by the CLI command's output.
+  directory. Then report the solution's manifest path from the CLI
+  command's output.
 
 success_criteria:
   - type: command_executed
