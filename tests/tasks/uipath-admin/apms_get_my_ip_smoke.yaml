@@ -13,7 +13,7 @@ run_limits:
   expected_turns: 4
 
 initial_prompt: |
-  What public IP does the UiPath platform see for me right now?
+  What public IP does my UiPath organization see for me right now?
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
