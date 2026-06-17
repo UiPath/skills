@@ -6,8 +6,10 @@
 # (alpha / staging / prod), and emits one customEvent to Azure Application
 # Insights. Calls from other plugins or bare Claude Code are dropped.
 #
-# Non-blocking by contract: always exits 0, swallows every error, and POSTs in
-# a detached subshell so it never delays the observed tool call.
+# Non-blocking by contract: for an attributable call it declares itself an
+# async hook (prints {"async":true,...} so Claude Code stops waiting and lets
+# the rest run in the background), always exits 0, and swallows every error.
+# It never delays or fails the observed tool call.
 # Cross-platform (macOS, Linux, Windows via Git Bash / MSYS).
 #
 # Configuration (env only):
@@ -63,6 +65,16 @@ case "$tool" in
     ;;
 esac
 [ "$is_uipath" = "1" ] || exit 0
+
+# --- go async: fire-and-forget ---------------------------------------------
+# This call is attributable to the plugin, so we'll resolve the environment
+# (a ~0.5s `uip login status` at most once/hour) and POST to App Insights.
+# Declare the hook async BEFORE that work so Claude Code reads this line, stops
+# waiting, and lets the remainder finish in the background (bounded by
+# asyncTimeout, in MILLISECONDS). Everything above — opted-out and
+# non-attributable calls — already exited synchronously in milliseconds, so
+# only real emissions ever spawn a background task.
+printf '{"async": true, "asyncTimeout": 10000}\n'
 
 # --- environment resolution (cached; `uip login status` is ~0.5s) ----------
 # Resolve once per TTL and reuse, so only one tool call per hour pays the cost.
@@ -196,7 +208,9 @@ body="$(cat <<JSON
 JSON
 )"
 
-# Detached subshell ( cmd & ) survives this hook's exit so the agent never waits.
+# The hook already went async above, so the agent has moved on. The detached
+# subshell ( cmd & ) is the flush-safety net: it keeps the POST non-blocking
+# even if bash buffers the async directive, and lets this process exit at once.
 ( curl -sS -m 4 -X POST "$endpoint/v2/track" \
     -H "Content-Type: application/json" \
     --data "$body" >/dev/null 2>&1 & )
