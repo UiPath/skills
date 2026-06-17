@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "f8a9b0c1-d2e3-4204-ef50-61728394a5b6",
+      "State": "Faulted",
+      "ProcessName": "BatchPdfConvert",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-17T06:00:03.410Z",
+      "EndTime": "2026-06-17T06:00:09.880Z",
+      "CreationTime": "2026-06-17T06:00:03.180Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
