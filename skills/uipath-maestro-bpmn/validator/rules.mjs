@@ -517,25 +517,35 @@ export function validateErrorEndEvents(nodes) {
 // ===========================================================================
 // RULE 7: FakeJoinRule
 // ===========================================================================
-// On the canvas, the rule keys off the abstract node types `bpmn:Activity` and
-// `bpmn:Event`. On the reconstructed model we carry an `abstractType` derived
-// from the concrete BPMN type so this stays faithful. EndEvent is classified
-// as `bpmn:Event` on the canvas too, BUT the canvas models a converging end as
-// a gateway join, so it never sees a multi-incoming end event. We replicate the
-// frontend's observable behavior: tasks/activities and intermediate events flag
-// on multiple incoming; end events do not (converging onto one end is idiomatic
-// and the skill's own gateway-boundary-error fixture relies on it).
-function fakeJoinAbstractType(node) {
-  return node.abstractType; // "bpmn:Activity" | "bpmn:Event" | undefined
+// FAITHFUL-PORT NOTE (drift resolved by matching the frontend's *actual*
+// behavior — see validator/test/integration.test.mjs and README "FakeJoin"):
+//
+// The PO.Frontend FakeJoinRule fires only when `node.type === "bpmn:Activity"`
+// or `node.type === "bpmn:Event"` — a LITERAL string equality against the
+// abstract BPMN type names (FakeJoinRule.ts, isActivityOrEvent). However, on the
+// real canvas every node carries its CONCRETE `$type` (`bpmn:Task`,
+// `bpmn:EndEvent`, ...): bpmn-from-xml.ts sets `type: $type` and the validation
+// layer compares concrete types everywhere (ValidateBpmnFlowUtils compares
+// `=== "bpmn:StartEvent"`). The abstract names are never assigned to a real
+// node, so on exported BPMN this frontend rule is effectively DORMANT — it never
+// fires. The rule's own source carries a TODO admitting it must be rewritten to
+// walk the inherited-type chain, which it does not yet do.
+//
+// Our model reconstructs CONCRETE types from the XML, mirroring the canvas.
+// To match the frontend's observable behavior on real BPMN (and avoid the
+// false positives an earlier hand-port produced on valid files), we apply the
+// frontend's exact predicate: literal equality on `node.type`. This keeps the
+// port faithful — same inputs, same outputs as the frontend — rather than
+// inventing a stricter rule the frontend does not have.
+function isFrontendFakeJoinType(type) {
+  return type === "bpmn:Activity" || type === "bpmn:Event";
 }
 export function validateFakeJoins(nodes, edges, lookupMaps) {
   if (!nodes || !edges) return [];
   const errors = [];
   const { edgesByTarget } = lookupMaps;
   for (const node of nodes) {
-    const at = fakeJoinAbstractType(node);
-    const isFakeJoinCandidate = at === "bpmn:Activity" || (at === "bpmn:Event" && node.type !== "bpmn:EndEvent");
-    if (!isFakeJoinCandidate) continue;
+    if (!isFrontendFakeJoinType(node.type)) continue;
     const incoming = (edgesByTarget.get(node.id) ?? []).filter((e) => !e.type || e.type === "bpmn:SequenceFlow");
     if (incoming.length > 1) {
       errors.push({
@@ -740,6 +750,7 @@ export function validateNoAssignmentsInExpressions(nodes, edges) {
 // supplied by design-time enrichment that exported BPMN does not carry). This
 // keeps the rule a true subset of the canvas behavior with no false positives.
 export function validateRequiredFields(nodes) {
+  if (!nodes) return []; // frontend RequiredFieldsRule guards null inputs
   const errors = [];
   for (const node of nodes) {
     const uipath = node.data?.uipath;

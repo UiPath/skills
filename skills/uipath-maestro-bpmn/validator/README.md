@@ -22,8 +22,77 @@ node validate-bpmn.mjs <bpmn-file> [resources]
   unauthenticated CLI is reported as a NOTE, never a hard failure.
 
 ```bash
-npm test   # rule-coverage harness: asserts every rule fires on a crafted invalid
+npm test   # runs all three suites below; green = no drift from the frontend
 ```
+
+## Test suites (`test/`)
+
+`npm test` runs three layers and asserts all 28 rule codes are exercised:
+
+1. **Crafted-invalid XML coverage** (`run-tests.mjs`): for each rule, a minimal
+   BPMN that should trip exactly that rule's code, plus a check that valid twins
+   don't. Proves the full parse → model → rules pipeline end-to-end.
+2. **Ported PO.Frontend rule tests** (`test/ported-rule-tests.mjs`): a 1:1
+   translation of every `PO.Frontend/src/services/validation/bpmn/rules/*.test.ts`
+   case (162 assertions). Each case carries a `// FE:` comment naming the
+   originating frontend test and runs the same synthetic Node/Edge/CanvasState
+   graph through **our** rule engine. This is the primary drift detector: if our
+   port disagrees with a frontend test's expectation, this suite fails.
+3. **Integration over real `.bpmn` files** (`test/integration.test.mjs`): every
+   file in `test/fixtures/` is a real, externally-validated artifact (backend
+   BpmnParser/Worker/Athena/V2-E2E TestData, and PO.Frontend editor mocks),
+   bundled so the suite is self-contained in CI. `fixtures/known-good/` must
+   produce **zero** ERROR-severity findings; `fixtures/expected-findings/` assert
+   the exact ERROR codes the frontend would also raise (each verified by reading
+   the file). Set `MAESTRO_BPMN_TESTDATA` / `MAESTRO_BPMN_FRONTEND_MOCKS` to also
+   sweep a live corpus during development.
+
+## Drift log (hand-port vs. PO.Frontend source of truth)
+
+Surfaced by running the frontend's own test inputs and real `.bpmn` corpora
+through this port. Each was either **fixed to match the frontend** or
+**justified and documented**.
+
+1. **Empty `<conditionExpression/>` crash — FIXED.** Legacy `model:`-namespace
+   files (and any empty condition element) parse to a moddle object with no
+   `.body`; `model.mjs` fell back to the moddle object itself, crashing the
+   string-based rules (`expression.startsWith is not a function`). Now an empty
+   condition element is treated as "no condition" (frontend behavior).
+2. **`FakeJoinRule` over-firing — FIXED (match frontend behavior).** The frontend
+   rule matches only the **literal** abstract types `"bpmn:Activity"` /
+   `"bpmn:Event"`. On the real canvas every node carries its **concrete** `$type`
+   (`bpmn:Task`, `bpmn:EndEvent`, …; `bpmn-from-xml.ts` sets `type: $type`), so
+   the rule is **dormant on exported BPMN** — its own source has a `TODO` noting
+   it must be rewritten to walk the inherited-type chain. An earlier hand-port
+   fired `FAKE_JOIN` on concrete activities/events, producing false positives on
+   many valid real files. The port now applies the frontend's exact predicate, so
+   it is faithful (same inputs → same outputs). The rule's logic is proven in the
+   ported suite (which feeds literal abstract types, like the frontend test); it
+   is intentionally not triggerable via real XML.
+3. **`validateRequiredFields(null)` crash — FIXED.** The frontend rule guards
+   `if (!nodes || !edges) return []`; the port now guards null inputs too.
+4. **`VARIABLE_DOES_NOT_EXIST` false positives on node-output variables — FIXED.**
+   A node's `<uipath:output var="x">` **declares** variable `x` (frontend
+   `mapNodeOutputsToVariables`: `id: v.var`), available to downstream nodes/edges.
+   `collectKnownVariableIds` only gathered declared `uipath:variables` blocks, so
+   a gateway condition reading a variable written by an upstream script/task
+   output false-positived. Now node outputs' `var`/`name`/`canonicalId` are
+   included in the known-id set. Also fixed: script-task IO lives under
+   `uipath:Mapping` (same shape as `uipath:Activity`/`Event`), which the model now
+   recognizes.
+
+### Justified, intentional divergences (documented, not bugs)
+
+- **`FAKE_JOIN` dormant on real BPMN** (see #2): faithful to the frontend, which
+  cannot fire it on concrete-typed canvas nodes.
+- **`RequiredFields` is a conservative subset** offline (see the parity note
+  below): flags present-but-empty required fields, not absent ones.
+- **`VARIABLE_DOES_NOT_EXIST` is the existence half** of the frontend's variable
+  validation. The frontend additionally emits a *separate* `VARIABLE_NOT_SET`
+  WARNING for variables that exist but aren't reachable in flow order; this port
+  intentionally implements only the existence check (declared/produced anywhere),
+  which is why some backend parser fixtures with genuinely dangling `vars.*`
+  references are listed as expected-findings — the frontend would flag them too.
 
 ## Architecture (Phase 1 → Phase 2)
 

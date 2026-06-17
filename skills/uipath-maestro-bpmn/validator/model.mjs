@@ -134,7 +134,11 @@ function mapVariables(varsEl) {
 // run offline with the same `field.required && isNilOrEmpty(value)` semantics
 // the canvas uses.
 function buildNodeUiPath(el, requiredFieldIndex) {
-  const act = findExt(el, "uipath:Activity") ?? findExt(el, "uipath:Event");
+  // Script tasks / BPMN.Variables nodes carry their IO under uipath:Mapping,
+  // which has the same { type, context, input, output } shape as
+  // uipath:Activity / uipath:Event. Treat all three uniformly so node-output
+  // variables (e.g. a script writing `var="x"`) are recovered.
+  const act = findExt(el, "uipath:Activity") ?? findExt(el, "uipath:Event") ?? findExt(el, "uipath:Mapping");
   const em = findExt(el, "uipath:ErrorMapping");
   const vars = findExt(el, "uipath:Variables");
   let uipath;
@@ -218,9 +222,16 @@ function buildEdge(el, parent) {
   const data = {};
   if (el.name) data.label = el.name;
   if (el.conditionExpression) {
+    // A FormalExpression moddle element carries its text in `.body`; an empty
+    // `<conditionExpression/>` element has no `.body` (undefined). Only a real
+    // string body is a condition — never fall back to the moddle object itself,
+    // which would crash the string-based rules (matches frontend: an empty
+    // conditionExpression element means "no condition expression").
     let body = el.conditionExpression.body ?? el.conditionExpression;
-    if (typeof body === "string" && body && !body.startsWith("=")) body = `=${body}`;
-    data.conditionExpression = body;
+    if (typeof body === "string") {
+      if (body && !body.startsWith("=")) body = `=${body}`;
+      data.conditionExpression = body;
+    }
   }
   // defaultFlow: source gateway's @default points to this flow.
   const source = el.sourceRef;
@@ -378,6 +389,16 @@ export function collectKnownVariableIds(canvasState) {
       for (const v of nv?.inputs ?? []) add(v);
       for (const v of nv?.inputOutputs ?? []) add(v);
       for (const v of nv?.outputs ?? []) add(v);
+      // A node's outputs each DECLARE a variable via their `var` attribute
+      // (frontend mapNodeOutputsToVariables: `id: v.var`). These variables are
+      // available to downstream nodes/edges, so they count as known. Without
+      // this, a gateway condition reading a variable written by an upstream
+      // script/task output false-positives as VARIABLE_DOES_NOT_EXIST.
+      for (const o of n.data?.uipath?.outputs ?? []) {
+        if (o.var) ids.add(o.var);
+        if (o.name) ids.add(o.name);
+        if (o.canonicalId) ids.add(o.canonicalId);
+      }
     }
   }
   return ids;

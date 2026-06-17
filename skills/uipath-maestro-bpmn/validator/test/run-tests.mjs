@@ -161,19 +161,13 @@ ${FLOW("S", "E", "S_E")}`,
   ),
 );
 
-// 7 FAKE_JOIN: task with two incoming flows
-add(
-  "FAKE_JOIN",
-  DEFS(
-    PROC(
-      `    <bpmn:startEvent id="S"><bpmn:outgoing>S_T</bpmn:outgoing></bpmn:startEvent>
-    <bpmn:task id="T0"><bpmn:outgoing>T0_T</bpmn:outgoing></bpmn:task>
-    <bpmn:task id="T"><bpmn:incoming>S_T</bpmn:incoming><bpmn:incoming>T0_T</bpmn:incoming></bpmn:task>
-${FLOW("S", "T", "S_T")}
-${FLOW("T0", "T", "T0_T")}`,
-    ),
-  ),
-);
+// 7 FAKE_JOIN: NOTE — this rule fires only on literal abstract node types
+// ("bpmn:Activity"/"bpmn:Event"), which the frontend canvas never assigns to a
+// real node (it uses concrete $types), so the rule is dormant on exported BPMN.
+// It is therefore NOT triggerable via this XML harness; the rule LOGIC is proven
+// at the model level in test/ported-rule-tests.mjs (FakeJoinRule suite, which
+// mirrors the frontend unit test verbatim). We mark it as covered there.
+// (No XML case added; see FakeJoinRule drift note in rules.mjs / README.)
 
 // 8 SAME_POOL_MESSAGE_FLOW: message flow between two nodes in the same pool
 add(
@@ -396,9 +390,10 @@ ${FLOW("G", "B", "G_B")}`,
   ),
 );
 
-// ---- Run ----------------------------------------------------------------
+// ---- Run: 1) crafted-invalid XML coverage harness -----------------------
 let failures = 0;
 const fired = new Set();
+console.log("== Crafted-invalid XML coverage ==");
 for (const c of cases) {
   const findings = await findingsFor(c.xml);
   const codes = findings.map((f) => f.code);
@@ -408,7 +403,42 @@ for (const c of cases) {
   if (!ok) failures++;
   console.log(`${tag}  ${c.code}${c.note ? " (" + c.note + ")" : ""}  -> [${[...new Set(codes)].join(", ") || "none"}]`);
 }
+console.log(`${cases.length} crafted cases, ${cases.length - failures} passed, ${failures} failed.`);
 
-console.log(`\n${cases.length} cases, ${cases.length - failures} passed, ${failures} failed.`);
-console.log(`distinct rule codes fired: ${fired.size}`);
+// FAKE_JOIN is dormant on real/exported BPMN (matches the frontend — it keys off
+// abstract node types the canvas never assigns). Its logic is proven in the
+// ported rule suite, so it is intentionally not triggerable via this XML harness.
+import { RULE_CODES } from "../rules.mjs";
+
+// ---- Run: 2) ported per-rule tests (1:1 with PO.Frontend rule tests) -----
+console.log("\n== Ported PO.Frontend rule tests ==");
+const ported = (await import("./ported-rule-tests.mjs")).default;
+console.log(`${ported.passed + ported.failed} ported assertions, ${ported.passed} passed, ${ported.failed} failed.`);
+for (const f of ported.failures) console.log("  FAIL " + f);
+failures += ported.failed;
+// Codes the ported suite positively asserts (incl. FAKE_JOIN, dormant in XML).
+const COVERED_BY_PORTED = ported.firedCodes;
+
+// ---- Run: 3) integration over real .bpmn files ---------------------------
+console.log("\n== Integration over real .bpmn files ==");
+const runIntegration = (await import("./integration.test.mjs")).default;
+const integ = await runIntegration({ verbose: true });
+console.log(
+  `${integ.ranFiles} real files (${integ.knownGood} known-good, ${integ.expected} expected-findings), ${integ.passed} passed, ${integ.failed} failed.`,
+);
+for (const f of integ.failures) console.log("  FAIL " + f);
+failures += integ.failed;
+
+// ---- Coverage assertion: every rule code is exercised somewhere -----------
+const portedOnly = [...COVERED_BY_PORTED].filter((c) => !fired.has(c));
+const portedCoverageNote = portedOnly.length ? ` (+${portedOnly.join(",")} via ported suite)` : "";
+const allFired = new Set([...fired, ...COVERED_BY_PORTED]);
+const missing = RULE_CODES.filter((c) => !allFired.has(c));
+console.log(`\nRule codes exercised: ${allFired.size}/${RULE_CODES.length}${portedCoverageNote}`);
+if (missing.length) {
+  console.log(`  MISSING coverage for: ${missing.join(", ")}`);
+  failures += missing.length;
+}
+
+console.log(`\n${failures === 0 ? "ALL GREEN" : failures + " FAILURE(S)"}`);
 process.exit(failures === 0 ? 0 : 1);
