@@ -162,6 +162,7 @@ uip admin audit tenant export \
 | Flag | Required | Description |
 |---|---|---|
 | `--output-path <dir>` | **yes** | **Base directory** for the export (created if missing). **Pass a directory only — never a filename or extension**; the CLI generates the per-export name. A uniquely-named output is created inside it — a folder of day-wise JSON files (`json`) or a single `.csv` (`csv`), named `audit_<from>_<to>_<generated-at>` (generated-at to the second) so repeated exports never collide. Resolved to absolute internally. |
+| `--output-file <dir>` | no | **Deprecated** alias for `--output-path` (kept for backward compatibility; treated as a base directory, not a file). Prefer `--output-path` — using `--output-file` emits a deprecation warning. |
 | `--from-date <iso>` | **yes** | Start of time interval. Both bounds are required by Commander before any HTTP call. |
 | `--to-date <iso>` | **yes** | End of time interval. |
 | `--file-format <json\|csv>` | no | Output shape. `json` (default) = a folder holding one `<YYYY-MM-DD>.json` file per UTC day. `csv` = every event merged into a single RFC 4180 CSV under a shared header. Invalid values fail before any HTTP call with `Invalid --file-format '<v>'. Use 'json' or 'csv'.` |
