@@ -38,7 +38,7 @@
 {"id": "uipath-admin-038", "prompt": "Poll the status of the tenant-creation operation I just started", "expected_skill": "uipath-admin"}
 {"id": "uipath-admin-039", "prompt": "Enable the tenant we disabled last week", "expected_skill": "uipath-admin"}
 {"id": "uipath-admin-040", "prompt": "Update our organization's display name", "expected_skill": "uipath-admin"}
-{"id": "uipath-admin-041", "prompt": "What public IP does the UiPath platform see for me?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-041", "prompt": "Add my current outbound IP to the org's IP allowlist, then turn on enforcement", "expected_skill": "uipath-admin"}
 {"id": "uipath-admin-042", "prompt": "Add our office CIDR range to the IP allowlist", "expected_skill": "uipath-admin"}
 {"id": "uipath-admin-043", "prompt": "Turn on IP-restriction enforcement for the org", "expected_skill": "uipath-admin"}
 {"id": "uipath-admin-044", "prompt": "Add a bypass rule so our webhook endpoint skips IP allowlisting", "expected_skill": "uipath-admin"}

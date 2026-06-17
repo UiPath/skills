@@ -5,7 +5,6 @@
 {"id": "uipath-agents-005", "prompt": "Help me decide between low-code and coded agent for my use case", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-006", "prompt": "Create a low-code agent.json from scratch with a system prompt and one Orchestrator process tool", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-007", "prompt": "Authenticate the uip CLI to my tenant so I can run my coded agent", "expected_skill": "uipath-agents"}
-{"id": "uipath-agents-008", "prompt": "uip login keeps failing with invalid_client when I pass client-id and client-secret in a GitHub Action for my coded agent \u2014 what am I missing?", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-009", "prompt": "Run my coded agent locally with uip codedagent run", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-010", "prompt": "Pack and publish my coded agent to my Personal Workspace feed", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-011", "prompt": "Deploy this LangGraph agent to Orchestrator", "expected_skill": "uipath-agents"}
@@ -26,7 +25,7 @@
 {"id": "uipath-agents-026", "prompt": "Populate my bindings.json so connections, assets, and processes can be overridden at deploy time", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-027", "prompt": "My bindings.json is an empty list even though I'm using an Outlook connection in code \u2014 fix it", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-028", "prompt": "Define inputs and outputs for my agent in entry-points.json", "expected_skill": "uipath-agents"}
-{"id": "uipath-agents-029", "prompt": "Add a new package dependency to my pyproject.toml and rebuild", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-029", "prompt": "Add a new dependency to my LangGraph coded agent's pyproject.toml and rebuild the agent", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-030", "prompt": "Switch the LLM model my coded agent uses from gpt-4.1 to claude sonnet via the UiPath LLM Gateway", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-031", "prompt": "I want my coded agent to call another UiPath agent as a tool \u2014 how do I do that?", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-032", "prompt": "Add tracing to my coded agent so I can see tool calls and LLM hops in the trace viewer", "expected_skill": "uipath-agents"}
@@ -51,8 +50,8 @@
 {"id": "uipath-agents-051", "prompt": "Call a Slack channel from a Python UiPath coded agent via Integration Service", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-052", "prompt": "Use sdk.connections.invoke_activity to file a Jira issue from my coded agent", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-053", "prompt": "How do I write an ActivityMetadata literal for a curated Integration Service activity?", "expected_skill": "uipath-agents"}
-{"id": "uipath-agents-054", "prompt": "My coded agent's send-mail call returns 'Unable to parse multipart body' — what's wrong with my ActivityMetadata?", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-054", "prompt": "My coded agent's send-mail call returns 'Unable to parse multipart body' \u2014 what's wrong with my ActivityMetadata?", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-055", "prompt": "Bind a Slack connection in bindings.json for a coded Python agent so retrieve(<key>) works locally", "expected_skill": "uipath-agents"}
-{"id": "uipath-agents-056", "prompt": "Sync my coded agent's connection resource overwrite — sdk.connections.retrieve is returning CNS1026 locally", "expected_skill": "uipath-agents"}
-{"id": "uipath-agents-057", "prompt": "Curated Jira create_issue keeps silently ignoring my custom field — how do I tell if it's a rename mismatch?", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-056", "prompt": "Sync my coded agent's connection resource overwrite \u2014 sdk.connections.retrieve is returning CNS1026 locally", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-057", "prompt": "Curated Jira create_issue keeps silently ignoring my custom field \u2014 how do I tell if it's a rename mismatch?", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-058", "prompt": "Add a Salesforce integration tool to my LangGraph coded agent so the model can call it", "expected_skill": "uipath-agents"}
