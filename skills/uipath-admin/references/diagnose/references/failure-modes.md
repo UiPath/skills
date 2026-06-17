@@ -118,7 +118,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 **Investigation:**
 1. Resolve user: `uip admin users list --search "<USER_EMAIL>" --output json`
 2. Check effective access: `uip admin authorization check-access "<USER_ID>" --output json`
-3. Narrow to service: `check-access "<USER_ID>" --service <SERVICE> --output json`
+3. Narrow to service: `uip admin authorization check-access "<USER_ID>" --service <SERVICE> --output json`
 4. Compare against required permission: `uip admin authorization permissions list --service <SERVICE> --output json`
 5. Label each result as `direct` or `inherited from <Group>` — see [check-access.md](../../authorization/check-access.md)
 
@@ -153,8 +153,8 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 **Cause:** Permissions are service-scoped — an Orchestrator role does NOT grant DU, IXP, or other service access.
 
 **Investigation:**
-1. Check without service filter: `check-access "<USER_ID>" --output json`
-2. Check with service filter: `check-access "<USER_ID>" --service documentunderstanding --output json`
+1. Check without service filter: `uip admin authorization check-access "<USER_ID>" --output json`
+2. Check with service filter: `uip admin authorization check-access "<USER_ID>" --service documentunderstanding --output json`
 3. Compare — the missing service's permissions will be absent
 4. Check role's `ownerServiceName` to confirm it belongs to the wrong service
 
