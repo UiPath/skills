@@ -2,6 +2,8 @@
 
 Execute approved `tasks.md` plan, building `caseplan.json` via direct JSON edits per plugin. Validate, then optionally debug and publish. Five phases: **Phase 2 Prototyping** → **Phase 3 Implementation** → **Phase 4 Validate** → **Phase 5 Debug** → **Phase 6 Publish**.
 
+> **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip this execution pipeline — see [brownfield.md](brownfield.md).
+
 > **Prerequisite:** User must have explicitly approved `tasks.md` from [Phase 1 Planning](planning.md) before starting.
 >
 > **Input:** `tasks/tasks.md` — the complete handoff artifact.

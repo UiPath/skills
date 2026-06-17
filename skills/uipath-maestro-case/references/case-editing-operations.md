@@ -10,6 +10,7 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 
 | Concern | Requirement |
 |---|---|
+| Task schema (`taskTypeId`, `inputs`, `outputs`) | Never hand-author. Source from `registry-resolved.json` / `uip maestro case tasks describe` — see [registry-discovery.md](registry-discovery.md). Hand-written schemas fail validation. |
 | ID generation | Generate IDs per the ID Generation section below using the `prefixedId(prefix, count)` algorithm |
 | `elementId` on tasks | Compute and write `${stageId}-${taskId}` on every task |
 | Stage position | Count existing stages first; compute `{ x: 100 + existingStageCount * 500, y: 200 }`; then write |
@@ -134,6 +135,17 @@ Used for: debugging, downstream cross-task reference resolution within the same 
 
 ---
 
+## Expression Prefixes
+
+Every `=`-prefixed value written into `caseplan.json` (`data.inputs[].value`, condition/rule `conditionExpression`, connector body fields) must use the wrap form its **sink** dispatches to — wrong wrap is a silent runtime fault. The two-line rule:
+
+- **Value lookup** (`data.inputs[].value` referencing one identifier): `=vars.<id>` or `=bindings.<id>` — no dots, no operators.
+- **JS eval** (everything else — `conditionExpression`, connector body fields, dotted access, operators, `=metadata.*`): `=js:<expr>`. Conditions reference only `vars.X` and `metadata` (no `event` namespace).
+
+Full sink-to-form table, the lookup-vs-JS-eval dispatch, and connector-trigger filter forms: [bindings-and-expressions.md § Canonical form per sink](bindings-and-expressions.md#canonical-form-per-sink).
+
+---
+
 ## Primitive Operations
 
 ### Tool usage — mandatory
@@ -174,6 +186,12 @@ Procedure per section:
    - **Large sections (≥10 T-entries)** — single whole-section write replacing the section's container (e.g., entire `schema.nodes` array for stages, a stage's full `data.tasks` array for tasks within that stage). Compose the complete post-section state in reasoning from the Read snapshot, then emit via one Edit (replacing the container slice) or one Write (whole-file rewrite) — Write only when the per-section Edit slice is too large to express as a single unambiguous `old_string`/`new_string` pair.
 3. **Skip the re-Read between sibling Edits** — Edit's tool result confirms applied state in context; explicit re-Read is redundant for in-memory correctness.
 4. **One `validate`** at section boundary (Pre-flight Item 12 above).
+
+**Same-file sequential Edits — anchoring.** N Edits against `caseplan.json` in one section serialize in order; each later Edit runs against the text the earlier ones already changed. `caseplan.json` has keys that recur across nodes (`"tasks"`, `"data"`, `"entryConditions"`, `"exitConditions"`, `"inputs"`) — a bare recurring key is NOT a safe anchor.
+
+- **Anchor each Edit on a unique value** — the target stage/task's `"id": "<Stage_… | t…>"` — then extend `old_string` to the slice you mutate. Never anchor on a bare `"tasks": [` or `"entryConditions": [`.
+- **Extend until the match is unique within the whole file**, not just within the intended node.
+- An `old_string` that overlaps text a prior Edit in the same turn removed or shifted fails with "string not found" — order Edits so each targets an untouched slice, or re-Read if a later Edit depends on an earlier one's output.
 
 **Tool primitive choice.** Edit is the default — it preserves untouched fields automatically. Whole-file Write rebuilds the file from agent reasoning and risks silently dropping fields the agent forgot; use it only when (a) the section has ≥10 T-entries AND (b) the agent has the complete file state in context from the Read at step 1 AND (c) every untouched root-level field, sibling section, and node not mutated by this section will be copied verbatim. When in doubt, fall back to N Edits — the 12-item Pre-flight Checklist exists because field drops have happened, and Edit is the structural defense.
 
@@ -284,6 +302,16 @@ No edges are involved — reachability is entirely condition-driven.
 
 See [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md). The upgrade edits the task's `data` field in place to add `taskTypeId`, schema-driven `inputs`/`outputs`, and any required context — keeping the task's `id` and `elementId` unchanged so any conditions referencing it remain valid.
 
+### Replace a trigger with a different type
+
+Swap a trigger's type in place (e.g., manual → timer, or manual → event) — keep the node `id` so `id-map.json` and any references stay valid.
+
+1. Read `caseplan.json`.
+2. Locate the Trigger node by `id`. Replace its `data.uipath` block with the target type's shape (`serviceType` + type-specific fields) per the target plugin's recipe — [triggers/manual](plugins/triggers/manual/impl-json.md), [triggers/timer](plugins/triggers/timer/impl-json.md), [triggers/event](plugins/triggers/event/impl-json.md). Preserve `data.label`, `data.description`, and `data.parentElement` (secondary triggers).
+3. Update the matching `entry-points.json` entry if the trigger's `displayName`/`input`/`output` shape changes; the `filePath` `#<triggerId>` fragment stays (id unchanged).
+4. Edit — narrow slices targeting that node's `data.uipath` and the `entry-points.json` entry. Never whole-file Write.
+5. Validate at the section boundary.
+
 ### Re-wire a stage transition — RETIRED (no edges)
 
 Transitions are not edges. To change where a stage flows, edit the relevant stage's entry/exit conditions (the target stage's `stage-entry-conditions` rule, and the source's `stage-exit-conditions` when it diverges). See the conditions plugins.
@@ -311,3 +339,27 @@ On failure: fix the reported issue (usually a missing field, malformed ID, or or
 - **Do NOT use whole-file Write mid-section.** Whole-file Write between sibling T-entries inside a section bypasses the section-entry Read snapshot and risks silently dropping fields. Use Edit per T-entry, OR collapse the entire section into one whole-section Write at section boundary when T-entry count ≥10 (per § Per-section batch write contract).
 - **Do NOT skip TaskUpdate per T-entry.** TaskUpdate is the audit trail under the per-section batched contract — reviewers track T-by-T progress there, not in per-T-entry file diffs. The audit trail must remain T-by-T even when the file diff collapses to one whole-section write.
 - **Do NOT emit standalone text-only assistant turns between Edits.** Each costs ~5s inference + ~250K cache replay for zero work. Bundle status text into the same turn as the next tool_use (text block + tool_use block in one content array), or omit entirely — TaskUpdate already shows progress.
+
+---
+
+## Quick Reference — Operation to Plugin
+
+Each operation's JSON shape lives in its plugin's `impl-json.md`. This file covers only the cross-cutting mechanics above.
+
+| I need to... | Go to |
+|---|---|
+| Scaffold the case root + sidecar files (T01) | [plugins/case/impl-json.md](plugins/case/impl-json.md) |
+| Add a Stage / ExceptionStage | [plugins/stages/impl-json.md](plugins/stages/impl-json.md) |
+| Add a manual / timer / event trigger | [triggers/manual](plugins/triggers/manual/impl-json.md) · [triggers/timer](plugins/triggers/timer/impl-json.md) · [triggers/event](plugins/triggers/event/impl-json.md) |
+| Add an action / agent / RPA / process task | [tasks/action](plugins/tasks/action/impl-json.md) · [tasks/agent](plugins/tasks/agent/impl-json.md) · [tasks/rpa](plugins/tasks/rpa/impl-json.md) · [tasks/process](plugins/tasks/process/impl-json.md) |
+| Add an api-workflow / case-management / wait-for-timer task | [tasks/api-workflow](plugins/tasks/api-workflow/impl-json.md) · [tasks/case-management](plugins/tasks/case-management/impl-json.md) · [tasks/wait-for-timer](plugins/tasks/wait-for-timer/impl-json.md) |
+| Add a connector-activity task / connector trigger | [tasks/connector-activity](plugins/tasks/connector-activity/impl-json.md) · [tasks/connector-trigger](plugins/tasks/connector-trigger/impl-json.md) |
+| Write stage entry / exit conditions | [stage-entry-conditions](plugins/conditions/stage-entry-conditions/impl-json.md) · [stage-exit-conditions](plugins/conditions/stage-exit-conditions/impl-json.md) |
+| Write task entry / case exit conditions | [task-entry-conditions](plugins/conditions/task-entry-conditions/impl-json.md) · [case-exit-conditions](plugins/conditions/case-exit-conditions/impl-json.md) |
+| Add SLA / escalation | [plugins/sla/impl-json.md](plugins/sla/impl-json.md) |
+| Add logging | [plugins/logging/impl-json.md](plugins/logging/impl-json.md) |
+| Add global variables / I/O binding / variable bindings | [global-vars](plugins/variables/global-vars/impl-json.md) · [io-binding](plugins/variables/io-binding/impl-json.md) · [bindings](plugins/variables/bindings/impl-json.md) |
+| Bind an input value or expression | [bindings-and-expressions.md](bindings-and-expressions.md) |
+| Sync `bindings_v2.json` | [bindings-v2-sync.md](bindings-v2-sync.md) |
+| Upgrade a placeholder task | [placeholder-tasks.md](placeholder-tasks.md) |
+| Resolve task schemas from the registry | [registry-discovery.md](registry-discovery.md) |
