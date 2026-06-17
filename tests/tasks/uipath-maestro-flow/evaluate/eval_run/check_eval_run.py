@@ -5,7 +5,10 @@ Reads `eval-results.json` (the JSON the agent saved from
 `uip maestro flow eval run results <run_id> --verbose --output json`) and
 asserts:
 
-  1. Top-level `Code` is `MaestroFlowEvalRunResults`.
+  1. Top-level `Code` is the eval-run-results envelope code. Accept both the
+     current `FlowEvalRunResults` and the legacy `MaestroFlowEvalRunResults`
+     the CLI emitted before the `eval run *` codes dropped the `Maestro`
+     prefix.
   2. There is at least 1 per-data-point row.
   3. Every row has `Status == "Completed"`.
   4. No row has a non-empty `Error`.
@@ -30,6 +33,9 @@ from pathlib import Path
 RESULTS_PATH = Path("eval-results.json")
 STATUS_PATH = Path("eval-run-status.json")
 EXPECTED_DATA_POINTS = 1
+# Current CLI emits `FlowEvalRunResults`; older versions emitted the
+# `Maestro`-prefixed code. Accept both so the checker survives the rename.
+RESULTS_CODES = ("FlowEvalRunResults", "MaestroFlowEvalRunResults")
 
 
 def _fail(msg: str) -> None:
@@ -110,9 +116,9 @@ def _extract_rows(doc: dict) -> list[dict]:
     minor key-name drift by walking common containers.
     """
     code = doc.get("Code")
-    if code != "MaestroFlowEvalRunResults":
+    if code not in RESULTS_CODES:
         _fail(
-            f'eval-results.json `Code` should be "MaestroFlowEvalRunResults", '
+            f'eval-results.json `Code` should be one of {RESULTS_CODES}, '
             f'got {code!r}'
         )
     data = doc.get("Data") or {}
