@@ -1,0 +1,6 @@
+{
+  "Name": "BatchLetterFill",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Replace Text COM-busy failure (RPC_E_SERVERCALL_RETRYLATER) when WINWORD.EXE is busy or stalled on a background dialog.",
+  "MainFile": "Main.xaml"
+}
