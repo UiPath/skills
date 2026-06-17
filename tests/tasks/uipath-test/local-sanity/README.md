@@ -9,10 +9,10 @@ Behavioural eval scenarios for the **`uipath-test`** skill (the `uip tm` command
 cd tests
 SKILLS_REPO_PATH=$(cd .. && pwd) \
   .venv/bin/coder-eval run "tasks/uipath-test/local-sanity/**/*.yaml" \
-  -e experiments/pe.yaml -j 6 --no-preserve
+  -j 6 --no-preserve
 ```
 
-`experiments/pe.yaml`: `max_turns: 60`, `turn_timeout: 450`, `task_timeout: 700`. Execution/link-automation scenarios use the published [`fixtures/TestManagerSmoke/`](fixtures/TestManagerSmoke/README.md) automation (folder `Shared/uipath-test`, key `fcf79fe1-147b-4000-82b3-9eb81b165452`, serverless robot pre-assigned).
+Execution/link-automation scenarios use the published [`fixtures/TestManagerSmoke/`](fixtures/TestManagerSmoke/README.md) automation (folder `Shared/uipath-test`, key `fcf79fe1-147b-4000-82b3-9eb81b165452`, serverless robot pre-assigned).
 
 ## Legend
 - **Tier** — `Smoke` (`gating:must-pass`) · `Edge` (`gating:edge-case`)
