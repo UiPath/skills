@@ -19,6 +19,7 @@ Failures originate at distinct layers — COM/Interop availability (step 1), fil
 - **Replace Text in Document** (display name "Replace Text in Document" / classic "Replace Text"; modern `ReplaceTextInDocument` inside `Use Word File`, classic `WordReplaceText` inside `Word Application Scope`) — find a `Search` string in the open document and substitute `Replace`. Runs against the document held by the surrounding scope. Classic versions cap `Search`/`Replace` at 256 characters.
 - **Read Text** (display name "Read Text") — extract the document's text. Two surfaces: the **Word-pack** `Read Text` reads the document held open by a surrounding `Use Word File` / `Word Application Scope` (no file input of its own); the **standalone** `Read Text` under `System > File > Word Document` takes a file path directly (no container) but is OpenXML `.docx`-only.
 - **Export to PDF** (`WordExportToPdf`, display name "Export to PDF" / "Save Document as PDF") — export the open document to a PDF at a target path, via Word **Interop** inside a `Word Application Scope`. Does **not** auto-create the output directory.
+- **Append Text** (`WordAppendText`, display name "Append Text") — append text to the document. Two surfaces (like Read Text): the **App-Integration** `Append Text` appends to the document held open by a surrounding `Word Application Scope` / `Use Word File` (no file input of its own); the **standalone** `Append Text` under the **Word Document** category takes a file path directly (no container, no Word install needed).
 
 ## Common Failure Patterns
 
@@ -52,6 +53,12 @@ Failures originate at distinct layers — COM/Interop availability (step 1), fil
 - **Malformed output path / missing `.pdf`** — the File Path is built from unformatted concatenation (no `.pdf` suffix, missing/doubled separator, empty variable segment). Fix: `Path.Combine(folder, name & ".pdf")` and validate the pieces.
 - **COM interop hang / crash / `COMException`** — an orphaned `WINWORD.EXE` or a locked input document blocks the export's COM call. Fix: Kill Process WINWORD before the scope, ensure the input is free; persistent → an Invoke Code C# `ExportAsFixedFormat` fallback.
 - **`TargetInvocationException` / outdated package** — same design-time version-mismatch signature as Replace Text; update `UiPath.Word.Activities` (see the Replace Text version-mismatch playbook).
+
+### Append Text
+
+- **"Activity is valid only inside WordApplicationScope"** — the App-Integration `Append Text` is outside a `Word Application Scope` / `Use Word File`; it has no file input of its own. Fix: nest it in a scope, or use the standalone `Word Document` `Append Text` (takes a file path).
+- **"Archive file cannot be size zero"** — the target `.docx` is a 0-byte file (a renamed `.txt`, or a failed/truncated write), not a valid OpenXML package. Fix: delete it + `Create if not exists`, or fix the upstream that produced the empty file.
+- **Shared with other Word activities** — "make sure Word application is installed" (→ word-scope-com-not-installed), file lock / corrupted document (→ word-scope-file-corrupted), and missing/unresolved activity from a package version issue (→ replace-text-version-mismatch).
 
 ## Package
 
