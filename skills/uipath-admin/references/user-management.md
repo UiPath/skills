@@ -103,3 +103,5 @@ uip admin users list --sort-by "UserName" --sort-order "asc" --output json
 | `No fields to update` | No flags provided to update | Provide `--email`, `--name`, or `--surname` |
 | `user not found` | Invalid user ID | Run `users list` to find the correct ID |
 | `HTTP 403` | Insufficient permissions | User needs admin role in the organization |
+
+> **Troubleshoot:** For login failures, see [troubleshooting/identity-auth-failures.md → Playbook 1](troubleshooting/identity-auth-failures.md#playbook-1-user-cannot-log-in). For permission denied, see [troubleshooting/permission-denied-troubleshooting.md → Playbook 6](troubleshooting/permission-denied-troubleshooting.md#playbook-6-user-gets-http-403-permission-denied).

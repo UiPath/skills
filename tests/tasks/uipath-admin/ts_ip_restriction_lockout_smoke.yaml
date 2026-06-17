@@ -1,0 +1,42 @@
+task_id: skill-admin-ts-ip-restriction-lockout-smoke
+description: >
+  Troubleshoot smoke: agent diagnoses an IP restriction lockout by
+  checking enforcement status and comparing the colleague's IP against
+  the allowlist. Validates Playbook 9.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, smoke, mode:diagnose, troubleshoot, apms, ip-restriction]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  I just enabled IP restriction enforcement and now my colleague
+  can't access the UiPath org from their office. How do I diagnose
+  and fix this?
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked enforcement status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+enforcement\s+get\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed IP ranges to check allowlist"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+ip-ranges\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

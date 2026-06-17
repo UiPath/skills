@@ -140,3 +140,5 @@ Used by: CI/CD pipelines, external API integrations, service-to-service calls, a
 | `scope not found` | Invalid scope name | Run `uip admin scopes list` to find valid scopes |
 | Non-confidential + `--app-scope` | Public apps can't use app scopes | Use `--user-scope` only |
 | User scopes without redirect URI | OAuth2 auth code flow needs redirect | Add `--redirect-uri` |
+
+> **Troubleshoot:** For OAuth2 flow failures (scope mismatches, expired secrets, grant type confusion), see [troubleshooting/identity-auth-failures.md → Playbook 2](troubleshooting/identity-auth-failures.md#playbook-2-external-app-oauth2-flow-failing).

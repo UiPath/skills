@@ -71,3 +71,5 @@ uip admin smtp delete --output json
 | `No fields to update` | No SMTP flags provided | Provide at least one flag (e.g., `--host`, `--port`) |
 | SMTP test fails | Incorrect settings | Verify host, port, credentials, and SSL settings |
 | `HTTP 403` | Insufficient permissions | Needs admin role |
+
+> **Troubleshoot:** For email delivery failures (connection refused, auth errors, SSL mismatch), see [troubleshooting/identity-auth-failures.md → Playbook 5](troubleshooting/identity-auth-failures.md#playbook-5-smtp-emails-not-delivering).

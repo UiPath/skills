@@ -71,3 +71,5 @@ uip admin pat regenerate <TOKEN_ID> --expiration "2028-01-15" --output json
 | `limit reached` | Max tokens per user (default 5) | Revoke unused tokens first |
 | `scope not found` | Invalid scope name | Run `uip admin scopes list` to find valid scopes |
 | `HTTP 403` | Listing all tokens without admin role | Omit `--scope all` to list only your own |
+
+> **Troubleshoot:** For PAT rejection issues (expired, revoked, scope mismatch), see [troubleshooting/identity-auth-failures.md → Playbook 4](troubleshooting/identity-auth-failures.md#playbook-4-pat-rejected--not-working).
