@@ -21,8 +21,6 @@ run_limits:
   expected_turns: 13
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I want to set up a signed webhook so we get notified when jobs finish.
   Use the unique prefix in `seed.json` for the name.
 

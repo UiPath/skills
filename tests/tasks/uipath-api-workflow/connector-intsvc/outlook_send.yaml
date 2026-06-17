@@ -20,8 +20,6 @@ initial_prompt: |
   validates. The activity must come from the registry (not hand-authored) wired
   to a real connection, leaving no <REPLACE_WITH_*> placeholders.
   Do NOT ask for approval, confirmation, or feedback.
-  Before starting, load the uipath-api-workflow skill and follow its
-  connector-activity discovery flow.
 
 success_criteria:
   - type: file_exists

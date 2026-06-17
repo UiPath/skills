@@ -7,8 +7,6 @@ description: >
 tags: [uipath-platform, smoke, licensing, consumables]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Show me per-folder consumption for tenant
   `c0ffee00-0000-0000-0000-000000000001`.
 

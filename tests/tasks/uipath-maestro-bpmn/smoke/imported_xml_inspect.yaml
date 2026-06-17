@@ -17,8 +17,6 @@ sandbox:
       path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Treat the three complex public-safe fixtures below as imported BPMN that you
   cannot modify. Inspect them and produce a `inspection-report.md` summarizing
   structure, model/CLI ownership, and any preserve-only payloads.

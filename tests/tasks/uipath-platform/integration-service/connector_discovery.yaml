@@ -10,8 +10,6 @@ run_limits:
   expected_turns: 7
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   I need to find UiPath Integration Service connectors for "Google" and also
   check if there is a connector for "Apify".
 

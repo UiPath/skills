@@ -17,8 +17,6 @@ sandbox:
       path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a new local Maestro BPMN Process Orchestration project named
   InvoiceExceptionTriage. The project must be fully synthetic and public-safe.
 

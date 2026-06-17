@@ -18,8 +18,6 @@ post_run:
     timeout: 60
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I want a scheduled trigger on one of my processes that fires every
   day at 4:30 AM. The process ID and its folder are in `seed.json`
   along with a unique prefix (the trigger has to live in the same
