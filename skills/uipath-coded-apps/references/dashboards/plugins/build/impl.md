@@ -47,7 +47,7 @@ Classify each metric using `tier-resolution.md` and `capability-registry.json`.
 The plan must feel like a thoughtful product recommendation, not a technical specification. Rules:
 
 - Lead with a name and widget count on one line
-- One bullet per widget — widget name in bold, time range in parentheses, then one sentence on what it shows and why it matters
+- One bullet per widget — widget name in bold, time range in parentheses, one sentence on what it shows and why it matters, **then a short plain-language clause on how it renders** (the visual form + the key elements they will see: a single number, a sortable table with named columns, an area-chart trend with a headline, a percentage line, a donut split, etc.) so the user can picture the visualization and adjust it
 - Close with 3–4 concrete things the user can ask for, phrased as natural language
 - If a metric was hard-refused: one sentence inline, strikethrough style, with the alternative offered
 - No API names, no tier labels, no metric IDs, no JSON, no code
@@ -57,10 +57,10 @@ The plan must feel like a thoughtful product recommendation, not a technical spe
 ```
 Here's your **[Dashboard Name]** — [N] widgets ready to build.
 
-📊 **[Widget Name]** ([time range]) — [one sentence: what it shows and why it's useful to them specifically]
-📈 **[Widget Name]** ([time range]) — ...
-🔢 **[Widget Name]** — ...
-📋 **[Widget Name]** ([time range]) — ...
+📊 **[Widget Name]** ([time range]) — [what it shows and why it's useful to them], shown as [the visual form + key elements]
+📈 **[Widget Name]** ([time range]) — [what + why], shown as [an area-chart trend with a running headline and a vs-previous change]
+🔢 **[Widget Name]** — [what + why], shown as [a single headline number]
+📋 **[Widget Name]** ([time range]) — [what + why], shown as [a sortable table with columns A, B, C]
 
 Confirm to build, or tell me what to change:
 → "make it 7 days"
@@ -72,22 +72,23 @@ The plan message ends there — no OAuth talk in the plan, no tool calls in the 
 
 > **The plan response is text-only by design.** Never put a question/option tool call in the same response as the plan — live runs showed it reliably replaces the plan with a bare options list (the user approves widgets they never saw). Structured-choice questions fire only on later, short turns: the post-approval OAuth question (Phase 3), intent disambiguation, and the deploy pin choice.
 
-**Widget type icons:**
-- 🔢 KPI card
-- 📈 Line or area chart
-- 📊 Bar or donut chart
-- 📋 Table or ranked list
-- 🔷 Multi-line chart (e.g. P50/P95)
+**Widget types — icon + how to describe the rendering** (always state the visual form so the user can adjust it):
+- 🔢 **KPI card** — "as a single headline number" (with a vs-previous-period change badge when there is a prior period)
+- 📈 **Line or area chart** — "as an area/line trend over time, with a headline [total/latest/average] and a vs-previous change"
+- 📈 **Rate chart** — "as a percentage line over time with an overall headline" (a ratio: numerator ÷ denominator per period)
+- 📊 **Bar or donut chart** — "as a bar chart" / "as a donut split by category"
+- 📋 **Table or ranked list** — "as a sortable table with columns [A, B, C]", or "ranked worst/highest-first"
+- 🔷 **Multi-line chart** — "as multiple lines over time (e.g. P50/P95)"
 
 **Example plan:**
 
 ```
 Here's your **Agent Operations Dashboard** — 4 widgets ready to build.
 
-🔢 **Active Agents** — count of agents that ran at least once in the last 30 days, so you can see fleet utilisation at a glance
-📋 **Agent Health** (30 days) — agents ranked by health score, worst first, so you know where to investigate
-📈 **Memory Calls** (7 days) — agent memory access volume as a trend, to spot unusual activity early
-📊 **Governance Verdicts** (7 days) — allow/deny breakdown of policy enforcement across your agents
+🔢 **Active Agents** — agents that ran at least once in the last 30 days, so you can see fleet utilisation at a glance, shown as a single headline number
+📋 **Agent Health** (30 days) — where to focus your attention, shown as a sortable table ranked worst-first, with columns for agent, health score, and last incident
+📈 **Memory Calls** (7 days) — agent memory access volume so you can spot unusual activity early, shown as an area-chart trend over time with a running total and a vs-previous-week change
+📊 **Governance Verdicts** (7 days) — how policy enforcement is splitting across your agents, shown as a donut split by allow / deny / no-op
 
 Confirm to build, or tell me what to change:
 → "make all charts 7 days"
