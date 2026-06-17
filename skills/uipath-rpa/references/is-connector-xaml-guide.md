@@ -36,6 +36,19 @@ Three ingredients:
 2. **`ConnectionId`** — the IS connection's GUID (from `uip is connections list`).
 3. **`Configuration`** — an opaque base64 + gzip JSON blob encoding connector/operation identity. **Never hand-edit.** Always take the value from `activities get-default-xaml`.
 
+## IS activity types & how fields resolve
+
+`get-default-xaml` produces all four IS activity shapes from a `typeId` (+ a live connection). What *unlocks* an activity's fields differs by type — hand the tool the right selector and it returns the resolved `FieldObjects`:
+
+| Activity | What it is | How to resolve its fields |
+|---|---|---|
+| `ConnectorActivity` | A connector operation (create / get / update …) | `typeId` + connection; criteria fields fed back via `--field-values` expand the rest (Step 4). |
+| `ConnectorTriggerActivity` | Fires when a connector event occurs | `typeId` already encodes the event; fields resolve from `typeId` + connection. |
+| `ConnectorPersistenceActivity` | Suspends the workflow until a connector event | `--event-operation <op>` selects the event and resolves its fields (Step 4). |
+| `ConnectorHttpActivity` | Generic HTTP-request escape hatch | Standard request fields (`method`, `url`, `headers`, `query`, `body`) — author them directly; they are the same for every connector. |
+
+Same principle throughout: **pass the selector the activity needs, get back its resolved schema.** A bare call (no selector) returns the correctly-typed activity with its baseline fields.
+
 ## Step-by-Step Flow
 
 ### Prereq: `uip login`
@@ -73,7 +86,7 @@ If `activityTypeId` is empty, the activity is a non-dynamic BAF/vendor activity 
 
 **`activities find` is not exhaustive — be ready to iterate.** Results vary by connector: some expose 6+ typed operations with rich descriptions (Slack); others expose only 1-2 (Outlook). Try several query phrasings (`"send email"`, `"<connector> send"`, the literal operation name from `uip is activities list`). If no typeId surfaces:
 
-- The operation may only be reachable via the generic `ConnectorHttpActivity` typeId (suffix `...httpRequest...`). Use it as a fallback — the field schema is still read from `uip is resources describe`, but the HTTP method/path live in the Configuration blob's `InstanceParameters`.
+- The operation may only be reachable via the generic `ConnectorHttpActivity` typeId (suffix `...httpRequest...`). Use it as a fallback — see [Typed Operation vs Generic HTTP](#typed-operation-vs-generic-http) for its standard, connector-independent request fields.
 - Different connectors that share a schema (e.g. a mock connector + its real counterpart) often share typeIds. The same `fbdeec58-...` "Send Email" typeId works for both `uipath-mock-outlook` and `uipath-microsoft-outlook365` — the `ConnectionId` at runtime determines which backend receives the call. Don't be surprised if the discovered typeId's description mentions a different connector than the one you're targeting.
 
 ### Step 3 — Get the connection ID
@@ -131,6 +144,17 @@ When you already know valid criteria values up front, the second call alone does
 **Field-name encoding.** Pass names **exactly as they appear in the returned `FieldObjects`** — copy them verbatim from the previous call's output. Don't hand-encode or invent names: the connector's encoding (nested paths, arrays — see § FieldObject Name Encoding Rules) is already applied in what it hands you. An unknown name fails fast with the list of available fields, so use that error as discovery rather than guessing.
 
 **Older CLI fallback:** if `--field-values` is not recognized, upgrade `uip`. Until then the expansion is not reachable headlessly — bind only fields present in the returned XAML and treat missing ones per § Hidden Secondary Fields.
+
+#### Resolve persistence event fields with `--event-operation`
+
+A `ConnectorPersistenceActivity` ("suspend until an event") exposes no event fields until an **event operation** is chosen — the headless equivalent of picking the event in the designer before its fields appear. Pass it explicitly:
+
+```bash
+uip rpa activities get-default-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN>" \
+    --event-operation "<eventOperation>" --project-dir "<P>" --output json
+```
+
+The returned `Configuration` carries the resolved event fields as `FieldObjects`. Without `--event-operation` you get the bare activity (correct default, no event fields). It is the persistence analogue of `--field-values` criteria — a selector that unlocks the schema — and needs a live connection (same cloud round-trip and silent-no-op caveat as above). Combine the two to also pre-bind values.
 
 ### Step 5 — Read the operation's field schema
 
@@ -236,7 +260,9 @@ If `HasErrors: true`, the `ErrorMessage` field carries the compile/runtime error
 
 ## Typed Operation vs Generic HTTP
 
-Every connector exposes a `ConnectorHttpActivity` with a typeId suffixed like `...httpRequest...` — a generic escape hatch for arbitrary HTTP calls. Prefer a **typed operation** (e.g. `send_message_to_channel_v2`) whenever one exists: it encodes the endpoint, method, and field schema for you. Only fall back to the HTTP activity when the connector lacks a modeled operation for what you need. For the generic one, the field names are NOT `method`/`path`/`body` — they're still connector-defined. Read the schema.
+Every connector exposes a `ConnectorHttpActivity` with a typeId suffixed like `...httpRequest...` — a generic escape hatch for arbitrary HTTP calls. Prefer a **typed operation** (e.g. `send_message_to_channel_v2`) whenever one exists: it encodes the endpoint, method, and field schema for you. Only fall back to the HTTP activity when the connector lacks a modeled operation for what you need.
+
+`get-default-xaml` for an HTTP typeId returns a correctly-typed `ConnectorHttpActivity` with a valid `Configuration`. Its fields are the **standard HTTP request fields** — `method`, `url`, `headers`, `query`, `body` (inputs), plus `out_body` / `out_headers` / `out_code` (outputs) — identical across connectors, so author the ones you need directly per Step 6 instead of reading a per-operation schema. The `ConnectionId` still scopes the call at runtime.
 
 ## Worked Example: Slack "Send Message to Channel"
 
