@@ -17,11 +17,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-# Rounded recall.yes baseline (in %) per skill, from the 2026-05-08 full
-# activation run. Nearest 5%. Skills with positives but no measured baseline
-# yet (uipath-admin, uipath-api-workflow, uipath-automation-discovery,
-# uipath-ixp, uipath-mcp-servers, uipath-solution) are omitted — the gate
-# SKIPs them until a fresh full activation run produces their numbers.
+# Rounded recall.yes baseline (in %) per skill. Nearest 5%. Most skills were
+# measured in the 2026-05-08 full activation run. The six added in skills#1542
+# (uipath-admin, uipath-api-workflow, uipath-automation-discovery, uipath-ixp,
+# uipath-mcp-servers, uipath-solution) were measured 2026-06-17 over their full
+# positive sets on claude-sonnet-4-6 via Bedrock.
 #
 # uipath-planner: 90 was measured 2026-05-08 against the pre-merge
 # 41-prompt yes-set and the old description. PDD→SDD design has since been
@@ -37,9 +37,15 @@ from pathlib import Path
 # combined recall is expected to land closer to the modern half.
 # Re-baseline after the first full activation run on the merged dataset.
 BASELINES_PCT: dict[str, int] = {
+    "uipath-automation-discovery": 100,
+    "uipath-ixp": 100,
+    "uipath-mcp-servers": 100,
+    "uipath-solution": 95,
     "uipath-feedback": 90,
     "uipath-data-fabric": 90,
     "uipath-planner": 90,
+    "uipath-admin": 90,
+    "uipath-api-workflow": 85,
     "uipath-tasks": 85,
     "uipath-governance": 85,
     "uipath-platform": 70,
