@@ -143,13 +143,15 @@ For discovery, retrieval settings, memory item types, and troubleshooting, see [
 
 ### `uip agent debug`
 
-Run the agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 8: consent before upload/publish/deploy).
+Run the autonomous agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 8: consent before upload/publish/deploy).
 
 ```bash
 uip agent debug <AGENT_PROJECT_DIR> --inputs '{"input":"..."}' --output json
 ```
 
 Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, and `Data.TraceId`. A `Faulted` run returns `Result: "Failure"` (exit 1); inspect it with `uip traces spans get <TraceId> --output json`. Full options and reporting in [debug.md](debug.md).
+
+> The debug command is currently not supported for conversational agents, so only attempt to debug autonomous agents.
 
 ## Solution Commands
 
