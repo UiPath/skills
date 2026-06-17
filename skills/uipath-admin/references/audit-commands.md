@@ -176,7 +176,7 @@ uip admin audit tenant export \
 ```json
 // --file-format json (default) — Path is the generated folder under the base dir
 {
-  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-02-01_2026-06-17T11-26-30Z",
+  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-02-01_20260617T112630",
   "Format": "json",
   "Files": 27,
   "Bytes": 1841,
@@ -187,7 +187,7 @@ uip admin audit tenant export \
 
 // --file-format csv — Path is the generated .csv under the base dir
 {
-  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-02-01_2026-06-17T11-26-30Z.csv",
+  "Path": "C:\\absolute\\path\\to\\audit-exports\\audit_2026-01-01_2026-02-01_20260617T112630.csv",
   "Format": "csv",
   "Bytes": 98765,
   "Days": 31,

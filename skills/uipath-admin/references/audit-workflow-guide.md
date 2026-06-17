@@ -220,7 +220,7 @@ Typical layout (the base dir holds one generated folder; one file per UTC day wi
 
 ```
 audit-exports/
-└── audit_2026-01-01_2026-02-01_2026-06-17T11-26-30Z/
+└── audit_2026-01-01_2026-02-01_20260617T112630/
     ├── 2026-01-01.json
     ├── ...
     └── 2026-01-31.json
