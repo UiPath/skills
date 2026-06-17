@@ -18,16 +18,18 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 
 UiPath low-code agents come in **two variants**, both sharing this skill.
 
-1. Autonomous agents are intended for any general use-cases involving execution from input → output.
+1. Autonomous agents are intended for any general use-cases involving execution from input → output. They may be standalone or inline in a flow.
    
-2. Conversational agents are intended for use-cases involving multi-turn conversations / fast latency with real-time user-interaction / streamed responses. 
+2. Conversational agents are intended for use-cases involving multi-turn conversations / fast latency with real-time user-interaction / streamed responses.
 
-After deployment, conversational agents are served through the UiPath Conversation Service, which manages conversation history and exposes a CLI/SDK for client UIs. Each user-initiated exchange invokes the agent for a single turn, streaming events back to the client.
+> Currently, conversational agents are only standalone and not yet supported to be inline in a flow, so inline-in-flow use-cases should always use an autonomous agent.
+> After deployment, conversational agents are interacted with through the UiPath Conversation Service, which manages conversation history and exposes a CLI/SDK for client UIs. Each user-initiated exchange invokes the agent for a single turn, streaming events back to the client.
 
 In summary:
 | Signal | Variant |
 |---|---|
 | User wants general input → output execution | **Autonomous** |
+| User wants inline-in-flow | **Autonomous** |
 | `agent.json` has `metadata.isConversational: false` or unset | **Autonomous** |
 | User wants multi-turn chat / fast latency with real-time user-interaction / streamed responses | **Conversational** |
 | Existing `agent.json` has `metadata.isConversational: true` | **Conversational** |
