@@ -18,11 +18,10 @@ import tempfile
 from pathlib import Path
 
 # Rounded recall.yes baseline (in %) per skill, from the 2026-05-08 full
-# activation run. Nearest 5%. Skills omitted have no activation test set
-# yet (uipath-admin, uipath-ixp) — the gate SKIPs them.
-# uipath-solution (`uip solution` lifecycle) was split out of the former
-# merged uipath-solution skill; omitted here pending a fresh full activation
-# run — the gate SKIPs it.
+# activation run. Nearest 5%. Skills with positives but no measured baseline
+# yet (uipath-admin, uipath-api-workflow, uipath-automation-discovery,
+# uipath-ixp, uipath-mcp-servers, uipath-solution) are omitted — the gate
+# SKIPs them until a fresh full activation run produces their numbers.
 #
 # uipath-planner: 90 was measured 2026-05-08 against the pre-merge
 # 41-prompt yes-set and the old description. PDD→SDD design has since been
