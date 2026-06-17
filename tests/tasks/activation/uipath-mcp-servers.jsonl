@@ -1,0 +1,42 @@
+{"id": "uipath-mcp-servers-001", "prompt": "Register a new AgentHub MCP server of type uipath", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-002", "prompt": "Create a coded MCP server that wraps my published coded-agent process", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-003", "prompt": "Register a remote MCP server pointing at an external HTTP MCP endpoint", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-004", "prompt": "Create a swagger MCP server from this OpenAPI spec URL", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-005", "prompt": "Register a platform MCP server bound to the orchestrator service", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-006", "prompt": "Create a command MCP server that spawns a local npx process", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-007", "prompt": "List all AgentHub MCP servers in my folder", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-008", "prompt": "Get the details of the inbox-mcp server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-009", "prompt": "Delete the team-helper MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-010", "prompt": "Refresh the tools on my coded MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-011", "prompt": "Add an is-activity tool that wraps a Slack Send Message connector activity to my uipath MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-012", "prompt": "Add a resource tool that binds an Orchestrator process to my uipath MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-013", "prompt": "Add a raw tool with a custom JSON schema to my MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-014", "prompt": "List the tools on my uipath MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-015", "prompt": "Disable a tool on my MCP server without deleting it", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-016", "prompt": "Delete a tool from my AgentHub MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-017", "prompt": "Show me the payload schema for creating a remote MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-018", "prompt": "My MCP server slug was rejected — what are the slug rules?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-019", "prompt": "Register an AgentHub MCP server that exposes Jira, Slack, and send-email tools", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-020", "prompt": "Update my remote MCP server to add an auth header", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-021", "prompt": "Create a uipath MCP server and add three is-activity tools to it", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-022", "prompt": "Refresh tools on my swagger MCP server after the spec changed", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-023", "prompt": "My refresh-tools returned a 202 with a runtime id — is that expected?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-024", "prompt": "Add an is-activity tool for Gmail Send Email to my MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-025", "prompt": "mcp delete by GUID returns 404 — why?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-026", "prompt": "Enable a disabled tool on my MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-027", "prompt": "Get a ready-to-edit template for a swagger MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-028", "prompt": "Discover the bindable is-activity candidates for an MCP tool", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-029", "prompt": "Register a coded MCP server with the process key and folder", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-030", "prompt": "Create a platform MCP server for orchestrator exposing only the start-job tool", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-031", "prompt": "Bind an api-workflow as a resource tool on my uipath MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-032", "prompt": "List the candidate automations I can wrap as MCP resource tools", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-033", "prompt": "My agenthub mcp create fails with HTTP 400 and no detail — how do I see the resolved body?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-034", "prompt": "Add a resource tool that binds an agentic-process to my MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-035", "prompt": "Register a remote MCP server that uses relay for on-prem connectivity", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-036", "prompt": "Update the description on my MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-037", "prompt": "Verify my MCP server's tools after I created them", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-038", "prompt": "Create a swagger MCP server and refresh its tools from the spec", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-039", "prompt": "Which folder context flag do I pass for refresh-tools on a coded MCP server?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-040", "prompt": "Author a raw MCP tool from the template skeleton", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-041", "prompt": "Register an AgentHub MCP server that points at my company's internal HTTP MCP service", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-042", "prompt": "Add an is-activity tool wrapping a GitHub create-issue activity to my uipath MCP server", "expected_skill": "uipath-mcp-servers"}

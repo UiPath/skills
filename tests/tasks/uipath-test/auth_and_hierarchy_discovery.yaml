@@ -14,8 +14,6 @@ run_limits:
   max_turns: 30
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   I just got access to UiPath Test Manager and want to see what I have
   access to. First confirm I'm actually logged in, then show me what
   projects I can see. Pick one that has test sets, list its test sets,

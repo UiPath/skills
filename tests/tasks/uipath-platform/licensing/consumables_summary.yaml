@@ -7,8 +7,6 @@ description: >
 tags: [uipath-platform, smoke, licensing, consumables]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Give me a summary of license consumption for this account.
 
   Important:

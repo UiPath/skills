@@ -65,13 +65,13 @@ success_criteria:
       - "Allowed.AgentService"
       - "LicensedFeatures"
     # Excludes target false-positive conclusions that should NEVER appear as
-    # the chosen root cause. "pool exhausted" / "Test Heals" are intentionally
-    # NOT excluded — they appear legitimately in `to_eliminate` when the agent
-    # discriminates cause #1 from causes #7 / Test-Heals branch.
+    # the chosen root cause. "pool exhausted" / "Test Heals" / "version mismatch"
+    # are intentionally NOT excluded — they appear legitimately in `to_eliminate`
+    # when the agent discriminates cause #1 from causes #7 / Test-Heals /
+    # package-version-mismatch branches (a flat substring scan cannot tell a
+    # chosen root cause from a correctly eliminated one).
     excludes:
-      - "Attended StudioPro is not HA-eligible"
       - "package corruption"
-      - "version mismatch"
     weight: 1.0
 
   - type: command_executed

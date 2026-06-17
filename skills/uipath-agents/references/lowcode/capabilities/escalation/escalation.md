@@ -127,7 +127,7 @@ Use other `type` values (1=UserId, 2=GroupId, 4=AssetUserEmail, 5=StaticGroupNam
 
 > **Do not set `displayName` for `type: 3`.** The reference solution omits it; leaving it out results in cleaner rendering in Studio Web.
 
-**`channel.properties.folderName` must be the literal `Folder` from `uip solution resources list`** — the same rule for both external and solution-internal apps. External apps return the Orchestrator folder (e.g., `"Shared/Approvals"`); solution-internal apps return `"solution_folder"`. `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. See [../../critical-rules.md](../../critical-rules.md) Rule 11.
+**`channel.properties.folderName` must be the literal `Folder` from `uip solution resources list`** — the same rule for both external and solution-internal apps. External apps return the Orchestrator folder (e.g., `"Shared/Approvals"`); solution-internal apps return `"solution_folder"`. `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Rule 11.
 
 Default `taskTitle` / `taskTitleV2` to a short human-readable label — e.g., `"Approval request"`. `taskTitle` is a string; `taskTitleV2` is a `contentTokens`-style object (see [../../agent-definition.md](../../agent-definition.md) § Messages).
 
@@ -272,9 +272,9 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Critical Rules. Escalation-specific gotchas:
+See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules. Escalation-specific gotchas:
 
-- `properties.folderName` MUST be the literal `Folder` from `uip solution resources list` — same rule for both external and solution-internal apps. External apps carry the Orchestrator folder (e.g., `"Shared/Approvals"`); solution-internal apps carry `"solution_folder"`. `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. See [../../critical-rules.md](../../critical-rules.md) Rule 11.
+- `properties.folderName` MUST be the literal `Folder` from `uip solution resources list` — same rule for both external and solution-internal apps. External apps carry the Orchestrator folder (e.g., `"Shared/Approvals"`); solution-internal apps carry `"solution_folder"`. `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Rule 11.
 - `isEnabled` MUST be `true` — it is not defaulted. An escalation written without it (or with `null`) is inactive and fails validation.
 - `recipients` array MUST have at least one entry. Empty uploads but routes nowhere.
 - For `type: 3` (email) recipients, do NOT set `displayName`.

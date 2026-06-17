@@ -17,7 +17,6 @@ initial_prompt: |
   It must survive a StudioWeb designer roundtrip.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete workflow in a single pass.
-  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

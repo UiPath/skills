@@ -12,8 +12,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "WebFetch"]
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   Produce a read-only licensing snapshot of this account. This is read-only:
   do NOT run anything that mutates licensing state.
 

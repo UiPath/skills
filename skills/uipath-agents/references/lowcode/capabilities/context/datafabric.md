@@ -43,7 +43,7 @@ No `indexName` and no `settings` for DataFabric contexts. The shape is entirely 
 
 ## Gotchas
 
-`contextType` value MUST be `"datafabricentityset"` (all lowercase) — see [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.
+`contextType` value MUST be `"datafabricentityset"` (all lowercase) — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
 
 ## References
 
