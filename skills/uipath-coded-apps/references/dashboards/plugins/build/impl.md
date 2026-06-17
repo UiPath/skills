@@ -6,7 +6,7 @@ By the time you read this you have already loaded all docs, run login, checked s
 
 1. **Zero tool calls between user request and plan.** Everything internal runs in the parallel blast. The first thing the user sees is the plan.
 2. **Zero tool calls between plan and build confirmation. Pure text HALT.** The build plan gate is deliberately text-only: do NOT use the question/option tool here — it reproducibly suppresses the plan rendering (the user gets options with no plan). The plan text ends with the confirm/change affordances; OAuth details are asked AFTER approval (Phase 3).
-3. **The build runs in a subagent (Phase 4).** After confirmation, the main thread prints one "Building…" line, spawns the build subagent via the `Task` tool, and relays its returned milestone block. The build command, events, tsc/npm output, and retries stay inside the subagent.
+3. **The build runs in a subagent (Phase 4).** After confirmation, the main thread prints one "Building…" line, spawns the build subagent using the host agent's sub-task mechanism (the `Task` tool in Claude Code; the equivalent sub-agent/sub-task feature in other agents), and relays its returned milestone block. The build command, events, tsc/npm output, and retries stay inside the subagent.
 4. Never read `build-dashboard.mjs` — this file documents everything.
 5. Never run directory exploration via any shell — `ls`, `find`, `dir`, `Get-ChildItem`, `tree`.
 
@@ -281,7 +281,7 @@ The build extracts a committed, versioned archive (`assets/fixtures/governance-d
 
 ## Phase 4 — Build (runs in a build subagent)
 
-To keep the experience seamless, Phase 4 executes inside a **build subagent** (the `Task` tool). The subagent **authors `intent.json` and the metric modules**, runs the build script, handles the type-error retry loop, and returns one short milestone block. Every file write, the bash command, the raw event stream, tsc/npm output, and retries stay inside the subagent — none surface in the main thread. **The user sees only your one-line "Building…" and the final milestone — never the `intent.json` or `metrics/*.ts` writes.**
+To keep the experience seamless, Phase 4 executes inside a **build subagent** — a sub-task spawned via the host agent's mechanism (the `Task` tool in Claude Code; the equivalent sub-agent feature in Codex, Gemini, and others). The subagent **authors `intent.json` and the metric modules**, runs the build script, handles the type-error retry loop, and returns one short milestone block. Every file write, the bash command, the raw event stream, tsc/npm output, and retries stay inside the subagent — none surface in the main thread. **The user sees only your one-line "Building…" and the final milestone — never the `intent.json` or `metrics/*.ts` writes.**
 
 `SKILL_BASE_DIR` is the directory shown in "Base directory for this skill:" from your activation message — it contains `SKILL.md` and ends in `/skills/uipath-coded-apps`. `INTENT_DIR` is the directory the subagent writes `intent.json` + `metrics/` into; `INTENT_JSON_PATH` is `<INTENT_DIR>/intent.json`.
 
@@ -291,7 +291,7 @@ To keep the experience seamless, Phase 4 executes inside a **build subagent** (t
 Building **[Dashboard Name]**…
 ```
 
-Do NOT write `intent.json` or any `metrics/*.ts` in the main thread — the subagent writes them, so those edits stay hidden. Call the `Task` tool with this prompt, pasting the APPROVED PLAN (it is the subagent's authoring spec — give it everything needed to write the files):
+Do NOT write `intent.json` or any `metrics/*.ts` in the main thread — the subagent writes them, so those edits stay hidden. Spawn the build subagent with this prompt (use your host agent's sub-task mechanism — e.g. the `Task` tool in Claude Code), pasting the APPROVED PLAN (it is the subagent's authoring spec — give it everything needed to write the files):
 
 > You are the dashboard build executor. You NEVER surface raw output or file edits — your final message is the only thing shown.
 > 1. Read `<SKILL_BASE_DIR>/references/dashboards/plugins/build/impl.md` §§ "Phase 3.5" and "Build subagent — execution" and follow them exactly.
