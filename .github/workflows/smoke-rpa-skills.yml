@@ -87,6 +87,14 @@ jobs:
     # min; bump the ceiling so we don't cancel mid-task.
     timeout-minutes: 90
     name: Run RPA skill smoke tests (Windows)
+    # Disable uip CLI version-sync for the whole job. These tasks run in
+    # tempdir mode (no container), so the auth step and every task share one
+    # host ~/.uipath and one global `uip`; a `uip login status` otherwise
+    # re-pins config.json to a stale CLI line and downgrades the CLI for every
+    # later task. The CLI honors this kill switch unconditionally. Mirrors the
+    # nightly daily.sh fix.
+    env:
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
 
