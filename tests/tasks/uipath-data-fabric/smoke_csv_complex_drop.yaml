@@ -13,16 +13,14 @@ run_limits:
 
 
 initial_prompt: |
-  Could you load 3 expense rows into the Expense list (ID
-  `exp-ent-001`)? Each expense has an amount, a description, a
-  category picked from a dropdown (ID `cs-cat-001`), tags picked from
-  a different dropdown (ID `cs-tags-001`), and a link back to a
-  customer.
+  Could you load 3 expense rows into the Expense list called
+  `CE_SmokeExpenses`? It has an amount column and a multi-select tags
+  column (backed by a Travel / Meals / Lodging dropdown).
 
   The rows:
-    R1 — amount 100, description "taxi",   category travel, tags travel + lodging, customer `c-uuid-A`
-    R2 — amount 250, description "dinner", category meals,  tags meals,            customer `c-uuid-A`
-    R3 — amount 400, description "hotel",  category lodging, tags lodging,         customer `c-uuid-B`
+    R1 — amount 100, tags Travel + Lodging
+    R2 — amount 250, tags Meals
+    R3 — amount 400, tags Lodging
 
   Bulk-load all 3 rows in one go using whichever uip df bulk path is
   the right one for this list's column types. Write the file in
@@ -36,7 +34,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used `records insert --file <json>` for the entity with complex fields"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert\s+exp-ent-001\s+.*--file\s+\S+\.json'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert\s+CE_SmokeExpenses\s+.*--file\s+\S+\.json'
     min_count: 1
     weight: 3.5
     pass_threshold: 1.0
@@ -44,7 +42,7 @@ success_criteria:
   - type: command_executed
     description: "Agent must NOT call `records import` on an entity with complex fields"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+import\s+exp-ent-001'
+    command_pattern: '(?s)uip\s+df\s+records\s+import\s+CE_SmokeExpenses'
     min_count: 0
     max_count: 0
     weight: 3.5
@@ -81,3 +79,20 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CE_SmokeExpenses
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_expenses.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_expenses.records.json
+    timeout: 180
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_SmokeExpenses
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_expenses.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_expenses.records.json
+    timeout: 180

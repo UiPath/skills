@@ -1,0 +1,21 @@
+{
+  "displayName": "Smoke Expenses",
+  "description": "Persistent fixture for smoke_choice_multiple_filter — Expense list with an amount and a multi-select tags column bound to the existing `claudetest_ExpenseCategory` choice set (Travel=0, Meals=1, Lodging=2, Equipment=3, Other=4). Used to exercise CHOICE_SET_MULTIPLE filter operator semantics.",
+  "fields": [
+    {
+      "fieldName": "amount",
+      "displayName": "Amount",
+      "type": "DECIMAL",
+      "isRequired": true,
+      "decimalPrecision": 2,
+      "minValue": 0,
+      "maxValue": 100000
+    },
+    {
+      "fieldName": "tags",
+      "displayName": "Tags",
+      "type": "CHOICE_SET_MULTIPLE",
+      "choiceSetId": "6f375d79-1d5f-f111-8fcb-000d3a32b519"
+    }
+  ]
+}

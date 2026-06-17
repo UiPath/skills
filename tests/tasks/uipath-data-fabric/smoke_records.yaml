@@ -21,21 +21,20 @@ initial_prompt: |
   separate command — please don't chain multiple `uip df` calls
   together with `&&`, `;`, or `|`.
 
-    - Add a single row: "Write tests", priority 1, not done.
+    - Add a single new row: "Write tests", priority 1, not done. Use
+      the ID it comes back with as the "first row" referenced below.
     - Add two more rows in one shot: "Review PR" priority 2 and
       "Deploy" priority 3, both not done.
-    - Pull the first row back up by its ID — use placeholder
-      `id-single`.
+    - Pull the first row back up by its ID.
     - Find every row that's not done, 50 rows per page, skipping the
       first 100 rows.
     - Show me the first page of everything, 10 rows per page.
-    - Pull the next page using the next-page cursor `cursor-page-2`
-      (pretend that's what came back from the previous response).
+    - Pull the next page using the next-page cursor from the previous
+      response.
     - Jump straight to the page that holds row number 200 with 10
       rows per page.
     - Mark the first row done.
-    - Mark the other two rows (placeholder IDs `id-2` and `id-3`)
-      done in one shot.
+    - Mark the other two new rows you just added done in one shot.
     - Delete the first row.
 
 success_criteria:

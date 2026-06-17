@@ -21,26 +21,25 @@ initial_prompt: |
 
     - First, show me what lists are already in the tenant.
 
-    - Set up a new Departments list with these columns:
+    - Set up a new Departments list called `CE_SmokeDepartments` with
+      these columns:
         - Department name — required, no longer than 100 characters
         - Head count — whole number, between 0 and 10,000
         - Budget — decimal, two places, between 0 and 999,999
         - Description — long text, up to 2000 characters
 
-    - Read the Employees list's settings back. Notice that each column
-      has its own internal ID and that the limits we set on a column
-      (max length, min and max value, decimal places) come back to us
-      when we read the settings.
+    - Read the Employees list's settings back so you have the column
+      IDs handy.
 
     - Add a salary column to Employees: decimal, two places, never
       negative.
 
-    - Rename the hire date column to "Date Hired" and make it
-      required. Use placeholder column ID `field-hire-id` — that's
-      what the settings would have given you.
+    - Rename the hire date column to "Date Hired" and make it required
+      (use the column ID you just read from Employees' settings).
 
     - On the Departments list, bump the department-name length limit
-      to 200. Use placeholder column ID `field-deptname-id`.
+      to 200 (use the column ID from the Departments settings you just
+      created).
 
   Please don't try to remove any columns and don't delete any lists.
 

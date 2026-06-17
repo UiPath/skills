@@ -1,0 +1,25 @@
+{
+  "displayName": "Smoke Employees",
+  "description": "Persistent fixture for smoke_entities — Employees list with FirstName / LastName / HireDate. The agent reads its schema, adds a Salary field, and updates HireDate's metadata + lengthLimit on FirstName.",
+  "fields": [
+    {
+      "fieldName": "FirstName",
+      "displayName": "First Name",
+      "type": "STRING",
+      "isRequired": true,
+      "lengthLimit": 100
+    },
+    {
+      "fieldName": "LastName",
+      "displayName": "Last Name",
+      "type": "STRING",
+      "isRequired": true,
+      "lengthLimit": 100
+    },
+    {
+      "fieldName": "HireDate",
+      "displayName": "Hire Date",
+      "type": "DATE"
+    }
+  ]
+}
