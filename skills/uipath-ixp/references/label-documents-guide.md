@@ -140,6 +140,14 @@ uip ixp labellings confirm <project-name> <document-id> \
 
 Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated). For batching many occurrences in one call, use `--updates '[…]'` — see [CLI Reference § Labellings](cli-reference.md#labellings). See Critical Rule 13.
 
+**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields f001` (no `--group`) removes `f001` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 14.
+
+```bash
+# Roll back only occurrence 2 of Line Items (every field in that line):
+uip ixp labellings unconfirm <project-name> <document-id> \
+  --group "Line Items" --occurrence 2 --output json
+```
+
 ### 2e. Move to the next document
 
 Repeat steps 2a–2d for all documents in the list.
