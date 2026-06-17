@@ -26,7 +26,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/send-telemetry.sh\"",
-            "timeout": 10
+            "async": true,
+            "timeout": 5
           }
         ]
       }

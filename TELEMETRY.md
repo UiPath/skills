@@ -109,12 +109,10 @@ aggregations over events sharing `ai.session.id`:
 
 ## Reliability & performance
 
-- **Non-blocking:** for an attributable call the hook declares itself async
-  (prints `{"async": true, "asyncTimeout": 10000}` before any slow work), so
-  Claude Code stops waiting and lets it finish in the background. It also POSTs
-  in a detached subshell with a 4s cap and always exits 0 — it never delays or
-  fails a tool call. Opted-out and non-UiPath calls exit synchronously in
-  milliseconds, so only real emissions spawn a background task.
+- **Non-blocking:** the hook is registered as an async hook in `hooks.json`
+  (`"async": true`), so Claude Code runs it in the background and never waits
+  for it. It also POSTs in a detached subshell with a 4s cap and always exits
+  0 — it never delays or fails a tool call.
 - **Best-effort delivery:** an event is dropped on network failure (no local
   retry queue). Telemetry is for aggregate trends, not exact accounting.
 - **Environment cost:** `uip login status` (~0.5s) runs at most once per hour;
