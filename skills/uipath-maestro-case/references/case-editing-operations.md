@@ -13,8 +13,7 @@ When editing `caseplan.json` directly, the agent is responsible for these mechan
 | Task schema (`taskTypeId`, `inputs`, `outputs`) | Never hand-author. Source from `registry-resolved.json` / `uip maestro case tasks describe` — see [registry-discovery.md](registry-discovery.md). Hand-written schemas fail validation. |
 | ID generation | Generate IDs per the ID Generation section below using the `prefixedId(prefix, count)` algorithm |
 | `elementId` on tasks | Compute and write `${stageId}-${taskId}` on every task |
-| Stage position | Count existing stages first; compute `{ x: 100 + existingStageCount * 500, y: 200 }`; then write |
-| Stage render fields | Emit `style`, `measured`, `width`, `zIndex`, `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` on every new Stage node |
+| Stage data fields | Emit `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` on every new Stage node. Do NOT emit `style`, `measured`, `width`, `zIndex`, or `position` — see Layout fields below (Rule 18/19) |
 | Edges | Not authored — `schema.edges` stays `[]`. No edge handles, no edge objects, no cleanup needed on stage removal |
 | Root-level bindings cleanup | Prune entries from top-level `bindings` no longer referenced by any task |
 | Lane array expansion | Ensure `stageNode.data.tasks` is expanded to include `laneIndex` before pushing |
@@ -292,7 +291,7 @@ The skill never creates edges, so `schema.edges` should already be `[]`. If a st
 
 ### Insert a stage between two existing stages
 
-1. Add the new stage node (with render fields).
+1. Add the new stage node (with `data.*` fields only — no layout fields, per Rule 18).
 2. Add a `stage-entry-conditions` rule on the new stage referencing the upstream stage (`selected-stage-completed`).
 3. Re-point the downstream stage's entry condition to reference the new stage instead of the upstream stage.
 
