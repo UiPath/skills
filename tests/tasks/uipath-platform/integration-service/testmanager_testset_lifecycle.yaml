@@ -5,7 +5,8 @@ description: >
   surface — create, get, update, delete a test set, assign test cases to it, read
   its assigned test cases, and execute the test set. Offline (command-shape)
   grading; runs in CI without a live connection.
-tags: [uipath-platform, smoke, integration-service, resources, execute]
+tags: [uipath-platform, integration, integration-service, resources, execute]
+skip: true  # comprehensive coverage target; agent does not reliably run all per-activity commands in CI (Bedrock). Run via integration/nightly or locally.
 
 run_limits:
   expected_turns: 32
