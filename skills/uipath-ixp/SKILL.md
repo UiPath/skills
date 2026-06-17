@@ -52,12 +52,6 @@ Do not answer these from this skill. Re-activate `uipath-maestro-flow` and follo
 
 ## Quick Start
 
-> **Prerequisite — login scope.** IXP commands reuse the token from `uip login`; they do not authenticate on their own. The token MUST carry the `DocumentUnderstanding` scope. A session logged in without it is "Logged in" but IXP calls fail with an authorization error (403 Forbidden). Log in with:
-> ```bash
-> uip login --scope "openid profile offline_access DocumentUnderstanding"
-> ```
-> `--scope` replaces the requested set, so keep the base OIDC scopes (`openid profile offline_access`) alongside `DocumentUnderstanding`.
-
 1. Run `uip ixp projects list --output json` to see existing projects
 2. To create a new project: follow [Project Setup Guide](references/project-setup-guide.md)
 3. To improve an existing project: follow [Improve Prompts Guide](references/improve-prompts-guide.md)
@@ -98,7 +92,6 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 |---------|-------|-----|
 | Metrics don't change after a prompt update | Re-evaluation hasn't completed | Wait ~2 minutes for retrain. |
 | ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Wait ~2 min then retry. |
-| 403 / authorization error on `uip ixp` calls despite being logged in | Token missing the `DocumentUnderstanding` scope | Re-login: `uip login --scope "openid profile offline_access DocumentUnderstanding"`. See Quick Start prerequisite. |
 | Field instructions conflict with label_def instructions | `fields update-prompts` only edits per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and update them with `groups update-prompts` if they contradict the per-field prompts. |
 
 ## Unsupported Capabilities
