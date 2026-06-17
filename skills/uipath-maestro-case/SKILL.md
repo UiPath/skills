@@ -1,7 +1,7 @@
 ---
 name: uipath-maestro-case
-description: "Always invoke for `caseplan.json` files. UiPath Case Management authoring (caseplan.json) from sdd.md, or via lightweight interview if sdd.md absent. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For PDD→SDD or complex/multi-product→uipath-planner."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite, Agent
+description: "Always invoke for `caseplan.json` files. UiPath Case Management authoring (caseplan.json) from sdd.md, or via lightweight interview if sdd.md absent. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. Edits an existing caseplan.json via targeted operations (skips planning). For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For PDD→SDD or complex/multi-product→uipath-planner."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 ---
 
 # UiPath Case Management Authoring Assistant
@@ -10,7 +10,7 @@ Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` pl
 
 When `sdd.md` is absent, **Phase 0 interview** generates one interactively (listen → sketch → progressive ask-walk → resolve → approve, with optional HTML preview before handing off). Complex / multi-product cases redirect to `uipath-planner` — see [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds) for caps.
 
-**Scope:** new case from `sdd.md` (user-provided or Phase 0-generated). Modifying existing case not supported (no remote fetch tooling).
+**Scope:** two journeys — **greenfield** (build a new case from `sdd.md`, user-provided or Phase 0-generated) and **brownfield** (targeted edits to an existing local `caseplan.json` — see [references/brownfield.md](references/brownfield.md)). Not supported: fetching a remote/deployed case back to local (no remote fetch tooling).
 
 ## When to Use This Skill
 
@@ -30,7 +30,7 @@ When `sdd.md` is absent, **Phase 0 interview** generates one interactively (list
 3. **Run `uip maestro case registry pull` before planning.** Discovery reads cache files at `~/.uip/case-resources/<type>-index.json` directly. `registry search` has known gaps (esp. action-apps). See [references/registry-discovery.md](references/registry-discovery.md).
 4. **`--output json` on every parsed read.**
 5. **Follow plugin per node type.** Open matching `planning.md` during planning + `impl-json.md` during execution. Never guess JSON shapes from memory.
-6. **`tasks.md` declarative only.** No shell commands inside. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. One T-entry per sdd.md declaration — every stage, task, trigger, condition, SLA rule, **variable, and argument** gets own T-number, even when value looks like default (`current-stage-entered`, `case-entered`, `exit-only`, `is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`). Never group, never silently omit. **When an sdd.md row's format is unrecognized, ambiguous, or cannot be categorized — invoke AskUserQuestion before skipping. Silent omission is forbidden.** Always regenerate from scratch. See [`references/planning.md` §4.0](references/planning.md).
+6. **`tasks.md` declarative only.** No shell commands inside. Field names use plain identifiers (e.g., `type:`, `displayName:`, `lane:`), not CLI flag syntax. One T-entry per sdd.md declaration — every stage, task, trigger, condition, SLA rule, **variable, and argument** gets own T-number, even when value looks like default (`current-stage-entered`, `case-entered`, `exit-only`, `is-interrupting: false`, `runOnlyOnce: true`, `marks-stage-complete: true`). Never group, never silently omit. **When an sdd.md row's format is unrecognized, ambiguous, or cannot be categorized — invoke AskUserQuestion before skipping. Silent omission is forbidden.** Always regenerate from scratch (greenfield/planning only — brownfield targeted edits mutate in place and preserve IDs; see [references/brownfield.md](references/brownfield.md)). See [`references/planning.md` §4.0](references/planning.md).
 7. **HARD STOP after `tasks.md`.** AskUserQuestion: `Approve and proceed` / `Request changes`. Re-read `tasks.md` before executing.
 8. **Unresolved resource → placeholder, never fabricate IDs.** Keep `<UNRESOLVED: ...>` markers in `tasks.md`. Placeholder **task**: node with `type` + `displayName` + structural fields, `data: {}`; conditions still reference the TaskId. Placeholder **event trigger**: node with render fields + `data.uipath: { serviceType: "Intsvc.EventTrigger" }` only (no other `data.uipath` keys); `entry-points.json` entry appended. No trigger-edge is created (edges retired) — the first stage's `case-entered` entry condition starts the case. See [references/placeholder-tasks.md](references/placeholder-tasks.md) and [references/plugins/triggers/event/impl-json.md § Placeholder fallback](references/plugins/triggers/event/impl-json.md).
 9. **Persist every registry resolution to `registry-resolved.json`** — search query, all matches, selected result, rationale.
@@ -43,6 +43,15 @@ When `sdd.md` is absent, **Phase 0 interview** generates one interactively (list
 16. **Caseplan task `type` enum is closed — 9 values, schema-kebab.** Any task node written into `caseplan.json` MUST have `type` exactly one of: `process` | `agent` | `rpa` | `action` | `api-workflow` | `case-management` | `execute-connector-activity` | `wait-for-connector` | `wait-for-timer`. **Never** write the plugin folder name (`connector-activity`, `connector-trigger`) or the CLI `--type` flag value into the JSON node — those name the planning artifacts, not the schema. Never write `external-agent`, `external-workflow`, `document-extraction`, `flow-process`, `wait-for-event`, or any hallucinated value — there is no plugin to back them. `external-agent`, `external-workflow`, `document-extraction`, and `flow-process` are **not supported yet**. See [references/case-schema.md § Task type](references/case-schema.md) and the Plugin Index naming-asymmetry table below.
 17. **Empty registry lookup → AskUserQuestion BEFORE any placeholder fallback.** When a planning-phase lookup returns 0 matches, present AskUserQuestion per lookup-batch (one prompt, not per-task) BEFORE any placeholder T-entry or per-plugin Unresolved Fallback, with options: (a) `Force pull and re-resolve` — loops back for still-empty; (b) `Skip and use placeholders`; (c) `Create the missing agent(s) inline` — shown ONLY when ≥1 still-empty is creatable (an `agent`) AND the CLI supports `registry --local`. **Create covers agents only, gate-selected only** (never from SDD content alone; agent → `uipath-agents`); unselected + non-creatable empties (regular RPA process, action, connectors, agentic processes) → placeholder; the option is suppressed when `--local` is absent. Do NOT pre-judge via resource-name heuristics — the user's call. Placeholder fallback is valid only after `Skip`. Build/register/verify mechanics live in [references/registry-discovery.md § Create-on-Missing](references/registry-discovery.md#create-on-missing-build-and-rediscovery) (gate detail: [§ MUST Confirm](references/registry-discovery.md#must-confirm-before-placeholder-fallback)).
 18. **Layout state lives in top-level `layout`, not on the node/edge.** Do NOT emit node-level `position`, `style`, `measured`, `width`, `height`, `zIndex`. Do NOT compute stage `position.x = 100 + count * 500`. Do NOT emit edge `data.waypoints`. Emit top-level `layout: {}` (empty object) — FE auto-layouts on canvas load. The frontend's `transformCaseInMemoryJsonToDiskJson` strips these fields anyway when round-tripping through canvas; emitting them is harmless on read but wastes tokens. See [`references/case-editing-operations.md`](references/case-editing-operations.md).
+
+## Routing — greenfield vs brownfield
+
+| Condition | Journey |
+|---|---|
+| New case, or `sdd.md` provided, or no `caseplan.json` yet, or user asks to (re)build from a spec | **Greenfield** — Phase 0→6 below |
+| `caseplan.json` exists AND intent is a targeted edit ("add a stage", "remove task X", "change a condition", "swap the trigger") | **Brownfield** — skip Phase 0→6, go to [references/brownfield.md](references/brownfield.md) |
+
+Brownfield bypasses planning, prototyping, and their hard stops; it still honors the debug-consent gate (Rule 12) and reuses the Phase 5 / Phase 6 contracts.
 
 ## Workflow
 
@@ -118,6 +127,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 | Generate sdd.md interactively when none provided | [references/phase-0-interview.md](references/phase-0-interview.md) |
 | Plan tasks from sdd.md | [references/planning.md](references/planning.md) |
 | Execute tasks.md into a case | [references/implementation.md](references/implementation.md) |
+| Edit an existing caseplan.json (targeted edits) | [references/brownfield.md](references/brownfield.md) |
 | Phase 2 → 3 → 4 → 5 → 6 split + hard stop contracts | [references/phased-execution.md](references/phased-execution.md) |
 | Edit caseplan.json directly | [references/case-editing-operations.md](references/case-editing-operations.md) |
 | Case JSON schema | [references/case-schema.md](references/case-schema.md) |

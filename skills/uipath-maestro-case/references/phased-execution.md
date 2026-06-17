@@ -2,6 +2,8 @@
 
 Authoritative reference for the post-planning execution flow. Read before executing any T-entry from an approved `tasks.md`.
 
+> **Editing an existing case?** Targeted edits to an existing `caseplan.json` skip these phases — see [brownfield.md](brownfield.md).
+
 > **Relationship to other docs.** This document defines phase boundaries and hard-stop contracts. Per-plugin execution detail lives in `plugins/<name>/impl-json.md`. Per-step ordering and file-system mutations live in [implementation.md](implementation.md).
 
 ## Downstream CLI compatibility
