@@ -229,23 +229,20 @@ Example:
 
 ## Validation
 
-There is **no** `uip maestro bpmn validate` CLI command. Validate with the
-bundled offline validator (added by a sibling PR) at
-[`validator/`](../validator/), which parses the BPMN with the same
-`bpmn-moddle` + UiPath descriptor the canvas uses and runs the ported canvas
-rules:
+There is **no** `uip maestro bpmn validate` CLI command. Validate with a
+well-formed-XML parse plus the structural checklist below. The checklist mirrors
+the canvas serializer's blocking rules (gateway/condition, fake-join,
+superfluous-gateway, error end/boundary event, timer-duration,
+single-blank-start, variable-reference, and IS-connector checks referenced
+above).
+
+Parse for well-formedness first:
 
 ```bash
-node skills/uipath-maestro-bpmn/validator/validate-bpmn.mjs <file.bpmn>
+python3 -c "import xml.etree.ElementTree as ET; ET.parse('<file.bpmn>')"
 ```
 
-It prints `VALID` and exits 0 when there are no blocking errors. Blocking rules
-include the gateway/condition, fake-join, superfluous-gateway, error end/boundary
-event, timer-duration, single-blank-start, variable-reference, and IS-connector
-checks referenced above.
-
-If the bundled validator is unavailable in the environment, fall back to a
-well-formed-XML parse and the structural checklist:
+Then walk the structural checklist:
 
 1. Root is `<…:definitions>` with the BPMN + `uipath` namespaces.
 2. Exactly one `<bpmndi:BPMNDiagram>` with a shape per node and an edge per flow.

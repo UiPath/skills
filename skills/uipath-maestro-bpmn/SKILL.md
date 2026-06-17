@@ -57,10 +57,9 @@ Two halves make a valid Maestro `.bpmn`:
    structural BPMN the registry does not emit — sequence flows, gateways,
    events, boundary events, containers, multi-instance markers — and generate
    the `bpmndi:BPMNDiagram`.
-4. **Validate.** Run the bundled validator
-   ([references/structural-bpmn.md#validation](references/structural-bpmn.md#validation)),
-   or fall back to a well-formed-XML parse + the structural checklist. There is
-   **no** `uip maestro bpmn validate` CLI command.
+4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command.
+   Validate with a well-formed-XML parse plus the structural checklist in
+   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
 
 ## Structural coverage
 

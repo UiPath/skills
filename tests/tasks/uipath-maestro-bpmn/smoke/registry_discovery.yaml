@@ -4,7 +4,7 @@ description: >
   Maestro BPMN extension types via the registry CLI (pull, list/search, get)
   before authoring anything. Tests that the skill teaches the registry-driven
   discovery loop instead of hand-authoring uipath:* XML from prose.
-tags: [uipath-maestro-bpmn, smoke, registry]
+tags: [uipath-maestro-bpmn, smoke, "mode:build"]
 
 sandbox:
   driver: tempdir
@@ -16,20 +16,21 @@ initial_prompt: |
   uipath-maestro-bpmn skill and use the registry to discover the right
   extension types and their templates.
 
-  Save your findings to registry_report.json with at minimum:
-    {
-      "extension_types_found": ["<relevant extension types>"],
-      "commands_used": ["<the uip maestro bpmn registry commands you ran>"],
-      "rpa_job_type": "<the extension type for starting an RPA job>",
-      "receive_message_type": "<the extension type for receiving an internal message>",
-      "rpa_job_has_xml_template": true
-    }
+  Save the raw JSON output of every registry command you run into a
+  `registry-evidence/` directory (one file per command), for example:
+    - `uip maestro bpmn registry pull --output json > registry-evidence/pull.json`
+    - `uip maestro bpmn registry list --output json > registry-evidence/list.json`
+    - `uip maestro bpmn registry get <type> --output json > registry-evidence/get-<type>.json`
+
+  Do not summarize or paraphrase the output — preserve the raw CLI JSON so the
+  RPA-job and receive-message extension types and their templates are present in
+  the saved files.
 
   Important:
   - The `uip` CLI is already available in the environment.
   - Use `--output json` on all uip commands.
-  - Do not author the BPMN yet — just discover and report. Do not upload,
-    publish, deploy, debug, run, or pack anything.
+  - Do not author the BPMN yet — just discover and save the raw evidence. Do not
+    upload, publish, deploy, debug, run, or pack anything.
 
 success_criteria:
   - type: command_executed
@@ -64,21 +65,10 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "registry_report.json exists"
-    path: "registry_report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Report identifies the RPA-job and receive-message extension types"
-    path: "registry_report.json"
-    assertions:
-      - expression: "rpa_job_type"
-        operator: "contains"
-        expected: "Orchestrator.StartJob"
-      - expression: "receive_message_type"
-        operator: "contains"
-        expected: "Maestro.ReceiveMessageEvent"
-    weight: 2.0
+  - type: run_command
+    description: "Raw registry evidence covers the RPA-job and receive-message types"
+    command: "python3 $TASK_DIR/check_registry_discovery.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
