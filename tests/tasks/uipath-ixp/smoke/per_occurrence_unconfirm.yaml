@@ -1,10 +1,12 @@
 task_id: skill-ixp-per-occurrence-unconfirm-smoke
 description: >
-  Smoke: a repeatable field group has 4 confirmed line-item occurrences;
-  one was confirmed by mistake. Agent must roll back only that occurrence
-  with `unconfirm --group + --occurrence` (or `--updates`), NOT plain
-  `--fields` (which removes the field id from every occurrence — would
-  un-confirm the correct lines too). Mirrors per_occurrence_confirm and
+  Smoke: a repeatable field group was confirmed with 4 line-item
+  occurrences; one is an invented row that isn't on the document and was
+  confirmed by mistake. The agent must number the occurrences itself
+  (0-based, extraction order) and roll back ONLY that one with
+  `unconfirm --group + --occurrence` (or `--updates`) — NOT plain
+  `--fields` (which removes the field id from every occurrence,
+  un-confirming the correct lines too). Mirrors per_occurrence_confirm;
   locks in the unconfirm half of Critical Rules 13/14.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
@@ -17,18 +19,19 @@ run_limits:
 initial_prompt: |
   On project `freight_docs-df33115f-ixp`, document `doc-freight-9`, the
   `Line Items` field group was confirmed earlier with four extractions,
-  one per invoice line. In extraction order, as `get-predictions` returns
-  them, they are:
+  one per line. In extraction order, as `get-predictions` returns them,
+  they are:
 
-  - "Widget A", Qty 5 — correct (matches line 1).
-  - "Widget B", Qty 3 — correct (matches line 2).
-  - "Widget XYZ", Qty 99 — WRONG: a model hallucination that was confirmed
-    by mistake (line 3 is actually "Widget C", Qty 2).
-  - "Widget D", Qty 1 — correct (matches line 4).
+  - "Steel bolts", Qty 200, Total $400 — a real line on the invoice.
+  - "Copper wire", Qty 50, Total $150 — a real line on the invoice.
+  - "Premium freight surcharge", Qty 1, Total $9,999 — there is NO such
+    line on the invoice; the model invented this row and it was confirmed
+    by mistake.
+  - "Pallet wrap", Qty 12, Total $36 — a real line on the invoice.
 
-  Roll back only the confirmed "Widget XYZ" line so it goes back to
-  un-annotated. Leave the other three confirmed lines, and every other
-  annotation on the document, intact.
+  Roll back only the invented "Premium freight surcharge" line so it goes
+  back to un-annotated. Leave the other three confirmed lines, and every
+  other annotation on the document, intact.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant
@@ -38,13 +41,13 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # The "Widget XYZ" row is extraction-order occurrence 2 (Widget A=0,
-  # Widget B=1, Widget XYZ=2, Widget D=3). The agent must derive that
-  # index itself — the prompt never states it — and roll it back with the
-  # per-occurrence shape. Either `--occurrence 2` or an `--updates` entry
-  # `"occurrence":2` satisfies this.
+  # The invented "Premium freight surcharge" row is extraction-order
+  # occurrence 2 (Steel bolts=0, Copper wire=1, surcharge=2, Pallet
+  # wrap=3). The agent must derive that index itself — the prompt never
+  # states it — and roll it back with the per-occurrence shape. Either
+  # `--occurrence 2` or an `--updates` entry `"occurrence":2` satisfies it.
   - type: command_executed
-    description: "Rolls back occurrence 2 (Widget XYZ) via --group + occurrence 2"
+    description: "Rolls back occurrence 2 (the invented row) via --group + occurrence 2"
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-9["'']?.*--group\s+["'']?Line Items["'']?.*(--occurrence\s+2\b|"occurrence"\s*:\s*2\b)'
     min_count: 1
