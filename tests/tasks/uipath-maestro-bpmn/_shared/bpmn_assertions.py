@@ -60,9 +60,8 @@ def activity_type(element: ET.Element) -> str | None:
 
 def mapping_outputs(element: ET.Element) -> list[ET.Element]:
     # The canonical wrapper for service-task / businessRuleTask payloads is
-    # `<uipath:activity>` (see fixtures/validation/contract-variants.bpmn
-    # and references/shared/wrapper-shells.md). `<uipath:mapping>` is only
-    # used by `BPMN.Variables` and `BPMN.ScriptTask`. Match either so the
+    # `<uipath:activity>` per the registry `xmlTemplate`s. `<uipath:mapping>`
+    # is used by `BPMN.Variables` and `BPMN.ScriptTask`. Match either so the
     # same helper covers both wrapper families.
     return element.findall(
         f"./{{{BPMN_NS}}}extensionElements/{{{UIPATH_NS}}}activity/{{{UIPATH_NS}}}output"
