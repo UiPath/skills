@@ -14,29 +14,23 @@ run_limits:
 
 
 initial_prompt: |
-  Help us set up a new expense list that links back to employees and
-  projects and uses two dropdowns — one for a category, one for tags.
+  Heads-up — I'm just sketching this out before I've actually logged in, so every command will error on auth. Don't worry about that, and please don't retry or try to log in — please run each step exactly once as a real Bash command so I can see the right shape.
 
-  The tenant already has these in place:
-    - An Employees list called `CE_SmokeEmployees`, with a couple of
-      employees in it
-    - A Projects list called `CE_SmokeProjects`
-    - A category dropdown — look through the existing dropdowns and
-      pick one whose name suggests expense categories
-    - A tags-style dropdown — pick any other multi-value dropdown
-      that's already configured
+  Treat these as real things in the tenant:
+    - A category dropdown (choice-set ID "cs-cat-001") with options
+      travel (NumberId 1), meals (2), lodging (3)
+    - A tags dropdown (choice-set ID "cs-tag-002") with options
+      urgent (1), reimbursable (2), client (3)
+    - An Employees list (entity ID "emp-ent-100") with one employee
+      already in it: record ID "emp-rec-500"
+    - A Projects list (entity ID "proj-ent-200")
 
   Walk through these for me:
 
     - See what lists are already set up, and see what dropdowns exist.
-      Then look up the available options on the category dropdown so
-      you have the option numbers.
+      Then look up the available options on the category dropdown.
 
-    - Look up the existing employees and remember the first one's ID
-      — call it the "primary employee" for the rest of this task.
-
-    - Set up a new Expense list (call it `CE_SmokeExpenseLink`) with
-      these columns:
+    - Set up a new Expense list with these columns:
         - amount — decimal, two places, required
         - category — pick one from the category dropdown, required
         - tags — pick one or more from the tags dropdown
@@ -47,13 +41,12 @@ initial_prompt: |
       tags dropdown.
 
     - Add one expense to the Expense list:
-        amount $250, category = the first category option,
-        tags = the first two tag options, submitter = the primary
-        employee.
+        amount $250, category travel, tags urgent + reimbursable,
+        submitter is employee "emp-rec-500".
 
-    - Find expenses in the first category.
+    - Find expenses in the travel category.
 
-    - Find expenses submitted by the primary employee.
+    - Find expenses submitted by employee "emp-rec-500".
 
     - Finally, I'll ask you to make a brand-new dropdown called
       "PaymentStatus" from the command line. Please refuse — dropdowns
@@ -138,9 +131,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted a record writing target UUID for RELATIONSHIP field"
+    description: "Agent inserted a record writing target record ID for RELATIONSHIP field"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"submitter\"\s*:\s*\"[0-9a-fA-F]{8}-[0-9a-fA-F-]{20,}\"'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"submitter\"\s*:\s*\"emp-rec-500\"'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -186,26 +179,3 @@ success_criteria:
     min_count: 3
     weight: 1.0
     pass_threshold: 1.0
-
-pre_run:
-  - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
-      --entity-name CE_SmokeEmployees
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_employees.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_employees.records.json
-    timeout: 180
-    fail_on_error: false
-  - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
-      --entity-name CE_SmokeProjects
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_projects.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_projects.records.json
-    timeout: 180
-    fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpenseLink"
-    timeout: 60
-    fail_on_error: false
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_SmokeExpenseLink"
-    timeout: 60

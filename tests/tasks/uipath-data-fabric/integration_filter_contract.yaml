@@ -10,9 +10,6 @@ description: >
   (verify_filter_contract.py) then probes every documented shape directly
   against the CLI and asserts each is accepted — or, for anti-patterns,
   silently dropped. Asserts command-shape validity, not record counts.
-  Previously named `smoke_filter_contract.yaml` — re-tagged because it
-  hits the live tenant and uses a pre-seeded entity, so the `smoke`
-  (offline) classification was incorrect.
 tags: [uipath-data-fabric, integration, records, mode:operate, lifecycle:discover]
 
 agent:

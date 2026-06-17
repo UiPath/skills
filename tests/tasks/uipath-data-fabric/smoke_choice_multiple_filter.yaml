@@ -13,34 +13,36 @@ run_limits:
 
 
 initial_prompt: |
-  There's an Expense list called `CE_SmokeExpenses` already set up in
-  the tenant. It has an amount column and a multi-select tags column
-  backed by a dropdown — the dropdown options are Travel, Meals, and
-  Lodging (plus a couple of others that don't matter for these searches).
+  Heads-up — I'm just sketching this out before I've actually logged in, so every command will error on auth. Don't worry about that, and please don't retry or try to log in — please run each step exactly once as a real Bash command so I can see the right shape.
 
-  Could you run these four searches? One search per request — just
-  run each one once, no retries:
+  There is an Expense entity with entity ID "exp-ent-001".
+  It has an `amount` column and a multi-select `tags` column backed by
+  a dropdown (choice-set ID "cs-tags-001") whose options have NumberIds
+  travel=1, meals=2, lodging=3.
 
-    1. Find every expense tagged with Travel.
-    2. Find every expense whose tags are exactly {Travel, Lodging}
-       and nothing else.
-    3. Find every expense that's NOT tagged with Meals.
+  Could you run these four searches? One search per request, run each
+  exactly once, don't retry:
+
+    1. Find every expense tagged with travel.
+    2. Find every expense whose tags are exactly {travel, lodging} and
+       nothing else.
+    3. Find every expense that's NOT tagged with meals.
     4. Show me how many expenses there are for each unique tag
        combination.
 
 success_criteria:
   - type: command_executed
-    description: "Task 1 — agent used `contains` with a bare NumberId string for membership (Travel=0)"
+    description: "Task 1 — agent used `contains` with a bare NumberId string for membership (travel=1)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"contains\")(?=.*\"value\"\s*:\s*\"0\")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"contains\")(?=.*\"value\"\s*:\s*\"1\")'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Task 2 — agent used `=` with a JSON-array string for set equality (Travel + Lodging = [0, 2])"
+    description: "Task 2 — agent used `=` with a JSON-array string for set equality (travel + lodging = [1, 3])"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"=\")(?=.*\"value\"\s*:\s*\"\[0,\s*2\]\")'
+    command_pattern: '(?s)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"operator\"\s*:\s*\"=\")(?=.*\"value\"\s*:\s*\"\[1,\s*3\]\")'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -89,7 +91,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Negative — agent must NOT pass a display label (`Travel`/`Meals`/`Lodging`) into a tags filter"
+    description: "Negative — agent must NOT pass a display label (`travel`/`meals`/`lodging`) into a tags filter"
     tool_name: "Bash"
     command_pattern: '(?si)uip\s+df\s+records\s+query(?=.*\"fieldName\"\s*:\s*\"tags\")(?=.*\"value\"\s*:\s*\"(travel|meals|lodging)\")'
     min_count: 0
@@ -104,20 +106,3 @@ success_criteria:
     min_count: 2
     weight: 1.0
     pass_threshold: 1.0
-
-pre_run:
-  - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
-      --entity-name CE_SmokeExpenses
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_expenses.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_expenses.records.json
-    timeout: 180
-    fail_on_error: false
-
-post_run:
-  - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
-      --entity-name CE_SmokeExpenses
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_expenses.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/smoke_expenses.records.json
-    timeout: 180
