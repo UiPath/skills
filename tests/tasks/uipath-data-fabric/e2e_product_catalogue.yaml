@@ -52,9 +52,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent imported products from CSV"
+    description: "Agent bulk-loaded products (either CSV via `records import` or JSON via `records insert --file` — both are valid for Basic-type-only schemas)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+import'
+    command_pattern: 'uip\s+df\s+records\s+(?:import|insert\s+\S+\s+--file)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

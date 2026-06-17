@@ -48,12 +48,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the folder-scoped entity (CE_FolderScopeTest)"
+    description: "Agent created the folder-scoped entity (CE_FolderScopeTest) — only fires when the tenant has ≥2 folders; soft assertion since the prompt allows skipping this branch on single-folder tenants"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+entities\s+create\s+CE_FolderScopeTest'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent must NOT recreate CE_TenantScopeTest (harness pre-seeds it)"
@@ -73,12 +73,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used fieldName key in entities create body"
+    description: "Agent used fieldName key in entities create body (only fires when folder-scoped entity was created; soft on single-folder tenants)"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+entities\s+create.*fieldName'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent used --native-only flag when listing entities"

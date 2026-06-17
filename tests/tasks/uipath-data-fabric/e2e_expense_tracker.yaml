@@ -189,9 +189,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted expense records writing submitter as a UUID"
+    description: "Agent inserted expense records (either `--body` with inline `submitter` UUID, or `--file` with a JSON payload — the file-content shape is verified by report.json's stored_submitter_is_uuid assertion)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"[Ss]ubmitter\"\s*:\s*\"[0-9a-fA-F-]{8,}'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert\s+\S+\s+(?:--body[\s\S]*\"[Ss]ubmitter\"\s*:\s*\"[0-9a-fA-F-]{8,}|--file\s+\S+\.json)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
