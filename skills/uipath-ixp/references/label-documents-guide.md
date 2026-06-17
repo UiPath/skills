@@ -126,7 +126,7 @@ uip ixp labellings confirm <project-name> <document-id> \
 
 Use `labellings mark-missing` only as a fallback when `confirm --fields` is a no-op for a field you expected it to handle — typically a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain). Verify by re-running `labellings get-predictions <project-name> <document-id>` and checking whether the field appears in the Fields[] array: if yes, `confirm --fields` is the right tool; if no, `mark-missing` reaches the stale annotation that `confirm` can't.
 
-**Per-occurrence confirm for repeatable groups.** When a repeatable group's verdicts differ across occurrences (some lines correct, some not), `confirm --fields f001` is the wrong shape — it confirms `f001` in **every** occurrence, including the wrong ones. Target each correct occurrence by index:
+**Per-occurrence confirm for repeatable groups.** When a repeatable group's verdicts differ across occurrences (some lines correct, some not), `confirm --fields a7c3e9105f2b4d86` is the wrong shape — it confirms `a7c3e9105f2b4d86` in **every** occurrence, including the wrong ones. Target each correct occurrence by index:
 
 ```bash
 # All predicted fields in occurrence 0:
@@ -135,12 +135,12 @@ uip ixp labellings confirm <project-name> <document-id> \
 
 # Just Quantity in occurrence 2:
 uip ixp labellings confirm <project-name> <document-id> \
-  --group "Line Items" --occurrence 2 --fields f005000000000001 --output json
+  --group "Line Items" --occurrence 2 --fields c4e1907a3b8f25d6 --output json
 ```
 
 Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated). For batching many occurrences in one call, use `--updates '[…]'` — see [CLI Reference § Labellings](cli-reference.md#labellings). See Critical Rule 13.
 
-**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields f001` (no `--group`) removes `f001` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 14.
+**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 14.
 
 ```bash
 # Roll back only occurrence 2 of Line Items (every field in that line):
