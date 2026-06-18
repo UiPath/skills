@@ -13,6 +13,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
 - User asks about `uip codedapp` commands, `.uipath/` directory, `app.config.json`, or `action-schema.json`
 - User wants to **scaffold** a new React/Vue frontend for UiPath Cloud or an Action Center form
+- User wants to embed the **Document Understanding Validation Station** widget for human review of DU extraction results
 - User wants to **push/pull source** between local and Studio Web
 - User wants to use the `@uipath/uipath-typescript` SDK from a coded app
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
@@ -56,6 +57,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
 | **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
 | **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
+| **Embed the DU Validation Station widget** | [references/widgets/validation-station.md](references/widgets/validation-station.md) |
 | **OAuth scopes for SDK services** | [references/oauth-scopes.md](references/oauth-scopes.md) |
 | **SDK: Import paths & subpath exports** | [references/sdk/imports.md](references/sdk/imports.md) |
 | **SDK: Assets, Queues, Buckets, Processes, Jobs, Attachments** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |
