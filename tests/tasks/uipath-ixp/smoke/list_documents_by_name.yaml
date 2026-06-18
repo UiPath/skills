@@ -1,0 +1,48 @@
+task_id: skill-ixp-list-documents-by-name-smoke
+description: >
+  Smoke: agent resolves a project by its display title, then lists its
+  documents — `uip ixp projects list` (resolve "Orange Invoices" to its Name
+  slug) then `uip ixp documents list <Name>`. Trap: the title is not the Name
+  slug; the agent must look it up, not pass the title straight to documents
+  list.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  List all the files in the IXP project titled "Orange Invoices".
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed documents via `documents list`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+documents\s+list\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved the project title to its Name via `projects list`/`get`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+(list|get)\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
