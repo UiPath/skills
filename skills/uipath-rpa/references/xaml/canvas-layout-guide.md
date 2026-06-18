@@ -68,6 +68,8 @@ Every activity should have `sap:VirtualizedContainerService.HintSize` as an attr
 
 ## 3. Flowchart Layout
 
+Node vocabulary, structure & wiring, and node registration: [flowchart-guide.md](flowchart-guide.md). This section covers layout coordinates and ViewState only.
+
 ### What Counts as a Node
 
 A node is one `FlowStep` / `FlowDecision` / `FlowSwitch` on the canvas. A `FlowStep` wraps **exactly one** activity — which may be a container (`Sequence`, `NApplicationCard`, `NCheckState`, `TryCatch`). Activities **inside** a container are NOT separate nodes; they stay nested in their parent and never get their own `ShapeLocation`. Promote a step to its own node only when it is a top-level step in the process flow. Example: an `NCheckState`'s `Throw` belongs inside the `IfNotExists` branch — making it a sibling node would change when it runs.
