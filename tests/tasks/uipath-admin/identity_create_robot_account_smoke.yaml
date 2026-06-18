@@ -3,7 +3,7 @@ description: >
   Smoke test: agent uses the uipath-admin skill to create a robot
   account. Tests discover-before-create pattern (Critical Rule #3),
   correct positional arg for name, and --display-name flag.
-tags: [uipath-admin, smoke, create]
+tags: [uipath-admin, smoke, mode:build, create]
 
 run_limits:
   expected_turns: 8

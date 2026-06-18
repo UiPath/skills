@@ -3,7 +3,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-admin skill to
   retrieve SMTP settings. Tests correct CLI namespace.
 
-tags: [uipath-admin, smoke, get]
+tags: [uipath-admin, smoke, mode:operate, get]
 
 run_limits:
   expected_turns: 6

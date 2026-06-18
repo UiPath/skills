@@ -1,0 +1,57 @@
+task_id: skill-admin-apms-troubleshoot-ip-lockout-smoke
+description: >
+  Smoke test: agent diagnoses an IP restriction issue by checking
+  the caller's public IP against the allowlist and enforcement status.
+  Tests the my-ip → ip-ranges list → enforcement get diagnostic chain.
+tags: [uipath-admin, smoke, mode:diagnose, apms, troubleshoot]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Our team in the new office cannot access the UiPath platform. We
+  think it might be an IP restriction issue. Diagnose the problem —
+  check what our current IP is, what IPs are allowed, and whether
+  enforcement is on.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked caller's public IP"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+my-ip\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed allowed IP ranges"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+ip-ranges\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked enforcement status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+enforcement\s+get\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
