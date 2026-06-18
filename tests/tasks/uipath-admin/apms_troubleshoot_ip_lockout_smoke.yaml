@@ -10,13 +10,17 @@ description: >
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, apms, troubleshoot]
 
 run_limits:
-  expected_turns: 6
+  expected_turns: 10
 
 initial_prompt: |
   Our team in the new office cannot access the UiPath platform. We
-  think it might be an IP restriction issue. Diagnose the problem —
-  check what our current IP is, what IPs are allowed, and whether
-  enforcement is on.
+  think it might be an IP restriction issue. Run these three diagnostic
+  commands in order:
+  1. Check our public IP: `uip admin ip-restriction my-ip --output json`
+  2. List allowed ranges: `uip admin ip-restriction ip-ranges list --output json`
+  3. Check enforcement: `uip admin ip-restriction enforcement get --output json`
+
+  If a command fails, move on to the next — do not stop.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
