@@ -39,6 +39,11 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
+  - type: file_exists
+    description: "Agent wrote investigation state under .local/investigations/"
+    path: .local/investigations/state.json
+    weight: 0.5
+
   - type: command_executed
     description: "Agent interrogated the faulted job via the uip CLI (uip or jobs get on the job key). Enforced here — not in the judge — so it stays robust across iterations and sub-agents."
     tool_name: "Bash"
