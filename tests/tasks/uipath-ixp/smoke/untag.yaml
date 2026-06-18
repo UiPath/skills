@@ -13,7 +13,7 @@ run_limits:
 
 initial_prompt: |
   In the IXP project `my_invoices-f1afa9ef-ixp`, remove the tag from model
-  version 27. The version must stay published — clear only its tag.
+  version 27.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant
