@@ -58,13 +58,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
 
 ## Procedure
 
-1. **Auth preflight (time-boxed — never blocks SDD output).** Run a benign call once with a hard 60s timeout, so a hanging or unauthenticated tenant call cannot eat the turn budget:
-
-   ```bash
-   timeout 60 uip or libraries list --limit 1 --output json
-   ```
-
-   If the call times out (exit 124), errors, or returns `Result == "Failure"` with an auth-related message: do NOT retry, and do NOT troubleshoot auth mid-generation. Then branch by mode:
+1. **Auth preflight (never blocks SDD output).** Run a benign call once: `uip or libraries list --limit 1 --output json`. If it errors or returns `Result == "Failure"` with an auth-related message: do NOT retry, and do NOT troubleshoot auth mid-generation. Then branch by mode:
    - **Autonomous mode** — skip tenant library discovery entirely: proceed with public NuGet only and record the reuse mandate as a forward note in §16 (equivalent to fallback option 1). Do not pause.
    - **Interactive mode** — surface the failure and switch to the manual fallback (below).
 

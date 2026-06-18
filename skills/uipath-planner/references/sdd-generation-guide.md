@@ -133,7 +133,7 @@ Skip this step for non-RPA primaries (Agents, Coded Apps, Flow, Case, API Workfl
 
 Run the procedure in [tenant-library-search-guide.md](tenant-library-search-guide.md). Keyword source for step 2: PDD Application Inventory + org-prefix terms (`Common`, `Shared`, `<Company>` if mentioned in the PDD). Output mapping: every selected library → one row in every sub-project's §14 Packages table, and its package ID into §16 Deployment Environment → "Shared libraries referenced". If the auth preflight fails, use the guide's manual fallback and propagate the user's named libraries to §14 / §16 the same way.
 
-**This step is best-effort and time-boxed — it never blocks SDD output.** The tenant call carries a hard 60s timeout (see the guide's auth preflight). If it times out or auth is unavailable, **Autonomous mode skips library discovery and proceeds with public NuGet only** — do not retry or troubleshoot auth mid-generation, and do not pause. Skip the step entirely if the user's prompt forbids running `uip` commands.
+**This step is best-effort — it never blocks SDD output.** If the auth preflight errors or auth is unavailable, **Autonomous mode skips library discovery and proceeds with public NuGet only** — do not retry or troubleshoot auth mid-generation, and do not pause. Skip the step entirely if the user's prompt forbids running `uip` commands.
 
 ### Step 3: Detect Gaps
 
