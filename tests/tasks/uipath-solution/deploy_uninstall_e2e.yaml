@@ -28,8 +28,6 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Use the `uipath-solution` skill.
-
   I deployed our `e2e-stub` solution by mistake and need it completely
   removed from the tenant.
 

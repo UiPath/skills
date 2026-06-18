@@ -26,8 +26,6 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Use the `uipath-solution` skill.
-
   I need to round-trip a solution package through the feed.
 
   `seed.json` has a unique `uuid8` — use it in the solution name so the

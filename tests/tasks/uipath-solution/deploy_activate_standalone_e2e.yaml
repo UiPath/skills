@@ -29,8 +29,6 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Use the `uipath-solution` skill.
-
   I want to roll out our `e2e-stub` solution in TWO steps — deploy it
   WITHOUT activating, then activate it separately — so I control go-live.
 
