@@ -1,9 +1,8 @@
 task_id: skill-ixp-untag-smoke
 description: >
   Smoke: agent removes the tag from a model version with
-  `uip ixp projects untag <Name> --model-version <N>`. untag is keyed by
-  version (not tag name); it clears only the tag pointer, so the version
-  stays published and the agent must NOT reach for `unpublish` or `delete`.
+  `uip ixp projects untag <Name> --model-version <N>`. The version stays
+  published, so the agent must NOT reach for `unpublish` or `delete`.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

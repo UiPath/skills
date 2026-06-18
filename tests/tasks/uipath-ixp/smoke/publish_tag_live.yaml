@@ -12,7 +12,7 @@ run_limits:
 
 initial_prompt: |
   In the IXP project named `my_invoices-f1afa9ef-ixp`, make model version
-  27 the live model (tag it `live`).
+  27 the live model.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant

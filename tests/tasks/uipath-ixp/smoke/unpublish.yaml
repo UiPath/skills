@@ -1,9 +1,9 @@
 task_id: skill-ixp-unpublish-smoke
 description: >
-  Smoke: agent unpublishes (unpins) a specific model version with
+  Smoke: agent unpublishes a specific model version with
   `uip ixp projects unpublish <Name> --model-version <N>`. Locks in the
-  command name and that unpublish removes only the pin — it must NOT delete
-  the project or the model.
+  command name and that unpublish removes only the published status — it
+  must NOT delete the project or the model.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -14,7 +14,7 @@ run_limits:
 
 initial_prompt: |
   In the IXP project named `my_invoices-f1afa9ef-ixp`, model version 26 is
-  currently published (pinned). Unpublish it — it should no longer be a
+  currently published. Unpublish it — it should no longer be a
   published/live model, but must stay trained and listable.
 
   Important:
@@ -33,7 +33,7 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Anti-pattern guard: unpublish only removes the pin. Deleting the project
+  # Anti-pattern guard: unpublish only removes the published status. Deleting the project
   # or document would destroy data — forbidden for this task.
   - type: command_not_executed
     description: "Agent did NOT delete the project or a document (unpublish must not destroy data)"
