@@ -3,7 +3,11 @@ description: >
   Smoke test: agent disables a tenant using the OMS workflow. Tests
   that the agent lists tenants first to resolve the target (Rule 20),
   then invokes the disable command with an explicit tenant ID.
-tags: [uipath-admin, smoke, mode:operate, oms, tenant-lifecycle]
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, oms, tenant-lifecycle]
 
 run_limits:
   expected_turns: 6

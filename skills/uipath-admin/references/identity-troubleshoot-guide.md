@@ -33,7 +33,7 @@ uip admin authorization check-access <USER_GUID> --scope Tenant --output json
 Or for folder-level:
 
 ```bash
-uip admin authorization check-access <USER_GUID> --scope Folder --output json
+uip admin authorization check-access <USER_GUID> --scope Folder --folder-id <FOLDER_UUID> --output json
 ```
 
 Inspect `Data.roleAssignments[]` — each entry shows `roleName`, `scopeType`, and `securityPrincipalType` (`direct` = assigned to the user; `inherited` or `Group` = inherited from a group). Look for whether the needed permission (e.g., `Publish`) appears anywhere. If absent, that's the gap.
@@ -195,7 +195,7 @@ Bypass rules exempt specific URL patterns from IP restriction. If the affected a
 
 ### Step 5 — Resolution options
 
-- **Add the new IP/CIDR:** `ip-ranges create --cidr <CIDR> --description "<LOCATION>" --output json`
+- **Add the new IP/CIDR:** `ip-ranges create --name "<LOCATION>" --cidr <CIDR> --output json`
 - **Disable enforcement temporarily:** `ip-restriction enforcement disable --output json` (if accessible from an allowed IP)
 - **Platform recovery:** if fully locked out, use the Portal recovery flow (no CLI bypass exists — Rule 32)
 

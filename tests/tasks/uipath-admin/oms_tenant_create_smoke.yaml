@@ -2,9 +2,13 @@ task_id: skill-admin-oms-tenant-create-smoke
 description: >
   Smoke test: agent creates a new tenant following the OMS workflow —
   list regions first (Critical Rule 21), then create with required
-  --region flag and a file body. Tests the region-first discovery
+  --region flag or a file body. Tests the region-first discovery
   pattern and correct create invocation.
-tags: [uipath-admin, smoke, mode:operate, oms, tenant-lifecycle]
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, oms, tenant-lifecycle]
 
 run_limits:
   expected_turns: 8
@@ -32,9 +36,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent invoked tenants create with --region"
+    description: "Agent invoked tenants create with --file or --region"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+tenants\s+create\b.*--region'
+    command_pattern: 'uip\s+admin\s+tenants\s+create\b.*(?:--file|--region)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

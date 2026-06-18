@@ -1,9 +1,13 @@
 task_id: skill-admin-apms-add-ip-range-smoke
 description: >
   Smoke test: agent adds a CIDR entry to the IP allowlist. Tests
-  correct ip-ranges create invocation with --cidr flag. Validates the
-  operational workflow for IP restriction management.
-tags: [uipath-admin, smoke, mode:operate, apms, ip-management]
+  correct ip-ranges create invocation with --name and --cidr flags.
+  Validates the operational workflow for IP restriction management.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, apms, ip-management]
 
 run_limits:
   expected_turns: 6
@@ -28,6 +32,14 @@ success_criteria:
     command_pattern: 'uip\s+admin\s+ip-restriction\s+ip-ranges\s+create\b.*203\.0\.113\.0/24'
     min_count: 1
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --name (required on ip-ranges create)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+ip-ranges\s+create\b.*--name'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
