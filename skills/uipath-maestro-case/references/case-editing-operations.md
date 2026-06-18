@@ -304,6 +304,20 @@ No edges are involved — reachability is entirely condition-driven.
 
 See [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md). The upgrade edits the task's `data` field in place to add `taskTypeId`, schema-driven `inputs`/`outputs`, and any required context — keeping the task's `id` and `elementId` unchanged so any conditions referencing it remain valid.
 
+### Re-sync a task after its source schema changed
+
+The task's source resource (action-app / agent / process / api-workflow / connector activity) added, removed, renamed, or retyped an input/output. The task's `taskTypeId` / `data.inputs` / `data.outputs` are now stale. Edit in place — keep `id` and `elementId` so conditions and `=vars.*` / `=bindings.*` references stay valid.
+
+1. **Re-fetch the current schema** (read-only CLI — never hand-author, per § Responsibilities):
+   - Non-connector task: `uip maestro case registry pull --force`, then `uip maestro case tasks describe ... --output json`.
+   - Connector activity / trigger: `uip maestro case spec --type ... --output json` (unified endpoint — see [connector-integration.md](connector-integration.md)).
+2. Read `caseplan.json`; locate the task by `id`.
+3. Edit the task's `data` slice to match the fetched schema: update `taskTypeId` if it changed; add / remove / rename `data.inputs[]` and `data.outputs[]`. Keep `id` and `elementId = ${stageId}-${taskId}` unchanged.
+4. **Re-bind affected inputs.** For each added / renamed / retyped input, fix its `data.inputs[i]` entry (literal/expression `value` or cross-task `sourceStage`/`sourceTask`/`sourceOutput`) per [bindings-and-expressions.md](bindings-and-expressions.md). Prefix: `=vars.X` / `=bindings.X` for a single lookup, `=js:...` for dotted access or operators.
+5. **Repoint consumers of removed/renamed outputs.** Any other task input or condition referencing a dropped output now dangles — repoint or remove it. Prune top-level `bindings` entries no longer referenced.
+6. **Connector tasks only** — if connection/folder bindings changed, regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14).
+7. Edit — narrow slices targeting the task's `data` (and any consumer / bindings slices). Never whole-file Write. Validate at the section boundary.
+
 ### Replace a trigger with a different type
 
 Swap a trigger's type in place (e.g., manual → timer, or manual → event) — keep the node `id` so `id-map.json` and any references stay valid.
