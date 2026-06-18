@@ -220,7 +220,7 @@ Never re-ask for anything the user already provided. The same pattern applies to
 uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
   --non-confidential \
   --redirect-uri "http://localhost:57173,<CLOUD_URL>/<ORG>/portal_" \
-  --user-scope "OR.Assets,OR.Jobs,OR.Folders,OR.Buckets,OR.Execution,OR.Tasks,OR.Queues,OR.Users,Insights,Insights.RealTimeData" \
+  --user-scope "OR.Assets,OR.Jobs,OR.Folders,OR.Buckets,OR.Execution,OR.Tasks,OR.Queues,OR.Users,Insights,Insights.RealTimeData,PIMS" \
   --output json
 ```
 
@@ -232,9 +232,11 @@ Read `ClientId` from the JSON response and carry it as the plan's `clientId` (th
 uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
   --non-confidential \
   --redirect-uri "http://localhost:57173,<CLOUD_URL>/<ORG>/portal_" \
-  --user-scope "OR.Assets,OR.Jobs,OR.Folders,OR.Buckets,OR.Execution,OR.Tasks,OR.Queues,OR.Users" \
+  --user-scope "OR.Assets,OR.Jobs,OR.Folders,OR.Buckets,OR.Execution,OR.Tasks,OR.Queues,OR.Users,PIMS" \
   --output json
 ```
+
+> **Insights metrics need the Insights scopes.** The minimal fallback drops `Insights,Insights.RealTimeData` — every agent **and** Maestro Insights/SLA metric (`agent-*`, `trace-*`, `case-sla-*`, `top-*`, `*-status-timeline`, `element-latency-stats`) returns 403 under it. `PIMS` is kept in the minimal set so plain Maestro `getAll` metrics (e.g. `cases-running-above`) still work. Use the minimal set only when the environment rejects the Insights scopes; the Insights-based metrics will be unavailable.
 
 If both fail: direct the user to `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalApps` to create one manually and paste back the client ID. Do not proceed without `clientId`.
 

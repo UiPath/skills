@@ -336,3 +336,100 @@ function InstanceDashboard() {
   );
 }
 ```
+
+## Maestro Insights — RTM (SDK ≥ 1.4.x)
+
+> Scopes: Top/timeline/element methods need `Insights Insights.RealTimeData OR.Folders.Read`; the SLA methods additionally need **`PIMS`**. These use the Insights RTM host (NOT PIMS) — contrast with `Cases.getAll`/`CaseInstances.getAll`. Surface a 403 as a permissions message (the External App may lack the scopes in this environment).
+
+`Cases` (`@uipath/uipath-typescript/cases`) and `MaestroProcesses` (`@uipath/uipath-typescript/maestro-processes`) expose the **same six methods** with identical signatures. `CaseInstances` (`@uipath/uipath-typescript/cases`) adds the two SLA methods.
+
+**Positional `Date` args** (`start, end`) for the six analytics methods; `getSlaSummary` takes an **options object**. All return a **bare array** except `getSlaSummary` (rows on `.items`).
+
+| Method | Returns (bare array of) | Notes |
+|--------|------------------------|-------|
+| `getTopRunCount(start, end, options?)` | `{ packageId, processKey, runCount, name }` | ≤5, ranked. `options`: `{ packageId?, processKey?, version? }` |
+| `getTopFaultedCount(start, end, options?)` | `{ packageId, processKey, faultedCount, name }` | ≤10, ranked |
+| `getTopExecutionDuration(start, end, options?)` | `{ packageId, processKey, duration, name }` | ≤5, `duration` in ms |
+| `getTopElementFailedCount(start, end, options?)` | `{ elementName, elementType, processKey, failedCount }` | ≤10, BPMN elements |
+| `getInstanceStatusTimeline(start, end, options?)` | `{ startTime, status, count }` | `status` ∈ `Completed`/`Faulted`/`Cancelled`; `startTime` is a LOCALE string; `options`: `{ groupBy?: TimeInterval }` (HOUR/DAY/WEEK, default DAY) |
+| `getElementStats(processKey, packageId, start, end, packageVersion)` | `{ elementId, successCount, failCount, terminatedCount, pausedCount, inProgressCount, minDurationMs, maxDurationMs, avgDurationMs, p50DurationMs, p95DurationMs, p99DurationMs }` | all positional args |
+
+For Cases, `name` is derived from `packageId` (CaseManagement prefix stripped); for MaestroProcesses, `name === packageId`. Both present on every row.
+
+`CaseInstances` SLA methods:
+
+| Method | Returns | Row shape |
+|--------|---------|-----------|
+| `getSlaSummary(options?)` | `{ items: SlaSummaryResponse[] }` (default top 50) or paginated | `{ caseInstanceId, folderKey, name, externalId, caseSummary, processKey, slaDueTime (ISO UTC), slaStatus, escalationRuleIndex, escalationRuleType, instanceStatus, lastModifiedTime }`. `options`: `{ caseInstanceId?, startTimeUtc?: Date, endTimeUtc?: Date }` + pagination |
+| `getStagesSlaSummary(options?)` | **bare** `{ caseInstanceId, stages: Stage[] }[]` | `Stage = { elementId, name, latestStatus, slaDueTime, slaStatus, escalationRuleIndex, escalationRuleType }`. `options`: `{ caseInstanceId? }` |
+
+`slaStatus` string values: `'On Track'`, `'At Risk'`, `'Overdue'`, `'Completed'`, `'Unknown'`. **Compare as strings — do not import the enum** (avoids TS narrowing errors; values are stable).
+
+### Module patterns
+
+```ts
+// Top processes by run count (ranked-table) — native shape, return as-is
+import type { MetricFn } from '@/lib/metric-contract'
+import { THIRTY_DAYS_AGO, NOW } from '@/lib/time'
+
+export const fetchData: MetricFn = async (sdk) => {
+  const { MaestroProcesses } = await import('@uipath/uipath-typescript/maestro-processes')
+  return await new MaestroProcesses(sdk as never).getTopRunCount(THIRTY_DAYS_AGO, NOW)
+}
+```
+
+```ts
+// Process instance status over time (multi-line-chart) — pivot long→wide, seed all series
+export const fetchData: MetricFn = async (sdk) => {
+  const { MaestroProcesses } = await import('@uipath/uipath-typescript/maestro-processes')
+  const points = await new MaestroProcesses(sdk as never).getInstanceStatusTimeline(THIRTY_DAYS_AGO, NOW)
+  const byDate: Record<string, Record<string, unknown>> = {}
+  for (const p of points) {
+    const d = String(p.startTime)
+    byDate[d] = byDate[d] ?? { date: d, Completed: 0, Faulted: 0, Cancelled: 0 }
+    byDate[d][String(p.status)] = p.count
+  }
+  return Object.values(byDate)
+}
+```
+
+```ts
+// SLA status breakdown (donut-chart) — group by status string
+export const fetchData: MetricFn = async (sdk) => {
+  const { CaseInstances } = await import('@uipath/uipath-typescript/cases')
+  const { fetchAll } = await import('@/lib/paginate')
+  const rows = await fetchAll(cursor => new CaseInstances(sdk as never).getSlaSummary({ pageSize: 200, cursor }))
+  const by: Record<string, number> = {}
+  for (const r of rows) { const k = String(r.slaStatus); by[k] = (by[k] ?? 0) + 1 }
+  return Object.entries(by).map(([name, value]) => ({ name, value }))
+}
+```
+
+```ts
+// Cases at SLA risk (data-table) — filter At Risk / Overdue
+export const fetchData: MetricFn = async (sdk) => {
+  const { CaseInstances } = await import('@uipath/uipath-typescript/cases')
+  const { fetchAll } = await import('@/lib/paginate')
+  const rows = await fetchAll(cursor => new CaseInstances(sdk as never).getSlaSummary({ pageSize: 200, cursor }))
+  return rows.filter(r => { const s = String(r.slaStatus); return s === 'At Risk' || s === 'Overdue' })
+}
+```
+
+```ts
+// Stage-level SLA (data-table) — flatten stages
+export const fetchData: MetricFn = async (sdk) => {
+  const { CaseInstances } = await import('@uipath/uipath-typescript/cases')
+  const data = await new CaseInstances(sdk as never).getStagesSlaSummary()
+  return data.flatMap(d => d.stages.map(s => ({
+    caseInstanceId: d.caseInstanceId, stage: s.name, slaStatus: s.slaStatus, slaDueTime: s.slaDueTime, latestStatus: s.latestStatus,
+  })))
+}
+```
+
+```ts
+// Element latency stats (T2 — identifiers baked in at authoring time)
+export const fetchData: MetricFn = async (sdk) => {
+  const { MaestroProcesses } = await import('@uipath/uipath-typescript/maestro-processes')
+  return await new MaestroProcesses(sdk as never).getElementStats('<processKey>', '<packageId>', THIRTY_DAYS_AGO, NOW, '<version>')
+}
+```

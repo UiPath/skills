@@ -235,6 +235,17 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 |--------|----------------|
 | `Governance.getPolicyTraces()` / `getOperationSummary()` | `Insights` and `Insights.RealTimeData` — caller needs elevated (org-admin) access; `fullOrganization: true` returns 403 without org-admin |
 
+## Maestro Insights — RTM (SDK ≥ 1.4.x)
+
+These use the Insights RTM host (`INSIGHTS_RTM_BASE`). The SLA methods also touch PIMS-backed case data and require `PIMS` on top of the Insights scopes.
+
+| Method | Required Scope |
+|--------|----------------|
+| `Cases` / `MaestroProcesses` `.getTopRunCount()` / `getTopFaultedCount()` / `getTopExecutionDuration()` / `getTopElementFailedCount()` / `getInstanceStatusTimeline()` / `getElementStats()` | `Insights` · `Insights.RealTimeData` · `OR.Folders.Read` |
+| `CaseInstances.getSlaSummary()` / `getStagesSlaSummary()` | `Insights` · `Insights.RealTimeData` · `OR.Folders.Read` · **`PIMS`** |
+
+> All Insights RTM methods (Agents, Agent Traces, Agent Memory, Governance, Maestro Insights above) also require `OR.Folders.Read` — covered by the granted `OR.Folders`. `Cases.getAll` / `CaseInstances.getAll` (PIMS host, not Insights) require `PIMS` — see the Maestro sections above.
+
 ---
 
 ## Common Scope Bundles
@@ -248,4 +259,5 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 | Orchestrator Jobs (list + read output) | `OR.Jobs.Read OR.Folders.Read` (add `OR.Folders.Read` so `Jobs.getOutput()` can resolve file-type output arguments via Attachments) |
 | Maestro full access | `PIMS OR.Execution.Read` |
 | Conversational Agent | `OR.Execution OR.Folders OR.Jobs ConversationalAgents Traces.Api` |
-| Insights RTM (Agents, Agent Traces, Agent Memory, Governance) | `Insights Insights.RealTimeData` |
+| Insights RTM (Agents, Agent Traces, Agent Memory, Governance, Maestro Insights) | `Insights Insights.RealTimeData OR.Folders.Read` |
+| Maestro SLA (CaseInstances SLA summary) | `Insights Insights.RealTimeData OR.Folders.Read PIMS` |

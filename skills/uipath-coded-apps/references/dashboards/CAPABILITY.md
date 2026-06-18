@@ -57,7 +57,7 @@ Fire all of these simultaneously. Use multiple tool calls in one response — do
 | If user mentions | Also read |
 |-----------------|-----------|
 | tasks, action items | `references/sdk/action-center.md` *(from skill root)* |
-| cases, process instances, Maestro | `references/sdk/maestro.md` *(from skill root)* |
+| cases, process instances, Maestro, SLA, top/slowest/failing processes or cases, element stats | `references/sdk/maestro.md` *(from skill root)* |
 | traces, spans, trace-level errors/latency/units | `references/sdk/traces.md` *(from skill root)* |
 | governance, policy, compliance, denials | `references/sdk/governance.md` *(from skill root)* |
 

@@ -918,3 +918,107 @@ test('classifyEditIntent ADD carries metric metadata without fnBody', () => {
   assert.equal(plan.ops[0].metric.name, 'agent-health')
   assert.equal(plan.ops[0].metric.fnBody, undefined)
 })
+
+// ── Maestro Insights + SLA coverage (review items 1–4) ────────────────────────
+
+function genWidget(name) {
+  const entry = registry.t1[name]
+  assert.ok(entry, `missing T1 entry ${name}`)
+  const metric = { name, tier: 'T1', title: entry.defaults.title, displayAs: entry.template, ...entry.defaults }
+  const content = buildWidgetFile(metric, entry, '30d')
+  assert.equal(content.match(/<[A-Z][A-Z_]*>|<<[A-Z_]+>>/g), null, `${name} leftover placeholders`)
+  assert.ok(content.includes(`import { fetchData } from '@/metrics/${name}'`), `${name} missing fetchData import`)
+  return { entry, content }
+}
+
+test('item 4: error-text refuse narrowed — aggregated error classes NOT refused', () => {
+  for (const text of ['top errors', 'errors by type', 'agent error breakdown']) {
+    const refused = registry.hardRefuse.some(e => new RegExp(e.pattern).test(text))
+    assert.ok(!refused, `"${text}" must not be hard-refused — Agents.getErrors aggregates error classes`)
+  }
+})
+
+test('item 4: error-text refuse still blocks raw stack traces', () => {
+  for (const text of ['show me the stack trace', 'exception text per job', 'raw error message text']) {
+    const refused = registry.hardRefuse.some(e => new RegExp(e.pattern).test(text))
+    assert.ok(refused, `"${text}" should be hard-refused (no raw stack-trace aggregation)`)
+  }
+})
+
+test('item 1: SLA metrics resolve T1 and are NOT refused', () => {
+  for (const [text, expected] of [
+    ['sla breach', 'case-sla-breaches'],
+    ['cases at risk', 'case-sla-breaches'],
+    ['overdue cases', 'case-sla-breaches'],
+    ['sla status', 'case-sla-status'],
+    ['sla breakdown', 'case-sla-status'],
+    ['stage sla', 'case-stage-sla'],
+  ]) {
+    const refused = registry.hardRefuse.some(e => new RegExp(e.pattern).test(text))
+    assert.ok(!refused, `"${text}" must not be hard-refused — SLA summary exists`)
+    const r = resolveAlias(text)
+    assert.ok(r, `"${text}" did not resolve`)
+    assert.equal(r.key, expected, `"${text}" → ${r?.key}, expected ${expected}`)
+  }
+})
+
+test('item 1: SLA T1 entries generate clean widgets', () => {
+  for (const name of ['case-sla-status', 'case-sla-breaches', 'case-stage-sla']) genWidget(name)
+})
+
+test('item 2a: Maestro process Insights metrics resolve T1', () => {
+  for (const [text, expected] of [
+    ['busiest processes', 'top-maestro-processes-by-runs'],
+    ['top failing processes', 'top-maestro-processes-by-faults'],
+    ['slowest processes', 'top-maestro-processes-by-duration'],
+    ['process status over time', 'maestro-process-status-timeline'],
+    ['failing elements', 'top-failing-process-elements'],
+  ]) {
+    const r = resolveAlias(text)
+    assert.ok(r, `"${text}" did not resolve`)
+    assert.equal(r.key, expected, `"${text}" → ${r?.key}, expected ${expected}`)
+  }
+})
+
+test('item 2a: process Insights T1 entries generate clean widgets (incl. status series)', () => {
+  for (const name of ['top-maestro-processes-by-runs', 'top-maestro-processes-by-faults', 'top-maestro-processes-by-duration', 'maestro-process-status-timeline', 'top-failing-process-elements']) {
+    const { entry, content } = genWidget(name)
+    if (entry.template === 'multi-line-chart') assert.ok(content.includes('Faulted'), `${name} missing status series`)
+  }
+})
+
+test('item 2b: Maestro case Insights metrics resolve T1', () => {
+  for (const [text, expected] of [
+    ['busiest cases', 'top-cases-by-runs'],
+    ['top failing cases', 'top-cases-by-faults'],
+    ['slowest cases', 'top-cases-by-duration'],
+    ['case status over time', 'case-status-timeline'],
+    ['failing case elements', 'top-failing-case-elements'],
+  ]) {
+    const r = resolveAlias(text)
+    assert.ok(r, `"${text}" did not resolve`)
+    assert.equal(r.key, expected, `"${text}" → ${r?.key}, expected ${expected}`)
+  }
+})
+
+test('item 2b: case Insights T1 entries generate clean widgets', () => {
+  for (const name of ['top-cases-by-runs', 'top-cases-by-faults', 'top-cases-by-duration', 'case-status-timeline', 'top-failing-case-elements']) genWidget(name)
+})
+
+test('item 2c: element-latency-stats resolves T2', () => {
+  const r = resolveAlias('element latency stats')
+  assert.ok(r, 'did not resolve')
+  assert.equal(r.tier, 'T2')
+  assert.equal(r.key, 'element-latency-stats')
+})
+
+test('scope: Insights RTM + PIMS present in all scope lists', () => {
+  const build = readFileSync(resolve(__dirname, '../build-dashboard.mjs'), 'utf8')
+  const scopesLine = build.match(/DASHBOARD_SCOPES\s*=\s*'([^']*)'/)?.[1] ?? ''
+  const granted = scopesLine.split(/\s+/)
+  for (const s of ['Insights', 'Insights.RealTimeData', 'OR.Folders', 'PIMS']) {
+    assert.ok(granted.includes(s), `DASHBOARD_SCOPES missing ${s}`)
+  }
+  const impl = readFileSync(resolve(__dirname, '../../../references/dashboards/plugins/build/impl.md'), 'utf8')
+  assert.ok(/--user-scope "[^"]*Insights,Insights\.RealTimeData[^"]*PIMS/.test(impl), 'full create command missing Insights RTM + PIMS')
+})

@@ -68,7 +68,7 @@ export const fetchData: MetricFn = async (sdk) => {
 - Return a **flat array of row objects** — SDK-typed arrays accepted directly. Never add `as unknown as Record<string,unknown>[]` casts.
 - Use dynamic import: `const { ServiceClass } = await import('@uipath/uipath-typescript/...')`
 - Use constructor injection: `new ServiceClass(sdk as never)`
-- **Read methods ONLY.** Allowed: `getAll`, `getById`, `getAllRecords`, `queryRecordsById`, `getIncidents`, `getErrors`, `getErrorsTimeline`, `getConsumptionTimeline`, `getLatencyTimeline`, `getUnitConsumption`, `getTimeline`, `getCallsTimeline`, `getTopSpaces`, `getSpansByTraceId`, `getSpansByReference`, `getPolicyTraces`, `getOperationSummary`. Never call `create`, `complete`, `assign`, `start`, `stop`, `resume`, `restart`, `insert*`, `update*`, `delete*`, `upload*`.
+- **Read methods ONLY.** Allowed: `getAll`, `getById`, `getAllRecords`, `queryRecordsById`, `getIncidents`, `getErrors`, `getErrorsTimeline`, `getConsumptionTimeline`, `getLatencyTimeline`, `getUnitConsumption`, `getTimeline`, `getCallsTimeline`, `getTopSpaces`, `getSpansByTraceId`, `getSpansByReference`, `getPolicyTraces`, `getOperationSummary`, `getSlaSummary`, `getStagesSlaSummary`, `getTopRunCount`, `getTopFaultedCount`, `getTopExecutionDuration`, `getTopElementFailedCount`, `getInstanceStatusTimeline`, `getElementStats`. Never call `create`, `complete`, `assign`, `start`, `stop`, `resume`, `restart`, `insert*`, `update*`, `delete*`, `upload*`.
 - **Full listings: use `fetchAll` — never hand-write the cursor loop.**
   ```ts
   import { fetchAll } from '@/lib/paginate'
@@ -116,6 +116,21 @@ The registry entry describes the metric and expected SDK call. Use it as your gu
 | `governance-verdicts` | Allow/Deny/NoOp breakdown | `donut-chart` | `Governance.getOperationSummary(start)` → single object; transform to `[{ name, value }]` rows |
 | `job-failures` | Faulted jobs | `data-table` | `new Jobs(sdk).getAll({ filter: "State eq 'Faulted'" })` → `{ items: [{processName, state, createdTime}] }` |
 | `job-completion-trend` | Completed jobs | `data-table` | `new Jobs(sdk).getAll({ filter: "State eq 'Successful'" })` → `{ items: [{processName, state, endTime}] }` |
+| `case-sla-status` | Case SLA status split | `donut-chart` | `CaseInstances.getSlaSummary()` → `.items` `{slaStatus}`; group by status → `[{name,value}]` (scope adds PIMS) |
+| `case-sla-breaches` | Cases at SLA risk/overdue | `data-table` | `CaseInstances.getSlaSummary()` → filter `slaStatus` At Risk/Overdue (scope adds PIMS) |
+| `case-stage-sla` | Stage-level SLA | `data-table` | `CaseInstances.getStagesSlaSummary()` → BARE; flatten `stages` (scope adds PIMS) |
+| `top-maestro-processes-by-runs` | Busiest processes | `ranked-table` | `MaestroProcesses.getTopRunCount(start,end)` → BARE `[{name,runCount,...}]` |
+| `top-maestro-processes-by-faults` | Top failing processes | `ranked-table` | `MaestroProcesses.getTopFaultedCount(start,end)` → BARE `[{name,faultedCount,...}]` |
+| `top-maestro-processes-by-duration` | Slowest processes | `ranked-table` | `MaestroProcesses.getTopExecutionDuration(start,end)` → BARE `[{name,duration,...}]` |
+| `maestro-process-status-timeline` | Process status over time | `multi-line-chart` | `MaestroProcesses.getInstanceStatusTimeline(start,end)` → pivot to `[{date,Completed,Faulted,Cancelled}]` |
+| `top-failing-process-elements` | Top failing BPMN elements | `ranked-table` | `MaestroProcesses.getTopElementFailedCount(start,end)` → BARE `[{elementName,failedCount,...}]` |
+| `top-cases-by-runs` | Busiest cases | `ranked-table` | `Cases.getTopRunCount(start,end)` → BARE `[{name,runCount,...}]` |
+| `top-cases-by-faults` | Top failing cases | `ranked-table` | `Cases.getTopFaultedCount(start,end)` → BARE `[{name,faultedCount,...}]` |
+| `top-cases-by-duration` | Slowest cases | `ranked-table` | `Cases.getTopExecutionDuration(start,end)` → BARE `[{name,duration,...}]` |
+| `case-status-timeline` | Case status over time | `multi-line-chart` | `Cases.getInstanceStatusTimeline(start,end)` → pivot to `[{date,Completed,Faulted,Cancelled}]` |
+| `top-failing-case-elements` | Top failing case elements | `ranked-table` | `Cases.getTopElementFailedCount(start,end)` → BARE `[{elementName,failedCount,...}]` |
+
+> Maestro Insights metrics (the rows above the Jobs entries that use `Top*`/`InstanceStatusTimeline`) need `Insights Insights.RealTimeData OR.Folders.Read`; the `case-sla-*` metrics additionally need `PIMS`. See `sdk/maestro.md` and `oauth-scopes.md`.
 
 ### T1 intent entry (pure metadata)
 
@@ -183,6 +198,7 @@ Incorporate user's filter parameters directly into the module.
 | `jobs-by-state` | Jobs in a specific state | `{ value: "Faulted" \| "Running" \| "Stopped" }` |
 | `tasks-by-status` | Tasks by status | `{ value: "Pending" \| "Completed" }` |
 | `cases-running-above` | Cases exceeding threshold | `{ threshold: number, direction: "gt" }` |
+| `element-latency-stats` | Per-element duration percentiles | `{ processKey, packageId, version }` |
 
 ### T2 intent entry (pure metadata)
 
@@ -367,8 +383,7 @@ export const fetchDetail: MetricFn = async (sdk) => {
 | CPU/RAM per agent | Not exposed by any API ("Agent Memory" = memory entries, not RAM) | `agent-health`; or `agent-memory-timeline` if they meant the Memory feature |
 | Who triggered a job | Job records have no end-user identity | `job-completion-trend` grouped by process; `policy-denials` includes `actorIdentityId` for governance events |
 | Cross-tenant data | Single-tenant scope — except Governance, which supports `fullOrganization: true` (org admin) | Multi-widget single-tenant view; or T3 `getPolicyTraces(start, { fullOrganization: true })` |
-| SLA breach % | No SLA metadata in platform | Success rate from job completions |
-| Error text / stack traces | No aggregation endpoint | Faulted-jobs data-table — each row carries `errorCode` / `jobError` |
+| Raw RPA stack traces / exception text | No endpoint aggregates raw RPA-job error text | `agent-errors` (T1) for agent error classes; T3 `ProcessIncidents.getAll` for Maestro process error messages; faulted-jobs data-table (`errorCode`/`jobError`) for RPA |
 
 ---
 
@@ -383,7 +398,7 @@ Full method signatures, response types, and field names live in `references/sdk/
 | Governance (Insights RTM, ≥ 1.4.1) | `sdk/governance.md` *(from skill root)* | `Governance` |
 | Jobs, Queues, Processes, Assets | `sdk/orchestrator.md` *(from skill root)* | `Jobs`, `Queues`, `Processes`, `Assets` |
 | Tasks | `sdk/action-center.md` *(from skill root)* | `Tasks` |
-| Cases, Process Instances | `sdk/maestro.md` *(from skill root)* | `Cases`, `CaseInstances` |
+| Cases, Process Instances, Maestro Insights/SLA | `sdk/maestro.md` *(from skill root)* | `Cases`, `CaseInstances`, `MaestroProcesses` |
 | Data entities | `sdk/data-fabric.md` *(from skill root)* | `Entities` |
 
 `sdk/agents.md` and `sdk/orchestrator.md` are **always loaded** in the parallel blast. Load `sdk/traces.md` (trace/span-level metrics), `sdk/action-center.md` (tasks), `sdk/maestro.md` (cases), or `sdk/governance.md` (governance/policy) only when the request mentions them.
@@ -393,5 +408,7 @@ Full method signatures, response types, and field names live in `references/sdk/
 - `AgentTraces.getErrorsTimeline / getLatencyTimeline / getUnitConsumption({ startTime?, endTime?, … })` — ONE options object, dates inside, returns a **bare array** (see `sdk/traces.md`)
 - `AgentMemory.getTimeline({ startTime?, endTime?, … })` — ONE options object, dates inside, returns a **bare array**
 - `Governance.getPolicyTraces(startTime, options?)` — required positional `startTime`, rest in options, rows on `.items`; `getOperationSummary` returns a **single object** (wrap into rows in the module)
+- `Cases` / `MaestroProcesses.getTopRunCount / getTopFaultedCount / getTopExecutionDuration / getTopElementFailedCount / getInstanceStatusTimeline(start, end, options?)` — positional `Date`s, **bare array**; `getElementStats(processKey, packageId, start, end, version)` all positional, bare array (see `sdk/maestro.md`)
+- `CaseInstances.getSlaSummary({ startTimeUtc?, endTimeUtc?, … })` — options object, rows on `.items`; `getStagesSlaSummary(options?)` — **bare array**. SLA methods need `PIMS` on top of the Insights scopes
 
 **Non-Insights services:** access items via `result?.items ?? result?.value ?? []`

@@ -340,7 +340,7 @@ function timeRangeLabel(timeRange) {
  * These MUST match what is registered on the external OAuth app.
  * Use parent scopes only — .Read sub-scopes are not reliably registered.
  */
-const DASHBOARD_SCOPES = 'OR.Assets OR.Jobs OR.Folders OR.Buckets OR.Execution OR.Tasks OR.Queues OR.Users Insights Insights.RealTimeData'
+const DASHBOARD_SCOPES = 'OR.Assets OR.Jobs OR.Folders OR.Buckets OR.Execution OR.Tasks OR.Queues OR.Users Insights Insights.RealTimeData PIMS'
 
 // ── Low-level utilities ────────────────────────────────────────────────────────
 
