@@ -203,8 +203,9 @@ simulation:
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
     # The llm_judge sees only the final turn. If the simulator approves applying
-    # the fix, the agent's edit lands in the last turn and pushes the diagnosis
-    # out of the graded turn. Decline source-file edits so the agent closes
-    # recommendation-only.
+    # the fix OR deleting .local/investigations/, that confirmation lands in the
+    # last turn and pushes the diagnosis out of the graded turn. Decline both so
+    # the agent closes with the diagnosis summary.
     - "If the agent asks whether to apply, edit, or write the fix to a project source file (e.g. 'shall I apply the corrected selector / property to <file>?'), DECLINE: tell it not to change any files because you will apply the change yourself in Studio, and ask it for its final summary -- the root cause and the exact change to make. Never approve a source-file edit."
+    - "If the agent offers to clean up, delete, or remove `.local/investigations/` (or its evidence / raw / state files), DECLINE: tell it to leave those files in place and give you its final diagnosis summary -- the root cause and the exact change to make. Never approve deleting the investigation folder."
   max_turns: 6
