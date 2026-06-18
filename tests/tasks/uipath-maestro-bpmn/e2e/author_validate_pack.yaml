@@ -12,8 +12,6 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a new synthetic UiPath Maestro BPMN Process Orchestration project
   called "PurchaseApproval" in a folder named PurchaseApproval. The project
   should include:

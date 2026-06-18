@@ -1,0 +1,6 @@
+{
+  "Name": "InvoicePostingTxn",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Start Transaction failure caused by a post-migration provider mismatch; a Windows project still uses System.Data.SqlClient on the Start Transaction activity, so opening the transaction throws a Microsoft.Data.SqlClient type-initializer exception before any child runs.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T08:15:03.610Z",
+      "Message": "[Execute Non Query] A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T08:15:03.628Z",
+      "Message": "Execute Non Query: A database error occurred. ---> System.DllNotFoundException: Unable to load DLL 'OraOps12.dll' or one of its dependencies: Failed to load library (ErrorCode: 126)\r\nin Main.xaml\r\n    at ExecuteNonQuery \"Execute Non Query\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T08:15:03.640Z",
+      "Message": "OracleLedgerSync execution error: System.DllNotFoundException at OracleInternal.Common.ProviderConfig native client load. The Oracle Data Provider for .NET requires the Oracle Client native libraries to be installed on the host. ErrorCode 126 = the specified module could not be found."
+    }
+  ]
+}

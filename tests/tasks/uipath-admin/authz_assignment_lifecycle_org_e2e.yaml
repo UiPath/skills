@@ -62,7 +62,7 @@ success_criteria:
   - type: command_executed
     description: "Agent cleaned up via `roles assignments delete <id>`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+(?:["'']?[a-f0-9-]{8,}|--file\s+\S+)'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+.*(?:["'']?[a-f0-9-]{8,}|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

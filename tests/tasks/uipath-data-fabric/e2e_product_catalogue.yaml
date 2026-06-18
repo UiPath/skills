@@ -15,7 +15,6 @@ run_limits:
 
 initial_prompt: |
   Build an e-commerce product catalogue in UiPath Data Fabric.
-  Load the uipath-data-fabric skill before starting.
 
   Create entity `ProductCatalogue_<EPOCH>` (Unix epoch seconds suffix —
   e.g. `ProductCatalogue_1716163200`) with fields:

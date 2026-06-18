@@ -14,7 +14,6 @@ initial_prompt: |
 
   The run must succeed (the error is caught, not fatal). Validate and run it
   locally to confirm; it must survive a StudioWeb designer roundtrip.
-  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

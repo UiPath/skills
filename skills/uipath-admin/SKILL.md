@@ -1,6 +1,6 @@
 ---
 name: uipath-admin
-description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets), Authorization (custom roles, role assignments, permission catalog, effective-access via check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async operation polling), IP Restriction (allowlist, enforcement switch, bypass rules, lockout safety), Audit (event sources, paginated queries, ZIP or single-CSV exports — login history, compliance dumps, who-did-what-when-where on a resource). For Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
+description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets), Authorization (custom roles, role assignments, permission catalog, effective-access via check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async operation polling), IP Restriction (allowlist, enforcement switch, bypass rules, lockout safety), Audit (event sources, paginated queries, day-wise-JSON-folder or single-CSV exports — login history, compliance dumps, who-did-what-when-where on a resource). For Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -49,9 +49,9 @@ Administrative operations on UiPath via `uip admin` — Identity Server, Authori
 
 Activate on both **explicit audit requests** and **natural-language investigation intent** — users rarely say "audit events" by name.
 
-- **Explicit** — `uip admin audit` commands; list sources / targets / types; query, filter, paginate, or export events; CSV/ZIP dump of audit history for a window.
+- **Explicit** — `uip admin audit` commands; list sources / targets / types; query, filter, paginate, or export events; CSV or per-day-JSON dump of audit history for a window.
 - **Query audit events** — list event sources, filter events by source / target / type / user / status / time window at org or tenant scope
-- **Export audit events** — chunked download from the long-term store (one call per UTC day, atomic abort on any chunk failure) as a ZIP of day-wise JSON files (default) or a single merged CSV via `--file-format csv`
+- **Export audit events** — chunked download from the long-term store (one call per UTC day, atomic abort on any chunk failure) as a folder of day-wise JSON files (default) or a single merged CSV via `--file-format csv`
 - **Membership / license phrasings** — "who joined / left the organization", "who was made an admin", "license changes", "cross-tenant audit"
 - **Sign-in / authentication phrasings** — "failed/successful logins", "login history for user X", "who's been signing in"
 - **Tenant-activity phrasings** — "what happened on tenant X", "asset/queue/folder edits", "queue items processed", "job failures", "Action Center task changes", "Apps / AgentHub / Document Understanding / Integration Service / Test Manager activity"
@@ -107,7 +107,7 @@ Each rule is the agent contract. Per-area detail is in the linked reference file
 27. **Bound the time window, ISO 8601 in UTC.** Don't call `audit <scope> events` without `--from-date` and `--to-date` on a noisy tenant. Accepted formats: date-only (`2026-04-01`) or with time (`2026-04-01T14:30:00Z`). **`--to-date` is inclusive of the exact instant** — to capture a full final day, pass the start of the next day or `T23:59:59.999Z`.
 28. **`--tenant-id` is silently ignored on `org`-scoped audit commands.** If you find yourself reaching for it on `audit org events`, switch to `audit tenant` instead.
 29. **On 401 from audit, do NOT retry.** The token is missing the `Audit.Read` scope; tell the user to `uip logout && uip login`.
-30. **`audit <scope> export` writes a ZIP (default) or a single merged CSV from the long-term store.** `--from-date`, `--to-date`, and `--output-file` are all required; dates per Rule 27. **`--file-format <zip|csv>`** selects the shape: `zip` (default) is one JSON file per UTC day; `csv` merges every event into one CSV — pick `csv` when the user wants a flat spreadsheet/Excel-friendly dump and `zip` for archival or per-day JSON. Match the `--output-file` extension to the format (`.zip` / `.csv`). **Never overwrite a path the user did not explicitly approve** — surface the resolved `--output-file` and confirm before running.
+30. **`audit <scope> export` writes into a base directory (`--output-path`): a uniquely-named folder of day-wise JSON files (default) or a single merged CSV.** `--from-date`, `--to-date`, and `--output-path` are all required; dates per Rule 27. `--output-path` is a **base directory** (created if missing) — **pass a directory only, never a filename or extension**; the CLI creates a uniquely-named `audit_<from>_<to>_<generated-at>` output inside it (folder for `json`, `.csv` for `csv`), so repeated exports of the same window never collide. **Do not hand-craft the per-export name.** **`--file-format <json|csv>`** selects the shape: `json` (default) = a folder of `<YYYY-MM-DD>.json` files; `csv` = one merged CSV — pick `csv` for a flat spreadsheet/Excel-friendly dump, `json` for per-day files. **Confirm the base directory with the user before running**, then report the generated `Path` (and `GeneratedAt`) from the result.
 
 ### IP Restriction
 

@@ -12,7 +12,6 @@ initial_prompt: |
 
   Validate it offline (no run needed) and confirm it reports valid. It must
   survive a StudioWeb designer roundtrip.
-  Before starting, load the uipath-api-workflow skill and follow its workflow.
 
 success_criteria:
   - type: file_exists

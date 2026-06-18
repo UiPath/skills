@@ -68,6 +68,20 @@ Every activity should have `sap:VirtualizedContainerService.HintSize` as an attr
 
 ## 3. Flowchart Layout
 
+### What Counts as a Node
+
+A node is one `FlowStep` / `FlowDecision` / `FlowSwitch` on the canvas. A `FlowStep` wraps **exactly one** activity — which may be a container (`Sequence`, `NApplicationCard`, `NCheckState`, `TryCatch`). Activities **inside** a container are NOT separate nodes; they stay nested in their parent and never get their own `ShapeLocation`. Promote a step to its own node only when it is a top-level step in the process flow. Example: an `NCheckState`'s `Throw` belongs inside the `IfNotExists` branch — making it a sibling node would change when it runs.
+
+One node per top-level step → separate boxes. One step's children nested → stay inside that box. Do not invert this into "every activity is a node."
+
+### Required vs. Optional ViewState Keys
+
+`ShapeLocation` + `ShapeSize` are the **required** pair on every node — they are what makes nodes render as separate boxes. `ConnectorLocation` (and `TrueConnector`/`FalseConnector`) is **optional**: Studio auto-routes connectors from the source and target node positions. The recipes below include connectors for precise routing, but omitting them is valid — Studio's own saved output omits them entirely.
+
+### No Orphan Nodes
+
+Every node except the start must be reachable: referenced by `Flowchart.StartNode`, a `FlowStep.Next`, or a decision/switch branch. A `FlowStep` with no incoming reference and no `FlowStep.Next` is an orphan — it renders as a disconnected box and is almost always a leftover. Do not generate them.
+
 ### Coordinate System
 
 - **Origin**: Top-left corner (0, 0)
@@ -637,10 +651,10 @@ Same rules as Flowchart — nodes defined inline within property elements (e.g.,
 
 ---
 
-## 7. When to Skip ViewState
+## 7. ViewState Is Mandatory for These Canvases
 
-If generating XAML for **execution only** (not for visual display), you can omit all ViewState properties. The workflow will execute correctly. Studio will auto-arrange nodes when the file is first opened.
+Always generate ViewState for **every** node in a Flowchart, State Machine, or ProcessDiagram. Do **not** skip it, even for "execution-only" workflows.
 
-**Trade-off:** The initial layout will be messy — all nodes may overlap at (0,0). For a professional-looking layout, always include ViewState.
+Omitting ViewState does not break execution, but Studio places every node at (0,0). They overlap into what looks like **a single node** — and Studio does **not** auto-arrange on open. The stacked layout persists until a user manually right-clicks → Auto Arrange. A generated workflow that opens as one overlapping node reads as broken.
 
-**Recommended approach:** Generate ViewState for all Flowchart, State Machine, and ProcessDiagram workflows. It adds bulk but produces immediately usable designs.
+The only ViewState you skip: **Sequences** (Studio stacks their children vertically without coordinates) and **nodes you are not editing** in an existing file (leave their ViewState untouched).

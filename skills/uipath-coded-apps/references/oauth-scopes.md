@@ -230,6 +230,26 @@ Combined scopes required: `OR.Execution` · `OR.Folders` · `OR.Jobs` · `Conver
 
 ---
 
+## Widgets
+
+Scopes required by `@uipath/ui-widgets-*` React components. The widget's own runtime API calls are listed here — add scopes from the sections above for any additional SDK calls the host app makes.
+
+### Validation Station (`@uipath/ui-widgets-validation-station`)
+
+| Required Scope | Why |
+|----------------|-----|
+| `OR.Buckets` | Widget reads the document and extraction artifacts from a storage bucket and uploads the validated payload during save. Read-only `OR.Buckets.Read` is insufficient — the upload step requires write. |
+| `OR.Tasks` or `OR.Tasks.Write` | Required when the host app calls `task.complete()` in `onSaveComplete` (action apps, and web apps that complete the task on save). |
+
+See [widgets/validation-station.md](widgets/validation-station.md) for the full integration guide.
+
+> **TODO:** Document scopes for the remaining widgets when their integration guides land in `references/widgets/`:
+> - `@uipath/ui-widgets-conversational-agent-chat`
+> - `@uipath/ui-widgets-datatable`
+> - `@uipath/ui-widgets-multi-file-upload`
+
+---
+
 ## Common Scope Bundles
 
 | App uses... | Minimum scopes needed |

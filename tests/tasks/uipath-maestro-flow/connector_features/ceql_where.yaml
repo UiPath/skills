@@ -16,7 +16,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Use the `uipath-maestro-flow` skill. Do NOT run `uip flow node configure`
+  Do NOT run `uip flow node configure`
   or any command that requires a live connection — this sandbox has no
   UiPath tenant. Instead, plan the exact `--detail` JSON you would pass to
   `uip flow node configure` and emit it to `where_detail.json`.

@@ -28,10 +28,6 @@ initial_prompt: |
   inside the solution `ReviewSol`. Review the agent project and produce
   a structured review report with Critical / Warning / Info findings.
 
-  Before doing anything else, load the `uipath-review` skill and follow
-  its review workflow (discover, classify, run validation, apply the
-  rule catalog, produce the report).
-
   This is a read-only review. Do NOT modify, create, or delete any
   files inside `ReviewSol/`. Do NOT scaffold a new project. Do NOT
   ask for approval, confirmation, or feedback.

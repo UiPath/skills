@@ -14,8 +14,6 @@ run_limits:
   max_turns: 30
 
 initial_prompt: |
-  Before starting, load the uipath-data-fabric skill and follow its workflow.
-
   You have three tasks. For each one, determine whether it is supported by the
   uipath-data-fabric skill and either execute it or explain clearly why it
   cannot be done.
