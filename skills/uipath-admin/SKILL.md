@@ -69,6 +69,12 @@ Activate on **access/auth/identity troubleshooting** — users report symptoms, 
 - **Diagnose role misconfiguration** — "custom role doesn't work", "user has role but can't do X" → inspect role actions, verify scope alignment. Playbook: [identity-troubleshoot-guide.md → Playbook 3](references/identity-troubleshoot-guide.md#playbook-3--role-misconfiguration)
 - **Diagnose IP restriction lockout** — "can't access platform from new office", "all users blocked" → my-ip + ip-ranges list + enforcement get. Playbook: [identity-troubleshoot-guide.md → Playbook 4](references/identity-troubleshoot-guide.md#playbook-4--ip-restriction-lockout)
 - **Diagnose PAT / external app failures** — "API returns 401", "PAT stopped working", "external app can't authenticate" → check expiry, scopes, audit for revocation. Playbook: [identity-troubleshoot-guide.md → Playbook 5](references/identity-troubleshoot-guide.md#playbook-5--pat-or-external-app-not-working)
+- **Diagnose SMTP email delivery failures** — "invitations not sending", "SMTP broken" → smtp get + smtp test
+- **Investigate stuck tenant operations** — "tenant create not completing", "operation stuck" → poll operation status
+- **Identify service provisioning no-ops** — "service still enabled after remove" → platform-pinned services
+- **Triage robot account authentication issues** — "robot not authenticating" → identity vs credential model confusion
+
+> **Structured diagnose capability index** with failure-mode lookup and diagnostic priority ladder: [diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md). Quick investigation playbooks: [identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md).
 
 ## Critical Rules
 
@@ -225,3 +231,6 @@ For per-area full checklists, follow the table's inline links: Identity → [ide
 | Audit investigation workflows (scope disambiguation, who-did-X, login history, date-range dump, overview) | [references/audit-workflow-guide.md](references/audit-workflow-guide.md) |
 | Paginate audit events beyond 200 | [references/audit-commands.md](references/audit-commands.md) + Rule 25 |
 | Troubleshoot access denied, login failures, role misconfig, IP lockout, PAT/app auth | [references/identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md) |
+| Diagnose capability index (structured) | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
+| Failure mode lookup (12 named patterns) | [references/diagnose/references/failure-modes.md](references/diagnose/references/failure-modes.md) |
+| Diagnostic priority ladder (sequential triage) | [references/diagnose/references/troubleshooting-guide.md](references/diagnose/references/troubleshooting-guide.md) |
