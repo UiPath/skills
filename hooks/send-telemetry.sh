@@ -158,12 +158,21 @@ effort_level="$(printf '%s' "$payload" \
   | grep -oE '"effort"[[:space:]]*:[[:space:]]*\{[^}]*"level"[[:space:]]*:[[:space:]]*"[^"]*"' \
   | grep -oE '"level"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
 
-# Subagent context — present only when the tool call ran inside a spawned
-# subagent (absent in the main session, so empty = main loop). agentType is the
-# subagent name (Explore / Plan / custom). The model id is NOT in the
-# PostToolUse payload, so it cannot be sent from the hook.
-agent_id="$(json_str agent_id)"
-agent_type="$(json_str agent_type)"
+# modelId — best-effort from the payload, mapped to a short family name
+# (opus / sonnet / haiku / fable). Prefer an explicit `model` field; else scan
+# for a `claude-<family>` id token anywhere in the payload. `model` is not a
+# documented PostToolUse field, so this is empty unless the payload carries it.
+model_raw="$(json_str model)"
+[ -z "$model_raw" ] && model_raw="$(printf '%s' "$payload" \
+  | grep -oE 'claude-(opus|sonnet|haiku|fable)[a-z0-9._-]*' | head -1)"
+case "$model_raw" in
+  *opus*)   model_id="opus" ;;
+  *sonnet*) model_id="sonnet" ;;
+  *haiku*)  model_id="haiku" ;;
+  *fable*)  model_id="fable" ;;
+  "")       model_id="" ;;
+  *)        model_id="$model_raw" ;;
+esac
 
 # Sanitize free-ish text to keep the hand-built JSON valid and bounded. Value
 # sanitization is the hook's job (CLI and skills ship co-versioned); the CLI
@@ -181,8 +190,7 @@ effort_level="$(san "$effort_level")"
 skills_ver="$(san "$skills_ver")"
 tool_use_id="$(san "$tool_use_id")"
 session_id="$(san "$session_id")"
-agent_id="$(san "$agent_id")"
-agent_type="$(san "$agent_type")"
+model_id="$(san "$model_id")"
 
 # --- hand off to the CLI telemetry tracker ---------------------------------
 # Build a flat key:value JSON object and pipe it to `uip track`. The CLI hard-
@@ -195,7 +203,7 @@ agent_type="$(san "$agent_type")"
 # Detached subshell ( cmd & ) survives this hook's exit so the agent never
 # waits. `uip track` is opt-in and never-fail (exits 0, emits nothing when
 # telemetry is off); piping to it is harmless even if the CLI is absent.
-( printf '%s' "{\"toolName\":\"$tool\",\"skillName\":\"$skill_name\",\"uipSubcommand\":\"$uip_subcommand\",\"fileExtension\":\"$file_ext\",\"environment\":\"$env_name\",\"baseUrl\":\"$base_url\",\"outcome\":\"$outcome\",\"permissionMode\":\"$permission_mode\",\"effortLevel\":\"$effort_level\",\"skillsVersion\":\"$skills_ver\",\"toolUseId\":\"$tool_use_id\",\"sessionId\":\"$session_id\",\"agentId\":\"$agent_id\",\"agentType\":\"$agent_type\",\"durationMs\":$dur_json}" \
+( printf '%s' "{\"toolName\":\"$tool\",\"skillName\":\"$skill_name\",\"uipSubcommand\":\"$uip_subcommand\",\"fileExtension\":\"$file_ext\",\"environment\":\"$env_name\",\"baseUrl\":\"$base_url\",\"outcome\":\"$outcome\",\"permissionMode\":\"$permission_mode\",\"effortLevel\":\"$effort_level\",\"skillsVersion\":\"$skills_ver\",\"toolUseId\":\"$tool_use_id\",\"sessionId\":\"$session_id\",\"modelId\":\"$model_id\",\"durationMs\":$dur_json}" \
     | uip track >/dev/null 2>&1 & )
 
 exit 0
