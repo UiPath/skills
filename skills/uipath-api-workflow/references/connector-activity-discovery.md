@@ -18,6 +18,8 @@ Without both, the designer renders the activity as a "block / forbidden" card an
 ```
 1. uip api-workflow registry resolve "<keyword>" --output json     → candidate GUIDs
 2. (IntSvc kind only) uip is connections list <connector-key>           → connection UUID
+     empty? → uip is connections list                              → fallback: unfiltered
+     still empty? → uip is connections list --all-folders          → fallback: other folders
    uip is connections ping <uuid>                                  → REQUIRED — verify it works
 3. uip api-workflow registry stub <activity-type-id> \             → ready-to-paste activity
      [--connection-id <uuid>] [--inputs '<json>'] --output json
@@ -92,7 +94,7 @@ Skip this step if `connectorKey === "uipath-uipath-http"` — the HTTP connector
 uip is connections list <connector-key> --output json
 ```
 
-Returns connections for that connector. Pick the `Id` of an `Enabled` connection (prefer `IsDefault: "Yes"` if multiple). If none exist, the user must create one in Integration Service before authoring can complete.
+Returns connections for that connector. Pick the `Id` of an `Enabled` connection (prefer `IsDefault: "Yes"` if multiple). If this returns empty, do NOT conclude none exist — the listing is folder-scoped; run the unfiltered and `--all-folders` fallbacks below first.
 
 ```bash
 uip is connections ping <connection-uuid> --output json
@@ -103,7 +105,7 @@ This is **not optional**. A connection that exists in the listing can still be i
 - `Code: "ConnectionPing"` (success) → connection is healthy, proceed to Step 3.
 - `Code: "ConnectionNotEnabled"` or 404 `"Connection [<uuid>] is invalid or you do not have access to it"` → **DO NOT proceed**. The connection is broken. Run the fallback below before aborting.
 
-**Fallback — unfiltered listing.** Filtered `uip is connections list <connector-key>` can return orphaned records that don't appear in the unfiltered list (and vice versa). When the filtered listing's UUID fails to ping, run:
+**Fallback 1 — unfiltered listing.** Filtered `uip is connections list <connector-key>` can return orphaned records that don't appear in the unfiltered list (and vice versa). When the filtered listing's UUID fails to ping, run:
 
 ```bash
 uip is connections list --output json
@@ -111,7 +113,15 @@ uip is connections list --output json
 
 (no connector argument) and search the result for entries whose `ConnectorKey` matches the one you need. If a different UUID exists for the same connector, ping that one. Often the working connection is only visible in the unfiltered listing.
 
-Only after both the filtered AND unfiltered listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you abort and tell the user to either re-authenticate (`uip is connections edit <connection-uuid>` opens a browser for OAuth) or create a fresh connection in the StudioWeb UI. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
+**Fallback 2 — all folders.** Both listings above are scoped to the current folder. A connection living in a *different* folder returns **empty from both** — `"No connections found"` does NOT mean the tenant has no connection. Before concluding none exists, search across every folder:
+
+```bash
+uip is connections list --all-folders --output json
+```
+
+Returns connections from all folders (each row carries a `Folder` / `FolderKey`). Pick an `Enabled` row whose `ConnectorKey` matches and ping its `Id`. `--all-folders` cannot be combined with `--folder`/`--folder-key`. This is the single most common reason a working connection appears "missing" — always run it before aborting.
+
+Only after the filtered, unfiltered, AND `--all-folders` listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you abort and tell the user to either re-authenticate (`uip is connections edit <connection-uuid>` opens a browser for OAuth) or create a fresh connection in the StudioWeb UI. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
 
 ### Step 3 — Stub the activity
 
