@@ -1,0 +1,70 @@
+# PROTOTYPE — data-grounded CRUD pattern (vs invocation-only). skip:true, tenant-gated.
+# Self-seeding + self-cleaning: no maintained fixture needed. Needs a TM connection
+# (codereval has one) and a project to create under (set TM_EVAL_PROJECT_KEY).
+# The grading verifies the RETRIEVED value equals the CREATED value — provable only
+# by a real create->read round-trip, not by merely invoking the activity.
+task_id: skill-platform-is-testmanager-crud-grounded
+description: >
+  Data-grounded coverage: agent creates a Test Case via the
+  uipath-uipath-testmanager connector with a unique seeded name, reads it back by
+  id, and records the round-trip. Graded on the agent invoking create+get AND on
+  the retrieved name matching the created (seeded) name — i.e. the connector
+  actually round-tripped the data, not just that the activity was called.
+tags: [uipath-platform, integration, integration-service, resources, execute]
+skip: true
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+run_limits:
+  expected_turns: 14
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager_crud_grounded/seed.py"
+    timeout: 30
+
+initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
+  Read seed.json — it has a unique `name` and a `project_key`. Using the UiPath
+  Test Manager Integration Service connector (`uipath-uipath-testmanager`):
+
+  1. Create a Test Case named exactly that `name` under that project
+     (`uip is resources run create uipath-uipath-testmanager TestCase ...`).
+     Capture the new test case `Id` from the response.
+  2. Get that test case back by its `Id`
+     (`uip is resources run get uipath-uipath-testmanager TestCase ...`).
+  3. Write `result.json` with: `created_name` (the name you sent), `retrieved_name`
+     (the name field returned by Get), and `id` (the captured Id).
+  4. Then delete the test case to clean up.
+
+  Use `--output json` and `--connection-id` on every resource command.
+
+  Do NOT ask for approval. Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the test case (`uip is resources run create uipath-uipath-testmanager TestCase`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the test case back (`uip is resources run get uipath-uipath-testmanager TestCase`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data-grounded: retrieved name == created (seeded) name — the value round-tripped through the connector"
+    command: "python3 $TASK_DIR/check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
