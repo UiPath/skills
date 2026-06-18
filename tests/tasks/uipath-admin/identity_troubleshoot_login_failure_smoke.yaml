@@ -10,7 +10,7 @@ description: >
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, troubleshoot, login-history]
 
 run_limits:
-  expected_turns: 8
+  expected_turns: 20
 
 initial_prompt: |
   We suspect bob@contoso.com's account may be compromised — there

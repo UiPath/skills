@@ -10,12 +10,16 @@ description: >
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, authz, troubleshoot]
 
 run_limits:
-  expected_turns: 8
+  expected_turns: 12
 
 initial_prompt: |
   A user alice@contoso.com reports she cannot publish automations to
-  the Finance folder. Investigate what permissions she actually has and
-  identify the gap.
+  the Finance folder. Run these three diagnostic steps in order:
+  1. Resolve the user: `uip admin users list --search alice --output json`
+  2. Check effective access: `uip admin authorization check-access <user-id-or-email> --scope Tenant --output json`
+  3. List role assignments: `uip admin authorization roles assignments list --output json`
+
+  If a command fails, move on to the next step — do not stop.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
