@@ -42,9 +42,9 @@ Three ingredients:
 
 | Activity | What it is | How to resolve its fields |
 |---|---|---|
-| `ConnectorActivity` | A connector operation (create / get / update …) | `typeId` + connection; criteria fields fed back via `--field-values` expand the rest (Step 4). |
-| `ConnectorTriggerActivity` | Fires when a connector event occurs | `typeId` already encodes the event; fields resolve from `typeId` + connection. |
-| `ConnectorPersistenceActivity` | Suspends the workflow until a connector event | Discover events with `uip is activities list <connector> --triggers`, then `--event-operation <op>` resolves the event's fields (Step 4). |
+| `ConnectorActivity` | A connector operation (create / get / update …) | `typeId` + connection. A **generic** operation needs `--object-name <obj>` (the record type); criteria fields fed back via `--field-values` expand the rest (Step 4). |
+| `ConnectorTriggerActivity` | Fires when a connector event occurs | Curated triggers resolve from `typeId` + connection; a **generic** trigger needs `--object-name <obj>` (the object whose changes it watches). |
+| `ConnectorPersistenceActivity` | Suspends the workflow until a connector event | Discover events with `uip is activities list <connector> --triggers`, then `--event-operation <op>` resolves the event's fields. A named event auto-resolves its single object; a generic/multi-object event also needs `--object-name <obj>` (Step 4). |
 | `ConnectorHttpActivity` | Generic HTTP-request escape hatch | Standard request fields (`method`, `url`, `headers`, `query`, `body`) — author them directly; they are the same for every connector. |
 
 Same principle throughout: **pass the selector the activity needs, get back its resolved schema.** A bare call (no selector) returns the correctly-typed activity with its baseline fields.
@@ -163,8 +163,8 @@ TICKET_UPDATED  Ticket Updated   tickets      Yes        ← named event: object
 CREATED         Record Created   N/A          No         ← generic op: choose an object too
 ```
 
-- **Named event** (`ObjectName` populated, e.g. `TICKET_UPDATED`) — pass its `Name` directly.
-- **Generic op** (`CREATED` / `UPDATED` / `DELETED`, `ObjectName` is `N/A`) — also pick the object it applies to:
+- **Named event** (`ObjectName` populated, e.g. `TICKET_UPDATED`) — pass its `Name` to `--event-operation`; its single object auto-resolves, so no `--object-name` is needed.
+- **Generic op** (`CREATED` / `UPDATED` / `DELETED`, `ObjectName` is `N/A`) — also pass `--object-name <obj>`. List the objects it applies to with:
   ```bash
   uip is triggers objects <connector-key> CREATED --output json
   ```
@@ -177,6 +177,22 @@ uip rpa activities get-default-xaml --activity-type-id "<TYPE_ID>" --connection-
 ```
 
 The returned `Configuration` carries the resolved event fields as `FieldObjects`. Without `--event-operation` you get the bare activity (correct default, no event fields). It is the persistence analogue of `--field-values` criteria — a selector that unlocks the schema — and the resolution needs a live connection (same cloud round-trip and silent-no-op caveat as above). Combine with `--field-values` to also pre-bind values.
+
+#### Select the object for generic activities with `--object-name`
+
+A **generic** `ConnectorActivity` (Insert / Get / Delete a record) or a generic event has no object baked into its `typeId`, so `get-default-xaml` returns it bare until you name the object — the headless equivalent of the designer's object dropdown. Pass `--object-name <obj>`:
+
+```bash
+uip rpa activities get-default-xaml --activity-type-id "<TYPE_ID>" --connection-id "<CONN>" \
+    --object-name issue --project-dir "<P>" --output json
+```
+
+Discover valid object names (use the `Name` field, not the display name):
+
+- Generic activity → `uip is resources list <connector-key> --output json`
+- Generic event → `uip is triggers objects <connector-key> <EVENT> --output json`
+
+A named event auto-resolves its single object, so `--object-name` is only needed for generic operations and multi-object events. It is the same kind of selector as `--event-operation` (identity that unlocks the schema), needs a live connection, and combines with `--event-operation` and `--field-values`.
 
 ### Step 5 — Read the operation's field schema
 
