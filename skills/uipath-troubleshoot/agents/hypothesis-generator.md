@@ -2,7 +2,7 @@
 
 Produce ranked hypotheses based on investigation state and evidence.
 
-**Follow `agents/shared.md` first** — all invariants and confidence-level behavior apply.
+See `shared.md` § Invariants and § Confidence-Level Behavior first.
 
 ## Inputs
 
@@ -17,7 +17,7 @@ Write or update: `.local/investigations/hypotheses.json` — see `schemas/hypoth
 ## Steps
 
 1. **Read state + evidence + signals.** Read `state.json`, `evidence/triage-initial.json` (especially its `signals` array — the structured fact inventory triage produced), and the matched + eliminated playbook lists. Verify the evidence relates to the user's reported problem (correct process, queue, entity). If it doesn't, STOP — write `needs_input.json` (see shared.md) flagging the mismatch.
-2. **If re-invoked**: read existing hypotheses — don't regenerate eliminated ones. Check `generation_context` for trigger (deepening a symptom? scope adjustment?) and read `generation_context.eliminated_ids` to know which hypotheses to skip. When `trigger: deepening`, each new sub-hypothesis MUST name a distinct upstream cause for the parent's confirmed state — not a paraphrase of the parent with different wording. If you cannot name a distinct upstream cause, write `needs_input.json` instead of restating.
+2. **If re-invoked:** read existing hypotheses; skip those in `generation_context.eliminated_ids` (never regenerate eliminated ones). On `trigger: deepening`, each new sub-hypothesis MUST name a *distinct upstream cause* for the parent's confirmed state — not a reworded paraphrase. If you cannot name a distinct upstream cause, write `needs_input.json` instead of restating.
 3. **Read matched playbooks** from `state.json.matched_playbooks` — these are pre-ranked by `signal_match_count` (highest specificity first). Honor that ordering: H1 is drafted from the top-ranked playbook, H2 from the second-ranked, etc. **Never draft hypotheses from playbooks in `eliminated_playbooks`** — those have been disproved by signals already.
 
    Generate hypotheses for **every** matched playbook in a **single round** (see Single-round coverage rule in `shared.md`). The number of hypotheses per playbook follows the confidence-level behavior table in `shared.md` ("Generator" column).

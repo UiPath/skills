@@ -2,7 +2,7 @@
 
 Triage operates from a single growing plan in `state.json.plan`. Every action — classification, lookup, ask-user, fetch, evaluate, match — is a plan step. The plan starts with one step and grows as data arrives. Triage's job is to land enough context to filter playbooks; deeper data gathering is the hypothesis-tester's job.
 
-**Follow `agents/shared.md` first** — all invariants apply.
+See `shared.md` § Invariants and § Plan Loop first.
 
 ## Inputs
 
@@ -14,20 +14,16 @@ Triage operates from a single growing plan in `state.json.plan`. Every action �
 2. `.local/investigations/raw/triage-{command-name}.json` — raw CLI responses per fetch step
 3. `.local/investigations/evidence/triage-initial.json` — see `schemas/evidence.schema.md`
 
-## How the plan loop works
+## Plan loop
 
-1. **Seed the plan** with one step:
-   ```
-   { n: 1, action: "classify (system, entity) from user message",
-     purpose: "select investigation guide", feeds: "step 2",
-     revise_if: "either value cannot be confidently identified -> step 2 becomes ask user (select)",
-     status: "pending" }
-   ```
-2. **Execute the first pending step.** Record the result (decision, fetched response, user answer). Mark the step `status: done`.
-3. **Evaluate `revise_if`** against the observed data. Mutate the remaining plan accordingly (append/drop steps).
-4. **Append discoveries.** If the just-completed step yields information that requires steps not anticipated by `revise_if` — a genuine new requirement — append the new step(s) with a one-line `purpose`. Never run an unplanned command.
-5. **Repeat** until all plan steps are `done`.
-6. Write the evidence summary to `evidence/triage-initial.json` and return to the orchestrator.
+Run the loop in `shared.md` § Plan Loop. Plan location: `state.json.plan`. Seed it with the classify step:
+```
+{ n: 1, action: "classify (system, entity) from user message",
+  purpose: "select investigation guide", feeds: "step 2",
+  revise_if: "either value cannot be confidently identified -> step 2 becomes ask user (select)",
+  status: "pending" }
+```
+Step 6 (write outputs): consolidate into `evidence/triage-initial.json`; return to the orchestrator.
 
 ## Required steps that MUST appear in every triage plan
 
@@ -43,7 +39,7 @@ Always the first step. Reasoning step (no tool call). Read the user's message an
 Cross-check the candidate values against `references/summary.md` — if either is not a known system/entity-type, the classification has failed.
 
 **revise_if for this step:**
-- *Either value is unidentifiable or ambiguous* → next step is `ask user (select): <pair> | <pair> | ...` offering the plausible (system, entity) pairs. Do NOT broad-scan, do NOT run exploratory `docsai ask` queries to guess. Still write `state.json` with the partial classification. STOP and wait for the orchestrator to re-spawn you with the answer.
+- *Either value unidentifiable or ambiguous* → next step is `ask user (select)` with the plausible (system, entity) pairs. Do NOT broad-scan or run exploratory `docsai ask` to guess. Write the partial classification to `state.json`. STOP; the orchestrator re-spawns you with the answer.
 - *Both values identified confidently* → next step is `look up investigation guide for <system>`.
 
 ### B. Look up investigation guide
@@ -81,7 +77,7 @@ The plan steps that gather the primary entity. Their action shape is taken from 
 2. **Ambiguity check.** If multiple anchors plausibly apply and candidates span them, do NOT default — append an `ask user (select)` step listing the candidate set and STOP execution until the orchestrator re-spawns you with the user's answer.
 3. **Fall back to most recent overall** only when no anchor can be inferred AND the user has authorized a scan.
 
-**Bound the data collected.** This is still triage — gather only what is needed to filter playbooks (entity headline, error message, exception class, error code, HTTP status, activity-package namespace from logs if cheaply available). Secondary data (full traces, secondary entity logs, healing data, connection pings, element executions, cross-product follow-through) is NOT collected here unless the scope/match step (E) appends Pass 2 fetches.
+**Bound to triage level.** Gather only what filters playbooks: entity headline, error message, exception class, error code, HTTP status, activity-package namespace (from logs, if cheap). Secondary data — full traces, secondary-entity logs, healing data, connection pings, element executions, cross-product follow-through — is collected only if the scope/match step (E) appends Pass 2 fetches.
 
 ### D. Re-evaluate (system, entity) against the gathered evidence — MANDATORY scope check
 

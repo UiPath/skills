@@ -30,6 +30,19 @@ Every agent must follow this table. Do not redefine confidence behavior locally.
 
 **Playbook-signature granularity rule.** One hypothesis = one playbook match at its signature level. Do NOT enumerate the playbook's `## Causes` / "What can cause it" list as separate hypotheses — those are sub-cause branches the playbook's `## Resolution` section narrows once the playbook-level signature is confirmed.
 
+## Plan Loop
+
+Triage and the hypothesis-tester operate from a single growing plan. Plan location is per-agent: triage → `state.json.plan`; tester → per-hypothesis `test_plan`.
+
+The plan is an array of objects with the keys in `schemas/state.schema.md` § Plan: `{n, action, purpose, feeds, revise_if, status}`. An array of strings, a single string, or omitting the field are contract violations — downstream tooling parses by field name.
+
+1. **Seed** the plan with the steps you can already foresee (see your agent's Required steps).
+2. **Execute** the first pending step. Record the result. Mark `status: done`.
+3. **Evaluate `revise_if`** against observed data; mutate the remaining plan (append/drop steps).
+4. **Append discoveries.** If a completed step reveals a requirement `revise_if` didn't anticipate, append step(s) with a one-line `purpose`. Never run an unplanned command.
+5. **Repeat** until all steps are `done`.
+6. **Write outputs** (see your agent's Outputs) and return to the orchestrator.
+
 ## Startup
 
 1. Create `.local/investigations/`, `.local/investigations/evidence/`, `.local/investigations/raw/` if they don't exist
@@ -41,14 +54,9 @@ The primary tool for interacting with the UiPath platform. Output defaults to js
 - Commands are documented in each product's overview CLI section and in playbook `## Investigation` sections. See invariant #5.
 
 ### Documentation Search
-Search UiPath documentation and knowledge base:
-```
-uip docsai ask "<question>" --source <source>
-```
-- `--source docs` — official UiPath product documentation (default)
-- `--source technical_solution_articles` — support knowledge base articles and known issue resolutions
-
-Use `--source docs` for feature behavior, configuration, and API reference. Use `--source technical_solution_articles` for known bugs, workarounds, and troubleshooting steps from support cases.
+`uip docsai ask "<question>" --source <source>`
+- `--source docs` (default) — official product docs: feature behavior, configuration, API reference.
+- `--source technical_solution_articles` — support KB: known bugs, workarounds, troubleshooting from support cases.
 
 ## Reading Playbooks and Guides
 
@@ -60,14 +68,13 @@ Read files from paths in `state.json`:
 
 ## Raw Data Rule
 
-- **Redirect CLI output directly to file.** Use `uip ... --output json > .local/investigations/raw/{filename}.json` or `uip ... -o .local/investigations/raw/` so raw responses never enter agent context. Then read back only the specific fields you need.
-- Do NOT capture full CLI responses in context. The raw file is the record — read from it selectively.
-- Evidence files reference raw files via `raw_data_ref`
-- Before fetching data, check `raw/` and `evidence/` for existing files — reuse if the same entity was already queried
+- **Redirect CLI output to file:** `uip ... --output json > .local/investigations/raw/{filename}.json` (or `-o .local/investigations/raw/`). Read back only the fields you need — never load full responses into context. The raw file is the record.
+- Evidence files reference raw files via `raw_data_ref`.
+- Before fetching, check `raw/` and `evidence/` — reuse if the entity was already queried.
 
 ## Requesting User Input
 
-When you need user input, write a file `.local/investigations/needs_input.json` and then stop:
+Write `.local/investigations/needs_input.json`, then STOP:
 
 ```json
 {
@@ -78,14 +85,12 @@ When you need user input, write a file `.local/investigations/needs_input.json` 
 }
 ```
 
-The orchestrator reads this file, presents the question via `AskUserQuestion`, and re-spawns you with the answer.
-
-**`needs_input.json` is the signaling mechanism** — this is how the orchestrator knows you need input. The `needs_user_input` fields in evidence and hypotheses schemas are for record-keeping only (documenting that a data gap existed). Always write `needs_input.json` to actually request user input.
+`needs_input.json` is the signaling mechanism — the orchestrator detects it, asks the user via `AskUserQuestion`, and re-spawns you with the answer. The `needs_user_input` fields in the evidence/hypotheses schemas are record-keeping only; always write `needs_input.json` to actually request input.
 
 ## Constraints
 
-- Do NOT generate or execute code (no Python scripts, no inline code). Shell commands for file I/O and uip are fine.
-- Do NOT perform work outside your role (see your agent file for boundaries)
+- Never generate or execute code (no Python, no inline code). Shell commands for file I/O and uip are fine.
+- Stay within your role (see your agent file for boundaries).
 
 ## Output Schemas
 

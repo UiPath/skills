@@ -1,8 +1,8 @@
 # Hypothesis Tester Sub-Agent
 
-The tester operates from a single growing plan stored on the hypothesis itself (`hypotheses.json` → per-hypothesis `test_plan`). Every action is a plan step. Unlike triage, the tester has a clear initial picture: a specific hypothesis, the matched playbook's `## Investigation` section, and the hypothesis's `evidence_needed.to_confirm` / `to_eliminate` items — so most of the plan can be written upfront. Steps are still revised when data demands it.
+The tester operates from a per-hypothesis `test_plan` (`hypotheses.json`). It has a clear initial picture — a specific hypothesis, the matched playbook's `## Investigation` section, and the hypothesis's `evidence_needed.to_confirm` / `to_eliminate` items — so most of the plan is knowable upfront. Revise as data arrives.
 
-**Follow `agents/shared.md` first** — all invariants and confidence-level behavior apply.
+See `shared.md` § Invariants, § Confidence-Level Behavior, and § Plan Loop first.
 
 ## Inputs
 
@@ -18,16 +18,11 @@ The tester operates from a single growing plan stored on the hypothesis itself (
 2. `.local/investigations/evidence/{hypothesis-id}-{source}.json` — see `schemas/evidence.schema.md`
 3. Update the hypothesis in `hypotheses.json`: write `test_plan` (with all steps recorded), then update `status`, `evidence_refs`, `evidence_summary`
 
-## How the plan loop works
+## Plan loop
 
-1. **Seed the plan.** Write the initial set of steps to the hypothesis's `test_plan` field — see "Required steps" below. The tester knows the hypothesis and the playbook, so most steps are knowable upfront. Append more later only when `revise_if` triggers or a genuine discovery requires it.
+Run the loop in `shared.md` § Plan Loop. Plan location: the hypothesis's `test_plan` field. Seed it with the steps under "Required steps" below (most are knowable upfront).
 
-   **`test_plan` MUST be an array of objects** with the keys defined in `schemas/state.schema.md` § Plan: `{n, action, purpose, feeds, revise_if, status}`. Writing it as an array of strings (e.g., `["Step 1: read X", "Step 2: run Y"]`), as a single string, or omitting the field entirely are all contract violations. The orchestrator and downstream consumers parse `test_plan` by field name — a string-shaped or missing plan breaks downstream tooling and the audit trail.
-2. **Execute the first pending step.** Record the result. Mark the step `status: done`.
-3. **Evaluate `revise_if`** against the observed data. Mutate the remaining plan accordingly.
-4. **Append discoveries.** If the just-completed step yields information that requires steps not anticipated by `revise_if`, append the new step(s) with a one-line `purpose`. Never run an unplanned command.
-5. **Repeat** until all plan steps are `done`.
-6. Set the hypothesis's `status`, `evidence_refs`, `evidence_summary`, `is_root_cause`. Return to the orchestrator.
+Step 6 (write outputs): set the hypothesis's `status`, `evidence_refs`, `evidence_summary`, `is_root_cause`; return to the orchestrator.
 
 ## Required steps that MUST appear in every test plan
 
@@ -39,7 +34,7 @@ Scope your work per the confidence-level behavior table in shared.md.
 
 ### B. Read investigation guides — Data Correlation always; Testing Prerequisites by confidence
 
-Read every path listed in `state.json.investigation_guides` BEFORE any evidence step. Apply each guide's `## Data Correlation` rules to every piece of evidence you later cite — if a correlation rule is unmet (wrong entity, wrong workflow, wrong time window, fabricated field, etc.), discard the evidence; do NOT confirm a hypothesis on evidence that fails correlation.
+Read every path in `state.json.investigation_guides` BEFORE any evidence step. Apply each guide's `## Data Correlation` rules to every cited evidence item; discard evidence that fails correlation (wrong entity, workflow, time window, fabricated field). Never confirm on evidence that fails correlation.
 
 - **High confidence:** Data Correlation only; Testing Prerequisites may be skipped. The plan needs only the 1-2 verification steps from the matched playbook's `## Investigation` section.
 - **Medium / Low confidence:** additionally treat each guide's `## Testing Prerequisites` section as gates. Distinguish two categories:
@@ -96,7 +91,7 @@ Final reasoning step. Set status:
 | eliminated | Evidence contradicts OR causal chain link missing |
 | inconclusive | Not enough data — describe what's missing in `open_gaps`, including any unmet investigation-guide prerequisites or undocumented-command gaps |
 
-**Runtime-evidence gate.** When the user-reported symptom is a runtime failure (a job/run/instance that faulted, hung, or misbehaved), `confirmed` additionally requires at least one cited evidence item drawn from runtime/platform data (logs, job records, instance state, incident data) that passes Data Correlation. Design-time evidence alone (source files, manifests, naming patterns) can show a defect EXISTS but cannot confirm it CAUSED the reported failure. If every runtime fetch relevant to the symptom returns empty while the user reports active failures, that is a CONTRADICTION, not neutral absence — the data view is likely pointed at the wrong scope (wrong folder, wrong key, wrong command form). Do NOT confirm. Set `inconclusive`, record the contradiction in `open_gaps`, and append an `ask user` step to verify the scope.
+**Runtime-evidence gate.** For runtime failures (a job/run/instance that faulted, hung, or misbehaved), `confirmed` requires ≥1 cited evidence item from runtime/platform data (logs, job records, instance state, incidents) that passes Data Correlation. Design-time evidence alone (source files, manifests, naming) shows a defect EXISTS but not that it CAUSED the failure. If every relevant runtime fetch returns empty while the user reports active failures, that is a CONTRADICTION, not absence — the data view is likely the wrong scope (folder, key, command form). Do NOT confirm: set `inconclusive`, record the contradiction in `open_gaps`, append an `ask user` step to verify scope.
 
 If `confirmed`, set `is_root_cause`: `true` if evidence explains WHY, `false` if it only shows WHAT.
 

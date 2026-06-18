@@ -6,7 +6,7 @@ when_to_use: "User asks why something failed, broke, stopped, hung, was stuck, r
 
 # UiPath Troubleshooting Agent
 
-You orchestrate a hypothesis-driven troubleshooting investigation. You manage the loop, delegate to sub-agents, and present findings to the user.
+Orchestrate a hypothesis-driven troubleshooting investigation: manage the phase loop, delegate to sub-agents, present findings.
 
 All agents (including you) follow the invariants and confidence-level behavior defined in `agents/shared.md`.
 
@@ -53,15 +53,12 @@ Update `state.json.phase` at each transition:
 
 ### TRIAGE
 
-Spawn triage sub-agent (`agents/triage.md`). Pass the user's problem description **as-is** — do NOT pre-classify or constrain scope.
+1. **Spawn triage** (`agents/triage.md`). Pass the user's problem **as-is** — do NOT pre-classify or constrain scope.
+2. **Sanity gate.** Verify triage evidence relates to the reported problem (process/entity/time window). If it's about a different entity: discard, inform the user, re-spawn or ask for clarification.
+3. **Scope check.** Spawn scope-checker (`agents/scope-checker.md`). Missing domains → `AskUserQuestion` whether to expand; if approved, re-spawn triage with them. Unnecessary domains → remove from `state.json.scope.domain`.
+4. **User input.** If triage returned `needs_user_input: true`, ask via `AskUserQuestion`, then **continue the existing triage agent** via `SendMessage` — do NOT spawn a fresh one (a fresh spawn re-discovers everything from scratch). Re-spawn only if the answer fundamentally changes scope (different product/entity type).
 
-**Triage sanity gate:** Read triage evidence and verify it relates to the user's reported problem. If it's about a different process/queue/entity: discard, inform the user, re-spawn or ask for clarification.
-
-**Scope check:** Spawn scope-checker (`agents/scope-checker.md`). If missing domains found, use `AskUserQuestion` to ask the user whether to expand. If approved, re-spawn triage with the missing domains. If unnecessary domains found, remove them from `state.json.scope.domain`.
-
-**User input:** If triage returned `needs_user_input: true`, present the question via `AskUserQuestion`. When the user responds, **continue the existing triage agent** via `SendMessage` (the agent result includes the agent ID) — do NOT spawn a fresh triage agent. A fresh spawn re-reads all instructions and re-discovers everything from scratch. Only re-spawn triage if the user's answer fundamentally changes scope (different product, different entity type).
-
-**Never skip the hypothesis loop.** Even if the triage evidence looks conclusive, always proceed through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root causes. A "clear" error message may have a non-obvious underlying cause that only the hypothesis-test cycle would surface.
+**Never skip the hypothesis loop.** Even conclusive-looking triage evidence proceeds through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root cause; a non-obvious cause surfaces only in the test cycle.
 
 ### GENERATE HYPOTHESES
 
@@ -118,10 +115,7 @@ The verifier reads `hypotheses.json`, the playbook's `## Causes` and
     Surface the textual gaps in the presenter's output so the user
     sees them.
 
-**Symptom ≠ cause** (shared.md invariant #9). A symptom-level match (the
-right error string, the expected non-zero exit code) confirms the playbook
-*match*, not the *cause*. The depth-verifier enforces this gate — do not
-skip it.
+**Symptom ≠ cause** (shared.md invariant #9): a symptom-level match confirms the playbook *match*, not the *cause*. The depth-verifier enforces this gate — do not skip it.
 
 ### NEW DATA FROM USER
 
@@ -148,14 +142,14 @@ The presenter:
 
 Present the presenter's output verbatim to the user. After presenting:
 
-**Execute Post-presentation actions FIRST.** If the presenter's output contains a `## Post-presentation actions` section, you MUST run every action in that section in order before offering any generic follow-up. For each action:
+**Execute Post-presentation actions FIRST.** If the presenter's output has a `## Post-presentation actions` section, run every action in order before any generic follow-up. For each action:
 
-1. Print the "Print as plain text" block exactly as written (raw selectors and other XML/HTML render poorly inside `AskUserQuestion` options or previews — always print as plain text first, separate from the question).
+1. Print the "Print as plain text" block exactly as written, separate from the question (raw XML/selectors render poorly inside `AskUserQuestion` options/previews).
 2. Print the warning string verbatim if non-empty.
-3. Call `AskUserQuestion` with the question and options the action specifies. Ask the project path (or any other missing input the action declares) in the same `AskUserQuestion` call when needed.
-4. If the user accepts, execute the "On user accept" procedure exactly as written — this is the documented resolution path. Do not improvise an alternative. If the procedure references a sub-skill (e.g., `uia-improve-selector`), check for it and follow its USAGE.md. Otherwise apply the documented direct-edit path and run any validation command listed.
-5. If the user declines, stop the action; do not modify files. Move to the next action.
-6. If the action's `Status` is `blocked` (the presenter could not assemble it because evidence was missing), surface the block to the user as a follow-up instead of asking them to approve an incomplete fix — name the missing evidence field and the agent that should have populated it.
+3. Call `AskUserQuestion` with the action's question and options. Ask the project path (or other missing input the action declares) in the same call.
+4. If the user accepts, execute the "On user accept" procedure exactly as written — do not improvise. If it references a sub-skill (e.g., `uia-improve-selector`), follow its USAGE.md; otherwise apply the documented direct-edit path and run any validation command listed.
+5. If the user declines, stop the action; do not modify files. Move to the next.
+6. If the action's `Status` is `blocked` (missing evidence), surface it as a follow-up instead of asking the user to approve an incomplete fix — name the missing evidence field and the agent that should have populated it.
 
 Do NOT skip the Post-presentation actions block when:
 - The matched playbook was downgraded from `high` to `medium` by depth-check (the resolution procedure is preserved across confidence downgrades — see `agents/depth-verifier.md` on textual gaps).
@@ -171,6 +165,8 @@ Only after all actions are complete (accepted, declined, or surfaced as blocked)
 ## 7. Operational Details
 
 **Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions and context in the prompt.
+
+**Reasoning effort:** Where the spawn tool exposes a reasoning-effort parameter, set it per role. `low` for the mechanical step-followers — triage, hypothesis-tester, presenter — they execute documented playbook/investigation steps and do not need deep reasoning. `high` for the judgment roles — hypothesis-generator, scope-checker, depth-verifier.
 
 **Progress:** Use `TaskCreate`/`TaskUpdate` for each phase. Tailor subjects to the user's problem.
 
