@@ -2,8 +2,6 @@ task_id: skill-ixp-publish-tag-live-smoke
 description: >
   Smoke: agent makes a specific version the live model with
   `uip ixp projects publish <Name> --model-version <N> --tag live`.
-  A tag is set/moved through `publish --tag` (the only way) — this is also
-  how a version is changed from staging to live.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
