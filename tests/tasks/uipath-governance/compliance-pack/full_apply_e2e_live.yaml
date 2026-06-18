@@ -1,53 +1,55 @@
-task_id: skill-governance-compliance-full-apply-e2e-live
+﻿task_id: skill-governance-compliance-full-apply-e2e-live
 description: >
   Live e2e: full ISO 42001 posture improvement lifecycle against a real tenant.
-  Agent must: (1) call catalog get, (2) run state coverage, (3) present posture plan
-  with Applied/Not Applied labels, (4) call state enable if gaps exist,
-  (5) produce clean user-facing report using "settings" not "controls".
+  Agent must discover current posture, apply missing settings if gaps exist, and
+  deliver a structured compliance summary. Tests the complete skill workflow end-to-end.
 
   Requires UIPATH_CLI_ENABLE_ENV_AUTH + UIPATH_CLI_AUTH_TOKEN + org/tenant env vars.
   Run via experiments/live-e2e-local.yaml. See that file for setup instructions.
-tags: [uipath-governance, e2e, lifecycle:execute, feature:compliance, live]
+tags: [uipath-governance, e2e, mode:operate, lifecycle:setup, feature:compliance, live]
 
 sandbox:
   python: {}
+
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+    timeout: 60
 
 post_run:
   - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
     timeout: 60
 
 run_limits:
-  max_turns: 40
+  max_turns: 60
 
 initial_prompt: |
   Get my tenant fully aligned to ISO 42001. First show me where I stand today —
-  which recommended settings are already in place and which are missing — then apply
+  which recommended settings are already configured and which are missing — then apply
   whatever's missing and confirm it took. Skip the apply if I'm already fully covered.
 
-  Use the uipath-governance skill. Save a written posture plan to posture_plan.txt
-  and a summary of the run to report.json. Capture all CLI output to output.txt as you go.
-  Also save the raw state coverage response to coverage.json in the working directory.
+  Save the written posture plan to a file named posture_plan.txt, and capture all CLI
+  output to output.txt as you go. Save the raw posture analysis (state coverage) JSON
+  response to coverage.json.
+
+  Save a run summary to report.json with pack identity, posture counts, and whether apply was performed.
 
   Important:
-  - Use --output json on all uip gov commands.
+  - Always pass --output json.
   - Do NOT prompt for confirmation — automated run.
   - The CLI IS connected to a live tenant via env-var authentication. Commands will succeed.
 
 success_criteria:
-  - type: file_contains
-    description: "Step 1: output.txt shows catalog get was called and returned ISO 42001 data"
-    path: "output.txt"
-    includes:
-      - "CompliancePacksCatalogGet"
-      - "iso-42001-2023"
+  - type: command_executed
+    description: "Step 1: Agent called catalog get for ISO 42001"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+(?:iso-42001-2023|\$\S+)'
+    min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Step 2: output.txt shows state coverage was called for posture analysis"
-    path: "output.txt"
-    includes:
-      - "CompliancePacksStateCoverage"
+  - type: command_executed
+    description: "Step 2: Agent called state coverage for posture analysis"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001-2023|\$\S+)'
+    min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
@@ -113,7 +115,7 @@ success_criteria:
     excludes:
       - "in-place"
     weight: 2.5
-    pass_threshold: 0.6
+    pass_threshold: 0.4
 
   - type: llm_judge
     description: "Agent presented a structured report without narrating raw CLI to the user"

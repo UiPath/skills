@@ -29,6 +29,8 @@ _candidates = [
 ]
 # Also glob for coverage.json under common temp prefixes created by the agent
 _candidates += glob.glob("/tmp/compliance-*/coverage.json")
+_candidates += glob.glob("/tmp/tmp.*/coverage.json")   # mktemp -d creates /tmp/tmp.XXXXXXXXXX
+_candidates += glob.glob(os.path.join(os.environ.get("HOME", ""), "compliance-*", "coverage.json"))
 _candidates += glob.glob(os.path.join(os.environ.get("TEMP", ""), "compliance-*", "coverage.json"))
 
 COVERAGE = "coverage.json"

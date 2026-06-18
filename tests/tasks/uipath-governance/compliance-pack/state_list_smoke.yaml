@@ -5,23 +5,22 @@ description: >
   query stays in the list/get path and never triggers apply or disable flows.
 
   Platform note: uip commands fail with auth errors - expected.
-tags: [uipath-governance, smoke, lifecycle:discover, feature:compliance]
+tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
 sandbox:
-  driver: tempdir
   python: {}
 
 initial_prompt: |
   What compliance standards are currently configured on my tenant?
   Show me which compliance standards have been applied.
 
-  Use the uipath-governance skill. Capture all command output to ./output.txt
+  Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
   - uip CLI is not connected to a live tenant - auth errors expected.
   - Run each command once, capture output, move on. Do NOT retry.
-  - Use --output json on all uip gov commands.
+  - Always pass --output json.
   - Do NOT prompt for confirmation.
 
 success_criteria:

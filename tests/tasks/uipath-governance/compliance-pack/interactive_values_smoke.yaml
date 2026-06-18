@@ -6,24 +6,26 @@ description: >
   compliance standard.
 
   Platform note: uip commands fail with auth errors - expected.
-tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
+tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance]
 
 
 sandbox:
-  driver: tempdir
   python: {}
 
 initial_prompt: |
-  Apply the Robot UI Automation recommended settings from ISO 42001 — I want to
-  set the URL and application allowlists for UIAutomation.
+  As part of our ISO 42001 work I want to restrict which URLs and applications
+  our robots are allowed to automate — set up just that control for now, leave
+  the rest of the standard alone.
 
-  Use the uipath-governance skill. Capture all command output to ./output.txt
+  Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
-  When the skill asks for URL or application lists, respond with SKIP for now.
+  If you're asked for the URL or application lists, just answer SKIP for now.
   Important:
   - uip CLI not connected — auth errors expected. Run each command once and continue.
-  - Use --output json on all uip gov commands. Do NOT prompt for confirmation.
+  - Always pass --output json. Do NOT prompt for confirmation.
+  - Write any helper scripts to the current working directory using relative paths
+    (e.g. ./scripts/, ./compliance-session/), not to AppData or TEMP paths.
 
 success_criteria:
   - type: command_executed
@@ -33,12 +35,10 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "output.txt confirms synthesize-formdata was called for Robot product"
-    path: "output.txt"
-    includes:
-      - "synthesize-formdata"
-      - "Robot"
+  - type: command_executed
+    description: "Agent invoked synthesize-formdata.mjs for Robot UIAutomation partial apply"
+    command_pattern: 'synthesize-formdata\.mjs'
+    min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 

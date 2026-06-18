@@ -5,25 +5,25 @@ description: >
   Must NOT use state enable (that is full compliance standard only).
 
   Platform note: uip commands fail with auth errors - expected.
-tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
+tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance]
 
 
 sandbox:
-  driver: tempdir
   python: {}
 
 initial_prompt: |
-  Apply only the AI Trust Layer traceability recommended settings from ISO 42001 —
-  just that one area, not the full standard.
+  I want to make sure all AI model usage in my tenant is logged and traceable for
+  our ISO 42001 audit — but only that, don't touch the rest of the standard yet.
+  Set up just the traceability piece.
 
-  Use the uipath-governance skill. Capture all command output to ./output.txt
+  Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
   - uip CLI not connected to live tenant — auth errors expected. Run each command once and continue.
-  - Use --output json on all uip gov commands. Do NOT prompt for confirmation.
+  - Always pass --output json. Do NOT prompt for confirmation.
   - Write any helper scripts to the current working directory using relative paths
-    (e.g. ./synthesize-formdata.mjs, ./compliance-session/), not to AppData or TEMP paths.
+    (e.g. ./scripts/, ./compliance-session/), not to AppData or TEMP paths.
 
 success_criteria:
   - type: command_executed

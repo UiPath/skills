@@ -7,37 +7,36 @@ description: >
 
   Platform note: uip commands fail with auth errors in this environment - expected.
   Run once, capture to output.txt, move on.
-tags: [uipath-governance, smoke, lifecycle:validate, feature:compliance]
+tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
 
 sandbox:
-  driver: tempdir
   python: {}
 
 initial_prompt: |
   Check my ISO 42001 compliance standard posture. Show me which recommended settings are already
   configured and which are not yet applied. Do not change anything.
 
-  Use the uipath-governance skill. Capture all command output to ./output.txt
+  Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
   - uip CLI is not connected to a live tenant - auth errors expected.
   - Run each command once, capture output, and move on. Do NOT retry.
-  - Use --output json on all uip gov commands.
+  - Always pass --output json.
   - Do NOT prompt for confirmation - this is an automated test.
 
 success_criteria:
   - type: command_executed
     description: "Agent called catalog get for pack detail"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+iso-42001.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+(?:iso-42001|\$\S+).*--output\s+json'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent called state coverage for posture analysis"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+(?:tenant|organization)\s+\S+\s+iso-42001.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+).*--output\s+json'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

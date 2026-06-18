@@ -7,32 +7,31 @@ description: >
   this covers the AI Trust Layer model governance path for the ISO 42001 compliance standard.
 
   Platform note: uip commands fail with auth errors - expected.
-tags: [uipath-governance, smoke, lifecycle:execute, feature:compliance]
+tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance]
 
 sandbox:
-  driver: tempdir
   python: {}
 
 initial_prompt: |
-  Apply the AI Trust Layer model governance recommended settings from ISO 42001.
-  I want to configure which AI model providers are approved for my organization.
+  For our ISO 42001 alignment, I want to lock down which AI model providers are
+  approved for use across the org — just that control, not the whole standard.
+  Set it up.
 
-  Use the uipath-governance skill. Capture all command output to ./output.txt
+  Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
-  When the skill asks which AI model providers to approve, respond with SKIP for now.
+  If you're asked which AI model providers to approve, just answer SKIP for now.
   Important:
   - uip CLI not connected — auth errors expected. Run each command once and continue.
-  - Use --output json on all uip gov commands. Do NOT prompt for confirmation.
+  - Always pass --output json. Do NOT prompt for confirmation.
   - Write any helper scripts to the current working directory using relative paths
-    (e.g. ./synthesize-formdata.mjs, ./compliance-session/), not to AppData or TEMP paths.
+    (e.g. ./scripts/, ./compliance-session/), not to AppData or TEMP paths.
 
 success_criteria:
-  - type: file_contains
-    description: "output.txt shows catalog get was called (CompliancePacksCatalogGet response code)"
-    path: "output.txt"
-    includes:
-      - "CompliancePacksCatalogGet"
+  - type: command_executed
+    description: "Agent called catalog get for pack detail"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+catalog\s+get\s+.*--output\s+json'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 

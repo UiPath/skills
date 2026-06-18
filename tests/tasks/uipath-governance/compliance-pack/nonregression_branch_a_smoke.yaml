@@ -4,21 +4,20 @@ description: >
   (AOps product policy) and NOT Branch C (compliance standards). Tests that adding
   Branch C signals to SKILL.md did not break Branch A routing. The agent should
   call aops-policy create, not deployed-policy list or pack-walker.
-tags: [uipath-governance, smoke, lifecycle:activate]
+tags: [uipath-governance, smoke, mode:build, lifecycle:setup]
 
 sandbox:
-  driver: tempdir
   python: {}
 
 initial_prompt: |
   Block ChatGPT (OpenAI provider) for all Studio developers in my tenant.
-  Use the uipath-governance skill. Capture all command output to ./output.txt
+  Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
   - uip CLI is not connected to a live tenant - auth errors expected.
   - Run each command once, capture output, and move on. Do NOT retry.
-  - Use --output json on all uip gov commands.
+  - Always pass --output json.
   - Do NOT prompt for confirmation.
   - Use relative paths for all output files and session directories
     (e.g. ./output.txt, ./aops-session/), not absolute AppData or TEMP paths.

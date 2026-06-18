@@ -59,6 +59,13 @@ Current posture on <tenantName>: <inPlaceCount> / <totalCount> settings Applied
 - `controls[].recommendedSetting` → Recommendation column
 - `controls[].impact` → Impact column
 - `controls[].configLocation` → Where to configure column
-- Current posture line: from `state coverage` if SESSION_TEMP/coverage.json exists, otherwise omit the line
+- Current posture line: read from `SESSION_TEMP/coverage.json` **only if it already exists** (written by a prior `state coverage` call this session) — parse `Data.Summary.InPlaceCount` / `DeploymentPolicyCount`. If the file does not exist, omit the posture line entirely. **Never run `state coverage` or any other `state` command here.**
 
 **Terminology:** "settings" for configured items. Plain-English clause name in headline, clause ID as secondary reference in parentheses.
+
+## Auth failure handling
+
+If `catalog get` returns an auth error (401 / `RetryWillNotFix`):
+1. Report the error to the user.
+2. Stop. Do NOT suggest or write example `state` commands (coverage, enable, disable, get) anywhere — not in the response, not in output files, not as comments.
+3. The query flow is read-only; if catalog data is unavailable, there is nothing to query.

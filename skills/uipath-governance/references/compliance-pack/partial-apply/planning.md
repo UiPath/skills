@@ -12,9 +12,10 @@ Enter this plugin when the user explicitly scoped their request to a subset of t
 
 | User phrase | Product(s) | What to look up in catalog |
 |---|---|---|
-| "traceability" / "audit logging" / "trace retention" | AITrustLayer, Robot | Clauses mentioning trace in controls |
+| "traceability" / "audit logging" / "trace retention" / "logged and traceable" / "AI usage logged" / "AI activity traceable" / "traceable for audit" | AITrustLayer, Robot | Clauses mentioning trace in controls |
 | "guardrails" / "prompt injection" / "sensitive data" / "PII" | AITrustLayer | Clauses with guardrail controls |
-| "model governance" / "allowed models" / "LLM providers" | AITrustLayer | Clauses with model toggle controls |
+| "model governance" / "allowed models" / "LLM providers" / "lock down AI model providers" / "which AI providers are approved" / "approved AI providers" / "AI model providers approved for use" | AITrustLayer | Clauses with model toggle controls |
+| "restrict which URLs robots access" / "robot URL allowlist" / "applications our robots are allowed to automate" / "URL and application allowlists" / "robot automation allowlists" | Robot | Clauses with UIAutomation URL/app controls |
 | "publishing controls" / "release notes" / "workflow analyzer" | Development | Clauses with analyzer/publish controls |
 | "healing agent" / "self-healing" | Robot | Clauses with healing agent controls |
 | "connector" / "integration service" | Integration Service | Clauses with connector controls |
@@ -71,7 +72,7 @@ Configuring this selection will NOT apply settings for the other products.
 
 ## Org-scope partial apply
 
-When the user adds an org-level signal ("apply the traceability settings organization-wide"), partial logic uses the `organization` scope for `synthesize-formdata.mjs` synthesis (note: synthesize operates on catalog data which is org-agnostic), but `aops-policy create` targets the tenant logged into. For true org-scope partial apply, recommend applying the full pack at org scope (`state enable organization`) and refining individual tenant policies in the admin console afterward.
+When the user adds an org-level signal ("apply the traceability settings organization-wide"), partial logic uses the `organization` scope for `synthesize-formdata.mjs` synthesis (note: synthesize operates on catalog data which is org-agnostic), but `aops-policy create` targets the tenant logged into. For true org-scope partial apply, iterate over all tenants: run `synthesize-formdata.mjs` + `aops-policy create` per tenant (the same per-tenant flow). `state enable organization` is NOT implemented on the backend — never call it.
 
 ## See also
 

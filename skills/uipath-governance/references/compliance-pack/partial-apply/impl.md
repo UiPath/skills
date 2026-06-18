@@ -35,7 +35,7 @@ Exit 3 = no contributions for this product in these clauses → skip it, continu
 
 ## Step 1b: Collect user-specific values (if any)
 
-After running `synthesize-formdata.mjs`, check stdout for `⚠` warning lines indicating settings that need org-specific values.
+After running `synthesize-formdata.mjs`, check **stderr** for `⚠` warning lines indicating settings that need org-specific values. (The script uses `console.warn` which writes to stderr, not stdout.)
 
 For each warned key, ask the user before proceeding:
 

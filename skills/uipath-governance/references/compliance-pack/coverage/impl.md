@@ -53,7 +53,10 @@ Terminology rules:
 - Use "settings" NOT "controls" in output
 - Use plain-English clause names (from `clauses[].clauseName`) in headlines; clause IDs (e.g. A.6.2.8) as secondary reference in DETAILS only
 - Use `controls[].displayName` as setting name, NOT product identifiers
-- "Applied" for ✓ rows, NOT "in-place"
+- **NEVER write raw API status strings** (`in-place`, `new`, `not-deployed`, `fully-deployed`, `needs-policies`) in user-facing display output (posture_plan.txt, chat responses, report summaries) — translate EVERY occurrence before writing
+  - `"in-place"` → **Applied** (or ✓)
+  - `"new"` → **Not Applied** (or ✗)
+- **`coverage.json` is an internal session file** — save it as the raw `--output json` CLI response. Raw API values (`"in-place"`, `"new"`) are CORRECT and expected in this file. Do NOT translate status values when writing coverage.json.
 - Never say "compliance gaps" — say "settings not yet configured"
 - Never claim the tenant IS compliant
 
@@ -128,3 +131,9 @@ Do NOT call `state enable` in this case.
 ## Never cache
 
 Always run fresh before presenting a posture plan. Coverage reflects live tenant state.
+
+## Anti-patterns
+
+- **Writing raw API status strings in user-facing display output** — `in-place`, `new`, `not-deployed`, `fully-deployed`, `needs-policies` must NEVER appear in user-facing display output (posture_plan.txt, chat responses, report summaries). Translate every status before writing. `coverage.json` is an internal session file — raw API values are correct there.
+- **Partial translation** — translating the summary section but leaving raw values in the DETAILS or verification section. ALL sections must use the translated labels.
+- **Quoting API values for context** — avoid notes like "Status is still 'new'". Rephrase to "AI Trust Layer shows as Not Applied" instead.
