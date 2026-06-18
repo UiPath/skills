@@ -77,11 +77,11 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 
 **Investigation:**
 1. List tokens: `uip admin pat list --output json`
-2. Check `expirationDate` — if past today, token is expired
-3. Check `isRevoked` — if true, token was explicitly revoked
+2. Check `expiration` — if past today, token is expired
+3. If the token is **absent from the list**, it was revoked (revocation is a hard delete — there is no `isRevoked` flag)
 4. Compare `scopes` against the API being called
 
-**Fix:** Cause 1 → regenerate: `pat regenerate "<PAT_ID>" --output json`. Cause 2 → create new token. Cause 3 → create new token with correct scopes. Cause 4 → revoke unused tokens first: `pat revoke "<PAT_ID>" --output json`.
+**Fix:** Cause 1 → regenerate: `pat regenerate "<PAT_ID>" --output json`. Cause 2 → create new token (revoked tokens are deleted, not recoverable). Cause 3 → create new token with correct scopes. Cause 4 → revoke unused tokens first: `pat revoke "<PAT_ID>" --output json`.
 
 ---
 
@@ -209,7 +209,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 
 **Investigation:**
 1. Poll: `uip admin organizations operation get "<OPERATION_ID>" --output json`
-2. Interpret status: `Pending`/`Running`/`InProgress` → still going (auto-poll 3× at 5s, Rule 18). `Failed` → inspect `Data.error` / `Data.message`. `Succeeded` → verify with `tenants get "<TENANT_ID>" --output json`
+2. Interpret status: `Pending`/`Queued`/`Creating`/`Updating`/`Enabling`/`Disabling`/`Deleting`/`InProgress` → still in progress (auto-poll 3× at 5s, Rule 18). `Failed` → inspect `Data.error` / `Data.message`. Terminal success statuses are verb-specific: `Created`/`Updated`/`Enabled`/`Disabled`/`Deleted`/`Done` → verify with `tenants get "<TENANT_ID>" --output json`
 
 **Fix:** Cause 1 → try different region: `organizations regions list --output json`. Cause 2 → check catalog: `tenants services list-available --region "<REGION>" --output json`. Cause 3 → retry. Cause 4 → contact support. Do NOT auto-retry failed mutations.
 
@@ -219,10 +219,10 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 
 **Symptom:** `tenants services disable` or `remove` returned Success but service still shows Enabled.
 
-**Cause:** Platform-pinned services return Success on `disable`/`remove` but the state never changes. Known no-op services: Orchestrator, Maestro, Connections (Integration Service), Data Service (Data Fabric), Insights, Test Manager.
+**Cause:** Always-provisioned services return Success on `disable`/`remove` but the state never changes. The always-provision list is configuration-driven and varies by deployment — always re-list after mutating to confirm the actual state changed.
 
 **Investigation:**
 1. Verify state: `uip admin tenants services list --tenant-id "<TENANT_ID>" --output json`
-2. Check if the service is in the known no-op list above
+2. Compare state before and after the mutation — if unchanged, the service is always-provisioned
 
-**Fix:** CLI cannot disable/remove platform-pinned services. Redirect to UiPath Portal. Always re-list after any service mutation (Rule 22).
+**Fix:** CLI cannot disable/remove always-provisioned services. Redirect to UiPath Portal. Always re-list after any service mutation (Rule 22).

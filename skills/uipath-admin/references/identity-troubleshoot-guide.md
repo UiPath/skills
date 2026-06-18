@@ -212,7 +212,7 @@ For PATs:
 uip admin pat list --output json
 ```
 
-Check `expirationDate` — expired PATs return 401 silently.
+Check `expiration` — expired PATs return 401 silently. If the token is absent from the list, it was revoked (revocation is a hard delete — no `isRevoked` flag exists).
 
 For external apps:
 ```bash

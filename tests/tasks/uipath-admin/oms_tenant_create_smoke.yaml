@@ -1,9 +1,10 @@
 task_id: skill-admin-oms-tenant-create-smoke
 description: >
   Smoke test: agent creates a new tenant following the OMS workflow —
-  list regions first (Critical Rule 21), then create with required
-  --region flag or a file body. Tests the region-first discovery
-  pattern and correct create invocation.
+  list regions first, then create with --region flag or a file body.
+  Region is optional (falls back to org default) but best practice is
+  to discover and specify it explicitly. Tests region discovery and
+  correct create invocation.
 
   Platform note: runs without an authenticated tenant — commands will
   fail with auth errors. That is acceptable; what matters is correct
