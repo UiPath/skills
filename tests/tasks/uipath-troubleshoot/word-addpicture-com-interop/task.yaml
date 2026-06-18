@@ -9,12 +9,13 @@ description: >
   0x8002801D (TYPE_E_LIBNOTREGISTERED)) because the Word interop type
   library is not registered on the robot host (after a partial/failed
   Office update). Agent must match the
-  activity-packages/word-activities/playbooks/add-picture-failures.md
-  playbook (COM/interop branch / C2), conclude the fault is
-  environmental (NOT a workflow edit), and recommend an online repair
-  of Office to re-register the COM libraries (and/or fix bitness, kill
-  orphaned WINWORD.EXE, or migrate to file-based Word Document
-  activities).
+  activity-packages/word-activities/playbooks/word-com-interop-failures.md
+  playbook (type-library-not-registered branch / E1 — reached directly
+  or via add-picture-failures.md C2, which delegates to it), conclude
+  the fault is environmental (NOT a workflow edit), and recommend an
+  online repair of Office to re-register the COM libraries (and/or fix
+  bitness, kill orphaned WINWORD.EXE, or migrate to file-based Word
+  Document activities).
 tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, com-interop]
 
 agent:
@@ -59,7 +60,7 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the add-picture-failures playbook AND identified the COM/interop branch (C2): an environmental Word interop type-library-not-registered fault (HRESULT 0x8002801D / TYPE_E_LIBNOTREGISTERED), NOT a workflow defect; fix is an online repair of Office (and/or bitness, orphaned WINWORD.EXE, or migrate to file-based Word Document activities)"
+    description: "Agent matched the word-com-interop-failures playbook (E1, reached directly or via add-picture-failures.md C2) AND identified an environmental Word interop type-library-not-registered fault (HRESULT 0x8002801D / TYPE_E_LIBNOTREGISTERED), NOT a workflow defect; fix is an online repair of Office (and/or bitness, orphaned WINWORD.EXE, or migrate to file-based Word Document activities)"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
@@ -84,14 +85,16 @@ success_criteria:
 
       DIMENSION A -- Correct playbook
         The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/word-activities/playbooks/add-picture-failures.md
-        (the Word "Add Picture" / WordAddImage failures playbook). The
-        relevant branch is C2 — COM / Office Interop exception.
-        Evidence (any one suffices): the agent names/reads this playbook,
+          skills/uipath-troubleshoot/references/activity-packages/word-activities/playbooks/word-com-interop-failures.md
+        (the package-level Word COM / Office Interop failures playbook). The
+        relevant branch is E1 — COM type library / class not registered.
+        Reaching it via the neighbouring add-picture-failures.md playbook and
+        its C2 branch (which delegates to this playbook) is ACCEPTABLE.
+        Evidence (any one suffices): the agent names/reads either playbook,
         state.json references it, or the agent's narrative clearly identifies
-        the Word Add Picture failure family and the COM/interop branch.
-        NOT penalized: reading neighbouring branches (missing scope, bookmark,
-        image variable) while ruling them out.
+        the Word COM/interop failure family and the type-library/registration
+        branch. NOT penalized: reading neighbouring branches (missing scope,
+        bookmark, image variable) while ruling them out.
 
       DIMENSION B -- Same root cause + fix as RESOLUTION.md
         Correct root cause (REQUIRED for a high score): the fault is
@@ -122,8 +125,9 @@ success_criteria:
         such answers at 0.5.
 
       SCORING RUBRIC (single score reflecting both dimensions):
-        1.0  Matched the add-picture-failures playbook AND identified the
-             COM/interop environmental root cause (0x8002801D /
+        1.0  Matched the word-com-interop-failures playbook (E1, directly or
+             via add-picture-failures.md C2) AND identified the COM/interop
+             environmental root cause (0x8002801D /
              TYPE_E_LIBNOTREGISTERED = Word interop type library not registered
              on the host; workflow is correct) AND recommended an Office online
              repair (and/or bitness check, kill WINWORD.EXE, or migrate to
