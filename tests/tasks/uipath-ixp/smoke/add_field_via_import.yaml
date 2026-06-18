@@ -1,0 +1,50 @@
+task_id: skill-ixp-add-field-via-import-smoke
+description: >
+  Smoke: agent adds a field through the taxonomy-import route — reads
+  `projects get-taxonomy`, adds the new field entry to the JSON, and re-imports
+  via `projects import-taxonomy`. Exercises the import path specifically (the
+  task asks for it); native `fields add` is the simpler path but not what this
+  row tests.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, add a Currency (Exact Text)
+  field to the "Invoice Header" group using the taxonomy import workflow: read
+  the current taxonomy, add the field to the JSON, and re-import it.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent read the taxonomy via `projects get-taxonomy`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+get-taxonomy\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent re-imported via `projects import-taxonomy`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+import-taxonomy\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
