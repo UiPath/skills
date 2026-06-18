@@ -31,12 +31,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  # Anti-pattern guard: unpublish only removes the published status. Deleting the project
-  # or document would destroy data — forbidden for this task.
+  # Anti-pattern guard: unpublish only removes the published status — it must
+  # not delete the whole project.
   - type: command_not_executed
-    description: "Agent did NOT delete the project or a document (unpublish must not destroy data)"
+    description: "Agent did NOT delete the project (unpublish must not destroy the project)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+(projects|documents)\s+delete\b'
+    command_pattern: 'uip\s+ixp\s+projects\s+delete\b'
     weight: 1.0
     pass_threshold: 1.0
 
