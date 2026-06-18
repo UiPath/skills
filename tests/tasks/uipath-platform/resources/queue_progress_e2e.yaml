@@ -1,0 +1,95 @@
+task_id: skill-platform-queue-progress-e2e
+description: >
+  E2E queue-item state transitions: add one item, set-progress to advance it
+  from New → InProgress, confirm via get, then update progress text and delete.
+  Verifies the state-machine deterministically without needing a robot.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, queues]
+skip: true
+# Blocked: `queue-items set-progress` requires the item to be in InProgress
+# state already — the New → InProgress transition only happens when a robot
+# dequeues the item via the runtime API (no CLI surface). Without a robot,
+# this test cannot exercise the state machine.
+#
+# Possible unblock paths:
+#  1. Run a real robot in Serverless that processes one queue item, then
+#     observe the state-transition via `queue-items get` (turns this into a
+#     job+queue integration test).
+#  2. Reframe as a "metadata mutations only" test: add → get → update
+#     specific-content + priority → get → delete (skips state transitions).
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  Read `seed.json` for `uuid8`, `folder_a_path`.
+
+  Goal: track a single queue item's state through the API-driven progression
+  (New → InProgress via set-progress → still InProgress with new text via update).
+
+  Steps (use `--output json` on EVERY uip command):
+
+  1. `uip resource queues create <uuid8>-q --folder-path <folder_a_path>` → `create_queue.json`. Capture queue key.
+  2. `uip resource queue-items add <uuid8>-q --folder-path <folder_a_path> --specific-content '{"Id":"1"}'` → `add_item.json`. Capture item unique-key.
+  3. `uip resource queue-items get <item-key> --folder-path <folder_a_path>` → `get_new.json` (expect status New).
+  4. `uip resource queue-items set-progress <item-key> "starting" --folder-path <folder_a_path>` → `set_progress.json`.
+  5. `uip resource queue-items get <item-key> --folder-path <folder_a_path>` → `get_after_progress.json` (expect status InProgress).
+  6. `uip resource queue-items update <item-key> --folder-path <folder_a_path> --progress "halfway"` → `update.json`.
+  7. `uip resource queue-items get <item-key> --folder-path <folder_a_path>` → `get_after_update.json` (still InProgress, new progress text).
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a queue"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+queues\s+create'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a single queue item"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+queue-items\s+add\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent called set-progress to advance state"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+queue-items\s+set-progress'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the item state at least 3 times across transitions"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+resource\s+queue-items\s+get\b'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Behavioral check: state goes New → InProgress; progress text updates"
+    command: "python3 $TASK_DIR/check_queue_progress.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -1,0 +1,57 @@
+task_id: skill-platform-trigger-api-e2e
+description: >
+  E2E: agent uses the skill to leave the tenant in a state where an API
+  trigger exists on the seeded process with a known slug/method/name. Check
+  queries tenant directly.
+tags: [uipath-platform, e2e, mode:operate, lifecycle:setup, resources, triggers]
+skip: true
+# Blocked: CLI `uip resource triggers create --type api` rejects with
+# HTTP 400 "A folder is required for this action" regardless of how the
+# folder is passed (--folder-path is documented as time/queue only;
+# --folder-key also fails; without either, same error). The folder should
+# be inferred from the release-key's process, but the CLI doesn't pass the
+# X-UIPATH-FolderPath header correctly for API triggers. Re-enable once the
+# CLI bug is fixed in @uipath/resource-tool.
+
+agent:
+  type: claude-code
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 60
+
+initial_prompt: |
+  Use the `uipath-platform` skill.
+
+  `seed.json` provides: `uuid8`, `process_key`, `folder_path` (the folder
+  containing the process — triggers must live in the same folder).
+
+  Goal: leave the tenant in this state — an **API trigger** exists in
+  `folder_path`, attached to `process_key`, with these fields:
+  - Name: `e2e-trigger-api-<uuid8>-renamed`
+  - Slug: `e2e-trigger-api-<uuid8>-slug`
+  - Method: `Post`
+
+  Exercise renaming the trigger at some point (you may create it with a
+  different name first, then rename). What matters at the end is the desired
+  state above.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: run_command
+    description: "Tenant state: API trigger with expected name/slug/method exists"
+    command: "python3 $TASK_DIR/check_trigger_api.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
