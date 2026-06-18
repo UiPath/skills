@@ -65,7 +65,8 @@ sends becomes an event property.
 | `toolName` | `Skill`, `Bash` | Claude Code tool |
 | `toolUseId` | `toolu_01ABC` | Unique per call — correlation key + ordering tiebreaker |
 | `sessionId` | `b3f1...` | Claude Code `session_id` — the coding-agent session; session correlation key |
-| `userId` | `9eeb311fc6d5fa03` | **SHA-256 of `cwd`** (first 16 hex) — stable, anonymous per-workspace id. Distinct from the CLI-stamped `CloudUserId` |
+| `agentId` | `agt_77` | Subagent id; present only when the call ran inside a spawned subagent (empty = main session) |
+| `agentType` | `Explore` | Subagent name (`Explore` / `Plan` / custom); empty = main session |
 | `skillName` | `uipath:uipath-platform` | `Skill` calls only |
 | `uipSubcommand` | `solution publish` | Derived first 1–2 verbs of a `uip` command — never the full command line |
 | `fileExtension` | `.flow` | File-tool calls only |
@@ -74,14 +75,13 @@ sends becomes an event property.
 | `outcome` | `ok` / `failure` / `interrupted` | From `tool_response`, not output content |
 | `permissionMode` | `bypassPermissions` | |
 | `effortLevel` | `high` | From the payload's `effort.level`, when present (`low` / `medium` / `high` / `xhigh` / `max`) |
-| `operatingSystem` | `Linux`, `Darwin`, `MINGW64_NT-...` | From `uname -s` |
 | `skillsVersion` | `1.196.0` | `skillsVersion` from `version-manifest.json` |
-| `cliVersion` | `1.197.0-beta...` | From `uip --version` |
 | `durationMs` | `1234` | Tool-call wall-clock from the payload's `duration_ms`. JSON **number**; the CLI stringifies it for App Insights, so latency queries use `toreal(tostring(durationMs))`. `null` when absent → dropped |
 
-`skillsVersion` tracks the CLI version (`version-manifest.json` `targetCli`) and
-is sent alongside `cliVersion` so drift is visible in queries. It is **not** the
-`.claude-plugin/plugin.json` plugin package version.
+`skillsVersion` tracks the CLI version (`version-manifest.json` `targetCli`); it
+is **not** the `.claude-plugin/plugin.json` plugin package version. The hook no
+longer sends `cliVersion` or `operatingSystem` — the CLI tracker already records
+its own version as `application_Version` and the OS / client context by default.
 
 ### Added by the CLI
 
@@ -91,25 +91,23 @@ sends them, and a `source` value sent by the hook would be overridden:
 | Field | Notes |
 |-------|-------|
 | `source` | Always `skills-plugin` |
-| `CloudUserId` / `CloudTenantId` / `CloudOrganizationId` | Authenticated UiPath cloud identity — distinct from the hook's anonymous `userId` |
-| CLI app version | The `uip` CLI's own version |
+| `CloudUserId` / `CloudTenantId` / `CloudOrganizationId` | Authenticated UiPath cloud identity |
+| `application_Version` | The `uip` CLI's own version (replaces the hook's former `cliVersion`) |
+| OS / client context | Recorded by the tracker by default (replaces the hook's former `operatingSystem`) |
 
 ## Privacy
 
 Skills telemetry rides the CLI's telemetry tracker, so each event is
 **associated with the signed-in UiPath identity** — `CloudUserId`,
 `CloudTenantId`, `CloudOrganizationId`, plus the CLI app version, all stamped by
-the CLI. It is **not** anonymous. The hook also sends a `userId` that is a
-SHA-256 hash of the working directory — a stable, anonymous **per-workspace**
-id, separate from the authenticated `CloudUserId`.
+the CLI. It is **not** anonymous.
 
 What the hook **never** sends:
 
 - File contents, `stdout`, `stderr` — only `outcome` and `durationMs`.
 - Full command lines — only the derived `uip` subcommand verb.
 - File paths — only the extension / known filename.
-- Raw `cwd` / project path — only its SHA-256 hash (`userId`). `transcript_path`
-  is never collected.
+- The `cwd` / project path and `transcript_path` — neither is collected.
 
 All fields the hook derives are low-cardinality. Nothing is sent unless
 explicitly opted in with `UIPATH_TELEMETRY_DISABLED=0`.

@@ -84,12 +84,11 @@ now="$(date +%s 2>/dev/null || echo 0)"
 cache_val() { # $1 = key; emits value stripped to a safe charset
   grep -E "^$1=" "$cache" 2>/dev/null | head -1 | cut -d= -f2- | tr -cd 'A-Za-z0-9:._/-'
 }
-env_name="unknown"; base_url=""; cli_ver=""; _ts=0
+env_name="unknown"; base_url=""; _ts=0
 if [ -f "$cache" ]; then
   _ts="$(cache_val _ts)"
   env_name="$(cache_val env_name)"
   base_url="$(cache_val base_url)"
-  cli_ver="$(cache_val cli_ver)"
   case "$_ts" in *[!0-9]*|"") _ts=0 ;; esac   # non-numeric -> treat as stale
 fi
 
@@ -97,7 +96,6 @@ if [ "$(( now - _ts ))" -ge "$ttl" ]; then
   status_json="$(uip login status --output json 2>/dev/null)"
   base_url="$(printf '%s' "$status_json" \
     | grep -oE '"BaseUrl"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
-  cli_ver="$(uip --version 2>/dev/null | awk 'NR==1{print $1}')"
   case "$base_url" in
     *alpha.uipath.com*)   env_name="alpha" ;;
     *staging.uipath.com*) env_name="staging" ;;
@@ -109,7 +107,6 @@ if [ "$(( now - _ts ))" -ge "$ttl" ]; then
     echo "_ts=$now"
     echo "env_name=$env_name"
     echo "base_url=$base_url"
-    echo "cli_ver=$cli_ver"
   } > "$cache" 2>/dev/null
 fi
 
@@ -149,28 +146,24 @@ session_id="$(json_str session_id)"
 tool_use_id="$(json_str tool_use_id)"   # unique per call: correlation key + ordering tiebreaker
 permission_mode="$(json_str permission_mode)"
 
-# Skills version — tracks the CLI version (version-manifest.json `targetCli`),
-# so send it alongside cliVersion and let drift surface in queries. Read from
-# the manifest, NOT git. This is the skills/CLI co-version, NOT the
-# .claude-plugin/plugin.json package version.
+# Skills version — tracks the CLI version (version-manifest.json `targetCli`).
+# The CLI's own app version already rides the tracker as `application_Version`,
+# so we no longer send a separate cliVersion. Read from the manifest, NOT git.
+# This is the skills/CLI co-version, NOT the .claude-plugin/plugin.json package
+# version.
 skills_ver="$(grep -oE '"skillsVersion"[[:space:]]*:[[:space:]]*"[^"]*"' \
   "${CLAUDE_PLUGIN_ROOT:-.}/version-manifest.json" 2>/dev/null \
   | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
 effort_level="$(printf '%s' "$payload" \
   | grep -oE '"effort"[[:space:]]*:[[:space:]]*\{[^}]*"level"[[:space:]]*:[[:space:]]*"[^"]*"' \
   | grep -oE '"level"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
-os_name="$(uname -s 2>/dev/null)"
 
-# cwd embeds the OS username -> never send raw. Hash to a stable, anonymous
-# workspace id. This is the agent's working directory, distinct from the cloud
-# identity (CloudUserId) the CLI stamps; it segments telemetry by workspace.
-cwd="$(json_str cwd)"
-hash_of() {
-  if   command -v sha256sum >/dev/null 2>&1; then printf '%s' "$1" | sha256sum    | cut -c1-16
-  elif command -v shasum    >/dev/null 2>&1; then printf '%s' "$1" | shasum -a 256 | cut -c1-16
-  else printf '%s' "$1" | cksum | tr -d ' '; fi
-}
-if [ -n "$cwd" ]; then user_id="$(hash_of "$cwd")"; else user_id=""; fi
+# Subagent context — present only when the tool call ran inside a spawned
+# subagent (absent in the main session, so empty = main loop). agentType is the
+# subagent name (Explore / Plan / custom). The model id is NOT in the
+# PostToolUse payload, so it cannot be sent from the hook.
+agent_id="$(json_str agent_id)"
+agent_type="$(json_str agent_type)"
 
 # Sanitize free-ish text to keep the hand-built JSON valid and bounded. Value
 # sanitization is the hook's job (CLI and skills ship co-versioned); the CLI
@@ -185,12 +178,11 @@ base_url="$(san "$base_url")"
 outcome="$(san "$outcome")"
 permission_mode="$(san "$permission_mode")"
 effort_level="$(san "$effort_level")"
-cli_ver="$(san "$cli_ver")"
 skills_ver="$(san "$skills_ver")"
 tool_use_id="$(san "$tool_use_id")"
 session_id="$(san "$session_id")"
-os_name="$(san "$os_name")"
-user_id="$(san "$user_id")"
+agent_id="$(san "$agent_id")"
+agent_type="$(san "$agent_type")"
 
 # --- hand off to the CLI telemetry tracker ---------------------------------
 # Build a flat key:value JSON object and pipe it to `uip track`. The CLI hard-
@@ -203,7 +195,7 @@ user_id="$(san "$user_id")"
 # Detached subshell ( cmd & ) survives this hook's exit so the agent never
 # waits. `uip track` is opt-in and never-fail (exits 0, emits nothing when
 # telemetry is off); piping to it is harmless even if the CLI is absent.
-( printf '%s' "{\"toolName\":\"$tool\",\"skillName\":\"$skill_name\",\"uipSubcommand\":\"$uip_subcommand\",\"fileExtension\":\"$file_ext\",\"environment\":\"$env_name\",\"baseUrl\":\"$base_url\",\"outcome\":\"$outcome\",\"permissionMode\":\"$permission_mode\",\"effortLevel\":\"$effort_level\",\"operatingSystem\":\"$os_name\",\"skillsVersion\":\"$skills_ver\",\"cliVersion\":\"$cli_ver\",\"toolUseId\":\"$tool_use_id\",\"sessionId\":\"$session_id\",\"userId\":\"$user_id\",\"durationMs\":$dur_json}" \
+( printf '%s' "{\"toolName\":\"$tool\",\"skillName\":\"$skill_name\",\"uipSubcommand\":\"$uip_subcommand\",\"fileExtension\":\"$file_ext\",\"environment\":\"$env_name\",\"baseUrl\":\"$base_url\",\"outcome\":\"$outcome\",\"permissionMode\":\"$permission_mode\",\"effortLevel\":\"$effort_level\",\"skillsVersion\":\"$skills_ver\",\"toolUseId\":\"$tool_use_id\",\"sessionId\":\"$session_id\",\"agentId\":\"$agent_id\",\"agentType\":\"$agent_type\",\"durationMs\":$dur_json}" \
     | uip track >/dev/null 2>&1 & )
 
 exit 0
