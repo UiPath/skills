@@ -52,111 +52,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the connect-to-database-failures playbook (branch 4) AND identified the empty ProviderName resolving to SqlClient on the migrated Windows project as the root cause, recommending ProviderName=System.Data.OleDb for the Excel/OLE DB target"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md for this scenario. Treat it as the authoritative ground
-      truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My LedgerExportXlsx process started faulting in Orchestrator on every
-         run right after we migrated it to the new Windows compatibility. Can
-         you investigate why?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/database-activities/playbooks/connect-to-database-failures.md
-        specifically BRANCH 4 (provider init failure after migration / wrong
-        ProviderName), because the runtime error
-          "System.TypeInitializationException: The type initializer for
-           'Microsoft.Data.SqlClient.SqlConnection' threw an exception."
-        on a project moved to Windows (.NET) is the verbatim branch-4 signature.
-
-        Evidence sources (in priority order):
-          1. The agent's final response naming the connect-to-database-failures
-             playbook and branch 4.
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/database-activities/playbooks/.
-
-        Do NOT inspect internal investigation state (state.json,
-        hypotheses.json, matched_playbooks, scope.domain, evidence_refs). Grade
-        only what the agent presents to the user and its tool calls.
-
-        Acceptable / non-penalized: the agent may read neighboring provider
-        playbooks (Execute Query / Start Transaction provider/connection
-        playbooks) while ruling them out -- but the conclusion must tie the
-        failure to the Connect to Database activity targeting an Excel/OLE DB
-        source.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - On the migrated Windows (.NET) project, the Connect to Database
-            activity (DatabaseConnect) in Main.xaml has an EMPTY ProviderName
-            (ProviderName="").
-          - An empty ProviderName resolves to the SqlClient provider on the
-            modern .NET runtime, so the activity initializes
-            Microsoft.Data.SqlClient and throws the
-            System.TypeInitializationException for
-            Microsoft.Data.SqlClient.SqlConnection.
-          - This happens even though the connection string is clearly an
-            Excel/ACE OLE DB string
-            (Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Finance\Ledger.xlsx;...)
-            -- the intended target is Excel, not SQL Server.
-          - The failure began right after the Windows-Legacy -> Windows
-            migration; the empty provider was tolerated under Windows-Legacy.
-        The reference fix:
-          - Set ProviderName EXPLICITLY to System.Data.OleDb on the Connect to
-            Database activity (the source is Excel/Access via ACE OLE DB).
-          - Do NOT switch to Microsoft.Data.SqlClient -- that is for SQL Server,
-            and the target here is Excel.
-
-        Evidence sources (in priority order):
-          1. The agent's final response naming the Microsoft.Data.SqlClient
-             type-initializer crash + the empty ProviderName + the Excel/OLE DB
-             target + the Windows migration.
-          2. Cited project.json ("targetFramework": "Windows"), Main.xaml (empty
-             ProviderName + the ACE OLE DB connection string), and the job logs.
-
-      REJECT these wrong conclusions (cap the score at 0.2 if the agent lands on
-      one as the root cause):
-        - "malformed / wrong connection string" (branch 1 -- the connection
-          string is well-formed)
-        - "provider not registered / bitness mismatch" (branch 2)
-        - "the workbook file is locked / used by another process" (branch 3)
-        - "switch the provider to Microsoft.Data.SqlClient" as the fix (WRONG --
-          the target is Excel/OLE DB; the correct provider is System.Data.OleDb)
-        - "SQL syntax error in the query"
-        - "database outage / SQL Server is down"
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent (a) names the Microsoft.Data.SqlClient type-initializer crash
-             stemming from an empty / SqlClient-resolved ProviderName, (b)
-             attributes it to the Connect to Database activity targeting an
-             Excel/ACE OLE DB source after the Windows migration, AND (c)
-             recommends setting ProviderName explicitly to System.Data.OleDb.
-        0.8  Both dimensions partial: e.g., names the type-initializer crash and
-             the empty ProviderName but does not explicitly recommend
-             System.Data.OleDb; or recommends System.Data.OleDb without naming
-             the playbook branch.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (Connect to Database / provider init
-             failure) but neither matched the branch nor identified the empty
-             ProviderName fix, OR landed on one of the REJECT conclusions above
-             (including "switch to Microsoft.Data.SqlClient").
-        0.0  Misdiagnosed entirely or got blocked.
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

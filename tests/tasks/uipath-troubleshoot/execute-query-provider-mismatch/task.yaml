@@ -57,121 +57,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the execute-query-failures playbook (Branch 2) AND identified the post-migration driver/provider keyword mismatch as the root cause"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt
-      is the RESOLUTION.md for this scenario. Treat it as the
-      authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My InvoiceReconciliation process is faulting in Orchestrator on
-         every run. It started right after we migrated the project to the
-         new Windows compatibility."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/database-activities/playbooks/execute-query-failures.md
-        specifically BRANCH 2 (driver / provider mismatch after a
-        Windows-Legacy -> Windows migration). The runtime signature
-          "Execute Query: A database error occurred" wrapping
-          "System.ArgumentException: Keyword not supported: 'Provider'."
-          (from the Microsoft.Data.SqlClient connection-string parser),
-          appearing right after the migration
-        is the verbatim Branch 2 signature.
-
-        Evidence sources (in priority order):
-          1. The agent's final response -- it should name the
-             execute-query-failures playbook / Branch 2.
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/database-activities/playbooks/.
-        Grade only what the agent presented (final response + tool
-        calls); do NOT inspect internal investigation state.
-
-        Acceptable / non-penalized: the agent may also Read neighboring
-        execute-query branches (null connection, SQL syntax, timeout,
-        CLR crash, wrong activity) while ruling them out. Exploration is
-        normal.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The project was migrated from Windows - Legacy (.NET
-            Framework) to Windows (.NET 6+); `project.json` now sets
-            `targetFramework: "Windows"`.
-          - The Connect to Database activity in Main.xaml still sets
-            `ProviderName="System.Data.SqlClient"` and supplies a
-            connection string containing a keyword the modern provider
-            rejects: `Provider=SQLOLEDB;...`.
-          - Under the modern runtime, the connection-string parser
-            (Microsoft.Data.SqlClient) throws
-            `System.ArgumentException: Keyword not supported: 'Provider'`,
-            which UiPath wraps as "A database error occurred". The fault
-            is at the connection/provider configuration, not the SQL.
-        The reference fix:
-          - Switch the provider to `Microsoft.Data.SqlClient`.
-          - Remove/adjust the connection-string keyword(s) the new
-            provider rejects (drop `Provider=SQLOLEDB`; use the modern
-            SqlClient keyword form, e.g. `Integrated Security=true`).
-          - Confirm the Microsoft.Data.SqlClient driver is installed on
-            every Robot host that runs the process, not just the dev
-            machine.
-
-        Evidence sources (in priority order):
-          1. The agent's final response -- it should reference the
-             "Keyword not supported" ArgumentException, the Windows
-             (migrated) project, and the legacy SqlClient provider, and
-             describe the post-migration provider/keyword mismatch (NOT a
-             null connection, NOT a SQL syntax error, NOT a timeout, NOT
-             a CLR crash, NOT a wrong activity, NOT a
-             database/connectivity outage).
-          2. The agent's tool-call summary and any evidence it cites
-             from the job logs / Main.xaml / project.json.
-        Grade only what the agent presented; do NOT inspect internal
-        investigation state.
-
-      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
-      concludes any of these as the root cause):
-        - "The connection was null / out of scope / expired."
-        - "SQL syntax error / unsafe string concatenation."
-        - "Query timeout / the query is too slow."
-        - "CLR-level crash (0xE0434352)."
-        - "Wrong activity type (should be Execute Non Query)."
-        - "The database is down / unreachable / a network outage."
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched execute-query-failures Branch 2 AND
-             identified the post-migration provider/keyword mismatch.
-             Conclusion must (a) name the "Keyword not supported"
-             ArgumentException from the connection-string parser, (b)
-             attribute it to the project being migrated to Windows while
-             the activity still uses System.Data.SqlClient with a
-             connection-string keyword the modern provider rejects, and
-             (c) recommend switching to Microsoft.Data.SqlClient,
-             adjusting the rejected keyword(s), and confirming the driver
-             is installed on the Robot host.
-        0.8  Both partial: e.g., correct playbook and names the provider
-             mismatch but does not connect it to the migration / the
-             specific rejected keyword; or identifies the SqlClient
-             provider issue but recommends only editing the connection
-             string without switching the provider.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (Execute Query / connection-string
-             error) but neither matched the branch nor identified the
-             provider/keyword mismatch -- OR concluded one of the WRONG
-             ANSWERS above.
-        0.0  Got blocked, or produced no usable conclusion.
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

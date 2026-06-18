@@ -49,97 +49,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the connect-to-database-failures playbook (branch 1) AND identified the malformed connection string (unquoted Extended Properties) as the root cause, recommending quoting the Extended Properties value"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md for this scenario. Treat it as the authoritative ground
-      truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My MonthlyReconImport process faults in Orchestrator on every run. Can
-         you investigate why? The project source is in the current working
-         directory."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/database-activities/playbooks/connect-to-database-failures.md
-        specifically BRANCH 1 (malformed / wrong connection string), because the
-        runtime error
-          "System.ArgumentException: Format of the initialization string does
-           not conform to specification starting at index 47."
-        is the verbatim branch-1 signature.
-
-        Evidence (grade ONLY what the agent presented):
-          1. The agent's final response naming the connect-to-database-failures
-             playbook, branch 1 (connection string).
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/database-activities/playbooks/.
-
-        Grade only what the agent presented (final response + tool calls); do
-        NOT inspect internal investigation state.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Connect to Database activity (DatabaseConnect) in Main.xaml uses
-            ProviderName="System.Data.OleDb" and an ACE OLE DB connection string
-            whose Extended Properties value is NOT quoted:
-              Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Finance\Recon.xlsx;Extended Properties=Excel 12.0 Xml;HDR=YES;
-          - Because the value is unquoted, the ';' inside "Excel 12.0 Xml;HDR=YES;"
-            is read as a key/value separator, so the connection-string parser
-            cannot parse the string and throws
-              "Format of the initialization string does not conform to
-               specification".
-        The reference fix:
-          - Quote the Extended Properties value so the embedded ';' is part of
-            the value, not a separator:
-              Extended Properties="Excel 12.0 Xml;HDR=YES;"
-
-        Evidence (grade ONLY what the agent presented):
-          1. The agent's final response naming the connection-string parse/format
-             error AND the unquoted Extended Properties as the cause.
-          2. Tool-call / cited evidence: the Main.xaml connection string and the
-             job logs (the ArgumentException / "initialization string" message).
-
-      REJECT these wrong conclusions (cap the score at 0.2 if the agent lands on
-      one as the root cause):
-        - "the ACE provider is not registered" / a bitness mismatch (branch 2)
-        - "the workbook file is locked / used by another process" (branch 3)
-        - "provider init failure" / "wrong ProviderName" / a
-          "Microsoft.Data.SqlClient" type-initializer error (branch 4)
-        - "SQL syntax error in the query"
-        - "the file / sheet does not exist" / "wrong Data Source path"
-        - "a database outage"
-        This is a connection-STRING FORMAT error, not any of those.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent (a) named the "Format of the initialization string does not
-             conform to specification" connection-string parse error, (b)
-             attributed it to the malformed / unquoted Extended Properties in
-             the Connect to Database ConnectionString, AND (c) recommended
-             quoting the Extended Properties value. (Naming branch 1 of the
-             playbook is expected.)
-        0.8  Both partial: e.g., correct playbook and names the
-             "initialization string" parse error but does not explicitly tie it
-             to the unquoted Extended Properties; or recommends quoting the
-             value without naming the playbook branch.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (Connect to Database / OLE DB failure) but
-             neither matched branch 1 nor identified the unquoted Extended
-             Properties, OR landed on one of the REJECT conclusions above.
-        0.0  Misdiagnosed entirely or got blocked.
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "..."}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

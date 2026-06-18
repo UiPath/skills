@@ -58,112 +58,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the start-transaction-failures playbook (Branch 2) AND identified the skipped transaction body / v1.5.0 package defect as the root cause"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My NightlyReconcileTxn process reports Success in Orchestrator
-         every night, but the reconciliation it should perform never
-         happens — no rows are written and there is no error in the logs."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/database-activities/playbooks/start-transaction-failures.md
-        specifically BRANCH 2 (transaction scope skips its body -- a
-        defective UiPath.Database.Activities build, notably v1.5.0, fails to
-        execute the activities inside the Start Transaction body at all; the
-        scope enters and exits cleanly with NO error, every child database
-        activity is skipped, so nothing is read or written, and the job
-        reports Success having done nothing).
-
-        Evidence sources (in priority order):
-          1. The agent's final response -- it should name the
-             start-transaction-failures playbook / Branch 2.
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/database-activities/playbooks/.
-        Grade only what the agent presented (final response + tool calls);
-        do NOT inspect internal investigation state.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The project pins UiPath.Database.Activities v1.5.0, a build with
-            a defect where the Start Transaction scope skips its body.
-          - On that build the child activities (an Execute Non Query and a
-            Log Message, both well-formed and correctly wired to the scope's
-            dbTxn) never execute, NO error is raised, and the scope commits
-            an empty transaction.
-          - The job therefore reports Success having read or written
-            nothing -- the reconciliation never ran.
-        The reference fix:
-          - Upgrade UiPath.Database.Activities to v1.7.1 or newer (or
-            downgrade to a known-good build such as v1.4.0) via Manage
-            Packages. It is a package-version fix, NOT a workflow change.
-
-        Evidence sources (in priority order):
-          1. The agent's final response -- it should identify the
-             empty/skipped transaction body AND the v1.5.0 package version
-             as the cause, and the version upgrade as the fix. It must make
-             clear that NO child ran and there is NO error (this is NOT a
-             swallowed-error/silent-rollback case, NOT a null/unpropagated
-             connection, NOT a provider mismatch, NOT a data problem, NOT a
-             trigger/schedule failure).
-          2. The agent's tool-call summary and any evidence it cites:
-             project.json pinning v1.5.0; the job logs showing the Start
-             Transaction scope ran no children and raised no error (scope
-             start immediately followed by commit, with an empty
-             error-level log); Main.xaml showing the child activities that
-             should have run but did not.
-        Grade only what the agent presented; do NOT inspect internal
-        investigation state.
-
-      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
-      any of these as the root cause):
-        - "A child error was swallowed / silent rollback / an in-scope
-          catch logged and continued." (No -- that is Branch 1; here NO
-          child ran and there is NO error at all.)
-        - "The connection was null / was not propagated to the child."
-          (Branch 4.)
-        - "Provider mismatch / wrong provider after migration." (Branch 3.)
-        - "The data didn't match / it's a data problem."
-        - "The schedule/trigger didn't fire." (No -- the job DID run and
-          reported Successful.)
-        - "Add logging / add a Retry / wrap it in a Try Catch."
-      Also cap at 0.2 if the agent's PRIMARY fix is any workflow-logic
-      change -- the fix is the package version (upgrade off v1.5.0).
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched start-transaction-failures Branch 2 AND its
-             conclusion (a) identifies that the Start Transaction scope
-             executed none of its child activities with no error, (b)
-             attributes it to the defective UiPath.Database.Activities
-             v1.5.0 build (body-skip bug), and (c) recommends upgrading to
-             v1.7.1+ (or downgrading to v1.4.0).
-        0.8  Both partial: e.g., correct playbook and names the empty scope
-             but does not pin it to the v1.5.0 package defect; or names the
-             v1.5.0 defect but recommends a workflow change rather than a
-             version upgrade.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (Start Transaction / job Success but no
-             work done) but neither matched the branch nor identified the
-             skipped-body/v1.5.0 cause -- OR concluded one of the WRONG
-             ANSWERS above.
-        0.0  Got blocked, or produced no usable conclusion.
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

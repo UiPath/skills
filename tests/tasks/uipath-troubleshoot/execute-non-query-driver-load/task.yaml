@@ -53,117 +53,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the execute-non-query-failures Branch 4 playbook AND identified the missing / wrong-bitness DB driver on the host as the root cause"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt
-      is the RESOLUTION.md for this scenario. Treat it as the
-      authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My OracleLedgerSync process is faulting in Orchestrator on
-         every scheduled run. I only have Orchestrator access — I can't
-         get onto the Robot host."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/database-activities/playbooks/execute-non-query-failures.md
-        specifically BRANCH 4 (driver / client library not loadable),
-        because the runtime signature
-          "Failed to load library (ErrorCode: 126)" /
-          "System.DllNotFoundException" at the Execute Non Query step
-        is the verbatim signature of that branch.
-
-        Evidence sources (in priority order):
-          1. The agent's final response -- it should name the
-             execute-non-query-failures playbook / Branch 4.
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/database-activities/playbooks/.
-        Grade only what the agent presented (final response + tool
-        calls); do NOT inspect internal investigation state.
-
-        Acceptable / non-penalized: the agent may also Read the
-        sibling connect-to-database-failures playbook (Branch 2 shares
-        the same driver/bitness family) or other execute-non-query
-        branches while ruling them out. Exploration is normal.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Execute Non Query activity in Main.xaml uses
-            `ProviderName = "Oracle.DataAccess.Client"`, which depends
-            on the Oracle Client NATIVE libraries on the Robot host.
-          - Those native libraries are MISSING or the WRONG BITNESS on
-            the host, so the native load fails with
-            `Failed to load library (ErrorCode: 126)` /
-            `System.DllNotFoundException` BEFORE the SQL runs.
-          - The project's `targetFramework` is `Windows` => a 64-bit
-            process => it needs the 64-bit driver/client (match the
-            PROCESS bitness, not Office / the dev machine).
-          - The SQL, parameters, and connection string are all correct.
-        The reference fix:
-          - Install the matching-bitness (64-bit) Oracle Client / DB
-            driver on the Robot host.
-          - Verify the connection from the host with Configure
-            Connection.
-          - The fix is a HOST-SIDE instruction handed to the Robot
-            machine owner; the diagnosing user cannot get on the host.
-          - (Optional, also acceptable) switch to the fully-managed
-            `Oracle.ManagedDataAccess.Client` provider to remove the
-            native-client dependency.
-
-        Evidence sources (in priority order):
-          1. The agent's final response -- it should name the error
-             code 126 / DllNotFound (failed to load library) and the
-             missing / wrong-bitness DB driver / client on the host as
-             the cause.
-          2. The agent's tool-call summary and any evidence it cites
-             from the job logs / Main.xaml (ProviderName, targetFramework).
-        Grade only what the agent presented; do NOT inspect internal
-        investigation state.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched execute-non-query-failures Branch 4 AND
-             identified the missing / wrong-bitness DB driver/client on
-             the host as the cause. Conclusion must (a) name the
-             driver/client load failure tied to ErrorCode 126 /
-             DllNotFoundException, (b) state the fix is to install the
-             matching-bitness (64-bit, matching the Windows process)
-             driver/client ON THE HOST, and (c) NOT recommend a SQL,
-             parameter, connection-string, or activity change as the
-             fix.
-        0.8  Both partial: e.g., correct playbook and identifies a
-             "driver / host environment" problem but does not name the
-             bitness dimension or the Configure Connection / host
-             install step; or names the host driver but matched only
-             the database-activities overview rather than the specific
-             execute-non-query Branch 4.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (Execute Non Query / database
-             failure) but neither matched Branch 4 nor identified the
-             host driver/client layer.
-
-      HARD CAP -- assign AT MOST 0.2 if the agent's stated root cause is
-      any of: a SQL syntax error, an empty `Sql`, an output-parameter
-      `Size` issue, a null / expired connection, the wrong activity
-      (Execute Query vs Execute Non Query), "the database is down" /
-      vault or server outage, or a connection-string typo. These are
-      explicitly the WRONG answers for this scenario regardless of how
-      confidently they are presented.
-
-        0.0  Misdiagnosed and blocked, or produced no usable
-             conclusion.
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

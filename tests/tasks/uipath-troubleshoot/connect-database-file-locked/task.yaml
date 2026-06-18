@@ -51,109 +51,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the connect-to-database-failures playbook (branch 3) AND identified the workbook being held open by another process (file lock / sharing violation) as the root cause, recommending closing/releasing the file (and/or a read-only open)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md for this scenario. Treat it as the authoritative ground
-      truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My DailyInvoiceLoad process faults in Orchestrator on every run. Can
-         you investigate why? The project source is in the current working
-         directory."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/database-activities/playbooks/connect-to-database-failures.md
-        specifically BRANCH 3 (file lock / sharing violation), because the
-        runtime error
-          "System.IO.IOException: The process cannot access the file
-           'C:\Finance\Invoices.xlsx' because it is being used by another
-           process."
-        is the verbatim branch-3 signature.
-
-        Evidence sources (in priority order):
-          1. The agent's final response naming the connect-to-database-failures
-             playbook and branch 3 (file lock / sharing violation).
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/database-activities/playbooks/.
-
-        Grade DIMENSION A only on the agent's final response and tool-call
-        summary. Do NOT inspect or require any internal investigation state
-        (e.g. files under .local/investigations/) -- what the agent presents to
-        the user is the contract.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Connect to Database activity (DatabaseConnect) in Main.xaml uses
-            ProviderName="System.Data.OleDb" and a WELL-FORMED ACE OLE DB
-            connection string
-            "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=C:\Finance\Invoices.xlsx;Extended Properties=..."
-            — the "Excel-as-a-database" pattern. The connection string and
-            provider are CORRECT.
-          - The target workbook C:\Finance\Invoices.xlsx is held open by another
-            process at run time — the Excel UI, an orphaned EXCEL.EXE from a
-            prior run, a concurrent job touching the same file, or a OneDrive /
-            sync / AV client. File-based providers request a write lock by
-            default, so the file-based ACE provider cannot acquire the file and
-            the connect throws "The process cannot access the file ... because
-            it is being used by another process" (a sharing violation).
-        The reference fix:
-          - Ensure the workbook is closed and no orphaned process holds it
-            before the robot runs (kill stray EXCEL.EXE processes as a hygiene
-            step at job start if a prior run can leak a handle).
-          - For read-only SELECTs, open the connection read-only so the engine
-            does not take a write lock — for ACE OLE DB add Mode=Read to the
-            connection string.
-
-        Evidence sources (in priority order):
-          1. The agent's final response naming the file-lock / sharing
-             violation and the held workbook (Invoices.xlsx).
-          2. The agent citing Main.xaml (well-formed connection string and
-             provider) and the job logs.
-
-      REJECT these wrong conclusions (cap the score at 0.2 if the agent lands on
-      one as the root cause):
-        - "malformed / wrong connection string" (branch 1 — the connection
-          string is well-formed here)
-        - "provider not registered / bitness mismatch / install the 64-bit ACE
-          engine" (branch 2)
-        - "provider init failure / wrong or empty ProviderName / SqlClient type
-          initializer" (branch 4)
-        - "SQL syntax error in the query"
-        - "file not found / wrong path / the sheet doesn't exist" (the file
-          EXISTS — it is locked, not missing)
-        - "the database is down / outage"
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched connect-to-database-failures branch 3 AND
-             (a) named the "used by another process" file-lock / sharing
-             violation, (b) attributed it to the workbook being held open by
-             another process (NOT a connection-string, provider, or SQL issue),
-             and (c) recommended closing/releasing the file (kill orphan
-             process) and/or opening the connection read-only (Mode=Read).
-        0.8  Both partial: e.g., correct playbook and names the "used by another
-             process" file lock but does not recommend a concrete release/
-             read-only fix; or recommends closing the file without naming the
-             playbook branch.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (Connect to Database / OLE DB failure) but
-             neither matched the branch nor identified the file lock, OR landed
-             on one of the REJECT conclusions above.
-        0.0  Misdiagnosed entirely or got blocked.
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true

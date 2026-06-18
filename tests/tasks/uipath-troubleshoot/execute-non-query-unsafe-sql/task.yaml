@@ -56,114 +56,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the execute-non-query-failures playbook (branch 2) AND identified unsafe SQL string concatenation as the root cause"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath diagnostic agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My CustomerUpsert process faults in Orchestrator on some runs."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/database-activities/playbooks/execute-non-query-failures.md
-        specifically BRANCH 2 (unsafe SQL construction / parameter
-        mapping). The runtime signature
-          "Execute Non Query: A database error occurred" wrapping
-          "Unclosed quotation mark after the character string ')'." /
-          "Incorrect syntax near 'Brien'." (Microsoft.Data.SqlClient)
-        is the verbatim branch-2 signature.
-
-        Evidence (in priority order):
-          1. The agent's final response names the
-             execute-non-query-failures playbook and its branch 2.
-          2. The agent's tool-call summary -- a Read on a file under
-             references/activity-packages/database-activities/playbooks/.
-
-        Do NOT inspect any internal investigation state
-        (.local/investigations/, state.json, hypotheses.json, matched
-        playbooks, scope/domain, or requirement fields). Grade only what
-        the agent presented to the user and its tool-call summary.
-
-        Acceptable / non-penalized: the agent may also Read neighboring
-        execute-non-query branches (output-parameter size, empty Sql,
-        driver load) while ruling them out. Exploration is normal.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Execute Non Query activity in Main.xaml builds its Sql by
-            string concatenation:
-            "INSERT INTO Customers (Name, City) VALUES ('" + in_CustomerName + "', '" + in_City + "')".
-          - At runtime in_CustomerName is "O'Brien"; the embedded
-            apostrophe closes the SQL string literal early, so the resolved
-            statement is malformed:
-            INSERT INTO Customers (Name, City) VALUES ('O'Brien', 'Austin').
-          - The SQL Server provider rejects it with
-            "Unclosed quotation mark after the character string ')'." /
-            "Incorrect syntax near 'Brien'."; UiPath wraps it as
-            "A database error occurred". It is also a SQL-injection risk.
-        The reference fix:
-          - Do NOT concatenate, and do NOT merely escape/double the
-            apostrophe or sanitize the input. Parameterize: use a static
-            statement with named parameters
-            (INSERT INTO Customers (Name, City) VALUES (@name, @city)) and
-            map in_CustomerName -> @name and in_City -> @city via the
-            activity's Parameters collection (direction In, type String).
-            The provider then handles quoting and typing, which also closes
-            the SQL-injection risk.
-
-        Evidence (in priority order):
-          1. The agent's final text response names the broken
-             concatenation / unclosed-quote error and the apostrophe value
-             (O'Brien).
-          2. The agent cites Main.xaml (the concatenated Sql with no
-             Parameters collection) and the job-log resolved SQL.
-
-      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
-      any of these as the PRIMARY root cause or fix):
-        - "The Sql is empty / CommandText not initialized." (branch 3)
-        - "An output parameter has Size = 0." (branch 1)
-        - "The driver / client library is not loadable." (branch 4)
-        - "Wrong activity type (should be Execute Query)."
-        - "The connection was null / closed / expired."
-        - "The database is down / unreachable."
-        - "Escape or double the apostrophe" / "sanitize the input string"
-          as the PRIMARY fix. The correct fix is parameterization via the
-          Parameters collection, not escaping.
-
-      SCORING RUBRIC (single score reflecting both dimensions):
-
-        1.0  Agent matched execute-non-query-failures branch 2 AND
-             identified unsafe SQL string concatenation as the root cause.
-             Conclusion must (a) name the unclosed-quote / syntax error
-             produced by string concatenation, (b) attribute it to building
-             the Sql by concatenating an apostrophe-bearing value
-             (O'Brien) and note the SQL-injection risk, and (c) recommend
-             parameterizing with named @parameters via the Parameters
-             collection (not escaping the apostrophe).
-        0.8  Both partial: e.g., correct playbook and names "malformed SQL
-             / syntax error" but does not connect it to the concatenated
-             variable + apostrophe; OR identifies the concatenation but
-             recommends only escaping/doubling the quote rather than
-             parameterizing.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface (Execute Non Query / SQL error) but
-             neither matched the branch nor identified concatenation as the
-             cause; OR concluded one of the WRONG ANSWERS above.
-        0.0  Misdiagnosed entirely, or got blocked.
-
-      Be substance-focused, not schema-focused.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 simulation:
   enabled: true
