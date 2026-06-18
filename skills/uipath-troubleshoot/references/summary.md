@@ -109,7 +109,7 @@ Namespaces: `UiPath.Excel.Activities`
 
 ## Word Activities
 
-Activities for automating Microsoft Word documents on Windows. Document operations run inside a `Use Word File` (`WordProcessScope`) or `Word Application Scope` container and drive Word through Office Interop (COM). Issues here involve `Add Picture` (`WordAddImage`) failures — activity placed outside a Word scope, COM interop exceptions (`0x8002801D` library-not-registered, `0x8001010A` application-busy), insertion target (text/bookmark) not found, and invalid image path / unusable image input.
+Activities for automating Microsoft Word documents on Windows. Document operations run inside a `Use Word File` (`WordProcessScope`) or `Word Application Scope` container and drive Word through Office Interop (COM). Issues here include package-wide COM / host failures common to all Word activities — type library / class not registered (`0x8002801D` / `0x80040154`), bitness mismatch, Word busy/blocked (`0x8001010A`), and `WINWORD.EXE` crashing mid-operation with a `RPC_E_WRONG_THREAD` (`0x8001010E`) cast error — as well as `Add Picture` (`WordAddImage`)-specific failures: activity placed outside a Word scope, insertion target (text/bookmark) not found, invalid image path / unusable image input, and a very large image crashing Word on insert.
 
 Namespaces: `UiPath.Word.Activities`
 
