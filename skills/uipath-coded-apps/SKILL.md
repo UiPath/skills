@@ -47,8 +47,8 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 13. **Inspect the DF schema before writing analytics, filters, or seeds.** Run `uip df entities get <ENTITY_ID> --output json` to inspect fields and types. At runtime, use `entities.getById(<id>)` from the app's authenticated session. DF doesn't behave like a typical RDBMS; see [sdk/data-fabric.md](references/sdk/data-fabric.md) "Anti-shapes & gotchas".
 14. **Every list call returns ONE page — even with no options. There is no "give me everything" path.** Applies to `getAll`, `getAllRecords`, `queryRecordsById`, `getFileMetaData`, etc. `getAll()` with no options does NOT return all rows; the SDK sends no `pageSize` and the **server** applies its own cap, wrapped in a misleadingly-named `NonPaginatedResponse`. To list every row from a source that may exceed the cap, you MUST loop the cursor: `while (page.hasNextPage) { page = await getAll({ cursor: page.nextCursor }) }` and accumulate `items`. Reading `result.items.length` after a single call is almost always a bug. See [sdk/pagination.md](references/sdk/pagination.md).
 15. **Tables of dynamic data must paginate, not dump all rows in one scroll.** Page size 25–50 with next/prev/page-number controls and a "Showing X–Y of Z" summary. Top-N + "see all" is acceptable for explicitly summary panels (e.g., "Top 10 oldest"). Infinite-scroll-of-N-rows is unusable for operational dashboards. Applies to any table backed by any service (DF entities, Tasks, Jobs, Conversations, Process Instances, etc.). See [patterns.md](references/patterns.md) "Tabular Data".
-16. **When adding any new SDK method call, verify the configured OAuth scope already includes the required scope** (dashboards: the `scope` key in `uipath.json`; web apps: `VITE_UIPATH_SCOPE`). Write operations, action methods (`Jobs.stop`, `Tasks.complete`, `ProcessInstances.cancel`, etc.), or first use of a new service typically need broader scopes than read-only flows. Mismatched scopes fail silently with `401` / `403` on the first call. See [oauth-scopes.md](references/oauth-scopes.md) for the per-method scope table.
-17. **Never call `sdk.initialize()` in an action app.** That is web-app-only — it starts a PKCE OAuth redirect. Action apps run in Action Center's iframe with a host-injected session: construct `new UiPath()` (no args, no `.env`) and use it directly. See [create-action-app.md](references/create-action-app.md) `src/uipath.ts`.
+16. **When adding any new SDK method call, verify the configured OAuth scope already includes the required scope** — both dashboards and web apps read the `scope` key from `uipath.json`. Write operations, action methods (`Jobs.stop`, `Tasks.complete`, `ProcessInstances.cancel`, etc.), or first use of a new service typically need broader scopes than read-only flows. Mismatched scopes fail silently with `401` / `403` on the first call. See [oauth-scopes.md](references/oauth-scopes.md) for the per-method scope table.
+17. **Never call `sdk.initialize()` in an action app.** That is web-app-only — it starts a PKCE OAuth redirect. Action apps run in Action Center's iframe with a host-injected session: construct `new UiPath()` (no args) and use it directly. See [create-action-app.md](references/create-action-app.md) `src/uipath.ts`.
 18. **Never make the user type magic phrases.** Whenever you ask the user to pick between known options (app type, build/edit/deploy intent, OAuth setup, deploy pinning), present a **structured choice** via the host coding agent's native question tool (selectable options) when one exists. Mechanics: one option per choice with a short bold label + one-line description of what picking it does; put the recommended option **first** and suffix its label "(Recommended)"; keep to **at most 4 options** (reserve one slot for an escape option like *Make changes* / *Cancel* when applicable). If there are 5+ candidates, or the host agent has no question tool, render a plain numbered list instead and accept the number or the option label as the answer. A free-text reply must always remain valid (e.g. a plan-change request) and takes precedence over the options. **Exception — never put a question in the same response as a long output:** plan-approval gates are free-text by design (the plan ends with "confirm or tell me what to change"); structured questions fire only on later, short turns. See `references/dashboards/plugins/build/impl.md`.
 
 ## Disambiguation — Apps vs Dashboards
@@ -123,16 +123,17 @@ uip login                              # interactive OAuth (opens browser)
 uip login --authority https://alpha.uipath.com   # non-production environments
 ```
 
-## Environment Variables
+## SDK Config (web app)
+
+The web app initializes the SDK with `new UiPath()` (no config). At runtime the SDK reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` from `<meta name="uipath:*">` tags. Those tags are injected by `@uipath/coded-apps-dev` during local dev — it pulls `scope` and `clientId` from `uipath.json` (committed) and `orgName` / `tenantName` / `baseUrl` from `.uipath/` (gitignored, populated by `uip login --org <org> --tenant <tenant>`). In production the UiPath platform injects the same tags directly.
+
+To change scopes or the client ID, edit `uipath.json`. To change org / tenant / base URL, re-run `uip login` with the new flags.
+
+## CLI Environment Variables
 
 | Variable | Used By | Description |
 |----------|---------|-------------|
-| `VITE_UIPATH_CLIENT_ID` | Web App SDK | OAuth Client ID from External Application |
-| `VITE_UIPATH_SCOPE` | Web App SDK | Space-separated OAuth scopes |
-| `VITE_UIPATH_ORG_NAME` | Web App SDK | UiPath organization slug |
-| `VITE_UIPATH_TENANT_NAME` | Web App SDK | UiPath tenant name |
-| `VITE_UIPATH_BASE_URL` | Web App SDK | Must use API subdomain (see below) |
-| `UIPATH_PROJECT_ID` | push / pull | Studio Web project ID |
+| `UIPATH_PROJECT_ID` | `uip codedapp push` / `uip codedapp pull` | Studio Web project ID |
 
 **Base URL by environment:**
 
