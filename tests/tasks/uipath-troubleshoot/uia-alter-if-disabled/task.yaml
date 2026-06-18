@@ -39,11 +39,6 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  - type: file_exists
-    description: "Agent wrote investigation state under .local/investigations/"
-    path: .local/investigations/state.json
-    weight: 0.5
-
   - type: command_executed
     description: "Agent interrogated the faulted job via the uip CLI (uip or jobs get on the job key). Enforced here — not in the judge — so it stays robust across iterations and sub-agents."
     tool_name: "Bash"
@@ -59,9 +54,6 @@ success_criteria:
     include_reference: true
     include_agent_output: true
     include_tool_calls: false
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
       You are grading a UiPath troubleshooting agent against a known-correct
       reference outcome (the attached RESOLUTION.md).
@@ -90,9 +82,8 @@ success_criteria:
 
       DIMENSION A -- Correct playbook
         The agent must match the UI-automation disabled-element playbook
-        (disabled-element.md) in state.json's `matched_playbooks`.
-        Acceptable: the agent also Reads neighboring playbooks during
-        exploration.
+        (disabled-element.md) in its presented diagnosis. Acceptable:
+        the agent also Reads neighboring playbooks during exploration.
         (Orchestrator CLI interrogation is verified separately by a
         command_executed criterion — do NOT grade it here, and do not
         penalize based on which tool calls are or aren't visible.)
@@ -136,7 +127,9 @@ success_criteria:
 
       Be substance-focused, not schema-focused. Intermediate file shapes
       may vary between runs — look at the meaning of what the agent
-      recorded.
+      presented to the user. Grade on the agent's final response and the
+      diagnosis it presents, NOT on the contents of
+      `.local/investigations/state.json` or `hypotheses.json`.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook match and fix recommendation>"}
 
@@ -158,6 +151,9 @@ simulation:
     Let the agent complete its troubleshooting flow without imposing
     constraints. Approve every scope expansion or clarification the
     agent requests so the investigation reaches the final resolution.
+    Approve scope expansions so it reaches a root cause, but do NOT
+    authorize it to modify any project source files -- you will apply any
+    recommended fix yourself in Studio.
   constraints:
     - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator), always answer Yes — pick the recommended / first / affirmative option."
     - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
@@ -165,4 +161,9 @@ simulation:
     - "Never invent or provide new factual data — you don't know any details beyond your initial report and the project path above."
     - "Keep replies short (one sentence or pick a numbered option)."
     - "Never instruct the agent to stop, abort, or skip phases."
+    # The llm_judge sees only the final turn. If the simulator approves applying
+    # the fix, the agent's edit lands in the last turn and pushes the diagnosis
+    # out of the graded turn. Decline source-file edits so the agent closes
+    # recommendation-only.
+    - "If the agent asks whether to apply, edit, or write the fix to a project source file (e.g. 'shall I apply the corrected selector / property to <file>?'), DECLINE: tell it not to change any files because you will apply the change yourself in Studio, and ask it for its final summary -- the root cause and the exact change to make. Never approve a source-file edit."
   max_turns: 6
