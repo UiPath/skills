@@ -6,6 +6,8 @@ Handles ADD / REMOVE / CHANGE / REBUILD / UPGRADE requests on existing dashboard
 
 Detects `.dashboard/state.json` at session start or after `BUILD_RESULT`. State schema: [state-file.md](state-file.md).
 
+> **Precondition:** the project must still contain the extracted starter kit, including `_gen/widgets/` (the widget generator templates the build reads). It's there from the initial build; if the project dir was wiped, the build fails loud with the extract command — re-extract the kit (or run a fresh build) before editing. See `plugins/build/impl.md § The starter-kit archive`.
+
 ## edit-intent.json schema
 
 Write to `<PROJECT_DIR>/edit-intent.json`. **Multiple changes = ONE `ops` batch — never run the script once per change.** The whole batch is validated up front (nothing is written if any op would fail), applied in order, and Dashboard.tsx/index.ts + tsc run once at the end.

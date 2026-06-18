@@ -1,16 +1,43 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs'
+import { readFileSync, mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync } from 'node:fs'
 import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
-import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, generateKeyedDetailViewFile, buildViewSpec, compileColumns, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, SCAFFOLD_VERSION, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift, runIntentMigrations, VALID_EDIT_OPS } from '../build-dashboard.mjs'
-import { zipDir, unzipTo, contentHash } from '../lib/zip.mjs'
+import { execSync } from 'node:child_process'
+import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, generateKeyedDetailViewFile, buildViewSpec, compileColumns, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, setWidgetsDir, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, SCAFFOLD_VERSION, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift, runIntentMigrations, VALID_EDIT_OPS } from '../build-dashboard.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REGISTRY_PATH = resolve(__dirname, '../capability-registry.json')
 
 const registry = JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'))
+
+// Widget generator templates ship inside the committed starter-kit zip (the skill
+// carries no template source). For generation tests, extract that zip with whatever
+// OS tool is available — self-contained (no sibling-repo dependency) and it tests the
+// ACTUAL shipped templates. Falls back to the apps-dev-tools sibling source if present.
+function locateWidgetTemplates() {
+  const zip = resolve(__dirname, '../../fixtures/governance-dashboard-starter-kit.zip')
+  if (existsSync(zip)) {
+    const dest = mkdtempSync(join(tmpdir(), 'kit-test-'))
+    // execSync with a shell string is fine here: `zip`/`dest` are internal paths
+    // (resolve(__dirname,…) / mkdtempSync), never user input — no injection surface.
+    for (const cmd of [
+      `unzip -o "${zip}" -d "${dest}"`,
+      `python3 -m zipfile -e "${zip}" "${dest}"`,
+      `python -m zipfile -e "${zip}" "${dest}"`,
+      `powershell -NoProfile -Command "Expand-Archive -LiteralPath '${zip}' -DestinationPath '${dest}' -Force"`,
+    ]) {
+      try { execSync(cmd, { stdio: 'pipe' }); break } catch { /* try next extractor */ }
+    }
+    const w = join(dest, '_gen', 'widgets')
+    if (existsSync(w)) return w
+  }
+  const sibling = resolve(__dirname, '../../../../../../apps-dev-tools/uipath-dashboard-starter-kit/widgets')
+  return existsSync(sibling) ? sibling : null
+}
+const WIDGETS_DIR_FOR_TESTS = locateWidgetTemplates()
+if (WIDGETS_DIR_FOR_TESTS) setWidgetsDir(WIDGETS_DIR_FOR_TESTS)
 
 // ── Phase 2: version stamps ───────────────────────────────────────────────────
 test('buildVersions stamps skill/scaffold/intentSchema/sdk', () => {
@@ -68,69 +95,9 @@ test('classifyEditIntent accepts a no-target UPGRADE op', () => {
 })
 
 // ── Phase 3: zip library ──────────────────────────────────────────────────────
-test('zip round-trip preserves files and bytes (incl. nested dirs)', () => {
-  const src = mkdtempSync(join(tmpdir(), 'zsrc-'))
-  const dst = mkdtempSync(join(tmpdir(), 'zdst-'))
-  writeFileSync(join(src, 'a.txt'), 'hello')
-  mkdirSync(join(src, 'sub'), { recursive: true })
-  writeFileSync(join(src, 'sub', 'b.ts'), 'export const x = 1\n')
-  try {
-    unzipTo(zipDir(src), dst)
-    assert.equal(readFileSync(join(dst, 'a.txt'), 'utf8'), 'hello')
-    assert.equal(readFileSync(join(dst, 'sub', 'b.ts'), 'utf8'), 'export const x = 1\n')
-  } finally {
-    rmSync(src, { recursive: true, force: true })
-    rmSync(dst, { recursive: true, force: true })
-  }
-})
-
-test('contentHash is stable for identical content and changes when content changes', () => {
-  const a = mkdtempSync(join(tmpdir(), 'zha-'))
-  const b = mkdtempSync(join(tmpdir(), 'zhb-'))
-  writeFileSync(join(a, 'f.txt'), 'same')
-  writeFileSync(join(b, 'f.txt'), 'same')
-  try {
-    assert.equal(contentHash(a), contentHash(b))
-    writeFileSync(join(b, 'f.txt'), 'different')
-    assert.notEqual(contentHash(a), contentHash(b))
-  } finally {
-    rmSync(a, { recursive: true, force: true })
-    rmSync(b, { recursive: true, force: true })
-  }
-})
-
-test('committed starter-kit archive matches the loose scaffold (re-pack to refresh)', () => {
-  const scaffoldDir = resolve(__dirname, '../../templates/dashboard/scaffold')
-  const manifest = JSON.parse(readFileSync(resolve(__dirname, '../../fixtures/governance-dashboard-starter-kit.manifest.json'), 'utf8'))
-  assert.equal(contentHash(scaffoldDir), manifest.sha256, 'Scaffold changed but archive not re-packed — run pack-scaffold.mjs and commit the refreshed zip + manifest')
-})
-
-// Build a single stored-entry zip with an arbitrary (possibly malicious) name.
-function makeZipWithName(name) {
-  const nameBuf = Buffer.from(name, 'utf8')
-  const local = Buffer.alloc(30)
-  local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt16LE(0, 8)
-  local.writeUInt16LE(nameBuf.length, 26)
-  const cen = Buffer.alloc(46)
-  cen.writeUInt32LE(0x02014b50, 0); cen.writeUInt16LE(20, 4); cen.writeUInt16LE(20, 6)
-  cen.writeUInt16LE(0, 10); cen.writeUInt16LE(nameBuf.length, 28); cen.writeUInt32LE(0, 42)
-  const localPart = Buffer.concat([local, nameBuf])
-  const cenPart = Buffer.concat([cen, nameBuf])
-  const eocd = Buffer.alloc(22)
-  eocd.writeUInt32LE(0x06054b50, 0); eocd.writeUInt16LE(1, 8); eocd.writeUInt16LE(1, 10)
-  eocd.writeUInt32LE(cenPart.length, 12); eocd.writeUInt32LE(localPart.length, 16)
-  return Buffer.concat([localPart, cenPart, eocd])
-}
-
-test('unzipTo rejects zip-slip entries that escape destDir', () => {
-  const dst = mkdtempSync(join(tmpdir(), 'zslip-'))
-  try {
-    assert.throws(() => unzipTo(makeZipWithName('../escape.txt'), dst), /escape|unsafe/)
-    assert.throws(() => unzipTo(makeZipWithName('a/../../escape.txt'), dst), /escape|unsafe/)
-  } finally {
-    rmSync(dst, { recursive: true, force: true })
-  }
-})
+// NOTE: zip/unzip + contentHash + zip-slip tests moved to apps-dev-tools
+// (uipath-dashboard-starter-kit/tests/zip.test.mjs) along with zip.mjs — the
+// skill no longer ships any zip code or scaffold source.
 
 function resolveT1(metricName) {
   const entry = registry.t1[metricName]
@@ -1135,9 +1102,27 @@ test('multi-line series: a string literal (registry form) passes through unchang
   assert.ok(out.includes('key:"Completed"') && !out.includes('[object Object]'))
 })
 
-test('Perf: scaffold tsconfig has incremental + skipLibCheck', () => {
-  const ts = JSON.parse(readFileSync(resolve(__dirname, '../../templates/dashboard/scaffold/tsconfig.json'), 'utf8'))
-  assert.equal(ts.compilerOptions.incremental, true, 'incremental must be enabled')
-  assert.equal(ts.compilerOptions.skipLibCheck, true, 'skipLibCheck must be enabled')
-  assert.ok(ts.compilerOptions.tsBuildInfoFile, 'tsBuildInfoFile must be set (required with noEmit+incremental)')
+// NOTE: scaffold tsconfig (incremental/skipLibCheck) is now validated in
+// apps-dev-tools (it owns the scaffold source) — not a skill concern.
+
+// ── Regression guards: every build path must be kept in lockstep ──────────────
+// (Caught the externalization bug where incremental edits never set the widgets
+// dir and the row-click drill-down was wired only into the fresh build.)
+
+test('regression: widgets dir is set + extraction asserted on every widget-generating path', () => {
+  const src = readFileSync(resolve(__dirname, '../build-dashboard.mjs'), 'utf8')
+  const setCalls = (src.match(/setWidgetsDir\(join\(P, '_gen', 'widgets'\)\)/g) || []).length
+  assert.ok(setCalls >= 3, `setWidgetsDir(<proj>/_gen/widgets) must run on fresh build, upgrade, AND incremental edit; found ${setCalls}`)
+  const assertCalls = (src.match(/assertScaffoldExtracted\(/g) || []).length
+  // definition + fresh + upgrade + incremental + prewarm = 5
+  assert.ok(assertCalls >= 5, `assertScaffoldExtracted must guard every build entry path; found ${assertCalls}`)
+})
+
+test('regression: row-click keyed views are wired on fresh + incremental + upgrade', () => {
+  const src = readFileSync(resolve(__dirname, '../build-dashboard.mjs'), 'utf8')
+  assert.ok(src.includes('injectAppRoutes(P, generatedViewNames, keyedViewWidgets)'), 'fresh build must inject keyed routes')
+  assert.ok((src.match(/collectKeyedViews\(P, state\)/g) || []).length >= 2, 'incremental + upgrade must inject keyed routes via collectKeyedViews')
+  assert.ok((src.match(/writeKeyedViewIfRowLink\(/g) || []).length >= 3, 'keyed detail view must be (re)written on ADD, CHANGE, and REBUILD')
+  // no bare 2-arg injectAppRoutes call survives (the old broken incremental path)
+  assert.ok(!/injectAppRoutes\(P, viewNames\)(?!,)/.test(src), 'no injectAppRoutes call may omit keyed views')
 })

@@ -28,7 +28,7 @@ If the intent is unclear, ask one question — "What do you want to do with the 
 
 ## Turn 2 output — Show the plan (zero tool calls, zero intermediate output)
 
-After all reads complete and pre-warm is fired, output the plan as the first and only text.
+After the blocking file reads + state check complete (login status and pre-warm run in the background — don't wait on them), output the plan as the first and only text.
 
 **The user should see nothing between their request and the plan.** No "Reading files…", no "Checking login…", no "Starting pre-warm…". Pure silence then the plan.
 
@@ -61,11 +61,7 @@ Fire all of these simultaneously. Use multiple tool calls in one response — do
 | traces, spans, trace-level errors/latency/units | `references/sdk/traces.md` *(from skill root)* |
 | governance, policy, compliance, denials | `references/sdk/governance.md` *(from skill root)* |
 
-**2 commands (same message):**
-
-```bash
-uip login status --output json
-```
+**1 blocking command (instant, local — routes build vs edit, so the plan needs it):**
 
 ```bash
 node -e "
@@ -74,15 +70,25 @@ fs.existsSync('.dashboard/state.json') ? process.exit(0) : process.exit(1)
 " && echo INCREMENTAL || echo FRESH
 ```
 
-**Pre-warm (same message — `run_in_background: true` on the Bash tool call):**
-
-Derive the routing name from the user's request now (e.g. `"agent health dashboard"` → `"agent-health-x7k2"`). Pass **only the routing name**, not a full path. The build script creates `<cwd>/<routing-name>` — project lands in the current working directory.
+**Login status — `run_in_background: true` (do NOT block the plan on it):** `uip login status` is only needed when building starts (the project's cloudUrl/org/apiUrl and to create the OAuth client) — never to present the plan. Fire it in the background alongside pre-warm; read its result in Phase 1 when you build.
 
 ```bash
-node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"
+uip login status --output json
 ```
 
-⚠️ `run_in_background: true` is a tool call parameter, not a shell flag. Without it, the call blocks for 60–90s before the plan appears.
+**Pre-warm (same message — `run_in_background: true` on the Bash tool call):**
+
+Derive the routing name from the user's request now (e.g. `"agent health dashboard"` → `"agent-health-x7k2"`). The project lands at `<cwd>/<ROUTING_NAME>`. Pre-warm = **extract the starter kit there, then install deps** — both in the background. The skill ships no unzip code, so extract with your OS's native tool (chain with `&&` so it's one background call):
+
+```bash
+# Windows (Git Bash):
+mkdir -p "<ROUTING_NAME>" && powershell -NoProfile -Command "Expand-Archive -LiteralPath '<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.zip' -DestinationPath '<ROUTING_NAME>' -Force" && node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"
+
+# macOS / Linux:
+mkdir -p "<ROUTING_NAME>" && unzip -o "<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.zip" -d "<ROUTING_NAME>" && node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"
+```
+
+The extract is fast; `--prewarm` then runs `npm ci` (the slow part) so it overlaps plan approval. ⚠️ `run_in_background: true` is a tool call parameter, not a shell flag. Without it, the call blocks before the plan appears.
 
 > **What the user should see:** Only the plan text. Nothing else — not file reads, not login output, not pre-warm status, not bash results, and no question popup. If there is ANY output before the plan, or any tool call in the plan response, that is a bug.
 

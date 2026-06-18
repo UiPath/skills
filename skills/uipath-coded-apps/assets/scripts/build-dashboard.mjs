@@ -18,19 +18,28 @@
  *   2 — widget needs retry (update fnBody in intent.json and re-run)
  */
 
-import { readFileSync, writeFileSync, copyFileSync, mkdirSync, readdirSync, existsSync, renameSync, unlinkSync, rmSync } from 'fs'
+import { readFileSync, writeFileSync, copyFileSync, mkdirSync, existsSync, renameSync, unlinkSync } from 'fs'
 import { createConnection } from 'net'
 import { join, dirname, basename, resolve } from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
 import { execSync } from 'child_process'
 import { createHash } from 'crypto'
-import { unzipTo } from './lib/zip.mjs'
 
 // ── Path constants ─────────────────────────────────────────────────────────────
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const WIDGETS_DIR = resolve(__dirname, '../templates/dashboard/widgets')
-const T3_SHELL_TEMPLATE_PATH = resolve(__dirname, '../templates/dashboard/widgets/t3-shell.tsx.template')
+
+// Widget generator templates ship INSIDE the starter-kit zip (under _gen/widgets),
+// not in the skill — the skill carries no scaffold/template source and no zip code.
+// The orchestration points this at <project>/_gen/widgets after the agent extracts
+// the kit; tests set it via setWidgetsDir(). null until set.
+let WIDGETS_DIR = null
+export function setWidgetsDir(dir) { WIDGETS_DIR = dir }
+function widgetsDir() {
+  if (!WIDGETS_DIR) fail('Widget templates dir not set — extract the starter kit (assertScaffoldExtracted) before generating widgets.')
+  return WIDGETS_DIR
+}
+function t3ShellTemplatePath() { return join(widgetsDir(), 't3-shell.tsx.template') }
 
 /** Fixed dev server port — high enough to avoid common app collisions */
 const DASHBOARD_PORT = 57173
@@ -175,12 +184,12 @@ export const VALID_COLUMN_FORMATS = ['number', 'percent', 'duration', 'timeAgo',
 export const MIN_SDK_VERSION = '1.4.1'
 
 export const SKILL_VERSION = '2.0.0'        // compiler-architecture era; bump per skill release
-const SCAFFOLD_MANIFEST_PATH = resolve(__dirname, '../fixtures/governance-dashboard-starter-kit.manifest.json')
 const FIXTURE_ZIP_PATH = resolve(__dirname, '../fixtures/governance-dashboard-starter-kit.zip')
+const SCAFFOLD_VERSION_FILE = resolve(__dirname, '../fixtures/governance-dashboard-starter-kit.version')
 function readScaffoldVersion() {
-  try { return JSON.parse(readFileSync(SCAFFOLD_MANIFEST_PATH, 'utf8')).version ?? '1.0.0' } catch { return '1.0.0' }
+  try { return readFileSync(SCAFFOLD_VERSION_FILE, 'utf8').trim() || '0.0.0' } catch { return '0.0.0' }
 }
-export const SCAFFOLD_VERSION = readScaffoldVersion()  // sourced from the starter-kit manifest
+export const SCAFFOLD_VERSION = readScaffoldVersion()  // published alongside the starter-kit zip by apps-dev-tools
 export const INTENT_SCHEMA_VERSION = 2
 export const STATE_SCHEMA_VERSION = 2
 
@@ -227,6 +236,38 @@ export async function runIntentMigrations(intent, migrationsDir, targetVersion =
 }
 
 /**
+ * Generate (or remove) a table widget's keyed row-click detail view. Writes
+ * <Component>DetailView.tsx when the metric is a table with `rowLink`, and removes
+ * a stale one otherwise. Shared by fresh build, ADD, CHANGE, REBUILD, and upgrade so
+ * the row-click drill-down stays consistent on every path. Returns true if a keyed
+ * view now exists on disk.
+ * @returns {boolean}
+ */
+function writeKeyedViewIfRowLink(P, componentName, metric, entry, timeRange) {
+  const detailPath = join(P, 'src', 'dashboard', 'views', `${componentName}DetailView.tsx`)
+  const displayAs = metric.displayAs ?? entry?.template ?? ''
+  if (metric.rowLink?.key && widgetLayoutGroup(displayAs) === 'table') {
+    writeAtomic(detailPath, generateKeyedDetailViewFile({
+      componentName,
+      title: metric.title ?? entry?.defaults?.title ?? componentName,
+      subtitle: autoSubtitle(metric, entry?.defaults ?? {}, timeRange),
+      moduleSpecifier: metricModuleSpecifier(metric),
+      detailColumns: metric.detailColumns ? compileColumns(metric.detailColumns) : null,
+    }))
+    return true
+  }
+  if (existsSync(detailPath)) unlinkSync(detailPath)
+  return false
+}
+
+/** Route descriptors for every widget that currently has a keyed DetailView file on disk. */
+function collectKeyedViews(P, state) {
+  return Object.keys(state.widgets ?? {})
+    .filter(name => existsSync(join(P, 'src', 'dashboard', 'views', `${name}DetailView.tsx`)))
+    .map(name => ({ componentName: name, routeBase: `/${name.toLowerCase()}` }))
+}
+
+/**
  * Regenerate every widget + chart view from each widget's persisted intentMetric
  * (metadata) against the on-disk metric modules. Used by the REBUILD op and by upgrade.
  * @param {string} P  resolved project dir
@@ -250,6 +291,7 @@ export function rebuildAllWidgets(P, state, timeRange) {
     } else if (existsSync(viewPath)) {
       unlinkSync(viewPath)
     }
+    writeKeyedViewIfRowLink(P, componentName, m, entry, timeRange)
   }
 }
 
@@ -270,18 +312,12 @@ async function runUpgrade(P, state, intentPath) {
     if (dirty) log('⚠ Project has uncommitted changes — upgrade regenerates disposable files (your intent.json + src/metrics are preserved).')
   } catch { /* not a git repo — nothing to check */ }
 
-  // 1. Refresh the disposable scaffold framework by extracting the current
-  //    starter-kit archive, preserving the deploy clientId in uipath.json
-  //    (the scaffold ships a template one).
-  const uipathJsonPath = join(P, 'uipath.json')
-  const prevClientId = existsSync(uipathJsonPath) ? (JSON.parse(readFileSync(uipathJsonPath, 'utf8')).clientId ?? null) : null
-  extractFixture(P)
-  try { rmSync(join(P, 'node_modules'), { recursive: true, force: true }) } catch { /* ignore */ }
-  if (prevClientId && existsSync(uipathJsonPath)) {
-    const uj = JSON.parse(readFileSync(uipathJsonPath, 'utf8'))
-    uj.clientId = prevClientId
-    writeAtomic(uipathJsonPath, JSON.stringify(uj, null, 2))
-  }
+  // 1. Refresh the disposable scaffold framework: the agent re-extracts the
+  //    latest starter-kit archive over the project before --upgrade (preserving
+  //    src/metrics, intent.json, and the gitignored .env.local that carries the
+  //    clientId). Verify the fresh kit is present and point at its templates.
+  assertScaffoldExtracted(P)
+  setWidgetsDir(join(P, '_gen', 'widgets'))
 
   // 2. Migrate intent.json if present (no-op today — empty registry).
   const intentJsonPath = join(P, 'intent.json')
@@ -299,7 +335,11 @@ async function runUpgrade(P, state, intentPath) {
   rebuildAllWidgets(P, state, state.timeRange ?? '30d')
   const widgetMeta = Object.entries(state.widgets ?? {}).map(([name, info]) => ({ componentName: name, template: info.template ?? 'ranked-table' }))
   generateDashboardFiles(P, widgetMeta, state.app?.name ?? 'Dashboard', state.app?.description ?? '')
-  injectAppRoutes(P, Object.keys(state.widgets ?? {}).filter(n => existsSync(join(P, 'src', 'dashboard', 'views', `${n}View.tsx`))))
+  injectAppRoutes(
+    P,
+    Object.keys(state.widgets ?? {}).filter(n => existsSync(join(P, 'src', 'dashboard', 'views', `${n}View.tsx`))),
+    collectKeyedViews(P, state),
+  )
 
   // 4. Validate: Stage A (metric modules in isolation) then the full app.
   const stageA = runMetricsTypecheck(P)
@@ -353,12 +393,25 @@ function log(msg) {
   process.stdout.write(msg + '\n')
 }
 
-/** Recursive directory copy — Node.js only, no cp -r, works on Windows */
-/** Extract the committed starter-kit archive into a project dir (replaces the
- *  loose-directory copy). Dependency-free + cross-platform — see lib/zip.mjs. */
-function extractFixture(projectPath) {
-  if (!existsSync(FIXTURE_ZIP_PATH)) fail(`Starter-kit archive not found at ${FIXTURE_ZIP_PATH} — run pack-scaffold.mjs`)
-  unzipTo(readFileSync(FIXTURE_ZIP_PATH), projectPath)
+/**
+ * The agent extracts the starter-kit zip into the project dir before building —
+ * the skill ships no zip/unzip code. This verifies the kit landed (scaffold app +
+ * the _gen/widgets generator templates) and fails loud with the OS-native extract
+ * command if not. Pick the command for your platform.
+ * @param {string} projectPath
+ */
+function assertScaffoldExtracted(projectPath) {
+  const hasScaffold = existsSync(join(projectPath, 'package.json'))
+  const hasTemplates = existsSync(join(projectPath, '_gen', 'widgets'))
+  if (hasScaffold && hasTemplates) return
+  fail([
+    `Starter kit not extracted into: ${projectPath}`,
+    `Extract the archive there first (choose your OS):`,
+    `  Windows : powershell -NoProfile -Command "Expand-Archive -LiteralPath '${FIXTURE_ZIP_PATH}' -DestinationPath '${projectPath}' -Force"`,
+    `  macOS   : unzip -o "${FIXTURE_ZIP_PATH}" -d "${projectPath}"   (or: ditto -x -k "${FIXTURE_ZIP_PATH}" "${projectPath}")`,
+    `  Linux   : unzip -o "${FIXTURE_ZIP_PATH}" -d "${projectPath}"   (or: python3 -m zipfile -e "${FIXTURE_ZIP_PATH}" "${projectPath}")`,
+    `Then re-run the build.`,
+  ].join('\n'))
 }
 
 /** Atomic file write — write to .tmp then rename on success */
@@ -501,8 +554,8 @@ export function parseEvent(line) {
  * @returns {string}
  */
 function applyTemplate(templateName, subs) {
-  const templatePath = join(WIDGETS_DIR, `${templateName}.tsx`)
-  if (!existsSync(templatePath)) fail(`Template not found: ${templateName}.tsx in ${WIDGETS_DIR}`)
+  const templatePath = join(widgetsDir(), `${templateName}.tsx`)
+  if (!existsSync(templatePath)) fail(`Template not found: ${templateName}.tsx in ${widgetsDir()}`)
   let content = readFileSync(templatePath, 'utf8')
 
   for (const [key, value] of Object.entries(subs)) {
@@ -1018,8 +1071,9 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
   }
 
   // ── KPI / table path (shell template) ──────────────────────────────────────
-  if (!existsSync(T3_SHELL_TEMPLATE_PATH)) {
-    throw new Error(`T3 shell template not found at ${T3_SHELL_TEMPLATE_PATH}`)
+  const t3ShellPath = t3ShellTemplatePath()
+  if (!existsSync(t3ShellPath)) {
+    throw new Error(`T3 shell template not found at ${t3ShellPath}`)
   }
   // No explicit columns → emit an empty literal; the widget auto-detects columns
   // from the actual row data at runtime (real keys + labels), instead of a static
@@ -1034,7 +1088,7 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
   const defaultSortAsc = metric.defaultSortAsc === true ? 'true' : 'false'
   const subtitle     = autoSubtitle(metric, defaults, timeRange)
 
-  let content = readFileSync(T3_SHELL_TEMPLATE_PATH, 'utf8')
+  let content = readFileSync(t3ShellPath, 'utf8')
   content = content
     .split('<<METRIC_IMPORT>>').join(`import { fetchData } from '${metricModuleSpecifier(metric)}'`)
     .split('<<COMPONENT_NAME>>').join(componentName)
@@ -1164,11 +1218,11 @@ async function runDashboardBuild(intent, intentPath) {
   writeAtomic(BUILD_SENTINEL, String(Date.now()))
 
   try {
-    // Step 1 — Scaffold (skip if already exists)
-    if (!existsSync(join(P, 'package.json'))) {
-      extractFixture(P)
-      try { rmSync(join(P, 'node_modules'), { recursive: true, force: true }) } catch { /* ignore */ }
-    }
+    // Step 1 — Scaffold (the agent extracts the starter-kit zip into the project
+    // before building; the skill ships no zip code). Verify it's present, then
+    // point widget generation at the kit's _gen/widgets templates.
+    assertScaffoldExtracted(P)
+    setWidgetsDir(join(P, '_gen', 'widgets'))
     emit('SCAFFOLD_READY')
 
     // Step 2 — Env
@@ -1464,6 +1518,11 @@ async function runIncrementalEdit(editIntent, intentPath) {
   const intentDir = dirname(intentPath)
   const statePath = join(P, '.dashboard', 'state.json')
   if (!existsSync(statePath)) fail('No .dashboard/state.json found. Run a fresh build first.')
+  // The starter kit must still be extracted in the project (the widget generator
+  // templates live in <proj>/_gen/widgets). Verify + point the generator at them —
+  // without this, ADD/CHANGE/REBUILD crash at widgetsDir().
+  assertScaffoldExtracted(P)
+  setWidgetsDir(join(P, '_gen', 'widgets'))
   const state = JSON.parse(readFileSync(statePath, 'utf8'))
   const editDrift = scaffoldDrift(state)
   if (editDrift) emit('UPGRADE_AVAILABLE', editDrift)
@@ -1533,6 +1592,8 @@ async function runIncrementalEdit(editIntent, intentPath) {
       const viewContent = generateViewFile(buildViewSpec(componentName, metric, entry, timeRange))
       writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
     }
+    // Table with rowLink → generate its keyed row-click detail view
+    writeKeyedViewIfRowLink(P, componentName, metric, entry, timeRange)
 
   } else if (op === 'REMOVE') {
     const stored = state.widgets?.[target]
@@ -1564,6 +1625,8 @@ async function runIncrementalEdit(editIntent, intentPath) {
     } else if (existsSync(changeViewPath)) {
       unlinkSync(changeViewPath)
     }
+    // Sync the keyed row-click detail view (adds it if rowLink was set, removes a stale one)
+    writeKeyedViewIfRowLink(P, target, metricRef, entry, delta?.timeRange ?? timeRange)
 
   } else if (op === 'REBUILD') {
     // Regenerate every widget (and chart detail view) from the persisted intentMetric.
@@ -1581,11 +1644,11 @@ async function runIncrementalEdit(editIntent, intentPath) {
   }))
   generateDashboardFiles(P, widgetMeta, state.app?.name ?? 'Dashboard', state.app?.description ?? '')
 
-  // Re-inject App.tsx routes — only for widgets that have an actual view file on disk
+  // Re-inject App.tsx routes — chart views + keyed row-click detail views on disk
   const viewNames = Object.keys(state.widgets ?? {}).filter(name =>
     existsSync(join(P, 'src', 'dashboard', 'views', `${name}View.tsx`))
   )
-  injectAppRoutes(P, viewNames)
+  injectAppRoutes(P, viewNames, collectKeyedViews(P, state))
 
   // Stage A — re-type-check metric modules in isolation after the batch.
   const stageA = runMetricsTypecheck(P)
@@ -1615,16 +1678,12 @@ async function runIncrementalEdit(editIntent, intentPath) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 
-  // --prewarm <routingName> mode: extract the starter-kit archive + run npm ci, then exit
-  // Creates the project under <cwd>/<routingName>.
+  // --prewarm <routingName> mode: run npm ci in an already-extracted project, then exit.
+  // The agent extracts the starter-kit zip into <cwd>/<routingName> first.
   if (process.argv[2] === '--prewarm' && process.argv[3]) {
     const routingName = process.argv[3]
     const prewarmDir  = join(process.cwd(), routingName)
-    if (!existsSync(join(prewarmDir, 'package.json'))) {
-      mkdirSync(prewarmDir, { recursive: true })
-      extractFixture(prewarmDir)
-      try { rmSync(join(prewarmDir, 'node_modules'), { recursive: true, force: true }) } catch { /* ignore */ }
-    }
+    assertScaffoldExtracted(prewarmDir)
     await runPrewarm(prewarmDir)
     process.exit(0)
   }

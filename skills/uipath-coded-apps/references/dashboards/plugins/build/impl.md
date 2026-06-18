@@ -1,6 +1,6 @@
 # Dashboard Build Plugin
 
-By the time you read this you have already loaded all docs, run login, checked state, and fired pre-warm in the background (per CAPABILITY.md). The user is waiting for the plan.
+By the time you read this you have already loaded all docs, checked state, and fired pre-warm **and** `uip login status` in the background (per CAPABILITY.md). Login status is NOT needed for the plan — read its background result only when you build (Phase 1). The user is waiting for the plan.
 
 ## Rules
 
@@ -12,15 +12,15 @@ By the time you read this you have already loaded all docs, run login, checked s
 
 ---
 
-## Phase 1 — Preflight (already done in background)
+## Phase 1 — Preflight (read the background login-status result now)
 
-You already have the `uip login status` response from the parallel blast. Extract:
+`uip login status --output json` was fired in the background during plan presentation; by build time its result is ready. Read it now and extract:
 
 - `orgName` ← `Data.Organization`
 - `tenantName` ← `Data.Tenant`
 - `cloudUrl` ← `Data.BaseUrl`
 
-Verify `Data.Status === "Logged in"` — if not, stop and tell the user to run `uip login`.
+Verify `Data.Status === "Logged in"` — if not, stop and tell the user to run `uip login`. (This check is deferred to build time on purpose: login is only required to create the OAuth client and build, not to present the plan.)
 
 ### Derive apiUrl from cloudUrl
 
@@ -282,9 +282,18 @@ If a build or edit against an existing project emits `UPGRADE_AVAILABLE:{from,to
 
 ---
 
-## Maintaining the starter-kit archive
+## The starter-kit archive
 
-The build extracts a committed, versioned archive (`assets/fixtures/governance-dashboard-starter-kit.zip`) into each new dashboard instead of copying the loose `scaffold/` directory; the loose `templates/dashboard/scaffold/` stays the editable source of truth. After changing the scaffold (or the widget templates), re-pack and commit the refreshed archive: `node assets/scripts/pack-scaffold.mjs --version <x.y.z>`. CI / pre-commit runs `pack-scaffold.mjs --check` to fail if the scaffold changed without re-packing. Extraction uses a dependency-free pure-Node helper (`assets/scripts/lib/zip.mjs`) — no system `unzip`/`tar`/PowerShell — so any coding agent on any OS extracts it identically.
+The skill ships ONE artifact — `assets/fixtures/governance-dashboard-starter-kit.zip` — and no scaffold source or zip code. The zip bundles the React scaffold (at its root) plus the widget generator templates under `_gen/widgets/` and a version pointer `_gen/starter-kit.json`. The build reads templates from `_gen/widgets` and never ships them into the final app.
+
+> **Extracting the kit (the agent does this — the skill has no unzip code).** Before building, extract the zip into the project dir with your OS's native tool:
+> - **Windows:** `powershell -NoProfile -Command "Expand-Archive -LiteralPath '<ZIP>' -DestinationPath '<PROJECT_DIR>' -Force"`
+> - **macOS:** `unzip -o "<ZIP>" -d "<PROJECT_DIR>"`  (or `ditto -x -k "<ZIP>" "<PROJECT_DIR>"`)
+> - **Linux:** `unzip -o "<ZIP>" -d "<PROJECT_DIR>"`  (or `python3 -m zipfile -e "<ZIP>" "<PROJECT_DIR>"`)
+>
+> `build-dashboard.mjs` verifies the kit landed and fails loud with the exact command if not. `<ZIP>` is `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.zip`.
+
+**Source of truth:** the scaffold + widget templates + packer live in the `apps-dev-tools` repo (`uipath-dashboard-starter-kit/`). Maintainers edit there and run `node publish.mjs` to re-pack and copy the refreshed `.zip` + `.version` into this skill. The skill is a pure consumer.
 
 ---
 
@@ -307,7 +316,7 @@ Do NOT write `intent.json` or any `metrics/*.ts` in the main thread — the suba
 > 2. Author `<INTENT_DIR>/intent.json` (pure metadata — `schemaVersion: 2`, no `fnBody`) and one `<INTENT_DIR>/metrics/<name>.ts` per metric (`export const fetchData: MetricFn`), writing each module from the SDK references and applying the Phase 3.5 cross-check. Implement exactly this approved plan:
 >    - Project: dashboardName=`<NAME>`, routingName=`<ROUTING>`, projectDir=`<PROJECT_DIR>`, orgName=`<ORG>`, tenantName=`<TENANT>`, cloudUrl=`<CLOUD_URL>`, apiUrl=`<API_URL>`, timeRange=`<RANGE>`, clientId=`<CLIENT_ID or empty>`
 >    - Widgets (one metric each): [per widget — name, tier, title, displayAs, presentation hints, and the SDK service/method it resolves to]
-> 3. Run: `node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" "<INTENT_JSON_PATH>"`
+> 3. Extract the starter kit into `<PROJECT_DIR>` with your OS's native tool (Windows `Expand-Archive`; macOS/Linux `unzip -o`; see § "The starter-kit archive"), then run: `node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" "<INTENT_JSON_PATH>"` (it verifies the kit and prints the exact extract command if missing)
 > 4. On `METRICS_RETRY`, fix the named `src/metrics/*.ts` files using the SDK references + the reported errors, then re-run — at most 2 attempts, then drop the metric.
 > 5. Return ONLY the milestone block defined in § "Build subagent — returns".
 
@@ -336,7 +345,7 @@ If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface
 - Write `<INTENT_DIR>/intent.json` — pure metadata: `schemaVersion: 2`, `dashboardName`, `routingName`, `projectDir`, `orgName`, `tenantName`, `cloudUrl`, `apiUrl`, `timeRange`, `clientId`, and a `metrics` array of metadata entries (NO `fnBody`).
 - Write one `<INTENT_DIR>/metrics/<name>.ts` per metric — `export const fetchData: MetricFn = async (sdk) => { … }` written from the SDK references; import time windows from `@/lib/time` and `fetchAll` from `@/lib/paginate`; read-only methods only. Cross-check each against its documented example response (§ "Phase 3.5"). For a chart record-grain drill-down, also export `fetchDetail` and set `"detail": true`. For a **table row-click** drill-down, set `rowLink: { key: "<rowField>" }` on the metric and export `fetchDetailByKey(sdk, key, getToken)` (the clicked row's `<rowField>` arrives as `key`). For a KPI with a change badge, return `[{ value, previous }]` (two windows).
 
-**Step B — Run the build script once.** Most events are silent — translate the rest to milestones for the return block.
+**Step B — Extract the kit, then run the build script once.** First extract `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.zip` into `<PROJECT_DIR>` with your OS's native command (§ "The starter-kit archive"). Then run the build script. Most events are silent — translate the rest to milestones for the return block.
 
 **Silent (never report):** `PREWARM_START`, `PREWARM_DONE`, `SCAFFOLD_READY`, `ENV_WRITTEN`, `PARTIAL_BUILD_DETECTED`.
 

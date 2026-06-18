@@ -1,6 +1,0 @@
-{
-  "name": "governance-dashboard-starter-kit",
-  "version": "1.1.0",
-  "sha256": "1af19ac73176204821402ae18202e2f9869ed7edbb877a949fee837abd7f7909",
-  "builtFrom": "templates/dashboard/scaffold"
-}
