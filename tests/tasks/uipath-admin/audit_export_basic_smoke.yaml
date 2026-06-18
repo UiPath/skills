@@ -2,7 +2,7 @@ task_id: skill-admin-audit-export-basic-smoke
 description: >
   Skill-guided evaluation: agent uses the uipath-admin skill to run
   a minimal `export` against a small window. Validates the three
-  required flags (`--from-date`, `--to-date`, `--output-file`) and
+  required flags (`--from-date`, `--to-date`, `--output-path`) and
   that the agent picks a reasonable output path inside the working
   directory.
 
@@ -16,8 +16,9 @@ run_limits:
 
 initial_prompt: |
   An admin needs all tenant audit events from yesterday exported as
-  day-wise JSON files for archival. Write them to the ./audit-yesterday
-  folder in the current working directory.
+  day-wise JSON files for archival. Write them into the ./audit-yesterday
+  base directory in the current working directory (the CLI creates a
+  uniquely-named folder inside it).
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -30,9 +31,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, AND --output-file"
+    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, AND --output-path"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--from-date\s+\S+.*--to-date\s+\S+.*--output-file\s+\S+'
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--from-date\s+\S+.*--to-date\s+\S+.*--output-path\s+\S+'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -42,7 +43,7 @@ success_criteria:
     tool_name: "Bash"
     # Match the audit-yesterday folder path; the negative lookahead rejects a .zip/.csv
     # file (the retired ZIP shape) so this confirms the json-folder default is used.
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-file\s+\S*audit-yesterday(?![\w.])'
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-path\s+\S*audit-yesterday(?![\w.])'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

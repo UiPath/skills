@@ -17,8 +17,6 @@ sandbox:
       path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Inspect the validation fixtures under:
   fixtures/validation
 

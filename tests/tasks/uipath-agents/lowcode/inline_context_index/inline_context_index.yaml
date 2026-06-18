@@ -14,9 +14,11 @@ run_limits:
   expected_turns: 90
   turn_timeout: 1200
 
+# Explicitly mentioning "autonomous" here since the "question"/"answer" prompt may
+# cause the coding agent to assume the conversational low-code agent variant.
 initial_prompt: |
-  Create a UiPath Flow project "KnowledgeFlow" that runs an inline low-code
-  agent which answers a user's `question` (string) and returns an `answer`
+  Create a UiPath Flow project "KnowledgeFlow" that runs an autonomous inline 
+  low-code agent which answers a user's `question` (string) and returns an `answer`
   (string). It should base its answers on our existing
   "UiPathAgentsProductKnowledge" knowledge index — which is already set up in
   our tenant — instead of answering from general knowledge. Wire it into the

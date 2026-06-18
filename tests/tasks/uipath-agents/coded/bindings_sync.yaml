@@ -9,86 +9,17 @@ tags: [uipath-agents, smoke, coded, bindings]
 run_limits:
   expected_turns: 15
 
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/_fixtures/bindings_sync/invoice-processor/. ."
+    timeout: 10
+
 initial_prompt: |
-  I have a UiPath coded agent project with multiple Python modules.
-  Set up the project, then sync the bindings.json to reflect all
-  resource calls across all files.
+  I have a UiPath coded agent project in the current directory. It has more than
+  one Python module — a main graph plus a helper module — and its bindings.json
+  is currently empty.
 
-  Project structure:
-
-  **pyproject.toml:**
-  ```toml
-  [project]
-  name = "invoice-processor"
-  version = "0.1.0"
-  requires-python = ">=3.11"
-  ```
-
-  **uipath.json:**
-  ```json
-  {"projectType": "CodedAgent"}
-  ```
-
-  **entry-points.json:**
-  ```json
-  {
-    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
-    "$id": "entry-points.json",
-    "entryPoints": [
-      {
-        "filePath": "agent",
-        "uniqueId": "aaa11111-2222-3333-4444-555566667777",
-        "type": "agent",
-        "input": {"type": "object", "properties": {}, "required": []},
-        "output": {"type": "object", "properties": {"answer": {"type": "string"}}, "required": ["answer"]}
-      }
-    ]
-  }
-  ```
-
-  **graph.py** (main entry point):
-  ```python
-  from langgraph.graph import END, START, StateGraph
-  from langgraph.types import interrupt
-  from uipath.platform import UiPath
-  from uipath.platform.common import InvokeProcess
-  from storage import BUCKET_NAME
-
-  SCRAPER_PROCESS = "data-scraper"
-
-  def fetch_data(state):
-      response = interrupt(InvokeProcess(name=SCRAPER_PROCESS, input_arguments={}))
-      return {"data": response}
-
-  def save_results(state):
-      sdk = UiPath()
-      sdk.buckets.upload(name=BUCKET_NAME, blob_file_path="results.json", content="{}")
-      return state
-
-  def get_config(state):
-      sdk = UiPath()
-      api_key = sdk.assets.retrieve("api-key", folder_path="Shared")
-      return {"config": api_key}
-  ```
-
-  **storage.py** (helper module with constant):
-  ```python
-  from uipath.platform import UiPath
-
-  BUCKET_NAME = "invoice-data"
-
-  def download_template():
-      sdk = UiPath()
-      sdk.buckets.download(name=BUCKET_NAME, blob_file_path="template.xlsx", destination_path="/tmp/t.xlsx")
-  ```
-
-  **bindings.json** (start empty):
-  ```json
-  {"version": "2.0", "resources": []}
-  ```
-
-  After creating these files, sync the bindings.json so it reflects
-  every resource call across every Python file in the project.
+  Set up the project, then sync bindings.json so it reflects every resource call
+  across every Python file in the project, not just the main entry point.
 
   Do NOT create any report file — just update bindings.json.
 

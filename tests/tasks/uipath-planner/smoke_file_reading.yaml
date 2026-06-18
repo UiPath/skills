@@ -21,7 +21,7 @@ initial_prompt: |
   - **Department:** Smoke Test Fixture
   --- END PDD CONTENT ---
 
-  Step 2 — Load the `uipath-planner` skill. Use the Read tool to
+  Step 2 — Use the Read tool to
   read `pdd.md`. Do NOT rely on the inline content above for your answer —
   read the file.
 

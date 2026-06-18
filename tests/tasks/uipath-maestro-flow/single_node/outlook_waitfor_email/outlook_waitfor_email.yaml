@@ -44,7 +44,7 @@ initial_prompt: |
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a single
-  pass. Before starting, load the uipath-maestro-flow skill and follow its
+  pass. Before starting, follow the
   connector-trigger plugin "Wait for events" workflow exactly — the event node
   is added mid-flow with `node add` and must NOT replace the start trigger, and
   the subject filter must be a structured `filter` tree, not a
