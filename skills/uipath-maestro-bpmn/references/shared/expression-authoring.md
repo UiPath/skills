@@ -93,3 +93,7 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 - Reading `iterator[0].item` outside the multi-instance subprocess body.
 - Moving a variable into a subprocess without updating mappings that read it
   from the root scope.
+- Using `=requestId` instead of `=vars.Var_RequestId` at runtime. This passes
+  static validation but fails at execution with `Unknown identifier`. Static
+  validation does not catch every undeclared variable reference; treat runtime
+  identifier resolution as a separate gate from the BPMN lint.
