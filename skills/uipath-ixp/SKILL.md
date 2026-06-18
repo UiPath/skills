@@ -69,6 +69,7 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "Improve scores" / "Fix prompts" / "Improve F1" | [Improve Prompts Guide](references/improve-prompts-guide.md) |
 | "Publish the model" / "Tag as live" | `uip ixp projects publish <project-name> --output json` |
 | "Roll back to a previous version" / "Restore version N" | `uip ixp projects publish <project-name> --model-version <N> --output json` — re-publishes an earlier version. Get available versions from `uip ixp projects list-models <project-name> --output json`. |
+| "Unpublish a model" / "Unpin a version" / "Take a model out of production" | `uip ixp projects unpublish <project-name> [--model-version <N>] --output json` — unpins a published version (it stays trained/listable). Omit `--model-version` when exactly one is published; otherwise specify which (find published versions via `list-models`, `Pinned: true`). No "unpublish all" and no fully-unpinned-state workflow — to change which version is live, re-`publish` a different one instead. |
 | "Show metrics" / "What are the scores?" | `uip ixp projects get-metrics <project-name> --output json` |
 | "List projects" | `uip ixp projects list --output json` |
 | "Configure the model" | `uip ixp projects configure-model <project-name> [options] --output json` |
