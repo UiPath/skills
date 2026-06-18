@@ -31,6 +31,7 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 | Insert a stage between two existing stages | [case-editing-operations.md § Insert a stage between two existing stages](case-editing-operations.md#insert-a-stage-between-two-existing-stages) |
 | Add a task to a stage | [case-editing-operations.md § Add a task to a stage](case-editing-operations.md#add-a-task-to-a-stage) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
 | Bind / change a task input | [case-editing-operations.md § Bind an input](case-editing-operations.md#bind-an-input) + [bindings-and-expressions.md](bindings-and-expressions.md) |
+| Move a task to a different stage or lane | [case-editing-operations.md § Move a task to a different stage or lane](case-editing-operations.md#move-a-task-to-a-different-stage-or-lane) |
 | Add / change a condition (4 scopes) | the matching [plugins/conditions/<scope>/impl-json.md](plugins/conditions/) |
 | Replace a placeholder task with a real one | [case-editing-operations.md § Replace a placeholder task with an enriched task](case-editing-operations.md#replace-a-placeholder-task-with-an-enriched-task) + [placeholder-tasks.md](placeholder-tasks.md) |
 | Re-sync a task whose source schema changed | [case-editing-operations.md § Re-sync a task after its source schema changed](case-editing-operations.md#re-sync-a-task-after-its-source-schema-changed) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |

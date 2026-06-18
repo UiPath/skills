@@ -319,6 +319,24 @@ The task's source resource (action-app / agent / process / api-workflow / connec
 6. **Connector tasks only** — if connection/folder bindings changed, regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14).
 7. Edit — narrow slices targeting the task's `data` (and any consumer / bindings slices). Never whole-file Write. Validate at the section boundary.
 
+### Move a task to a different stage or lane
+
+Relocate a task within the case. **Keep the task `id`** so conditions and cross-task bindings referencing it stay valid — but every `elementId` is stage-scoped and MUST be recomputed.
+
+1. Read `caseplan.json`. Locate the task in its source `stageNode.data.tasks[oldLane]`.
+2. **Recompute every stage-scoped `elementId` — the step most easily missed** (a move looks like layout, but `elementId` encodes the owning stage):
+   - the task itself: `elementId = ${destStageId}-${taskId}`
+   - any `wait-for-connector` entry-condition rule on the task, and each entry in that rule's `uipath.outputs[]`: `elementId = ${destStageId}-${ruleId}`
+   - (root `inputOutputs[]` companions are `elementId: "root"` — NOT stage-scoped, leave them.)
+3. Remove the task from the source `data.tasks[oldLane]`; expand the destination `stageNode.data.tasks` to cover `newLane`, then push the task onto `data.tasks[newLane]`. One task per lane (default); within a `runs-sequentially` group, parallel siblings share a lane (Pre-flight Item 8).
+4. **Repoint cross-task bindings that consume this task's outputs.** Any other task input with `sourceTask == <taskId>` keeps `sourceTask`, but its `sourceStage` must change to `<destStageId>`. Confirm ordering still holds — a consumer can only read a task that runs before it; moving the task later in the flow can invalidate the binding.
+5. **Re-check the moved task's `entryConditions[]`:**
+   - `current-stage-entered` — no change; it follows the task to the destination stage.
+   - `selected-tasks-completed` — `selectedTasksIds` left behind in the source stage now gate across stages; repoint to a task in the destination or remove if the dependency no longer applies.
+   - `runs-sequentially` — the move splits the source group; re-evaluate lane membership (step 3) in both stages.
+6. Update the task's `id-map.json` entry `stageId` if the sidecar is present.
+7. Edit — narrow slices for the source and destination `data.tasks`, the recomputed `elementId`s, and any consumer-binding slices. Never whole-file Write. Validate at the section boundary.
+
 ### Rename or delete a global variable or argument
 
 The runtime resolver matches `=vars.<id>` by **exact string equality on `Variable.id`** ([global-vars impl-json](plugins/variables/global-vars/impl-json.md)). Renaming or removing a variable dangles every consumer, and `validate` does not reliably catch a dangling `=vars.*` — sweep them by hand.
