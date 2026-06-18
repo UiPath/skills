@@ -9,7 +9,6 @@ description: >
   against a live tenant (2026-06-15): connectorKey uipath-uipath-testmanager,
   Requirement.Create = POST /v2/{ProjectId}/requirements.
 tags: [uipath-platform, integration, integration-service, resources, execute]
-skip: true  # comprehensive coverage target; agent does not reliably run all per-activity commands in CI (Bedrock). Run via integration/nightly or locally.
 
 run_limits:
   expected_turns: 28
@@ -46,7 +45,7 @@ success_criteria:
   - type: command_executed
     description: "Create Requirement (`uip is resources run create uipath-uipath-testmanager Requirement`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+Requirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?Requirement'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -54,7 +53,7 @@ success_criteria:
   - type: command_executed
     description: "Get Requirement (`uip is resources run get uipath-uipath-testmanager Requirement`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+Requirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?Requirement'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -62,7 +61,7 @@ success_criteria:
   - type: command_executed
     description: "Update Requirement (`uip is resources run update uipath-uipath-testmanager Requirement`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+uipath-uipath-testmanager\s+Requirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?Requirement'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -70,7 +69,7 @@ success_criteria:
   - type: command_executed
     description: "Delete Requirement (`uip is resources run delete uipath-uipath-testmanager Requirement`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+uipath-uipath-testmanager\s+Requirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?Requirement'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -78,7 +77,7 @@ success_criteria:
   - type: command_executed
     description: "Assign Test Cases to Requirement (`... run create uipath-uipath-testmanager AssignTestCasesToRequirement`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+AssignTestCasesToRequirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?AssignTestCasesToRequirement'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -86,7 +85,7 @@ success_criteria:
   - type: command_executed
     description: "Get Assigned Test Cases for Requirement (`... run list uipath-uipath-testmanager GetAssignedTestCasesForRequirement`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetAssignedTestCasesForRequirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAssignedTestCasesForRequirement'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

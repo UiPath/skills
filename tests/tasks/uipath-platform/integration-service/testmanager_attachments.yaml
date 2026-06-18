@@ -5,7 +5,6 @@ description: >
   upload, get (list), download, and delete attachments. Offline (command-shape)
   grading; runs in CI without a live connection.
 tags: [uipath-platform, integration, integration-service, resources, execute]
-skip: true  # comprehensive coverage target; agent does not reliably run all per-activity commands in CI (Bedrock). Run via integration/nightly or locally.
 
 run_limits:
   expected_turns: 20
@@ -37,7 +36,7 @@ success_criteria:
   - type: command_executed
     description: "Upload Attachment (`... run create uipath-uipath-testmanager UploadAttachment`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+UploadAttachment'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?UploadAttachment'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -45,7 +44,7 @@ success_criteria:
   - type: command_executed
     description: "Get Attachments (`... run list uipath-uipath-testmanager GetAttachments`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetAttachments'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAttachments'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -53,7 +52,7 @@ success_criteria:
   - type: command_executed
     description: "Download Attachment (`... run get uipath-uipath-testmanager DownloadAttachment`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+DownloadAttachment'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?DownloadAttachment'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -61,7 +60,7 @@ success_criteria:
   - type: command_executed
     description: "Delete Attachment (`... run delete uipath-uipath-testmanager DeleteAttachment`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+uipath-uipath-testmanager\s+DeleteAttachment'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?DeleteAttachment'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

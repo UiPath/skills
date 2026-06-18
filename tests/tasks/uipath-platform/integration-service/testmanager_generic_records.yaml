@@ -7,7 +7,6 @@ description: >
   CI without a live connection. Completes the 36-activity coverage set alongside
   the per-object lifecycle tasks.
 tags: [uipath-platform, integration, integration-service, resources, execute]
-skip: true  # comprehensive coverage target; agent does not reliably run all per-activity commands in CI (Bedrock). Run via integration/nightly or locally.
 
 run_limits:
   expected_turns: 24
@@ -41,7 +40,7 @@ success_criteria:
   - type: command_executed
     description: "Insert Record (`uip is resources run create uipath-uipath-testmanager <Object>`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+\S+'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?\S+'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -49,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Get Record (`uip is resources run get uipath-uipath-testmanager <Object>`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+\S+'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?\S+'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -57,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Update Record (`uip is resources run update uipath-uipath-testmanager <Object>`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+uipath-uipath-testmanager\s+\S+'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?\S+'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -65,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Delete Record (`uip is resources run delete uipath-uipath-testmanager <Object>`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+uipath-uipath-testmanager\s+\S+'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?\S+'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -73,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "List Records (`uip is resources run list uipath-uipath-testmanager <Object>`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+\S+'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?\S+'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

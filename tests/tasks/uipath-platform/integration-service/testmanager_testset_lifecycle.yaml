@@ -6,7 +6,6 @@ description: >
   its assigned test cases, and execute the test set. Offline (command-shape)
   grading; runs in CI without a live connection.
 tags: [uipath-platform, integration, integration-service, resources, execute]
-skip: true  # comprehensive coverage target; agent does not reliably run all per-activity commands in CI (Bedrock). Run via integration/nightly or locally.
 
 run_limits:
   expected_turns: 32
@@ -41,7 +40,7 @@ success_criteria:
   - type: command_executed
     description: "Create Test Set (`... run create uipath-uipath-testmanager TestSet`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+TestSet'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -49,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Get Test Set (`... run get uipath-uipath-testmanager TestSet`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+uipath-uipath-testmanager\s+TestSet'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -57,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Update Test Set (`... run update uipath-uipath-testmanager TestSet`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+uipath-uipath-testmanager\s+TestSet'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -65,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Delete Test Set (`... run delete uipath-uipath-testmanager TestSet`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+uipath-uipath-testmanager\s+TestSet'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -73,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Assign Test Cases to Test Set (`... run create uipath-uipath-testmanager AssignTestCasesToTestSet`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+AssignTestCasesToTestSet'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?AssignTestCasesToTestSet'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -81,7 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Get Assigned Test Cases for Test Set (`... run list uipath-uipath-testmanager GetAssignedTestCasesForTestSet`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetAssignedTestCasesForTestSet'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAssignedTestCasesForTestSet'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -89,7 +88,7 @@ success_criteria:
   - type: command_executed
     description: "Execute Test Set (`... run create uipath-uipath-testmanager ExecuteTestSet`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+uipath-uipath-testmanager\s+ExecuteTestSet'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?ExecuteTestSet'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
