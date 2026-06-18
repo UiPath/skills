@@ -61,10 +61,11 @@ Updated by: Hypothesis Tester (status, evidence, is_root_cause, open_gaps), Orch
 - Hypothesis Tester reads triage's `signals` array BEFORE writing `test_plan`. Any `to_confirm` / `to_eliminate` item already resolved by an existing signal becomes a `status: skipped` plan step with the signal name in `purpose`. After execution, the tester updates: `status`, `evidence_refs`, `evidence_summary`, and appends any new contradicting signals to `signals_contradicting`. See `schemas/state.schema.md` § Plan for plan-step structure.
 - Hypothesis Tester writes `open_gaps` on `inconclusive`/`confirmed` (unmet testable prerequisites, undocumented-command gaps, out-of-band prerequisites, runtime-evidence contradictions). `status: confirmed` may carry `open_gaps` only for out-of-band items that do not block confirmation.
 - Hypothesis Tester sets `is_root_cause` on confirm (`true` = evidence explains WHY, `false` = shows only WHAT). Orchestrator may override per its upstream-cause gate.
-- Orchestrator updates: `resolution` field for confirmed root causes
+- Orchestrator updates: `resolution` field for confirmed root causes, after the depth-check verdict (the depth-verifier reads the playbook's `## Resolution`, not this field)
 - Never remove eliminated hypotheses — they prevent retesting
 - `parent` links sub-hypotheses to the confirmed symptom they're deepening
 - `generation_context` tells the generator what happened before (for re-invocation)
 - When deepening: orchestrator sets `generation_context.trigger: "deepening"` and `generation_context.parent_hypothesis` to the ID of the confirmed symptom before re-invoking the generator
-- `source`: `playbook` for playbook-derived, `docsai` for documentation-derived, `evidence` for evidence-derived
+- `source`: `playbook` for playbook-derived, `docsai` for documentation-derived, `evidence` for evidence-derived. This is the hypothesis-origin tag — distinct from the evidence-file `source` enum (`uip_cli | docsai | playbook | user | source_code`) in `evidence.schema.md`.
+- `test_plan` step `status` enum is `pending | done | skipped` (see `state.schema.md` § Plan)
 - When high-confidence playbooks exist, the generator produces ONLY high-confidence hypotheses (fast path). If all high-confidence hypotheses are eliminated, the orchestrator re-invokes the generator with `trigger: "scope_adjustment"` to produce from remaining medium/low playbooks. When a high-confidence hypothesis is confirmed, the orchestrator skips to resolution.

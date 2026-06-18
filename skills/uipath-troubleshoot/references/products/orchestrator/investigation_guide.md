@@ -16,7 +16,7 @@ uip or jobs list --folder-key <key> --state Faulted \
   | tee .local/investigations/raw/triage-jobs-list.json
 ```
 
-**Filter-failure fallback.** If `--output-filter '<jsonpath>'` returns an empty result, an error, or a shape the agent cannot interpret (likely cause: a field name in the documented filter has drifted from the current CLI response schema), retry the SAME command ONCE without `--output-filter` to see the actual response shape. Use that unfiltered response for the current call, and flag the mismatch in `evidence/notes.json` so the discrepancy gets fixed in the guide. Do NOT silently swallow filter errors — they mean the documented filter is stale.
+**Filter-failure fallback.** If `--output-filter '<jsonpath>'` returns an empty result, an error, or a shape the agent cannot interpret (likely cause: a field name in the documented filter has drifted from the current CLI response schema), retry the SAME command ONCE without `--output-filter` to see the actual response shape. Use that unfiltered response for the current call, and note the stale filter in your evidence summary so the discrepancy gets fixed in the guide. Do NOT silently swallow filter errors — they mean the documented filter is stale.
 
 Anti-patterns — do NOT do these:
 

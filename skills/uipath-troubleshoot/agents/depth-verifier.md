@@ -29,10 +29,11 @@ Do NOT generate hypotheses, run CLI, or rewrite findings (see Invariants).
    cause: file contents, ownership, folder bindings, configuration flags,
    trace attributes.
 
-3. **Resolution alignment.** The hypothesis's `resolution` field must
-   match the playbook's `## Resolution` branch keyed on the named
-   cause. If the playbook offers multiple branches under "If X, then …",
-   the chosen branch must correspond to the cause named in check 1.
+3. **Resolution alignment.** The playbook's `## Resolution` must contain
+   a branch keyed on the named cause. If it offers multiple branches
+   under "If X, then …", confirm one corresponds to the cause named in
+   check 1. (The hypothesis's `resolution` field is written later by the
+   orchestrator — do not depend on it being populated here.)
 
 ## Causal precedence
 

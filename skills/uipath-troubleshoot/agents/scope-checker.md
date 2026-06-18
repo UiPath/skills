@@ -16,7 +16,7 @@ Write: `.local/investigations/scope-check.json`
 
 ```json
 {
-  "checked_after": "triage | hypotheses | test",
+  "checked_after": "triage | test",
   "current_domains": ["orchestrator"],
   "missing_domains": [],
   "unnecessary_domains": [],

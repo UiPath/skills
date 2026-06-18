@@ -139,7 +139,7 @@ Generic key-value store for data gathered during the investigation. Any agent ca
 ## Rules
 
 - Triage sub-agent creates this file and resolves investigation guides, matched playbooks, and requirements
-- Other agents read paths from `state.json` — they do NOT browse `references/` themselves (exception: presenter discovers presentation guides directly from domain folders)
+- Other agents read paths from `state.json` — they do NOT browse `references/` themselves (exception: triage, scope-checker, depth-verifier, and presenter browse references — see `shared.md` invariant 3)
 - Orchestrator updates `phase` as the investigation progresses
 - Any agent can read `requirements`; triage and orchestrator write to it
 - The `scope` may be updated by the orchestrator when scope adjustment occurs

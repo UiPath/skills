@@ -8,14 +8,14 @@ when_to_use: "User asks why something failed, broke, stopped, hung, was stuck, r
 
 Orchestrate a hypothesis-driven troubleshooting investigation: manage the phase loop, delegate to sub-agents, present findings.
 
-All agents (including you) follow the invariants and confidence-level behavior defined in `agents/shared.md`.
+All agents (including you) follow the invariants and confidence-level behavior defined in `agents/shared.md` (§ Invariants, § Confidence-Level Behavior).
 
 ## 1. Critical Rules
 
 1. **You NEVER run uip commands, query endpoints, or read reference docs.** Sub-agents do everything else.
 2. **You NEVER confirm/eliminate hypotheses yourself.** Always spawn a tester.
 3. **You own all decisions:** phase transitions, root cause vs. symptom classification, when to present resolution.
-4. **You present the presenter's output verbatim.** The presenter agent formats all findings — you do not rewrite or reformat them.
+4. **You present the presenter's output verbatim.** The presenter agent formats all findings — you do not rewrite or reformat them. The one exception: you parse and act on the `## Post-presentation actions` block (see §6).
 5. **Test hypotheses one at a time, sequentially.** Never spawn parallel testers.
 6. **When you need user input, use `AskUserQuestion`.** Do not proceed until the user responds.
 
@@ -31,6 +31,7 @@ All state lives in `.local/investigations/` (relative to working directory). Sch
 | `raw/*.json` | Full raw CLI/API responses | triage, tester |
 | `scope-check.json` | Domain expansion verdict | scope-checker |
 | `depth-check.json` | Depth-gate verdict on confirmed root causes | depth-verifier |
+| `needs_input.json` | User-input request (sub-agent halts; orchestrator reads it, asks via `AskUserQuestion`) | triage, generator, tester |
 
 Sub-agents write raw responses to `raw/` immediately and don't keep them in context. You read evidence summaries, not raw files.
 
@@ -45,7 +46,7 @@ Update `state.json.phase` at each transition:
 | `test` | Hypotheses ready, testing next in confidence order | `evaluate` |
 | `evaluate` | Tester returns verdict | `deepen`, `test`, or `depth_check` |
 | `deepen` | Confirmed symptom needs sub-hypotheses | `hypotheses` (re-invoke generator) |
-| `depth_check` | Hypothesis confirmed as root cause | `resolution` (verified), `test` (one re-round), or `needs_input` |
+| `depth_check` | Hypothesis confirmed as root cause | `resolution` (verified), `test` (one re-round), or halt (write `needs_input.json`) |
 | `resolution` | Depth check verified, or all hypotheses exhausted | `complete` |
 | `complete` | Findings presented to user | — |
 
@@ -55,7 +56,7 @@ Update `state.json.phase` at each transition:
 
 1. **Spawn triage** (`agents/triage.md`). Pass the user's problem **as-is** — do NOT pre-classify or constrain scope.
 2. **Sanity gate.** Verify triage evidence relates to the reported problem (process/entity/time window). If it's about a different entity: discard, inform the user, re-spawn or ask for clarification.
-3. **Scope check.** Spawn scope-checker (`agents/scope-checker.md`). Missing domains → `AskUserQuestion` whether to expand; if approved, re-spawn triage with them. Unnecessary domains → remove from `state.json.scope.domain`.
+3. **Scope check.** Spawn scope-checker (`agents/scope-checker.md`); read its `scope-check.json`. Missing domains (`missing_domains`) → `AskUserQuestion` whether to expand; if approved, re-spawn triage with them. Unnecessary domains (`unnecessary_domains`) → remove from `state.json.scope.domain`.
 4. **User input.** If triage returned `needs_user_input: true`, ask via `AskUserQuestion`, then **continue the existing triage agent** via `SendMessage` — do NOT spawn a fresh one (a fresh spawn re-discovers everything from scratch). Re-spawn only if the answer fundamentally changes scope (different product/entity type).
 
 **Never skip the hypothesis loop.** Even conclusive-looking triage evidence proceeds through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root cause; a non-obvious cause surfaces only in the test cycle.
@@ -72,7 +73,7 @@ Test every hypothesis sequentially (highest confidence first). For each, spawn h
 
 **Validate:** Reject and re-spawn if `elimination_checks` are missing/incomplete. For medium/low, also reject if `execution_path_traced` has unverified downstream entities.
 
-**Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, spawn scope-checker. Otherwise skip.
+**Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, spawn scope-checker and act on its `scope-check.json` (`missing_domains` / `unnecessary_domains`). Otherwise skip.
 
 **Classify and act:**
 

@@ -52,7 +52,7 @@ Read the resolved guides and apply their Data Correlation rules to the steps tha
 
 ### B.5 Signal extraction — running throughout C, D, E
 
-While executing data-fetch steps from C onward, append discrete signals to `evidence/triage-initial.json` → `signals` array (see `schemas/evidence.schema.md` § Signals). A signal is one observed fact: an exception class, an error code, an HTTP status, a verbatim message fragment, an entity-state assertion (e.g., `asset_exists: true`), a package version, a runtime type, an activity-instance label, a cross-product entity key. One signal per fact; do NOT combine.
+While executing data-fetch steps from C onward, append discrete signals to `evidence/triage-initial.json` → `signals` array (see `schemas/evidence.schema.md` § Signals). A signal is one observed fact: an exception class, an error code, an HTTP status, a verbatim message fragment, an entity-state assertion (e.g., `asset_exists: true`), a package version, a runtime type, an activity-instance label, a cross-product entity key. One signal per fact; do NOT combine. Tag each with the closest `category` from the enum in `schemas/evidence.schema.md` § Signals.
 
 The signals array is the unified input to the rest of the investigation:
 
@@ -141,7 +141,7 @@ Final step. Consolidate findings into `evidence/triage-initial.json`. Return to 
 
 ## Boundaries
 
-- Primary classification agent that reads `references/summary.md` and browses the knowledge base (scope-checker and presenter also browse references per shared.md).
+- Primary classification agent that reads `references/summary.md` and browses the *reference* knowledge base (scope-checker, depth-verifier, and presenter also browse references per shared.md).
 - Tool-call steps in the plan run only data-gathering uip commands documented in the matched investigation guide or the matched playbook's `## Investigation` section. Anything else is a contract violation.
 - Do NOT generate hypotheses — that's the generator's job.
 - Do NOT do hypothesis-tester-level deep gathering (traces, healing data, element executions, connection pings, etc.) outside a triggered Pass 2.
