@@ -17,7 +17,12 @@ run_limits:
 initial_prompt: |
   I assigned the custom role "DU Editor" (role id: a1b2c3d4-5678-9abc-def0-111111111111)
   to user bob@example.com but he still can't edit Document Understanding
-  projects. What's wrong?
+  projects. Run these diagnostic steps directly (do NOT delegate to
+  sub-agents):
+  1. Inspect the role: `uip admin authorization roles get a1b2c3d4-5678-9abc-def0-111111111111 --output json`
+  2. Check effective access: `uip admin authorization check-access bob@example.com --output json`
+
+  If a command fails, move on to the next — do not stop.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
