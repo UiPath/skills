@@ -4,7 +4,7 @@ description: >
   Integration Service workflow — connector, connection, ping, discover,
   describe, and execute a create operation. Tests that the skill teaches the
   complete 6-step workflow and correct `resources run create` syntax with --body.
-tags: [uipath-platform, smoke, mode:operate, lifecycle:setup, connector]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:setup, integration-service, connector]
 
 run_limits:
   expected_turns: 15
