@@ -36,19 +36,9 @@ Notes:
 
 ## VB ↔ C# translation key
 
-Examples are **VB** (default expression language; bracket `[expr]` in XAML attributes). Coded (`.cs`) workflows use the C# form directly; C#-expression XAML projects use it **except the `†` rows** (expression-tree-forbidden — see note below). Mechanical translation:
+Examples are **VB** (default expression language; bracket `[expr]` in XAML attributes). VB→C# is mechanical (`Function(r) r("Col")` → `r => r["Col"]`, `()`→`[]` indexing, `If(c,a,b)` → `c ? a : b`); coded (`.cs`) uses the C# form directly and C#-expression XAML uses it too — **except** the coded-only constructs below.
 
-| VB | C# |
-|----|----|
-| `Function(r) r("Col").ToString()` | `r => r["Col"].ToString()` |
-| `row("Col")` | `row["Col"]` |
-| `If(cond, a, b)` | `cond ? a : b` |
-| `Integer.TryParse(s, n)` | `int.TryParse(s, out int n)` — **coded-only** † |
-| `If(x Is Nothing, "", x)` | `x ?? ""` / `x?.Trim()` — **coded-only** † |
-| `New Dictionary(Of String,Integer) From {{"a",1}}` | `new Dictionary<string,int> { ["a"]=1 }` — **coded-only** † |
-| RegEx literal `"\d+"` (single-escaped) | `@"\d+"` or `"\\d+"` |
-
-**†** `out` arguments (`int.TryParse(s, out int n)`), `?.`/`?[]`, collection initializers, and `??` work **only in coded (`.cs`)** workflows. They do NOT compile in a VB XAML `Assign`, and — despite being "C#" — they also fail **inside `CSharpValue`** in a C#-expression XAML project: XAML binds expressions as expression trees, which forbid them (CS8198 `out`, CS8072 `?.`, CS8074 initializer; statement-body lambdas/IIFEs fail CS0834).
+**Coded-only — these do NOT compile in any XAML expression:** the C# `out` **parameter** keyword (e.g. `int.TryParse(s, out int n)` — this is the C# `out` keyword, *not* a workflow/XAML `OutArgument`), null-propagation `?.` / `?[]`, the null-coalescing `??`, and collection initializers (`new Dictionary<…>{ … }`). They work only in coded (`.cs`) workflows. They fail in a VB XAML `Assign`, and — despite being "C#" — also fail **inside `CSharpValue`** in a C#-expression XAML project, because XAML binds expressions as expression trees that forbid them (CS8198 `out`, CS8072 `?.`, CS8074 initializer; statement-body lambdas/IIFEs fail CS0834).
 
 **XAML-safe forms instead** (both VB and C# expression projects):
 - Parse: pre-declare `n`, use the composite VB `If(Integer.TryParse(s, n), n, 0)` (C#-expression XAML: there is no `out`-free `TryParse`, so do the parse in a coded workflow or accept the VB form — `out` cannot appear in `CSharpValue`).
@@ -72,7 +62,11 @@ See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 
 **Default in VB projects: native expressions (`Assign`) for LINQ and JSON — not `Invoke Code`.** Inline `Invoke Code` adds assembly/import/version pitfalls (it compiles against a separately-resolved set, drifts from the project's references, and isn't checked by `validate`); native expressions reuse the project's imports and round-trip in the designer. The `[expr]` snippets here are all native.
 
-When a transform genuinely outgrows expressions — >2 statement steps, a reusable safe accessor/helper, mutating rows in a loop, real try/catch around a parse, or an unreadable one-liner — move to a **coded (`.cs`) workflow**, still not `Invoke Code`. Coded gives `?.`, `out var`, multi-statement logic, and unit tests. Tabular *source/sink*: modern projects use the **Use Excel File** scope (not classic Excel Application Scope) — route to the Excel activity docs.
+When a transform genuinely outgrows expressions — >2 statement steps, a reusable safe accessor/helper, mutating rows in a loop, real try/catch around a parse, or an unreadable one-liner — move to a **coded (`.cs`) workflow** ([coded/operations-guide.md](coded/operations-guide.md)), still not `Invoke Code`. Coded gives `?.`, `out var`, multi-statement logic, and unit tests.
+
+**Source file vs workflow — and how to call it:** a bare **Coded Source File** (helper class, no entry point) is callable only from other code. To invoke the logic from a XAML process, make it a **Coded Workflow** (`[Workflow]` + `Execute`) and call it via **Invoke Workflow File** (from XAML) or `RunWorkflow` / the typed `workflows` property (from coded) — see [coded/operations-guide.md](coded/operations-guide.md).
+
+Tabular *source/sink*: modern projects use the **Use Excel File** scope (not classic Excel Application Scope) — route to the Excel activity docs.
 
 ## Safe data access first
 
