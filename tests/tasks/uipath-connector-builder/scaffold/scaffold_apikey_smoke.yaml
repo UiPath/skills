@@ -1,0 +1,59 @@
+task_id: skill-connector-builder-smoke-scaffold-apikey
+description: >
+  Smoke test: agent scaffolds a new REST connector on disk, configures
+  API-key authentication, and validates it. Verifies the core
+  scaffold → auth → validate loop via `uip is connectors builder`.
+tags: [uipath-connector-builder, smoke, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Create a new UiPath Integration Service connector on disk called
+  "Acme Widgets" for a REST API at https://api.acme.example that
+  authenticates with a static API key sent in the `X-API-Key` header.
+  Build it in a folder named `connector` (pass `--connector-dir ./connector`).
+
+  Scaffold the connector, configure the authentication, and validate it.
+  Not complete until `connector validate` reports no Errors.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the connector"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+connector\s+scaffold'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent configured authentication via auth set (not hand-rolled config)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+auth\s+set'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the connector"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+connector\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent parses CLI output with --output json"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "connector validate passes (exit 0 = no Errors) on the built connector"
+    command: "uip is connectors builder connector validate --connector-dir ./connector --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

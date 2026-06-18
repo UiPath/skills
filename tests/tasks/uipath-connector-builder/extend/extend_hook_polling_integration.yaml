@@ -1,0 +1,80 @@
+task_id: skill-connector-builder-integration-hook-polling
+description: >
+  Integration test: extend a connector beyond the happy path — add a resource,
+  attach a postRequest JS hook to unwrap the vendor response, and add a polling
+  event — then validate. Exercises hook create + event polling add, two of the
+  riskier documented authoring paths.
+tags: [uipath-connector-builder, integration, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 40
+  task_timeout: 600
+
+initial_prompt: |
+  Create a UiPath Integration Service connector "Acme Events" (REST + JSON,
+  API-key auth in the `X-API-Key` header) with an `orders` resource at vendor
+  path /v1/orders (GET, GETBYID, POST), primary key `id`.
+  Build it in a folder named `connector` (pass `--connector-dir ./connector`).
+
+  Then:
+  - Attach a postRequest JavaScript hook on the orders GET that unwraps the
+    vendor response array.
+  - Add a polling event on the orders resource keyed on an `updatedAt` field
+    and id field `id`.
+
+  Validate the connector and fix anything `connector validate` reports.
+  Not complete until `connector validate` passes (Errors must be empty).
+
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Before starting, load the
+  uipath-connector-builder skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the orders resource"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+resource\s+create'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attached a hook"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+hook\s+create'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a polling event"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+event\s+polling\s+add'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the connector (primary success bar)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+connector\s+validate'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent parses CLI output with --output json"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "connector validate passes (exit 0 = no Errors) on the built connector"
+    command: "uip is connectors builder connector validate --connector-dir ./connector --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -44,14 +44,14 @@ keys), `multipart_hook_context_items`. Return changed keys via `done({...})`; ba
 if (request_parameters.nextPage) request_vendor_path = request_parameters.nextPage;
 done({ request_vendor_path: request_vendor_path });
 
-// postRequest — unwrap array
-done({ response_body: response_body?.data || response_body?.items || [] });
+// postRequest — unwrap array (ES5-safe: no optional chaining)
+done({ response_body: (response_body && (response_body.data || response_body.items)) || [] });
 
 // postRequest — error pass-through
 if (response_iserror) { done(); return; }
 
 // preRequest — auth header from config
-request_vendor_headers['Authorization'] = 'Bearer ' + configuration['oauth.bot.token'];
+request_vendor_headers['Authorization'] = 'Bearer ' + configuration['oauth.user.token'];
 done({ request_vendor_headers: request_vendor_headers });
 
 // postRequest — wrap object in array

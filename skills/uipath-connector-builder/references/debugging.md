@@ -1,8 +1,9 @@
 # Connector Debugging Guide
 
 Workflow: inspect → understand → identify the misconfiguration → fix with a single
-addressed write → re-validate. Tooling: `connector inspect`, `state query <pointer>`,
-`state patch <pointer>`, `connector validate`.
+addressed write → re-validate. Tooling: `connector inspect`, `state query <POINTER>`,
+`state patch <POINTER>` (replaces the whole node — to edit one config field, query the entry
+and patch the complete object back; `config create --force` resets omitted fields), `connector validate`.
 
 ## Investigation steps
 1. `connector inspect` — auth types, config, resources, hooks, events.
@@ -33,9 +34,17 @@ addressed write → re-validate. Tooling: `connector inspect`, `state query <poi
 - **404**: `vendorPath` typo/version, path-param `vendorName` mismatch, wrong/missing
   `base.url`, deprecated endpoint.
 - **Create/Update sends wrong data**: `requestBodyRoot` wraps in the wrong key,
-  preRequest hook mangles the body, CE↔vendor field-name mismatch.
+  preRequest hook mangles the body, IS↔vendor field-name mismatch.
 - **Fields don't show in Studio**: missing `requestCurated`/`responseCurated` on field
   method entries, no `curated` block in `metadata.method.{METHOD}`, or `design.isHidden`.
+- **Object shows in Studio but has NO methods under it**: the SR method's path points at the
+  VENDOR path, not the IS slug `/<object>`, so periodic can't link it; `connector validate`
+  flags "SR linkage broken". Fix: re-run `resource sync-from-cache` (it normalizes the path)
+  or set the SR method's `reference`/`path` to `/<object>`. Canonical rule:
+  [standard-resources.md](standard-resources.md) Rule 5.
+- **Methods aren't curated activities**: `resource create` / `resource sync-from-cache`
+  curate by default; a method with no `curated` block was created with `--no-curate` — add
+  one with `resource method curate`.
 
 ## Hook issues
 - **done() not called**: an exception or a branch skips `done()`.

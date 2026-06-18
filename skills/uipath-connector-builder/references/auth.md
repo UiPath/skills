@@ -1,14 +1,13 @@
 # Authentication in UiPath Integration Service connectors
 
-A connector's authentication block tells the server which auth flow to run
+A connector's authentication block tells Udon which auth flow to run
 when a tenant creates a connection. Two pieces are involved:
 
 1. **Config entries** in element.json `configuration[]`: every credential
-   or endpoint URL gets one entry. The server uses these to render the
+   or endpoint URL gets one entry. Udon uses these to render the
    connection form AND to drive the OAuth dance / API-key wiring at runtime.
 2. **Top-level fields**: `authentication.type`, `typeOauth`,
-   `elementMetadata.authenticationTypes`. Together they tell periodic
-   which flow to use.
+   `elementMetadata.authenticationTypes`. Together they select the flow.
 
 `auth set` writes all of these in one shot.
 
@@ -38,6 +37,11 @@ OAuth/JWT types additionally accept a rich scope surface (--scope-options,
 --scope-screen-type) that builds an `oauth.scope` MULTISELECT. The scope
 option list can also be managed standalone with `auth scope set|add|delete`.
 
+OAuth2 and customApiKey are detailed below as the two most common flows. For the other
+types, the required flags are discoverable with `auth set --help` (or `describe auth set`);
+[configuration.md](configuration.md) §"Auth as configuration" lists the config key set for
+the common ones (basic, jwtOauth, awsv4, PKCE, client credentials).
+
 ## OAuth 2.0 (authorization_code)
 
 Required CLI arguments:
@@ -50,17 +54,11 @@ Optional:
 - --token-revoke-url
 
 What gets written to element.json:
-- 16 config entries (oauth.api.key, oauth.api.secret, oauth.callback.url,
-  oauth.authorization.url, oauth.token.url, oauth.token.refresh.url,
-  oauth.token.revoke.url, oauth.scope, oauth.basic.header,
-  oauth.user.token, oauth.user.refresh.token, oauth.user.refresh.time,
-  oauth.user.refresh.interval, oauth.decode.authorization.code,
-  authentication.time, expires_in)
-- authentication = { "type": "oauth2" }
-- typeOauth = true
-- elementMetadata.authenticationTypes appends "oauth2"
-- A resources[] entry of type "oauthOnTokenRefresh" pointing at the
-  refresh URL — periodic calls this when the access token expires.
+- 16 OAuth2 config entries — full key list in [configuration.md](configuration.md) §"Auth as configuration".
+- `authentication = { "type": "oauth2" }`, `typeOauth = true`,
+  `elementMetadata.authenticationTypes` appends "oauth2".
+- A resources[] entry of type "oauthOnTokenRefresh" pointing at the refresh URL —
+  periodic calls this when the access token expires.
 
 ## customApiKey
 
@@ -79,15 +77,15 @@ Optional:
                          name (e.g. 'subscription.key').
 - --key-config-display-name  UI label. Defaults to 'API Key'.
 
-What gets written:
-- 1 secret config entry (the chosen key name, PASSWORD type, encrypted,
-  groupBy="customApiKey").
-- 1 global parameter in element.json `parameters[]` mapping
-  ${configuration.<key-config-name>} into the vendor header / query
-  parameter name with the optional prefix.
-- authentication = { "type": "customApiKey" }
-- typeOauth = false
-- elementMetadata.authenticationTypes appends "customApiKey"
+Copy-paste (key sent in an `X-API-Key` header):
+```bash
+uip is connectors builder auth set --auth-type customApiKey \
+  --api-key-param-name X-API-Key --api-key-location header \
+  --validation-vendor-path /me        # provisionAuthValidation is REQUIRED for static auth (no token exchange)
+```
+What `auth set` writes (the secret config entry, the `type:"value"` mapping parameter, and
+`authentication.type`/`typeOauth`) is documented once in [configuration.md](configuration.md)
+§customApiKey — this section owns only the CLI flow and flags.
 
 ## Re-running auth set
 

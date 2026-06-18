@@ -3,7 +3,7 @@
 System resources are `element.json → resources[]` entries with NO SR file and no
 `standardResourceName`. They never appear as CRUD/curated activities — they exist for
 connector lifecycle, auth flow, or runtime overrides. Add via
-`resource system create --type <type>` (skips SR creation). For types with a built-in
+`resource system create --type <TYPE>` (skips SR creation). For types with a built-in
 default, the `path` is fixed and MUST match exactly; `(custom)` types let you choose.
 
 ## provisionAuthValidation — verify creds at connection time

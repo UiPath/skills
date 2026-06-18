@@ -21,7 +21,7 @@ it; `auth`, `config`, `resource`, `global`, `hook` commands mutate it.
 | `publishStatus` | string | `"draft"` or `"published"`. |
 | `protocolType` | string | Almost always `"http"`. |
 | `cloneable` / `extended` / `transformationsEnabled` | boolean | Usually true / false / true. |
-| `elementMetadata` | object | Embedded: `key`, `name`, `authenticationTypes[]`, `discovery`, `api`, `bulk`. |
+| `elementMetadata` | object | Embedded object INSIDE element.json (`key`, `name`, `authenticationTypes[]`, `discovery`, `api`, `bulk`) — distinct from the separate `element-metadata.json` file, which holds catalog flags (`hasEvents`, `hasHttpRequest`, categories). |
 
 ## resources[]
 
@@ -30,7 +30,7 @@ GET/GETBYID/POST/PATCH/DELETE has 5 entries.
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `method` | yes | Udon method: GET, POST, PATCH, PUT, DELETE. |
+| `method` | yes | Udon method: GET, GETBYID, POST, PATCH, PUT, DELETE. |
 | `path` | yes | Udon path (e.g. `/accounts`). Hub prefix is legacy/optional. |
 | `vendorPath` | yes | Vendor API path. May differ from `path`. |
 | `vendorMethod` | yes | Vendor HTTP method (usually same as `method`). |
@@ -45,9 +45,11 @@ GET/GETBYID/POST/PATCH/DELETE has 5 entries.
 ### Resource types
 `api` (discoverable, in CRUD dropdowns), `apiNoDocumentation` (hidden but callable),
 `apiElementRequest` (routes back through Udon; still appears in CRUD unless `isHidden`),
-plus the system types `onProvision`, `onDelete`, `oauthOnTokenRefresh`,
-`oauthOnTokenExchange`, `oauthOnAuthroizeUrl` (historical typo — keep it),
-`provisionAuthValidation`. System types have no SR file. See [system-resources.md](system-resources.md).
+plus the **system types** (no SR file): `onProvision`, `onDelete`, `onRefresh`,
+`oauthOnTokenRefresh`, `oauthOnTokenExchange`, `oauthOnTokenRevoke`,
+`oauthOnAuthroizeUrl` (historical typo — keep it), `provisionAuthValidation`,
+`onProvisionWebhook`, `onDeleteWebhook`.
+[system-resources.md](system-resources.md) is the authoritative list with override paths.
 
 ## parameters[] (global and per-resource)
 
@@ -80,18 +82,19 @@ Common patterns:
 For `type:"value"` params, Udon substitutes `${<namespace>.<key>}` in the `name` field
 at request time. Namespaces: `configuration`, `header`, `body`. Special tokens
 (no prefix): `${webhookCallbackUrl}`, `${elementWebhookCallbackUrl}`, `${encodedId}`,
-`${date}`, `${gmtDate:FORMAT}` (event-poller only). This is how prefixes like
+`${date}`, `${date:FORMAT}` / `${gmtDate:FORMAT}` (event-poller only — see [events.md](events.md)).
+This is how prefixes like
 `Bearer <token>` are applied without a hook:
 ```json
-{"name": "Bearer ${configuration.api.key}", "vendorName": "Authorization", "type": "value", "vendorType": "header"}
+{"name": "Bearer ${configuration.oauth.user.token}", "vendorName": "Authorization", "type": "value", "vendorType": "header"}
 ```
 Unresolved tokens are left verbatim (silent failure) — validate spellings against
 `configuration[]`. No escape for a literal `{`. Prefer `type:"configuration"` for a 1:1
 map; use `type:"value"` + interpolation when you need a prefix/suffix/composition.
 
 ## Hook execution order
-1. Global preRequest → 2. Resource preRequest → [vendor call] → 3. Resource postRequest
-→ 4. Global postRequest. Global hooks always run. See [hooks.md](hooks.md).
+Global hooks wrap resource hooks around the vendor call. Canonical order, context vars,
+naming, and patterns: [hooks.md](hooks.md).
 
 ## Expressions
 `requestBodyRoot` wraps the body (`"contact"` → `{"contact": ...}`); `responseBodyRoot`

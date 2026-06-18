@@ -22,12 +22,14 @@ Optional: `groupControl`, `groupBy`, `options` (`[{"description","value"}]`),
 ## Auth as configuration
 Authentication is config keys + `authentication.type`. Key sets per type:
 
-- **OAuth2**: `oauth.api.key`, `oauth.api.secret` (encrypted, isPrivate),
-  `oauth.callback.url` (auto-set, do NOT hardcode), `oauth.authorization.url`,
-  `oauth.token.url`, `oauth.token.refresh.url`, `oauth.token.revoke.url`,
-  `oauth.scope`, `oauth.basic.header`, `oauth.user.token`,
-  `oauth.user.refresh.token`, `oauth.user.refresh.interval` (sec, default 3600).
-  Set `authentication.type:"oauth2"`, `typeOauth:true`.
+- **OAuth2** (16 entries — canonical list; `auth set` writes all of them):
+  `oauth.api.key`, `oauth.api.secret` (encrypted, isPrivate), `oauth.callback.url`
+  (auto-set, do NOT hardcode), `oauth.authorization.url`, `oauth.token.url`,
+  `oauth.token.refresh.url`, `oauth.token.revoke.url`, `oauth.scope`,
+  `oauth.basic.header`, `oauth.user.token`, `oauth.user.refresh.token`,
+  `oauth.user.refresh.interval` (sec, default 3600), plus auto-set internals
+  `oauth.user.refresh.time`, `oauth.decode.authorization.code`, `authentication.time`,
+  `expires_in`. Set `authentication.type:"oauth2"`, `typeOauth:true`.
 - **OAuth2 PKCE** adds `oauth.pkce.code.challenge.verifier`, `oauth.pkce.code.challenge`,
   `oauth.pkce.code.challenge.method` (`"S256"`).
 - **OAuth2 Client Credentials**: subset — no auth URL, no refresh token.
@@ -35,8 +37,8 @@ Authentication is config keys + `authentication.type`. Key sets per type:
   but never use periodic's bare `apiKey`): one PASSWORD secret config (default
   `custom.api.key`, encrypted, isPrivate, `groupBy:"customApiKey"`) + one
   `type:"value"` parameter mapping `${configuration.<name>}` into the vendor
-  header/query. Location, name, and prefix come from vendor docs. Set
-  `authentication.type:"customApiKey"`, `typeOauth:false`.
+  header/query; `authentication.type:"customApiKey"`, `typeOauth:false`. CLI flow +
+  example: [auth.md](auth.md) §customApiKey.
 - **basic**: `username`, `password` (encrypted).
 - **jwtOauth**: `jwt.oauth.consumer.key`, `jwt.oauth.private.key`, `jwt.oauth.username`,
   `jwt.oauth.token.url`, `jwt.oauth.scope`. `typeOauth:true`.
@@ -56,9 +58,9 @@ entries tagged with `groupBy`. Fields without `groupBy` always show; comma-separ
 `enableUserOverride`.
 
 ## Event keys
-`event.notification.enabled`, `event.vendor.type` (`polling`/`webhook`),
-`event.poller.refresh_interval` (minutes, default 15), `event.poller.configuration`
-(JSON blob). See [events.md](events.md).
+Polling/webhook config keys (`event.notification.*`, `event.vendor.type`, `event.poller.*`,
+`event.raw.enabled`) are documented in [events.md](events.md) §"Polling config keys" — the
+canonical list. They are ordinary `configuration[]` entries.
 
 ## See also
 - [auth.md](auth.md), [system-resources.md](system-resources.md), [events.md](events.md)
