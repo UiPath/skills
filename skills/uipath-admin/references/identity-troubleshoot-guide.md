@@ -85,7 +85,7 @@ Extract the `id` for `--user-id` filtering.
 ### Step 2 — Discover login event types
 
 ```bash
-uip admin audit org sources --output json
+uip admin audit org sources --output json > /tmp/sources.json
 ```
 
 Extract the User Login type GUID:
