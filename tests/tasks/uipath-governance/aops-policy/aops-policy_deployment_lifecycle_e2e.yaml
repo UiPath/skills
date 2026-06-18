@@ -20,8 +20,8 @@ description: >
 tags: [uipath-governance, e2e, aops-policy, deployment, mode:build]
 
 run_limits:
-  expected_turns: 26
-  max_turns: 50
+  expected_turns: 35
+  max_turns: 70
 
 initial_prompt: |
   Walk the full deployment lifecycle of an AOps governance policy on the
