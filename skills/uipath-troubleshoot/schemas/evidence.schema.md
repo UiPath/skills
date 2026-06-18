@@ -104,7 +104,7 @@ Each evidence file:
 ### Rules
 
 - One signal per discrete fact. Do NOT combine multiple facts into one signal (`exception_class_and_message` is two signals, not one).
-- Contradictory signals are not allowed. If two raw sources disagree, record both observations as separate signals with distinct `name`s and let the matcher / downstream agents resolve the conflict.
+- Never overwrite or reconcile a signal in place — one `name` = one observed fact. If two raw sources disagree, that is NOT a forbidden state: record each observation as its own signal with a distinct `name` and let the matcher / downstream agents resolve the conflict. The only thing disallowed is mutating an existing signal (see immutability below).
 - Signals are immutable once written. New evidence appends new signals; existing signals don't get rewritten.
 
 ## Rules

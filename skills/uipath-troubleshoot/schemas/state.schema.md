@@ -12,7 +12,7 @@ Updated by: Orchestrator (phase transitions)
 {
   "id": "inv-YYYY-MM-DD-NNN",
   "created_at": "ISO8601 timestamp",
-  "phase": "triage | hypotheses | test | evaluate | deepen | resolution | complete",
+  "phase": "triage | hypotheses | test | evaluate | deepen | depth_check | resolution | complete",
   "scope": {
     "level": "platform | product | feature | process | activity",
     "domain": ["orchestrator", "maestro", "integration-service", "ui-automation"],

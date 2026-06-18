@@ -14,7 +14,7 @@ ALL agents, ALL phases, ALL confidence levels. Never override.
 6. **Empty ≠ absent.** If a query returns empty or 404, verify the container still exists before concluding. Deleted/inaccessible container = data gap, not proof of absence.
 7. **Live state ≠ historical state.** Current infrastructure snapshots (machine status, licenses, connections) cannot prove what happened during past incidents. Context only for incidents older than 24 hours.
 8. **CLI retry cap.** Max 2 retries per unique command (3 attempts total). If the same command fails 3 times with the same error, stop trying it. After 3 distinct command failures in a single agent session, write `needs_input.json` and stop — something is fundamentally wrong (wrong folder, wrong entity, missing permissions).
-9. **Symptom ≠ cause.** A hypothesis is "confirmed as root cause" only when the underlying cause from the matched playbook's `## Causes` enumeration is named with cause-specific evidence. Symptom matches alone (e.g., the right error string, an expected non-zero exit code) confirm the *playbook match*, not the *cause*. The depth-verifier sub-agent enforces this gate before resolution.
+9. **Symptom ≠ cause.** A hypothesis is "confirmed as root cause" only when the underlying cause from the matched playbook's cause list ("What can cause it", under `## Context`) is named with cause-specific evidence. Symptom matches alone (e.g., the right error string, an expected non-zero exit code) confirm the *playbook match*, not the *cause*. The depth-verifier sub-agent enforces this gate before resolution.
 
 ## Confidence-Level Behavior
 
@@ -28,7 +28,7 @@ Every agent must follow this table. Do not redefine confidence behavior locally.
 
 **Single-round coverage rule.** Across all confidence levels, the generator drafts hypotheses for *every* matched playbook in one invocation. Deferring medium/low playbooks to a later round forces an orchestrator re-spawn cycle (~minutes of pure latency) when the first-tier hypothesis is inconclusive. The originating-fault hypothesis (per `hypothesis-generator.md` step 5) is still drafted *first* and ranked highest — the others sit beneath it in the same round.
 
-**Playbook-signature granularity rule.** One hypothesis = one playbook match at its signature level. Do NOT enumerate the playbook's `## Causes` / "What can cause it" list as separate hypotheses — those are sub-cause branches the playbook's `## Resolution` section narrows once the playbook-level signature is confirmed.
+**Playbook-signature granularity rule.** One hypothesis = one playbook match at its signature level. Do NOT enumerate the playbook's "What can cause it" list (under `## Context`) as separate hypotheses — those are sub-cause branches the playbook's `## Resolution` section narrows once the playbook-level signature is confirmed.
 
 ## Plan Loop
 

@@ -91,8 +91,9 @@ Before classifying as **explains-WHY**, apply the upstream-cause gate. The mecha
 
 Spawn the depth-verifier sub-agent (`agents/depth-verifier.md`). Pass it the
 confirmed hypothesis ID(s), `state.json` path, and the matched playbook path.
-The verifier reads `hypotheses.json`, the playbook's `## Causes` and
-`## Resolution` sections, and the evidence files, then writes
+The verifier reads `hypotheses.json`, the playbook's `## Context` cause
+list ("What can cause it") and `## Resolution` section, and the evidence
+files, then writes
 `.local/investigations/depth-check.json` with one of:
 
 - `verdict: "verified"` — the confirmed hypothesis names a specific cause

@@ -10,21 +10,21 @@ Do NOT generate hypotheses, run CLI, or rewrite findings (see Invariants).
 - `.local/investigations/hypotheses.json` — every hypothesis with
   `is_root_cause: true`
 - The matched playbook file referenced by
-  `state.json.matched_playbooks[*].path` — read its `## Causes` and
-  `## Resolution` sections
+  `state.json.matched_playbooks[*].path` — read its `## Context` cause
+  list ("What can cause it") and `## Resolution` section
 - `.local/investigations/evidence/*.json` — for cause-specific evidence
 
 ## The three depth checks (per confirmed hypothesis)
 
 1. **Specific cause named.** The hypothesis's `evidence_summary` (or
-   description) names *one* bullet from the playbook's `## Causes`
-   verbatim or as a tight paraphrase — specific, not a vague
-   generalization (e.g. "the connection is invalid" when the playbook
-   lists four distinct sub-causes).
+   description) names *one* item from the playbook's cause list ("What
+   can cause it", under `## Context`) verbatim or as a tight paraphrase —
+   specific, not a vague generalization (e.g. "the connection is invalid"
+   when the playbook lists four distinct sub-causes).
 
 2. **Evidence pinned to the cause.** Evidence files contain a datum that
    distinguishes the chosen cause from its siblings in the same
-   `## Causes` list. Symptom-level data (e.g. "ping returned 404") fits
+   cause list. Symptom-level data (e.g. "ping returned 404") fits
    multiple causes — not enough. Require evidence that singles out *this*
    cause: file contents, ownership, folder bindings, configuration flags,
    trace attributes.
@@ -80,7 +80,7 @@ Write `.local/investigations/depth-check.json`:
   "verdict": "verified",                                   // or "shallow"
   "hypothesis_id": "H1",
   "playbook_path": "<path from state.json.matched_playbooks>",
-  "named_cause": "<verbatim or quoted paraphrase from playbook ## Causes>",
+  "named_cause": "<verbatim or quoted paraphrase from the playbook's 'What can cause it' list>",
   "evidence_for_cause": [
     "<file path under .local/investigations/evidence/ or .local/investigations/raw/>"
   ],
@@ -156,7 +156,7 @@ paraphrased), emit two separate gap entries — one of each kind.
 
 ## When you may declare `verified` despite incomplete evidence
 
-If a playbook's `## Causes` enumeration is truly exhaustive but a
+If a playbook's cause list ("What can cause it") is truly exhaustive but a
 specific cause cannot be distinguished from the available data
 (genuine data gap, not laziness), declare `verdict: shallow` with
 `gaps: ["cannot disambiguate causes X vs Y from available evidence"]`.
