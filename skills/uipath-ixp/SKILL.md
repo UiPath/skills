@@ -13,6 +13,7 @@ Skill for working with UiPath IXP (Intelligent eXtraction Platform) projects —
 - User asks to label, review, or confirm document predictions
 - User asks to improve extraction scores, prompts, or field instructions
 - User asks to publish or manage IXP model versions
+- User asks to run a published/deployed model on a document — one-off runtime extraction (`uip ixp extract`)
 - User provides a taxonomy file to import into a project
 - User asks for the project taxonomy at a specific trained model version — what the schema looked like when version N was published (use `deployments get-taxonomy <project-name> --version <N>`)
 
@@ -66,6 +67,7 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | "Label documents" / "Review predictions" | [Label Documents Guide](references/label-documents-guide.md) |
 | "Improve scores" / "Fix prompts" / "Improve F1" | [Improve Prompts Guide](references/improve-prompts-guide.md) |
 | "Publish the model" / "Tag as live" | `uip ixp projects publish <project-name> --output json` |
+| "Run extraction on a document" / "Extract fields from this file with the published model" | `uip ixp extract <project-name> <file> (--tag <tag> \| --version <N>) --output json` — runtime extraction against a **published** model. Exactly one of `--tag`/`--version` is required. Optional `--timeout <ms>` (default 600000; 30000–1200000) and `--poll-interval <ms>` (default 5000; 1000–60000). See [CLI Reference § Runtime extraction](references/cli-reference.md#runtime-extraction). This is the runtime path — distinct from `labellings get-predictions`, which is for the training set. |
 | "Roll back to a previous version" / "Restore version N" | `uip ixp projects publish <project-name> --model-version <N> --output json` — re-publishes an earlier version. Get available versions from `uip ixp projects list-models <project-name> --output json`. |
 | "Show metrics" / "What are the scores?" | `uip ixp projects get-metrics <project-name> --output json` |
 | "List projects" | `uip ixp projects list --output json` |
@@ -100,7 +102,7 @@ These requests fall outside the skill. Recognise the request, reply with the sta
 | "Upload these files" / "add documents" | **Project named / already in context →** supported; upload it (see the "Upload a document" row in Task Navigation). **Otherwise →** "Name an existing project and I'll upload it — or upload in-product (e.g. for a new project): https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-deploying-models." |
 | "Deploy this model" / "push to staging / production / folder / environment / tenant" | "I don't drive deployment to folders, environments, or tenants — that's a product-side flow: https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-deploying-models. I can publish a model version with `uip ixp projects publish <project-name> --output json`, but binding it to a folder/environment is done in-product." |
 | "Give X access" / "share this project" / "change roles or permissions" | "Access, roles, and permissions are managed in-product, not through this skill: https://docs.uipath.com/ixp/automation-cloud/latest/overview/managing-access." |
-| "Use this model in my automation / workflow / agent" / "call the extractor from a process" | "Consuming a published model inside an automation is an authoring task outside this skill. See https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-consuming-a-workflow." |
+| "Use this model in my automation / workflow / agent" / "wire the extractor into a process" | **One-off runtime extraction IS supported** — run `uip ixp extract <project-name> <file> --tag <tag> --output json` (see the "Run extraction on a document" row in Task Navigation). **Wiring** the model into an automation/workflow/agent as a node is authoring outside this skill: "Embedding a published model inside an automation is an authoring task outside this skill. See https://docs.uipath.com/ixp/automation-cloud/latest/user-guide/building-and-consuming-a-workflow." |
 | "Mine these emails / communications" / "set up Communications Mining" | "Communications Mining is a separate IXP capability this skill doesn't cover (this skill is document extraction). See https://docs.uipath.com/ixp/automation-cloud/latest/cm-user-guide/introduction-to-uipath-communication-mining." |
 | "Monitor the deployed model" / "how many docs did it process?" / "runtime throughput or incidents" | "Runtime/operational monitoring of a deployed model lives in Orchestrator, not this skill: https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/about-monitoring. For design-time scores use `get-metrics` (see 'Show metrics')." |
 

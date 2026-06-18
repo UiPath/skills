@@ -112,3 +112,38 @@ For working with runtime (deployed) IXP models — separate from the training wo
 | Command | Description |
 |---------|-------------|
 | `uip ixp deployments get-taxonomy <project-name> --version <N> --output json` | Get the project taxonomy (data types + field groups) at a specific trained model version. `--version` is the model version number from `projects list-models`. Output mirrors `projects get-taxonomy` — `EntityDefs[]` + `LabelGroups[]` — pinned to the snapshot the version was trained on. |
+| `uip ixp extract <project-name> <file> (--tag <tag> \| --version <N>) [--timeout <ms>] [--poll-interval <ms>] --output json` | Run **runtime extraction** on a document against a published model. See [Runtime extraction](#runtime-extraction) below for the model selector, polling options, file types, and output shape. |
+
+### Runtime extraction
+
+`uip ixp extract <project-name> <file> (--tag <tag> | --version <N>) --output json` digitizes a document and extracts fields with a **published (deployed) model** — the live runtime path, not the training-data prediction path.
+
+> **`extract` vs `labellings get-predictions`:** `extract` runs the published model on **any new file** you pass (runtime). `labellings get-predictions` returns predictions on documents already **uploaded for training** (design-time). Use `extract` to run a deployed model on a fresh document; use `get-predictions` when labelling/reviewing the training set.
+
+Model selector — **exactly one is required** (mutually exclusive):
+
+| Flag | Meaning |
+|------|---------|
+| `--tag <tag>` | Published model tag — `live`, `staging`, or a custom tag (see `projects publish --tag`). |
+| `--version <N>` | Trained model version number (non-negative integer, from `projects list-models`). |
+
+Polling options (both optional, values in **milliseconds**):
+
+| Flag | Default | Allowed range | Meaning |
+|------|---------|---------------|---------|
+| `--timeout <ms>` | `600000` (10 min) | `30000`–`1200000` (30 s – 20 min) | Max time to wait for the extraction to finish. |
+| `--poll-interval <ms>` | `5000` (5 s) | `1000`–`60000` (1 s – 60 s) | How often to poll for completion. |
+
+Out-of-range or non-numeric values are rejected before any network call (e.g. `--poll-interval must be between 1000 and 60000 ms`).
+
+**File types:** same whitelist as document upload — see [Supported document files](#supported-document-files).
+
+**Output** (Code: `IxpExtract`): `Data` is an array of field groups, each `{ "fieldGroupName": "<name>", "fields": [{ "name": "<field>", "value": "<extracted>" }] }`.
+
+```bash
+uip ixp extract <project-name> "<file>" --tag live --output json
+# pin to a specific trained version instead of a tag:
+uip ixp extract <project-name> "<file>" --version 3 --output json
+# slow/large document — widen the ceiling and poll less often:
+uip ixp extract <project-name> "<file>" --tag live --timeout 1200000 --poll-interval 10000 --output json
+```
