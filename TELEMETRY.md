@@ -1,22 +1,26 @@
 # UiPath Skills Plugin Telemetry
 
-Opt-in, privacy-preserving usage telemetry for the UiPath skills plugin. Off by
-default. One `PostToolUse` hook (`hooks/send-telemetry.sh`) emits a single event
-per relevant tool call to Azure Application Insights. No local state file, no
-session daemon — session-level metrics are computed at query time from the event
-stream (see [Correlation](#correlation)).
+Opt-in usage telemetry for the UiPath skills plugin. Off by default. One
+`PostToolUse` hook (`hooks/send-telemetry.sh`) hands a single flat JSON object
+per relevant tool call to the hidden `uip track` CLI command, which forwards it
+through the CLI's own telemetry tracker as one `uip.skills.tool-use`
+Application Insights event. No local state file, no session daemon —
+session-level metrics are computed at query time from the event stream (see
+[Correlation](#correlation)).
 
 ## Enabling / disabling
 
-Telemetry is **opt-in / off by default**. It sends only when both are true:
+Telemetry is **opt-in / off by default**. The hook and `uip track` share one
+gate:
 
 | Env var | Effect |
 |---------|--------|
 | `UIPATH_TELEMETRY_DISABLED` | Reuses the `uip` CLI's variable name. Send **only** when explicitly set to `0`. Unset (default) or `1` → no send. |
-| `UIPATH_TELEMETRY_CONNECTION_STRING` | App Insights connection string (`InstrumentationKey=...;IngestionEndpoint=https://<region>.in.applicationinsights.azure.com/`). Without it there is nothing to send to. `APPLICATIONINSIGHTS_CONNECTION_STRING` is read as a fallback. |
 
 Default (var unset) is a silent no-op. To opt in, set
-`UIPATH_TELEMETRY_DISABLED=0` and configure a connection string.
+`UIPATH_TELEMETRY_DISABLED=0` on a machine signed in to UiPath (`uip login`).
+The CLI owns the Application Insights connection — there is **no** connection
+string to configure on the skills side.
 
 ## What triggers an event
 
@@ -29,16 +33,38 @@ plugin; everything else exits silently. A call qualifies when:
 | `Bash` / `PowerShell` | command invokes the `uip` CLI or `rpa-tool` |
 | `Edit` / `Write` / `Read` / `Glob` / `Grep` | path targets `.cs` (coded workflows), `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.json`, `project.json`, `app.config.json`, `action-schema.json` |
 
+## How it works
+
+1. The `PostToolUse` hook fires on every tool call and exits silently unless
+   the call is attributable to this plugin (table above).
+2. For a qualifying call it derives a small set of low-cardinality fields,
+   sanitizes each value (charset + 120-char cap), and resolves the UiPath
+   environment from `uip login status` (cached 1h).
+3. It pipes one flat `key:value` JSON object to `uip track` on stdin, in a
+   detached subshell, then exits 0.
+4. `uip track` ([UiPath/cli#2600](https://github.com/UiPath/cli/pull/2600))
+   reads that object, hard-codes the event name `uip.skills.tool-use`, stamps a
+   `source: "skills-plugin"` dimension, attaches the authenticated UiPath cloud
+   identity and the CLI app version, and forwards it through the CLI's
+   telemetry tracker. Every key becomes an event property; non-scalar values
+   (objects / arrays / `null`) are dropped.
+
+The hook builds **no** App Insights envelope and makes **no** direct HTTP POST.
+Transport, the connection, the event name, the `source` dimension, and identity
+all belong to the CLI.
+
 ## What is collected
 
-Each event is an App Insights `customEvent` named `ToolUse`.
+Each event is the App Insights event `uip.skills.tool-use`. Every key the hook
+sends becomes an event property.
 
-### Properties (dimensions)
+### Properties sent by the hook
 
 | Field | Example | Notes |
 |-------|---------|-------|
 | `toolName` | `Skill`, `Bash` | Claude Code tool |
 | `toolUseId` | `toolu_01ABC` | Unique per call — correlation key + ordering tiebreaker |
+| `sessionId` | `b3f1...` | Claude Code `session_id` — session correlation key |
 | `skillName` | `uipath:uipath-platform` | `Skill` calls only |
 | `uipSubcommand` | `solution publish` | Derived first 1–2 verbs of a `uip` command — never the full command line |
 | `fileExt` | `.flow` | File-tool calls only |
@@ -50,60 +76,59 @@ Each event is an App Insights `customEvent` named `ToolUse`.
 | `os` | `Linux`, `Darwin`, `MINGW64_NT-...` | |
 | `pluginVersion` | `1.197.0` | `skillsVersion` from `version-manifest.json` |
 | `cliVersion` | `1.197.0-beta...` | From `uip --version` |
+| `durationMs` | `1234` | Tool-call wall-clock from the payload's `duration_ms`. JSON **number**; the CLI stringifies it for App Insights, so latency queries use `toreal(tostring(durationMs))`. `null` when absent → dropped |
 
 `pluginVersion` is designed to track `cliVersion`; both are sent so drift is
 visible in queries.
 
-### Measurements (metrics)
+### Added by the CLI
+
+The CLI stamps these on every `uip.skills.tool-use` event — the hook never
+sends them, and a `source` value sent by the hook would be overridden:
 
 | Field | Notes |
 |-------|-------|
-| `durationMs` | Tool-call wall-clock from the payload's `duration_ms` |
-
-### Tags (envelope)
-
-| Tag | Value |
-|-----|-------|
-| `ai.cloud.role` | `uipath-skills-plugin` |
-| `ai.cloud.roleInstance` | resolved environment |
-| `ai.session.id` | Claude Code `session_id` |
-| `ai.user.id` | **SHA-256 of `cwd`** (stable anonymous workspace id) |
-| `ai.application.ver` | `pluginVersion` |
+| `source` | Always `skills-plugin` |
+| `CloudUserId` / `CloudTenantId` / `CloudOrganizationId` | Authenticated UiPath cloud identity |
+| CLI app version | The `uip` CLI's own version |
 
 ## Privacy
 
-What **never** leaves the machine:
+Skills telemetry rides the CLI's telemetry tracker, so each event is
+**associated with the signed-in UiPath identity** — `CloudUserId`,
+`CloudTenantId`, `CloudOrganizationId`, plus the CLI app version, all stamped by
+the CLI. It is **not** anonymous.
 
-- Raw `cwd` / project path — only a SHA-256 hash (`ai.user.id`).
-- `transcript_path`.
-- Full command lines — only the derived `uip` subcommand verb.
+What the hook **never** sends:
+
 - File contents, `stdout`, `stderr` — only `outcome` and `durationMs`.
+- Full command lines — only the derived `uip` subcommand verb.
 - File paths — only the extension / known filename.
+- The `cwd` / project path, and `transcript_path` — neither is collected.
 
-All emitted fields are low-cardinality and PII-free. Nothing is sent unless
-explicitly opted in.
+All fields the hook derives are low-cardinality. Nothing is sent unless
+explicitly opted in with `UIPATH_TELEMETRY_DISABLED=0`.
 
 ## Missing fields
 
-Every field above is **always emitted**, even when the source value is absent
-from the payload, so query schemas stay stable:
+Every property above is **always sent** by the hook, even when the source value
+is absent from the payload, so query schemas stay stable:
 
-- **Properties** fall back to an empty string `""` — never JSON `null`, because
-  App Insights drops null-valued properties (which would make the field
-  disappear from the event).
-- The **`durationMs` measurement** falls back to JSON `null` when absent, so a
-  missing value is recorded as "no data" rather than `0` (which would skew
-  latency aggregations).
+- **String properties** fall back to an empty string `""` — a scalar the CLI
+  keeps (it drops only objects, arrays, and `null`).
+- **`durationMs`** falls back to JSON `null` when absent; the CLI drops `null`
+  values, so a missing duration records as "no data" rather than `0` (which
+  would skew latency aggregations).
 
 ## Correlation
 
 Session-level metrics need no local state file — they are query-time
-aggregations over events sharing `ai.session.id`:
+aggregations over events sharing `sessionId`:
 
 | Metric | Query shape |
 |--------|-------------|
-| Tool calls per session | `count() by session_id` |
-| Session duration | `max(timestamp) - min(timestamp) by session_id` |
+| Tool calls per session | `count() by sessionId` |
+| Session duration | `max(timestamp) - min(timestamp) by sessionId` |
 | Time-to-first-skill | first `Skill` event − first event, per session |
 | Retries | repeated `uipSubcommand` flipping `failure → ok`, ordered by `timestamp` then `toolUseId` |
 
@@ -111,12 +136,14 @@ aggregations over events sharing `ai.session.id`:
 
 - **Non-blocking:** the hook is registered as an async hook in `hooks.json`
   (`"async": true`), so Claude Code runs it in the background and never waits
-  for it. It also POSTs in a detached subshell with a 4s cap and always exits
-  0 — it never delays or fails a tool call.
-- **Best-effort delivery:** an event is dropped on network failure (no local
-  retry queue). Telemetry is for aggregate trends, not exact accounting.
+  for it. It pipes to `uip track` in a detached subshell and always exits 0 —
+  it never delays or fails a tool call. `uip track` is itself never-fail (always
+  exits 0, emits nothing when telemetry is off or on any error).
+- **Best-effort delivery:** an event is dropped on failure (no local retry
+  queue). Telemetry is for aggregate trends, not exact accounting.
 - **Environment cost:** `uip login status` (~0.5s) runs at most once per hour;
   the result is cached in a per-user, `chmod 700` directory and parsed as data,
   never sourced.
 - **Cross-platform:** pure POSIX `bash` + `grep`/`sed`/`awk`, no `jq`
-  dependency (macOS, Linux, Windows Git Bash).
+  dependency (macOS, Linux, Windows Git Bash). Requires the `uip` CLI on `PATH`
+  — the plugin's `SessionStart` hook ensures it is installed.

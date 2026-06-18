@@ -3,33 +3,36 @@
 #
 # Reads the hook JSON payload from stdin, decides whether the tool call is
 # attributable to THIS plugin (skill gate), resolves the UiPath environment
-# (alpha / staging / prod), and emits one customEvent to Azure Application
-# Insights. Calls from other plugins or bare Claude Code are dropped.
+# (alpha / staging / prod), and pipes one flat JSON object to `uip track`,
+# which forwards it through the CLI's own telemetry tracker as a single
+# uip.skills.tool-use Application Insights event. Calls from other plugins or
+# bare Claude Code are dropped.
+#
+# The CLI (see UiPath/cli#2600) owns transport, the App Insights connection,
+# the event name, the authenticated cloud identity, and the `source:
+# "skills-plugin"` dimension. This hook only derives + sanitizes fields and
+# gates on opt-in; value sanitization stays the hook's responsibility because
+# the CLI and skills ship co-versioned.
 #
 # Non-blocking by contract: registered as an async hook in hooks.json
 # ("async": true), so Claude Code runs it in the background and never waits for
-# it. Always exits 0, swallows every error, and POSTs in a detached subshell.
-# It never delays or fails the observed tool call.
+# it. Always exits 0, swallows every error, and pipes to `uip track` in a
+# detached subshell. It never delays or fails the observed tool call.
 # Cross-platform (macOS, Linux, Windows via Git Bash / MSYS).
 #
 # Configuration (env only):
-#   UIPATH_TELEMETRY_DISABLED            Gate. Reuses the uip CLI's variable name.
-#                                        Send ONLY when explicitly set to "0".
-#                                        Unset (default) or "1" -> do not send.
-#                                        Privacy-first default-off; absent is
-#                                        treated as disabled.
-#   UIPATH_TELEMETRY_CONNECTION_STRING   App Insights connection string
-#       (InstrumentationKey=...;IngestionEndpoint=https://<region>.in.applicationinsights.azure.com/)
-#   APPLICATIONINSIGHTS_CONNECTION_STRING  Fallback if the above is unset.
+#   UIPATH_TELEMETRY_DISABLED   Gate. Reuses the uip CLI's variable name.
+#                               Send ONLY when explicitly set to "0".
+#                               Unset (default) or "1" -> do not send.
+#                               Privacy-first default-off; absent is treated
+#                               as disabled.
 
 set +e
 
 # Send only when telemetry is explicitly NOT disabled (=0). Unset defaults to
-# "1" (disabled), so nothing is sent unless the user opts in with =0.
+# "1" (disabled), so nothing is sent unless the user opts in with =0. `uip
+# track` enforces the same gate on its side; we short-circuit here too.
 [ "${UIPATH_TELEMETRY_DISABLED:-1}" = "0" ] || exit 0
-
-conn="${UIPATH_TELEMETRY_CONNECTION_STRING:-${APPLICATIONINSIGHTS_CONNECTION_STRING:-}}"
-[ -z "$conn" ] && exit 0   # no endpoint configured -> nothing to send to
 
 payload="$(cat)"
 
@@ -110,7 +113,7 @@ if [ "$(( now - _ts ))" -ge "$ttl" ]; then
   } > "$cache" 2>/dev/null
 fi
 
-# --- derived, low-cardinality, PII-free fields -----------------------------
+# --- derived, low-cardinality fields ---------------------------------------
 skill_name=""; uip_subcommand=""; file_ext=""
 case "$tool" in
   Skill)
@@ -137,8 +140,9 @@ printf '%s' "$payload" | grep -q '"interrupted"[[:space:]]*:[[:space:]]*true'  &
 printf '%s' "$payload" | grep -q '"success"[[:space:]]*:[[:space:]]*false'     && outcome="failure"
 
 duration_ms="$(printf '%s' "$payload" | grep -oE '"duration_ms"[[:space:]]*:[[:space:]]*[0-9]+' | head -1 | grep -oE '[0-9]+$')"
-# Measurement fallback: emit JSON null (not 0) when absent, so a missing value
-# doesn't skew latency aggregations. Must stay unquoted in the JSON.
+# durationMs is sent as a JSON number. Emit JSON null (not 0) when absent, so a
+# missing value doesn't skew latency aggregations. The CLI drops a null-valued
+# property, so a missing duration simply records as "no data". Stays unquoted.
 case "$duration_ms" in ''|*[!0-9]*) dur_json="null" ;; *) dur_json="$duration_ms" ;; esac
 
 session_id="$(json_str session_id)"
@@ -155,16 +159,9 @@ effort_level="$(printf '%s' "$payload" \
   | grep -oE '"level"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
 os_name="$(uname -s 2>/dev/null)"
 
-# cwd contains the OS username -> never send raw. Hash to a stable anon id.
-cwd="$(json_str cwd)"
-hash_of() {
-  if   command -v sha256sum >/dev/null 2>&1; then printf '%s' "$1" | sha256sum    | cut -c1-16
-  elif command -v shasum    >/dev/null 2>&1; then printf '%s' "$1" | shasum -a 256 | cut -c1-16
-  else printf '%s' "$1" | cksum | tr -d ' '; fi
-}
-if [ -n "$cwd" ]; then workspace_id="$(hash_of "$cwd")"; else workspace_id=""; fi
-
-# Sanitize free-ish text to keep the hand-built JSON valid and bounded.
+# Sanitize free-ish text to keep the hand-built JSON valid and bounded. Value
+# sanitization is the hook's job (CLI and skills ship co-versioned); the CLI
+# then namespaces, stamps identity, and forwards.
 san() { printf '%s' "$1" | tr -c 'A-Za-z0-9:._/ -' '_' | cut -c1-120; }
 tool="$(san "$tool")"
 skill_name="$(san "$skill_name")"
@@ -178,29 +175,21 @@ effort_level="$(san "$effort_level")"
 cli_ver="$(san "$cli_ver")"
 plugin_ver="$(san "$plugin_ver")"
 tool_use_id="$(san "$tool_use_id")"
+session_id="$(san "$session_id")"
 os_name="$(san "$os_name")"
 
-# --- emit to Application Insights ------------------------------------------
-ikey="$(printf '%s' "$conn" | grep -oE 'InstrumentationKey=[^;]+' | head -1 | cut -d= -f2)"
-endpoint="$(printf '%s' "$conn" | grep -oE 'IngestionEndpoint=[^;]+' | head -1 | cut -d= -f2)"
-[ -z "$endpoint" ] && endpoint="https://dc.services.visualstudio.com"
-endpoint="${endpoint%/}"
-[ -z "$ikey" ] && exit 0
-
-ts_iso="$(date -u +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null)"
-
-# Field-fallback contract: every key below is always emitted. Properties whose
-# payload source was missing carry an empty string "" (NOT JSON null — App
-# Insights drops null-valued properties, which would make the field vanish).
-# The lone measurement carries JSON null when absent (see $dur_json above).
-body="$(cat <<JSON
-{"name":"Microsoft.ApplicationInsights.Event","time":"$ts_iso","iKey":"$ikey","tags":{"ai.cloud.role":"uipath-skills-plugin","ai.cloud.roleInstance":"$env_name","ai.session.id":"$session_id","ai.user.id":"$workspace_id","ai.application.ver":"$plugin_ver"},"data":{"baseType":"EventData","baseData":{"ver":2,"name":"ToolUse","properties":{"toolName":"$tool","toolUseId":"$tool_use_id","skillName":"$skill_name","uipSubcommand":"$uip_subcommand","fileExt":"$file_ext","environment":"$env_name","baseUrl":"$base_url","outcome":"$outcome","permissionMode":"$permission_mode","effortLevel":"$effort_level","os":"$os_name","pluginVersion":"$plugin_ver","cliVersion":"$cli_ver"},"measurements":{"durationMs":$dur_json}}}}
-JSON
-)"
-
-# Detached subshell ( cmd & ) survives this hook's exit so the agent never waits.
-( curl -sS -m 4 -X POST "$endpoint/v2/track" \
-    -H "Content-Type: application/json" \
-    --data "$body" >/dev/null 2>&1 & )
+# --- hand off to the CLI telemetry tracker ---------------------------------
+# Build a flat key:value JSON object and pipe it to `uip track`. The CLI hard-
+# codes the event name (uip.skills.tool-use), stamps source: "skills-plugin",
+# attaches the authenticated cloud identity + CLI app version, and owns
+# transport + flush. Every scalar key below becomes an event property; the CLI
+# drops any non-scalar value (so a null durationMs simply disappears). Send no
+# `event` key, no envelope, and no `source` (the CLI overrides it).
+#
+# Detached subshell ( cmd & ) survives this hook's exit so the agent never
+# waits. `uip track` is opt-in and never-fail (exits 0, emits nothing when
+# telemetry is off); piping to it is harmless even if the CLI is absent.
+( printf '%s' "{\"toolName\":\"$tool\",\"skillName\":\"$skill_name\",\"uipSubcommand\":\"$uip_subcommand\",\"fileExt\":\"$file_ext\",\"environment\":\"$env_name\",\"baseUrl\":\"$base_url\",\"outcome\":\"$outcome\",\"permissionMode\":\"$permission_mode\",\"effortLevel\":\"$effort_level\",\"os\":\"$os_name\",\"pluginVersion\":\"$plugin_ver\",\"cliVersion\":\"$cli_ver\",\"toolUseId\":\"$tool_use_id\",\"sessionId\":\"$session_id\",\"durationMs\":$dur_json}" \
+    | uip track >/dev/null 2>&1 & )
 
 exit 0
