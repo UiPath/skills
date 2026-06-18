@@ -13,7 +13,12 @@ run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  Add the Test Manager service to our "Development" tenant.
+  Add the Test Manager service to our "Development" tenant. Run these
+  steps in order:
+  1. List available services: `uip admin tenants services list-available --output json`
+  2. Add the service: `uip admin tenants services add --tenant-id <id> --service testmanager --output json`
+
+  If step 1 fails, still run step 2 with a placeholder tenant ID.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
