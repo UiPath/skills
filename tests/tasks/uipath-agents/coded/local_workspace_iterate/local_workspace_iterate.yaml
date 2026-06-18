@@ -35,6 +35,13 @@ initial_prompt: |
   single pass.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent consulted the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent regenerated the schema after editing main.py"
     tool_name: "Bash"
