@@ -1,0 +1,178 @@
+task_id: skill-hitl-e2e-round-trip
+description: >
+  Full HITL round-trip against a live tenant. Agent authors a flow with a HITL
+  QuickForm node, uploads it via `uip flow debug` (background), polls Action
+  Center until the task appears, saves a snapshot of the pending task, completes
+  it programmatically, waits for the flow execution to finish, and saves the
+  debug output. A Python checker then asserts: (1) the pending task had the
+  correct field schema, (2) the flow reached a terminal Completed state, and
+  (3) the approved execution branch was taken.
+tags: [uipath-human-in-the-loop, e2e, lifecycle:execute, round-trip]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+
+run_limits:
+  max_turns: 80
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  You are running a full HITL round-trip test. Follow every step exactly.
+
+  ── STEP 1: BUILD THE FLOW ──────────────────────────────────────────────────
+
+  Use the `uipath-maestro-flow` and `uipath-human-in-the-loop` skills.
+
+  Scaffold a solution + project:
+    uip solution new HitlRoundTrip
+    (cd into HitlRoundTrip, then) uip maestro flow init HitlRoundTrip
+
+  Build the flow at HitlRoundTrip/HitlRoundTrip/HitlRoundTrip.flow with these
+  nodes (write the JSON directly — do not use the HITL CLI):
+
+  1. Manual trigger — input variable `requester` (string, direction: in)
+  2. HITL QuickForm node (id: reviewTask, label: "Manager Review"):
+       inputs:  requester — read-only, binding = "=js:$vars.trigger1.output.requester"
+       outputs: approved — boolean, variable: "approved"
+       outcomes: Approve (isPrimary: true), Reject
+  3. Decision node (id: routeDecision):
+       expression = "$vars.reviewTask.output.approved === true"
+       true handle → approvedScript
+       false handle → rejectedScript
+  4. Script node (id: approvedScript):
+       return { decision: "approved", for: $vars.trigger1.output.requester }
+  5. Script node (id: rejectedScript):
+       return { decision: "rejected", for: $vars.trigger1.output.requester }
+  6. End node after approvedScript — maps output variable `decision` from
+       approvedScript.output.decision
+  7. End node after rejectedScript — maps output variable `decision` from
+       rejectedScript.output.decision
+
+  Flow output variable: `decision` (string, direction: out).
+
+  Run `uip maestro flow validate HitlRoundTrip/HitlRoundTrip/HitlRoundTrip.flow
+  --output json` and fix any errors before proceeding.
+  Run `uip maestro flow tidy HitlRoundTrip/HitlRoundTrip/HitlRoundTrip.flow`
+  after validation passes.
+
+  ── STEP 2: UPLOAD AND START THE FLOW ───────────────────────────────────────
+
+  Confirm login: `uip login status --output json`. Stop if not logged in.
+
+  Run debug in the background, redirecting all output to debug-output.json:
+    uip flow debug HitlRoundTrip/HitlRoundTrip --log-level debug \
+      --output json -i '{"requester":"e2e-alice"}' \
+      > debug-output.json 2>&1 &
+    echo $! > debug-pid.txt
+
+  ── STEP 3: WAIT FOR THE HITL TASK ──────────────────────────────────────────
+
+  Poll `uip tasks list --output json` every 5 seconds, up to 90 seconds total.
+  Stop when a task appears whose Title or CatalogName contains "Manager Review".
+
+  When found:
+  - Save the full task JSON to task-snapshot.json
+  - Extract: task ID (numeric), folder ID, task type
+
+  ── STEP 4: ASSERT TASK SCHEMA ──────────────────────────────────────────────
+
+  From task-snapshot.json, confirm the task has:
+  - A read-only field for `requester` (value should be "e2e-alice")
+  - An output field for `approved` (boolean type)
+
+  Write your schema assertion findings (pass/fail per field) to
+  task-assert.json:
+    {
+      "requester_field_present": <true/false>,
+      "requester_value": "<value or null>",
+      "approved_field_present": <true/false>,
+      "schema_ok": <true/false>
+    }
+
+  ── STEP 5: COMPLETE THE TASK ────────────────────────────────────────────────
+
+  Complete the task using approve outcome:
+    uip tasks complete <task-id> \
+      --type ExternalTask \
+      --folder-id <folder-id> \
+      --action "Approve" \
+      --data '{"approved":true}' \
+      --output json
+
+  Save the completion response to task-complete-response.json.
+
+  ── STEP 6: WAIT FOR FLOW COMPLETION ────────────────────────────────────────
+
+  Poll debug-output.json every 5 seconds for up to 60 seconds.
+  The file is ready when it contains a JSON object with a "Result" key.
+  When ready, copy it to flow-result.json.
+
+  ── DONE ────────────────────────────────────────────────────────────────────
+
+  Do not summarize or explain further after completing step 6.
+
+success_criteria:
+  - type: run_command
+    description: "Flow file exists and validates"
+    command: "uip maestro flow validate HitlRoundTrip/HitlRoundTrip/HitlRoundTrip.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent confirmed login before starting debug"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran uip flow debug in the background"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+flow\s+debug\s+HitlRoundTrip'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent polled uip tasks list while debug was running"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent saved the pending task snapshot"
+    path: "task-snapshot.json"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent completed the task with --type ExternalTask and --action Approve"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tasks\s+complete\s+\d+.*--type\s+ExternalTask.*--action\s+.Approve'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent saved the debug output after flow completion"
+    path: "flow-result.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema check: task had correct fields; flow reached Completed; approved branch taken"
+    command: "python3 $TASK_DIR/check_hitl_roundtrip.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 8.0
+    pass_threshold: 1.0
