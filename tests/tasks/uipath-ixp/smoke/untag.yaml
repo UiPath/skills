@@ -12,9 +12,8 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  The IXP project named `my_invoices-f1afa9ef-ixp` has its `live` tag on
-  model version 27. Remove that tag — the model version itself must stay
-  published; only the tag should be cleared.
+  In the IXP project `my_invoices-f1afa9ef-ixp`, remove the tag from model
+  version 27.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant

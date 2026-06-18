@@ -13,9 +13,7 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  In the IXP project named `my_invoices-f1afa9ef-ixp`, model version 26 is
-  currently published. Unpublish it — it should no longer be a
-  published/live model, but must stay trained and listable.
+  In the IXP project `my_invoices-f1afa9ef-ixp`, unpublish model version 26.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant
