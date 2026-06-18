@@ -279,6 +279,27 @@ FlowDecision:  (270, 220)     60x60
 
 All FlowStep/FlowDecision/FlowSwitch nodes must be registered as children of `<Flowchart>`. Direct children are already registered. Nodes defined inline within property elements (e.g., inside `FlowDecision.True`) need a trailing `<x:Reference>` entry at the Flowchart level.
 
+Only nodes in the `Flowchart.Nodes` collection (the direct children) render. ViewState positions a node **only after** it is registered there — coordinates on an unregistered node do nothing.
+
+**Forbidden — nested FlowStep chains.** Do NOT build the flow by physically nesting each `FlowStep` inside the previous one's `<FlowStep.Next>`, leaving only the first node under `<Flowchart.StartNode>`. Nested-only steps never enter `Flowchart.Nodes`, so the designer renders almost nothing — invisible regardless of ViewState. Wire each step's successor with `<FlowStep.Next><x:Reference>__ReferenceIDn</x:Reference></FlowStep.Next>` and keep every `FlowStep` a direct child of `<Flowchart>`:
+
+```xml
+<Flowchart>
+  <Flowchart.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </Flowchart.StartNode>
+  <FlowStep x:Name="__ReferenceID0">           <!-- direct child -->
+    <ui:LogMessage DisplayName="Step 1" />
+    <FlowStep.Next>
+      <x:Reference>__ReferenceID1</x:Reference> <!-- link by reference, NOT by nesting -->
+    </FlowStep.Next>
+  </FlowStep>
+  <FlowStep x:Name="__ReferenceID1">           <!-- direct child -->
+    <ui:LogMessage DisplayName="Step 2" />
+  </FlowStep>
+</Flowchart>
+```
+
 See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for the full rules with correct/wrong examples.
 
 ---

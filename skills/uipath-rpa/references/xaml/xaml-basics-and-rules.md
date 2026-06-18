@@ -101,6 +101,43 @@ Branching logic with decision nodes. Best for complex decision flows.
 
 **Node registration:** If a node is defined inline within a property element (e.g., inside `FlowStep.Next`) instead of as a direct Flowchart child, it needs a trailing `<x:Reference>` entry as a direct child of `<Flowchart>`. See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for details.
 
+**Forbidden — nested FlowStep chains.** Do NOT build the flow by physically nesting each `FlowStep` inside the previous one's `<FlowStep.Next>` (a deep chain with only the first node under `<Flowchart.StartNode>`). Only direct children of `<Flowchart>` are added to the `Flowchart.Nodes` collection — nested-only steps are absent from it, so the designer renders almost nothing, invisible regardless of ViewState. Every `FlowStep` MUST be a direct child of `<Flowchart>` with an `x:Name`; wire the sequence with `<FlowStep.Next><x:Reference>`.
+
+**Correct** — each step a direct child, linked by reference:
+```xml
+<Flowchart sap2010:WorkflowViewState.IdRef="Flowchart_1">
+  <Flowchart.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </Flowchart.StartNode>
+  <FlowStep x:Name="__ReferenceID0">
+    <ui:LogMessage DisplayName="Step 1" />
+    <FlowStep.Next>
+      <x:Reference>__ReferenceID1</x:Reference>
+    </FlowStep.Next>
+  </FlowStep>
+  <FlowStep x:Name="__ReferenceID1">          <!-- direct child — in Flowchart.Nodes -->
+    <ui:LogMessage DisplayName="Step 2" />
+  </FlowStep>
+</Flowchart>
+```
+
+**Wrong** — Step 2 nested inside Step 1's `.Next`; `Flowchart.Nodes` holds only Step 1, so Step 2 never renders:
+```xml
+<Flowchart sap2010:WorkflowViewState.IdRef="Flowchart_1">
+  <Flowchart.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </Flowchart.StartNode>
+  <FlowStep x:Name="__ReferenceID0">
+    <ui:LogMessage DisplayName="Step 1" />
+    <FlowStep.Next>
+      <FlowStep>                              <!-- WRONG — nested, not registered -->
+        <ui:LogMessage DisplayName="Step 2" />
+      </FlowStep>
+    </FlowStep.Next>
+  </FlowStep>
+</Flowchart>
+```
+
 **Expression language:** VB projects use `<mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="condition" />` instead of `<CSharpValue>`.
 
 **ViewState is needed** for usable Flowchart layout. See [canvas-layout-guide.md § Flowchart Layout](canvas-layout-guide.md#3-flowchart-layout) for coordinate systems, sizes, and recipes.
