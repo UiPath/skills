@@ -52,4 +52,7 @@ sys.exit(0 if matches else 3)'
 test-%:  ## Run all tests for a specific skill
 	$(CODER_EVAL) run $(shell find tasks/$* -name '*.yaml' -type f) -e experiments/default.yaml -j $(TASK_PARALLELISM) -v
 
+check-links:  ## Validate all relative Markdown links in skills/ resolve to existing files
+	python3 scripts/check_skill_links.py --root ..
+
 .DEFAULT_GOAL := help
