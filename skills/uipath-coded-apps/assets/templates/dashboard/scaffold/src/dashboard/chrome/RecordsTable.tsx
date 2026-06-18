@@ -13,6 +13,10 @@ interface RecordsTableProps<T> {
   rows: T[]
   columns: ColumnDef<T>[]
   defaultSortKey?: string
+  /** Initial sort direction (default descending). */
+  defaultSortAsc?: boolean
+  /** When set, rows become clickable and invoke this with the clicked row. */
+  onRowClick?: (row: T) => void
   pageSize?: number
 }
 
@@ -20,10 +24,12 @@ export function RecordsTable<T extends Record<string, unknown>>({
   rows,
   columns,
   defaultSortKey,
+  defaultSortAsc = false,
+  onRowClick,
   pageSize = 50,
 }: RecordsTableProps<T>) {
   const [sortKey, setSortKey] = useState(defaultSortKey ?? (columns[0]?.key as string))
-  const [sortAsc, setSortAsc] = useState(false)
+  const [sortAsc, setSortAsc] = useState(defaultSortAsc)
   const [page, setPage] = useState(0)
 
   const sorted = [...rows].sort((a, b) => {
@@ -73,7 +79,11 @@ export function RecordsTable<T extends Record<string, unknown>>({
           </thead>
           <tbody>
             {pageRows.map((row, i) => (
-              <tr key={i} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+              <tr
+                key={i}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={cn('border-b last:border-0 hover:bg-muted/30 transition-colors', onRowClick && 'cursor-pointer')}
+              >
                 {columns.map((col) => {
                   const val = row[col.key as string]
                   return (

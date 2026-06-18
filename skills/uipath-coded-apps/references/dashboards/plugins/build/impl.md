@@ -73,12 +73,14 @@ The plan message ends there — no OAuth talk in the plan, no tool calls in the 
 > **The plan response is text-only by design.** Never put a question/option tool call in the same response as the plan — live runs showed it reliably replaces the plan with a bare options list (the user approves widgets they never saw). Structured-choice questions fire only on later, short turns: the post-approval OAuth question (Phase 3), intent disambiguation, and the deploy pin choice.
 
 **Widget types — icon + how to describe the rendering** (always state the visual form so the user can adjust it):
-- 🔢 **KPI card** — "as a single headline number" (with a vs-previous-period change badge when there is a prior period)
+- 🔢 **KPI card** — "as a single headline number". Add "with a vs-previous-period change badge" ONLY if the metric module returns `{ value, previous }` — value over the dashboard window, previous over the equal-length prior window via `priorWindow(start, end)` (works for any time range). A plain KPI returns `{ value }` and shows no badge — don't promise a badge you won't compute.
 - 📈 **Line or area chart** — "as an area/line trend over time, with a headline [total/latest/average] and a vs-previous change"
 - 📈 **Rate chart** — "as a percentage line over time with an overall headline" (a ratio: numerator ÷ denominator per period)
 - 📊 **Bar or donut chart** — "as a bar chart" / "as a donut split by category"
-- 📋 **Table or ranked list** — "as a sortable table with columns [A, B, C]", or "ranked worst/highest-first"
+- 📋 **Table or ranked list** — "as a sortable table with columns [A, B, C]", or "ranked worst/highest-first". To make rows clickable (drill into the clicked entity), set `rowLink: { key: "<rowField>" }` and export `fetchDetailByKey(sdk, key, getToken)` — generates a `/<widget>/:key` detail page.
 - 🔷 **Multi-line chart** — "as multiple lines over time (e.g. P50/P95)"
+
+> **Promise only what the scaffold can render.** The bullets above are the complete set of buildable affordances. Before writing a feature into the plan, confirm it maps to one of them: KPI delta → `{value, previous}`; row drill-down → `rowLink` + `fetchDetailByKey`. If a prompt needs something not listed (a bespoke interaction, a custom layout), say so in the plan ("this needs a template extension") rather than promising it and silently dropping it during the build.
 
 **Example plan:**
 
@@ -248,9 +250,10 @@ If both fail: direct the user to `<CLOUD_URL>/<ORG>/portal_/adminui/#/externalAp
 
 **The build subagent (Phase 4) authors these modules and applies this check — it is NOT done in the main thread.** When the subagent writes each `metrics/<name>.ts` from the SDK references, it cross-checks every one against the **Example response** and **semantics notes** in the relevant `references/sdk/*.md` file (already loaded in the parallel blast). For each metric, confirm:
 
-1. **The field you filter or read on appears in the example response** — with the value you expect. Not just "the field exists in the type" (both `sourceType` and `packageType` exist) — the example shows the real *value*.
+1. **The field you filter or read on appears in the example response** — with the value you expect. Not just "the field exists in the type" (both `sourceType` and `packageType` exist) — the example shows the real *value*. **Appearing in the response does NOT make a field filterable**: mapped fields like `processName` are read-only and throw `Invalid OData query options` in a `$filter` (see `orchestrator.md § Filterable vs read-only Job fields`). Filter only on documented raw fields and match mapped fields client-side.
 2. **No semantics note warns against your choice.** The references flag the traps types can't express.
 3. **Your return shape matches the example** — `.items` vs `.data` vs a top-level array, and the exact field names you map to `xKey`/`yKey`/columns.
+4. **Table column keys match the return shape.** For a `data-table`/`ranked-table`, every `columns`/`columnDefs` key must be a field your module actually returns per row — a key with no matching field renders an empty `—` column. Tables use `columns`/`columnDefs` (NOT `detailColumns`, which only feeds chart drill-down views); a T3 table with no columns is rejected by the build.
 
 This is a read-only, deterministic check — no live calls. The references encode the domain semantics that types alone don't.
 
@@ -331,7 +334,7 @@ If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface
 
 **Step A — Author the inputs** (these writes stay inside you — they never reach the main thread):
 - Write `<INTENT_DIR>/intent.json` — pure metadata: `schemaVersion: 2`, `dashboardName`, `routingName`, `projectDir`, `orgName`, `tenantName`, `cloudUrl`, `apiUrl`, `timeRange`, `clientId`, and a `metrics` array of metadata entries (NO `fnBody`).
-- Write one `<INTENT_DIR>/metrics/<name>.ts` per metric — `export const fetchData: MetricFn = async (sdk) => { … }` written from the SDK references; import time windows from `@/lib/time` and `fetchAll` from `@/lib/paginate`; read-only methods only. Cross-check each against its documented example response (§ "Phase 3.5"). For a record-grain drill-down, also export `fetchDetail` and set `"detail": true` on that metric.
+- Write one `<INTENT_DIR>/metrics/<name>.ts` per metric — `export const fetchData: MetricFn = async (sdk) => { … }` written from the SDK references; import time windows from `@/lib/time` and `fetchAll` from `@/lib/paginate`; read-only methods only. Cross-check each against its documented example response (§ "Phase 3.5"). For a chart record-grain drill-down, also export `fetchDetail` and set `"detail": true`. For a **table row-click** drill-down, set `rowLink: { key: "<rowField>" }` on the metric and export `fetchDetailByKey(sdk, key, getToken)` (the clicked row's `<rowField>` arrives as `key`). For a KPI with a change badge, return `[{ value, previous }]` (two windows).
 
 **Step B — Run the build script once.** Most events are silent — translate the rest to milestones for the return block.
 

@@ -3,11 +3,15 @@
     "active-agents-kpi": {
       "aliases": ["active agents", "active agent count", "how many agents", "agent count", "agents running"],
       "template": "kpi-card",
-      "description": "Count of agents active in the window. SDK: `new Agents(sdk as never).getAll(startTime, endTime)` (positional Dates) → `{ items: AgentListItem[] }`. kpi: return `[{ count: result?.items?.length ?? 0 }]`, set valueField: \"count\", valueLabel: \"active agents\" in intent.",
+      "description": "Count of agents active in the window, with a vs-previous-period delta. SDK: `new Agents(sdk as never).getAll(start, end)` (positional Dates) → `{ items }`. Module returns `[{ value, previous }]`: value = count over the dashboard window; previous = count over the equal-length prior window via `priorWindow(start, end)` from @/lib/time (works for any time range, not a fixed 30/60-day offset). The card renders the delta badge automatically from `previous`. For a plain KPI with no badge, return `[{ value }]` (omit previous).",
       "defaults": {
         "title": "Active Agents",
         "description": "Agents with at least one run",
-        "icon": "Bot"
+        "icon": "Bot",
+        "valueField": "value",
+        "valueLabel": "active agents",
+        "previousField": "previous",
+        "deltaPolarity": "up-good"
       }
     },
     "agent-consumption": {

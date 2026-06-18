@@ -604,6 +604,79 @@ export function ${componentName}View() {
 }
 
 /**
+ * Generate a KEYED detail view for a table widget with `rowLink` — reads the
+ * route param and calls the module's `fetchDetailByKey(sdk, key, getToken)`.
+ * @param {{componentName:string,title?:string,subtitle?:string,moduleSpecifier:string,detailColumns?:string|null}} widget
+ * @returns {string}
+ */
+export function generateKeyedDetailViewFile(widget) {
+  const { componentName, title, subtitle = '', moduleSpecifier, detailColumns } = widget
+  const columnsExpr = detailColumns ? detailColumns : 'autoColumns(rows)'
+
+  return `import React from 'react'
+import { useParams } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { DetailViewShell } from '@/dashboard/chrome/DetailViewShell'
+import { RecordsTable, type ColumnDef } from '@/dashboard/chrome/RecordsTable'
+import { useAuth } from '@/hooks/useAuth'
+import { LoadingState, EmptyState } from '@/dashboard/chrome'
+import { fmtNumber, fmtPercent, fmtDuration, fmtTimeAgo } from '@/lib/format'
+import { toneClass } from '@/lib/widget'
+import { fetchDetailByKey } from '${moduleSpecifier}'
+
+type Row = Record<string, unknown>
+
+/** Auto-detect columns from the first row when explicit detailColumns aren't given. */
+function autoColumns(rows: Row[]): ColumnDef<Row>[] {
+  if (rows.length === 0) return [{ key: 'value', label: 'Value' }]
+  return Object.entries(rows[0])
+    .filter(([, v]) => v !== null && v !== undefined && typeof v !== 'object')
+    .map(([k, v]) => ({
+      key: k,
+      label: k.replace(/([A-Z])/g, ' $1').replace(/^(.)/, (s: string) => s.toUpperCase()).trim(),
+      ...(typeof v === 'number' && { align: 'right' as const }),
+    }))
+}
+
+export function ${componentName}DetailView() {
+  const { key } = useParams<{ key: string }>()
+  const { sdk, getToken } = useAuth()
+  const [data, setData] = useState<Row[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    if (!sdk || !key) return
+    setLoading(true)
+    fetchDetailByKey(sdk, key, getToken)
+      .then((rows: Row[]) => { setData(rows); setLoading(false) })
+      .catch((err: unknown) => { setError(err instanceof Error ? err : new Error(String(err))); setLoading(false) })
+  }, [sdk, key])
+
+  const rows = data
+  const columns = ${columnsExpr}
+  const heading = key ? \`${title ?? componentName}: \${decodeURIComponent(key)}\` : '${title ?? componentName}'
+
+  if (loading) return (
+    <DetailViewShell title={heading} description="${subtitle}">
+      <LoadingState height="h-96" />
+    </DetailViewShell>
+  )
+  if (error) return (
+    <DetailViewShell title={heading} description="${subtitle}">
+      <EmptyState message={error.message} />
+    </DetailViewShell>
+  )
+  return (
+    <DetailViewShell title={heading} description="${subtitle}">
+      <RecordsTable rows={rows} columns={columns} />
+    </DetailViewShell>
+  )
+}
+`
+}
+
+/**
  * Generate Dashboard.tsx and widgets/index.ts from resolved widget metadata.
  * @param {string} projectPath
  * @param {WidgetMeta[]} widgetMeta
@@ -678,7 +751,7 @@ export function widgetLayoutGroup(template) {
  * @param {string} projectPath
  * @param {string[]} viewWidgetNames - Widget names that have a generated view file
  */
-export function injectAppRoutes(projectPath, viewWidgetNames) {
+export function injectAppRoutes(projectPath, viewWidgetNames, keyedViews = []) {
   const appPath = join(projectPath, 'src', 'App.tsx')
   if (!existsSync(appPath)) {
     emit('PARTIAL_BUILD_DETECTED', { message: 'App.tsx not found — scaffold may not be copied yet' })
@@ -691,11 +764,13 @@ export function injectAppRoutes(projectPath, viewWidgetNames) {
   const imports = [
     `import { Dashboard } from '@/dashboard/Dashboard'`,
     ...viewNames.map(n => `import { ${n}View } from '@/dashboard/views/${n}View'`),
+    ...keyedViews.map(k => `import { ${k.componentName}DetailView } from '@/dashboard/views/${k.componentName}DetailView'`),
   ].join('\n')
 
   const routes = [
     `        <Route path="/" element={<Dashboard />} />`,
     ...viewNames.map(n => `        <Route path="/${n.toLowerCase()}" element={<${n}View />} />`),
+    ...keyedViews.map(k => `        <Route path="${k.routeBase}/:key" element={<${k.componentName}DetailView />} />`),
   ].join('\n')
 
   content = content.replace(
@@ -759,6 +834,10 @@ export function validateIntent(intent) {
           errors.push(`metric "${m.name}" detailColumns "${c.key}" has invalid format "${c.format}". Valid: ${VALID_COLUMN_FORMATS.join(', ')}`)
         }
       }
+    }
+    // Row-click drill-down config
+    if (m.rowLink !== undefined && (typeof m.rowLink !== 'object' || !m.rowLink.key || typeof m.rowLink.key !== 'string')) {
+      errors.push(`metric "${m.name}" rowLink must be an object with a string "key" (the row field used as the drill-down route param). The module must export fetchDetailByKey.`)
     }
   }
   return errors
@@ -826,6 +905,26 @@ export function compileColumns(input) {
     return `{${parts.join(',')}}`
   })
   return `[${cols.join(',')}]`
+}
+
+/**
+ * Compile a multi-line-chart `series` spec into a TS array literal.
+ * Accepts either a ready literal string (passed through) or an array of
+ * `{ key, color, label? }` objects — the natural form an author writes in
+ * intent.json. Without this, naive string coercion of the array writes the JS
+ * default `[object Object],[object Object]` into the SERIES constant and tsc fails.
+ * @param {string|Array<{key:string,color:string,label?:string}>} input
+ * @returns {string}
+ */
+export function compileSeries(input) {
+  if (typeof input === 'string') return input
+  if (!Array.isArray(input) || input.length === 0) return '[{key:"value",color:"hsl(var(--chart-1))"}]'
+  const items = input.map((s) => {
+    const parts = [`key:${JSON.stringify(s.key)}`, `color:${JSON.stringify(s.color)}`]
+    if (s.label) parts.push(`label:${JSON.stringify(s.label)}`)
+    return `{${parts.join(',')}}`
+  })
+  return `[${items.join(',')}]`
 }
 
 /** Build a `render` function body for a column with `format` and/or `color`. Returns null if neither. */
@@ -912,7 +1011,7 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
       deltaPolarity:     metric.deltaPolarity ?? defaults.deltaPolarity ?? 'neutral',
       rateNum:           metric.rateNum ?? defaults.rateNum ?? 'num',
       rateDen:           metric.rateDen ?? defaults.rateDen ?? 'den',
-      series:            metric.series ?? defaults.series ?? '[{key:"value",color:"hsl(var(--chart-1))"}]',
+      series:            compileSeries(metric.series ?? defaults.series ?? '[{key:"value",color:"hsl(var(--chart-1))"}]'),
       pivotExpression:   metric.pivotExpression ?? defaults.pivotExpression ?? 'rawData',
     }
     return applyTemplate(spec.template, specToSubs(spec))
@@ -922,10 +1021,18 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
   if (!existsSync(T3_SHELL_TEMPLATE_PATH)) {
     throw new Error(`T3 shell template not found at ${T3_SHELL_TEMPLATE_PATH}`)
   }
-  const columns    = compileColumns(metric.columnDefs ?? metric.columns ?? defaults.columnDefs ?? defaults.columns ?? '[{key:"name",label:"Name"},{key:"value",label:"Value",align:"right" as const}]')
-  const valueField = metric.valueField ?? ''
-  const valueLabel = metric.valueLabel ?? ''
-  const subtitle   = autoSubtitle(metric, defaults, timeRange)
+  // No explicit columns → emit an empty literal; the widget auto-detects columns
+  // from the actual row data at runtime (real keys + labels), instead of a static
+  // name/value placeholder that renders every cell as "—".
+  const columns      = compileColumns(metric.columnDefs ?? metric.columns ?? defaults.columnDefs ?? defaults.columns ?? '[]')
+  const valueField   = metric.valueField ?? defaults.valueField ?? ''
+  const valueLabel   = metric.valueLabel ?? defaults.valueLabel ?? ''
+  const previousField = metric.previousField ?? defaults.previousField ?? ''
+  const deltaPolarity = metric.deltaPolarity ?? defaults.deltaPolarity ?? 'neutral'
+  const rowLinkKey   = metric.rowLink?.key ?? ''
+  const rowLinkRoute = rowLinkKey ? `/${componentName.toLowerCase()}` : ''
+  const defaultSortAsc = metric.defaultSortAsc === true ? 'true' : 'false'
+  const subtitle     = autoSubtitle(metric, defaults, timeRange)
 
   let content = readFileSync(T3_SHELL_TEMPLATE_PATH, 'utf8')
   content = content
@@ -938,6 +1045,11 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
     .split('<<COLUMNS>>').join(columns)
     .split('<<VALUE_FIELD>>').join(valueField)
     .split('<<VALUE_LABEL>>').join(valueLabel)
+    .split('<<PREVIOUS_FIELD>>').join(previousField)
+    .split('<<DELTA_POLARITY>>').join(deltaPolarity)
+    .split('<<ROW_LINK_KEY>>').join(rowLinkKey)
+    .split('<<ROW_LINK_ROUTE>>').join(rowLinkRoute)
+    .split('<<DEFAULT_SORT_ASC>>').join(defaultSortAsc)
   return content
 }
 
@@ -1160,6 +1272,7 @@ async function runDashboardBuild(intent, intentPath) {
     const widgetHashes = {}
     const widgetMeta = []    // { componentName, template }
     const widgetSpecs = {}   // componentName → view spec (see buildViewSpec); chart widgets only
+    const keyedSpecs = {}    // componentName → keyed detail spec; table widgets with rowLink
     let widgetIndex = 0
     const total = metrics.length
 
@@ -1194,6 +1307,19 @@ async function runDashboardBuild(intent, intentPath) {
         widgetSpecs[componentName] = buildViewSpec(componentName, metric, entry, timeRange)
       }
 
+      // Row-click drill-down: a table widget with `rowLink` gets a keyed detail
+      // view at /<widget>/:key that calls the module's fetchDetailByKey.
+      if (metric.rowLink?.key && widgetLayoutGroup(displayAs) === 'table') {
+        keyedSpecs[componentName] = {
+          componentName,
+          title: metric.title ?? entry?.defaults?.title ?? componentName,
+          subtitle: autoSubtitle(metric, entry?.defaults ?? {}, timeRange),
+          moduleSpecifier: metricModuleSpecifier(metric),
+          detailColumns: metric.detailColumns ? compileColumns(metric.detailColumns) : null,
+          routeBase: `/${componentName.toLowerCase()}`,
+        }
+      }
+
       widgetIndex++
       emit('WIDGET_READY', { name: componentName, index: widgetIndex, total })
     }
@@ -1209,8 +1335,16 @@ async function runDashboardBuild(intent, intentPath) {
       generatedViewNames.push(componentName)
     }
 
+    // Step 5a.2 — Generate keyed detail views for tables with rowLink
+    const keyedViewWidgets = []
+    for (const [componentName, spec] of Object.entries(keyedSpecs)) {
+      const viewContent = generateKeyedDetailViewFile(spec)
+      writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}DetailView.tsx`), viewContent)
+      keyedViewWidgets.push({ componentName, routeBase: spec.routeBase })
+    }
+
     // Step 5b — Only inject routes for widgets that actually have view files
-    injectAppRoutes(P, generatedViewNames)
+    injectAppRoutes(P, generatedViewNames, keyedViewWidgets)
 
     // Step 6 — Full-app tsc backstop. Metric-level errors were already caught by
     // Stage A; a failure here is an integration/template error, not a metric bug.

@@ -261,7 +261,35 @@ Server-side filters (use the raw field name `ProcessType` in the OData string):
 - Faulted agent jobs: `getAll({ filter: "State eq 'Faulted' and ProcessType eq 'Agent'" })`
 - Reading results: `result.items.filter(j => j.packageType === 'Agent')` (client-side, mapped field name)
 
-Cross-check any filter against the example response above before committing it: the field you filter on must appear there with the value you expect.
+#### Filterable vs read-only Job fields
+
+A field appearing in the response does **NOT** make it valid in an OData `$filter`. The SDK's mapped (renamed) response fields are **read-only** — filtering on them throws `Invalid OData query options … Could not find a property named '<field>'` at request time (invisible to `tsc`).
+
+| Read-only (response only — NEVER in `$filter`) | Filter on the raw field instead |
+|---|---|
+| `processName` (← `releaseName`) | match **client-side**: `items.filter(j => j.processName === name)` |
+| `createdTime` (← `creationTime`) | `CreationTime` (e.g. `orderby: 'CreationTime desc'`) |
+| `folderId` (← `organizationUnitId`) | folder is scoped via header, not `$filter` |
+| `packageType` (← `ProcessType`) | `ProcessType` |
+
+Safe `$filter` fields: **`ProcessType`**, **`State`**, **`CreationTime`**, **`StartTime`**. To find a specific agent's jobs, filter `ProcessType eq 'Agent'` and match the name **client-side** on `processName` — there is no server-side name filter.
+
+#### Recipe — jobs for a named agent → its most-recent trace's spans
+
+The bridge from a clicked agent to its spans (e.g. a `rowLink` table's `fetchDetailByKey`):
+
+```ts
+import type { MetricDetailByKeyFn } from '@/lib/metric-contract'
+
+export const fetchDetailByKey: MetricDetailByKeyFn = async (sdk, agentName) => {
+  const { Jobs } = await import('@uipath/uipath-typescript/jobs')
+  const { AgentTraces } = await import('@uipath/uipath-typescript/traces')
+  const jobs = (await new Jobs(sdk as never).getAll({ filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc' }))?.items ?? []
+  const job = jobs.find(j => j.processName === agentName)   // client-side match — processName is read-only
+  if (!job?.traceId) return []
+  return await new AgentTraces(sdk as never).getSpansByTraceId(job.traceId)   // Job carries traceId (see traces.md)
+}
+```
 
 ## Job-Attached Methods (JobMethods)
 

@@ -46,6 +46,23 @@ export function delta(rows: Rows, key: string, polarity: DeltaPolarity = 'neutra
 }
 
 /**
+ * Delta between a current value and an explicit prior-period value, as a
+ * percentage mapped to a coloured badge direction. For KPI cards whose metric
+ * returns `{ value, previous }` (two windows) rather than a time series.
+ * Returns empty text when a real delta can't be computed.
+ */
+export function kpiDelta(value: number, previous: number, polarity: DeltaPolarity = 'neutral'): { text: string; direction: DeltaDirection } {
+  if (!Number.isFinite(value) || !Number.isFinite(previous)) return { text: '', direction: 'neutral' }
+  if (previous === 0) return { text: value === 0 ? '0%' : 'new', direction: 'neutral' }
+  const pct = Math.round(((value - previous) / Math.abs(previous)) * 100)
+  if (pct === 0 || polarity === 'neutral') return { text: `${pct > 0 ? '+' : ''}${pct}%`, direction: 'neutral' }
+  const direction: DeltaDirection = pct > 0
+    ? (polarity === 'up-good' ? 'up-good' : 'up-bad')
+    : (polarity === 'up-good' ? 'down-bad' : 'down-good')
+  return { text: `${pct > 0 ? '+' : ''}${pct}%`, direction }
+}
+
+/**
  * Tailwind text-colour class for a numeric cell.
  * `goodHigh` — higher is better (e.g. success rate). `goodLow` — lower is better (e.g. error rate).
  */

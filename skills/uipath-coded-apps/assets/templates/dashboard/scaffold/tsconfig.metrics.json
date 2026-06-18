@@ -1,5 +1,8 @@
 {
   "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "node_modules/.cache/dash-metrics.tsbuildinfo"
+  },
   "include": [
     "src/metrics/**/*.ts",
     "src/lib/metric-contract.ts",

@@ -48,7 +48,14 @@ function listFiles(dir) {
  */
 export function contentHash(srcDir) {
   const h = createHash('sha256')
-  for (const f of listFiles(srcDir)) { h.update(f.name); h.update('\0'); h.update(f.data) }
+  for (const f of listFiles(srcDir)) {
+    h.update(f.name); h.update('\0')
+    // Normalize CRLF→LF (drop 0x0D) so the digest is line-ending-insensitive.
+    // Otherwise a Windows autocrlf checkout (CRLF) hashes differently from the
+    // LF content the manifest was packed from, and the drift guard false-fails
+    // on fresh checkouts / CI / non-Windows machines. Scaffold files are text.
+    h.update(f.data.includes(0x0d) ? Buffer.from(f.data.filter((b) => b !== 0x0d)) : f.data)
+  }
   return h.digest('hex')
 }
 

@@ -6,9 +6,17 @@ A chart widget drills down to a detail view at `/<foo>`. The view shows **indivi
 
 For each chart widget `Foo`, the build generates `src/dashboard/views/FooView.tsx` and registers its route in `App.tsx`.
 
-Detail views are generated for **chart widgets only** — `line-chart`, `area-chart`, `bar-chart`, `donut-chart`, `multi-line-chart`, `rate-chart` — any tier. Only chart templates emit a `navigate()` / `ViewAllLink` drill-down, so only charts need a route. KPI cards and tables (`kpi-card`, `data-table`, `ranked-table`) link nowhere and show their value/rows in place — no detail view.
+Detail views are generated for **chart widgets** (`line-chart`, `area-chart`, `bar-chart`, `donut-chart`, `multi-line-chart`, `rate-chart`) — any tier — at `/<foo>`, and for **tables with a `rowLink`** (see below). KPI cards and plain tables (no `rowLink`) link nowhere and show their value/rows in place.
 
-> **Contract:** every widget that emits a navigation link must have a generated view + route. Never emit `navigate()` / `ViewAllLink` without the build generating the matching view.
+> **Contract:** every widget that emits a navigation link must have a generated view + route. Never emit `navigate()` / `ViewAllLink` / `onRowClick` without the build generating the matching view.
+
+## Row-click drill-down (tables)
+
+A `data-table`/`ranked-table` metric with `rowLink: { key: "<rowField>" }` becomes clickable: clicking a row navigates to `/<widget>/:key` (the clicked row's `<rowField>` is the `:key`). The build generates `views/<Widget>DetailView.tsx`, which reads the route param and calls the module's **`fetchDetailByKey(sdk, key, getToken)`** (type `MetricDetailByKeyFn`). Use it to show the entity behind the row — e.g. click an agent → that agent's most-recent trace's spans (recipe in `sdk/orchestrator.md`).
+
+- The module exports BOTH `fetchData` (the table rows) and `fetchDetailByKey` (the per-key drill-down).
+- `detailColumns` (optional) styles the detail table; without it columns auto-detect.
+- The detail page has a back link via `DetailViewShell`.
 
 ## Record grain — the detail must add information
 

@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'nod
 import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
-import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, buildViewSpec, compileColumns, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, SCAFFOLD_VERSION, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift, runIntentMigrations, VALID_EDIT_OPS } from '../build-dashboard.mjs'
+import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, generateKeyedDetailViewFile, buildViewSpec, compileColumns, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, SCAFFOLD_VERSION, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift, runIntentMigrations, VALID_EDIT_OPS } from '../build-dashboard.mjs'
 import { zipDir, unzipTo, contentHash } from '../lib/zip.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -1021,4 +1021,123 @@ test('scope: Insights RTM + PIMS present in all scope lists', () => {
   }
   const impl = readFileSync(resolve(__dirname, '../../../references/dashboards/plugins/build/impl.md'), 'utf8')
   assert.ok(/--user-scope "[^"]*Insights,Insights\.RealTimeData[^"]*PIMS/.test(impl), 'full create command missing Insights RTM + PIMS')
+})
+
+// ── Robustness fixes (Agent-Ops postmortem: KPI delta, row-click, columns, OData lint) ──
+
+test('Defect 1: KPI with previousField/deltaPolarity emits a delta badge', () => {
+  const out = buildWidgetFile(
+    { name: 'active-agents', tier: 'T3', title: 'Active Agents', displayAs: 'kpi-card', valueField: 'value', previousField: 'previous', deltaPolarity: 'up-good' },
+    null, '30d'
+  )
+  assert.equal(out.match(/<[A-Z][A-Z_]*>|<<[A-Z_]+>>/g), null, 'leftover placeholders')
+  assert.ok(out.includes('kpiDelta('), 'KPI must compute kpiDelta')
+  assert.ok(out.includes('DeltaBadge'), 'KPI must render DeltaBadge')
+  assert.ok(out.includes("const PREVIOUS_FIELD = 'previous'"), 'previousField not substituted')
+  assert.ok(out.includes("const DELTA_POLARITY = 'up-good'"), 'deltaPolarity not substituted')
+})
+
+test('Defect 1: plain KPI (no previous) still generates and shows no badge data', () => {
+  const out = buildWidgetFile(
+    { name: 'running-jobs', tier: 'T3', title: 'Running Jobs', displayAs: 'kpi-card', valueField: 'count' },
+    null, '30d'
+  )
+  assert.equal(out.match(/<[A-Z][A-Z_]*>|<<[A-Z_]+>>/g), null, 'leftover placeholders')
+  assert.ok(out.includes("const PREVIOUS_FIELD = ''"), 'plain KPI must have empty PREVIOUS_FIELD')
+})
+
+test('Defect 1: registry active-agents-kpi defaults drive the delta badge', () => {
+  const entry = registry.t1['active-agents-kpi']
+  assert.equal(entry.defaults.previousField, 'previous')
+  const out = buildWidgetFile({ name: 'active-agents-kpi', tier: 'T1', title: 'Active Agents', displayAs: 'kpi-card' }, entry, '30d')
+  assert.ok(out.includes("const PREVIOUS_FIELD = 'previous'"), 'registry previousField default not applied')
+  assert.ok(out.includes('DeltaBadge'))
+})
+
+test('Defect 2: table with rowLink emits onRowClick navigate; without rowLink it does not', () => {
+  const withLink = buildWidgetFile(
+    { name: 'all-agents', tier: 'T3', title: 'Agents', displayAs: 'data-table', columns: '[{key:"agentName",label:"Agent"}]', rowLink: { key: 'agentName' }, defaultSortAsc: true },
+    null, '30d'
+  )
+  assert.equal(withLink.match(/<[A-Z][A-Z_]*>|<<[A-Z_]+>>/g), null, 'leftover placeholders')
+  assert.ok(withLink.includes("const ROW_LINK_KEY = 'agentName'"), 'rowLink key not substituted')
+  assert.ok(withLink.includes("const ROW_LINK_ROUTE = '/allagents'"), 'rowLink route not derived')
+  assert.ok(withLink.includes('onRowClick'), 'rowLink table must wire onRowClick')
+  assert.ok(withLink.includes('defaultSortAsc={true}'), 'defaultSortAsc not substituted')
+
+  const noLink = buildWidgetFile(
+    { name: 'plain', tier: 'T3', title: 'Plain', displayAs: 'data-table', columns: '[{key:"a",label:"A"}]' },
+    null, '30d'
+  )
+  assert.ok(noLink.includes("const ROW_LINK_KEY = ''"), 'plain table must have empty ROW_LINK_KEY')
+})
+
+test('Defect 2: generateKeyedDetailViewFile imports fetchDetailByKey + reads route param', () => {
+  const view = generateKeyedDetailViewFile({
+    componentName: 'AllAgents', title: 'Agents', subtitle: 'Spans',
+    moduleSpecifier: '@/metrics/all-agents', detailColumns: null,
+  })
+  assert.ok(view.includes("import { fetchDetailByKey } from '@/metrics/all-agents'"), 'keyed view must import fetchDetailByKey')
+  assert.ok(view.includes('useParams'), 'keyed view must read the route param')
+  assert.ok(view.includes('fetchDetailByKey(sdk, key, getToken)'), 'keyed view must call fetchDetailByKey with key')
+  assert.ok(view.includes('export function AllAgentsDetailView()'), 'keyed view component name')
+})
+
+test('Defect 3: table with no columns auto-detects at runtime (no error, no name/value placeholder)', () => {
+  // detailColumns-only (the postmortem mistake) no longer breaks — it auto-detects.
+  const errs = validateIntent({
+    schemaVersion: 2, dashboardName: 'D', timeRange: '30d',
+    metrics: [{ name: 'agents', tier: 'T3', title: 'Agents', displayAs: 'data-table', detailColumns: [{ key: 'a', label: 'A' }] }],
+  })
+  assert.deepEqual(errs, [])
+  const out = buildWidgetFile({ name: 'agents', tier: 'T3', title: 'Agents', displayAs: 'data-table' }, null, '30d')
+  assert.equal(out.match(/<[A-Z][A-Z_]*>|<<[A-Z_]+>>/g), null, 'leftover placeholders')
+  assert.ok(out.includes('COLUMNS.length ? COLUMNS : autoColumns(data)'), 'table must auto-detect columns when none given')
+  assert.ok(out.includes('const COLUMNS: ColumnDef<Row>[] = []'), 'no explicit columns → empty COLUMNS')
+  assert.ok(!out.includes('{key:"name",label:"Name"},{key:"value"'), 'must not emit static name/value placeholder')
+})
+
+test('Defect 3: explicit columns honored; T1 registry tables unaffected', () => {
+  const out = buildWidgetFile({ name: 'agents', tier: 'T3', title: 'Agents', displayAs: 'data-table', columns: '[{key:"agentName",label:"Agent"}]' }, null, '30d')
+  assert.ok(out.includes('agentName'))
+  const t1ok = validateIntent({
+    schemaVersion: 2, dashboardName: 'D', timeRange: '30d',
+    metrics: [{ name: 'job-failures', tier: 'T1', title: 'Faulted Jobs' }],
+  })
+  assert.deepEqual(t1ok, [])
+})
+
+test('Defect 2: invalid rowLink is rejected', () => {
+  const errs = validateIntent({
+    schemaVersion: 2, dashboardName: 'D', timeRange: '30d',
+    metrics: [{ name: 'agents', tier: 'T3', title: 'Agents', displayAs: 'data-table', columns: '[{key:"a",label:"A"}]', rowLink: { foo: 'bar' } }],
+  })
+  assert.ok(errs.some(e => /rowLink must be an object with a string "key"/.test(e)))
+})
+
+test('multi-line series: an array in intent.json compiles to a TS literal (not [object Object])', () => {
+  const out = buildWidgetFile(
+    { name: 'agent-latency', tier: 'T3', title: 'Latency', displayAs: 'multi-line-chart', xKey: 'date',
+      series: [{ key: 'P50', color: 'hsl(var(--chart-1))' }, { key: 'P95', color: 'hsl(var(--chart-2))', label: 'P95 (ms)' }] },
+    null, '30d'
+  )
+  assert.ok(!out.includes('[object Object]'), 'array series must not coerce to [object Object]')
+  assert.ok(out.includes('key:"P50",color:"hsl(var(--chart-1))"'), 'series key/color not compiled')
+  assert.ok(out.includes('label:"P95 (ms)"'), 'optional series label not compiled')
+})
+
+test('multi-line series: a string literal (registry form) passes through unchanged', () => {
+  const out = buildWidgetFile(
+    { name: 'x', tier: 'T3', title: 'X', displayAs: 'multi-line-chart', xKey: 'date',
+      series: '[{key:"Completed",color:"hsl(var(--chart-3))"}]' },
+    null, '30d'
+  )
+  assert.ok(out.includes('key:"Completed"') && !out.includes('[object Object]'))
+})
+
+test('Perf: scaffold tsconfig has incremental + skipLibCheck', () => {
+  const ts = JSON.parse(readFileSync(resolve(__dirname, '../../templates/dashboard/scaffold/tsconfig.json'), 'utf8'))
+  assert.equal(ts.compilerOptions.incremental, true, 'incremental must be enabled')
+  assert.equal(ts.compilerOptions.skipLibCheck, true, 'skipLibCheck must be enabled')
+  assert.ok(ts.compilerOptions.tsBuildInfoFile, 'tsBuildInfoFile must be set (required with noEmit+incremental)')
 })

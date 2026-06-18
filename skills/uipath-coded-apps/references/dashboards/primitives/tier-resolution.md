@@ -266,6 +266,12 @@ export const fetchData: MetricFn = async (sdk) => {
 }
 ```
 
+### Table display columns — which field to use
+
+A `data-table`/`ranked-table` widget renders from **`columns`** (a literal string) or **`columnDefs`** (a structured `{key,label,align?,format?,color?}[]` array, all tiers). Every key must be a field the module returns per row. **`detailColumns` is NOT for table display** — it only styles a *chart's* drill-down view; a table given only `detailColumns` renders empty `—` cells. A T3 table with neither `columns` nor `columnDefs` is rejected by the build (fail-loud, not a silent fallback).
+
+To make table rows clickable, add `rowLink: { key: "<rowField>" }` and export `fetchDetailByKey` (see `detail-views.md § Row-click drill-down`); optionally `defaultSortAsc: true` to sort ascending.
+
 ### T3 ranked table from Insights (governance denials grouped by actor)
 
 Intent entry:
