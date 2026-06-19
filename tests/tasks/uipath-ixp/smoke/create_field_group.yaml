@@ -1,8 +1,8 @@
 task_id: skill-ixp-create-field-group-smoke
 description: >
-  Smoke: agent creates a field group with several fields in one call
-  (`groups add` with `--fields`). The user gives no field types, so the agent
-  must default sensibly (or ask) and supply instructions per field.
+  Smoke: agent creates a field group with several fields in one call. The
+  user gives no field types, so the agent must default sensibly (or ask) and
+  supply instructions per field.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

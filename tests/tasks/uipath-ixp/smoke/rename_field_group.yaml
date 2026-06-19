@@ -1,7 +1,7 @@
 task_id: skill-ixp-rename-field-group-smoke
 description: >
-  Smoke: agent renames a field group via `groups rename`. Preserves the
-  group's fields and annotations; the agent must NOT delete/recreate.
+  Smoke: agent renames a field group. Preserves the group's fields and
+  annotations; the agent must NOT delete/recreate.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
