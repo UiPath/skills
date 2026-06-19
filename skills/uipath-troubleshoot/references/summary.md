@@ -107,6 +107,15 @@ Namespaces: `UiPath.Excel.Activities`
 - [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, `Invoke VBA` execution model, and common failure patterns
 - [activity-packages/excel-activities/summary.md](./activity-packages/excel-activities/summary.md) — All playbooks for Excel Activities issues
 
+## Word Activities
+
+Activities for automating Microsoft Word on Windows via COM interop (`Word Application Scope` / `Use Word File` driving a real `WINWORD.EXE` through `Microsoft.Office.Interop.Word`) and background document processing (System Word activities). Issues here involve COM apartment / thread-affinity failures — most notably `Save Document as PDF` faulting with `0x8001010E RPC_E_WRONG_THREAD` when the scope attaches to an already-open external Word, that Word closes mid-run, or the export runs off the owning STA (unattended/Session 0/background or a non-creator thread). Unlike `Excel Process Scope`, `Word Application Scope` exposes no isolated-instance control.
+
+Namespaces: `UiPath.Word.Activities`
+
+- [activity-packages/word-activities/overview.md](./activity-packages/word-activities/overview.md) — Package overview, COM interop execution model, and common failure patterns
+- [activity-packages/word-activities/summary.md](./activity-packages/word-activities/summary.md) — All playbooks for Word Activities issues
+
 ## Database Activities
 
 Activities for querying and modifying relational databases over ADO.NET (SQL Server, Oracle, MySQL, ODBC, OLE DB). A `DatabaseConnection` opened by `Connect to Database` / `Start Transaction` is consumed by `Execute Query`, `Execute Non Query`, `Run Command`, and the bulk/insert activities. Issues here involve null/out-of-scope connections, provider/driver mismatches after Windows-Legacy → Windows migration, SQL syntax / unsafe concatenation, query text in the connection-string field, command timeouts, `0xE0434352` CLR crashes, and using the wrong activity for the statement type.
