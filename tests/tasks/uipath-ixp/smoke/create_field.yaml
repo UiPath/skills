@@ -1,8 +1,7 @@
 task_id: skill-ixp-create-field-smoke
 description: >
-  Smoke: agent adds a single field to an existing group with
-  `uip ixp fields add <Name> --group "Subscriber information" --field "name"
-  --type <type> --instructions …`. --instructions is required.
+  Smoke: agent adds a single field to an existing group (`fields add` with
+  --group/--field/--type). --instructions is required.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

@@ -1,9 +1,8 @@
 task_id: skill-ixp-change-field-type-smoke
 description: >
-  Smoke: agent changes a field's type with
-  `uip ixp fields change-type <Name> --group <g> --field <f> --type "Exact Text"
-  --confirm-data-loss`. Destructive — the server creates a new field and drops
-  the old field's annotations; the CLI refuses without --confirm-data-loss.
+  Smoke: agent changes a field's type via `fields change-type`. Destructive —
+  the server creates a new field and drops the old field's annotations, so it
+  must pass --confirm-data-loss (the CLI refuses without it).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

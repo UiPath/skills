@@ -1,9 +1,8 @@
 task_id: skill-ixp-delete-multiple-fields-smoke
 description: >
-  Smoke: agent deletes two fields, handling the list explicitly —
-  `uip ixp fields delete <Name> --group <g> --field field1` and the same for
-  field2. `fields delete` removes one field per call, so the agent must issue
-  both. Trap: deleting only one and reporting done.
+  Smoke: agent deletes two fields, handling the list explicitly.
+  `fields delete` removes one field per call, so the agent must issue both.
+  Trap: deleting only one and reporting done.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

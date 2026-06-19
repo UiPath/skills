@@ -1,9 +1,7 @@
 task_id: skill-ixp-rename-field-smoke
 description: >
-  Smoke: agent renames a field with
-  `uip ixp fields rename <Name> --group <g> --field "rename me 1"
-  --new-name "Field Test Rename"`. Preserves field_id and annotations; the
-  agent must NOT delete/recreate.
+  Smoke: agent renames a field via `fields rename`. Preserves field_id and
+  annotations; the agent must NOT delete/recreate.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
