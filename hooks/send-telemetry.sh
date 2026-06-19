@@ -52,11 +52,21 @@ tool="$(json_str tool_name)"
 # concrete signals in tool_input. Anything that doesn't match -> exit 0.
 skill="$(json_str skill)"
 file_path="$(json_str file_path)"
+subagent_type="$(json_str subagent_type)"
 
 is_uipath=0
 case "$tool" in
   Skill)
     case "$skill" in uipath:*|uipath-*) is_uipath=1 ;; esac
+    ;;
+  Agent)
+    # Track subagent spawns only for UiPath agents or Claude's built-in agent
+    # types — NOT custom agents from other plugins (`<plugin>:<name>`) or
+    # user-defined ones.
+    case "$subagent_type" in
+      uipath:*|uipath-*) is_uipath=1 ;;
+      general-purpose|Explore|Plan|claude|claude-code-guide|statusline-setup|fork) is_uipath=1 ;;
+    esac
     ;;
   Bash|PowerShell)
     printf '%s' "$payload" \
@@ -158,12 +168,12 @@ effort_level="$(printf '%s' "$payload" \
   | grep -oE '"effort"[[:space:]]*:[[:space:]]*\{[^}]*"level"[[:space:]]*:[[:space:]]*"[^"]*"' \
   | grep -oE '"level"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
 
-# Subagent fields, extracted by key name (empty when the payload omits them):
+# Subagent fields (empty when the payload omits them). subagent_type is read
+# above in the relevance gate; here we add the model and the running-agent type:
 #   tool_response.resolvedModel -> subagentModel (model resolved for the spawn)
-#   tool_input.subagent_type    -> subagentType  (requested subagent type)
+#   tool_input.subagent_type    -> subagentType  (read in the gate above)
 #   agent_type (top-level)      -> agentType     (type of the running subagent)
 subagent_model="$(json_str resolvedModel)"
-subagent_type="$(json_str subagent_type)"
 agent_type="$(json_str agent_type)"
 
 # Sanitize free-ish text to keep the hand-built JSON valid and bounded. Value

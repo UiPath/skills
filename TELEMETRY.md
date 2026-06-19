@@ -30,6 +30,7 @@ plugin; everything else exits silently. A call qualifies when:
 | Tool | Qualifies when |
 |------|----------------|
 | `Skill` | skill name starts with `uipath:` / `uipath-` |
+| `Agent` | `subagent_type` is a UiPath agent (`uipath:` / `uipath-`) or a Claude built-in (`general-purpose`, `Explore`, `Plan`, `claude`, `claude-code-guide`, `statusline-setup`, `fork`) — **not** other plugins' (`<plugin>:<name>`) or user-defined custom agents |
 | `Bash` / `PowerShell` | command invokes the `uip` CLI or `rpa-tool` |
 | `Edit` / `Write` / `Read` / `Glob` / `Grep` | path targets `.cs` (coded workflows), `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.json`, `project.json`, `app.config.json`, `action-schema.json` |
 
