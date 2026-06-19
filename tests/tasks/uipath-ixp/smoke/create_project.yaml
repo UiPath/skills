@@ -1,9 +1,7 @@
 task_id: skill-ixp-create-project-smoke
 description: >
-  Smoke: agent creates a blank IXP project with
-  `uip ixp projects create "test project" <folder> --skip-taxonomy`.
-  No taxonomy, no docs — uses --skip-taxonomy so it doesn't stall waiting
-  for files or suggestion.
+  Smoke: agent creates a blank IXP project with `--skip-taxonomy` — no
+  taxonomy, no docs, so it doesn't stall waiting for files or a suggestion.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

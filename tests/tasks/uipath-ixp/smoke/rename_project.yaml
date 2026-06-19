@@ -1,8 +1,7 @@
 task_id: skill-ixp-rename-project-smoke
 description: >
-  Smoke: agent renames a project's title with
-  `uip ixp projects update-title <Name> "amazing IXP project"`.
-  Trap: renaming is update-title — the agent must NOT delete/recreate.
+  Smoke: agent renames a project's title via `update-title`.
+  Trap: the agent must NOT delete/recreate.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

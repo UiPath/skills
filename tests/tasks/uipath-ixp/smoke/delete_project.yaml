@@ -1,9 +1,8 @@
 task_id: skill-ixp-delete-project-smoke
 description: >
-  Smoke: agent deletes a project with
-  `uip ixp projects delete <Name> --confirm-data-loss`. Destructive and
-  irreversible — the agent must pass --confirm-data-loss (the CLI refuses
-  without it), acknowledging the data loss.
+  Smoke: agent deletes a project — destructive and irreversible, so it must
+  pass --confirm-data-loss (the CLI refuses without it), acknowledging the
+  data loss.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

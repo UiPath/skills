@@ -1,9 +1,9 @@
 task_id: skill-ixp-create-project-autopilot-smoke
 description: >
   Smoke: agent creates a project and lets IXP auto-suggest the taxonomy from
-  the uploaded documents — `uip ixp projects create "ap-invoices" ./invoices/
-  -d "<context>"` (NO --skip-taxonomy). Trap: the agent must NOT pass
-  --skip-taxonomy or hand-author / import a taxonomy — autopilot suggests it.
+  the uploaded documents (create WITHOUT --skip-taxonomy, with -d for
+  context). Trap: the agent must NOT pass --skip-taxonomy or hand-author /
+  import a taxonomy — autopilot suggests it.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
