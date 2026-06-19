@@ -1,7 +1,7 @@
 task_id: skill-ixp-publish-tag-staging-smoke
 description: >
   Smoke: agent publishes model version 15 and tags it staging — pins the
-  version and applies the staging tag (not live).
+  version and applies the staging tag.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
