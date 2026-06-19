@@ -173,9 +173,10 @@ uip df entities update <entity-id> \
 
 - `referenceEntityId` — UUID of the target entity. Get it from `entities list --native-only` (the `Id` column). Target must exist and be native (no federated targets).
 - `referenceFieldId` — UUID of the join field on the target entity. Get it from `entities get <target-entity-id>` (`Fields[].Id`). Configures join-on-read; the stored value is still the target record's `Id`.
+- `referenceFolderKey` — **only when the target lives in a different folder** than the parent entity. UUID of the target's folder. Omit when the target is tenant-level OR in the same folder as the parent. See [Cross-folder references](#cross-folder-references) for the full lookup flow.
 - The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
 - Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
-- Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required.
+- Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required (and `referenceFolderKey` for cross-folder targets).
 - Cue phrases that signal a `RELATIONSHIP` (never substitute `STRING`/`UUID` — **SKILL.md Rule 12**): *"each order has a Customer"*, *"each report has a Supplier"*, *"each issue belongs to a Project"*.
 - If the user didn't name a target entity OR the named one doesn't exist, follow the **pick-or-create flow in SKILL.md Rule 13** — list candidates via `entities list --native-only`, ask, create only with approval.
 
@@ -191,22 +192,66 @@ uip df records query <customer-entity-id> \
 uip df records insert <child-entity-id> --body '{"customerId":"<resolved-uuid>","amount":250}' --output json
 ```
 
+### Cross-folder references
+
+Folder-scoped entities can hold RELATIONSHIP, FILE, or CHOICE_SET_* fields whose target lives in a **different folder** (or at the tenant level). Use the per-field `referenceFolderKey` to disambiguate; omit it when the target is tenant-level or in the same folder as the parent.
+
+| Target location | Per-field key |
+|---|---|
+| Same folder as parent (or both tenant-level) | Omit `referenceFolderKey` |
+| Different folder | `"referenceFolderKey": "<target-folder-guid>"` |
+| Tenant level (target outside any folder) | Omit `referenceFolderKey` |
+
+**Lookup sequence:**
+
+```bash
+# 1. Find the target's folder and IDs
+uip df entities list --include-folders --output json          # → target entity's Id + FolderId
+uip df entities get <target-entity-id> --folder-key <target-folder-key> --output json   # → target field's Id
+
+# 2. Create the parent in its folder, with the cross-folder reference
+uip df entities create OrderLine \
+  --folder-key <parent-folder-key> \
+  --body '{
+    "fields":[
+      {"fieldName":"order","type":"RELATIONSHIP",
+       "referenceEntityId":"<target-entity-uuid>",
+       "referenceFieldId":"<target-field-uuid>",
+       "referenceFolderKey":"<target-folder-key>",
+       "isRequired": true}
+    ]
+  }' --output json
+```
+
+Same shape applies to `addFields` inside `entities update`. For `CHOICE_SET_*` fields whose choice set is folder-scoped in another folder, set `referenceFolderKey` to the choice set's folder key (look it up via `choice-sets list --include-folders`).
+
 ### FILE Fields
+
+> **Never include a FILE-typed key in `records insert` or `records update` payloads (SKILL.md Rule 6).** Expected behavior: the platform silently strips FILE values — UUID, file path, filename, base64, `null` — and returns `Result: Success` with no error. Do not read Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. Required path: `files upload` to attach or replace, `files delete` to clear, `files download` to retrieve. Sequence to seed a file on a new row: `records insert` without the FILE column → `files upload <entity-id> <record-id> <field-name> --file <path>` against the returned `Id`. CSV `records import` drops FILE columns too (Rule 20).
 
 ```json
 { "fieldName": "EvidenceFile", "type": "FILE", "referenceEntityId": "<EntityAttachment-uuid>", "referenceFieldId": "<EntityAttachment-Name-field-uuid>" }
 ```
 
-- Point `referenceEntityId` at the tenant's internal `EntityAttachment` entity and `referenceFieldId` at its `Name` field. This is the only target shape the platform accepts — any other binding produces a field that renders broken in the UiPath Data Fabric UI with no in-place fix.
-- The `EntityAttachment` UUIDs are tenant-specific. Discover them once and reuse across every FILE field in the tenant:
+- Point `referenceEntityId` at the tenant's internal `EntityAttachment` entity and `referenceFieldId` at its attachment-id field. This is the only target shape the platform accepts — any other binding produces a field that renders broken in the UiPath Data Fabric UI and rejects `files upload` with *"Update entity data failed. Relationship violation"*. The CLI requires both as **UUIDs** — `referenceEntityName` / `referenceFieldName` are rejected with *"Field '…' of type FILE requires both referenceEntityId and referenceFieldId (UUIDs of the target entity and field)"*.
+- **The two UUIDs are tenant-specific but shared across every FILE field in that tenant.** Capture them once and reuse on every subsequent FILE field create.
+- **`EntityAttachment` is a system entity hidden from CLI access** — it doesn't appear in `entities list` (even with `--include-folders`), and `entities get <EntityAttachment-id>` returns *"Entity '…' not found"*. The only CLI-reachable source is **any existing entity that already has a working FILE field** — read the UUIDs off its `Fields[].ReferenceEntity.Id` + `Fields[].ReferenceField.Id`:
   ```bash
-  # EntityAttachment entity Id
-  uip df entities list --output json | python3 -c "import json,sys;print([e['Id'] for e in json.load(sys.stdin)['Data'] if e['Name']=='EntityAttachment'][0])"
-  # Its Name-field Id (use this as referenceFieldId)
-  uip df entities get <EntityAttachment-id> --output json | python3 -c "import json,sys;print([f['Id'] for f in json.load(sys.stdin)['Data']['Fields'] if f['Name']=='Name'][0])"
+  uip df entities list --output json \
+    | python3 -c "
+  import json, sys
+  for e in json.load(sys.stdin)['Data']:
+      for f in (e.get('Fields') or []):
+          if (f.get('FieldDataType') or {}).get('Name') == 'FILE' \
+             and (f.get('ReferenceEntity') or {}).get('Name') == 'EntityAttachment':
+              print('referenceEntityId:', f['ReferenceEntity']['Id'])
+              print('referenceFieldId :', f['ReferenceField']['Id'])
+              sys.exit(0)
+  sys.exit(1)
+  "
   ```
-  Alternative: inspect any existing entity that already has a FILE field — `entities get` echoes the target as `ReferenceEntity.Id` + `ReferenceField.Id`.
-- CLI `files upload` against the field is currently unusable — upload via the UiPath Data Fabric UI instead. Status and workaround: [`file-attachments.md`](file-attachments.md).
+- **If the scan finds nothing** (no entity in this tenant has a FILE field yet), the CLI cannot bootstrap the UUIDs on its own. Stop and ask the user — they can either supply the `referenceEntityId` + `referenceFieldId` pair directly (e.g. captured from a sibling tenant or from internal docs), or hand off this one-time bootstrap to another channel that has the values. Do NOT guess UUIDs and do NOT fall back to a different field type.
+- `files upload` is functional once the binding is correct. Sequence: `entities create` with the FILE field bound → `records insert` (no FILE column) → `files upload <entity-id> <record-id> <field-name> --file <path>` → `records get` echoes the field populated with the server-assigned attachment UUID. Verified end-to-end on `@uipath/data-fabric-tool@1.197.0-alpha.20260617`. Full surface: [`file-attachments.md`](file-attachments.md).
 
 ### Combined Example — mixing scalar, choice-set, and relationship fields
 
@@ -270,7 +315,7 @@ Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reaso
 |-----------|--------|
 | Change a field's data type | Not supported — type is fixed at creation and cannot be changed via `updateFields` |
 | Field name matching a SQL / language keyword | API returns `RESERVED_LANGUAGE_KEYWORDS` — rename before retrying (see Name Validation above) |
-| Upload a file to a `FILE` field via `uip df files upload` | CLI insists on `referenceEntityId`/`referenceFieldId` at field create, then uploads fail with *"Relationship violation"* against arbitrary targets. No public attachment-storage entity is documented. Treat FILE upload as unusable via CLI until the target-entity contract is clarified — surface the gap to the user; don't attempt. |
+| Write a `FILE` value through `records insert` / `records update` / `records import` | Do not attempt. Expected behavior: the platform silently strips the value, returns `Result: Success`, FILE column unchanged. Use `files upload` to attach/replace, `files delete` to clear. Never `records update receipt:null`. See Rule 6 and [FILE Fields](#file-fields). |
 
 ---
 
