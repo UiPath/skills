@@ -3,10 +3,7 @@ description: >
   Skill-guided evaluation: agent uses the uipath-admin skill to
   list available OAuth2 scopes. Tests correct CLI namespace.
 
-tags: [uipath-admin, smoke, mode:operate, list]
-
-run_limits:
-  expected_turns: 6
+tags: [uipath-admin, smoke, list]
 
 initial_prompt: |
   Show me all available OAuth2 scopes I can use for external apps

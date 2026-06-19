@@ -1,0 +1,54 @@
+task_id: uipath-coded-apps-dashboard-metric-modules
+description: >
+  Regression guard for the metric-module architecture. A dashboard build must
+  author each metric's data-fetch code as a real metrics/<name>.ts module
+  (exporting fetchData) and keep intent.json pure metadata (schemaVersion 2, no
+  fnBody strings). Guards against reverting to the old "fnBody string embedded
+  in intent.json" model. Full build success (Stage A isolated typecheck + full
+  tsc) is exercised by the build/e2e tasks; this smoke checks the authored shape.
+tags: [uipath-coded-apps, smoke, dashboard, feature:metric-modules, mode:build]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+initial_prompt: |
+  Build a UiPath dashboard with two widgets: agent memory entries over the last
+  30 days, and faulted jobs. Approve the plan when asked, then build it.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The defining signal of the new architecture: data-fetch code is a real
+  # module under a metrics/ folder, not an fnBody string.
+  - type: run_command
+    description: "Agent authored a metric module under a metrics/ folder"
+    command: "sh -c 'find . -type f -name \"*.ts\" 2>/dev/null | grep -q /metrics/'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # intent.json must be pure metadata — the old model embedded fnBody here.
+  - type: run_command
+    description: "No intent.json contains an fnBody string (pure metadata)"
+    command: "sh -c '! grep -rqs fnBody --include=intent.json .'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # intent.json is on the v2 schema (the build's validateIntent rejects anything else).
+  - type: run_command
+    description: "intent.json declares the v2 schema"
+    command: "sh -c 'grep -rqs schemaVersion --include=intent.json .'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

@@ -8,8 +8,12 @@ description: >
 tags: [uipath-maestro-case, e2e, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
 run_limits:
-  expected_turns: 131
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1500
@@ -69,10 +73,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|---------|-----------|------|----------|---------------|---------|-----|
-  | 1 | `lookup.lookupAge` | Lookup age via NameToAgeFixed2 API workflow | api-workflow | Yes | No | system | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `lookup.lookupAge` | Lookup age via NameToAgeFixed2 API workflow | api-workflow | System |
 
   ##### Task 1.1: Lookup age via NameToAgeFixed2 API workflow (`lookup.lookupAge`)
 
@@ -106,6 +110,8 @@ initial_prompt: |
   debug` yourself — the test harness runs it. Do NOT ask for approval,
   confirmation, or feedback. Build end-to-end in a single pass and finish
   with `uip maestro case validate` passing on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
 
 success_criteria:
   - type: run_command
@@ -123,7 +129,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120

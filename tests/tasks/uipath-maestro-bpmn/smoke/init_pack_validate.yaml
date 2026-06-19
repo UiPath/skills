@@ -5,14 +5,19 @@ description: >
   locally, and package it without cloud-side effects.
 tags: [uipath-maestro-bpmn, smoke, mode:build, lifecycle:generate, lifecycle:validate, lifecycle:package]
 
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+
 run_limits:
-  expected_turns: 33
   max_turns: 60
+  turn_timeout: 900
+
 initial_prompt: |
   Create a UiPath Maestro BPMN Process Orchestration project named
   "ExpenseReviewBpmn".
 
-  Keep this local only:
+  Load and follow the uipath-maestro-bpmn skill. Keep this local only:
   create the project, author a minimal manual-start BPMN process with one
   task and one end event, validate it, and package it to a local output
   directory.

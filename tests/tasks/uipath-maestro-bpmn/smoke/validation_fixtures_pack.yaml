@@ -5,18 +5,23 @@ description: >
   fixture" matrix and complements the validate-side fixture smoke.
 tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:package"]
 
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+
 run_limits:
-  expected_turns: 20
   max_turns: 30
+  turn_timeout: 900
 
 sandbox:
   template_sources:
-    - type: template_dir
-      path: ../../../../skills/uipath-maestro-bpmn
+  - type: template_dir
+    path: ../../../../skills/uipath-maestro-bpmn
 
 initial_prompt: |
-  Package each UiPath Maestro BPMN process project in the validation-fixture
-  corpus locally, with no cloud-side effects.
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Package each validation fixture project locally without cloud-side effects.
 
   Each fixture lives in its own subdirectory under `fixtures/validation/`:
   - `fixtures/validation/linear-process/`
@@ -30,9 +35,9 @@ initial_prompt: |
   - `fixtures/validation/agent-invocation/`
 
   Requirements:
-  - Use the installed `uip` CLI to pack each fixture's BPMN project. Send
-    packed output to a local `fixture-pack-output/` directory, not into the
-    fixture folders.
+  - Use the installed `uip` CLI to pack each fixture project. Send packed
+    output to a local `fixture-pack-output/` directory, not into the fixture
+    folders.
   - Do not upload, publish, deploy, debug, or run any process.
   - Do not edit fixture files.
 

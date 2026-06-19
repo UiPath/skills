@@ -6,8 +6,12 @@ description: >
   and correctly configures filter conditions and map transformations.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:transform]
 
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
 run_limits:
-  expected_turns: 20
   turn_timeout: 1200
 
 initial_prompt: |
@@ -33,15 +37,13 @@ initial_prompt: |
   2. Transform the results to show only the book title (uppercased) and author
   3. Output the curated reading list as a result variable
 
-  Use a SINGLE generic `core.action.transform` node (the Generic Transform
-  shape) that CHAINS the filter operation and then the map operation in its
-  `operations` list — not separate `core.action.transform.filter` and
-  `core.action.transform.map` variant nodes, and not script nodes. Transform
+  Use transform nodes for the data operations, not script nodes. Transform
   collection inputs must reference a variable path (e.g. `$vars.catalog`), not
   an inline `=js:[...]` array or `=js:$vars.<path>` expression.
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
+  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────

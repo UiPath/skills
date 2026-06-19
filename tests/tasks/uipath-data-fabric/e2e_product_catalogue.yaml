@@ -8,13 +8,16 @@ description: >
   loop for a realistic e-commerce use case.
 tags: [uipath-data-fabric, e2e, product-catalogue]
 
+agent:
+  type: claude-code
+
 run_limits:
-  expected_turns: 35
   max_turns: 50
   turn_timeout: 600
 
 initial_prompt: |
   Build an e-commerce product catalogue in UiPath Data Fabric.
+  Load the uipath-data-fabric skill before starting.
 
   Create entity `ProductCatalogue_<EPOCH>` (Unix epoch seconds suffix —
   e.g. `ProductCatalogue_1716163200`) with fields:

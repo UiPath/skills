@@ -10,6 +10,12 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-llamaindex, feature:rag-coded]
 max_iterations: 1
 
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
+
 initial_prompt: |
   Build a UiPath coded agent named `hr-helper` that answers
   employee questions about HR policy. The agent reads the
@@ -25,9 +31,6 @@ initial_prompt: |
 
   Outputs:
     - `answer` (string)
-
-  Scaffold the agent project inside an `hr-helper/` directory at
-  the working-directory root.
 
   Take the agent through scaffold → schema sync. Do NOT run,
   publish, upload, or deploy. Do NOT call `uip login`. Do NOT
@@ -53,7 +56,7 @@ success_criteria:
 
   - type: file_exists
     description: "LlamaIndex framework marker present (proves framework selection)"
-    path: "hr-helper/llama_index.json"
+    path: "llama_index.json"
     weight: 2.0
     pass_threshold: 1.0
 
@@ -64,7 +67,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
-
-run_limits:
-  expected_turns: 27
-  turn_timeout: 1200

@@ -16,13 +16,15 @@ description: >
   but the review skill's structural analysis is platform-independent.
 tags: [uipath-review, e2e, multi-project]
 
+agent:
+  type: claude-code
+
 run_limits:
-  expected_turns: 31
   max_turns: 60
 
 initial_prompt: |
   You will audit a small UiPath solution with two RPA projects. The goal
-  is to exercise the full discovery → validation →
+  is to exercise the uipath-review skill's full discovery → validation →
   reporting workflow.
 
   Step 1 — Create the fixture at ./MySolution/ with this structure:
@@ -41,7 +43,7 @@ initial_prompt: |
       └── Main.xaml        (a Sequence with a TryCatch where the Catch
                             block is empty — no LogMessage, no Rethrow)
 
-  Step 2 — Review ./MySolution/. Do NOT
+  Step 2 — Review ./MySolution/ using the uipath-review skill. Do NOT
   modify any files inside MySolution/ during review (the skill is
   read-only). The user has no PDD — proceed without one. Produce a
   structured review report at ./review_report.md.

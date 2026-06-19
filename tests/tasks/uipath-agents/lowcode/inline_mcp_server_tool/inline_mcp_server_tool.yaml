@@ -7,19 +7,22 @@ description: >
   `$resourceType: "mcp"` (distinct from `$resourceType: "tool"`) with
   the documented sparse shape, and that a `uipath.agent.resource.mcp.*`
   flow node is wired to the autonomous agent node's `tool` handle.
-tags: [uipath-agents, e2e-blocked, mode:build, low-code, inline-flow]
-skip: true
-# Skipped for now — wiring an inline MCP server tool into the flow is not yet
-# reliable on the run tenant. Re-enable once the inline MCP flow-node path works.
+tags: [uipath-agents, e2e, low-code, inline-flow]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
-  expected_turns: 77
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath Flow project "DevToolsFlow" that runs an inline low-code agent
-  connected to our "GitHubMcp" MCP server so it can use that server's GitHub
-  tools. Wire it into the flow. The solution should be named "DevToolsFlowSol".
+  Create a UiPath solution "DevToolsFlowSol" containing a flow project
+  "DevToolsFlow". The flow should use an inline low-code agent that
+  connects to an MCP server named "GitHubMcp" exposing GitHub-related
+  tools. Declare the MCP server as a resource on the inline agent and
+  wire it into the flow.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -55,14 +58,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent refreshed the inline agent with --inline-in-flow"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+refresh\s+.*--inline-in-flow'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent validated the inline agent with --inline-in-flow"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+validate\s+.*--inline-in-flow'
@@ -71,12 +66,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
+    description: "Agent used --output json on uip commands"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 0.0
+    pass_threshold: 1.0
 
   - type: file_exists
     description: "Flow file was created"

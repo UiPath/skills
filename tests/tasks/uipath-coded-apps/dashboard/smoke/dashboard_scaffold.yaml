@@ -1,0 +1,51 @@
+task_id: uipath-coded-apps-dashboard-scaffold
+description: >
+  Validates that a minimal 2-widget dashboard build produces the current
+  compiler-model structure: intent.json (pure metadata, schemaVersion 2),
+  one metric module per metric under src/metrics/ exporting fetchData,
+  generated widgets under src/dashboard/widgets/, and the OAuth-PKCE env
+  contract in .env.local. Smoke-tier: asserts authored/generated shape;
+  does not run tsc (that belongs to e2e).
+tags: [uipath-coded-apps, smoke, dashboard, feature:scaffold, mode:build]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+initial_prompt: |
+  Build a dashboard with two widgets: agent success rate (last 30 days)
+  and agent error trend (last 7 days).
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran npm ci (scaffold + dependency install executed)"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+ci'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Compiler-model shape + OAuth-PKCE env contract. The checker auto-locates the
+  # generated project (the skill scaffolds into a <routingName> subdir) and
+  # validates: 6 env vars in .env.local, 2 metric modules, 2 widgets,
+  # pure-metadata intent.json (schemaVersion 2, no fnBody), and no legacy tokens.
+  - type: run_command
+    description: "Compiler-model structure + 6 OAuth env vars (project auto-located under <routingName>/)"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 2 --min-widgets 2 --forbid-substr fnBody --forbid-substr useInsights
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

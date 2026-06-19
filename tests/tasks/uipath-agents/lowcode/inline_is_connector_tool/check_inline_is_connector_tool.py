@@ -7,7 +7,8 @@ Combines the F8 (standalone IS tool) resource-shape assertions with
 the F2 (inline agent) flow-wiring assertions. Specifically:
 
   1. The flow file contains a `uipath.agent.autonomous` node whose
-     `inputs.source` points at the inline agent's UUID subdirectory.
+     `inputs.source` (falling back to `model.source` for legacy
+     fixtures) points at the inline agent's UUID subdirectory.
   2. The flow file contains a `uipath.agent.resource.tool.connector`
      node.
   3. An edge wires the agent's `tool` handle (source) to the connector
@@ -18,7 +19,7 @@ the F2 (inline agent) flow-wiring assertions. Specifically:
      under-asserted until the canonical shape locks in.
   5. At least one `bindings_v2.json` was authored somewhere under the
      flow project (outside `.agent-builder/`). The agent creates this
-     manually as the source for `uip solution resources refresh`. Shape
+     manually as the source for `uip solution resource refresh`. Shape
      under-asserted for now — we just verify presence and valid JSON.
   6. After refresh, at least one connection resource file exists under
      `ResearchFlowSol/resources/solution_folder/connection/`.
@@ -89,15 +90,18 @@ def assert_agent_and_connector_nodes(flow: dict) -> tuple:
 
 def assert_agent_source_dir(agent_node: dict) -> Path:
     inputs = agent_node.get("inputs") or {}
-    source = inputs.get("source")
+    model = agent_node.get("model") or {}
+    source = inputs.get("source") or model.get("source")
     if not isinstance(source, str) or not source:
         sys.exit(
-            f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no inputs.source"
+            f"FAIL: {INLINE_AGENT_NODE_TYPE} node has no inputs.source "
+            f"(checked model.source fallback too)"
         )
     agent_dir = FLOW_PATH.parent / source
     if not agent_dir.is_dir():
+        source_location = "inputs.source" if inputs.get("source") else "model.source"
         sys.exit(
-            f"FAIL: inputs.source {source!r} does not point to an existing "
+            f"FAIL: {source_location} {source!r} does not point to an existing "
             f"directory ({agent_dir})"
         )
     print(f"OK: inline agent directory resolves to {agent_dir.name}")
@@ -147,7 +151,7 @@ def assert_bindings_v2_authored() -> None:
         sys.exit(
             f"FAIL: no bindings_v2.json authored under {FLOW_PROJECT} (outside "
             ".agent-builder/). Agent must create it manually as the source "
-            "for `uip solution resources refresh`."
+            "for `uip solution resource refresh`."
         )
     path = authored[0]
     try:

@@ -1,0 +1,84 @@
+task_id: uipath-coded-apps-dashboard-deploy-state
+description: >
+  Validates that deploy correctly distinguishes fresh vs upgrade based on
+  state.json.deployment.systemName. Fresh deploy when systemName is null.
+  Upgrade deploy when systemName is present. Also verifies state.json is
+  updated after deploy with semver, folderKey, and lastDeployedAt.
+tags: [uipath-coded-apps, integration, dashboard, mode:operate, feature:scaffold]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  - command: |
+      mkdir -p .dashboard dist
+      echo "<html></html>" > dist/index.html
+      cat > .dashboard/state.json << 'EOF'
+      {
+        "app": { "name": "Agent Health Dashboard", "routingName": "agent-health-x7k2", "semver": "1.0.0" },
+        "env": "alpha", "org": "testorg", "tenant": "testTenant",
+        "cloudUrl": "https://alpha.uipath.com",
+        "widgets": ["ActiveAgentsKPI", "ErrorRateTrend"],
+        "deployment": { "systemName": null, "folderKey": null, "appUrl": null, "lastDeployedAt": null }
+      }
+      EOF
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  Deploy my Agent Health dashboard to the "Shared" folder in Automation Cloud.
+
+  Important: The uip CLI is available but NOT connected to a live tenant.
+  Commands will fail with auth errors — expected and acceptable.
+  Run each command exactly once. Do NOT retry. Do NOT login.
+  Do NOT ask for confirmation or approval.
+  Before starting, load the uipath-coded-apps skill and follow its deploy workflow.
+
+success_criteria:
+  # Fresh deploy: must attempt folder list with --all since folderKey is null
+  - type: command_executed
+    description: "Agent ran uip or folders list --all to resolve folder key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+list.*--all'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Must bump version from 1.0.0
+  - type: command_executed
+    description: "Agent incremented version for new deploy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack.*1\.0\.[1-9]|1\.[1-9]\.0'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Pack → publish → deploy sequence
+  - type: command_executed
+    description: "Agent ran full pack-publish-deploy sequence"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # State.json must be updated after deploy attempt
+  - type: run_command
+    description: "state.json semver is bumped from 1.0.0"
+    command: >
+      node -e "const s=JSON.parse(require('fs').readFileSync('.dashboard/state.json','utf8'));
+      process.exit(s.app.semver !== '1.0.0' ? 0 : 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Deploy must use --routing-name (display/system handled separately) — fresh deploy still pins the slug
+  - type: command_executed
+    description: "Agent ran uip codedapp deploy with --routing-name agent-health-x7k2 from state.json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy.*--routing-name.*agent-health-x7k2'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

@@ -4,21 +4,23 @@ description: >
   user asks to add LLM-filled columns to a CSV from a Studio Web Agent
   Builder / `agent.json` (lowCode) project. Verifies the skill fires
   for the low-code + CSV signal pair.
-tags: [uipath-agents, smoke, mode:build, low-code, lifecycle:discover, context-grounding]
+tags: [uipath-agents, smoke, low-code, lifecycle:discover, context-grounding]
 
-run_limits:
-  expected_turns: 5
+sandbox:
+  driver: tempdir
+  python: {}
 
 initial_prompt: |
-  I'm building a low-code agent in Studio Web Agent Builder. I want it to take a
-  CSV upload and add two new LLM-filled columns: a category and a confidence
-  label. How would I do this in UiPath, and which built-in tool would handle it?
-  Don't scaffold any files — just point me in the right direction.
+  I'm building a low-code agent in Studio Web Agent Builder (`agent.json`
+  with `"type": "lowCode"`). I want it to take a CSV upload and add two
+  new LLM-filled columns: a category and a confidence label. Tell me
+  which skill applies and which built-in tool I need to enable. Do NOT
+  scaffold any files.
 
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-agents skill"
     expected_skill: "uipath-agents"
-    skill_name: "uipath-agents"
+    expected: "yes"
     weight: 3.0
     pass_threshold: 1.0

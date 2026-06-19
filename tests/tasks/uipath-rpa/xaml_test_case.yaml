@@ -6,10 +6,7 @@ description: >
   fileInfoCollection entry in project.json (NOT entryPoints). Mirrors
   coded_test_case.yaml for the XAML mode that the skill historically
   under-served. See PILOT-5327.
-tags: [uipath-rpa, windows, integration, mode:build, feature:test-case]
-
-run_limits:
-  expected_turns: 36
+tags: [uipath-rpa, integration, mode:build, feature:test-case]
 
 initial_prompt: |
   I need a UiPath XAML test project called "LoginTests" with a first XAML
@@ -18,7 +15,7 @@ initial_prompt: |
   The working directory starts empty. Scaffold the project with
   `uip rpa init --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
   Studio Desktop is NOT available — skip any CLI commands that require
-  a running Studio Desktop instance.
+  --use-studio.
 
   Requirements:
   - Create one XAML test case at `LoginTests/TestLoginSuccess.xaml` that
@@ -86,7 +83,7 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_check
+  - type: file_contains
     description: "project.json does NOT register the test case as an entryPoint"
     path: "LoginTests/project.json"
     excludes:

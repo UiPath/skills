@@ -4,22 +4,23 @@ description: >
   user asks to summarize / synthesize across PDF or TXT documents from
   a Python coded agent (LangGraph). Verifies the skill fires for the
   Python-coded-agent + PDF/TXT signal pair.
-tags: [uipath-agents, smoke, coded, "mode:build", "lifecycle:discover", context-grounding]
+tags: [uipath-agents, smoke, coded, lifecycle:discover, context-grounding]
 
-run_limits:
-  expected_turns: 5
+sandbox:
+  driver: tempdir
+  python: {}
 
 initial_prompt: |
   I have a Python coded-agent project (`pyproject.toml` with uipath +
   uipath-langchain, plus `langgraph.json`). I want it to receive a PDF
   attachment at runtime and produce a single grounded summary with
-  citations. Use the applicable UiPath skill, then outline the
+  citations. Tell me which skill applies and outline the durable-interrupt
   pipeline. Do NOT scaffold any files.
 
 success_criteria:
   - type: skill_triggered
     description: "Agent invoked the uipath-agents skill"
     expected_skill: "uipath-agents"
-    skill_name: "uipath-agents"
+    expected: "yes"
     weight: 3.0
     pass_threshold: 1.0

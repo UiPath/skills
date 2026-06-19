@@ -7,6 +7,13 @@ description: >
   and writes valid JSON. Tests action-task field design (priority enum,
   recipient handling, taskTitle requirement).
 tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 90
+  turn_timeout: 900
+
 initial_prompt: |
   Create a UiPath Case Management project named "VendorPOReviewCase" with
   this shape:
@@ -86,10 +93,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|---------|-----------|------|----------|---------------|---------|-----|
-  | 1 | `fetch.fetchPoData` | Fetch PO Data | process | Yes | No | system | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `fetch.fetchPoData` | Fetch PO Data | process | System |
 
   ##### Task 1.1: Fetch PO Data (`fetch.fetchPoData`)
 
@@ -124,10 +131,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|---------|-----------|------|----------|---------------|---------|-----|
-  | 1 | `review.reviewPo` | Review PO | action | Yes | No | Procurement Officer | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `review.reviewPo` | Review PO | action | Procurement Officer |
 
   ##### Task 2.1: Review PO (`review.reviewPo`)
 
@@ -176,7 +183,7 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
+  #### Stage Task Summary
   (none)
   ```
 
@@ -264,13 +271,3 @@ success_criteria:
         expected: "High"
     weight: 2.5
     pass_threshold: 0.75
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
-
-run_limits:
-  expected_turns: 66
-  task_timeout: 900
-  max_turns: 120
-  turn_timeout: 900

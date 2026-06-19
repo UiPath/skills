@@ -10,20 +10,72 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:edit, feature:framework-langgraph, feature:schema-sync]
 max_iterations: 1
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/existing_project_resume/_fixtures/mood-meter ."
-    timeout: 10
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  turn_timeout: 1200
 
 initial_prompt: |
-  There's a half-finished LangGraph coded agent project on disk
-  under `mood-meter/`. Pick it up from this state and add one
-  small feature.
+  Recreate the half-finished coded agent project under
+  `mood-meter/` exactly as below, then pick it up from this
+  state and add one small feature.
 
-  The project is mid-scaffold: it has `pyproject.toml`, `main.py`,
-  and `langgraph.json`, but there is NO `.venv/` and NO
-  `entry-points.json` yet — that is the starting state, not a
-  mistake. Do not run `uip codedagent new` over it; that would
-  clobber the existing project.
+  **mood-meter/pyproject.toml**:
+  ```toml
+  [project]
+  name = "mood-meter"
+  version = "0.0.1"
+  description = "Half-finished mood detector"
+  authors = [{ name = "Test" }]
+  requires-python = ">=3.11"
+  dependencies = ["uipath", "uipath-langchain"]
+
+  [dependency-groups]
+  dev = ["uipath-dev"]
+  ```
+
+  **mood-meter/main.py**:
+  ```python
+  from typing_extensions import TypedDict
+  from langgraph.graph import StateGraph, START, END
+  from pydantic import BaseModel
+
+  class GraphInput(BaseModel):
+      text: str
+
+  class GraphOutput(BaseModel):
+      mood: str
+
+  class GraphState(TypedDict):
+      text: str
+      mood: str
+
+  async def classify_mood(state: GraphState):
+      lower = state["text"].lower()
+      if "great" in lower or "love" in lower:
+          mood = "happy"
+      elif "bad" in lower or "hate" in lower:
+          mood = "sad"
+      else:
+          mood = "neutral"
+      return {"mood": mood}
+
+  builder = StateGraph(GraphState, input_schema=GraphInput, output_schema=GraphOutput)
+  builder.add_node("classify_mood", classify_mood)
+  builder.add_edge(START, "classify_mood")
+  builder.add_edge("classify_mood", END)
+  graph = builder.compile()
+  ```
+
+  **mood-meter/langgraph.json**:
+  ```json
+  {"graphs": {"agent": "./main.py:graph"}}
+  ```
+
+  Do NOT create any other files in the seed. Specifically, there
+  is NO `.venv/` and NO `entry-points.json` — that is part of the
+  starting state.
 
   The feature to add: alongside the existing `mood`, the output
   must also include a `confidence` field — a float between `0.0`
@@ -67,7 +119,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
-
-run_limits:
-  expected_turns: 22
-  turn_timeout: 1200

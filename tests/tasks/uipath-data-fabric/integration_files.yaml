@@ -8,11 +8,15 @@ description: >
   upload/download/delete workflow including overwrite semantics and byte integrity.
 tags: [uipath-data-fabric, integration, files]
 
+agent:
+  type: claude-code
+
 run_limits:
-  expected_turns: 29
   turn_timeout: 600
 
 initial_prompt: |
+  Before starting, load the uipath-data-fabric skill and follow its workflow.
+
   Perform a complete file attachment lifecycle. Use --output json on every uip df command.
 
   1. Check login: run `uip login status --output json`. Do NOT re-login — use

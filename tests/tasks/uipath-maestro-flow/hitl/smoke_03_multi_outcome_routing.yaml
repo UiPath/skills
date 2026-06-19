@@ -3,12 +3,15 @@ description: >
   Smoke test: agent builds a flow where a Decision node reads the HITL
   reviewer's boolean field and routes to two separate downstream branches.
   Verifies both true and false edges of the Decision node are wired.
-tags: [uipath-maestro-flow, uipath-human-in-the-loop, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, smoke, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
 
 run_limits:
-  expected_turns: 31
   max_turns: 80
-  turn_timeout: 900
+  turn_timeout: 600
 
 initial_prompt: |
   Build a UiPath Flow named "LeaveRequest" with this structure:

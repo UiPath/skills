@@ -4,10 +4,7 @@ description: >
   a personal access token with scopes and expiration. Tests correct
   flag usage and token-shown-once awareness.
 
-tags: [uipath-admin, smoke, mode:build, create]
-
-run_limits:
-  expected_turns: 6
+tags: [uipath-admin, smoke, create]
 
 initial_prompt: |
   Create a personal access token for CI/CD with read access to Folders

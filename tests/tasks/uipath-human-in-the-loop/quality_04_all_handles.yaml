@@ -5,8 +5,10 @@ description: >
   in the next script node. Tests C5, C6, F2.
 tags: [uipath-human-in-the-loop, integration, edge-wiring]
 
+agent:
+  type: claude-code
+
 run_limits:
-  expected_turns: 21
   max_turns: 50
   turn_timeout: 600
 
@@ -21,7 +23,6 @@ initial_prompt: |
   processResult script body, log the reviewer's decision.
 
   Validate after adding and wiring.
-  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
 
 success_criteria:
   - type: file_contains
@@ -36,7 +37,7 @@ success_criteria:
     description: "completed handle is wired in the flow file"
     path: "PurchaseOrderApproval/PurchaseOrderApproval/PurchaseOrderApproval.flow"
     includes:
-      - 'completed'
+      - '"completed"'
     weight: 2.0
     pass_threshold: 1.0
 

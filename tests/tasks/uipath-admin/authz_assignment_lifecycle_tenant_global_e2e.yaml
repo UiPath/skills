@@ -10,19 +10,23 @@ description: >
   (`--identity-id`/`--identity-type User`); cleanup.
 
   Command-construction only — no live tenant available.
-tags: [uipath-admin, e2e, mode:build, authz, assignment-lifecycle, scope:tenant-global]
+tags: [uipath-admin, e2e, authz, assignment-lifecycle, scope:tenant-global]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
-  expected_turns: 18
   max_turns: 40
   turn_timeout: 600
 
 initial_prompt: |
-  My account needs the built-in global template role "Tenant Administrator",
-  which is available across every tenant in the organization. Exercise the
-  create, list, and delete commands: look the role up by name, create the
-  assignment, list my assignments to confirm it appears, then delete the
-  assignment and list again to confirm it's gone.
+  My account needs a built-in global template role that's available
+  across every tenant in the organization. Pick an appropriate
+  existing one and assign it to me. After it's assigned, confirm it
+  appears on my account. Then clean up by removing the assignment
+  and confirming it's gone.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -43,9 +47,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent listed built-in roles"
+    description: "Agent listed built-in TenantGlobal-scope roles (flag order-insensitive)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*\b'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--scope\s+TenantGlobal\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -69,7 +73,7 @@ success_criteria:
   - type: command_executed
     description: "Agent cleaned up via `roles assignments delete` (positional id or --file batch form)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+.*(?:["'']?[a-f0-9-]{8,}|--file\s+\S+)'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+(?:[a-f0-9-]{8,}|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -82,6 +86,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-post_run:
-  - command: 'CLEANUP_ASSIGNMENT_ROLE="Tenant Administrator" CLEANUP_ASSIGNMENT_SCOPE="Tenant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''cleanup_assignment.py''))"'
-    timeout: 30
+  - type: command_not_executed
+    description: "Agent must NOT pass --scope TenantGlobal to `assignments list` (server rejects it; only valid on create)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+list\s+.*--scope\s+TenantGlobal\b'
+    weight: 1.5
+
+  - type: command_not_executed
+    description: "Agent must NOT use legacy --principal-id flag"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+(?:create|delete)\s+.*--principal-id'
+    weight: 2.0

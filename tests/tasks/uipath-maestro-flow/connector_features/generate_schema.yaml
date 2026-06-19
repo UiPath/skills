@@ -4,10 +4,14 @@ description: >
   "Create Issue" connector node so that customFieldsRequestDetails captures
   the parent values (project key + issue type id) that drive the schema
   fetch, and bodyParameters carries the required fields.summary value.
-tags: [uipath-platform, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
-  expected_turns: 39
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
@@ -28,6 +32,10 @@ initial_prompt: |
   Validate the final flow file.
   If the Atlassian Jira connector is not present in the registry, stop —
   this test exercises GenerateSchema, which has no managed-HTTP fallback.
+
+  Test connections for this task live in Orchestrator folder "Shared/uipath-maestro-flow".
+  Resolve its key with `uip or folders get "Shared/uipath-maestro-flow" -o json`
+  and pass `--folder-key <key>` on every `uip is connections list` call.
 
 success_criteria:
   - type: run_command

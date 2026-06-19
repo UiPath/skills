@@ -3,7 +3,8 @@
 
 Validates:
   1. Flow has a `uipath.agent.autonomous` node whose `inputs.source`
-     resolves to an existing UUID subdirectory.
+     (falling back to `model.source` for legacy fixtures) resolves to
+     an existing UUID subdirectory.
   2. Flow has a `uipath.agent.resource.tool.process.<uuid>` node.
   3. Edge wires the autonomous node's `tool` handle (source) to the
      RPA tool node's `input` handle (target).

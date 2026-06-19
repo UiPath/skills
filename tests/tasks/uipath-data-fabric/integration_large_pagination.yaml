@@ -10,8 +10,10 @@ description: >
   offset-based page jumps.
 tags: [uipath-data-fabric, integration, bulk-pagination]
 
+agent:
+  type: claude-code
+
 run_limits:
-  expected_turns: 36
   max_turns: 60
   turn_timeout: 600
 
@@ -24,7 +26,8 @@ pre_run:
     fail_on_error: true
 
 initial_prompt: |
-  Pass `--output json` on every `uip df` command.
+  Load the uipath-data-fabric skill and follow its workflow. Pass
+  `--output json` on every `uip df` command.
 
   Two helper scripts are staged in the working directory by the harness:
 

@@ -1,0 +1,51 @@
+task_id: uipath-coded-apps-dashboard-agent-job-classification
+description: >
+  Regression guard for the agent-job classification trap. When a dashboard
+  derives agent metrics from job runs, the metric module must filter the
+  OData query with the RAW field name (ProcessType eq 'Agent') and match the
+  agent discriminator client-side on the SDK-mapped field (packageType ===
+  'Agent'). Using sourceType (the trigger origin, not the agent discriminator)
+  or filtering on a mapped field name like processName is wrong and returns
+  the wrong rows. The skill teaches this in sdk/orchestrator.md.
+tags: [uipath-coded-apps, integration, dashboard, feature:routing, mode:build]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+initial_prompt: |
+  Build a dashboard showing the error trend for my AI agents over the last
+  week, derived from their Orchestrator job runs.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Correct agent-job classification: raw OData filter + no sourceType discriminator.
+  - type: run_command
+    description: "Metric module filters jobs with ProcessType eq 'Agent' and does not use sourceType as the discriminator"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 1 --require-substr "ProcessType eq 'Agent'" --forbid-substr "sourceType"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # An OData filter string must never reference the mapped field processName
+  # (mapped fields are read-only client-side; filtering on them throws).
+  - type: run_command
+    description: "No metric module references the mapped field processName on a line that also builds an OData filter"
+    command: "sh -c '! grep -rn processName src 2>/dev/null | grep -q filter'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

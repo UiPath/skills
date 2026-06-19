@@ -9,8 +9,12 @@ description: >
   `uip codedagent run`.
 tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-llamaindex]
 
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
 run_limits:
-  expected_turns: 26
   turn_timeout: 1200
 
 initial_prompt: |
@@ -23,6 +27,10 @@ initial_prompt: |
 
   Take the agent end-to-end through scaffold → init → run. Run
   against `'{"question": "What is Python in one sentence?"}'`.
+
+  After the run succeeds, write `RAN_OK` to `run_marker.txt` in the
+  project root so the test harness can verify the run completed
+  cleanly.
 
   Do NOT publish, upload, or deploy. Do NOT pause between planning
   and implementation. Complete end-to-end in a single pass.

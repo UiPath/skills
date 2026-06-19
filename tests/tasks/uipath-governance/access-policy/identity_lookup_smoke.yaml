@@ -13,10 +13,7 @@ description: >
   `uip admin` commands that hit Identity Server will fail with an auth
   error. That is acceptable — what matters is that the agent invokes the
   correct commands with the correct flags.
-tags: [uipath-governance, smoke, mode:diagnose, access-policy, identity-lookup]
-
-run_limits:
-  expected_turns: 8
+tags: [uipath-governance, smoke, access-policy, identity-lookup]
 
 initial_prompt: |
   I am authoring a UiPath access policy and need three UUIDs for the
@@ -54,9 +51,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent invoked `uip admin groups list --output json` for the group lookup (groups list has no --search; agent filters client-side)"
+    description: "Agent invoked `uip admin groups list --output json` and filtered client-side with --output-filter (uip admin groups list has no --search)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+list\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+groups\s+list\s+(?=.*--output\s+json)(?=.*--output-filter).*'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

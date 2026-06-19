@@ -9,11 +9,20 @@ description: >
   it from the attachment download command.
 tags: [uipath-test, integration, mode:operate, lifecycle:report, feature:execution]
 
+agent:
+  type: claude-code
+
 run_limits:
-  expected_turns: 10
   max_turns: 35
 
+sandbox:
+  node:
+    env_packages:
+    - '@uipath/test-manager-tool'
+
 initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
   Export the results of the latest execution of my test set 'UAT Smoke Suite' in UiPath Test
   Manager project CLAIM as a JUnit report XML.
 

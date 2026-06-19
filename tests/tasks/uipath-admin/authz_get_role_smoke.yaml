@@ -8,10 +8,7 @@ description: >
   Platform note: runs without an authenticated tenant — commands will
   fail with auth errors. That is acceptable; what matters is correct
   command invocation with correct flags.
-tags: [uipath-admin, smoke, mode:diagnose, authz, role]
-
-run_limits:
-  expected_turns: 4
+tags: [uipath-admin, smoke, authz, role]
 
 initial_prompt: |
   I have a role with id 1782e940-8926-4d2d-aca7-465ba9eff474.

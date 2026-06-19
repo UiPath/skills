@@ -6,10 +6,9 @@ description: >
   failure is expected in this offline environment.
 tags: [uipath-platform, smoke, licensing, tenants]
 
-run_limits:
-  expected_turns: 5
-
 initial_prompt: |
+  Before starting, load the uipath-platform skill and follow its workflow.
+
   Show me the current license unit allocation for tenant
   `c0ffee00-0000-0000-0000-000000000001`.
 

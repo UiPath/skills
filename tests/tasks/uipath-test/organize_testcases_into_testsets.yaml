@@ -9,11 +9,20 @@ description: >
   the testcases add command for assigning testcases to a set.
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:test-set]
 
+agent:
+  type: claude-code
+
 run_limits:
-  expected_turns: 22
   max_turns: 35
 
+sandbox:
+  node:
+    env_packages:
+    - '@uipath/test-manager-tool'
+
 initial_prompt: |
+  Before starting, load the uipath-test skill and follow its workflow.
+
   I have a project called CLAIM. Organise testcases for the "disbursement"
   feature into logical test sets (e.g. happy path, edge cases, regression).
   List the testcases filtered by "disbursement", group them, and create the

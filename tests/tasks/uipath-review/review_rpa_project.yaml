@@ -13,9 +13,6 @@ description: >
   agent to produce, not on CLI runtime success.
 tags: [uipath-review, smoke]
 
-run_limits:
-  expected_turns: 24
-
 initial_prompt: |
   A small UiPath RPA project needs a quality review.
 
@@ -26,7 +23,7 @@ initial_prompt: |
   - Main.xaml — a minimal Sequence containing a single LogMessage
     activity with text "Hello"
 
-  Step 2 — Review the MyProject/ directory.
+  Step 2 — Review the MyProject/ directory using the uipath-review skill.
   Do NOT modify any files in MyProject/ during the review (the skill is
   read-only). Produce a review report at ./review_report.md.
 

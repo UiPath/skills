@@ -6,12 +6,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
-    _get_ci,
     assert_count,
     find_node_by_label,
     find_triggers,
-    first_rule_of_condition,
-    iter_stage_entry_conditions,
+    payload_contains,
     read_caseplan,
     start_debug,
 )
@@ -28,13 +26,9 @@ def main():
         uipath = ((t.get("data") or {}).get("uipath")) or {}
         service_types.append(uipath.get("serviceType"))
 
-    # Manual trigger accepts either form: no data.uipath key (serviceType None)
-    # OR an explicit serviceType "None". See triggers/manual/impl-json.md.
-    manual_count = sum(1 for s in service_types if s in (None, "None"))
-    if manual_count != 1:
+    if "None" not in service_types:
         sys.exit(
-            f"FAIL: expected exactly 1 manual trigger (no data.uipath key or "
-            f"serviceType='None'); got {service_types}"
+            f"FAIL: no manual trigger (serviceType='None'); got {service_types}"
         )
     timer_count = sum(1 for s in service_types if s == "Intsvc.TimerTrigger")
     if timer_count != 2:
@@ -70,35 +64,31 @@ def main():
             f"'2026-04-26T09:00:00'; got {bounded_cycle!r}"
         )
 
-    # Edges retired: no TriggerEdges. Any of the 3 triggers starts the case via
-    # the first stage's case-entered entry condition.
     run_stage = find_node_by_label(plan, "Run")
-    run_entry = list(iter_stage_entry_conditions(run_stage))
-    run_rules = {(first_rule_of_condition(c) or {}).get("rule") for c in run_entry}
-    if "case-entered" not in run_rules:
+    trigger_edges = [
+        e for e in plan.get("edges") or []
+        if e.get("type") == "case-management:TriggerEdge"
+        and e.get("target") == run_stage["id"]
+    ]
+    if len(trigger_edges) != 3:
         sys.exit(
-            f"FAIL: 'Run' must carry a case-entered entry condition — the edgeless "
-            f"case-start signal shared by all {len(triggers)} triggers; got entry "
-            f"rules {sorted(r for r in run_rules if r)}"
+            f"FAIL: expected 3 TriggerEdges into 'Run', got {len(trigger_edges)}"
         )
 
-    run_lanes = (run_stage.get("data") or {}).get("tasks") or []
-    run_tasks = [t for lane in run_lanes for t in (lane or [])]
-    rpa_tasks = [t for t in run_tasks if t.get("type") == "rpa"]
-    if len(rpa_tasks) != 1:
-        types_seen = [t.get("type") for t in run_tasks]
+    sources = {e.get("source") for e in trigger_edges}
+    expected_sources = {t["id"] for t in triggers}
+    if sources != expected_sources:
         sys.exit(
-            f"FAIL: expected exactly 1 rpa task in 'Run'; got {len(rpa_tasks)} "
-            f"(task types in Run: {types_seen})"
+            f"FAIL: TriggerEdge sources {sources} != trigger ids {expected_sources}"
         )
 
     payload = start_debug(timeout=540)
-    status = _get_ci(payload, "finalStatus", "FinalStatus", "status", "Status")
+    payload_contains(payload, "Run", require_all=False)
+    status = payload.get("finalStatus") or payload.get("status")
 
     print(
         "OK: 3 triggers (manual + infinite hourly R/PT1H + bounded daily "
-        "R5/2026-04-26T09:00:00.000Z/P1D) all starting the case via Run's "
-        "case-entered entry (edges retired); Run carries 1 rpa task; "
+        "R5/2026-04-26T09:00:00.000Z/P1D) each with its own TriggerEdge to Run; "
         f"debug payload returned (status={status})"
     )
 

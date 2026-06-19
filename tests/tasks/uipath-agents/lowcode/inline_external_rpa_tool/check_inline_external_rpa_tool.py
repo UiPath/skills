@@ -6,7 +6,7 @@ Validates:
      matches the sub-folder UUID of the inline agent under the flow
      project.
   2. Flow has a `uipath.agent.resource.tool.process.<uuid>` node
-     whose `inputs.source` matches the sub-folder UUID of the inline
+     whose `model.source` matches the sub-folder UUID of the inline
      agent's resource (under `<inline-agent-uuid>/resources/`).
   3. Edge wires agent.tool -> tool.input.
   4. Inline agent dir has at least one resource.json under
@@ -18,7 +18,7 @@ Validates:
        - properties.processName == "FibonacciRPA"
        - properties.folderPath == "Shared/uipath-agents/FibonacciRPA"
        - referenceKey is a UUID-shaped non-empty string (copied from
-         `uip solution resources list`'s `Key`)
+         `uip solution resource list`'s `Key`)
 """
 
 import os
@@ -34,7 +34,6 @@ from _shared.inline_wiring import (  # noqa: E402
     find_resource_node,
     load_json,
     resolve_inline_agent_dir,
-    resolve_resource_source,
 )
 
 FLOW_PATH = Path(os.getcwd()) / "FibonacciFlowSol" / "FibonacciFlow" / "FibonacciFlow.flow"
@@ -65,10 +64,10 @@ def main() -> None:
         )
     print(f"OK: autonomous node inputs.source={agent_source!r} matches inline agent sub-folder")
 
-    tool_source = resolve_resource_source(tool_node)
-    if not UUID_RE.match(tool_source):
+    tool_source = (tool_node.get("model") or {}).get("source")
+    if not isinstance(tool_source, str) or not UUID_RE.match(tool_source):
         sys.exit(
-            f"FAIL: {tool_node['type']} inputs.source must be a UUID matching "
+            f"FAIL: {tool_node['type']} model.source must be a UUID matching "
             f"the inline agent resource's sub-folder name, got {tool_source!r}"
         )
 
@@ -93,11 +92,11 @@ def main() -> None:
     )
     if resource_path.parent.name != tool_source:
         sys.exit(
-            f"FAIL: tool inputs.source UUID {tool_source!r} does not match "
+            f"FAIL: tool model.source UUID {tool_source!r} does not match "
             f"the resource sub-folder name {resource_path.parent.name!r}"
         )
     print(
-        f"OK: tool node inputs.source={tool_source!r} matches resource sub-folder "
+        f"OK: tool node model.source={tool_source!r} matches resource sub-folder "
         f"({resource_path.relative_to(Path(os.getcwd()))})"
     )
     print(
@@ -118,7 +117,7 @@ def main() -> None:
     if not isinstance(rkey, str) or "-" not in rkey:
         sys.exit(
             f"FAIL: resource.referenceKey must be a UUID-shaped string copied "
-            f"from `uip solution resources list`'s `Key`, got {rkey!r}"
+            f"from `uip solution resource list`'s `Key`, got {rkey!r}"
         )
     print(f"OK: resource.referenceKey={rkey!r} (UUID-shaped)")
 

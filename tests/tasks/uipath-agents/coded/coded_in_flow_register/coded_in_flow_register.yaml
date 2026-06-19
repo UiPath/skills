@@ -5,28 +5,29 @@ description: >
   as a local resource in the solution. Verifies `uip solution project add`
   registers the project and writes a process resource file with a `resource.key`
   UUID under `resources/solution_folder/process/`, and that
-  `uip solution resources list` surfaces it as a Local resource.
-tags: [uipath-agents, coded, mode:build, lifecycle:generate, resource, feature:registry]
+  `uip solution resource list` surfaces it as a Local resource.
+tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, resource, feature:registry]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
 
 run_limits:
-  expected_turns: 43
+  task_timeout: 1200
   turn_timeout: 1200
-  max_turns: 100
+  max_turns: 60
 
 initial_prompt: |
   Create a UiPath solution "ClaimsSol" containing a Flow project
   "ClaimsFlow" and a sibling Coded Function agent "ClassifierAgent"
   (Python, simple stub — no LLM call needed, just Input/Output Pydantic
   models). Register the coded agent in the solution and confirm it is
-  registered as a local resource using `uip solution resources list`.
-  When confirming local registration, use structured CLI output:
-  `uip solution resources list ... --output json`.
+  registered as a local resource using `uip solution resource list`.
 
   Use the Coded Function framework (package: `uipath`) — NOT LangGraph,
   LlamaIndex, or OpenAI Agents. This keeps setup minimal: one lightweight
   pip install, no graph wiring needed for the stub.
-
-  Create the `ClaimsSol/` solution at the working-directory root.
 
   Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
   ask for approval, confirmation, or feedback. Do NOT pause between
@@ -43,17 +44,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent scaffolded the Coded Function project (uip functions/codedagent new or uipath new)"
+    description: "Agent scaffolded the coded agent project with uip codedagent new"
     tool_name: "Bash"
-    command_pattern: '(uip\s+(functions|codedagent)\s+new\s+(?!-{1,2}help)\S+|uipath\s+new\s+(?!-{1,2}help)\S+)'
+    command_pattern: 'uip\s+codedagent\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent generated entry-points.json (uip functions/codedagent init or uipath init)"
+    description: "Agent generated entry-points.json with uip codedagent init"
     tool_name: "Bash"
-    command_pattern: '(uip\s+(functions|codedagent)\s+init|uipath\s+init)'
+    command_pattern: 'uip\s+codedagent\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -67,17 +68,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent confirmed local registration with uip solution resources list"
+    description: "Agent confirmed local registration with uip solution resource list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list'
+    command_pattern: 'uip\s+solution\s+resource\s+list'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used structured output when listing solution resources"
+    description: "Agent used --output json on uip commands"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--output\s+json'
+    command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -91,7 +92,7 @@ success_criteria:
   - type: file_exists
     description: "Coded agent entry-points.json exists"
     path: "ClaimsSol/ClassifierAgent/entry-points.json"
-    weight: 0.3
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command

@@ -10,13 +10,16 @@ description: >
   queries in a single end-to-end run.
 tags: [uipath-data-fabric, e2e, employee-directory]
 
+agent:
+  type: claude-code
+
 run_limits:
-  expected_turns: 30
   max_turns: 50
   turn_timeout: 600
 
 initial_prompt: |
   HR needs a digital employee directory in UiPath Data Fabric.
+  Load the uipath-data-fabric skill before starting.
 
   Create entity `EmployeeDirectory_<EPOCH>` (Unix epoch seconds suffix —
   e.g. `EmployeeDirectory_1716163200`) with fields:

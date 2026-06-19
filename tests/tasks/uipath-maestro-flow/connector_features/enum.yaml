@@ -5,9 +5,14 @@ description: >
   body are fixed so the test can verify the enum value wiring.
 tags: [uipath-maestro-flow, integration, lifecycle-generate, shape-multi-node, connector, uipath-google-gmail, ipe]
 
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+
 run_limits:
-  expected_turns: 46
   task_timeout: 3600
+  max_turns: 200
   turn_timeout: 1200
 
 initial_prompt: |
@@ -17,7 +22,7 @@ initial_prompt: |
     - to:        "baishali13@gmail.com"
     - subject:   "weather today"
     - body:      "Weather update for today."
-    - importance: "high"   (this is the enum field under test)
+    - importance: "medium"   (this is the enum field under test)
   Add a Decision node to check whether the call succeeded.
   Route failure to a Terminate node with error message "Enum test failed".
   Route success to a final action that logs "Enum test passed".

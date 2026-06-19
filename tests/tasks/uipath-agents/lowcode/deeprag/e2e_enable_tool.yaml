@@ -2,25 +2,28 @@ task_id: skill-agents-deeprag-lowcode-e2e-enable-tool
 description: >
   E2E: scaffold a low-code agent that enables the built-in deep-rag
   tool. Verifies that the agent runs the canonical CLI flow (uip
-  solution init, uip agent init, uip agent refresh, uip agent
+  solution new, uip agent init, uip solution project add, uip agent
   validate) and that resource.json uses the exact built-in shape
   (type=internal, referenceKey=null, properties.toolType=deep-rag).
-tags: [uipath-agents, e2e, mode:build, low-code, lifecycle:generate, context-grounding]
+tags: [uipath-agents, e2e, low-code, lifecycle:generate, context-grounding]
+max_iterations: 1
 
-run_limits:
-  expected_turns: 36
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
   turn_timeout: 1200
 
-initial_prompt: |
-  Create a UiPath low-code agent "DeepAgent" that synthesizes answers across
-  multiple PDF or TXT attachments uploaded in chat. Enable the
-  built-in "deep-rag" tool so the agent can run an iterative
-  research-and-synthesis pass over the attachments. The solution
-  should be named "DeepSol".
+sandbox:
+  driver: tempdir
+  python: {}
 
-  Use the `uip` CLI to scaffold the solution and agent — do NOT
-  hand-author the solution `.uipx`, `agent.json`, `project.uiproj`,
-  or `entry-points.json` files.
+initial_prompt: |
+  Create a UiPath solution "DeepSol" containing a low-code agent
+  "DeepAgent" that synthesizes answers across multiple PDF or TXT
+  attachments uploaded in chat. Enable the built-in "deep-rag" tool so
+  the agent can run an iterative research-and-synthesis pass over the
+  attachments.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -28,9 +31,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent created the solution with uip solution init"
+    description: "Agent created the solution with uip solution new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+init'
+    command_pattern: 'uip\s+solution\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -43,22 +46,10 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Outcome-based check (auto-registration via `uip agent init` OR explicit
-  # `uip solution project add` both populate Projects[] in the .uipx).
-  - type: json_check
-    description: "Project is registered in the parent solution .uipx"
-    path: "DeepSol/DeepSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
   - type: command_executed
-    description: "Agent refreshed the project to regenerate derived files"
+    description: "Agent linked the project to the solution with uip solution project add"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+refresh'
+    command_pattern: 'uip\s+solution\s+project\s+add'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

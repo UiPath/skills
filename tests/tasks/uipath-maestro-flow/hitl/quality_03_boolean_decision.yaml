@@ -4,11 +4,16 @@ description: >
   Decision node condition using the exact runtime path
   $vars.<nodeId>.output.<fieldName>. Tests field-level variable access
   and that both Decision branches are wired to distinct downstream nodes.
-tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
 
 run_limits:
-  expected_turns: 33
   max_turns: 110
+  turn_timeout: 900
+
 initial_prompt: |
   Build a UiPath Flow named "VendorApproval" for vendor onboarding:
 
@@ -24,8 +29,8 @@ initial_prompt: |
 
   Wire: Trigger → Script → HITL →|completed| Decision → (two branches) → End
 
-  The Decision node condition MUST use $vars.<nodeId>.output.approved —
-  the exact field-level runtime path where <nodeId> is the HITL node's id.
+  The Decision node condition MUST use the exact field-level runtime variable
+  path — not just $vars.<nodeId>.output but specifically the approved field.
 
   Validate the flow after building.
 

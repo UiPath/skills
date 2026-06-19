@@ -9,10 +9,9 @@ description: >
   complete already-completed tasks) without a live tenant.
 tags: [uipath-tasks, smoke, negative]
 
-run_limits:
-  expected_turns: 4
-
 initial_prompt: |
+  Before starting, load the uipath-tasks skill and follow its workflow.
+
   You have four requests. For each, decide whether the uipath-tasks skill
   supports it. If yes, describe what you would do. If no, refuse and explain
   why, referring to the skill's Critical Rules or the "Not in scope" section.

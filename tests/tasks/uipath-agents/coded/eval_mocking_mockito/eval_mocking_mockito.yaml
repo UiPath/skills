@@ -7,21 +7,32 @@ description: >
   looks up a remote label via a helper (mocked in-code via
   `@mockable` so eval-time substitutes example outputs). Output is
   structured JSON, eval'd with `JsonSimilarityEvaluator`. The full
-  pipeline runs offline. Project files are pre-seeded via `pre_run`
-  (fixtures in `_fixtures/`) so the eval grades mocking + evaluator
-  wiring, not file transcription.
+  pipeline runs offline.
 tags: [uipath-agents, e2e, coded, mode:build, feature:eval, feature:eval-mocking, feature:framework-simple]
 max_iterations: 1
+task_timeout: 1800
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_mocking_mockito/_fixtures/asset-retriever ."
-    timeout: 10
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
+  max_turns: 80
+  turn_timeout: 1800
 
 initial_prompt: |
-  I have an existing coded agent project at `asset-retriever/`
-  (`main.py`, `pyproject.toml`, `uipath.json`). It reads an
-  Orchestrator asset from the Shared folder, masks its value, and
-  fetches a human-readable label from a remote registry over HTTP.
+  Build a Simple Function UiPath coded agent named `secret-peek` that
+  returns a structured summary of a UiPath asset: the first 4
+  characters followed by stars to pad out to the original length,
+  alongside a human-readable label looked up from a remote registry.
+
+  The agent has two external calls:
+    1. Reads the asset `api_key` from the `Shared` folder via the
+       UiPath SDK.
+    2. Calls a helper `fetch_label(key_id: str) -> str` that talks
+       to a remote registry (just `requests.get` against a URL).
+
+  Output shape (Pydantic):
+    `{"masked_key": "abcd******", "label": "production-stripe"}`
 
   Add a smoke evaluation suite with 2–3 cases covering different
   asset values and run it locally. The evals must pass without
@@ -29,16 +40,34 @@ initial_prompt: |
   remote registry being reachable. Save the eval output to
   `eval-results.json` in the project root.
 
-  For scoring, use a **structured-output evaluator** — we care
-  about the shape of `{"masked_key": ..., "label": ...}`. Those
-  should be as similar as possible to what we expect.
+  Two constraints on how the mocking is wired (both matter — we use
+  this project as a reference for new joiners learning the eval
+  framework, so it has to demonstrate both approaches):
+    - For the `fetch_label` helper, bake the mock outputs **into the
+      Python code** so reviewers can see the example values right
+      next to the function definition. The mock data should travel
+      with `main.py`.
+    - For the asset retrieval, supply the mock value **from the
+      eval-set definitions** so each test case can use a different
+      asset value without code changes.
 
-  I also want to be able (in the future) to have an llm deciding
-  what mocking values should be substituted at runtime.
-  
-  Do NOT publish, upload, or deploy. Complete it in a single pass.
+  For scoring, use a **structured-output evaluator** — we care
+  about the shape of `{"masked_key": ..., "label": ...}` matching
+  the expected JSON per case, not character-for-character string
+  equality. We want the eval to flag a case where one field is
+  right but the other is subtly wrong.
+
+  Take the agent through scaffold → init → run the eval suite. Do
+  NOT publish, upload, or deploy. Complete it in a single pass.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project with uip codedagent new"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+new'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran uip codedagent init to generate entry-points.json"
@@ -63,9 +92,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
-
-run_limits:
-  expected_turns: 45
-  max_turns: 55
-  turn_timeout: 1800
-  task_timeout: 1800

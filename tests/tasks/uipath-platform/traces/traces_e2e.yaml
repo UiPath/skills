@@ -4,16 +4,16 @@ description: >
   traces-smoke-agent job, wait for completion, fetch LLM trace spans, and
   confirm at least one span is returned. Unlike traces_fetch.yaml (smoke),
   this exercises the full round-trip against a real job and real traces.
-tags: [uipath-platform, e2e, mode:diagnose, lifecycle:discover, traces]
+tags: [uipath-platform, e2e, lifecycle:discover]
 
 agent:
+  type: claude-code
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
 
-run_limits:
-  expected_turns: 21
-
 initial_prompt: |
-  Start a new job for the published agent at process key `$TRACES_SMOKE_PROCESS_KEY` and wait for it to finish. Then verify the run produced LLM trace spans and save the raw spans output to spans.json.
+  Use the `uipath-platform` skill.
+
+  Verify that the published agent at process key `$TRACES_SMOKE_PROCESS_KEY` produces LLM trace spans. Save the raw spans output to spans.json.
 
   Use `--output json` on all uip commands.
 

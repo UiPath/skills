@@ -4,6 +4,13 @@ description: >
   downstream task using the `=vars.<varId>` runtime path. Tests cross-task
   binding from an action task to a follow-up task in a later stage.
 tags: [uipath-maestro-case, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 110
+  turn_timeout: 900
+
 initial_prompt: |
   Create a UiPath Case Management project named "ExpenseApprovalCase" with
   this shape:
@@ -83,10 +90,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|---------|-----------|------|----------|---------------|---------|-----|
-  | 1 | `review.reviewExpense` | Review Expense | action | Yes | No | Reviewer | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `review.reviewExpense` | Review Expense | action | Reviewer |
 
   ##### Task 1.1: Review Expense (`review.reviewExpense`)
 
@@ -132,10 +139,10 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
-  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|---------|-----------|------|----------|---------------|---------|-----|
-  | 1 | `record.logDecision` | Log Decision | process | Yes | No | system | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `record.logDecision` | Log Decision | process | System |
 
   ##### Task 2.1: Log Decision (`record.logDecision`)
 
@@ -228,13 +235,3 @@ success_criteria:
         expected: ""
     weight: 2.0
     pass_threshold: 0.75
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
-
-run_limits:
-  expected_turns: 94
-  task_timeout: 900
-  max_turns: 120
-  turn_timeout: 900

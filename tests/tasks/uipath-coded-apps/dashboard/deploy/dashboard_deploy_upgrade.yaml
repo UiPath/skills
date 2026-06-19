@@ -1,0 +1,92 @@
+task_id: uipath-coded-apps-dashboard-deploy-upgrade
+description: >
+  Validates the upgrade deploy path: when state.json.deployment.systemName is
+  populated, the agent treats this as an upgrade, preserves the existing routing
+  name, and runs pack → publish → deploy with the incremented version.
+  Also validates the retry and collision-recovery behaviors are invoked.
+tags: [uipath-coded-apps, integration, dashboard, mode:operate, feature:scaffold]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  - command: |
+      mkdir -p .dashboard dist
+      echo "<html></html>" > dist/index.html
+      cat > .dashboard/state.json << 'EOF'
+      {
+        "app": { "name": "Agent Health Dashboard", "routingName": "agent-health-x7k2", "semver": "1.0.3" },
+        "env": "alpha", "org": "testorg", "tenant": "testTenant",
+        "cloudUrl": "https://alpha.uipath.com",
+        "widgets": ["ActiveAgentsKPI", "ErrorRateTrend", "InvocationVolume"],
+        "deployment": {
+          "systemName": "govdash-agent-health-x7k2",
+          "folderKey": "abc123-folder-key",
+          "deployVersion": 5,
+          "appUrl": "https://alpha.uipath.com/testorg/testTenant/agent-health-x7k2",
+          "lastDeployedAt": "2026-05-20T10:00:00Z"
+        }
+      }
+      EOF
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  Deploy the latest version of my Agent Health dashboard.
+
+  Important: The uip CLI is available but NOT connected to a live tenant.
+  Commands will fail with auth errors — expected and acceptable.
+  Run each command exactly once. Do NOT retry. Do NOT login.
+  Do NOT ask for confirmation or approval.
+  Before starting, load the uipath-coded-apps skill and follow its deploy workflow.
+
+success_criteria:
+  # Upgrade: should NOT run folder list (folderKey already in state)
+  - type: command_executed
+    description: "Agent did NOT re-run folder list for upgrade deploy (folderKey already known)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+list'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Must preserve existing routing name from state.json
+  - type: command_executed
+    description: "Agent used existing routing name agent-health-x7k2 from state.json"
+    tool_name: "Bash"
+    command_pattern: 'agent-health-x7k2'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Must increment version from 1.0.3
+  - type: command_executed
+    description: "Agent incremented semver from 1.0.3 to 1.0.4"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack.*1\.0\.[4-9]|uip\s+codedapp\s+pack.*1\.[1-9]\.'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Must use --folder-key from state (not prompt user)
+  - type: command_executed
+    description: "Agent passed --folder-key abc123-folder-key from state.json"
+    tool_name: "Bash"
+    command_pattern: '--folder-key\s+abc123-folder-key'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # State.json semver must be bumped after deploy
+  - type: run_command
+    description: "state.json semver bumped beyond 1.0.3"
+    command: >
+      node -e "const s=JSON.parse(require('fs').readFileSync('.dashboard/state.json','utf8'));
+      const [,, p]=s.app.semver.split('.').map(Number);
+      process.exit(p > 3 ? 0 : 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -1,24 +1,17 @@
 #!/usr/bin/env python3
-"""Verify the deterministic eval-run e2e produced a clean 1.0.
+"""Verify the deterministic eval-run e2e produced a clean 1.0 across all 3 data points.
 
 Reads `eval-results.json` (the JSON the agent saved from
 `uip maestro flow eval run results <run_id> --verbose --output json`) and
 asserts:
 
-  1. Top-level `Code` is the eval-run-results envelope code. Accept both the
-     current `FlowEvalRunResults` and the legacy `MaestroFlowEvalRunResults`
-     the CLI emitted before the `eval run *` codes dropped the `Maestro`
-     prefix.
-  2. There is at least 1 per-data-point row.
+  1. Top-level `Code` is `MaestroFlowEvalRunResults`.
+  2. There are at least 3 per-data-point rows.
   3. Every row has `Status == "Completed"`.
   4. No row has a non-empty `Error`.
   5. For each row, every entry in `EvaluatorScores` (or its singular
      equivalent) reports a score of 1.0 — the agent + evaluator were both
      deterministic, so anything else is a regression.
-
-When the Studio Web eval run does not complete, the agent should still save
-`eval-run-status.json`; this checker uses it to fail with the dependent run's
-status/error instead of a generic missing-results message.
 
 The CLI's exact field names may evolve; we tolerate both `EvaluatorScores`
 (list/dict of evaluator entries) and a flat per-row `Score` field. Anything
@@ -31,11 +24,7 @@ import sys
 from pathlib import Path
 
 RESULTS_PATH = Path("eval-results.json")
-STATUS_PATH = Path("eval-run-status.json")
-EXPECTED_DATA_POINTS = 1
-# Current CLI emits `FlowEvalRunResults`; older versions emitted the
-# `Maestro`-prefixed code. Accept both so the checker survives the rename.
-RESULTS_CODES = ("FlowEvalRunResults", "MaestroFlowEvalRunResults")
+EXPECTED_DATA_POINTS = 3
 
 
 def _fail(msg: str) -> None:
@@ -44,99 +33,31 @@ def _fail(msg: str) -> None:
 
 def _load() -> dict:
     if not RESULTS_PATH.is_file():
-        if STATUS_PATH.is_file():
-            _fail(
-                f"Missing {RESULTS_PATH}; latest eval-run status was "
-                f"{_status_summary(_load_json(STATUS_PATH))}"
-            )
-        _fail(f"Missing {RESULTS_PATH} and {STATUS_PATH}")
-    return _load_json(RESULTS_PATH)
-
-
-def _load_json(path: Path) -> dict:
+        _fail(f"Missing {RESULTS_PATH}")
     try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(RESULTS_PATH.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
-        _fail(f"{path} is not valid JSON: {e}")
-    except OSError as e:
-        _fail(f"Could not read {path}: {e}")
-    if not isinstance(doc, dict):
-        _fail(f"{path} should contain a JSON object, got {type(doc).__name__}")
-    return doc
-
-
-def _first_text(container: dict, keys: tuple[str, ...]) -> str | None:
-    for key in keys:
-        value = container.get(key)
-        if value not in (None, ""):
-            return str(value)
-    return None
-
-
-def _status_summary(doc: dict) -> str:
-    data = doc.get("Data") if isinstance(doc.get("Data"), dict) else {}
-    status = _first_text(
-        data,
-        (
-            "Status",
-            "status",
-            "State",
-            "state",
-            "RunStatus",
-            "runStatus",
-            "ExecutionStatus",
-            "executionStatus",
-        ),
-    )
-    error = _first_text(
-        data,
-        (
-            "Error",
-            "error",
-            "FailureReason",
-            "failureReason",
-            "Message",
-            "message",
-            "StatusMessage",
-            "statusMessage",
-        ),
-    )
-    if not error:
-        error = _first_text(doc, ("Error", "error", "Message", "message"))
-    parts = [f"Code={doc.get('Code')!r}"]
-    if status:
-        parts.append(f"Status={status!r}")
-    if error:
-        parts.append(f"Error={error!r}")
-    return ", ".join(parts)
+        _fail(f"{RESULTS_PATH} is not valid JSON: {e}")
 
 
 def _extract_rows(doc: dict) -> list[dict]:
-    """The results envelope is `{ Code, Data: ... }`. The current CLI returns
-    `Data` as a flat list of per-data-point row objects; older shapes nested
-    the rows under `Data.Results` / `DataPoints` / `Rows`. Tolerate both.
+    """The CLI envelope is `{ Code, Data: { Results: [...] } }`. Tolerate
+    minor key-name drift by walking common containers.
     """
     code = doc.get("Code")
-    if code not in RESULTS_CODES:
+    if code != "MaestroFlowEvalRunResults":
         _fail(
-            f'eval-results.json `Code` should be one of {RESULTS_CODES}, '
+            f'eval-results.json `Code` should be "MaestroFlowEvalRunResults", '
             f'got {code!r}'
         )
-    data = doc.get("Data")
-    if isinstance(data, list) and data:
-        return data
-    if isinstance(data, dict):
-        for key in ("Results", "DataPoints", "Rows"):
-            rows = data.get(key)
-            if isinstance(rows, list) and rows:
-                return rows
-        _fail(
-            f'eval-results.json has no Results/DataPoints/Rows list under Data. '
-            f'Top-level keys: {list(doc.keys())}, Data keys: {list(data.keys())}'
-        )
+    data = doc.get("Data") or {}
+    for key in ("Results", "DataPoints", "Rows"):
+        rows = data.get(key)
+        if isinstance(rows, list) and rows:
+            return rows
     _fail(
-        f'eval-results.json Data is empty or an unexpected type '
-        f'({type(data).__name__}); top-level keys: {list(doc.keys())}'
+        f'eval-results.json has no Results/DataPoints/Rows list under Data. '
+        f'Top-level keys: {list(doc.keys())}, Data keys: {list(data.keys())}'
     )
     return []  # unreachable
 

@@ -8,10 +8,7 @@ description: >
   Platform note: runs without an authenticated tenant — commands will
   fail with auth errors. That is acceptable; what matters is correct
   command invocation with correct flags.
-tags: [uipath-admin, smoke, mode:diagnose, authz, check-access]
-
-run_limits:
-  expected_turns: 4
+tags: [uipath-admin, smoke, authz, check-access]
 
 initial_prompt: |
   What can the user with id b44fc962-d544-4c99-b520-71121070ec17 do

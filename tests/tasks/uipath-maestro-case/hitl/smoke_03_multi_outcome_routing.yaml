@@ -6,6 +6,13 @@ description: >
   `IF` expressions on the same source stage, and that both downstream
   stages have correct entry conditions.
 tags: [uipath-maestro-case, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  max_turns: 110
+  turn_timeout: 600
+
 initial_prompt: |
   Create a UiPath Case Management project named "LeaveRequestCase" with this
   shape:
@@ -85,10 +92,10 @@ initial_prompt: |
   | selected-tasks-completed("Review Leave Request") | approved == true | exit-only | Yes |
   | selected-tasks-completed("Review Leave Request") | approved == false | exit-only | No |
 
-  #### Tasks
-  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
-  |---|---------|-----------|------|----------|---------------|---------|-----|
-  | 1 | `review.reviewLeaveRequest` | Review Leave Request | action | Yes | No | Manager | — |
+  #### Stage Task Summary
+  | # | Task ID | Task | Type | Owner |
+  |---|---|---|---|---|
+  | 1 | `review.reviewLeaveRequest` | Review Leave Request | action | Manager |
 
   ##### Task 1.1: Review Leave Request (`review.reviewLeaveRequest`)
 
@@ -126,7 +133,7 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
+  #### Stage Task Summary
   (none)
 
   ### Stage 3: Rejected (`rejected`)
@@ -144,7 +151,7 @@ initial_prompt: |
   |---|---|---|---|
   | required-tasks-completed | - | exit-only | Yes |
 
-  #### Tasks
+  #### Stage Task Summary
   (none)
   ```
 
@@ -197,8 +204,8 @@ success_criteria:
     description: "Both branch expressions present on Review's exits"
     path: "LeaveRequestCase/LeaveRequestCase/caseplan.json"
     includes:
-      - "vars.approved === true"
-      - "vars.approved === false"
+      - "approved == true"
+      - "approved == false"
     weight: 2.0
     pass_threshold: 1.0
 
@@ -223,13 +230,3 @@ success_criteria:
         expected: "approved"
     weight: 2.0
     pass_threshold: 0.75
-
-post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
-    timeout: 120
-
-run_limits:
-  expected_turns: 69
-  task_timeout: 900
-  max_turns: 120
-  turn_timeout: 900

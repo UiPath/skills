@@ -46,35 +46,6 @@ def find_call(tree: ast.Module, func_name: str) -> ast.Call | None:
     return None
 
 
-def module_str_constants(tree: ast.Module) -> dict[str, str]:
-    """Map module-level `NAME = "literal"` assignments to their string value."""
-    consts: dict[str, str] = {}
-    for node in tree.body:
-        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    consts[target.id] = node.value.value
-    return consts
-
-
-def resolve_str(node: ast.AST | None, consts: dict[str, str]) -> str | None:
-    """Resolve a string literal or a module-level string constant reference."""
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
-    if isinstance(node, ast.Name) and node.id in consts:
-        return consts[node.id]
-    return None
-
-
-def imports_from(tree: ast.Module, module: str, name: str) -> bool:
-    """True if `tree` contains `from <module> import <name>` — single- or multi-line."""
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module == module:
-            if any(alias.name == name for alias in node.names):
-                return True
-    return False
-
-
 def main() -> None:
     if not ROOT.is_dir():
         fail(f"project directory {ROOT} does not exist")
@@ -88,8 +59,8 @@ def main() -> None:
     workflows = cfg.get("workflows") or cfg.get("graphs") or {}
     if not workflows:
         fail("llama_index.json has no `workflows` entries")
-    if not any("main.py:" in str(v) for v in workflows.values()):
-        fail(f"llama_index.json workflows do not point at main.py: {workflows}")
+    if not any("./main.py" in str(v) for v in workflows.values()):
+        fail(f"llama_index.json workflows do not point at ./main.py: {workflows}")
     print("OK: llama_index.json points at a workflow in main.py")
 
     if not MAIN.is_file():
@@ -100,15 +71,15 @@ def main() -> None:
     except SyntaxError as exc:
         fail(f"main.py has a syntax error: {exc}")
 
-    if not imports_from(tree, "llama_index.core.workflow", "Workflow"):
+    if not re.search(r"from\s+llama_index\.core\.workflow\s+import\s+[^\n]*\bWorkflow\b", text):
         fail("main.py does not import `Workflow` from `llama_index.core.workflow`")
-    if not imports_from(tree, "llama_index.core.workflow", "step"):
+    if not re.search(r"from\s+llama_index\.core\.workflow\s+import\s+[^\n]*\bstep\b", text):
         fail("main.py does not import `step` from `llama_index.core.workflow`")
     if not re.search(r"@step\b", text):
         fail("main.py has no `@step` decorator — the workflow nodes must be marked with @step")
     print("OK: LlamaIndex Workflow shape (Workflow import + @step decorator) present")
 
-    if not imports_from(tree, "uipath_llamaindex.query_engines", "ContextGroundingQueryEngine"):
+    if not re.search(r"from\s+uipath_llamaindex\.query_engines\s+import\s+[^\n]*\bContextGroundingQueryEngine\b", text):
         fail(
             "main.py does not import `ContextGroundingQueryEngine` from "
             "`uipath_llamaindex.query_engines`. That is the UiPath RAG primitive "
@@ -121,9 +92,8 @@ def main() -> None:
         fail("no `ContextGroundingQueryEngine(...)` call site found")
     kwargs = {kw.arg: kw.value for kw in call.keywords if kw.arg is not None}
     name_node = kwargs.get("index_name")
-    consts = module_str_constants(tree)
-    if resolve_str(name_node, consts) != "hr-policy":
-        got = resolve_str(name_node, consts) or getattr(name_node, "value", name_node)
+    if name_node is None or not (isinstance(name_node, ast.Constant) and name_node.value == "hr-policy"):
+        got = getattr(name_node, "value", name_node)
         fail(
             f"`ContextGroundingQueryEngine(index_name=...)` resolves to {got!r}, "
             "expected 'hr-policy' (the index the user named in the prompt)"

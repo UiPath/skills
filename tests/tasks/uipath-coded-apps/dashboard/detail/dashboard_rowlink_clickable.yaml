@@ -1,0 +1,41 @@
+task_id: uipath-coded-apps-dashboard-rowlink-clickable
+description: >
+  Regression guard for the rowLink registry-default fix. The cataloged agent
+  compliance report ships its rowLink in the registry `defaults` (not the
+  intent). The generated table widget must wire the click handler from that
+  default — ROW_LINK_KEY resolved to a non-empty key (e.g. 'agentName') and an
+  onRowClick handler — and a keyed detail view file must be generated. Before
+  the fix the default rowLink rendered a non-clickable table with a dead route.
+tags: [uipath-coded-apps, integration, dashboard, feature:detail-views, mode:build]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+initial_prompt: |
+  Build me an agent compliance dashboard: a table of agents I can click to
+  open each agent's latest governance report.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The generated table widget wires the click handler from the default rowLink
+  # (non-empty ROW_LINK_KEY + onRowClick), and a keyed detail view is generated.
+  - type: run_command
+    description: "Clickable widget (non-empty ROW_LINK_KEY + onRowClick) and a generated *DetailView.tsx"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 1 --min-widgets 1 --require-rowlink --require-detailview
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

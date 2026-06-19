@@ -1,14 +1,14 @@
 task_id: skill-ixp-list-projects-smoke
 description: >
-  Smoke: agent picks `uip ixp projects list --output json` to
-  enumerate IXP projects on the tenant.
+  Skill-guided evaluation: agent uses the uipath-ixp skill to list IXP
+  projects on the tenant. Tests whether the skill teaches the correct CLI
+  namespace (`uip ixp projects list`) and the `--output json` convention.
 
-  Harness is unauthenticated; CLI calls fail with auth errors.
-  Grades command shape, not wire effect.
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip ixp` commands that hit the service will fail with an auth error.
+  That is acceptable — what matters is that the agent invokes the correct
+  command with the correct flags.
 tags: [uipath-ixp, smoke, lifecycle:discover]
-
-run_limits:
-  expected_turns: 4
 
 initial_prompt: |
   A document automation engineer wants to see every IXP project on the

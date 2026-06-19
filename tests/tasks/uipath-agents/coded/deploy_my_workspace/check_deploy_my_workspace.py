@@ -7,9 +7,9 @@ deployment guide flags as required (`name`, `version`, `description`,
 `authors`). Without `authors`, packaging fails with `Project authors
 cannot be empty`.
 
-This script focuses on the file artifacts produced by pack/deploy;
-that the deploy command ran is graded separately by a
-`command_executed` criterion in the YAML.
+The `invoke` command's signal is captured by a `command_executed`
+criterion in the YAML — this script focuses on the file artifacts
+produced by pack/deploy.
 
 Checks:
   1. `deploy-smoke/pyproject.toml` has `name`, `version`,

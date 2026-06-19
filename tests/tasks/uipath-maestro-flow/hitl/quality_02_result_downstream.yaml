@@ -3,11 +3,16 @@ description: >
   Quality test: agent correctly references the HITL node's output via
   $vars.<nodeId>.output in a downstream node. Tests that the agent knows
   the output variable path and wires it into a decision or script node.
-tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
 
 run_limits:
-  expected_turns: 30
-  max_turns: 65
+  max_turns: 47
+  turn_timeout: 900
+
 initial_prompt: |
   Build a UiPath Flow named "ExpenseApproval" that:
 
@@ -18,9 +23,7 @@ initial_prompt: |
        - Outcomes: Approve (primary), Reject
   3. Script node — reads the reviewer's decision from the HITL output and
      logs: "Decision: <approved value>, Comments: <comments value>"
-     The script must reference the HITL output via $vars.<nodeId>.output —
-     e.g. $vars.<nodeId>.output.approved and $vars.<nodeId>.output.comments,
-     where <nodeId> is the HITL node's id.
+     The script must reference the HITL output via the correct runtime variable path.
   4. End node
 
   Wire: Trigger -> HITL ->|completed| Script -> End

@@ -24,8 +24,6 @@ defaults:
         - UIPATH_CLI_TENANT_NAME
         - UIPATH_CLI_TENANT_ID
         - TRACES_SMOKE_PROCESS_KEY
-        - E2E_PROCESS_KEY
-        - E2E_LONG_PROCESS_KEY
       extra_mounts:
         - ~/.uipath:/.uipath:rw
 
@@ -45,7 +43,7 @@ defaults:
   # wire cleanup_solutions.py into their own post_run — that must run before
   # this step (still needs npm-installed CLIs).
   post_run:
-    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+    - command: "rm -rf node_modules .npm-prefix"
       timeout: 30
 
 variants:
