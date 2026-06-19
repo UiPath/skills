@@ -12,10 +12,9 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  Create a new IXP project named ap-invoices from the documents in the local
-  folder ./invoices/, and let IXP suggest the taxonomy automatically from
-  those documents. We want to extract the vendor, invoice number, invoice
-  date, and total.
+  Create an IXP project named ap-invoices from the invoices in ./invoices/,
+  and let IXP suggest the taxonomy. I want to extract vendor, invoice number,
+  invoice date, and total.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
