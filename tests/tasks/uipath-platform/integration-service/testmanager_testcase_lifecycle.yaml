@@ -1,85 +1,96 @@
+# Data-grounded CRUD coverage (self-seeding round-trip). skip:false, integration tier
+# -> runs in nightly (codereval has a TM connection), NOT the required PR smoke gate.
+# pre_run seeds a unique name; the agent creates the TestCase with it, reads it back,
+# and check.py asserts retrieved == created (a real round-trip through the connector,
+# not just invocation). Self-cleaning (deletes at the end).
 task_id: skill-platform-is-testmanager-testcase-lifecycle
 description: >
-  Coverage test: agent uses the uipath-platform skill to exercise every UiPath
-  Test Manager connector activity on the TestCase object through the `uip is`
-  surface — create, get, update, delete a test case, plus execute test cases.
-  Offline (command-shape) grading; runs in CI without a live connection. Verified
-  against a live tenant (2026-06-15): TestCase.Create = POST /v2/{ProjectId}/testcases
-  (required `name`).
+  Data-grounded coverage: agent exercises the UiPath Test Manager TestCase
+  operations through the uipath-uipath-testmanager connector ('uip is resources
+  run'), creating a uniquely-seeded record and verifying the create->read
+  round-trip — plus invoking every operation in the group for coverage.
 tags: [uipath-platform, integration, integration-service, resources, execute]
-
-run_limits:
-  expected_turns: 24
 
 sandbox:
   driver: tempdir
   python: {}
   node: {}
 
+run_limits:
+  expected_turns: 28
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/_tm_shared/seed.py"
+    timeout: 30
+
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 
-  Exercise the full set of UiPath Test Manager TestCase operations through
-  UiPath Integration Service, using connector `uipath-uipath-testmanager`. Run
-  the matching `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
+  You are connected to a live tenant. Read seed.json — it has a unique `name` and
+  a `project_key`. Using the UiPath Test Manager Integration Service connector
+  (`uipath-uipath-testmanager`), exercise the full TestCase operation set via
+  `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
 
-  - Create a Test Case   (object `TestCase`, name "IS Coverage - TC")
-  - Get the Test Case    (object `TestCase`)
-  - Update the Test Case (object `TestCase`)
-  - Delete the Test Case (object `TestCase`)
-  - Execute test cases   (object `ExecuteTestCases`)
+  1. Create a TestCase named exactly that `name` under that project; capture the new `Id`.
+  2. Get it back by its `Id`.
+  3. Write `result.json` with: `created_name` (the name you sent), `retrieved_name`
+     (the name field returned by Get), and `id` (the captured Id).
+  4. Update the Test Case (e.g. change its description).
+  5. Execute the test case(s).
+  Finally, delete the TestCase you created to clean up.
 
-  Important:
-  - The `uip` CLI is available but NOT connected to a live tenant. Commands will
-    fail with auth errors — expected. Run each once; do NOT retry or login.
-  - Use `--output json` and `--connection-id` (placeholder if needed) on resource
-    commands; use placeholder ids/bodies where prior output would be needed.
+  Use `--output json` and `--connection-id` on every resource command.
+
+  Do NOT ask for approval. Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed
-    description: "Create Test Case (`uip is resources run create uipath-uipath-testmanager TestCase`)"
+    description: "Create Test Case"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Get Test Case (`uip is resources run get uipath-uipath-testmanager TestCase`)"
+    description: "Get Test Case"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Update Test Case (`uip is resources run update uipath-uipath-testmanager TestCase`)"
+    description: "Update Test Case"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Delete Test Case (`uip is resources run delete uipath-uipath-testmanager TestCase`)"
+    description: "Delete Test Case"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Execute Test Cases (`... run create uipath-uipath-testmanager ExecuteTestCases`)"
+    description: "Execute Test Cases"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?ExecuteTestCases'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
     description: "Used --output json on resource commands"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data-grounded: retrieved name == created (seeded) name — real round-trip through the connector"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/_tm_shared/check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0

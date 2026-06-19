@@ -1,102 +1,112 @@
+# Data-grounded CRUD coverage (self-seeding round-trip). skip:false, integration tier
+# -> runs in nightly (codereval has a TM connection), NOT the required PR smoke gate.
+# pre_run seeds a unique name; the agent creates the TestSet with it, reads it back,
+# and check.py asserts retrieved == created (a real round-trip through the connector,
+# not just invocation). Self-cleaning (deletes at the end).
 task_id: skill-platform-is-testmanager-testset-lifecycle
 description: >
-  Coverage test: agent uses the uipath-platform skill to exercise every UiPath
-  Test Manager connector activity on the TestSet object through the `uip is`
-  surface — create, get, update, delete a test set, assign test cases to it, read
-  its assigned test cases, and execute the test set. Offline (command-shape)
-  grading; runs in CI without a live connection.
+  Data-grounded coverage: agent exercises the UiPath Test Manager TestSet
+  operations through the uipath-uipath-testmanager connector ('uip is resources
+  run'), creating a uniquely-seeded record and verifying the create->read
+  round-trip — plus invoking every operation in the group for coverage.
 tags: [uipath-platform, integration, integration-service, resources, execute]
-
-run_limits:
-  expected_turns: 32
 
 sandbox:
   driver: tempdir
   python: {}
   node: {}
 
+run_limits:
+  expected_turns: 28
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/_tm_shared/seed.py"
+    timeout: 30
+
 initial_prompt: |
   Before starting, load the uipath-platform skill and follow its workflow.
 
-  Exercise the full set of UiPath Test Manager TestSet operations through UiPath
-  Integration Service, using connector `uipath-uipath-testmanager`. Run the
-  matching `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
+  You are connected to a live tenant. Read seed.json — it has a unique `name` and
+  a `project_key`. Using the UiPath Test Manager Integration Service connector
+  (`uipath-uipath-testmanager`), exercise the full TestSet operation set via
+  `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
 
-  - Create a Test Set    (object `TestSet`)
-  - Get the Test Set     (object `TestSet`)
-  - Update the Test Set  (object `TestSet`)
-  - Delete the Test Set  (object `TestSet`)
-  - Assign test cases to a test set (object `AssignTestCasesToTestSet`)
-  - List the test cases assigned to a test set (object `GetAssignedTestCasesForTestSet`)
-  - Execute the test set (object `ExecuteTestSet`)
+  1. Create a TestSet named exactly that `name` under that project; capture the new `Id`.
+  2. Get it back by its `Id`.
+  3. Write `result.json` with: `created_name` (the name you sent), `retrieved_name`
+     (the name field returned by Get), and `id` (the captured Id).
+  4. Update the Test Set (e.g. change its description).
+  5. Assign test cases to the Test Set.
+  6. List the test cases assigned to the Test Set.
+  7. Execute the Test Set.
+  Finally, delete the TestSet you created to clean up.
 
-  Important:
-  - The `uip` CLI is available but NOT connected to a live tenant. Commands will
-    fail with auth errors — expected. Run each once; do NOT retry or login.
-  - Use `--output json` and `--connection-id` (placeholder if needed); placeholder
-    ids/bodies where prior output would be needed.
+  Use `--output json` and `--connection-id` on every resource command.
+
+  Do NOT ask for approval. Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed
-    description: "Create Test Set (`... run create uipath-uipath-testmanager TestSet`)"
+    description: "Create Test Set"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Get Test Set (`... run get uipath-uipath-testmanager TestSet`)"
+    description: "Get Test Set"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Update Test Set (`... run update uipath-uipath-testmanager TestSet`)"
+    description: "Update Test Set"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Delete Test Set (`... run delete uipath-uipath-testmanager TestSet`)"
+    description: "Delete Test Set"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestSet'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Assign Test Cases to Test Set (`... run create uipath-uipath-testmanager AssignTestCasesToTestSet`)"
+    description: "Assign Test Cases to Test Set"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?AssignTestCasesToTestSet'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Get Assigned Test Cases for Test Set (`... run list uipath-uipath-testmanager GetAssignedTestCasesForTestSet`)"
+    description: "Get Assigned Test Cases for Test Set"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAssignedTestCasesForTestSet'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
-    description: "Execute Test Set (`... run create uipath-uipath-testmanager ExecuteTestSet`)"
+    description: "Execute Test Set"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?ExecuteTestSet'
     min_count: 1
-    weight: 1.5
+    weight: 1.0
     pass_threshold: 1.0
-
   - type: command_executed
     description: "Used --output json on resource commands"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data-grounded: retrieved name == created (seeded) name — real round-trip through the connector"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/_tm_shared/check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
     pass_threshold: 1.0
