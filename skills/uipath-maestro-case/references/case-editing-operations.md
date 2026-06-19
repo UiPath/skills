@@ -316,6 +316,19 @@ The task's source resource (action-app / agent / process / api-workflow / connec
 6. **Connector tasks only** — if connection/folder bindings changed, regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14).
 7. Edit — narrow slices targeting the task's `data` (and any consumer / bindings slices). Never whole-file Write. Validate at the section boundary.
 
+### Repoint a non-connector task at a different resource
+
+Swap which process / agent / RPA / api-workflow / case-management resource a task runs. The node references its resource indirectly — `data.name` / `data.folderPath` are `=bindings.<id>` pointers into top-level `bindings[]` ([process impl-json](plugins/tasks/process/impl-json.md), [bindings impl-json](plugins/variables/bindings/impl-json.md)). The new resource almost always has a different I/O schema, so this is a **superset of § Re-sync a task after its source schema changed** plus a binding swap. Keep the task `id` / `elementId` / `entryConditions` so references stay valid.
+
+1. **Re-resolve the new resource** — `uip maestro case registry pull --force`, then search the cache files ([registry-discovery.md](registry-discovery.md)) for the new name + folder. Capture its `entityKey`, resolved `name`, and `folders[0].fullyQualifiedName` (the resolved folder path — never the raw SDD folder). Record the swap in `registry-resolved.json`.
+2. **Swap the resource bindings — respect dedup.** The task's two binding entries (`propertyAttribute` `name` / `folderPath`) share `resourceKey = <folderPath>.<name>`.
+   - Old pair referenced **only** by this task → update each entry's `default` (new name / folder) and `resourceKey` (`<newFolderPath>.<newName>`) in place.
+   - Old pair **shared** with other tasks (deduped by `default + resource + resourceKey`) → do NOT mutate in place. Create or reuse a binding pair for the new resource, repoint this task's `data.name` / `data.folderPath` to the new ids, then prune the old pair if no task references it any longer.
+3. **Re-sync the schema.** Follow § Re-sync a task after its source schema changed steps 1–5 against the new resource: `uip maestro case tasks describe --type <type> --id <newEntityKey> --output json`, update `data.inputs` / `data.outputs`, re-bind inputs, repoint downstream consumers of dropped outputs.
+4. **If the task type also changes** (e.g. process → agent): update the node `type`, the bindings' `resource` / `resourceSubType` per the new type's [impl-json](plugins/tasks/), and rebuild `data` per that type's recipe — still keeping `id` / `elementId` / `entryConditions`.
+5. Regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14) — the swap changes which Orchestrator resource declaration the case needs.
+6. Edit — narrow slices for the task `data`, the bindings array, and any consumer slices. Never whole-file Write. Validate at the section boundary.
+
 ### Move a task to a different stage or lane
 
 Relocate a task within the case. **Keep the task `id`** so conditions and cross-task bindings referencing it stay valid — but every `elementId` is stage-scoped and MUST be recomputed.
