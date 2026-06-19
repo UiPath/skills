@@ -358,6 +358,8 @@ Read `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs`. This file conta
 >
 > A pure-CLI flow with no Studio Desktop attached will not produce `ObjectRepository.cs`. Plan for a Studio Desktop step in any workflow that depends on `Descriptors.*`.
 
+When `ObjectRepository.cs` is missing or stale (see above), enumerate the project's registered apps/screens/elements as JSON with `uip rpa object-repository get` ([cli-reference.md § object-repository](cli-reference.md#object-repository)) — it reads the saved Object Repository without a Studio Desktop regen. Use it to confirm a screen/element exists before authoring; the strongly-typed `Descriptors.<App>.<Screen>.<Element>` reference still comes from `ObjectRepository.cs`.
+
 **Important:** Add the ObjectRepository using statement:
 ```csharp
 using <ProjectNamespace>.ObjectRepository;
@@ -366,6 +368,8 @@ using <ProjectNamespace>.ObjectRepository;
 #### Step 2 — Check UILibrary NuGet packages
 
 Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa packages inspect`.
+
+To list the apps/screens/elements a library actually exposes — not just its assembly API — read its Object Repository directly with `uip rpa object-repository get-library` ([cli-reference.md § object-repository](cli-reference.md#object-repository)), pointing at the library `.nupkg` path(s).
 
 For UILibrary packages, use the **package** namespace, not the project namespace:
 ```csharp
