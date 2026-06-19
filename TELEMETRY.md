@@ -65,6 +65,9 @@ sends becomes an event property.
 | `toolName` | `Skill`, `Bash` | Claude Code tool |
 | `toolUseId` | `toolu_01ABC` | Unique per call — correlation key + ordering tiebreaker |
 | `sessionId` | `b3f1...` | Claude Code `session_id` — the coding-agent session; session correlation key |
+| `subagentModel` | `claude-sonnet-4-6` | From `tool_response.resolvedModel` — model resolved for a spawned subagent. Empty when absent |
+| `subagentType` | `general-purpose` | From `tool_input.subagent_type` — requested subagent type on an Agent-tool call. Empty when absent |
+| `agentType` | `Explore` | From the top-level `agent_type` — type of the running subagent. Empty in the main session |
 | `skillName` | `uipath:uipath-platform` | `Skill` calls only |
 | `uipSubcommand` | `solution publish` | Derived first 1–2 verbs of a `uip` command — never the full command line |
 | `fileExtension` | `.flow` | File-tool calls only |

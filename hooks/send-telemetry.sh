@@ -158,6 +158,14 @@ effort_level="$(printf '%s' "$payload" \
   | grep -oE '"effort"[[:space:]]*:[[:space:]]*\{[^}]*"level"[[:space:]]*:[[:space:]]*"[^"]*"' \
   | grep -oE '"level"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
 
+# Subagent fields, extracted by key name (empty when the payload omits them):
+#   tool_response.resolvedModel -> subagentModel (model resolved for the spawn)
+#   tool_input.subagent_type    -> subagentType  (requested subagent type)
+#   agent_type (top-level)      -> agentType     (type of the running subagent)
+subagent_model="$(json_str resolvedModel)"
+subagent_type="$(json_str subagent_type)"
+agent_type="$(json_str agent_type)"
+
 # Sanitize free-ish text to keep the hand-built JSON valid and bounded. Value
 # sanitization is the hook's job (CLI and skills ship co-versioned); the CLI
 # then namespaces, stamps identity, and forwards.
@@ -174,6 +182,9 @@ effort_level="$(san "$effort_level")"
 skills_ver="$(san "$skills_ver")"
 tool_use_id="$(san "$tool_use_id")"
 session_id="$(san "$session_id")"
+subagent_model="$(san "$subagent_model")"
+subagent_type="$(san "$subagent_type")"
+agent_type="$(san "$agent_type")"
 
 # --- hand off to the CLI telemetry tracker ---------------------------------
 # Build a flat key:value JSON object and pipe it to `uip track`. The CLI hard-
@@ -186,7 +197,7 @@ session_id="$(san "$session_id")"
 # Detached subshell ( cmd & ) survives this hook's exit so the agent never
 # waits. `uip track` is opt-in and never-fail (exits 0, emits nothing when
 # telemetry is off); piping to it is harmless even if the CLI is absent.
-( printf '%s' "{\"toolName\":\"$tool\",\"skillName\":\"$skill_name\",\"uipSubcommand\":\"$uip_subcommand\",\"fileExtension\":\"$file_ext\",\"environment\":\"$env_name\",\"baseUrl\":\"$base_url\",\"outcome\":\"$outcome\",\"permissionMode\":\"$permission_mode\",\"effortLevel\":\"$effort_level\",\"skillsVersion\":\"$skills_ver\",\"toolUseId\":\"$tool_use_id\",\"sessionId\":\"$session_id\",\"durationMs\":$dur_json}" \
+( printf '%s' "{\"toolName\":\"$tool\",\"skillName\":\"$skill_name\",\"uipSubcommand\":\"$uip_subcommand\",\"fileExtension\":\"$file_ext\",\"environment\":\"$env_name\",\"baseUrl\":\"$base_url\",\"outcome\":\"$outcome\",\"permissionMode\":\"$permission_mode\",\"effortLevel\":\"$effort_level\",\"skillsVersion\":\"$skills_ver\",\"toolUseId\":\"$tool_use_id\",\"sessionId\":\"$session_id\",\"subagentModel\":\"$subagent_model\",\"subagentType\":\"$subagent_type\",\"agentType\":\"$agent_type\",\"durationMs\":$dur_json}" \
     | uip track >/dev/null 2>&1 & )
 
 exit 0
