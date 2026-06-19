@@ -1,7 +1,6 @@
-task_id: skill-ixp-group-instructions-smoke
+task_id: skill-ixp-update-group-instructions-smoke
 description: >
-  Smoke: agent updates a field group's instructions only — its fields are
-  untouched.
+  Smoke: agent updates a field group's instructions.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

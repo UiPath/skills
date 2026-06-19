@@ -13,8 +13,8 @@ run_limits:
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, create a new field group named
-  "Subscriber information" with fields: name, surname, address, bank account,
-  phone number, customer unique identifier.
+  "Subscriber information" with fields: surname, address, bank account, and
+  phone number.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
@@ -26,7 +26,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the group with multiple fields in one `groups add … --fields` call (batch)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+groups\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Subscriber information)(?=.*--fields)(?=.*surname)(?=.*address)(?=.*phone number).*'
+    command_pattern: 'uip\s+ixp\s+groups\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Subscriber information)(?=.*--fields)(?=.*surname)(?=.*address)(?=.*bank account)(?=.*phone number).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
