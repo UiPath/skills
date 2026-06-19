@@ -24,7 +24,7 @@ success_criteria:
   - type: command_executed
     description: "Agent renamed the group via `groups rename … --new-name \"Consumption\"`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+groups\s+rename\b(?=.*Consumption).*'
+    command_pattern: 'uip\s+ixp\s+groups\s+rename\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*rename me 2)(?=.*Consumption).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

@@ -27,7 +27,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the group via `groups add … --name \"Subscriber information\" … --fields`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+groups\s+add\b(?=.*Subscriber information)(?=.*--fields).*'
+    command_pattern: 'uip\s+ixp\s+groups\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Subscriber information)(?=.*--fields).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
