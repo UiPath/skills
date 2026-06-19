@@ -1,8 +1,7 @@
 task_id: skill-ixp-move-tag-smoke
 description: >
   Smoke: agent moves the `live` tag from one version to another by
-  re-publishing the target with `--tag live`
-  (`uip ixp projects publish <Name> --model-version 16 --tag live`).
+  re-publishing the target with `--tag live`.
   Trap: a tag is a single pointer — moving it does NOT require untag first,
   and there is no retag command. The agent must not untag/retag.
 
