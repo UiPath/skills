@@ -13,7 +13,7 @@ Upload automation packages, bind them as processes, start jobs, and monitor exec
 
 ## Prerequisites
 
-- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
+- Authenticated (`uip login`)
 - Target folder exists with machines assigned (see [setup-environment.md](setup-environment.md))
 - Automation package (.nupkg) built and ready to upload
 
@@ -44,8 +44,6 @@ uip or packages upload ./MyProcess.1.0.0.nupkg --feed-id <feed-key> --output jso
 
 Verify the upload and discover entry points before creating a process.
 
-> **Feeds:** `packages get`, `packages versions`, and `processes create` look in the **tenant** feed by default. If the package lives in a folder-hierarchy feed (a standard folder with its own feed), pass `--feed-id <feed-key>` — otherwise these return empty / 404 even though the package exists. (`processes create` itself no longer pre-checks the feed, so it succeeds in a folder feed regardless.)
-
 ```bash
 # Search for the uploaded package
 uip or packages list --search "MyProcess" --output json
@@ -72,9 +70,6 @@ Entry points show which workflows inside the package can be executed. Multi-entr
 Bind the uploaded package to a folder as a runnable process:
 
 ```bash
-# List published processes in a known folder path
-uip or processes list --folder-path "Production" --output json
-
 uip or processes create --name "MyProcess" \
   --package-key "MyProcess" \
   --package-version "1.0.0" \
@@ -88,7 +83,7 @@ Key options:
 |---|---|
 | `--entry-point <path>` | Required for multi-entry-point packages |
 | `--auto-update` / `--no-auto-update` | Auto-pick the latest package version on deploy |
-| `--job-priority <Low\|Normal\|High>` | Default execution priority. The CLI sets the matching `SpecificPriorityValue` band (Low=25, Normal=45, High=65) — the API derives the band from that value, so the change actually applies. |
+| `--job-priority <Low\|Normal\|High>` | Default execution priority |
 | `--specific-priority <1-100>` | Numeric priority override (mutually exclusive with `--job-priority`). Use when you need fine-grained ordering inside the same priority bucket. |
 | `--robot-size <Small\|Standard\|Medium\|Large>` | Cloud robot sizing for serverless runtimes |
 | `--input-arguments <json>` | Default input arguments (merged with per-job inputs) |
@@ -96,7 +91,7 @@ Key options:
 | `--tags <list>` | Comma-separated tags for filtering |
 | `--hidden-for-attended` / `--visible-for-attended` | Toggle visibility to attended robot users |
 | `--auto-create-triggers` / `--no-auto-create-triggers` | Auto-create connected triggers on deploy |
-| `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <id>`) | Job retention policy. `--retention-period` must be 1-180 (validated client-side). |
+| `--retention-period <days>` + `--retention-action <Delete\|Archive\|None>` (+ `--retention-bucket <id>`) | Job retention policy |
 | `--stale-retention-period <days>` + `--stale-retention-action <Delete\|Archive\|None>` | Stale-job retention policy |
 
 > The runtime kind (Unattended / Headless / NonProduction / AgentService / Serverless) is **not** a process-level setting; it's chosen per-job on `jobs start --runtime-type`. The process binds the package to a folder; runtime selection happens at execution time.
@@ -113,7 +108,7 @@ uip or processes resources <process-key-guid> --output json
 
 # Edit fields after creation. Same flag set as `processes create` minus name/package-key/package-version,
 # plus --healing-agent / --no-healing-agent (Autopilot for Robots toggle).
-uip or processes update <process-key-guid> --description "Updated description" --output json
+uip or processes edit <process-key-guid> --description "Updated description" --output json
 
 # Walk the package version history (every package version this release ever pointed at)
 uip or processes version-history <process-key-guid> --output json
@@ -125,10 +120,10 @@ uip or processes update-version <process-key-guid> --package-version 1.0.2 --out
 uip or processes rollback <process-key-guid> --output json
 
 # Delete the process (release). Package itself stays in the feed.
-uip or processes delete <process-key-guid> --yes --output json
+uip or processes delete <process-key-guid> --output json
 ```
 
-`processes update` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.
+`processes edit` uses `Mapper.Map<ReleaseDto, UiRelease>(dto)` server-side, which means missing fields on the request body are nulled. The CLI works around this by spreading `currentRelease` as the baseline before applying overrides — but if you build the body yourself by hand, `tags`, `arguments`, `videoRecordingSettings`, `targetFramework`, `robotSize`, `resourceOverwrites`, `remoteControlAccess`, `targetRuntime`, `publisherLicense`, etc. will silently get nulled.
 
 ## Step 4: Start Job
 
@@ -146,13 +141,12 @@ uip or jobs start <process-key> --folder-path "Production" \
 
 Key options:
 
-- `--input-arguments <json>` / `--input-file <path>` — pick one. `--input-arguments` inlines a JSON object (validated client-side — invalid JSON is rejected before the call); `--input-file` uploads a file as the job's `InputFile` argument.
-  - **10K character cap on job arguments.** Orchestrator caps serialized input/output arguments at 10,240 characters for classic `StartJob` runs; an oversized output is silently dropped (the consuming workflow receives `null`, the job still reports Successful). `StartAgentJob` (agent runs) is not subject to the same cap in practice. Robot 2025.10.1+ removes the cap entirely ("Support for large input and output arguments"). If you hit it: pass big payloads via a storage bucket / queue item reference, or upgrade the Robot.
+- `--input-arguments <json>` / `--input-file <path>` — pick one. `--input-arguments` inlines a JSON object; `--input-file` uploads a file as the job's `InputFile` argument.
 - `--attachment <[name=]path>` — upload one or more files and attach them to the job. Repeat the flag for multiple. Pair with `--attachment-id <guid>` to reuse an attachment that was previously uploaded.
 - `--runtime-type <type>` — `Unattended`, `Headless`, `NonProduction`, `AgentService`, or `Serverless`. Picks the runtime kind the scheduler will use.
-- `--strategy <strategy>` — one of `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (use `--user-keys` / `--machine-keys`), or `JobsCount`. Validated client-side. `--jobs-count` must be a whole number greater than 0.
+- `--strategy <strategy>` — `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (use `--user-keys` / `--machine-keys`).
 - `--user-keys <guids>` / `--machine-keys <guids>` — comma-separated GUIDs to pin the job to specific identities. With `--strategy ModernJobsCount` they restrict the candidate pool; with `Specific` they're required.
-- `--healing-agent` — enable Autopilot for Robots (Healing Agent) just for this job, regardless of the process-level `--healing-agent` setting on `processes update`. Useful for one-off self-healing without flipping the process default.
+- `--healing-agent` — enable Autopilot for Robots (Healing Agent) just for this job, regardless of the process-level `--healing-agent` setting on `processes edit`. Useful for one-off self-healing without flipping the process default.
 - `--reference <text>` — user-set reference (free-form string) attached to the job. Useful for correlation with external systems.
 - `--environment-variables <json>` — JSON object of per-job environment variables. Merged on top of folder-/process-level env.
 - `--run-as-me` — run under the caller's identity instead of resolving an unattended robot account in the folder.
@@ -173,22 +167,17 @@ uip or jobs list --state Running --folder-path "Production" --output json
 
 # Filter by process name and date range
 uip or jobs list --process-name "MyProcess" --folder-path "Production" --output json
-
-# List jobs across all accessible folders
-uip or jobs list --all-folders --state Faulted --output json
 ```
-
-`jobs list` requires `--folder-path`, `--folder-key`, or `--all-folders` — a bare `jobs list` is rejected. (Older CLI versions listed tenant-wide by default; pass `--all-folders` for that behavior.)
 
 ## Step 6: Get Logs
 
 ```bash
 uip or jobs logs <job-key> --output json                  # All logs
 uip or jobs logs <job-key> --level Error --output json    # Error logs only
-uip or jobs logs <job-key> --export --destination ./logs.csv  # Export to CSV file
+uip or jobs logs <job-key> --export -o ./logs.csv         # Export to CSV file
 ```
 
-`--export` writes a CSV file instead of terminal output. Combine with `--destination` (or `-d`) to set the file path. Logs are cross-folder -- no `--folder-path` required.
+`--export` writes a CSV file instead of terminal output. Combine with `-o` to set the output path. Logs are cross-folder -- no `--folder-path` required.
 
 ## Step 7: Get Traces
 
@@ -198,7 +187,7 @@ Retrieve LLM and agentic execution traces for Agent-type processes:
 uip or jobs traces <job-key> --output json
 ```
 
-Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For a standard Process the result is an empty list, and the response adds an `Instructions` note saying so — that's how you tell "no traces recorded" apart from "this isn't an Agent process". For deeper span-level data, use `uip traces spans get [trace-id]` (or `uip traces spans get --job-key <key>`) — see [traces.md](../traces/traces.md).
+Traces are only available for processes that use UiPath Autopilot or Agent capabilities. For deeper span-level data, use `uip traces spans get [trace-id]` (or `uip traces spans get --job-key <key>`) — see [traces.md](../traces/traces.md).
 
 Traces are cross-folder -- no `--folder-path` required.
 
@@ -225,22 +214,18 @@ uip or jobs history <job-key> --output json
 Control running or suspended jobs:
 
 ```bash
-# Stop a running job (SoftStop is best-effort -- a job whose activity ignores
-# the cancellation token can still run to completion)
+# Stop a running job
 uip or jobs stop <job-key> --strategy SoftStop --output json
 
 # Force-kill a job
 uip or jobs stop <job-key> --strategy Kill --output json
 
-# Restart a finished job (any outcome -- faulted, stopped, or successful).
-# Returns the new run in the same { Jobs: [...] } shape as `jobs start`.
+# Restart a faulted or stopped job
 uip or jobs restart <job-key> --output json
 
 # Resume a suspended job with new input
 uip or jobs resume <job-key> --input-arguments '{"approved": true}' --output json
 ```
-
-Jobs are immutable audit records -- there is no `jobs delete`. They age out per the binding process's retention period.
 
 ## Step 11: Manage Processes
 
@@ -254,7 +239,7 @@ uip or processes update-version <process-key> --output json
 uip or processes rollback <process-key> --output json
 
 # Edit process properties
-uip or processes update <process-key> --output json
+uip or processes edit <process-key> --output json
 ```
 
 ---
@@ -276,7 +261,7 @@ uip or jobs start <process-key> --folder-path "Finance" \
   --wait-for-completion --timeout 600 --output json
 
 uip or jobs logs <job-key> --level Error --output json
-uip or jobs logs <job-key> --export --destination ./invoice-logs.csv
+uip or jobs logs <job-key> --export -o ./invoice-logs.csv
 ```
 
 ---
@@ -341,4 +326,4 @@ uip or packages download "MyProcess:1.0.0" --destination ./packages/ --output js
 
 - [setup-environment.md](setup-environment.md) — Folder creation, machine assignment, user setup
 - [traces.md](../traces/traces.md) — Deep-dive into LLM/agentic traces and spans
-- Resources (assets, queues, buckets, triggers, webhooks, libraries) → [resources.md](resources.md)
+- Resources (assets, queues, buckets, triggers, webhooks, libraries) → [`uipath-resources`](../resources/resources.md)

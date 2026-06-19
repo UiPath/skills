@@ -16,10 +16,9 @@ All `uip or` commands share a set of cross-cutting options:
 | `--output json` | All commands | Emit structured JSON instead of table output. Always use this when parsing output programmatically. |
 | `--limit <n>` | List commands | Number of items to return (default 50). |
 | `--offset <n>` | List commands | Number of items to skip for pagination. |
-| `--sort-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
+| `--order-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
 | `--all-fields` | Most get/list commands | Return the full API DTO instead of the curated summary. Use when you need a field the curated view drops. Note: curated keys are PascalCase, raw DTO keys are camelCase — the shapes do not share casing. |
 | `--output-filter <expr>` | All commands | JMESPath expression to filter/reshape JSON output (e.g., `--output-filter "Data[].Key"`). |
-| `-y, --yes` | Delete commands | Confirm the irreversible operation. Required — the CLI never prompts; without it the command fails with "Confirmation required". Where a command also has `--force` (e.g. non-empty `queues`/`buckets` delete), `--force` implies `--yes`. |
 
 **Pagination pattern.** List responses include a `Pagination` block with `Returned`, `Limit`, `Offset`, and `HasMore`. When `HasMore` is `true`, increment `--offset` by `--limit` and fetch again. Continue until `HasMore` is `false` or `Returned < Limit`.
 
@@ -93,11 +92,39 @@ The CLI uses GUID keys for all entity references. Numeric IDs are never exposed 
 
 ## REST API Fallback
 
-When the CLI does not cover an operation, you can fall back to the Orchestrator REST API using the access token stored in `~/.uipath/.auth`. Always check `uip or --help` first — most operations are covered by the CLI, and a command is safer and more consistent than hand-rolled REST. Only reach for REST when there is genuinely no command for what you need (and consider reporting the gap so the CLI can cover it).
+When the CLI does not cover an operation, use the Orchestrator REST API directly with a stored token from `~/.uipath/.auth`.
+
+**Base URL pattern:**
+
+```
+${UIPATH_URL}/${UIPATH_ORG_NAME}/${UIPATH_TENANT_NAME}/orchestrator_/odata/
+```
+
+**Auth header:**
+
+```
+Authorization: Bearer <UIPATH_ACCESS_TOKEN>
+X-UIPATH-OrganizationUnitId: <FOLDER_ID>
+```
+
+Always check `uip or --help` and `uip resource --help` first -- most operations are covered by the CLI. Only fall back to REST when there is no CLI command for the operation you need.
+
+**Example -- list triggers (no CLI command yet):**
+
+```bash
+ACCESS_TOKEN=$(cat ~/.uipath/.auth | jq -r '.access_token')
+BASE_URL="https://cloud.uipath.com/myorg/mytenant/orchestrator_/odata"
+
+curl -s -G "${BASE_URL}/ProcessSchedules" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "X-UIPATH-OrganizationUnitId: <FOLDER_ID>" | jq .
+```
+
+Token expiry: re-run `uip login` if you get a 401.
 
 ---
 
 ## Related
 
-- **Resources** (`uip or`) — assets, queues, triggers, buckets, webhooks, libraries → [resources.md](resources.md)
-- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](/uipath:uipath-solution)
+- **Resources** (`uip resource`) — assets, queues, triggers, buckets, webhooks, libraries → [`uipath-resources`](../resources/resources.md)
+- **Solutions** (`uip solution`) — pack, publish, deploy solution packages → [`uipath-solution`](../solution/solution.md)

@@ -27,7 +27,7 @@ Route by file type first, signal second:
 |---|---|---|---|
 | `.csv` | "add columns" / "classify every row" / "enrich vendor addresses" / "MCC categorization" / "1000 rows of structured output" | **BatchTransform** | Coded: [coded/capabilities/batch-transform/planning.md](coded/capabilities/batch-transform/planning.md). Low-code: [lowcode/capabilities/built-in-tools/batch-transform/planning.md](lowcode/capabilities/built-in-tools/batch-transform/planning.md). |
 | `.pdf` / `.txt` | "summarize" / "research across these docs" / "one narrative answer" | **DeepRAG** | Coded: [coded/capabilities/deeprag/planning.md](coded/capabilities/deeprag/planning.md). Low-code: [lowcode/capabilities/built-in-tools/deeprag/planning.md](lowcode/capabilities/built-in-tools/deeprag/planning.md). |
-| pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | Consume: `sdk.context_grounding.unified_search_async` or low-code Context tool — see [coded/capabilities/context-grounding.md](coded/capabilities/context-grounding.md). Create / ingest / inspect the index from the CLI: [uipath-platform/references/context-grounding/index-management.md](../../uipath-platform/references/context-grounding/index-management.md). |
+| pre-built index, no file upload | "search the policy KB" / "look up X in our docs" | **Index search** | `sdk.context_grounding.unified_search_async` or low-code Context tool — see [coded/capabilities/context-grounding.md](coded/capabilities/context-grounding.md). |
 
 ## Surface Selection
 
@@ -49,4 +49,4 @@ These hold regardless of mode or surface:
 3. **Output destination differs by mode.** BatchTransform produces an augmented CSV server-side. Coded resume: the runtime downloads it to the local `destination_path` you supplied. Low-code: it is delivered as an Orchestrator bucket attachment for downstream consumers. DeepRAG returns content (`text` + optional `citations`) inline on the resume value.
 4. **Folder context is required.** Explicit folder key/path or env var. Missing → `400 "A folder is required for this action."`
 5. **Permissions live on the folder.** Coded: the invoking user's role must grant the index permission. Low-code: the agent's runtime identity must have it in the folder where the agent is published. `403 "User is missing required index permissions."` → switch folders (personal workspace is the safe default for self-serve).
-6. **Async / event-driven.** Both modes are long-running. Coded agents use plain `interrupt()` with the matching `Create*` / `Wait*` resume-trigger models from `uipath.platform.common`; low-code agents get this for free via the runtime.
+6. **Async / event-driven.** Both modes are long-running. Coded agents must use `@durable_interrupt` with the matching `Create*` resume-trigger model; low-code agents get this for free via the runtime.

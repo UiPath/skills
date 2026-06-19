@@ -8,27 +8,23 @@ The tenant feed is authoritative for org-published libraries. Do NOT search the 
 
 ## CLI surface
 
-`uip or libraries list`. Returns a curated `Data: [{ Key, Title, Version, Authors }]` (pass `--all-fields` for the full DTO). `Key` is `PackageId:Version` and is always populated. `Title` can be `null`.
+One command, one global filter:
 
 ```bash
-# Server-side name search (contains-match), single keyword:
-uip or libraries list --search Excel --output json
-
-# Full scan, then filter/rank client-side:
-uip or libraries list --limit 500 --output json
+uip resource libraries list --limit 500 --output json
 ```
+
+Returns `Data: [{ Key, Title, Version, Authors }]`. `Key` is `PackageId:Version` and is always populated. `Title` can be `null`.
 
 | Flag | Purpose |
 |------|---------|
-| `-s, --search <term>` | Server-side name contains-match. Single term only — for multi-keyword OR or `Authors` matching, use `--output-filter`. |
-| `--feed-id <id>` | Target a specific feed by ID. Defaults to the tenant feed. |
 | `--limit <N>` | Items per call (default 50). Use 500 to cover most tenants in one call. |
 | `--offset <N>` | Pagination offset. Use only if `Data.length == --limit`. |
-| `--sort-by "<field> <asc\|desc>"` | Sort. Default `Id desc`. |
-| `--all-fields` | Return the full library DTO instead of the curated subset. |
-| `--output-filter "<JMESPath>"` | Client-side filter, evaluated after the API returns. Use for multi-keyword OR, `Authors` matching, or null-`Title` guarding. |
+| `--order-by "<field> <asc\|desc>"` | Sort. Default `Id desc`. |
+| `--output-filter "<JMESPath>"` | Global filter, evaluated client-side after the API returns. |
+| `-t, --tenant <name>` | Override default tenant. |
 
-`--search` is the simplest path for a single name keyword. Use `--output-filter` (below) when you need multi-keyword OR, `Authors`-field matching, or a null-`Title` guard.
+There is **no `--search` flag** and **no `--feed-id` flag** on `libraries list`. Filter via `--output-filter`.
 
 ## JMESPath filter recipe
 
@@ -36,12 +32,12 @@ uip or libraries list --limit 500 --output json
 
 ```bash
 # Single keyword
-uip or libraries list --limit 500 \
+uip resource libraries list --limit 500 \
   --output-filter "[?Title != null && contains(Title, 'Excel')]" \
   --output json
 
 # Multi-keyword OR
-uip or libraries list --limit 500 \
+uip resource libraries list --limit 500 \
   --output-filter "[?Title != null && (contains(Title, 'Common') || contains(Title, 'Shared'))]" \
   --output json
 ```
@@ -53,7 +49,7 @@ For case-insensitive matching, lowercase the keyword in the filter and the field
 For orgs that publish libraries with cryptic Titles but a stable `Authors` value, filter on `Authors` instead of `Title`:
 
 ```bash
-uip or libraries list --limit 500 \
+uip resource libraries list --limit 500 \
   --output-filter "[?Authors != null && contains(Authors, '<OrgName>')]" \
   --output json
 ```
@@ -62,7 +58,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
 
 ## Procedure
 
-1. **Auth preflight.** Run a benign call once: `uip or libraries list --limit 1 --output json`. If `Result == "Failure"` with an auth-related message, surface it and switch to the manual fallback (below). Do NOT retry silently.
+1. **Auth preflight.** Run a benign call once: `uip resource libraries list --limit 1 --output json`. If `Result == "Failure"` with an auth-related message, surface it and switch to the manual fallback (below). Do NOT retry silently.
 2. **Extract keywords** from the source (user prompt, plan tasks, surrounding workflow names). Cap at 6:
    - Org-prefix terms: `Common`, `Shared`, `Utils`, `Helpers`, `<Company>` if known
    - Capability terms: `Excel`, `SAP`, `ServiceNow`, `Salesforce`, `Email`, `PDF`, `SharePoint`, `Outlook`, `Citrix`, etc. — drawn from the activities the project will use
@@ -85,7 +81,7 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
    > 3. **Provide names manually** — name libraries to install even if not yet deployed; flag as `[VERIFY DEPLOYMENT]`
    > 4. **Pause and re-authenticate to a different tenant** — if libraries live elsewhere
 
-6. **Record the user's selection.** For each accepted library, run `uip rpa packages install --packages 'id=<PackageId>,version=<Version>' --output json` to add it to `project.json`. Verify after install with `uip rpa validate --output json`.
+6. **Record the user's selection.** For each accepted library, run `uip rpa packages install --packages '[{"id": "<PackageId>", "version": "<Version>"}]' --output json` to add it to `project.json`. Verify after install with `uip rpa validate --output json`.
 
 ## Skip when
 
@@ -102,13 +98,13 @@ If `uip` is unauthenticated, ask the legacy question:
 > 1. **Skip — no shared libraries** *(recommended)*
 > 2. **Yes — `CommonLibrary`** (the conventional default)
 > 3. **Yes — other** (you name them)
-> 4. **Authenticate first** — run `uip login`, then re-invoke the skill
+> 4. **Authenticate first** — run `uip auth login`, then re-invoke the skill
 
 ## Anti-patterns
 
 1. **Searching the local filesystem first.** Tenant is authoritative; local matches do not indicate org adoption.
-2. **Using `--search` for multi-keyword OR or `Authors` matching.** `--search` is a single-term server-side name contains-match only. For OR across keywords or matching on `Authors`, use `--output-filter`.
-3. **Passing `--feed-id` without a reason.** It defaults to the tenant feed — only set it to target a non-default feed.
+2. **Using `--search`.** That flag does not exist on `uip resource libraries list`. Filter via `--output-filter`.
+3. **Using `--feed-id`.** That flag does not exist on `uip resource libraries list` (it does on `uip or packages list` — different command). The libraries command always targets the default tenant feed.
 4. **Calling `contains(Title, ...)` without `Title != null` guard.** Tenants commonly hold packages with null Title — the call fails fast with `Invalid type: contains() expected ... received type null`.
 5. **Listing all libraries with no `--limit` bump, or paginating past the end.** Default 50 truncates large tenants and silently misses candidates. Use `--limit 500` for a one-shot scan; paginate via `--offset` only if `Data.length == 500`. If `Data.length < --limit` on a paginated call, you have seen the entire feed — stop searching, do not run more filtered queries hoping for hidden matches.
 6. **Auto-installing a candidate.** Library installation modifies `project.json` and project compilability — always confirm via `AskUserQuestion` before invoking `packages install`.

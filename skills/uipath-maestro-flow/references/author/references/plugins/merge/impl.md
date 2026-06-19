@@ -10,7 +10,7 @@
 uip maestro flow registry get core.logic.merge --output json
 ```
 
-Confirm: input port `input` (accepts multiple connections), output port `output`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+Confirm: input port `input` (accepts multiple connections), output port `output`.
 
 ## JSON Structure
 
@@ -18,7 +18,7 @@ Confirm: input port `input` (accepts multiple connections), output port `output`
 {
   "id": "joinBranches",
   "type": "core.logic.merge",
-  "typeVersion": "<DEFINITION_VERSION>",
+  "typeVersion": "1.0",
   "display": { "label": "Join Branches" },
   "inputs": {}
 }

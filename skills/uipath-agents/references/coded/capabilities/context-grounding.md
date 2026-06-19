@@ -17,8 +17,6 @@ Before using context grounding, you must first create an index in your Orchestra
 
 Once indexed, you can reference the index by name in your agent code.
 
-To create, ingest, poll, search, or delete the index from the CLI instead of the Orchestrator UI, see [uipath-platform/references/context-grounding/index-management.md](../../../../uipath-platform/references/context-grounding/index-management.md).
-
 ## Folder Targeting
 
 Context Grounding indexes live in Orchestrator folders. Pass a folder identifier whenever the index is not in the default folder resolved from your auth context — otherwise the service may return `400 FolderKey required`. `ContextGroundingRetriever` accepts `folder_path` or `folder_key`; `ContextGroundingVectorStore` accepts `folder_path`.
@@ -81,9 +79,10 @@ class GraphState(MessagesState):
     query: str
     answer: str | None = None
 
+retriever = ContextGroundingRetriever(index_name="company_docs")
+
 async def retrieve_context(state: GraphState) -> Command:
     """Retrieve relevant documents from context grounding."""
-    retriever = ContextGroundingRetriever(index_name="company_docs", folder_path="Shared")
     documents = await retriever.ainvoke(state["query"])
     context = "\n".join([doc.page_content for doc in documents])
     return Command(update={
@@ -152,7 +151,7 @@ async def search_company_docs(query: str) -> str:
     Returns:
         Relevant documents matching the query
     """
-    retriever = ContextGroundingRetriever(index_name="company_docs", folder_path="Shared")
+    retriever = ContextGroundingRetriever(index_name="company_docs")
     documents = await retriever.ainvoke(query)
     return "\n".join([doc.page_content for doc in documents])
 
@@ -187,7 +186,7 @@ tools = [search_company_docs]
 
 ```python
 async def qa_system(question: str) -> dict:
-    retriever = ContextGroundingRetriever(index_name="faq_docs", folder_path="Shared")
+    retriever = ContextGroundingRetriever(index_name="faq_docs")
     docs = await retriever.ainvoke(question)
 
     if not docs:

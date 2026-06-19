@@ -116,8 +116,8 @@ Fetch the current priority landscape:
 ```bash
 uip gov aops-policy list \
   --product-name "$PRODUCT_NAME" \
-  --sort-by priority \
-  --sort-order asc \
+  --order-by priority \
+  --order-direction asc \
   --output json
 ```
 

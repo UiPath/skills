@@ -35,7 +35,7 @@ Do not derive metadata from stale package files first. Use existing generated fi
    output when parsing command results:
 
    ```bash
-   uip maestro bpmn pack <project-path> <OutputDir> --output json
+   uip maestro bpmn pack <ProjectDir> <OutputDir> --output json
    ```
 
 5. Inspect the package or generated content for:
@@ -131,13 +131,13 @@ JSON schema variables use their CDATA body as the property schema. Strip `$schem
 Generated `bindings_v2.json` must be a top-level object with
 `"version": "2.0"` and a `resources` array. Do not use a bare resource array, a
 single resource object, or an unversioned `{ "resources": [] }` object; those
-shapes are not the package contract consumed by solution resources refresh.
+shapes are not the package contract consumed by solution resource refresh.
 
 The resource array has two consumers with different tolerance:
 
 - Local/package binding expressions may need id-addressable entries that mirror
   root `uipath:binding` IDs.
-- `uip solution resources refresh` reads the same `resources` array and imports
+- `uip solution resource refresh` reads the same `resources` array and imports
   concrete dependencies only when it contains parseable resource entries.
   Process resources should come from CLI generation or fixture-backed binding
   entries with `id`, `kind`, `name`, `resourceKey`, `metadata`, `resource`,

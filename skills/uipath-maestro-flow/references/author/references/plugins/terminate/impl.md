@@ -10,7 +10,7 @@
 uip maestro flow registry get core.logic.terminate --output json
 ```
 
-Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+Confirm: input port `input`, no output ports.
 
 ## JSON Structure
 
@@ -18,7 +18,7 @@ Confirm: input port `input`, no output ports. Set the node instance `typeVersion
 {
   "id": "abortOnError",
   "type": "core.logic.terminate",
-  "typeVersion": "<DEFINITION_VERSION>",
+  "typeVersion": "1.0",
   "display": { "label": "Abort" },
   "inputs": {}
 }

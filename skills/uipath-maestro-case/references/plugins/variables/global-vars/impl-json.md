@@ -28,9 +28,9 @@ return allVariables.find(v => v.id === variableId);
 
 | Array | Resolves `=vars.X`? | Notes |
 |---|---|---|
-| `variables.inputOutputs[]` *(top level)* | YES if `id` present | Canonical declaration site |
-| `variables.inputs[]` *(top level)* | YES — by random `id` | Picker-invisible (resolution works, but the FE picker does not surface it); target only via the companion |
-| `variables.outputs[]` *(top level)* | YES (the formal entry) | But its `var` points elsewhere — see Out-arg shape below |
+| `root.data.uipath.variables.inputOutputs[]` | YES if `id` present | Canonical declaration site |
+| `root.data.uipath.variables.inputs[]` | YES — by random `id` | Picker-invisible (resolution works, but the FE picker does not surface it); target only via the companion |
+| `root.data.uipath.variables.outputs[]` | YES (the formal entry) | But its `var` points elsewhere — see Out-arg shape below |
 | `task.data.outputs[]` | YES if `id` present | Self-declares — task plugin writes id matching the SDD-given name |
 | `task.data.inputs[]` | YES — by random `id` | Picker-invisible; used for the In-arg formal slot |
 | `triggerNode.data.uipath.outputs[]` | YES if `id` present; **NO if only `var` (no `id`)** | Pattern A entries (`id === var`) self-resolve; Pattern C entries (`var` only) require a companion in `root.inputOutputs[]` |
@@ -43,22 +43,37 @@ Under the B refactor, this plugin is **the sole owner** of:
 
 | Array | Owns? |
 |---|---|
-| `variables.inputs[]` *(top level)* | Yes |
-| `variables.outputs[]` *(top level)* | Yes |
-| `variables.inputOutputs[]` *(top level)* | Yes |
+| `root.data.uipath.variables.inputs[]` | Yes |
+| `root.data.uipath.variables.outputs[]` | Yes |
+| `root.data.uipath.variables.inputOutputs[]` | Yes |
 | `triggerNode.data.uipath.outputs[]` | **Yes** — sole owner under B (was co-mutated with trigger plugin in previous design) |
 | `task.data.outputs[]` | No — task plugins self-declare; this plugin's writes never touch them |
 | `task.data.inputs[].value` | No — io-binding owns this |
-| top-level `bindings[]` | No — connector / trigger plugins own resource bindings |
+| `root.bindings[]` | No — connector / trigger plugins own resource bindings |
 
 ## Target Paths
+
+Read `Schema:` header from `tasks.md` per Rule 18. Trigger output mappings are identical across schemas (node internals untouched by v20).
+
+### v19
+
+| What | JSON path |
+|---|---|
+| In argument inputs | `root.data.uipath.variables.inputs[]` |
+| Out argument outputs | `root.data.uipath.variables.outputs[]` |
+| All internal variables | `root.data.uipath.variables.inputOutputs[]` |
+| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` |
+
+### v20
 
 | What | JSON path |
 |---|---|
 | In argument inputs | `variables.inputs[]` *(top level)* |
 | Out argument outputs | `variables.outputs[]` *(top level)* |
 | All internal variables | `variables.inputOutputs[]` *(top level)* |
-| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` |
+| Trigger output mappings | `nodes[<triggerIndex>].data.uipath.outputs[]` *(unchanged from v19)* |
+
+> v20 hoists `root.data.uipath.variables` to top-level `variables`. Field shape inside is identical — only the destination path changes.
 
 ## Uniqueness Rule
 
@@ -70,23 +85,6 @@ Every `var` / `id` must be globally unique across the case. When a name collides
 ```
 
 The `source` and `name` fields keep the original value — only `var` / `id` / `target` get the suffix.
-
-### Pool composition (what to scan)
-
-Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.json`. The pool is global — minting in any one location must consult ALL of the following:
-
-| Source | JSON path | Notes |
-|---|---|---|
-| Root variables | top-level `variables.{inputs,outputs,inputOutputs}[]` | The canonical case-variable namespace |
-| Task outputs | `nodes[<stage>].data.tasks[<lane>][].data.outputs[]` (for every task) | Self-declared task outputs |
-| Trigger outputs | `nodes[<trigger>].data.uipath.outputs[]` (for every trigger node) | Plain-name auto-emit + Pattern C wires |
-| **Stage entry / exit rule outputs** | `nodes[<stage>].data.entryConditions[].rules[][].uipath.outputs[]` AND `nodes[<stage>].data.exitConditions[].rules[][].uipath.outputs[]` | Connector-bound condition rules — outputs minted under `elementId = <stageId>-<ruleId>` |
-| **Case-exit rule outputs** | `metadata.caseExitRules[].rules[][].uipath.outputs[]` | Connector-bound case-exit rules — outputs minted under `elementId = root-<ruleId>` |
-| **Task-entry rule outputs** | `nodes[<stage>].data.tasks[<lane>][].entryConditions[].rules[][].uipath.outputs[]` (for every task) | Connector-bound task-entry rules — outputs minted under `elementId = <stageId>-<ruleId>` |
-
-**Both directions.** When a connector rule mints outputs, dedupe against the union {tasks ∪ triggers ∪ rules ∪ root}. When a task or trigger mints outputs, dedupe against existing rule outputs too — NOT just tasks + triggers. The shared FE form (`FPSFormServiceTypeFields`) registers rule outputs in the same global pool (`getAllVariables()`), so any duplicate `var` / `id` across the {task, trigger, rule} space collapses in `allInputOutputsByElementMap` and cross-wires ownership at round-trip.
-
-**Skip guard.** Rules with no `uipath.outputs[]` (connector configuration unresolved — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) contribute zero outputs to the pool and must be skipped during enumeration. Same skip pattern as placeholder tasks (`data:{}`).
 
 ## Inputs the plugin reads at Phase 3 Step 6.2
 
@@ -164,7 +162,7 @@ For each variable T-entry in `tasks.md` that has **no `sourceTrigger` / `sourceT
 SDD row: `Category=Variable`, no `sourceTriggers`, optional `Default`.
 
 ```json
-// variables.inputOutputs[]
+// root.data.uipath.variables.inputOutputs[]
 { "id": "caseStatus", "name": "caseStatus", "type": "string",
   "custom": true, "elementId": "root", "default": "Open" }
 ```
@@ -181,7 +179,7 @@ SDD row: `Category=Variable`, `sourceTriggers: T02`, `sourceFields: response.sub
   "source": "=response.subject", "type": "string", "value": "calendarTitle" }
 // No `id`, no `elementId` — FE auto-emit convention. `name` is the last segment of sourceField path.
 
-// variables.inputOutputs[]
+// root.data.uipath.variables.inputOutputs[]
 { "id": "calendarTitle", "name": "calendarTitle", "type": "string",
   "elementId": "root", "custom": true }
 ```
@@ -256,12 +254,12 @@ SDD row: `Category=Out`. **Companion is ALWAYS emitted at write time** (per FE c
 Same shape regardless of Default presence (two entries):
 
 ```json
-// 1. variables.outputs[]  — formal Out-arg pointer
+// 1. root.data.uipath.variables.outputs[]  — formal Out-arg pointer
 { "id": "<random9>", "name": "finalDecision", "type": "string",
   "var": "finalDecision" }
 // var is a POINTER — at case end, engine reads vars.finalDecision via this pointer
 
-// 2. variables.inputOutputs[]  — companion (always written)
+// 2. root.data.uipath.variables.inputOutputs[]  — companion (always written)
 { "id": "finalDecision", "name": "finalDecision", "type": "string",
   "default": "<value or empty string>", "elementId": "root" }
 // no custom — argument companions are NOT custom per FE convention
@@ -406,17 +404,3 @@ This is the **reassign shape** (FE Scenario B/D). The `originalVar` field tells 
 For `=` operator rows (Scenario E), the task plugin emits a separate `custom: true` entry — see Custom Outputs section above.
 
 Per Out-arg companion rule above, the variables plugin ALWAYS writes a `root.inputOutputs[]` companion for Out-args (no longer conditional on Default). For case Variables sourced via `->` from tasks, the companion is also written so the variable is picker-visible at Case Variables panel.
-
-## Connector-Rule Output → variable resolution
-
-Connector condition rules (`rule.uipath.outputs[]`) participate in the case-variable namespace through the same shapes as task outputs — the FE renders the SAME `FPSFormServiceTypeFields` form for both, and `updateRootVariables` is dispatched for rule outputs too (`FPSFormServiceTypeFields.tsx:80`). The variable resolution path is:
-
-- **Extract (`->`)** — rule emits a reassign-shape entry on `rule.uipath.outputs[]` with `originalVar` (load-bearing for `mutateRootVariables` to skip root-mirroring), and Loop B emits the matching `root.inputOutputs[]` companion (`elementId: "root"`, `custom: true`) from the SDD's `Category=Variable` row. The rule's `elementId` on the output entry is `<ownerNodeId>-<ruleId>` (= `<stageId>-<ruleId>` stage-scoped, `root-<ruleId>` case-exit).
-- **Assign (`=`)** — rule emits a `custom: true` Scenario E entry on `rule.uipath.outputs[]` with `value: "<expression>"`. No root mirror per `isUpdateExistingOutput` filter. Loop B emits the `Category=Variable` companion unconditionally (per Loop B line 166); only the `default` field is populated, and only when the SDD declares a Default.
-- **Bare** (no operator) — rule output is gate-local (named like the spec field, e.g. `response` / `Error`); not a case variable. No companion written.
-
-The dispatcher logic lives in [io-binding/impl-json.md § Output Binding Shapes for Connector Condition Rules](../io-binding/impl-json.md#output-binding-shapes-for-connector-condition-rules) (the 3rd dispatch path, parallel to task dispatch). The condition plugins (`plugins/conditions/*/impl-json.md`) invoke it as the last step of their `wait-for-connector` recipe.
-
-Loop B (this file) handles the COMPANION emission — it scans `tasks.md` Case Variables rows agnostically of producer type. A `Category=Variable` row whose producer is a connector rule's `->` extract gets the same companion shape as one whose producer is a task's `->` extract. The producer (task plugin OR condition plugin) is responsible for writing the upstream `outputs[]` entry referencing the companion via `var: <caseVar.id>`.
-
-> **Skip guard.** Rules with no `uipath.outputs[]` (stub placeholder — connector configuration unresolved) contribute no outputs to the global pool and no companions to Loop B — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback).

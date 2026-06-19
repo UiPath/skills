@@ -14,15 +14,13 @@ Consult this reference when planning or implementing any of:
 
 1. `uip login` — tenant-scoped connectors are only visible after authentication.
 2. `uip maestro case registry pull` — populates `typecache-activities-index.json` and `typecache-triggers-index.json` at `~/.uip/case-resources/`.
-3. A healthy Integration Service connection for the connector. If `Connections` is empty after `get-connection`, offer to create one (Step 2) rather than failing — see [§ Creating a Connection](#creating-a-connection).
+3. A healthy Integration Service connection must exist for the connector. If `Connections` is empty after `get-connection`, the user must create one in IS before proceeding.
 
-Connection selection mechanics (`--refresh` retry, ping verification, BYOA workflow, connection creation): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
+Connection selection rules (default-preference, `--refresh` retry, multi-connection disambiguation, ping verification, BYOA workflow): see [/uipath:uipath-platform — connections.md](../../uipath-platform/references/integration-service/connections.md).
 
 ## Resolution Pipeline
 
 For every connector task or event trigger, run these CLI metadata fetches in order. Each call feeds the next; the populated `caseShape` from `case spec` is written directly into `caseplan.json` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
-
-> **Empty `Connections[]` is not terminal.** When `get-connection` returns no connections, Step 2 offers to create one (`uip is connections create`) before falling back to `<UNRESOLVED>` — see [§ Creating a Connection](#creating-a-connection).
 
 ### Step 1 — Find the activity-type-id
 
@@ -52,34 +50,9 @@ Output: `{ Entry, Config, Connections }` where:
 **Selection rules (in priority order):**
 
 1. If the sdd.md names a specific connection, match by `name`. Use that `id`.
-2. If the sdd.md is silent, **always present the choice via AskUserQuestion — do not auto-select**, even when exactly one connection exists:
-   - **`Connections` non-empty** → list connections by `name` **plus a "Create a new connection" option** (an existing connection may not fit the intent).
-   - **`Connections` empty** → offer **Create a new connection** / **Skip (defer)**.
-3. **Create chosen** → create the connection, then continue to Step 3 with the returned `ConnectionId`. Procedure — background `is connections create`, capture `ConnectionId`, headless fallback: [§ Creating a Connection](#creating-a-connection).
-4. **Skip / create declined or failed / non-interactive run** → mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks.md` and omit `input-values:`. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Note it in the completion report. See [placeholder-tasks.md](placeholder-tasks.md). A failed `is connections create` MUST route here after surfacing the error (§ Creating a Connection step 4) — **planning continues to a placeholder, it never stalls.**
-
-#### Creating a Connection
-
-Reached when the user picks "Create a new connection" or no usable connection exists. Create one via the OAuth flow:
-
-```bash
-uip is connections create "<connector-key>" --output json
-# → Data: { ConnectionId, ConnectionName, Connector, State, Owner, Folder, FolderKey }
-```
-
-`<connector-key>` is a positional argument — use `Config.connectorKey` from `get-connection` (present even when `Connections` is empty). The command auto-opens the browser for OAuth and **blocks until the user finishes authorizing**, then returns the new connection.
-
-1. **Run it in the background.** OAuth completion is human-paced and routinely exceeds a foreground command timeout — run detached so it survives across turns; read the result when it exits.
-2. **Capture `Data.ConnectionId`** and use it directly as `--connection-id` for `case spec` (Step 3). **Do NOT re-run `get-connection`** to re-discover it — the IS connection cache may be stale immediately after create, and the create output already carries the authoritative id.
-3. **Ping to verify** (optional): `uip is connections ping "<ConnectionId>" --output json`.
-4. **On failure — surface and re-prompt, never stall.** The create failed if the command **exits non-zero**, the JSON `Result` is `"Failure"`, or no `Data.ConnectionId` is returned (e.g. OAuth denied/failed, browser closed, connector misconfigured). On auth failure the command **exits** (verified: exit 1) — it does not hang. Do NOT silently proceed and do NOT leave planning incomplete:
-   1. Show the user the failure `Message` (and `Instructions` if present) verbatim — do not invent a cause. Example: `{ "Result": "Failure", "Message": "Authentication failed", "Instructions": "Check credentials and try again." }`.
-   2. Re-prompt via **AskUserQuestion**: **Retry create** (re-run `is connections create`) / **Skip (defer)**.
-   3. On **Skip**, or after a repeated failure, fall to Selection rule 4 — mark `<UNRESOLVED>`, emit the placeholder, and **finish writing `tasks.md`** so planning completes.
-
-**Headless / no-browser fallback** (CI, remote sandbox, no display) — the agent cannot complete browser OAuth. Either ask the user to run `! uip is connections create "<connector-key>" --output json` in their own terminal and paste back the `ConnectionId`, or run with `--no-wait` to get the pending authorization URL, surface it, and poll until `State: Enabled`.
-
-> If you must re-discover via `is connections list` after create, pass `--refresh` to bypass the cache — but capturing `ConnectionId` from the create output is preferred.
+2. If the sdd.md is silent and exactly one connection exists, use it.
+3. If multiple connections exist and sdd.md is silent, use **AskUserQuestion** with a bounded list of connection names + "Something else".
+4. If `Connections` is empty, mark the task `<UNRESOLVED: no IS connection for <connectorKey>>` in `tasks.md` and omit `input-values:`. Execution writes a placeholder connector task — `type` + `displayName` + `data: {}`, no `data.typeId` / `data.connectionId` keys. Tell the user in the completion report to create the connection in the IS portal before the task can run. See [placeholder-tasks.md](placeholder-tasks.md).
 
 ### Step 3 — Discover the operation contract via `case spec`
 

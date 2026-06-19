@@ -2,7 +2,7 @@
 
 Companion to [`sdd-template.md`](sdd-template.md). Each section shows the SDD authoring snippets for a common pattern an author will encounter. Use as a reference when writing a new `sdd.md`.
 
-Thirteen v1-supported patterns. Two intentionally-dropped patterns documented at the end with workarounds.
+Twelve v1-supported patterns. Two intentionally-dropped patterns documented at the end with workarounds.
 
 ## Quick lookup
 
@@ -11,7 +11,6 @@ Thirteen v1-supported patterns. Two intentionally-dropped patterns documented at
 | 1 | Pure case state with default | `Variable` | Case Variables table | — |
 | 2 | Trigger-sourced Variable (event payload → case var) | `Variable` | Case Variables + Triggers tables | — |
 | 2b | Multi-trigger Variable (same slot from N triggers) | `Variable` | Case Variables + Triggers tables | — |
-| 2c | Trigger-sourced file Variable (event payload carries an attachment) | `Variable` (file) | Case Variables + Triggers tables | — |
 | 3 | Caller-supplied / Default-initialized input | `In` | Case Variables table | — |
 | 4 | Returned output to caller | `Out` | Case Variables + producer task's Outputs | `->` |
 | 5 | Task extracts response field → case var | (any) | Task's Outputs table | `->` |
@@ -102,41 +101,6 @@ In Case Variables — one row with CSV + keyed format:
 **When to use Use Case 2b vs declaring per-trigger Variables:**
 - **Use Case 2b** when the value is *semantically the same thing* across triggers (e.g., "the initiator", "the customer ID"). One variable, one downstream reference.
 - **Two separate Use Case 2 Variables** when the values are *different concepts* even if both come from triggers (e.g., `emailSubject` from email trigger and `slackChannelId` from Slack trigger are unrelated and don't share a slot).
-
----
-
-## Use Case 2c — Trigger-sourced file Variable (event payload carries an attachment)
-
-**Scenario:** An event trigger fires from a webhook whose payload includes a file attachment (e.g., insurance claim portal posts `{ ... attachmentRef: { ID, FullName, MimeType, Metadata } }`). The case wants the attachment as a first-class `file` Variable available to downstream stages.
-
-**SDD authoring:**
-
-In Case Triggers:
-```markdown
-| T# | Trigger Type        | Source              | Configuration                          |
-|----|---------------------|---------------------|----------------------------------------|
-| T02 | Intsvc.EventTrigger | Salesforce ServiceCloud | Claim webhook received (POST /claims) |
-```
-
-In Case Variables — one row, `Type: file`, `sourceTriggers` populated:
-
-```markdown
-| Name        | Category | Type | sourceTriggers | sourceFields                | Default | Description                                    |
-|-------------|----------|------|----------------|-----------------------------|---------|------------------------------------------------|
-| damagePhoto | Variable | file | T02            | response.attachment         |         | Damage photo uploaded by claimant at intake    |
-```
-
-**Runtime behavior:**
-
-- T02 fires. The connector spec (or webhook adapter) emits `response.attachment` as a JobAttachment record `{ID, FullName, MimeType, Metadata}` — the engine resolves the spec path and writes the record to `vars.damagePhoto`.
-- Downstream tasks can wire `=vars.damagePhoto` (whole record — multipart file inputs, attachment sub-binding) or `=vars.damagePhoto.FullName` (sub-field — log line, email subject substitution).
-- Caller-pre-upload obligation (Use Case 9) does NOT apply — the trigger-side connector emits the JobAttachment record automatically as part of payload extraction.
-
-**Authoring rules:**
-
-- `sourceFields` is the runtime path to the JobAttachment record within the trigger payload, NOT to a specific sub-field (`response.attachment.ID` would unwrap the record and lose the picker binding). Always bind to the whole record.
-- The connector / webhook adapter must actually emit a `type: "file"` field at that path. If the webhook delivers a URL or base64 blob instead, this pattern does NOT apply — use Use Case 5 with a `Download attachment` task at the start of Stage 1 (per Use Case 10).
-- `Default` MUST stay empty (file Variables reject defaults per FE `InputOutputArgumentsDialog.tsx:148`).
 
 ---
 
@@ -472,16 +436,6 @@ Plus a task with:
 In v1, **every variable accessible via `=vars.X` must appear in the Case Variables table** OR be an auto-emitted field of a task's response schema (which the skill exposes by the field's natural name, e.g., `=vars.score` for a task returning `{score: number}`).
 
 **Workaround:** if you want a "task-local" variable that doesn't pollute Case Variables, rely on the task's auto-emitted schema fields directly via their natural names. The skill auto-emits all of a task's response fields; you only need a Case Variables row when you want to RENAME the variable or expose it as case-level state with custom Default / Type / Description.
-
-**In an expression — `vars.$xref(...)`.** When the upstream output is one term *inside* a larger `=js:` expression (a composite payload, an `IF`, an SLA expression) rather than the whole input value, embed the in-expression marker `vars.$xref('Stage Name','Task Name','output_name')` (single quotes only). It resolves to the source output's `var` at build time (Step 11.5) — no Case Variables row, no "middle variable". Use whole-value `<- "Stage"."Task".out` when the output IS the entire input.
-
-**Worked example** — a composite input payload built from two upstream decisions, no Case Variables rows:
-
-```json
-"value": "=js:({ approvalDecision: vars.$xref('AP Review','AP lead approval','outcome'), urgentPaymentDecision: vars.$xref('AP Review','Urgent payment','outcome') })"
-```
-
-Full marker semantics: [bindings-and-expressions.md § In-expression references](../../references/bindings-and-expressions.md#in-expression-references-varsxref).
 
 ---
 

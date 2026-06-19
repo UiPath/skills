@@ -87,11 +87,11 @@ Create an evaluation set.
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--evaluators <refs>` | No (default: all) | Comma-separated evaluator IDs or generated file base names; do not pass display names |
+| `--evaluators <refs>` | No (default: all) | Comma-separated evaluator IDs or file base names |
 | `--entry-point <id>` | No | Entry point node id stored as the eval set's `selectedEntrypoint` |
 | `--path <path>` | No | (see Common Options) |
 
-When `--evaluators` is omitted, the new eval set references **all** evaluators present in the project at creation time using their generated evaluator file refs. Prefer this when creating a set immediately after adding the evaluator(s). If passing `--evaluators`, use the generated id/file base returned by `evaluator add/list`, not the evaluator display name.
+When `--evaluators` is omitted, the new eval set references **all** evaluators present in the project at creation time.
 
 ### `uip maestro flow eval set list`
 
@@ -296,11 +296,11 @@ The CLI emits a `Code` field on every JSON response. Useful when filtering or sc
 | `eval set add` / `list` / `remove` | `FlowEvalSetAdd` / `FlowEvalSetList` / `FlowEvalSetRemove` |
 | `eval evaluator add` / `list` / `remove` | `FlowEvalEvaluatorAdd` / `FlowEvalEvaluatorList` / `FlowEvalEvaluatorRemove` |
 | `eval simulation add` / `list` / `remove` | `FlowEvalSimulationAdd` / `FlowEvalSimulationList` / `FlowEvalSimulationRemove` |
-| `eval run start` (no `--wait`) | `FlowEvalRunStarted` |
-| `eval run start --wait` (summary) | `FlowEvalRunCompleted` |
-| `eval run status` | `FlowEvalRunStatus` |
-| `eval run results` | `FlowEvalRunResults` |
-| `eval run list` | `FlowEvalRunList` |
-| `eval run compare` | `FlowEvalRunComparison` |
+| `eval run start` (no `--wait`) | `MaestroFlowEvalRunStarted` |
+| `eval run start --wait` (summary) | `MaestroFlowEvalRunCompleted` |
+| `eval run status` | `MaestroFlowEvalRunStatus` |
+| `eval run results` | `MaestroFlowEvalRunResults` |
+| `eval run list` | `MaestroFlowEvalRunList` |
+| `eval run compare` | `MaestroFlowEvalRunComparison` |
 
-The `eval run *` codes dropped their `Maestro` prefix (e.g. `MaestroFlowEvalRunResults` → `FlowEvalRunResults`) to match the rest of the `eval` family. Older CLI versions emit the `Maestro`-prefixed names. If actual emitted codes diverge from the table above, trust the JSON output — file an issue.
+If actual emitted codes diverge from the table above, trust the JSON output — file an issue.

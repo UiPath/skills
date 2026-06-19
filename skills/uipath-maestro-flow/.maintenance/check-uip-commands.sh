@@ -122,11 +122,7 @@ def get_help(prefix):
         name = entry.get("Name", "")
         leaf = name.split(None, 1)[0]
         if leaf:
-            # Subcommand names may be pipe-aliased (e.g. `or|orchestrator`).
-            # Register each alias separately so either form is accepted.
-            for alias in leaf.split("|"):
-                if alias:
-                    subs.add(alias)
+            subs.add(leaf)
     takes_args = bool(inner.get("Arguments"))
     _help_cache[prefix] = (subs, takes_args)
     return _help_cache[prefix]

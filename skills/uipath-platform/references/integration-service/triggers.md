@@ -10,8 +10,6 @@ Triggers are event-based activities that fire when something happens in an exter
 - [Trigger Discovery Flow](#trigger-discovery-flow)
 - [List Trigger Activities](#list-trigger-activities)
 - [Trigger Objects](#trigger-objects)
-  - [`parameters[]` — canonical event-parameter input fields](#parameters--canonical-event-parameter-input-fields)
-- [Object Name Resolution](#object-name-resolution)
 - [Trigger Metadata (Describe)](#trigger-metadata-describe)
 - [CRUD vs Non-CRUD Triggers](#crud-vs-non-crud-triggers)
 - [Response Fields](#response-fields)
@@ -25,13 +23,11 @@ Triggers are event-based activities that fire when something happens in an exter
 
 ```
 [ ] 1. List trigger activities  →  pick one  →  note its **Operation**
-[ ] 2. If Operation is CREATED/UPDATED/DELETED  →  get objects  →  resolve object name (ask user if unclear)
-[ ] 3. Describe the resolved object + operation  →  field metadata
+[ ] 2. If Operation is CREATED/UPDATED/DELETED  →  get objects  →  pick one
+[ ] 3. Get metadata (fields) for the chosen object + operation
 ```
 
 **Decision point at step 2**: CREATED, UPDATED, and DELETED operations require an intermediate "objects" step. For other trigger operations, skip to step 3 using the activity's **ObjectName**.
-
-> **Source of truth:** Event-parameter inputs come from `triggers objects` → `parameters[]`. Field metadata comes from `triggers describe`. Configure trigger nodes exclusively from these two responses — do not invent parameters or fields, and do not substitute metadata from other commands.
 
 ---
 
@@ -63,32 +59,19 @@ uip is triggers objects "<connector-key>" "<OPERATION>" \
 
 ---
 
-## Object Name Resolution
-
-`triggers describe` requires an exact object name. Resolve it from the `triggers objects` response (`Data[].Name`):
-
-1. Match the user's intent against each object's `Name` / `DisplayName` (case-insensitive).
-2. Exactly one match → use its `Name` verbatim.
-3. No match or ambiguous → **ask the user** — present candidate objects by `displayName`. Do NOT guess or fabricate an object name; `triggers describe` with a wrong name returns empty or wrong field metadata.
-
-For non-CRUD operations there is no objects step — use the trigger activity's **ObjectName** field directly.
-
----
-
 ## Trigger Metadata (Describe)
 
 Get field metadata for a trigger object:
 
 ```bash
+uip is triggers describe "<connector-key>" "<OPERATION>" "<object-name>" --output json
+
+# With connection (includes custom fields):
 uip is triggers describe "<connector-key>" "<OPERATION>" "<object-name>" \
   --connection-id "<id>" --output json
 ```
 
 Returns field definitions with names, types, and descriptions. Always requests `allFields=true` from the API.
-
-- `<object-name>` comes from [Object Name Resolution](#object-name-resolution) above
-- Always pass `--connection-id` — without it, results omit custom/connection-specific fields
-- The returned fields are the **source of truth** for the trigger's field metadata. Use them verbatim — do not guess field names
 
 ---
 
@@ -124,22 +107,6 @@ Array of objects — each has a **name** to use in the describe command. Also in
 | `byoaConnection` | `true` if this event requires a BYOA connection |
 | `isWebhookUrlVisible` | `true` if the webhook URL should be shown to the user |
 | `eventMode` | `"webhooks"` or `"polling"` — how the trigger receives events |
-| **`parameters[]`** | **Canonical** event-parameter input fields for this trigger — see below |
-
-#### `parameters[]` — canonical event-parameter input fields
-
-One entry per configure-time input field (repo, mailbox folder, channel). Canonical across all connectors. `triggers describe` exposes the same set under `events.<operation>.required`/`.optional`, but that block is empty for several connectors — always read `parameters[]` here.
-
-| Field | Description |
-|---|---|
-| `name` | Field name — pass as a key inside the `--detail` bucket selected by `type` (see below) |
-| `displayName` | Human-readable label — use when prompting the user |
-| `dataType` | Value type (`string`, `number`, `boolean`, …) |
-| `required` | `true` → must be supplied before configure; `false` → optional |
-| `description` | Field hint (often suitable to surface verbatim when asking the user) |
-| `reference` | Present → field is a lookup ID. Resolve via `uip is resources run list "<connector-key>" "<reference.objectName>" --connection-id "<id>"` before configure (IDs are connection-scoped). |
-| `design.position` | `"primary"` → top-level input shown in the trigger card. Other positions are layout hints — ignore for configure. |
-| `type` | Bucket selector for `node configure --detail`: `"query"` → `queryParameters`, `"path"` → `pathParameters`, otherwise → `eventParameters`. Each bucket is a JSON object keyed by `name`. |
 
 ### Trigger Metadata (from `triggers describe`)
 
@@ -152,8 +119,6 @@ Additional fields:
 | `eventMode` | `"webhooks"` or `"polling"` |
 | `byoaConnection` | `true` if this trigger requires a BYOA connection |
 | `isWebhookUrlVisible` | `true` if the webhook URL should be shown |
-
-> **`events.<operation>.required` from `triggers describe` is connector-dependent and often empty.** Downstream commands that derive `eventParameters.fields` from it inherit the gap. Read input fields from [`parameters[]`](#parameters--canonical-event-parameter-input-fields) instead. `triggers describe` remains the source for **output** field metadata.
 
 ---
 

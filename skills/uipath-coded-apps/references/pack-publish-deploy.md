@@ -123,8 +123,6 @@ uip codedapp publish -n my-webapp --version 1.0.0
 | `Web` | Standard web app accessible via browser URL (default) |
 | `Action` | Action app triggered by UiPath automation workflows |
 
-> **Action apps — always pass `--type Action`.** `publish` defaults to `--type Web`. An action app published without `--type Action` registers as a Web app and will **not** bind to Action Center tasks. Pass `--type Action` on **every** publish of an action app — first deploy and every version update. Never omit it, never rely on the default.
-
 ### What Happens Internally
 
 1. Selects the `.nupkg` file (auto-select, by name, or interactive)
@@ -184,7 +182,7 @@ uip codedapp deploy -n my-webapp
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-n, --name <name>` | App name | From `app.config.json` or prompted |
-| `-v, --version <version>` | Target a **specific published version** to deploy (different semantic from `pack`/`publish`'s `-v`, which is the package version) | Latest |
+| `-v, --version <version>` | Target a **specific published version** (different semantic from `pack`/`publish`'s `-v`). **Prefer omitting it** — let it default to Latest. Passing a version that the catalog hasn't finished indexing yields a misleading `"...has not been published yet"` error. | Latest |
 | `--folder-key <key>` | UiPath folder **key** (GUID, not the name). **Always pass explicitly** — see below. | From `UIPATH_FOLDER_KEY` env var, else interactive (avoid) |
 | `--org-name <name>` | Organization name (for app URL) | From `.env` |
 

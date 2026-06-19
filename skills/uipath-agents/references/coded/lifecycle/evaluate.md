@@ -40,25 +40,23 @@ evaluations/
 ├── eval-sets/
 │   └── smoke-test.json              # Test cases
 └── evaluators/
-    └── llm-judge-output.json        # Evaluator config
+    └── llm-judge-trajectory.json    # Evaluator config
 ```
 
 Every evaluator referenced in an eval set's `evaluatorRefs` must have a matching config file in `evaluations/evaluators/` — the `id` in the config must match the `evaluatorRefs` value exactly. Evaluators are auto-discovered from this directory.
 
-Pick by output type: deterministic/structured → `uipath-exact-match` / `uipath-contains` / `uipath-json-similarity`; natural language → `uipath-llm-judge-output-semantic-similarity` (shown below). Use trajectory/tool-call evaluators only for multi-step / tool-using agents — they score 0.0 on single-step agents. Full guide: [evaluators.md](evaluations/evaluators.md), [best-practices.md](evaluations/best-practices.md).
-
-Example `evaluations/evaluators/llm-judge-output.json`:
+Example `evaluations/evaluators/llm-judge-trajectory.json`:
 
 ```json
 {
   "version": "1.0",
-  "id": "LLMJudgeOutputEvaluator",
-  "evaluatorTypeId": "uipath-llm-judge-output-semantic-similarity",
+  "id": "LLMJudgeTrajectoryEvaluator",
+  "evaluatorTypeId": "uipath-llm-judge-trajectory-similarity",
   "evaluatorConfig": {
-    "name": "LLMJudgeOutputEvaluator",
+    "name": "LLMJudgeTrajectoryEvaluator",
     "model": "gpt-4o-mini-2024-07-18",
     "defaultEvaluationCriteria": {
-      "expectedOutput": {"<output_field>": "A correct, on-topic response for the given input."}
+      "expectedAgentBehavior": "Agent should process the input and return a response."
     }
   }
 }
@@ -81,15 +79,6 @@ def fetch_weather(query: str) -> dict:
 ```
 
 During evaluations, calls matching an `ExampleCall.input` return the paired `output`. During normal execution, the real function runs.
-
-`@mockable` only *registers* the function as interceptable — mock values come from the test case's `mockingStrategy`. `example_calls` matter only for LLM-driven mocking:
-
-| Mock values supplied by | `example_calls` needed? |
-|---|---|
-| Declarative `mockingStrategy: mockito` behaviors | No — bare `@mockable()` is correct; mockito ignores `example_calls` |
-| LLM mocking (`mockingStrategy: llm`, or user wants LLM-decided substitution values) | Yes — they ground the LLM mocker; without them outputs are nondeterministic and structured-output evaluators score erratically |
-
-When `example_calls` are needed, provide ≥1 `ExampleCall` per decorated function with `output` matching the real return shape. Do NOT add `example_calls` to mockito-mocked functions. If no mock matches at runtime, the real function runs.
 
 **Declarative** — Set `mockingStrategy` on each test case in the eval set (`type: "mockito"` for function mocks, `type: "llm"` for LLM mocks). See [Evaluation Sets](evaluations/evaluation-sets.md) § Mocking Strategies.
 

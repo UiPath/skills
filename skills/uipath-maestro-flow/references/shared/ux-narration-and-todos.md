@@ -1,25 +1,13 @@
 # UX — Narration and Todos
 
-Two **opt-in** rules govern how this skill communicates with the user during work. They are **off by default** — the agent works quietly. Engage them only when the user requests narration / progress tracking or signals a preference for verbosity. When engaged, they apply across every capability (Author, Operate, Diagnose, Evaluate), every journey, and every action type (`uip` CLI, shell builtins, Read/Write/Edit, Glob/Grep).
+Two always-on rules govern how this skill communicates with the user during work. They apply across every capability (Author, Operate, Diagnose), every journey, and every action type (`uip` CLI, shell builtins, Read/Write/Edit, Glob/Grep).
 
 > Inherits from [SKILL.md](../../SKILL.md). The rules below are the canonical source — capability indexes and journey docs reference this file.
 
-## When to engage
-
-Engage narration + todos when **any** of these hold:
-
-- User explicitly asks: "narrate", "walk me through it", "show your steps", "keep a todo list", "track progress", "tell me what you're doing", "verbose", "be detailed", "explain as you go".
-- User expresses a standing preference for verbosity (in-session, or via a recalled memory / preference).
-- User asks a question that only makes sense with running commentary ("what are you doing right now?", "where are we?").
-
-**Default — silent mode.** When none of the above hold, do the work quietly. Surface only: decisions (user questions), failures, consent gates (`flow debug`), and the final result. No per-step narration line; no user-facing todo list. The agent MAY still keep todos privately on large journeys for its own tracking, but it is not required and is not a user-facing contract.
-
 ## The two rules
 
-These apply **only once engaged** (see When to engage):
-
 1. **Narrate every logical step in plain English** — one short line before each step explaining what the agent is doing and why, in terms of the user's request. The user should never need to know `bash`, `uip` flags, or `.flow` JSON internals to follow along.
-2. **Maintain a granular progress list** for any journey above the trivial threshold — one todo per logical step, kept current as work proceeds. Standard journeys typically land at 10+ items; complex flows go higher. The count emerges from the journey's actual logical steps — do not target a number.
+2. **Maintain a granular `TodoWrite` list** for any journey above the trivial threshold — one todo per logical step, kept current as work proceeds. Standard journeys typically land at 10+ items; complex flows go higher. The count emerges from the journey's actual logical steps — do not target a number.
 
 ## What is a "logical step"
 
@@ -42,8 +30,8 @@ Bash plumbing inside a step is invisible to the user — the step's narration li
 | Start of a logical step | **Narrate.** One short line, plain English, user terms. |
 | Multiple actions within the same step | No additional narration — the step's opening line covers them |
 | Step transitions (one outcome done, next starting) | Narrate the next step |
-| Decision point | Brief one-liner before asking the user ("This decision affects which connection binding I generate — choose one:") |
-| Failure / retry | Always narrate — explain what failed and what's being tried next. Failures surface even in silent mode. |
+| Decision point | Brief one-liner before `AskUserQuestion` ("This decision affects which connection binding I generate — choose one:") |
+| Failure / retry | Always narrate — explain what failed and what's being tried next |
 | Trivial probe (`uip --version`, repeated `login status` in same minute) | Skip |
 | Non-`uip` shell commands (`ls`, `cat`, `mkdir`, `cd`) used as plumbing inside a step | Skip — covered by the step's opening narration |
 | File reads/edits inside a step | Skip — covered by the step's opening narration |
@@ -66,8 +54,8 @@ Reference table — adapt to context. Add subject (what's being acted on) when s
 | Solution scaffold | "Scaffolding a new solution at `<path>` so the Flow project has a parent." |
 | Flow init | "Initializing the Flow project. This creates the `.flow` file you'll edit." |
 | Verify project layout | "Confirming the solution/project layout is correct before continuing." |
-| Registry discovery | "Looking up `<node-type>` in the registry so I can wire its inputs correctly…" |
-| Node add (multi-step) | "Adding the `<node-type>` node and copying its registry definition into the file…" |
+| Registry discovery | "Looking up `<nodeType>` in the registry so I can wire its inputs correctly…" |
+| Node add (multi-step) | "Adding the `<nodeType>` node and copying its registry definition into the file…" |
 | Edit flow JSON | "Editing the flow JSON to add the `<thing>`." |
 | Edge wiring | "Wiring `<from>` → `<to>` so data flows in the right order." |
 | Variable mapping | "Mapping output variables on the End node — every reachable End needs them." |
@@ -91,11 +79,9 @@ Reference table — adapt to context. Add subject (what's being acted on) when s
 | Flow correlation | "Mapping the faulting element ID back to a node in your `.flow` file…" |
 | Traces (last resort) | "Pulling traces. Last resort — the previous steps weren't enough." |
 
-## Threshold for the progress list
+## Threshold for `TodoWrite`
 
-This table applies only once narration/todos are engaged (see [When to engage](#when-to-engage)). In silent mode there is no user-facing narration or todo list regardless of journey size.
-
-| Journey size | Narration | Progress list |
+| Journey size | Narration | TodoWrite |
 | --- | --- | --- |
 | Single edit (1–2 actions, no decisions) | Yes — 1 line | No |
 | Small edit (3–5 actions or 1 decision) | Yes — line per logical step | Optional, agent's call |
@@ -131,7 +117,7 @@ A todo is a **state-changing outcome the user cares about**. One logical step �
 If the user redirects scope mid-journey ("skip the connector — use HTTP instead"):
 
 1. Narrate the pivot — "Switching from connector to HTTP node. Updating todos."
-2. Update the progress list:
+2. Update `TodoWrite`:
    - Mark obsolete in-flight todos as cancelled and drop them from the list.
    - Insert new todos for the new direction at the right spot.
    - Leave completed todos in place — they're history, not work.
@@ -142,9 +128,8 @@ If the user redirects scope mid-journey ("skip the connector — use HTTP instea
 - **Never narrate every command.** "Running `registry search`… running `registry get`… running `flow node add`…" — three lines for one logical step is noise. One step, one line.
 - **Never narrate every Read/Edit.** Reading the `.flow` before editing it is plumbing. The step's opening line covers it.
 - **Never recap flag-level or JSON-structure-level detail.** The user does not care that you used `--output json` or that `inputs.detail.bodyParameters` is the field name. Speak in user terms.
-- **Never narrate or spin up a user-facing todo list when the user hasn't asked for verbosity.** Silent by default. Surfacing every step unprompted is noise.
-- **When engaged, never skip narration on a step transition.** Silent transitions leave the user lost.
+- **Never skip narration when a step transitions.** Silent transitions leave the user lost.
 - **Never create a todo per bash call.** Todos are user-meaningful outcomes, not the agent's internal action log.
-- **When engaged, never skip the progress list on a standard journey.** Above the trivial threshold, the granular list is mandatory.
+- **Never skip `TodoWrite` on a standard journey.** Above the trivial threshold, the granular list is mandatory — no exceptions.
 - **Never use first-person filler.** "Let me…", "I'll go ahead and…", "I'm going to…" — drop. Lead with the verb.
 - **Never repeat the prior line's content.** If the previous narration said "Adding the Slack node and wiring its inputs", the next line is *not* "Adding the Slack node now" — it's the next step.

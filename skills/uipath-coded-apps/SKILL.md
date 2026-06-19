@@ -1,10 +1,12 @@
 ---
 name: uipath-coded-apps
-description: "Always invoke for `app.config.json` or `action-schema.json` files. UiPath Coded Web Apps & Coded Action Apps via `uip codedapp` and `@uipath/uipath-typescript` SDK. Scaffold, build, debug, deploy. For .cs/XAML→uipath-rpa, Python→uipath-agents."
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
+description: "UiPath Coded Web Apps, Action Apps (app.config.json, action-schema.json), and NLP-driven dashboards. Build apps via uip codedapp + TS SDK. Generate agent-health, error-rate, invocation, latency, KPI, or observability dashboards from natural-language prompts using Insights RTM API. For .cs/XAML→uipath-rpa, Python→uipath-agents, .flow→uipath-maestro-flow."
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, Task
 ---
 
 # UiPath Coded Apps
+
+> **Preview** — skill is under active development; surface and behavior may change.
 
 Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps using the `uip codedapp` CLI and `@uipath/uipath-typescript` SDK.
 
@@ -13,10 +15,11 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
 - User asks about `uip codedapp` commands, `.uipath/` directory, `app.config.json`, or `action-schema.json`
 - User wants to **scaffold** a new React/Vue frontend for UiPath Cloud or an Action Center form
-- User wants to embed the **Document Understanding Validation Station** widget for human review of DU extraction results
 - User wants to **push/pull source** between local and Studio Web
 - User wants to use the `@uipath/uipath-typescript` SDK from a coded app
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
+- User wants to **generate a dashboard** from a natural-language description — e.g. "build me a dashboard showing agent health, error rates, invocation volume, latency, active agents, KPIs, governance metrics, or consumption trends"
+- User says "build/create/generate a dashboard", describes metrics to visualize, or asks for an agent observability, operations, or cost view
 
 ## App Types
 
@@ -29,23 +32,40 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 
 ## Critical Rules
 
-1. **Identify the app type before doing anything else.** Ask: *"Are you building a **Coded Web App** (custom frontend deployed to UiPath Cloud) or a **Coded Action App** (form for Action Center human task reviews)?"* The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
+1. **Identify the app type before doing anything else.** Ask as a structured choice (Rule 17): **Coded Web App** — custom frontend deployed to UiPath Cloud · **Coded Action App** — form for Action Center human task reviews. The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
 2. **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
 3. **Never skip the build step.** Run `npm run build` after scaffolding (to verify the scaffold compiles) and again before `pack` or `push` (to produce the deployable `dist/`). Verify `dist/` exists each time.
 4. **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
 5. **Bump the version for re-publish.** If the same version already exists in Orchestrator, publish will fail.
 6. **Action apps require `-t Action` on publish.** Run `uip codedapp publish -t Action` (not the default `Web` type).
-7. **Never handle access tokens manually.** Do not pass, print, parse, source, or set cached access tokens. Use `uip login` and supported `uip codedapp` commands; the CLI manages authentication.
+7. **Never pass access tokens as CLI flags.** JWTs are too long — use the `UIPATH_ACCESS_TOKEN` environment variable instead.
 8. **Base URL must use the API subdomain.** `https://api.uipath.com` not `https://cloud.uipath.com`. See the table below.
 9. **`vite.config.ts` must always set `base: './'`.** The platform handles URL routing — apps must use relative asset paths. Do not use a routing name or a sub-path here.
 10. **Use `getAppBase()` from `@uipath/uipath-typescript` for any absolute URL constructed at runtime** — router basename, image `src`, `fetch` paths. Deployed apps mount at a non-root prefix; `/`-rooted paths work locally but 404 after deploy. Vite's `base: './'` only fixes import-time references.
 11. **`uip codedapp deploy` must run non-interactively.** Pass the folder key as `--folder-key <GUID>` (or as `UIPATH_FOLDER_KEY=<GUID>` env-var prefix — either works). The interactive folder picker fails in non-TTY contexts (CI, agent shells). If the user provides a folder **name**, resolve it to a key with `uip or folders list --output json` and match on the `Name` field (output rows are `{ Key, Name, Path, Description, Type, ParentKey }`). The `uip or ...` commands require the Orchestrator tool — install once via `uip tools install @uipath/orchestrator-tool` (check first with `uip tools list`).
 12. **Guard against text overflow in every UI.** See [patterns.md](references/patterns.md) "Preventing Text Overflow".
-13. **Inspect the DF schema before writing analytics, filters, or seeds.** Run `uip df entities get <ENTITY_ID> --output json` to inspect fields and types. At runtime, use `entities.getById(<id>)` from the app's authenticated session. DF doesn't behave like a typical RDBMS; see [sdk/data-fabric.md](references/sdk/data-fabric.md) "Anti-shapes & gotchas".
+13. **Inspect the DF schema before writing analytics, filters, or seeds.** Call `entities.getById(<id>)` from inside the app's authenticated session — NOT a CLI script with `~/.uipath/.auth` (different scopes, will 401). DF doesn't behave like a typical RDBMS; see [sdk/data-fabric.md](references/sdk/data-fabric.md) "Anti-shapes & gotchas".
 14. **Every list call returns ONE page — even with no options. There is no "give me everything" path.** Applies to `getAll`, `getAllRecords`, `queryRecordsById`, `getFileMetaData`, etc. `getAll()` with no options does NOT return all rows; the SDK sends no `pageSize` and the **server** applies its own cap, wrapped in a misleadingly-named `NonPaginatedResponse`. To list every row from a source that may exceed the cap, you MUST loop the cursor: `while (page.hasNextPage) { page = await getAll({ cursor: page.nextCursor }) }` and accumulate `items`. Reading `result.items.length` after a single call is almost always a bug. See [sdk/pagination.md](references/sdk/pagination.md).
 15. **Tables of dynamic data must paginate, not dump all rows in one scroll.** Page size 25–50 with next/prev/page-number controls and a "Showing X–Y of Z" summary. Top-N + "see all" is acceptable for explicitly summary panels (e.g., "Top 10 oldest"). Infinite-scroll-of-N-rows is unusable for operational dashboards. Applies to any table backed by any service (DF entities, Tasks, Jobs, Conversations, Process Instances, etc.). See [patterns.md](references/patterns.md) "Tabular Data".
 16. **When adding any new SDK method call, verify `VITE_UIPATH_SCOPE` already includes the required scope.** Write operations, action methods (`Jobs.stop`, `Tasks.complete`, `ProcessInstances.cancel`, etc.), or first use of a new service typically need broader scopes than read-only flows. Mismatched scopes fail silently with `401` / `403` on the first call. See [oauth-scopes.md](references/oauth-scopes.md) for the per-method scope table.
-17. **Never call `sdk.initialize()` in an action app.** That is web-app-only — it starts a PKCE OAuth redirect. Action apps run in Action Center's iframe with a host-injected session: construct `new UiPath()` (no args, no `.env`) and use it directly. See [create-action-app.md](references/create-action-app.md) `src/uipath.ts`.
+17. **Never make the user type magic phrases.** Whenever you ask the user to pick between known options (app type, build/edit/deploy intent, OAuth setup, deploy pinning), present a **structured choice** via the host coding agent's native question tool (selectable options) when one exists. Mechanics: one option per choice with a short bold label + one-line description of what picking it does; put the recommended option **first** and suffix its label "(Recommended)"; keep to **at most 4 options** (reserve one slot for an escape option like *Make changes* / *Cancel* when applicable). If there are 5+ candidates, or the host agent has no question tool, render a plain numbered list instead and accept the number or the option label as the answer. A free-text reply must always remain valid (e.g. a plan-change request) and takes precedence over the options. **Exception — never put a question in the same response as a long output:** plan-approval gates are free-text by design (the plan ends with "confirm or tell me what to change"); structured questions fire only on later, short turns. See `references/dashboards/plugins/build/impl.md`.
+
+## Disambiguation — Apps vs Dashboards
+
+**Route directly to Apps workflow** (sections below) when you see:
+`web app`, `action app`, `codedapp`, `app.config.json`, `action-schema.json`,
+`scaffold app`, `deploy app`, `pack`, `publish`, `push`, `pull`, `debug app`
+
+**Route directly to [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) when you see:**
+`dashboard`, `analytics`, `KPI`, `metrics`, `Insights`, `observability`,
+`admin console`, `report`, `chart`, `trend`, `governance report`, `agent metrics`
+
+**When intent is ambiguous** — ask "Which fits your goal?" as a structured choice (Rule 17):
+
+| Option | Description |
+|--------|-------------|
+| **Build or modify a Web App / Action App** | Scaffold a UI, form, or app that deploys to Automation Cloud |
+| **Generate a dashboard** | Analytics or admin view from a natural-language description |
 
 ## Task Navigation
 
@@ -57,7 +77,6 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
 | **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
 | **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
-| **Embed the DU Validation Station widget** | [references/widgets/validation-station.md](references/widgets/validation-station.md) |
 | **OAuth scopes for SDK services** | [references/oauth-scopes.md](references/oauth-scopes.md) |
 | **SDK: Import paths & subpath exports** | [references/sdk/imports.md](references/sdk/imports.md) |
 | **SDK: Assets, Queues, Buckets, Processes, Jobs, Attachments** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |
@@ -68,6 +87,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **SDK: Agent Feedback** | [references/sdk/feedback.md](references/sdk/feedback.md) |
 | **SDK: Pagination** | [references/sdk/pagination.md](references/sdk/pagination.md) |
 | **UI Patterns (polling, BPMN, HITL, text overflow, table pagination)** | [references/patterns.md](references/patterns.md) |
+| **Generate an admin dashboard from NLP** | [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) |
 
 ## CLI Setup
 

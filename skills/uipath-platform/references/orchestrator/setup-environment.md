@@ -13,7 +13,7 @@ Create folders, assign users with roles, provision machines, and configure licen
 
 ## Prerequisites
 
-1. Authenticated — verify with `uip login status`; if not, ask the user to run `uip login` (interactive browser flow)
+1. Authenticated: `uip login`
 2. Tenant selected: `uip login tenant set <tenant-name>`
 3. Sufficient permissions: tenant-level admin or folder-create rights.
 
@@ -24,7 +24,7 @@ Create folders, assign users with roles, provision machines, and configure licen
 ```mermaid
 graph LR
     A[folders create] --> B[roles create]
-    B --> C[roles update<br/>add permissions]
+    B --> C[roles edit<br/>add permissions]
     C --> D[users import]
     D --> E[users assign<br/>to folder + role]
     E --> F[machines create]
@@ -92,7 +92,7 @@ uip or folders delete "Finance/Invoicing" --output json
 uip or folders delete <folder-key-guid> --output json
 ```
 
-The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`). Without `--all`, only folders the current user is assigned to are returned.
+The `--all` flag enables filtering options (`--type`, `--name`, `--path`, `--top-level`, `--order-by`). Without `--all`, only folders the current user is assigned to are returned.
 
 `folders move` and `folders delete` require admin permissions and accept either a path or a GUID. `delete` errors if the folder still contains processes, queues, assets, or sub-folders — clean those out first or move them with `folders move`.
 
@@ -105,7 +105,7 @@ Roles group permissions and are scoped to either the tenant or a folder. Create 
 uip or roles create --name "FinanceOperator" --type Folder --output json
 
 # Add permissions to the role
-uip or roles update <role-key> \
+uip or roles edit <role-key> \
   --add-permissions "Assets.View,Assets.Edit,Queues.View,Jobs.Create,Jobs.View" \
   --output json
 ```
@@ -199,7 +199,7 @@ uip or users get <user-key-guid> --output json
 uip or users list-available --folder-path "Finance" --search "jane" --output json
 
 # Edit principal-level flags (this is the only place to grant unattended on a DirectoryUser)
-uip or users update <user-key-guid> \
+uip or users edit <user-key-guid> \
   --allow-unattended \
   --license-type Unattended \
   --unattended-username "DOMAIN\\jane.doe" --unattended-password "<secret-or-cred-store-name>" \
@@ -209,16 +209,16 @@ uip or users update <user-key-guid> \
 uip or users unassign <user-key-guid> --folder-path "Finance" --output json
 ```
 
-Key flags on `users update`:
+Key flags on `users edit`:
 
 - **License toggles** (mutually exclusive pairs): `--allow-unattended`/`--deny-unattended`, `--allow-attended`/`--deny-attended`, `--allow-login`/`--deny-login`, `--allow-personal-workspace`/`--deny-personal-workspace`, `--active`/`--inactive`.
 - `--license-type <Attended|Unattended|...>` — assigned license profile.
 - `--unattended-username <user>` and `--unattended-password <pass>` — Windows account + secret used for unattended execution. Required by the API as a pair when first toggling `--allow-unattended` on a `DirectoryUser`. Username typically `DOMAIN\\name` format. Password may be a literal secret or the name of an entry in a credential store (paired with `--credential-store-key <guid>`).
 - `--credential-store-key <guid>` — credential store backing `--unattended-password` when the secret is stored externally.
 
-`DirectoryRobot` principals don't need `--unattended-username` / `--unattended-password` on import — the robot identity already carries its own credentials in IS. Use `users update --license-type Unattended` on the robot key to set the license profile.
+`DirectoryRobot` principals don't need `--unattended-username` / `--unattended-password` on import — the robot identity already carries its own credentials in IS. Use `users edit --license-type Unattended` on the robot key to set the license profile.
 
-> **`users update` does NOT expose role assignments.** It only touches tenant-side flags (license, session flags, unattended credentials). To change roles, use `uip or users assign` (folder roles), `uip or users assign-roles` (tenant roles), or `uip or roles users <role-key> --add-users/--remove-users` (single-role membership). Identity attributes like `--name`, `--surname`, `--email` on directory principals are sourced from Identity Service via sync — updating them via `users update` only updates the Orchestrator-side cached copy and may be overwritten on the next IS sync.
+> **`users edit` does NOT expose role assignments.** It only touches tenant-side flags (license, session flags, unattended credentials). To change roles, use `uip or users assign` (folder roles), `uip or users assign-roles` (tenant roles), or `uip or roles users <role-key> --add-users/--remove-users` (single-role membership). Identity attributes like `--name`, `--surname`, `--email` on directory principals are sourced from Identity Service via sync — editing them via `users edit` only updates the Orchestrator-side cached copy and may be overwritten on the next IS sync.
 
 ### Step 5: Assign Users to Folders
 
@@ -276,7 +276,7 @@ Verify: `uip or machines list --folder-path "Finance" --output json`.
 uip or machines get <machine-key-guid> --output json
 
 # Edit slots, name, description (PATCH semantics — only provided fields change)
-uip or machines update <machine-key-guid> \
+uip or machines edit <machine-key-guid> \
   --unattended-slots 4 --headless-slots 2 \
   --name "finance-runner-01-renamed" --output json
 
@@ -284,19 +284,17 @@ uip or machines update <machine-key-guid> \
 uip or machines unassign <machine-key-guid> --folder-path "Finance" --output json
 
 # Delete the machine template entirely (tenant-level)
-uip or machines delete <machine-key-guid> --yes --output json
+uip or machines delete <machine-key-guid> --output json
 
 # Bulk delete
-uip or machines delete <key1> <key2> --yes --output json
+uip or machines delete <key1> <key2> --output json
 ```
 
 Notes:
 
-- `machines update` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed. `machines update` echoes the new name when you rename.
-- Slot flags (`--unattended-slots`, `--headless-slots`, `--non-production-slots`, `--testing-slots`) must be whole numbers `>= 0` (validated client-side; `0` is allowed).
-- `machines delete` removes the machine **and** any folder assignments it has (the assignments are re-creatable config, so there is no `--force` gate). It does not require unassigning first.
+- `machines edit` and `machines delete` resolve cross-folder by GUID — no `--folder-path` needed.
 - Each folder accepts **one** Cloud Robots / Serverless machine. Trying to assign a second serverless to the same folder returns `HTTP 409: Only one Cloud Robots - Serverless is allowed per folder.`
-- `machines list` defaults to all machines visible to the user. With `--folder-path`/`--folder-key` it returns only machines assigned to that folder, each with `IsAssignedToFolder`. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.) — note `--all-fields` emits the raw camelCase DTO.
+- `machines list` defaults to all machines visible to the user. With `--folder-path` it lists only machines assigned to that folder. Use `--all-fields` for the raw DTO including slot subtypes (`automationCloudSlots`, `automationCloudTestAutomationSlots`, etc.).
 
 ### Step 8: Configure Licenses
 
@@ -334,7 +332,7 @@ uip or folders create "Finance" -d "Finance department automations" --output jso
 uip or roles create --name "FinanceOperator" --type Folder --output json
 # Response: { "Data": { "Key": "r1r2r3r4-..." } }
 
-uip or roles update r1r2r3r4-... \
+uip or roles edit r1r2r3r4-... \
   --add-permissions "Assets.View,Assets.Edit,Queues.View,Jobs.Create,Jobs.View,Processes.View" \
   --output json
 
@@ -370,9 +368,9 @@ uip or machines list --folder-path "Finance" --output json
 
 ## Variations and Gotchas
 
-### The mutation verb is `update` (`edit` is a deprecated alias)
+### Folder edit uses `edit`, not `update`
 
-All five admin nouns use `update`: `uip or folders update <key>`, `machines update`, `processes update`, `roles update`, `users update`. The old `edit` spelling still works as a hidden alias for backward compatibility, but new scripts should use `update`.
+The verb is `edit` for both folders and machines: `uip or folders edit <key>`, not `update`.
 
 ### Users can be assigned without roles
 
@@ -398,9 +396,7 @@ The role-resolver utility fetches all roles to map GUIDs to numeric IDs. For ten
 
 ### `--all` flag on folders list enables filtering
 
-Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
-
-`folders list --all` rows also include `FeedType` (e.g. `FolderHierarchy`, `Processes`); the plain `folders list` does not (the current-user folders API doesn't return it). Use `--all` or `folders get` when you need `FeedType`.
+Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--order-by`) only work with `--all`. Without `--all`, the command returns only folders the current user is assigned to and rejects filter flags.
 
 ### Personal workspaces are flat
 
@@ -411,4 +407,4 @@ Filtering options (`--type`, `--name`, `--path`, `--top-level`, `--sort-by`) onl
 ## Related
 
 - [Run Jobs](run-jobs.md) — After setup, deploy packages and start jobs in the folder.
-- Create assets, queues, and buckets in the folder → [resources.md](resources.md)
+- Create assets, queues, and buckets in the folder → [`uipath-resources`](../resources/resources.md)

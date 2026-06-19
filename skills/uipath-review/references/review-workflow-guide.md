@@ -131,7 +131,7 @@ cat "<PROJECT_DIR>/project.json" | python3 -c "import json,sys; d=json.load(sys.
 
 ```bash
 # Run for EACH entry point file discovered above
-uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa validate --file-path "<ENTRY_FILE>" --project-dir "<PROJECT_DIR>" --output json --use-studio
 ```
 
 **Step 3 — Report ALL results:**
@@ -184,7 +184,7 @@ uip codedagent eval main evaluations/eval-sets/smoke-test.json --no-report
 ### Flow Validation
 
 ```bash
-uip maestro flow validate <ProjectName>.flow --output json
+uip flow validate <ProjectName>.flow --output json
 ```
 
 **Checks performed by the CLI:**
@@ -223,7 +223,7 @@ Are all required files present, correctly formatted, and schema-compliant?
 | RPA | `project.json`, entry point file (.xaml or .cs) | `uip rpa validate` |
 | Agent (Low-Code) | `agent.json` | `uip agent validate` |
 | Agent (Coded) | `main.py`, framework config, `pyproject.toml` | Import check + eval |
-| Flow | `.flow`, `project.uiproj` | `uip maestro flow validate` |
+| Flow | `.flow`, `project.uiproj` | `uip flow validate` |
 | Coded App | `package.json`, `.uipath/`, build output | `uip codedapp pack --dry-run` |
 | Solution | `.uipx`, project subdirectories | `uip solution pack` |
 
@@ -312,14 +312,13 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 
 ### Summary
 - **Overall Quality:** Good / Needs Improvement / Critical Issues
-- **Agent Grade:** <A–F> — <verdict label> (<binding constraint>) — *agent projects only; see SKILL.md Step 4.5 + [agent-grading-rubric.md](agents/agent-grading-rubric.md). Omit if no agent projects.*
 - **Business Value:** <1-2 sentence description of what this solution does>
 - **Project Types Found:** <list with counts>
 - **Validation Status:** <pass/fail per project>
 
 ### Automated Validation & Workflow Analyzer Results
 
-> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip maestro flow validate` (for flows), etc. Report ALL Errors, Warnings, and Info.
+> This section is MANDATORY. Every review must include the output of `uip rpa validate` (for RPA), `uip agent validate` (for agents), `uip flow validate` (for flows), etc. Report ALL Errors, Warnings, and Info.
 
 | Project | File | Command | Errors | Warnings | Info |
 |---|---|---|---|---|---|
@@ -343,11 +342,10 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 2. [I-002] ...
 
 ### Per-Project Summary
-| Project | Type | Validation | Quality | Grade | Key Findings |
-|---|---|---|---|---|---|
-| ClassifierAgent | Agent (Coded) | Pass | Good | B | W-D-002 |
-| ProjectA | RPA (Coded) | Pass | Good | — | W-001 |
-| ProjectB | Flow | 2 errors | Critical Issues | — | C-001, W-002 |
+| Project | Type | Validation | Quality | Key Findings |
+|---|---|---|---|---|
+| ProjectA | RPA (Coded) | Pass | Good | W-001 |
+| ProjectB | Flow | 2 errors | Needs Work | C-001, W-002 |
 
 ### Recommended Next Steps
 1. Fix [C-001] using `uipath-rpa` skill
@@ -360,12 +358,10 @@ The review report follows a fixed markdown structure. Produce it in chat — do 
 - Transaction handling: <observation and recommendation>
 ```
 
-**Overall Quality determination** (all project types):
+**Overall Quality determination:**
 - **Good** — 0 Critical findings, 0-3 Warnings
 - **Needs Improvement** — 0 Critical findings, 4+ Warnings OR 1 Critical with clear fix
 - **Critical Issues** — 2+ Critical findings OR 1 Critical with security implications
-
-**Agent Grade** (agent projects only): the A–F letter is `min(G_det, G_jud)` computed in SKILL.md Step 4.5 — full rubric, bands, edge cases, and worked examples in [agent-grading-rubric.md](agents/agent-grading-rubric.md). It maps to the same verdict labels (A/B = Good, C/D = Needs Improvement, F = Critical Issues). Non-agent projects carry the Quality verdict only (grading for RPA / flows / coded apps is a future phase).
 
 ## Optimization Evaluation Framework
 

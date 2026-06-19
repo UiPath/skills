@@ -35,19 +35,17 @@ Goal: get the error message and match playbooks as fast as possible.
    3. **Fall back to most recent overall** only when no process can be inferred from the user's message OR the working directory.
 
    Write to raw/, write evidence summary.
-6. **Match playbooks** — read the product/package summary for every domain in `state.json.scope.domain`. Record EVERY playbook whose signature the error data satisfies, across ALL confidence levels (high + medium + low) — not only the highest-ranked one. When multiple sibling playbooks share an overlapping signature but describe distinct causes or remediations, ALL of them MUST appear in `state.json.matched_playbooks`. The Confidence Gate below decides Pass 1→Pass 2 routing only; it does NOT decide which playbooks are recorded. Each entry carries confidence level and full path. Do NOT override confidence levels.
+6. **Match playbooks** — read the product/package summary for every domain in `state.json.scope.domain`. Match playbooks against the error message/type from the fetched data. Record every match in `state.json.matched_playbooks` with confidence level and full path. Do NOT override confidence levels.
 
 7. **Confirm source-code availability when the matched playbook needs it.** Some playbooks cannot reach a root cause without inspecting project source — typically runtime exceptions, selector failures, expression-evaluation errors, variable-binding issues, and any case where the error stack names a compiled workflow expression (e.g., `__Expr<n>Get`, `CSharpValue.Execute`, `InArgument.TryPopulateValue`) or a specific activity inside a `.xaml` / `.cs` / `.py` source file. Decide:
 
    a. **Does this investigation need source?** Read each matched playbook's `## Investigation` section. If it instructs reading XAML / `project.json` / activity arguments / variable bindings / expression text / compiled-expression mapping → source is required. If it only references CLI commands and platform-side fixtures → source is not required.
 
-   b. **Is source already known? Actively check — do NOT rely on memory.** Before declaring source unknown, run BOTH of these in order:
-      1. **Check the user's message.** If the problem description named a directory or path (e.g., "the project at C:\…", "the source for X is in cwd", "this folder"), record it as `source_code_path` and continue. This already happens during step 4 ("Resolve identity"); confirm here.
-      2. **Auto-discover the current working directory.** Run `Glob` for `project.json`, `agent.json`, and `caseplan.json` at the cwd top level (NOT recursive — top level only, to avoid false positives from nested sample projects). If any of those files exist at depth 0 of cwd, record `source_code_path = "."` in `state.json.requirements` with a `source_code_path_origin = "auto-discovered-cwd"` field noting which marker file was found, and continue. Do NOT ask the user when the project is already mounted.
+   b. **Is source already known?** Check `state.json.requirements.source_code_path`. It is "known" if:
+      - The user's problem description named a directory or path (e.g., "the project at C:\…", "the source for X is in cwd", "this folder"), AND you recorded it during step 4 ("Resolve identity"), OR
+      - The current working directory contains a recognisable UiPath project (`project.json`, `agent.json`, or `caseplan.json` at the top level) and you record `source_code_path = "."` here with a note that you auto-discovered it.
 
-      Source is "known" only if step (1) or (2) above produced a path. If neither did, treat it as unknown and proceed to (c).
-
-   c. **If source is required AND not yet known (after BOTH active checks in (b) failed) → STOP and ask the user.** Write `needs_input.json` (see shared.md) requesting the project source path. The question must be specific:
+   c. **If source is required AND not yet known → STOP and ask the user.** Write `needs_input.json` (see shared.md) requesting the project source path. The question must be specific:
       ```
       "To trace the originating cause for <error class / activity name>, I need to inspect the project source (XAML / project.json / .py). Could you share the project's directory path? If you are already in the project directory, just reply `pwd` or `.`."
       ```

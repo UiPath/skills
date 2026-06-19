@@ -63,8 +63,6 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 
 Record the returned `ProjectId` — the flow node's `inputs.source` must match it exactly.
 
-The scaffold sets `settings.model: "gpt-4o-2024-11-20"` (stale) and empty prompts — both are placeholders. During Phase 2 you MUST override the model (`uip agent model list` → newest GA per task) and author a robust system prompt + typed `outputSchema` per the obligations in [impl.md § Configure `agent.json`](impl.md#configure-agentjson). The skeleton, model-discovery command, and production checklist live in the `uipath-agents` skill's `model-selection-guide.md` and `agent-prompting-guide.md` (source of truth).
-
 For agent.json configuration (prompts, model, schemas) and resource file authoring (tools, contexts, escalations), see the `uipath-agents` skill (`lowcode/agent-definition.md` and `lowcode/capabilities/`).
 
 ## Tools — Flow Registry Discovery
@@ -88,11 +86,11 @@ Filter rows where `NodeType` starts with `<prefix>.` and `DisplayName` matches. 
 uip maestro flow registry get "<NodeType>" --output json
 ```
 
-For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). All four subtypes share discovery, `resource.json` shape, and refresh — only the `type` field and the schema flavor differ (see § Subtypes in `process.md`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/Sales)` → `"Shared/Sales"`) or from `uip solution resources get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resources refresh` from resolving the tool at runtime.
+For the tool's `resource.json` format and solution-level resource setup, see the `uipath-agents` skill (`lowcode/capabilities/process/`). All four subtypes share discovery, `resource.json` shape, and refresh — only the `type` field and the schema flavor differ (see § Subtypes in `process.md`). Set `location` based on the discovery `Source` field: `"solution"` when `Source: "Local"`, `"external"` when `Source: "Remote"` (same rule as standalone agents — see `critical-rules.md` Rule 12). Set `properties.folderPath` to the **literal folder path from discovery** — parse it from the registry `Description` field (e.g., `(Shared/Sales)` → `"Shared/Sales"`) or from `uip solution resource get`. Do **not** leave `folderPath` empty — an empty `folderPath` prevents `uip solution resource refresh` from resolving the tool at runtime.
 
 ### Anti-pattern
 
-Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json` and let `uip solution resources refresh` materialize the solution-level files.
+Do not use `uip agent tool add` to attach the tool to an inline-in-flow agent. That command is designed for standalone agent projects. For inline-in-flow agents, hand-author the tool's `resource.json` and let `uip solution resource refresh` materialize the solution-level files.
 
 ## Planning Annotation
 

@@ -4,38 +4,8 @@ Discover available capabilities, then design the flow topology — select node t
 
 > **Registry rules for this phase:**
 > - **`registry search` and `registry list` are ALLOWED** — use them to discover what connectors, resources, and operations exist before committing to a topology.
-> - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get <node-type> --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
+> - **`registry get` IS REQUIRED for any OOTB action node** the flow will use — `core.action.http`, `core.action.http.v2`, `core.action.script`, `core.action.transform`, queue actions, etc. These nodes have no connection-id; their full input/output schema, port names, and required fields are only visible via `registry get <nodeType> --output json`. Run `get` once per OOTB action node type during discovery so the topology and ports are grounded in real metadata.
 > - **`registry get` is DEFERRED for connector and resource nodes** — those require a `--connection-id` (connector) or `--local` resolution that belongs to [Planning Phase 2: Implementation](planning-impl.md).
-
----
-
-## Before You Build: Is Maestro the Right Home?
-
-Run this gate **before** designing the topology. Maestro is the right tool for a *long-running case* — but not every automation is one, and reaching for a flow by default leads to orchestration overhead that a simpler design would avoid. If the answer below is "queue + Action Center," stop here and hand the work to [/uipath:uipath-rpa](/uipath:uipath-rpa) + [/uipath:uipath-platform](/uipath:uipath-platform) instead of authoring a flow.
-
-### The one question
-
-> **Where does the case live right now — and where should it live between steps?**
-
-A business case (an invoice being approved, a claim being recovered, an onboarding in progress) needs a home for its state while it waits. There are two legitimate homes:
-
-- **One durable instance — Maestro.** A single orchestrated process holds the whole case, survives every wait, and shows you exactly where each case is at any moment.
-- **Scattered across infrastructure — a queue + Action Center state machine.** The case's state lives spread across queue items, asset values, and Action Center tasks; whichever robot picks the work up next reassembles it. RPA does the steps, a queue carries the work between them, Action Center holds the human-wait, and the "state" is implicit in which queue/task the item currently sits in.
-
-### Decision table
-
-| Factor | Lean **Maestro flow** | Lean **queue + Action Center state machine** |
-|---|---|---|
-| Number of distinct waits in the lifecycle | Several waits / branches / parallel paths | A **single** human-wait or external-wait |
-| Per-case visibility | You need to see "where is case #1234 right now" | Per-item queue status is enough |
-| Branching & parallelism | Real branching, fan-out/merge, SLAs | Mostly linear: do work → wait → finish |
-| Who maintains it | Team comfortable with orchestration as a first-class artifact | RPA-only team, existing queue infrastructure |
-| Cross-product composition | Coordinates RPA + Agents + connectors + humans | Pure RPA + Action Center, no agent reasoning |
-| Cost of the orchestration layer | Justified by the above | Overhead you won't repay for a one-shot process |
-
-**Rule of thumb:** a **single-wait** lifecycle (do work → wait for one approval → finish) is a legitimate and *simpler* job for a queue + Action Center state machine. **Multi-wait, branched, or visibility-critical** lifecycles are where Maestro earns its keep. Both are valid — choose deliberately, not by habit.
-
-> **Converting an existing RPA project to Maestro?** You don't rewrite the project into a flow — you keep the executors and lift only the orchestration. See [brownfield.md — Converting an existing project to Maestro](brownfield.md#converting-an-existing-project-to-maestro).
 
 ---
 
@@ -79,35 +49,30 @@ uip maestro flow registry get core.action.script --output json  # script node in
 **In-solution discovery (no login required):**
 ```bash
 uip maestro flow registry list --local --output json     # discover sibling projects in the same .uipx solution
-uip maestro flow registry search "<keyword>" --local --output json  # keyword search across in-solution nodes only
 ```
-Run from inside the flow project directory. If the resource (RPA, agent, flow, API workflow) exists as a sibling project in the same solution, it appears here without needing to be published. Prefer in-solution resources over mock placeholders. `--local` results omit `AvailableOnTenant` (no tenant lookup). Empty `search --local` is not authoritative — confirm with `list --local` before treating a resource as absent.
+Run from inside the flow project directory. If the resource (RPA, agent, flow, API workflow) exists as a sibling project in the same solution, it appears here without needing to be published. Prefer in-solution resources over mock placeholders.
 
 ### Check Connector Connections
 
 For each connector found in registry search, verify a healthy connection exists. See [plugins/connector/planning.md](plugins/connector/planning.md) for the full connection check workflow.
 
-**Never type a connector key from memory.** Use the key from the `registry search` node type only. The registry key is frequently prefixed or qualified differently than the service's brand name, so a guessed key silently misses the real connector and makes `connections list` return a false "No connections found."
-
 ```bash
-uip is connections list "<connector-key>" --all-folders --output json
+uip is connections list "<connector-key>" --output json
 ```
 
-> `--all-folders` is mandatory. Without it the CLI returns the active folder only and hides connections in other folders the user can see. Plain `uip is connections list "<connector-key>"` is forbidden for discovery.
-
 - If a default enabled connection exists (`IsDefault: Yes`, `State: Enabled`), record the connection ID for Phase 2.
-- **If the result is empty, do not conclude "no connection exists."** An empty `connections list` is suspicious, not authoritative. Three things must hold before you treat it as real: (a) the key came from `registry search`, not memory; (b) the call used `--all-folders`; (c) a `--refresh` retry was still empty. Only then surface it in **Open Questions** so the user can create one while reviewing (creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking Phase 2). Never ask the user a connection-creation question on an unverified empty result. See [connector/impl.md](plugins/connector/impl.md) for the platform-skill empty-result recovery path shared with implementation.
+- **If no connection exists**, surface it in the **Open Questions** section of the architectural plan so the user can create it while reviewing. Creating a connection may involve OAuth flows or admin approval — front-loading this avoids blocking Phase 2.
 
 > This is a lightweight existence check, not full connection binding. Phase 2 will ping the connection, fetch enriched metadata, and resolve reference fields.
 
 **What to record from discovery:**
 - **Connectors:** Whether a connector exists for each external service, available operations (from node type names), and whether a healthy connection exists. Field details require `registry get --connection-id` in Phase 2.
-- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`, or `registry search "<keyword>" --local` for keyword match), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
+- **Resources:** Whether a published or in-solution node exists for each RPA process, agent, or flow referenced in the requirements. Check in-solution first (`registry list --local`), then the tenant registry. Input/output schemas require `registry get` (with `--local` for in-solution) in Phase 2.
 - **Gaps:** Services with no connector -> fall back to `core.action.http.v2` (manual mode). Resources in the same solution but unpublished -> use `--local` discovery (no mock needed). Resources not in the solution and not yet published -> use `core.logic.mock` placeholder. Connectors with no connection -> flag in Open Questions for the user to create.
 
 Use these findings to select the right node types from the [Plugin Index](#plugin-index). If a connector doesn't exist, fall back to `core.action.http.v2` (manual mode) or note it as a gap in Open Questions.
 
-> **Run `registry get` for OOTB action nodes during discovery; defer for connector and resource nodes.** OOTB nodes (HTTP, Script, Transform, queue actions, etc.) have no `--connection-id` dependency — fetch their full schemas now so the planned topology references real ports and fields. Connector field metadata (required fields, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2; resource schemas (RPA, agent, flow, API workflow) require `--local` or published resolution and also belong to Phase 2. `is connections list --all-folders` is enough to confirm connector connection availability in this phase.
+> **Run `registry get` for OOTB action nodes during discovery; defer for connector and resource nodes.** OOTB nodes (HTTP, Script, Transform, queue actions, etc.) have no `--connection-id` dependency — fetch their full schemas now so the planned topology references real ports and fields. Connector field metadata (required fields, enums, reference resolution) requires `registry get --connection-id` and belongs to Phase 2; resource schemas (RPA, agent, flow, API workflow) require `--local` or published resolution and also belong to Phase 2. `is connections list` is enough to confirm connector connection availability in this phase.
 
 ---
 
@@ -136,7 +101,6 @@ Each plugin has a `planning.md` with full selection heuristics, ports, key input
 | `core.action.script` | [script](plugins/script/planning.md) | Custom logic, data transformation, computation, formatting |
 | `core.action.http.v2` | [http](plugins/http/planning.md) | Call a REST API — connector mode (IS auth) or manual mode (raw URL). Replaces deprecated `core.action.http` |
 | `core.action.transform` | [transform](plugins/transform/planning.md) | Declarative map, filter, or group-by on a collection |
-| Wait for events (mid-flow) | [connector-trigger](plugins/connector-trigger/planning.md) | Flow pauses mid-run and waits for an external event before continuing (e.g., wait for an approval reply, a downstream issue update). Node type: `uipath.connector.event.<key>.<event>`. Same connector event metadata as a trigger, but has an `input` port |
 | `uipath.pattern.batch-transform` | [batch-transform](plugins/batch-transform/planning.md) | Append LLM-generated columns (category, summary, extracted entities) to every row of an attached CSV. Gated by tenant flag `canvas.nodes.batch-transform` |
 | `uipath.pattern.deep-rag` (Summarize) | [summarize](plugins/summarize/planning.md) | Comprehensive synthesis / Q&A over one attached document, with optional per-claim citations. Gated by tenant flag `canvas.nodes.summarize` |
 | `core.logic.delay` | [delay](plugins/delay/planning.md) | Pause execution for a duration or until a specific date |
@@ -190,9 +154,6 @@ Resource nodes invoke published UiPath automations. They are tenant-specific and
 | Flow | `uipath.core.flow.{key}` | [flow](plugins/flow/planning.md) |
 | API Workflow | `uipath.core.api-workflow.{key}` | [api-workflow](plugins/api-workflow/planning.md) |
 | Human Task (app-based) | `uipath.core.human-task.{key}` | [hitl](plugins/hitl/planning.md) |
-| Document Extraction | `uipath.ixp.{modelName}.{fullyQualifiedName}` | [ixp](plugins/ixp/planning.md) |
-
-> The IxP entry uses a **two-segment tail** (`{modelName}.{fullyQualifiedName}`), unlike the other resource nodes which use a single-segment `{key}` tail. Both segments are sanitized at registry-emit time. See [plugins/ixp/planning.md](plugins/ixp/planning.md) for the sanitization rule.
 
 ### Placeholders
 
@@ -221,7 +182,6 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `core.trigger.manual` | — | `output` |
 | `core.trigger.scheduled` | — | `output` |
 | `uipath.connector.trigger.*` | — | `output` |
-| `uipath.connector.event.*` (Wait for events) | `input` | `output`, `error` |
 | `core.action.script` | `input` | `success`, `error` |
 | `core.action.http.v2` | `input` | `default`, `error`, `branch-{id}` (dynamic per `inputs.branches` entry) |
 | `core.action.transform` | `input` | `output`, `error` |
@@ -243,7 +203,6 @@ Use this when defining edges. Every edge requires a `sourcePort` and `targetPort
 | `uipath.core.flow.*` | `input` | `output`, `error` |
 | `uipath.core.agentic-process.*` | `input` | `output`, `error` |
 | `uipath.core.api-workflow.*` | `input` | `output`, `error` |
-| `uipath.ixp.*` | `input` | `success`, `error` |
 | `uipath.connector.*` (activities) | `input` | `output`, `error` |
 | `core.action.queue.create` | `input` | `success` |
 | `core.action.queue.create-and-wait` | `input` | `success` |
@@ -269,7 +228,7 @@ Apply these when defining edges in the topology:
 9. Merge nodes accept multiple incoming edges (one per parallel path being synchronized)
 10. Do not create cycles except through Loop's `loopBack` mechanism
 11. **No dangling nodes** — every node must be connected by at least one edge. A node with no incoming and no outgoing edges is invalid. Verify every node in the node table appears in the edge table as either a source or target.
-12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. The source node must also have `inputs.errorHandlingEnabled: true`; CLI edge-add/format commands set it automatically, but direct JSON edits must include it. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
+12. **Wire the `error` source port whenever the requirements specify a failure fallback** — e.g., "if the call fails", "return X for invalid input", "if the article doesn't exist", "handle timeouts". Without an `error` edge on the action node, the failure faults the whole flow instead of routing to the handler. Applies to every action node in the Standard Port Reference with `error` listed. See [Error Handling](#error-handling-implicit-error-port) and [Implicit error port on action nodes](../../shared/file-format.md#implicit-error-port-on-action-nodes).
 
 ---
 
@@ -324,26 +283,11 @@ Use a downstream Decision/Switch only for **content-based routing on a successfu
 
 ### Orchestration (Mixed Resources)
 
-The canonical composition when more than one product is in play. Default division of labor — most "where does this step go?" questions resolve against it:
-
-> **RPA = hands. Maestro = conductor. Agents = brain. Humans approve.**
-
-- **Maestro orchestrates** — owns the case, the waits, the branching, the SLA, the long-running state (this flow).
-- **RPA executes** — mechanical work against systems with no clean API (desktop apps, terminals, legacy web) — a `uipath.core.rpa-workflow.*` resource node. See [rpa/planning.md](plugins/rpa/planning.md).
-- **Agents reason** — judgment calls: classify, summarize, decide which branch a fuzzy input belongs to — an agent node. See [agent/planning.md](plugins/agent/planning.md) / [inline-agent/planning.md](plugins/inline-agent/planning.md).
-- **Humans approve** — a HITL / human-task node wraps the point where a person must look before the case continues. See [hitl/planning.md](plugins/hitl/planning.md).
-
-Worked example — extract, classify, and route with one human approval branch:
-
 ```
-Trigger -> Script (prepare) -> RPA Process (extract from legacy app) -> Agent (classify) -> Decision (confidence high)
-  |-- true  -> Script (format) -> End (auto-approved)
-  |-- false -> HITL (human approves or rejects) -> Decision (approved)
-                 |-- true  -> Script (format) -> End (approved)
-                 |-- false -> Script (log rejection) -> End (rejected)
+Trigger -> Script (prepare) -> RPA Process (extract) -> Agent (classify) -> Decision
+  |-- approved -> Script (format) -> End
+  |-- rejected -> Human Task (review) -> End
 ```
-
-Here Maestro holds the case across the agent call and the human wait; RPA does the extraction the source app gives no API for; the agent makes the confidence call; the human is the gate only when the agent is unsure. Each non-Maestro piece is a separate published (or in-solution) artifact the flow references as a node — you do **not** rebuild them inside the flow.
 
 ### Scheduled Batch Processing
 
@@ -353,35 +297,11 @@ Scheduled Trigger -> HTTP (fetch batch) -> Loop
   |-- success -> Script (summary) -> End
 ```
 
-### No-API Source (RPA Feeder Bridge)
-
-When the source application has **no API and no connector** (legacy desktop app, terminal, mainframe screen), the flow cannot be triggered by the source directly. Bridge it: a **scheduled RPA bot scrapes the source and drops the result onto something Maestro can watch** — a Queue or a Storage Bucket — and the flow triggers off that.
-
-```
-[Scheduled RPA bot]  (outside the flow — uipath-rpa + a time trigger)
-   scrape legacy app -> push item to Queue (or file to Bucket)
-        |
-        v
-Queue/Bucket item created
-        |
-        v
-Maestro flow trigger -> Process item -> ... -> End
-```
-
-Two ways to wire the Maestro side:
-
-- **Queue → flow:** the RPA bot calls `Add Queue Item`; the flow is started by a queue trigger (configured in Orchestrator — see [/uipath:uipath-platform](/uipath:uipath-platform)) or polls/consumes the queue. Best when each scraped row is a separate case.
-- **Bucket → flow:** the RPA bot uploads a file; a scheduled flow picks it up. Best for batch drops.
-
-> **Tradeoff — polling latency equals the scraper schedule.** The case starts no sooner than the next RPA run. A bot scheduled every 15 minutes means up to 15 minutes of trigger latency. There is no event from a no-API source, so "real-time" is not achievable this way — tighten the RPA schedule to lower latency, at the cost of more bot runs. If the source *does* expose an event/webhook or has a connector, prefer a connector trigger ([connector-trigger/planning.md](plugins/connector-trigger/planning.md)) over this bridge.
-
-The scraper bot itself is an RPA project ([/uipath:uipath-rpa](/uipath:uipath-rpa)) with a time trigger ([/uipath:uipath-platform](/uipath:uipath-platform)); only the consuming flow belongs to this skill.
-
 ---
 
 ## Output Format
 
-Generate a `<SolutionName>.uipath.flow.arch.plan.md` file in the **solution directory** (the folder containing the `.uipx` file, not the project subfolder). The plan covers the entire solution — which may contain multiple projects in the future.
+Generate a `<SolutionName>.arch.plan.md` file in the **solution directory** (the folder containing the `.uipx` file, not the project subfolder). The plan covers the entire solution — which may contain multiple projects in the future.
 
 ### 1. Summary
 
@@ -594,13 +514,6 @@ Quick decision guide. For full details, read the linked plugin's `planning.md`.
 - Synthesize or answer questions over one attached document, with optional citations -> [summarize](plugins/summarize/planning.md) (`uipath.pattern.deep-rag`)
 - Small ad-hoc reshaping (map/filter/groupBy) without an LLM -> [transform](plugins/transform/planning.md)
 - Multi-step reasoning with tool use -> [inline-agent](plugins/inline-agent/planning.md) or [agent](plugins/agent/planning.md)
-
-### "I need to extract structured fields from documents"
-
-- Source is a PDF, scanned form, photo, or email attachment with **variable layout** across inputs (invoices from many vendors, receipts, contracts, forms) -> [ixp](plugins/ixp/planning.md) (`uipath.ixp.{modelName}.{fullyQualifiedName}`)
-- Source is already structured (CSV, JSON, database row) -> [script](plugins/script/planning.md) or [transform](plugins/transform/planning.md)
-- Need free-form summarization, classification, or open-ended reasoning -> [agent](plugins/agent/planning.md) or [inline-agent](plugins/inline-agent/planning.md)
-- IxP model not yet trained -> use `core.logic.mock` and surface in Open Questions
 
 ### "The flow needs something outside flow capabilities"
 

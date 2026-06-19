@@ -15,7 +15,7 @@ This is the preferred option. No registry pull, no app publishing, no tenant dep
 
 ### Adding / Editing
 
-For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `outcome-completed` port after adding the node.
+For add, delete, and wiring procedures, see [editing-operations.md](../../editing-operations.md). **Use `Edit` / `Write` for HITL node authoring.** Do not use the dedicated HITL CLI for this non-carve-out structural edit. Wire the `completed` port after adding the node.
 
 ### Quick Reference
 
@@ -34,7 +34,7 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
       "fields": [
         { "id": "invoiceid", "label": "Invoice ID", "type": "text",   "direction": "input", "binding": "vars.fetchInvoice.output.invoiceId" },
         { "id": "amount",    "label": "Amount",     "type": "number", "direction": "input", "binding": "vars.fetchInvoice.output.amount" },
-        { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "decision" }
+        { "id": "decision",  "label": "Decision",   "type": "text",   "direction": "output", "variable": "vars.decision" }
       ],
       "outcomes": [
         { "id": "approve", "name": "Approve", "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -69,15 +69,15 @@ For add, delete, and wiring procedures, see [editing-operations.md](../../editin
 
 **Field format rules:**
 - **Input fields**: `binding: "vars.<nodeId>.output.<field>"` (raw path, no `=js:$` prefix). No `variable` property on input fields.
-- **Output fields**: `variable: "<globalName>"` (plain name, **no** `vars.` prefix). No `binding`.
+- **Output fields**: `variable: "vars.<globalName>"` (with `vars.` prefix). No `binding`.
 - **InOut fields**: both `binding` and `variable`, same formats as above.
 - `schemaId` (not `id`) at the schema level — generate a fresh UUID.
-- `typeVersion` — always `"1.0"` for `uipath.human-in-the-loop`. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
+- `typeVersion: "1.0"` (not `"1.0.0"`).
 - No `model` block on node instances — only the definition carries it.
 
 **outputs block**: only `output` (with `properties` for output/inOut fields + `Action` outcome) and `status` (with `enum`/`default` from outcomes). No per-field `custom: true` entries.
 
-**Ports:** `input` (target) → `outcome-completed` (source, label: Completed)
+**Ports:** `input` (target) → `completed` (source)
 
 **Output variables:**
 - `$vars.{nodeId}.output` — object with all `output` / `inOut` field values, keyed by **field `id`**
@@ -96,13 +96,13 @@ Use when there is an existing deployed Action Center app that should serve as th
 **CLI (primary path):**
 
 ```bash
-uip solution resources list --kind App --output json
+uip solution resource list --kind App --output json
 ```
 
 Returns all Action Center app types (`vB Action`, `workflow Action`, `Coded Action`, `JS Action`). Filter by app name. Then retrieve the configuration:
 
 ```bash
-uip solution resources get <key> --output json
+uip solution resource get <key> --output json
 ```
 
 **Direct API fallback (if CLI unavailable):**
@@ -121,7 +121,7 @@ Full step-by-step (app search → retrieve-configuration → resource files → 
 {
   "id": "invoiceReview1",
   "type": "uipath.human-in-the-loop",
-  "typeVersion": "<DEFINITION_VERSION>",
+  "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
     "type": "custom",
@@ -201,4 +201,4 @@ Manual Trigger -> RPA Process (extract) -> HITL (review) -> Decision (approved?)
 | Node type not found in registry (Option 2) | App not published or registry stale | If in same solution: `uip maestro flow registry list --local`. Otherwise: `uip login` then `uip maestro flow registry pull --force` |
 | Task never completes | Human hasn't submitted the form | Check task assignment in Orchestrator |
 | Output missing expected fields | App form doesn't match expected schema | Verify app form fields match what the flow expects |
-| `outcome-completed` port unwired (Option 1) | Missing edge on output handle | Wire the `outcome-completed` output handle — an unwired `outcome-completed` blocks the flow indefinitely |
+| `completed` port unwired (Option 1) | Missing edge on output handle | Wire the `completed` output handle — an unwired `completed` blocks the flow indefinitely |

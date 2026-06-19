@@ -10,7 +10,7 @@
 uip maestro flow registry get core.logic.decision --output json
 ```
 
-Confirm: input port `input`, output ports `true` and `false`, required input `expression`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+Confirm: input port `input`, output ports `true` and `false`, required input `expression`.
 
 ## JSON Structure
 
@@ -18,7 +18,7 @@ Confirm: input port `input`, output ports `true` and `false`, required input `ex
 {
   "id": "checkStatus",
   "type": "core.logic.decision",
-  "typeVersion": "<DEFINITION_VERSION>",
+  "typeVersion": "1.0",
   "display": { "label": "Check Status" },
   "inputs": {
     "expression": "$vars.fetchData.output.statusCode === 200"

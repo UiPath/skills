@@ -39,11 +39,11 @@ No `indexName` and no `settings` for DataFabric contexts. The shape is entirely 
 
 ## Solution-Level Files
 
-**Not auto-generated.** Solution-level resource generation for DataFabric contexts is not yet supported by `uip solution resources refresh` — the agent-level `resource.json` is written, but you must hand-author any solution manifests needed.
+**Not auto-generated.** Solution-level resource generation for DataFabric contexts is not yet supported by `uip solution resource refresh` — the agent-level `resource.json` is written, but you must hand-author any solution manifests needed.
 
 ## Gotchas
 
-`contextType` value MUST be `"datafabricentityset"` (all lowercase) — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
+`contextType` value MUST be `"datafabricentityset"` (all lowercase) — see [../../critical-rules.md](../../critical-rules.md) Anti-pattern 12.
 
 ## References
 

@@ -10,7 +10,7 @@
 uip maestro flow registry get core.logic.loop --output json
 ```
 
-Confirm: input ports `input` and `loopBack`, output ports `success` and `output`, required input `collection`. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+Confirm: input ports `input` and `loopBack`, output ports `success` and `output`, required input `collection`.
 
 ## JSON Structure
 
@@ -20,7 +20,7 @@ Confirm: input ports `input` and `loopBack`, output ports `success` and `output`
 {
   "id": "loop1",
   "type": "core.logic.loop",
-  "typeVersion": "<DEFINITION_VERSION>",
+  "typeVersion": "1.0",
   "display": { "label": "Loop over items" },
   "inputs": {
     "collection": "=js:$vars.fetchData.output.body.items",

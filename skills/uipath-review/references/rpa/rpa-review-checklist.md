@@ -55,7 +55,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| All referenced packages are installable | Critical | `uip rpa packages install` |
+| All referenced packages are installable | Critical | `uip rpa packages install --use-studio` |
 | No unused packages | Warning | Workflow Analyzer rule ST-USG-010 |
 | Version constraints use proper syntax (`[1.0.0]`, `[1.0.0, 2.0.0)`) | Warning | Read project.json dependencies |
 | No package version conflicts | Critical | Check for multiple versions of same package family |
@@ -99,7 +99,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| All `.xaml` files pass validation | Critical | `uip rpa validate --file-path "<FILE>" --project-dir "<DIR>" --output json` |
+| All `.xaml` files pass validation | Critical | `uip rpa validate --file-path "<FILE>" --project-dir "<DIR>" --output json --use-studio` |
 | Expression language in all XAML files matches `project.json` setting | Critical | Check `expressionLanguage` consistency |
 | No C# syntax in VB.NET projects | Warning | If `expressionLanguage` is `VisualBasic`, grep all `.xaml` for C# patterns: `!=`, `&&`, `\|\|`, `null` (VB uses `Nothing`), `$"` (interpolated strings), `=>` (lambda), `//` (comments), `typeof()` (VB uses `GetType()`). These compile-fail or silently misbehave. |
 | No activities with default display names ("Sequence", "Assign", "If") | Warning | Workflow Analyzer rule ST-MRD-002 |

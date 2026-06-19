@@ -14,7 +14,7 @@ npm -g install @uipath/cli
 uip skills install
 ```
 
-`uip skills install` finds the AI coding agents installed on your machine and installs the skills for all of them, into each agent's directory, ready to use. If it can't find any agent, it asks which one to target. To install for just one agent, pass `--agent <name>` (e.g. `--agent claude`).
+Select the skills you need from the wizard. Skills are installed into your coding agent's directory and ready to use.
 
 <details>
 <summary>Don't have Node.js installed?</summary>
@@ -42,80 +42,16 @@ After installing, verify with `node -v` and then run the quick start command abo
 
 ## Skill Catalog
 
-The repository ships skills covering authoring, platform operations, and diagnostics for UiPath automations.
-
-### Authoring
+The repository contains skills for building and managing UiPath automation projects — coded workflows in C#, RPA workflows in XAML, Flow projects in JSON, desktop/browser UI automation, and platform operations.
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-rpa** | RPA workflows (`.xaml` and `.cs` coded) — create, edit, build, run, debug, test; UI automation, Object Repository, Integration Service activities. |
-| **uipath-maestro-flow** | Maestro Flow (`.flow`) — author, connect nodes, validate, run, publish; triggers, schedules, evals, incidents. |
-| **uipath-agents** | UiPath agents end-to-end — coded (Python: LangGraph, LlamaIndex, OpenAI Agents) and low-code (`agent.json`); scaffold, run, evaluate, deploy. |
-| **uipath-maestro-bpmn** | Maestro BPMN process orchestration (`.bpmn`) — author XML, validate, package, operate, diagnose. |
-| **uipath-maestro-case** | Case Management (`caseplan.json`) authoring from SDD with phased build and validation. |
-| **uipath-coded-apps** | Coded Web Apps and Coded Action Apps — scaffold, build, debug, pack, publish, deploy via `uip codedapp`. |
-| **uipath-api-workflow** | API Workflow JSON DSL — author, run, package, publish; HTTP and Integration Service connector activities. |
-| **uipath-human-in-the-loop** | Human task authoring and operations — design approval gates, escalations, and validation forms in Flow, Maestro, or coded agents; list, assign, complete, and reassign the resulting Action Center tasks. |
-| **uipath-ixp** | Document Understanding (IXP) — project setup, labeling, prediction review, prompt improvement, model publishing. |
-
-### Solution & Planning
-
-| Skill | Description |
-|-------|-------------|
-| **uipath-planner** | Solution planner & designer — turn a Process Design Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
-| **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
-| **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
-
-### Platform & Operations
-
-| Skill | Description |
-|-------|-------------|
-| **uipath-platform** | Platform ops via `uip` CLI — auth, Orchestrator (folders, assets, queues, buckets, jobs, triggers), Integration Service, Data Fabric (entities and records), LLM Gateway, traces, licensing. |
-| **uipath-admin** | UiPath Admin — Identity Server, Authorization (custom roles, role assignments, PDP), OMS (org, tenants, services, regions), IP restriction, audit; governance policies (AOps product policies and Access ToolUsePolicy). |
-| **uipath-test** | Test Manager — manage projects, cases, sets, executions; generate persona-tailored test reports. |
-
-### Diagnostics & Feedback
-
-| Skill | Description |
-|-------|-------------|
-| **uipath-troubleshoot** | Root-cause investigation across any UiPath product — errors, failures, regressions, stuck jobs, traces, incidents. |
-| **uipath-feedback** | Submit bug reports and improvement suggestions via `uip feedback send`. |
-
-### Lifecycle Status
-
-Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-status.json) — the source of truth. The table below is generated; refresh it with `python3 scripts/check-skill-status.py --write-readme`.
-
-<!-- BEGIN GENERATED SKILL STATUS -->
-| Skill | Status |
-|-------|--------|
-| `uipath-admin` | In-development |
-| `uipath-agents` | In-development |
-| `uipath-api-workflow` | In-development |
-| `uipath-automation-discovery` | Preview |
-| `uipath-coded-apps` | Preview |
-| `uipath-data-fabric` | In-development |
-| `uipath-feedback` | Stable |
-| `uipath-governance` | In-development |
-| `uipath-human-in-the-loop` | In-development |
-| `uipath-ixp` | In-development |
-| `uipath-maestro-bpmn` | In-development |
-| `uipath-maestro-case` | In-development |
-| `uipath-maestro-flow` | In-development |
-| `uipath-mcp-servers` | In-development |
-| `uipath-planner` | Preview |
-| `uipath-platform` | Preview |
-| `uipath-review` | Preview |
-| `uipath-rpa` | Preview |
-| `uipath-solution` | Preview |
-| `uipath-tasks` | Preview |
-| `uipath-test` | In-development |
-| `uipath-troubleshoot` | Preview |
-
-**Status legend:**
-- **Stable** — Stable, production-ready surface; safe for production.
-- **Preview** — Not yet stable; may be broadly available or gated/allowlisted, and surface and behavior may change.
-- **In-development** — Skill itself is incomplete or unstable; coverage is partial.
-<!-- END GENERATED SKILL STATUS -->
+| **uipath-rpa** | Full assistant for UiPath automations — coded workflows (C#) and low-code RPA workflows (XAML). Create, edit, build, run, and debug automation projects |
+| **uipath-maestro-flow** | Create, validate, and debug UiPath Flow projects using the `.flow` JSON format and `uip` CLI |
+| **uipath-platform** | Authentication, Orchestrator management, resources, Integration Service, traces, licensing, and CLI tools |
+| **uipath-solution** | PDD → SDD authoring AND `uip solution` lifecycle (init, pack, publish, deploy, activate) for `.uipx` multi-project solutions |
+| **uipath-agents** | End-to-end toolkit for UiPath coded agents: scaffold, build, run, evaluate, deploy (LangGraph, LlamaIndex, OpenAI Agents, Simple Function) |
+| **uipath-coded-apps** | Build, sync, package, publish, and deploy UiPath Coded Web Applications — push/pull to Studio Web, pack into .nupkg, publish to Orchestrator, deploy to production |
 
 ## Agents
 
@@ -147,22 +83,11 @@ The command prints the recommended JSON and offers to merge it into your setting
 
 ### Google Gemini CLI
 
-Gemini CLI is supported by `uip skills install`. If the Gemini CLI is on your PATH, it's detected automatically and skills are wired up. If no agent is detected, pick **Gemini CLI** when prompted.
+Gemini CLI is supported by `uip skills install` — pick **Gemini CLI** when the wizard prompts for a target and skills are wired up automatically.
 
 ### OpenAI Codex CLI
 
 This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
-
-This repository also includes Codex plugin metadata under `.codex-plugin/`. The Codex plugin manifest exposes the same `skills/` directory and shared session hooks.
-
-Install with Codex CLI:
-
-```bash
-codex plugin marketplace add UiPath/skills --ref main
-codex plugin add uipath@uipath-marketplace
-```
-
-The marketplace entry currently uses a `plugins/uipath` symlink so Codex can load the repository root as the plugin root; remove it once [openai/codex#17066](https://github.com/openai/codex/issues/17066) is resolved.
 
 > **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
 > ```bash

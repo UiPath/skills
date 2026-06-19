@@ -16,15 +16,12 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
   "elementId": "Stage_aB3kL9-tWm4Vx9Tp",
   "isRequired": false,
   "shouldRunOnlyOnce": true,
-  "skipCondition": "=js:vars.skipReview === true",
   "data": {
     "timerType": "timeDuration",
     "timeDuration": "PT3M"
   }
 }
 ```
-
-> **`data` holds ONLY `timerType` + the duration field.** `skipCondition` and all other envelope fields are top-level siblings of `data`, never nested inside it (a misplaced one passes `validate` silently but is never applied). See [case-schema.md](../../../case-schema.md) §7 Tasks — BaseTask shape.
 
 ## Procedure
 
@@ -62,14 +59,6 @@ Write the timer task directly to `caseplan.json`. No CLI command needed.
 ```
 
 ISO 8601 duration format (e.g., `PT3M`, `PT1H30M`, `P2D`). Time units use `PT` prefix, date units use `P` (no `T`). Weeks → `P7D` (Luxon doesn't output `W`).
-
-**Bounded repetition** — when tasks.md specifies `repeat: N`, add `data.repeat` as a string alongside `timeDuration`. Omit `data.repeat` entirely for a single fire.
-
-```json
-"data": { "timerType": "timeDuration", "timeDuration": "PT1H", "repeat": "5" }
-```
-
-Pairs with `timeDuration` only. For bounded repetition with a start datetime, use `timeCycle` instead.
 
 ### timeDate — specific datetime
 

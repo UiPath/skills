@@ -10,7 +10,7 @@ Contexts feed retrievable information into an agent at runtime. Three variants e
 
 ## Variants
 
-| `contextType` | Backing | Solution-level auto-gen by `uip solution resources refresh`? | Walkthrough |
+| `contextType` | Backing | Solution-level auto-gen by `uip solution resource refresh`? | Walkthrough |
 |---|---|---|---|
 | `"index"` | ECS Context Grounding index (StorageBucket-backed) | Yes — auto-writes `index/<Name>.json` + `bucket/orchestratorBucket/<Bucket>.json` + 2 debug entries | [index.md](index.md) |
 | `"attachments"` | Runtime files passed to the agent | No (no solution resource needed) | [attachments.md](attachments.md) |
@@ -26,7 +26,7 @@ Contexts feed retrievable information into an agent at runtime. Three variants e
 
 ## Casing Rule
 
-`contextType` and `retrievalMode` values are lowercase. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) § What NOT to Do — Anti-pattern 12.
+`contextType` and `retrievalMode` values are lowercase. See [../../critical-rules.md](../../critical-rules.md) § What NOT to Do — Anti-pattern 12.
 
 ## Sibling Files
 

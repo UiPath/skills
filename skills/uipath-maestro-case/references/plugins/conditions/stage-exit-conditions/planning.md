@@ -17,25 +17,21 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 | Field | Source | Notes |
 |-------|--------|-------|
 | `<stage-id>` | Captured from the stages plugin | Target stage |
-| `display-name` | sdd.md Display Name column (optional) | Carry the SDD value verbatim. Omit when the SDD cell is blank / `—` — do NOT invent one; impl defaults it to `Complete Rule {N}` (marks-stage-complete `true`) / `Exit Rule {N}` (`false`). |
+| `display-name` | sdd.md (optional) | |
 | `type` | sdd.md exit style | `exit-only` / `wait-for-user` / `return-to-origin` |
 | `exit-to-stage-id` | sdd.md routing target (optional) | Required when routing to a specific stage |
 | `marks-stage-complete` | sdd.md (default depends on type) | `true` for completion exits, `false` for diverging routes |
 | `rule-type` | From catalog below | |
 | `selected-tasks-ids` | Required for `selected-tasks-completed` | Comma-separated task IDs |
-| `connector fields` | SDD **Connector Rule Detail** block | `type-id` (activity-type-id), `connector-key`, `connection-id`, `object-name`, `event-operation`, `event-mode`, `input-values`, optional `filter` — see [connector-trigger-common.md § Planning Pipeline](../../../connector-trigger-common.md#planning-pipeline) |
-| `condition-expression` | Optional on any rule-type | Extra `=js:` gate on **case state** (`=js:vars.X ...`) — NOT the event payload (no `event` namespace) |
-| `outputs` | SDD **Connector Rule Outputs** block | Optional. `->` (extract field → case var) or `=` (assign expression → case var). See [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning). |
+| `condition-expression` | Required for `wait-for-connector` | |
 
 ## Exit Type Catalog
 
 | Exit `type` | When to pick |
 |-------------|--------------|
-| `exit-only` | **Default.** Stage exits normally; the next stage is whichever one's entry condition matches (or `exit-to-stage-id` when set). No edges — routing is condition-driven. |
+| `exit-only` | **Default.** Stage exits normally along configured edges. |
 | `wait-for-user` | Exit requires manual user decision or approval. |
 | `return-to-origin` | Rework / exception loop — sends the case back to the previous stage. |
-
-> **Routing the origin INTO a decision/signal-routed exception lane.** The origin stage carries the route: a gated divert exit (`marks-stage-complete: false`, `selected-tasks-completed("<decider>")`, `conditionExpression =js:(<signal> === <exception-value>)`, `exit-to-stage-id` → the lane) PLUS its completion exit gated by the inverse `IF`. The two must be mutually exclusive (ungated completion → dual-fire; gated completion with no divert → deadlock). The lane returns via `return-to-origin`. See [stage-exit-conditions/impl-json.md § Divert into an exception lane](impl-json.md#divert-into-an-exception-lane-gated-routing-exit) and [`sdd-generation-rules.md` § Logical integrity step 5](../../../sdd-generation-rules.md#logical-integrity--stage-graph).
 
 ## Rule-Type Catalog (stage-exit scope)
 
@@ -45,13 +41,13 @@ Allowed `ruleType` values depend on `marks-stage-complete`:
 | Rule type | Extra fields |
 |-----------|--------------|
 | `required-tasks-completed` | — |
-| `wait-for-connector` | connector fields (fills `uipath`); `conditionExpression` optional |
+| `wait-for-connector` | `conditionExpression` |
 
 **When `marks-stage-complete: false` (exit-only, routing):**
 | Rule type | Extra fields |
 |-----------|--------------|
 | `selected-tasks-completed` | `selectedTasksIds` (comma-separated) |
-| `wait-for-connector` | connector fields (fills `uipath`); `conditionExpression` optional |
+| `wait-for-connector` | `conditionExpression` |
 
 ## Ordering
 
@@ -62,15 +58,12 @@ Stage exit conditions are created **after** all tasks in the stage have been add
 ```markdown
 ## T<n>: Add stage-exit condition for "<stage>" — <summary>
 - target-stage: "<stage-name>"
-- display-name: "<name>"                        # optional — omit when blank; impl defaults to "Complete Rule {N}"/"Exit Rule {N}" per marks-stage-complete
+- display-name: "<name>"
 - type: exit-only
 - exit-to-stage: "<target-stage-name>"          # optional
 - marks-stage-complete: true
 - rule-type: required-tasks-completed
 - selected-tasks: "<Task A>, <Task B>"          # only if rule-type requires
-- condition-expression: "=js:vars.X..."         # optional gate on case state, NOT the event payload
 - order: after T<m>
 - verify: Confirm Result: Success, capture ConditionId
 ```
-
-> `rule-type: wait-for-connector` also needs the connector fields — see [connector-trigger-common.md § tasks.md fields (planning)](../../../connector-trigger-common.md#tasksmd-fields-planning).

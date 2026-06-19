@@ -68,22 +68,6 @@ Every activity should have `sap:VirtualizedContainerService.HintSize` as an attr
 
 ## 3. Flowchart Layout
 
-Node vocabulary, structure & wiring, and node registration: [flowchart-guide.md](flowchart-guide.md). This section covers layout coordinates and ViewState only.
-
-### What Counts as a Node
-
-A node is one `FlowStep` / `FlowDecision` / `FlowSwitch` on the canvas. A `FlowStep` wraps **exactly one** activity — which may be a container (`Sequence`, `NApplicationCard`, `NCheckState`, `TryCatch`). Activities **inside** a container are NOT separate nodes; they stay nested in their parent and never get their own `ShapeLocation`. Promote a step to its own node only when it is a top-level step in the process flow. Example: an `NCheckState`'s `Throw` belongs inside the `IfNotExists` branch — making it a sibling node would change when it runs.
-
-One node per top-level step → separate boxes. One step's children nested → stay inside that box. Do not invert this into "every activity is a node."
-
-### Required vs. Optional ViewState Keys
-
-`ShapeLocation` + `ShapeSize` are the **required** pair on every node — they are what makes nodes render as separate boxes. `ConnectorLocation` (and `TrueConnector`/`FalseConnector`) is **optional**: Studio auto-routes connectors from the source and target node positions. The recipes below include connectors for precise routing, but omitting them is valid — Studio's own saved output omits them entirely.
-
-### No Orphan Nodes
-
-Every node except the start must be reachable: referenced by `Flowchart.StartNode`, a `FlowStep.Next`, or a decision/switch branch. A `FlowStep` with no incoming reference and no `FlowStep.Next` is an orphan — it renders as a disconnected box and is almost always a leftover. Do not generate them.
-
 ### Coordinate System
 
 - **Origin**: Top-left corner (0, 0)
@@ -281,27 +265,6 @@ FlowDecision:  (270, 220)     60x60
 
 All FlowStep/FlowDecision/FlowSwitch nodes must be registered as children of `<Flowchart>`. Direct children are already registered. Nodes defined inline within property elements (e.g., inside `FlowDecision.True`) need a trailing `<x:Reference>` entry at the Flowchart level.
 
-Only nodes in the `Flowchart.Nodes` collection (the direct children) render. ViewState positions a node **only after** it is registered there — coordinates on an unregistered node do nothing.
-
-**Forbidden — nested FlowStep chains.** Do NOT build the flow by physically nesting each `FlowStep` inside the previous one's `<FlowStep.Next>`, leaving only the first node under `<Flowchart.StartNode>`. Nested-only steps never enter `Flowchart.Nodes`, so the designer renders almost nothing — invisible regardless of ViewState. Wire each step's successor with `<FlowStep.Next><x:Reference>__ReferenceIDn</x:Reference></FlowStep.Next>` and keep every `FlowStep` a direct child of `<Flowchart>`:
-
-```xml
-<Flowchart>
-  <Flowchart.StartNode>
-    <x:Reference>__ReferenceID0</x:Reference>
-  </Flowchart.StartNode>
-  <FlowStep x:Name="__ReferenceID0">           <!-- direct child -->
-    <ui:LogMessage DisplayName="Step 1" />
-    <FlowStep.Next>
-      <x:Reference>__ReferenceID1</x:Reference> <!-- link by reference, NOT by nesting -->
-    </FlowStep.Next>
-  </FlowStep>
-  <FlowStep x:Name="__ReferenceID1">           <!-- direct child -->
-    <ui:LogMessage DisplayName="Step 2" />
-  </FlowStep>
-</Flowchart>
-```
-
 See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for the full rules with correct/wrong examples.
 
 ---
@@ -428,7 +391,7 @@ States defined inline inside `Transition.To` need `<x:Reference>` registration a
 
 ## 5. Long Running Workflow (ProcessDiagram) Layout
 
-ProcessDiagrams use a **BPMN-style horizontal left-to-right** flow, distinct from Flowchart's vertical top-to-bottom. Package dependency, full node vocabulary, gateway patterns, suspend/resume: [long-running-workflow-guide.md](long-running-workflow-guide.md) — this section covers layout and ViewState only.
+ProcessDiagrams use a **BPMN-style horizontal left-to-right** flow, distinct from Flowchart's vertical top-to-bottom.
 
 ### Key Differences from Flowchart
 
@@ -448,9 +411,6 @@ ProcessDiagrams use a **BPMN-style horizontal left-to-right** flow, distinct fro
 | `upa:EventNode` | 40x40 | Circle | Start event (with `StartBehavior`) |
 | `upa:TaskNode` | 120x80 | Rectangle | Activity container (wraps Sequence) |
 | `upa:DecisionNode` | 60x60 | Diamond | True/False branching |
-| `upa:SwitchNode` | 60x60 | Diamond | Multi-way routing (`x:TypeArguments`) |
-| `upa:SplitNode` | 60x60 | Diamond | Parallel branch fan-out |
-| `upa:MergeNode` | 60x60 | Diamond | Parallel branch convergence |
 | `upa:EndNode` | 40x40 | Circle | End event (with `EndBehavior`) |
 | `upa:BoundaryNode` | 40x40 | Circle | Error handler attached to TaskNode |
 
@@ -674,10 +634,10 @@ Same rules as Flowchart — nodes defined inline within property elements (e.g.,
 
 ---
 
-## 7. ViewState Is Mandatory for These Canvases
+## 7. When to Skip ViewState
 
-Always generate ViewState for **every** node in a Flowchart, State Machine, or ProcessDiagram. Do **not** skip it, even for "execution-only" workflows.
+If generating XAML for **execution only** (not for visual display), you can omit all ViewState properties. The workflow will execute correctly. Studio will auto-arrange nodes when the file is first opened.
 
-Omitting ViewState does not break execution, but Studio places every node at (0,0). They overlap into what looks like **a single node** — and Studio does **not** auto-arrange on open. The stacked layout persists until a user manually right-clicks → Auto Arrange. A generated workflow that opens as one overlapping node reads as broken.
+**Trade-off:** The initial layout will be messy — all nodes may overlap at (0,0). For a professional-looking layout, always include ViewState.
 
-The only ViewState you skip: **Sequences** (Studio stacks their children vertically without coordinates) and **nodes you are not editing** in an existing file (leave their ViewState untouched).
+**Recommended approach:** Generate ViewState for all Flowchart, State Machine, and ProcessDiagram workflows. It adds bulk but produces immediately usable designs.

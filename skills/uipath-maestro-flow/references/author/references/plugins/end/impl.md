@@ -10,7 +10,7 @@
 uip maestro flow registry get core.control.end --output json
 ```
 
-Confirm: input port `input`, no output ports. Set the node instance `typeVersion` to the `version` field from this response — do not hardcode it.
+Confirm: input port `input`, no output ports.
 
 ## JSON Structure
 
@@ -20,7 +20,7 @@ Confirm: input port `input`, no output ports. Set the node instance `typeVersion
 {
   "id": "doneSuccess",
   "type": "core.control.end",
-  "typeVersion": "<DEFINITION_VERSION>",
+  "typeVersion": "1.0",
   "display": { "label": "Done" },
   "inputs": {}
 }
@@ -34,7 +34,7 @@ When the workflow declares `out` variables, every End node must map all of them:
 {
   "id": "doneSuccess",
   "type": "core.control.end",
-  "typeVersion": "<DEFINITION_VERSION>",
+  "typeVersion": "1.0",
   "display": { "label": "Done" },
   "inputs": {},
   "outputs": {

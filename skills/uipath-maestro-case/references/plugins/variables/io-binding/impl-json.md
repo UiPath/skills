@@ -1,6 +1,6 @@
 # I/O Binding — Implementation
 
-> **Phase split.** Phase 3 only. Input/output binding at Step 9.8; in-expression `vars.$xref` marker resolution at Step 11.5 (after conditions + SLA). Phase 2 writes task shape (schema with empty `value` fields) but does not bind values. See [`../../../phased-execution.md`](../../../phased-execution.md).
+> **Phase split.** Phase 3 only (Step 9.8). Phase 2 writes task shape (schema with empty `value` fields) but does not bind values. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
 Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are created and enriched (Step 9) and after global variable + output wiring is complete.
 
@@ -15,7 +15,7 @@ Wire task inputs by editing `caseplan.json` directly. Runs after all tasks are c
   "value": "=vars.customerId" }
 ```
 
-Inputs are populated with empty `value` from the `tasks describe` schema when the task's `data.inputs[]` are written during the task plugin's impl-json write. Input IDs are random (`v` + 8 chars).
+Inputs are populated with empty `value` from the `tasks describe` schema when `data.context.taskTypeId` is set during the task plugin's impl-json write. Input IDs are random (`v` + 8 chars).
 
 ## Task Output Shape
 
@@ -36,38 +36,17 @@ Each task plugin emits `data.outputs[]` entries by combining its Step 0 schema (
 
 For each entry in the Step 0 schema, check whether the SDD's `outputs:` row in tasks.md references it (matched by schema field name on the left side of `->`, or as a bare name).
 
-- **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape: `{name: <Step 0 displayName>, type: <Step 0 schema entry's type>, id: <camelCase(leaf segment)>, var: "<sdd-name>", originalVar: <camelCase(leaf segment)>, value: "<sdd-name>", source: "=<sdd-field-path>", target: "=<id>", elementId: "<stage-task>"}`. **`source` is the SDD's left-side string with `=` prefix, verbatim.** The SDD writes the full runtime path (e.g., `response.status`, `Error`, `response.message.ts`, `Action`); skill never adds, removes, or infers envelope prefixes. Consult the Step 0 schema for `type` / `displayName` / `options` — top-level entries match by their `source` field (with `=` stripped); nested fields are found by navigating the parent entry's `body` schema. **`type` is required on every emitted output — FE rejects entries without it.** **`originalVar` is load-bearing** — tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits.
-- **Bare `<name>`** (no operator) → auto-mint shape: `{name, type: <Step 0 entry's type>, id: <camelCase(name)>, var: <id>, value: <id>, source: <Step 0 entry's source verbatim>, target: "=<id>", elementId}`. No `originalVar`. Used for top-level Step 0 entries the SDD doesn't alias.
+- **`<sdd-field-path> -> <sdd-name>`** (extract) → reassign-shape: `{name: <Step 0 displayName>, id: <camelCase(leaf segment)>, var: "<sdd-name>", originalVar: <camelCase(leaf segment)>, value: "<sdd-name>", source: "=<sdd-field-path>", target: "=<id>", elementId: "<stage-task>"}`. **`source` is the SDD's left-side string with `=` prefix, verbatim.** The SDD writes the full runtime path (e.g., `response.status`, `Error`, `response.message.ts`, `Action`); skill never adds, removes, or infers envelope prefixes. Consult the Step 0 schema only for type / displayName lookup — top-level entries match by their `source` field (with `=` stripped); nested fields are found by navigating the parent entry's `body` schema. **`originalVar` is load-bearing** — tells FE's `mutateRootVariables` (`VariableMutationUtils.ts:135`) to skip root-mirroring, preserving the case-Variable companion across FE edits.
+- **Bare `<name>`** (no operator) → auto-mint shape: `{name, id: <camelCase(name)>, var: <id>, value: <id>, source: <Step 0 entry's source verbatim>, target: "=<id>", elementId}`. No `originalVar`. Used for top-level Step 0 entries the SDD doesn't alias.
 - **`<sdd-name> = <expression>`** (set / compute / copy) → Scenario E shape: `{name: "<sdd-name>", custom: true, var: "<sdd-name>", value: "<expression>", source: "<same as value>", target: "", body: "", type: <case var's type>, elementId: "root"}`. **No `id`**, no `originalVar`. NO root mirror — FE's `isUpdateExistingOutput` filter at `VariableMutationUtils.ts:49-64` skips it.
 - **Schema fields with no SDD reference** → fall back to auto-mint shape (`var` = camelCased schema name). Connector plugins additionally apply the [uniqueness rule](../global-vars/impl-json.md#uniqueness-rule) dedup-suffix on collision (e.g., `response` → `response2`).
 
 Cross-cutting rules:
 
-- **Preserve type-refining schema attributes.** The shapes above list the *minimum* fields. Carry over any extra attributes the Step 0 schema entry defines — most importantly `options` (the enum / picklist value set on choice and decision outputs, e.g. `Action`'s `[{value:"approve",label:"approve"},{value:"reject",label:"reject"}]`) — **verbatim** onto the emitted output entry, alongside the named fields. Applies to reassign (`->`), auto-mint (bare / no-SDD-reference), and connector-rule outputs alike. Dropping `options` strips the decision / choice enum the FE picker and decision widget depend on. (The `=` Scenario E shape is a literal / computed assignment and carries no schema `options`.)
 - Expression values for `=`: literal (`"InReview"`, `5`, `true`), computed (`=js:vars.x + 1`), or variable reference (`=vars.X.Y.Z`).
 - Dot-paths in `->` paths are supported (e.g., `response.message.ts`, `Error.code`). Array indexing not supported in v1.
 - Target case variable on both `->` and `=` MUST exist in Case Variables table (validated at planning time).
 - [Uniqueness rule](../global-vars/impl-json.md#uniqueness-rule) applies to `var`/`id` on collision; `source` is never suffixed.
-
-## Output Binding Shapes for Connector Condition Rules
-
-The Output Binding Shapes above are operator-driven, not task-specific. The SAME shapes (`->` reassign with `originalVar`, `=` Scenario E with `custom: true`, bare-name auto-mint) apply when the SDD declares `Outputs:` rows on a `wait-for-connector` **condition rule** (in any of the 4 scopes: stage-entry, stage-exit, case-exit, task-entry). The connector-rule dispatch mirrors the connector-task dispatch with three targeting overrides:
-
-| Aspect | Connector task | Connector condition rule |
-|---|---|---|
-| Target array | `task.data.outputs[]` | `rule.uipath.outputs[]` |
-| Step 0 schema source | `tasks describe` / `case spec --input-details` `caseShape.outputs[]` | `case spec --type trigger --input-details` `caseShape.outputs[]` (already minted on `rule.uipath.outputs[]` by the connector-rule recipe — see [connector-trigger-common.md § Target: connector-bound condition rule](../../../connector-trigger-common.md#target-connector-bound-condition-rule)) |
-| `elementId` on each entry | `<stageId>-<taskId>` | `<ownerNodeId>-<ruleId>` — `<stageId>-<ruleId>` for stage-entry / stage-exit / task-entry; `root-<ruleId>` for case-exit |
-| Companion in `root.inputOutputs[]` (for `->` extract) | Required — `elementId: "root"`, `custom: true` | Required — same shape (`elementId: "root"`, `custom: true`) |
-| `=` Scenario E (custom output) | Permitted | Permitted — case variable assigned from rule response (`caseVar = response.X`), a literal, or an expression. NO root mirror per `isUpdateExistingOutput` filter. |
-
-**Uniqueness.** The [global pool](../global-vars/impl-json.md#uniqueness-rule) now includes rule outputs across all condition scopes — apply dedup against the union of tasks ∪ triggers ∪ rules ∪ root before minting.
-
-**When invoked.** Each condition plugin's `impl-json.md` invokes this dispatch as the LAST step of its `wait-for-connector` recipe — after writing `rule.uipath` (Step 5 of [connector-trigger-common.md § Procedure](../../../connector-trigger-common.md#procedure-phase-3)) and BEFORE running root bindings (Step 6). Iterate the rule's SDD `Outputs:` rows against the already-minted `rule.uipath.outputs[]` entries; rewrite each matched entry per the operator (`->` / `=` / bare). See the 4 condition `impl-json.md` files for the invocation site.
-
-**Skip guard.** Rules with no `rule.uipath.outputs[]` (stub placeholder — connector configuration unresolved, see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) — log `SKIPPED` and move on, same pattern as placeholder tasks (`data:{}`). The stub always carries a `uipath` block, but with empty `outputs[]`, so there is nothing to bind against until the connector resolves.
-
-**Runtime order (KNOWN ISSUE).** The case-backend currently evaluates the gateway BEFORE the rule's output extract populates `vars.caseVar` — gate-first / extract-after, opposite of the intended design contract. Extract-then-gate on a SINGLE rule does NOT work for in-rule event-payload conditioning; the gate sees the pre-extract value of the case var. **Workaround** at the case-design level: place the case-state gate on the DOWNSTREAM stage-entry / task-entry condition that follows the connector rule — by then the extract has populated the case var. Backend disposition pending; treat the in-rule gate against extracted values as undefined behavior until verified.
 
 ## Binding Procedure
 
@@ -90,29 +69,7 @@ src_output = find_output_by_name(src_task, "outputName")
 target_input["value"] = f"=vars.{src_output['var']}"
 ```
 
-## In-Expression Marker Resolution (Step 11.5)
-
-Whole-value `<-` (above) only resolves an input whose value IS the reference. To reference an upstream output from **inside** a `=js:` expression (composite payload, `conditionExpression`, SLA `expression`, computed `=` output, connector body field), the SDD embeds a `vars.$xref('Stage','Task','output')` marker — see [bindings-and-expressions.md § In-expression references](../../../bindings-and-expressions.md#in-expression-references-varsxref). Resolve all markers in **one pass over the whole `caseplan.json`** at **Step 11.5** — after conditions (Step 10) and SLA (Step 11) are written, and every task/trigger/rule output is minted and deduped (so the marker resolves to the final, suffixed `var`). This is the LAST mutation of Phase 3 before the validator; running it earlier (e.g. right after Step 9.8 input binding) misses markers in conditions / SLA and reads pre-dedup `var` ids.
-
-This single sink-blind pass replaces per-sink resolution: it walks every string value regardless of which sink holds it, so conditions, SLA, inputs, and connector bodies are all covered in one place.
-
-```text
-# pseudocode — not executed. Realize via Read → reason → Write/Edit.
-TOKEN = /vars\.\$xref\('([^']+)','([^']+)','([^']+)'\)/   # global, all matches
-
-for each string value V anywhere in caseplan.json:
-    for each match (stageLabel, taskName, outputName) of TOKEN in V:
-        src_stage  = find_node_by_label(nodes, stageLabel)        # data.label
-        src_task   = find_task_by_name(src_stage, taskName)       # displayName
-        src_output = find_output_by_name(src_task, outputName)    # data.outputs[].name
-        if any lookup fails: leave token unsubstituted — Check 4 (validator) surfaces it via AskUserQuestion
-        replace the matched token with "vars." + src_output["var"]   # bare, no leading "="
-    write V back
-```
-
-Resolution semantics are identical to whole-value `<-` (same name-triple, same lookup), with two differences: the substitution is **bare** `vars.<var>` (the marker already sits inside `=js:`), and it happens in a global string pass rather than against a single input's `value`. Exception-stage / adhoc scoping (reference any task across any stage) applies unchanged.
-
-After this pass and all bindings, run the end-of-Phase-3 validator. It performs the cross-reference checks below:
+After all bindings, run the end-of-Phase-3 validator. It performs three cross-reference checks:
 
 ### Check 1 — `=vars.X` reference resolution
 
@@ -121,13 +78,13 @@ Verify every bound input has a non-empty `value`, and every `=vars.X` reference 
 - Variables `inputOutputs[].id`
 - Variables `inputs[].id`
 
-Variables array path is top-level `variables.{inputOutputs,inputs}[].id`.
+Variables array path is schema-dependent — `root.data.uipath.variables.{inputOutputs,inputs}[].id` in v19, top-level `variables.{inputOutputs,inputs}[].id` in v20 (Rule 18).
 
 > **Scan key:** match by `.id`, NOT `.var`. The runtime resolver matches on `Variable.id` (`VariablesService.findVariableByVariableId`). Under the skill convention `id === var` on self-declaring outputs, scanning by `.var` is harmless in practice, but `.id` is symmetric with the resolver.
 
 Also scan `=vars.X` references in:
+- Edge guard expressions (`edges[].data.conditionExpression`)
 - Entry / exit condition expressions (stage and task)
-- Case-exit and trigger rule expressions
 - SLA expressions
 - `=js:` expressions anywhere they appear
 
@@ -135,7 +92,7 @@ Same resolution rule applies — these are read-side consumers of the variable n
 
 ### Check 2 — Out-arg producer presence
 
-For every entry in top-level `variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end. Per the always-emit-companion rule, the companion in `variables.inputOutputs[]` is always present; its `default` field is empty when SDD didn't declare a Default.
+For every entry in `root.data.uipath.variables.outputs[]` (formal Out-arg entries), the entry's `var` field is a POINTER to the variable slot that should hold the value at case end. Per the always-emit-companion rule, the companion in `root.inputOutputs[]` is always present; its `default` field is empty when SDD didn't declare a Default.
 
 **The check:** can the Out-arg's slot be populated at runtime? Three populating mechanisms exist:
 
@@ -224,107 +181,6 @@ See [implementation.md § Step 12 — End-of-Phase-3 validator pass](../../../im
 
 Where a `=vars.X` reference resolves to a declaration with a different `type` than the consuming input expects, log WARNING. Proceed (string coercion is common and runtime-tolerant).
 
-### Check 4 — No surviving `$xref` markers
-
-Scan every string value in `caseplan.json` for the literal token `$xref(`. The [Step 11.5 pass](#in-expression-marker-resolution-step-115) should have resolved them all; any survivor means its name-triple failed to resolve (typo'd stage / task / output name). This is the same class of failure as a Check 1 unresolved `=vars.X` — so it gets the **same interactive remediation**, NOT a silent ERROR. Never ship a marker to runtime (`vars.$xref(...)` throws — a method call on `vars`).
-
-**On AskUserQuestion** (present the outputs that DO exist on the named task as candidates — same diagnostic shape as a failed whole-value `<-`):
-
-```
-In-expression reference $xref('<stage>','<task>','<output>') does not resolve:
-  Stage  "<stage>":  <found | NOT FOUND>
-  Task   "<task>":   <found | NOT FOUND in that stage>
-  Output "<output>": NOT FOUND on task
-  Available outputs on "<task>": <name, name, ...>
-  Used in: <sink — e.g. entry condition on stage "Approve" | input "payload" on task "Notify">
-
-Pick one:
-  (a) Name the intended output — supply the correct output name (or full Stage / Task / output triple).
-  (b) Edit the SDD expression — the marker is one term in a larger =js: expression; the upstream output genuinely does not exist.
-  (c) Continue with best-effort emit — token left unsubstituted; case builds; the =js: expression throws at runtime until fixed.
-```
-
-**Skill response per pick:**
-
-- **(a)** Rewrite the marker's triple in place in `caseplan.json` with the corrected name(s), re-run the [Step 11.5](#in-expression-marker-resolution-step-115) resolution for that token, then re-scan. If it still fails, re-prompt.
-- **(b)** Edit the SDD expression as directed, re-run the Phase 1 dispatcher from the modified SDD, then retry Step 11.5 + this check.
-- **(c)** Leave the token unsubstituted, append the build-issues entry (template below), continue to Phase 4. No re-run.
-
-**Build-issues entry template:**
-
-```markdown
-## Open Items for User
-
-- **[Unresolved `$xref` marker]** — `vars.$xref('<stage>','<task>','<output>')` in <sink> did not resolve (output not found on the named task). The `=js:` expression throws at runtime until fixed. Correct the source output name in the SDD and rebuild.
-```
-
-### Check 5 — Resolved-resource I/O completeness
-
-Verifies each resolved task's binding contract **covers** its resource's declared I/O — the build-side re-check of [sdd-generation-rules.md § Resolved-resource I/O completeness](../../../sdd-generation-rules.md#resolved-resource-io-completeness) (Approve-gate item 9 / Finalization step 19). Where Checks 1–4 verify that references which *exist* resolve, Check 5 verifies the *right set of references exists*: required inputs are not silently missing, and extract outputs name real fields.
-
-Read each resolved task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** any task with no persisted contract (Rule 17 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
-
-```text
-# pseudocode — not executed. Realize via Read → reason → Write/Edit.
-for task in caseplan.json tasks where contract = registry_resolved[task].contract is present:
-    bound_inputs = { inp.name : inp.value for inp in task.data.inputs[] }
-    # (a) required-input coverage
-    for decl in contract.inputs where decl.required:
-        v = bound_inputs.get(decl.name)
-        if v is missing or v == "":            # no row, or row with empty value
-            ERROR → AskUserQuestion (unbound-required-input)
-    # (b) output-field fidelity
-    declared_out = set(contract.outputs[].name)
-    for out in task.data.outputs[]:            # extract rows: source = "=<path>"
-        leaf = top_level_segment(strip_leading_"=", out.source)   # strip envelope prefix: response. / Error. / data.
-        if leaf not in declared_out:
-            ERROR → AskUserQuestion (phantom-output-field)
-```
-
-An **upstream-output-fed** required input is covered like any other — its `value` is `=vars.<var>` (whole-value `<-`) or sits inside a `=js:` (resolved `$xref`); a non-empty `value` passes. Do NOT expect a §1.5 declaration for it.
-
-**On AskUserQuestion — unbound required input:**
-
-```
-Required input "<field>" on task "<task>" (resource "<resource>") is not bound:
-  Declared by the resource as required; no Inputs row with a value in the case plan.
-  Other required inputs on this task: <bound / unbound list>
-
-Pick one:
-  (a) Bind it — supply the source: a case variable, a literal, or an upstream task's output ("Stage"."Task".out). Skill writes the Inputs row and binds it.
-  (b) Mark <UNRESOLVED> — record a placeholder + a high review item; case builds, this input is runtime-null until wired.
-  (c) Continue with best-effort emit — leave it unbound; entry logged under Open Items; the job may fault at runtime.
-```
-
-**On AskUserQuestion — phantom output field:**
-
-```
-Output field "<field>" extracted by task "<task>" is not in resource "<resource>"'s declared outputs:
-  Available outputs on this resource: <name, name, ...>
-  Used in: outputs row "<field> -> <caseVar>"
-
-Pick one:
-  (a) Name the intended output — pick from the available list; skill rewrites the extract Field + re-resolves.
-  (b) Drop the extract row — the case does not consume this output.
-  (c) Continue with best-effort emit — left as-is; entry logged under Open Items; the extract resolves to runtime null.
-```
-
-**Skill response per pick:**
-
-- Unbound (a) — write the Inputs row to `tasks.md` + `caseplan.json`, run the Step 9.8 binding for that input, retry Check 5. (b) — set the input `value` to a placeholder and append a `high` review item (`rev_unbound_input_<task>_<field>`), continue. (c) — append the build-issues entry, continue. No re-run.
-- Phantom (a) — rewrite the output `source`/`Field` in `caseplan.json`, retry Check 5. (b) — delete the output row (and any now-orphaned `=vars.<caseVar>` consumer falls to Check 1). (c) — append the build-issues entry, continue.
-
-Check 5 honors the same **build-with-best** policy as Checks 1, 2, 4: option (c) appends a `## Open Items for User` entry and proceeds to Phase 4. Phase 4 `validate` stays green (a missing input / phantom extract is structurally valid); the runtime concern is surfaced for pre-publish review.
-
-**Build-issues entry templates:**
-
-```markdown
-## Open Items for User
-
-- **[Unbound required input]** — task "<task>" (resource "<resource>") input "<field>" is required but unbound; resolves to runtime null. Bind it in the SDD and rebuild.
-- **[Phantom output field]** — task "<task>" extracts "<field>", which resource "<resource>" does not emit; resolves to runtime null. Correct the output name in the SDD and rebuild.
-```
-
 ## Connector Tasks
 
 Connector task input values are written during Step 9.7 (connector detail), not during this I/O binding step. Resolve cross-task `var` IDs before constructing the `input-values` body from `tasks.md`, then apply the canonical wrap per sink:
@@ -362,15 +218,10 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | Check | Severity | Action |
 |---|---|---|
 | Placeholder task (no `data.inputs[]`) | `SKIPPED` | Skip all bindings |
-| Placeholder connector rule (no `rule.uipath.outputs[]`) | `SKIPPED` | Skip rule output bindings (nothing minted) |
 | Input name not found (exact match) | `ERROR` | Skip binding — log available inputs |
 | Source output not found (exact match) | `ERROR` | Skip binding — log available outputs |
-| `$xref(...)` marker name-triple fails to resolve (Step 11.5 / Check 4) | `ERROR` | Leave token unsubstituted; AskUserQuestion (Check 4 above) — log unresolved triple + available outputs |
 | `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |
 | Out-arg formal entry has NO producer (no extraction, assignment, or bare-name match in any task outputs) AND companion has no `default` | `ERROR` | Log Out-arg pure-orphan issue (Check 2 above); AskUserQuestion |
-| Resolved resource's **required** input has no bound `value` in the case plan (Check 5) | `ERROR` | AskUserQuestion (unbound-required-input) — bind / `<UNRESOLVED>`+review-item / best-effort |
-| Extract output `Field` absent from resolved output contract (Check 5) | `ERROR` | AskUserQuestion (phantom-output-field) — re-point / drop row / best-effort |
-| Resolved task has no persisted contract (placeholder / `<UNRESOLVED>`) | `SKIPPED` | Skip Check 5 for that task |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 
 Example log entry (pseudocode — record in-reasoning, not via subprocess):
