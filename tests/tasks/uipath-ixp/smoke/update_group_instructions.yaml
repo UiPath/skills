@@ -22,9 +22,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent updated group instructions via `groups update-prompts … --updates`"
+    description: "Agent set the new instructions on \"Invoice Header\" via `groups update-prompts --updates`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+groups\s+update-prompts\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*Invoice Header)(?=.*--updates).*'
+    command_pattern: 'uip\s+ixp\s+groups\s+update-prompts\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--updates)(?=.*Invoice Header)(?=.*Header section of the invoice).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
