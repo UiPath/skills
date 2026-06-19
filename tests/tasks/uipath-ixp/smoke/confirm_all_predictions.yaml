@@ -1,8 +1,8 @@
 task_id: skill-ixp-confirm-all-predictions-smoke
 description: >
-  Smoke: agent confirms every prediction as ground truth via
-  `uip ixp labellings confirm <Name> <document-id>` without `--fields`
-  (bulk-confirms all predicted fields). Project-wide means looping documents.
+  Smoke: agent confirms all predictions on a document as ground truth via
+  `labellings confirm <Name> <document-id>` with no `--fields` (the no-field
+  form bulk-confirms every predicted field in that document).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -12,8 +12,8 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  In the IXP project my_invoices-f1afa9ef-ixp, confirm every prediction as
-  ground truth.
+  In the IXP project my_invoices-f1afa9ef-ixp, confirm all predictions on
+  document doc-abc-123 as ground truth.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
@@ -23,9 +23,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent bulk-confirmed predictions via `labellings confirm`"
+    description: "Agent bulk-confirmed all predictions on doc-abc-123 via `labellings confirm` (no --fields)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\b(?=.*my_invoices-f1afa9ef-ixp).*'
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
