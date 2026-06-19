@@ -1,4 +1,4 @@
-task_id: skill-ixp-create-project-autopilot-smoke
+task_id: skill-ixp-create-project-suggest-taxonomy-smoke
 description: >
   Smoke: agent creates a project and lets IXP auto-suggest the taxonomy from
   the uploaded documents (create WITHOUT --skip-taxonomy, with -d for
