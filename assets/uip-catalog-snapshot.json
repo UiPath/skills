@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-18T05:40:43Z",
-  "cli_version": "1.197.0-alpha.20260617.7564",
+  "generated_at": "2026-06-19T05:47:39Z",
+  "cli_version": "1.197.0-alpha.20260618.7591",
   "verbs": [
     "admin",
     "admin audit",
@@ -298,6 +298,7 @@
     "api-workflow bindings",
     "api-workflow bindings sync",
     "api-workflow build",
+    "api-workflow init",
     "api-workflow pack",
     "api-workflow registry",
     "api-workflow registry resolve",
@@ -535,6 +536,8 @@
     "ixp projects list",
     "ixp projects list-models",
     "ixp projects publish",
+    "ixp projects unpublish",
+    "ixp projects untag",
     "ixp projects update-prompt",
     "ixp projects update-title",
     "llm-configuration",
