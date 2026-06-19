@@ -1,9 +1,8 @@
 task_id: skill-ixp-delete-field-group-smoke
 description: >
-  Smoke: agent deletes a field group with
-  `uip ixp groups delete <Name> --name "name group" --confirm-data-loss`.
-  Destructive cascade — deleting the group drops all annotations on all its
-  fields; the CLI refuses without --confirm-data-loss.
+  Smoke: agent deletes a field group — a destructive cascade that drops all
+  annotations on all its fields, so it must pass --confirm-data-loss (the CLI
+  refuses without it).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

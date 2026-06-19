@@ -1,9 +1,8 @@
 task_id: skill-ixp-group-instructions-smoke
 description: >
-  Smoke: agent updates a field group's instructions with
-  `uip ixp groups update-prompts <Name> --updates '[{"name":"Invoice Header",
-  "instructions":"…"}]'`. Updates the group (label_def) instructions only;
-  fields are untouched.
+  Smoke: agent updates a field group's instructions via
+  `groups update-prompts --updates`. Updates the group (label_def)
+  instructions only; fields are untouched.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

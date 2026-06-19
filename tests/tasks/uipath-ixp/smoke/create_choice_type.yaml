@@ -1,9 +1,8 @@
 task_id: skill-ixp-create-choice-type-smoke
 description: >
   Smoke: agent creates a custom Choice data type with three options and
-  instructions — `uip ixp data-types add <Name> --name "clause presence"
-  --kind choice --choices '<json>' --instructions … --input-value inferred`.
-  --kind choice requires --choices.
+  instructions (`data-types add --kind choice` with `--choices`; --kind
+  choice requires --choices).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
