@@ -1,4 +1,4 @@
-task_id: skill-ixp-create-project-smoke
+task_id: skill-ixp-create-project-blank-smoke
 description: >
   Smoke: agent creates a blank IXP project with `--skip-taxonomy` — no
   taxonomy, no docs, so it doesn't stall waiting for files or a suggestion.
@@ -11,7 +11,7 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  Create a blank IXP project named "test project" — no taxonomy.
+  Create a blank IXP project named "test project".
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
