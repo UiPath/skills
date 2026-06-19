@@ -40,7 +40,13 @@ plugin; everything else exits silently. A call qualifies when:
    the call is attributable to this plugin (table above).
 2. For a qualifying call it derives a small set of low-cardinality fields,
    sanitizes each value (charset + 120-char cap), and resolves the UiPath
-   environment from `uip login status` (cached 1h).
+   environment from `uip login status` (cached 1h). Field extraction is
+   **region-scoped**: a single string-aware `awk` pass walks the payload once,
+   tracking brace/string depth, and pulls each field only from the region it
+   lives in — envelope (top-level keys), `tool_input`, `tool_response`, or
+   `effort`. Free-form customer content embedded in a string (a prompt, a
+   command line, `stdout`) can never false-match an envelope field (see
+   [Region scoping](#region-scoping)).
 3. It pipes one flat `key:value` JSON object to `uip track` on stdin, in a
    detached subshell, then exits 0.
 4. `uip track` ([UiPath/cli#2600](https://github.com/UiPath/cli/pull/2600))
@@ -63,20 +69,21 @@ sends becomes an event property.
 
 | Field | Example | Notes |
 |-------|---------|-------|
-| `toolName` | `Skill`, `Bash` | Claude Code tool |
+| `schemaVersion` | `1` | Constant in the hook. JSON **number**. Bumped on any change to the key set, so App Insights can segment events emitted with older/churned schemas |
+| `toolName` | `Skill`, `Bash` | Claude Code tool. From the top-level `tool_name` |
 | `toolUseId` | `toolu_01ABC` | Unique per call — correlation key + ordering tiebreaker |
 | `sessionId` | `b3f1...` | Claude Code `session_id` — the coding-agent session; session correlation key |
-| `subagentModel` | `claude-sonnet-4-6` | From `tool_response.resolvedModel` — model resolved for a spawned subagent. Empty when absent |
-| `subagentType` | `general-purpose` | From `tool_input.subagent_type` — requested subagent type on an Agent-tool call. Empty when absent |
-| `agentType` | `Explore` | From the top-level `agent_type` — type of the running subagent. Empty in the main session |
-| `skillName` | `uipath:uipath-platform` | `Skill` calls only |
-| `uipSubcommand` | `solution publish` | Derived first 1–2 verbs of a `uip` command — never the full command line |
-| `fileExtension` | `.flow` | File-tool calls only |
+| `subagentModel` | `opus` | From `tool_response.resolvedModel`, normalized to a family — `opus` / `sonnet` / `haiku` / `fable` (`other` if unrecognized). The context-window marker is dropped (`claude-opus-4-8[1m]` → `opus`). Set on an Agent-**spawn** event; empty otherwise |
+| `subagentType` | `general-purpose` | From `tool_input.subagent_type` — requested subagent type. Set on an Agent-**spawn** event; empty otherwise |
+| `agentType` | `Explore` | From the top-level `agent_type` — type of the subagent the call runs **inside**. Empty on a main-loop call |
+| `skillName` | `uipath:uipath-platform` | From `tool_input.skill`. `Skill` calls only |
+| `uipSubcommand` | `solution publish` | First 1–2 verbs derived from `tool_input.command` — never the full command line, never `stdout` |
+| `fileExtension` | `.flow` | Derived from `tool_input.file_path`. File-tool calls only |
 | `environment` | `alpha` / `staging` / `prod` / `other` / `unknown` | From `uip login status` `BaseUrl`, cached 1h |
 | `baseUrl` | `https://cloud.uipath.com` | Cloud base URL only |
-| `outcome` | `ok` / `failure` / `interrupted` | From `tool_response`, not output content |
-| `permissionMode` | `bypassPermissions` | |
-| `effortLevel` | `high` | From the payload's `effort.level`, when present (`low` / `medium` / `high` / `xhigh` / `max`) |
+| `outcome` | `ok` / `failure` / `interrupted` / `unknown` | From the `tool_response` region **only**, never output content — see [Outcome semantics](#outcome-semantics) |
+| `permissionMode` | `bypassPermissions` | From the top-level `permission_mode` |
+| `effortLevel` | `high` | From the top-level `effort.level`, when present (`low` / `medium` / `high` / `xhigh` / `max`) |
 | `skillsVersion` | `1.196.0` | `skillsVersion` from `version-manifest.json` |
 | `durationMs` | `1234` | Tool-call wall-clock from the payload's `duration_ms`. JSON **number**; the CLI stringifies it for App Insights, so latency queries use `toreal(tostring(durationMs))`. `null` when absent → dropped |
 
@@ -84,6 +91,56 @@ sends becomes an event property.
 is **not** the `.claude-plugin/plugin.json` plugin package version. The hook no
 longer sends `cliVersion` or `operatingSystem` — the CLI tracker already records
 its own version as `application_Version` and the OS / client context by default.
+
+### Region scoping
+
+The payload embeds free-form customer content — prompts, command lines,
+`stdout` / `stderr`, file contents. A grep over the **whole** payload
+mis-extracts fields when that content happens to contain JSON-shaped text: a
+`stdout` with `"success":false`, an Agent prompt naming `uip solution publish`
+or `.flow"`, a log line with `"resolvedModel":"x"`. To prevent this, a single
+string-aware `awk` pass walks the payload once, tracks brace/string nesting
+depth (honoring `\"` and `\\` escapes), and emits each field **only** from the
+region where it actually lives:
+
+| Region | Fields |
+|--------|--------|
+| Envelope (top-level keys) | `toolName`, `toolUseId`, `sessionId`, `permissionMode`, `durationMs`, `effortLevel` (`effort.level`), `agentType` |
+| `tool_input` | `skillName`, `uipSubcommand` (from `command`), `fileExtension` (from `file_path`), `subagentType` |
+| `tool_response` | `outcome` (`interrupted` / `success`), `subagentModel` (`resolvedModel`) |
+
+Content nested inside a JSON string, or at the wrong depth, can never satisfy a
+top-level match — so `stdout` / prompt text cannot corrupt a field or cause
+over-attribution. The relevance gate is scoped the same way (the `uip` command
+is matched against `tool_input.command`, file extensions against
+`tool_input.file_path`).
+
+### Outcome semantics
+
+`outcome` is computed from the `tool_response` region **only** — output content
+never flips it:
+
+| Value | Condition |
+|-------|-----------|
+| `interrupted` | top-level `tool_response.interrupted == true` (takes precedence) |
+| `failure` | top-level `tool_response.success == false` |
+| `ok` | `tool_response` present with no failure signal — the default for tools that report no status (`Read`, `Edit`, `Write`, `Glob`, most MCP) |
+| `unknown` | no `tool_response` in the payload at all |
+
+A `tool_response` that is a JSON **string** or **array** (some MCP tools) yields
+`ok` — it is present but exposes no `success` / `interrupted` field.
+
+### Subagent fields — distinct meanings
+
+The three subagent fields describe two different viewpoints and are independent:
+
+- **`subagentType` + `subagentModel`** describe an Agent-**spawn** event — i.e.
+  `toolName == Agent`, the **parent's** view of the child it launched
+  (`tool_input.subagent_type` and the resolved `tool_response.resolvedModel`).
+- **`agentType`** is set on calls made **inside** a subagent — the **child's**
+  own view, from the top-level `agent_type`.
+
+All three are empty on a plain main-loop tool call.
 
 ### Added by the CLI
 
