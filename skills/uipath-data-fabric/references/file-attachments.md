@@ -52,7 +52,7 @@ uip df files delete <entity-id> <record-id> <field-name> \
   --output json
 ```
 
-Response: `{ Code: "FileDeleted", Data: { EntityId, RecordId, FieldName } }`
+Response: `{ Code: "FileDeleted", Data: { EntityId, RecordId, FieldName, Reason } }` — `Reason` echoes the `--reason` value.
 
 ## What `records get` returns for a FILE field
 

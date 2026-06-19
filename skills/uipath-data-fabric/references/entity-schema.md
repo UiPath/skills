@@ -21,7 +21,7 @@ uip df entities create "MyEntity" \
 
 - `fields` array is **required**. Each entry must include `fieldName`.
 - `displayName`, `description`, and `isRbacEnabled` are optional top-level keys.
-- Response: `{ Code: "EntityCreated", Data: { ID: "<entity-id>" } }` — save the ID for subsequent operations.
+- Response: `{ Code: "EntityCreated", Data: { Id: "<entity-id>" } }` — save `Data.Id` for subsequent operations.
 - Alternatively use `--file <path>` pointing to a JSON file with the same structure.
 
 ## Supported Field Types
@@ -154,7 +154,7 @@ uip df entities update <entity-id> \
   --output json
 ```
 
-`entities get` echoes the current constraint values on each field under `Fields[].fieldDataType.{lengthLimit,maxValue,minValue,decimalPrecision}` — read these before authoring an `updateFields` call.
+`entities get` echoes the current constraint values on each field under `Fields[].FieldDataType.{LengthLimit,MaxValue,MinValue,DecimalPrecision}` — read these before authoring an `updateFields` call.
 
 ### Choice Set Fields
 
@@ -233,7 +233,7 @@ Same shape applies to `addFields` inside `entities update`. For `CHOICE_SET_*` f
 { "fieldName": "EvidenceFile", "type": "FILE", "referenceEntityId": "<EntityAttachment-uuid>", "referenceFieldId": "<EntityAttachment-Name-field-uuid>" }
 ```
 
-- Point `referenceEntityId` at the tenant's internal `EntityAttachment` entity and `referenceFieldId` at its attachment-id field. This is the only target shape the platform accepts — any other binding produces a field that renders broken in the UiPath Data Fabric UI and rejects `files upload` with *"Update entity data failed. Relationship violation"*. The CLI requires both as **UUIDs** — `referenceEntityName` / `referenceFieldName` are rejected with *"Field '…' of type FILE requires both referenceEntityId and referenceFieldId (UUIDs of the target entity and field)"*.
+- Point `referenceEntityId` at the tenant's internal `EntityAttachment` entity and `referenceFieldId` at its `Name` field (NVARCHAR). Any other binding produces a field that renders broken in the UiPath Data Fabric UI and rejects subsequent `files upload` calls. The CLI requires both as **UUIDs** — `referenceEntityName` / `referenceFieldName` are rejected with *"Field '…' of type FILE requires both referenceEntityId and referenceFieldId (UUIDs of the target entity and field)"*.
 - **The two UUIDs are tenant-specific but shared across every FILE field in that tenant.** Capture them once and reuse on every subsequent FILE field create.
 - **`EntityAttachment` is a system entity hidden from CLI access** — it doesn't appear in `entities list` (even with `--include-folders`), and `entities get <EntityAttachment-id>` returns *"Entity '…' not found"*. The only CLI-reachable source is **any existing entity that already has a working FILE field** — read the UUIDs off its `Fields[].ReferenceEntity.Id` + `Fields[].ReferenceField.Id`:
   ```bash
@@ -280,7 +280,7 @@ uip df entities create "Expense" --body '{
 ## Deleting an Entity
 
 ```bash
-uip df entities delete <entity-id> --confirm --reason "<why>" --output json
+uip df entities delete <entity-id> [--folder-key <…>] --yes --reason "<why>" --output json
 ```
 
 Irreversible — deletes the entity and every record in it. **Before invoking, discover and surface every dependent to the user:**
@@ -294,8 +294,9 @@ Apply only the choices the user confirms — never cascade silently. If the user
 
 ```bash
 uip df entities update <entity-id> \
+  [--folder-key <…>] \
   --body '{"removeFields":[{"fieldName":"<exact-field-name>"}]}' \
-  --confirm --reason "<why>" \
+  --yes --reason "<why>" \
   --output json
 ```
 
@@ -345,7 +346,7 @@ uip df entities update <entity-id> \
 
 ### Updating Existing Field Metadata (`updateFields`)
 
-`updateFields` identifies fields by their **field ID** (UUID), not by name. Retrieve field IDs from `entities get <entity-id> --output json` — each field in the `Fields` array includes an `ID` property (uppercase in the GET response). Use that value as `id` (lowercase) in the `updateFields` payload.
+`updateFields` identifies fields by their **field ID** (UUID), not by name. Retrieve field IDs from `entities get <entity-id> --output json` — each field in the `Fields` array exposes the UUID as `Id`. **Re-emit it as `id` (lowercase) in the `updateFields` body** — the body key and the response key differ only by case, and a mistyped `Id` is silently treated as missing.
 
 ```bash
 uip df entities update <entity-id> \
@@ -378,7 +379,7 @@ Every entity has auto-created system fields: `Id`, `CreatedBy`, `CreateTime`, `U
 ## Listing and Inspecting Entities
 
 ```bash
-# List all entities (shows Source: Native or Federated)
+# List all entities (includes user, system, and any federated rows)
 uip df entities list --output json
 
 # List only native entities (recommended before any write operation)
@@ -392,33 +393,41 @@ uip df entities get <entity-id> --output json
 
 | Field | Description |
 |-------|-------------|
-| `ID` | Entity UUID — required for all `uip df` record and entity commands |
-| `Name` | CamelCase system name (e.g. `BankDetails`) |
+| `Id` | Entity UUID — required for all `uip df` record and entity commands |
+| `Name` | System name (e.g. `BankDetails`) |
 | `DisplayName` | Human-readable label shown in the UiPath Data Fabric UI |
-| `Source` | `Native` (read/write) or `Federated (ConnectorName)` (read-only) |
+| `EntityType` | Row class — observed values: `Entity` (native, read/write), `SystemEntity` (e.g. `SystemUser`; hidden by `--native-only`). Federated rows surface here too. There is **no** `Source` field. |
+| `EntityTypeId` | Numeric type code paralleling `EntityType` |
+| `FolderId` | Folder GUID, or all-zeros UUID for tenant level |
+| `RecordCount`, `StorageSizeInMB`, `UsedStorageSizeInMB` | Storage metrics |
 
 **Key fields in `entities get <id>` response:**
 
+> The GET response is **not** symmetric with the create payload — the type is nested under `FieldDataType.Name`, not a flat `Type`. Parsers that assume symmetry will KeyError. Use the exact keys below.
+
 | Field | Description |
-|-------|-------------|
-| `Fields[].FieldName` | Exact field name for use in record bodies and CSV headers |
-| `Fields[].Type` | Data type (e.g. `STRING`, `INTEGER`, `CHOICE_SET_SINGLE`, `RELATIONSHIP`) |
-| `Fields[].ID` | Field UUID — required for `updateFields` in `entities update` |
+|------------------------|-------------|
+| `Fields[].Name` | Exact field name for use in record bodies and CSV headers |
+| `Fields[].FieldDataType.Name` | Data type (e.g. `STRING`, `INTEGER`, `CHOICE_SET_SINGLE`, `RELATIONSHIP`, `FILE`) |
+| `Fields[].FieldDataType.{LengthLimit,MaxValue,MinValue,DecimalPrecision}` | Type-specific constraint values |
+| `Fields[].Id` | Field UUID — required for `updateFields` in `entities update` |
 | `Fields[].IsRequired` | Whether the field must have a value on insert |
+| `Fields[].ChoiceSetId` | Bound choice set UUID (set on `CHOICE_SET_*` fields) |
+| `Fields[].ReferenceEntity.Id` + `Fields[].ReferenceField.Id` | Target entity/field UUIDs (set on `RELATIONSHIP` / `FILE` fields) |
+| `Fields[].FieldDisplayType` | Render hint (`ChoiceSetSingle`, `ChoiceSetMultiple`, `File`, …) — set on complex fields |
+| `Fields[].IsForeignKey` | `true` on `RELATIONSHIP` / `FILE` fields |
 
-`entities get` echoes the complex-field bindings under each field: `Fields[].ChoiceSetId` for `CHOICE_SET_*`, and `Fields[].ReferenceEntity.Id` + `Fields[].ReferenceField.Id` for `RELATIONSHIP` / `FILE`. `Fields[].IsForeignKey` is `true` on relationship/file fields. Use these to recover the binding without asking the user.
-
-Before writing records, identify complex fields by `Type` and resolve lookups: `CHOICE_SET_*` → `choice-sets list-values <choice-set-id>` for `NumberId`s; `RELATIONSHIP` → `records query` on `ReferenceEntity.Id` for target record UUIDs.
+Before writing records, identify complex fields by `FieldDataType.Name` and resolve lookups: `CHOICE_SET_*` → `choice-sets list-values <choice-set-id>` for `NumberId`s; `RELATIONSHIP` → `records query` on `ReferenceEntity.Id` for target record UUIDs.
 
 **Example — discover an entity before writing records:**
 ```bash
-# 1. Find the entity ID and confirm it is Native
+# 1. Find the entity ID and confirm it is Native (EntityType == "Entity")
 uip df entities list --native-only --output json
-# e.g. response: { "Name": "Customer", "ID": "abc-123", "Source": "Native" }
+# e.g. response row: { "Name": "Customer", "Id": "abc-123", "EntityType": "Entity", "DisplayName": "Customer" }
 
 # 2. Get field names for use in record bodies
 uip df entities get abc-123 --output json
-# e.g. Fields: [{"FieldName": "FullName", "Type": "STRING"}, {"FieldName": "Score", "Type": "INTEGER"}]
+# e.g. Fields: [{"Name": "FullName", "FieldDataType": {"Name": "STRING"}}, {"Name": "Score", "FieldDataType": {"Name": "INTEGER"}}]
 
 # 3. Insert using exact field names
 uip df records insert abc-123 --body '{"FullName":"Alice","Score":95}' --output json
@@ -426,10 +435,11 @@ uip df records insert abc-123 --body '{"FullName":"Alice","Score":95}' --output 
 
 ## Native vs Federated Entities
 
-The `entities list` output includes a `Source` field:
+Each `entities list` row carries an `EntityType` field (no `Source` field exists):
 
-- `Native` — data stored in Data Fabric, full read/write access
-- `Federated (ConnectorName)` — backed by an external connector (e.g. Salesforce, Azure AD), read-only
+- `Entity` — native, data stored in Data Fabric, full read/write access
+- `SystemEntity` — internal entity (e.g. `SystemUser`); hidden by `--native-only`, not writable
+- Federated rows (backed by external connectors like Salesforce, Azure AD) surface here as well — read-only. The exact `EntityType` value for federated rows depends on the connector; verify by listing the tenant. `--native-only` filters them out alongside `SystemEntity`.
 
 **Only native entities support record creation, update, delete, and import.**
 

@@ -10,19 +10,20 @@ uip df records list <entity-id> --limit 50 --output json
 uip df records list <entity-id> --limit 50 --cursor <NextCursor> --output json
 ```
 
-Response: `{ TotalCount, Records, HasNextPage, NextCursor?, CurrentPage?, TotalPages? }`
+Response wrapper: `{ Result, Code: "RecordList" | "RecordQuery", Data: { Items, TotalCount, HasNextPage, NextCursor, CurrentPage, TotalPages, SupportsPageJump } }`.
 
-- Use `HasNextPage` to check if more records exist
-- Pass the `NextCursor` string value to `--cursor` to fetch the next page
+- **Records live in `Data.Items`** (array). Not `Data.Records` — the older docs used that name; the actual key the CLI emits is `Items`.
+- **`Data.NextCursor` is an object `{ "Value": "<base64-string>" }`, not a flat string.** Pass `Data.NextCursor.Value` to `--cursor` on the next call (unwrap one level). Passing the whole `NextCursor` object errors out.
+- Use `Data.HasNextPage` to check if more records exist. Stop when it's `false`.
 
 ## Pagination
 
 Offset-based under the hood. Available on both `records list` and `records query`:
 
 - `-l, --limit <number>` — page size, default `50`, min `1`. Keep constant across a sweep (changing it re-slices the offset and can skip/duplicate records).
-- `--cursor <NextCursor>` — opaque string from previous response. Pass verbatim; never hand-craft.
+- `--cursor <NextCursor.Value>` — the inner `Value` string from the previous response's `Data.NextCursor` object. Pass verbatim; never hand-craft. Do **not** pass the wrapper object.
 - `-o, --offset <number>` — non-negative record index. Rounded down to the nearest page boundary (`jumpToPage = floor(offset / limit) + 1`). **Mutually exclusive with `--cursor`** — passing both errors with *"--offset and --cursor are mutually exclusive"*.
-- Stop when `HasNextPage: false`. `CurrentPage` / `TotalPages` are informational.
+- Stop when `HasNextPage: false`. `CurrentPage` / `TotalPages` / `SupportsPageJump` are informational.
 
 ## Folder scope (`--folder-key`)
 
@@ -150,7 +151,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response: `Data.Records` is a single row — `[{ "total": 250 }]`.
+Response: `Data.Items` is a one-row array — e.g. `[{ "Total": 250 }]`. The server **PascalCases your alias** in the response (`alias: "total"` → key `"Total"`). Read by the PascalCase key when parsing.
 
 ```bash
 # Count per group (one result row per distinct value)
@@ -159,7 +160,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response: one row per group, each with the group fields + every aggregate alias — `[{ "Status": "Open", "total": 12 }, { "Status": "Closed", "total": 5 }]`.
+Response: `Data.Items` — one row per group, each with the group fields + every aggregate alias (PascalCased) — e.g. `[{ "Status": "Open", "Total": 12 }, { "Status": "Closed", "Total": 5 }]`.
 
 ### Functions
 
@@ -269,8 +270,13 @@ Batch update response: `{ Code: "RecordsBatchUpdated", Data: { SuccessCount, Fai
 
 ## Delete Records
 
+Irreversible — `--yes` and `--reason` are required (server-gated, same as `entities delete` / `choice-sets delete`). Pass each record ID as a **separate positional argument**; do not space-join them inside one quoted string (the CLI then tries to parse the whole string as a single GUID and errors with *"Error converting value '… …' to type 'System.Guid'"*).
+
 ```bash
-uip df records delete <entity-id> <id1> <id2> <id3> --output json
+uip df records delete <entity-id> <id1> <id2> <id3> \
+  [--folder-key <…>] \
+  --yes --reason "<why>" \
+  --output json
 ```
 
-Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
+Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords, Reason } }` — `Reason` echoes the `--reason` value for audit logging.

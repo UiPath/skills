@@ -71,9 +71,9 @@ Respond that the operation is not supported. Do not try to work around it.
 
 9. **Only work with native entities.** When listing entities before a write, use `entities list --native-only` to filter out federated entities. Never write to federated entities.
 
-10. **Entity delete is irreversible — surface dependents first.** `entities delete <id> --confirm --reason "<why>"` deletes the entity and every record in it. Before invoking, scan for dependents and list them to the user one by one: (a) other entities that reference this one (run `entities list --output json` and pull every entry whose `Fields[].ReferenceEntity.Id == <id>` — these will have broken FKs after the delete); (b) choice sets used by this entity's fields (`Fields[].ChoiceSetId` from `entities get`) — those choice sets are shared and may still be in use elsewhere. Ask the user explicitly for each dependent: delete it too, leave it, or stop. Apply only the choices the user confirms — never cascade silently.
+10. **Entity delete is irreversible — surface dependents first.** `entities delete <id> --yes --reason "<why>"` deletes the entity and every record in it. Before invoking, scan for dependents and list them to the user one by one: (a) other entities that reference this one (run `entities list --output json` and pull every entry whose `Fields[].ReferenceEntity.Id == <id>` — these will have broken FKs after the delete); (b) choice sets used by this entity's fields (`Fields[].ChoiceSetId` from `entities get`) — those choice sets are shared and may still be in use elsewhere. Ask the user explicitly for each dependent: delete it too, leave it, or stop. Apply only the choices the user confirms — never cascade silently.
 
-11. **Field delete is irreversible — surface impact first.** `entities update <id> --body '{"removeFields":[{"fieldName":"<name>"}]}' --confirm --reason "<why>"` drops the field and every record's value in it. Note `removeFields` takes `{"fieldName": "..."}` (NOT `{"id": "..."}` like `updateFields`). Before invoking: (a) if it's a RELATIONSHIP / FILE field, identify any code or flows that read its value; (b) if it's a CHOICE_SET field, note the choice set itself is unaffected (still shared). Ask the user explicitly: confirm the field name, confirm the loss is intentional, supply a reason for the audit log. Apply only after explicit confirmation.
+11. **Field delete is irreversible — surface impact first.** `entities update <id> --body '{"removeFields":[{"fieldName":"<name>"}]}' --yes --reason "<why>"` drops the field and every record's value in it. Note `removeFields` takes `{"fieldName": "..."}` (NOT `{"id": "..."}` like `updateFields`). Before invoking: (a) if it's a RELATIONSHIP / FILE field, identify any code or flows that read its value; (b) if it's a CHOICE_SET field, note the choice set itself is unaffected (still shared). Ask the user explicitly: confirm the field name, confirm the loss is intentional, supply a reason for the audit log. Apply only after explicit confirmation.
 
 12. **Complex field types need extra config and lookups, just like `DECIMAL` needs `decimalPrecision`.** `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` require `choiceSetId` (UUID, from `choice-sets list`); `RELATIONSHIP` and `FILE` require `referenceEntityId` (target entity UUID — from `entities list`) + `referenceFieldId` (target field UUID — from `entities get <target-id>`). The target entity must exist first. When the user describes a link to another row ("each order has a Customer", "each report has a Supplier"), the field type is `RELATIONSHIP` — never substitute `STRING` or `UUID` for it. Full shape in [`references/entity-schema.md`](references/entity-schema.md).
 
@@ -98,6 +98,15 @@ Respond that the operation is not supported. Do not try to work around it.
     2. **If folder-scoped**, pre-fetch `uip or folders list --output json` first, then render the accessible folders as a single-select dropdown — label each option `<Name> — <Path>`, stash the `Key` as the option payload, and use that as `--folder-key` for every subsequent call this turn. If more than 4 folders return, narrow first — ask whether the user wants Personal / Shared / Solution / Standard folders, or accept a free-text name filter, then re-prompt with the filtered list. Never render the raw folder list as plain markdown — always a selectable dropdown.
 
     Cache the folder list within the turn to avoid refetching. Echo the chosen scope back in the next message before any irreversible call. Scope persists across follow-up turns unless the user switches. Tenant prompting is rarely needed — `uip login status` shows the active tenant; only call `uip login tenant set <tenant>` after the user explicitly asks for a different one.
+
+    **Bypass clauses — skip the AskUserQuestion flow when ANY of these hold.** The agent must still announce the chosen scope (one line) in the response so the user can correct.
+    - The prompt explicitly says some variant of *"do not ask"*, *"do not pause"*, *"no approval / confirmation / feedback needed"*, or *"proceed without confirmation"* — proceed at **tenant level** unless folder context is mentioned inline.
+    - The prompt names a folder inline (*"in the Shared folder"*, *"in folder X"*, *"--folder-key <guid>"*, *"in personal workspace"*) — proceed with that folder; do **not** ask which folder.
+    - The prompt explicitly states tenant scope (*"tenant level"*, *"do NOT pass any folder flag"*, *"no folder"*, *"at the root"*) — proceed at tenant level.
+    - The prompt provides a folder GUID, a `folder_a_id`/`folder_b_id` variable, or instructions to derive folder IDs from another command — proceed using the derived folder; if none is available, fall through to tenant.
+    - The request is a pure tenant-wide discovery read (`entities list` / `choice-sets list` with no specific entity ID in mind) — default to `--include-folders` and announce. Asking adds no value for a survey.
+
+    When a bypass triggers, write one sentence at the top of the response stating which scope you picked and why (*"Proceeding at tenant level — prompt said 'do not pause'."* / *"Using folder Shared (key c4359cde-…) — prompt referenced it."*). The user can redirect in the next turn.
 
 20. **`records import` does not support complex field types — surface this to the user before invoking.** `records import` accepts Basic types only — `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` are **not supported**. The CSV header is accepted but the column values are ignored (no error, no `ErrorFileLink` entry — `null` in every row, or row failure if the field is `isRequired` without a `defaultValue`). Sequence: (1) run `entities get <entity-id>` and list every field whose type is in the unsupported set above; (2) tell the user verbatim which columns are not supported by import and why; (3) offer the alternative — `records insert --file <json>` with a JSON-array body handles all types except `FILE` (use `files upload` for those — Rule 6). See [`references/records-query.md` → Writing choice-set and relationship values](references/records-query.md#writing-choice-set-and-relationship-values) for the value form; (4) only invoke `records import` after the user confirms they accept the unsupported columns being skipped OR want to switch to `records insert`. This is platform behavior, not a bug — do not attempt to work around it.
 
@@ -179,25 +188,25 @@ If a verb returns `unknown option '--folder-key'`, the installed tool is older t
 | Manage choice sets | `choice-sets list [--folder-key <…> \| --include-folders]` / `list-values <id> [--folder-key <…>]` / `create [--folder-key <…>]` / `update [--folder-key <…>]` / `delete [--folder-key <…>]`; values via `choice-set-values create` / `update` / `delete` (all accept `--folder-key`) — full surface in [`references/choice-sets.md`](references/choice-sets.md) |
 | Create a new entity | `entities create <name> [--folder-key <folder-guid>] --body '{"fields":[{"fieldName":"Title","type":"STRING"}]}'` — omit `--folder-key` for tenant scope. For complex field types (`CHOICE_SET_*`, `RELATIONSHIP`) and their required extras (including cross-folder `referenceFolderKey`), see [`references/entity-schema.md`](references/entity-schema.md#supported-field-types) |
 | Update entity / add fields | `entities update <id> --body '{"addFields":[{"fieldName":"NewField","type":"STRING"}]}'` |
-| Update existing field metadata | `entities update <id> --body '{"updateFields":[{"id":"<field-uuid>","displayName":"New Label","isRequired":true}]}'` — `id` is the field UUID from `entities get Fields[].ID` |
+| Update existing field metadata | `entities update <id> --body '{"updateFields":[{"id":"<field-uuid>","displayName":"New Label","isRequired":true}]}'` — body uses `id` (lowercase); the response key is `Id` (different case, same value) |
 | Update entity metadata | `entities update <id> --body '{"displayName":"New Name","description":"desc"}'` |
 | Delete an entity (irreversible — list dependents first) | `entities delete <id> [--folder-key <…>] --yes --reason "<why>"` — pass `--folder-key` on folder-scoped entities. See Rule 10 for the dependent-discovery flow |
-| Delete a field (irreversible — confirm impact first) | `entities update <id> --body '{"removeFields":[{"fieldName":"<name>"}]}' --confirm --reason "<why>"` — note `removeFields` uses `fieldName`, NOT `id` like `updateFields`. See Rule 11 |
+| Delete a field (irreversible — confirm impact first) | `entities update <id> --body '{"removeFields":[{"fieldName":"<name>"}]}' --yes --reason "<why>"` — note `removeFields` uses `fieldName`, NOT `id` like `updateFields`. See Rule 11 |
 | Read records (first page) | `records list <entity-id> --limit 50` |
-| Read records (next page) | `records list <entity-id> --cursor <NextCursor>` |
+| Read records (next page) | `records list <entity-id> --cursor <NextCursor.Value>` — extract the inner `Value` from the previous response's `Data.NextCursor` object; passing the whole object errors |
 | Get one record | `records get <entity-id> <record-id>` |
 | Insert one record | `records insert <entity-id> --body '{...}'` (or `--file`). Choice / relationship value formats: see [`references/records-query.md`](references/records-query.md#writing-choice-set-and-relationship-values) |
 | Batch insert | `records insert <entity-id> --body '[{...},{...}]'` |
 | Update one record | `records update <entity-id> --body '{"Id":"<record-id>","field":"val"}'` |
 | Batch update | `records update <entity-id> --body '[{"Id":"<id1>","field":"val"},{"Id":"<id2>","field":"val"}]'` |
-| Delete records | `records delete <entity-id> <id1> <id2>` |
+| Delete records (irreversible — `--yes --reason` required) | `records delete <entity-id> <id1> <id2> [--folder-key <…>] --yes --reason "<why>"` — IDs are positional varargs (separate args, NOT space-joined in one quoted string) |
 | Filter/search records | `records query <entity-id> --body '{...}'`. Choice / relationship filter operators: see [`references/records-query.md`](references/records-query.md#filtering-on-choice-set-fields) |
 | Aggregate / group-by metrics | `records query <entity-id> --body '{"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}],"groupBy":["FieldName"]}'` |
 | Bulk import from CSV (Basic field types only — `CHOICE_SET_*`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` are **not supported** by `records import`; **surface this to the user before invoking — Rule 20**) | `records import <entity-id> --file data.csv [--folder-key <…>]` |
 | Bulk seed records that include complex fields | `records insert <entity-id> --file records.json` with a JSON array body |
 | Upload file to record | `files upload <entity-id> <record-id> <field-name> --file path` |
 | Download file | `files download <entity-id> <record-id> <field-name> --destination path` |
-| Delete file | `files delete <entity-id> <record-id> <field-name>` |
+| Delete file (irreversible — `--yes --reason` required) | `files delete <entity-id> <record-id> <field-name> [--folder-key <…>] --yes --reason "<why>"` |
 
 ---
 
@@ -224,8 +233,9 @@ uip df entities list --native-only --output json
 uip df entities get <entity-id> --output json
 uip df records insert <entity-id> --body '{"Name":"Alice","Score":95}' --output json
 uip df records list <entity-id> --limit 50 --output json
-# Use HasNextPage + NextCursor to page through results
-uip df records list <entity-id> --cursor <NextCursor> --output json
+# Records live in Data.Items (NOT Data.Records). Stop when Data.HasNextPage is false.
+# NextCursor is an object — unwrap Data.NextCursor.Value and pass that to --cursor.
+uip df records list <entity-id> --cursor <NextCursor.Value> --output json
 ```
 
 ---
@@ -262,7 +272,6 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 | Constraint violation (`"outside of allowed range"`, `"exceeds lengthLimit"`, etc.) | Write value broke `minValue` / `maxValue` / `lengthLimit` / `decimalPrecision` | Surface the full error to the user, show the allowed range from `entities get`, and ask what value to use — never silently clamp. See Rule 18. |
 | `referenceEntityId` missing on RELATIONSHIP/FILE field | Field defined with names instead of UUIDs | Pass `referenceEntityId` + `referenceFieldId` (UUIDs from `entities list` / `entities get`). See Rule 12. |
 | `Cannot read properties of undefined (reading 'sqlTypeName')` | Field `type` value didn't match a known `EntityFieldDataType` enum — almost always lowercase / mixed-case (e.g. `"boolean"` instead of `"BOOLEAN"`) | Case-fold to the UPPERCASE enum from the type table — see [`references/entity-schema.md` → Normalizing user-facing type names](references/entity-schema.md#normalizing-user-facing-type-names) |
-| `Update entity data failed. Relationship violation` (on `files upload`) | The `FILE` field was created with `referenceEntityId`/`referenceFieldId` pointing at the wrong target entity (FILE fields must bind to the tenant's `EntityAttachment` system entity + its attachment-id field) | Recreate the FILE field with `referenceEntityId`/`referenceFieldId` taken from any existing entity that already has a working FILE field — `entities list --output json` and filter for `Fields[].FieldDataType.Name == "FILE"`, then copy that field's `ReferenceEntity.Id` + `ReferenceField.Id`. The `EntityAttachment` entity itself is hidden from `entities list`. See [`references/entity-schema.md` → FILE Fields](references/entity-schema.md#file-fields). |
 | `Each field in removeFields must include a non-empty 'fieldName' string` | `removeFields` was called with `{"id": "..."}` (the shape `updateFields` uses) instead of `{"fieldName": "..."}` | Re-emit with `{"fieldName": "<exact field name>"}` — see Rule 11 |
 | `unknown option '--folder-key'` or `unknown option '--include-folders'` | Installed `@uipath/data-fabric-tool` predates `1.197.0` (folder-key fan-out) | Upgrade: `uip tools install @uipath/data-fabric-tool@alpha` until `1.197.0+` is promoted to `latest`. See *Tool Version Requirements* |
 | `--folder-key and --include-folders are mutually exclusive` | Both flags passed on `entities list` / `choice-sets list` | Pick one: `--folder-key <key>` for a single folder, OR `--include-folders` for tenant + every folder you can see |
