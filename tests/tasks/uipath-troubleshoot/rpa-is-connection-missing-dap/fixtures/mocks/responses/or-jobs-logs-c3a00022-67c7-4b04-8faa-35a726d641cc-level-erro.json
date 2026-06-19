@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-19T13:00:31.177Z",
+      "Message": "Create Folder: Failed to retrieve connection. Consider using a different connection. - Connection [989fd9d2-4b07-443e-86e3-ed6f1b00079b] is invalid or you do not have access to it Error code: DAP-GE-3000.\nin Main.xaml\n    at ConnectorActivity \"Create Folder\"\n    at Sequence \"Sequence\"\n    at Main \"Main\"\n\n--- .NET stack trace ---\nUiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException\n   at UiPath.IntegrationService.Activities.Runtime.Services.ConnectionService.GetConnectionAsync(String connectionId, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivityBase.BuildExecutionParametersAsync(AsyncCodeActivityContext context, RequestParameters requestParameters, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\n   at UiPath.IntegrationService.Activities.Runtime.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}
