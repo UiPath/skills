@@ -3,7 +3,9 @@
 
 Validates:
   1. Flow has a `uipath.agent.autonomous` node and a
-     `uipath.agent.resource.escalation` node.
+     `uipath.agent.resource.escalation.coded-action-app` node (the
+     solution-internal app-backed escalation node; the bare
+     `uipath.agent.resource.escalation` type is the external-app variant).
   2. Edge wires agent.escalation -> escalation.input.
   3. Inline agent dir has at least one escalation resource.json under
      its resources/ tree with:
@@ -12,17 +14,24 @@ Validates:
        - isEnabled is truthy
        - channels contains at least one entry with
          type == "actionCenter" (lowercase) and a non-empty name
+  4. The ActionCenter channel is bound to the solution-internal
+     HumanReviewEscalation app:
+       - properties.appName == "HumanReviewEscalation"
+       - properties.folderName == "solution_folder"
 
   Note: the escalation resource.json format documented in
   agent-json-format.md does not expose a `location` field on escalation
-  resources. The solution-vs-external distinction is captured by where
-  the ActionCenter app actually lives (separate project inside this
-  solution for F13) and by the test prompt wording.
+  resources. The solution-vs-external distinction is captured by the
+  ActionCenter channel binding to the solution-internal app
+  (folderName == "solution_folder").
 """
 
 import os
 import sys
 from pathlib import Path
+
+EXPECTED_APP_NAME = "HumanReviewEscalation"
+EXPECTED_FOLDER_NAME = "solution_folder"
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.inline_wiring import (  # noqa: E402
@@ -35,13 +44,16 @@ from _shared.inline_wiring import (  # noqa: E402
 )
 
 FLOW_PATH = Path(os.getcwd()) / "ReviewFlowSol" / "ReviewFlow" / "ReviewFlow.flow"
-ESCALATION_NODE_TYPE = "uipath.agent.resource.escalation"
+# Solution-internal escalation wired to a coded action app. The node type
+# carries a `.coded-action-app` suffix (vs the bare type used when the app
+# lives externally in Orchestrator), so match by prefix.
+ESCALATION_NODE_TYPE_PREFIX = "uipath.agent.resource.escalation.coded-action-app"
 
 
 def main() -> None:
     flow = load_json(FLOW_PATH)
     agent_node = find_autonomous_agent_node(flow)
-    escalation_node = find_resource_node(flow, node_type=ESCALATION_NODE_TYPE)
+    escalation_node = find_resource_node(flow, node_type_prefix=ESCALATION_NODE_TYPE_PREFIX)
     print(f"OK: flow has {agent_node['type']} and {escalation_node['type']} nodes")
 
     assert_edge(
@@ -78,6 +90,21 @@ def main() -> None:
             f"and a non-empty name"
         )
     print(f"OK: escalation resource at {path.name} is valid (id={rid}, {len(ac)} actionCenter channel(s))")
+
+    bound = [c for c in ac if (c.get("properties") or {}).get("appName") == EXPECTED_APP_NAME]
+    if not bound:
+        sys.exit(
+            f"FAIL: {path} has no actionCenter channel bound to the solution-internal app "
+            f"{EXPECTED_APP_NAME!r} (properties.appName) — got appNames: "
+            f"{[(c.get('properties') or {}).get('appName') for c in ac]}"
+        )
+    fname = (bound[0].get("properties") or {}).get("folderName")
+    if fname != EXPECTED_FOLDER_NAME:
+        sys.exit(
+            f"FAIL: channel properties.folderName should be {EXPECTED_FOLDER_NAME!r} "
+            f"(solution-internal app), got {fname!r}"
+        )
+    print(f"OK: actionCenter channel is bound to appName={EXPECTED_APP_NAME!r}, folderName={EXPECTED_FOLDER_NAME!r}")
 
 
 if __name__ == "__main__":
