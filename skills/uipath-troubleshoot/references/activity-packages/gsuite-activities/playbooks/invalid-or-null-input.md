@@ -22,11 +22,14 @@ What this looks like — any of the following messages:
 - `You do not have the following labels` — a Gmail activity referenced one or more label names that don't exist in the account (followed by the offending label names).
 - `Cannot iterate over the QuickHandle item.` — the result of a `For Each Row` was used in an operation that needs a valid current-row handle but received an incompatible object.
 - `The selected folder does not exist.` — legacy local-OAuth datastore: the configured credential-storage `Folder` path is missing on the robot machine.
+- `File does not exist: <path>` — a `System.IO.FileNotFoundException`: a configured **local** file path does not exist on the robot machine. Legacy `SendEmail` attachment path (validated as the activity assembles attachments, before any Gmail send), an upload source path, or a service-account key path. This is a local-filesystem miss, **not** a Drive 404.
+- `Could not extract an object Id from the Url '<url>'.` — an `ArgumentOutOfRangeException`: a Drive activity that resolves a file/folder by ID *or* URL (legacy `GetFileInfo` and any `CloudObjectIdentifier`-based by-ID/URL activity) was given a URL string with no extractable ID segment. Malformed/truncated link, not a missing resource.
+- `You must provide a value for at least one of the following properties: To, Cc, Bcc` — legacy `SendEmail` (non-draft) with `To`, `Cc`, and `Bcc` all empty. Validated at design time; satisfied by populating a recipient or setting `IsDraft = True`.
 
 The job faults synchronously the instant the activity validates the input; there is no API round-trip, no retry.
 
 What activities can produce these errors:
-Any activity with the relevant input. Null/`Value cannot be null` and `The object used in the activity does not exist.` are universal (every activity has required inputs). The range/row/column messages come from Sheets activities (`WriteRangeConnections`, `WriteCellConnections`, `WriteRowConnections`, `WriteColumnConnections`, `ReadRange(Connections)`, `ForEachRowConnections`, and their legacy equivalents). `<property> must be a positive number` and `You do not have the following labels` come from Gmail retrieval activities such as legacy `GetMailMessages`.
+Any activity with the relevant input. Null/`Value cannot be null` and `The object used in the activity does not exist.` are universal (every activity has required inputs). The range/row/column messages come from Sheets activities (`WriteRangeConnections`, `WriteCellConnections`, `WriteRowConnections`, `WriteColumnConnections`, `ReadRange(Connections)`, `ForEachRowConnections`, and their legacy equivalents). `<property> must be a positive number` and `You do not have the following labels` come from Gmail retrieval activities such as legacy `GetMailMessages`. `File does not exist: <path>` and the recipient-required message come from legacy `SendEmail` (missing attachment path / all recipients empty); `Could not extract an object Id from the Url ...` comes from legacy `GetFileInfo` and other Drive by-ID/URL activities given a malformed URL.
 
 What can cause it:
 - A workflow variable bound to the property was never assigned, or an expression evaluated to null/empty at runtime.
@@ -34,6 +37,8 @@ What can cause it:
 - A hard-coded address is wrong: an out-of-bounds row/column position, a misspelled column name, a named range combined with a cell value.
 - An empty or zero-column `DataTable` was built and passed to a write.
 - A configuration value (`MaxResults`, a label name, a local datastore folder) is invalid for the environment.
+- A configured local file path (a `SendEmail` attachment, an upload source) doesn't exist on the robot, or a Drive `FileId` is a malformed URL with no extractable ID.
+- A non-draft `SendEmail` has no recipient in any of `To`/`Cc`/`Bcc`.
 
 > **Different cause — do not apply this playbook:**
 > - **`Invalid data[0]: Unable to parse range: <Sheet>!<Cell>`** is a **server-side** Google 400 (the range reached Google and Google rejected its A1 syntax) — use [sheets-invalid-range.md](./sheets-invalid-range.md). The errors in *this* playbook are thrown before the call leaves the robot.
@@ -58,3 +63,6 @@ What can cause it:
 - **If a count is non-positive (`must be a positive number`):** Set `MaxResults` (or the named property) to a value ≥ 1.
 - **If labels don't exist (`You do not have the following labels`):** Correct the label names to match labels that exist in the Gmail account (labels are case-sensitive and user-defined).
 - **If the local datastore folder is missing (`The selected folder does not exist.`):** Create the configured credential-storage folder on the robot machine or point the legacy scope at an existing path.
+- **If a local file is missing (`File does not exist: <path>`):** Stage the file at the configured path on the robot, or correct the path (the attachment / upload-source entry). For unattended runs avoid machine-local / user-profile paths.
+- **If a Drive URL won't parse (`Could not extract an object Id from the Url ...`):** Supply a valid file ID or a well-formed Drive URL containing the ID segment.
+- **If `SendEmail` has no recipient:** Populate `To`, `Cc`, or `Bcc`, or set `IsDraft = True` to save a draft without recipients.

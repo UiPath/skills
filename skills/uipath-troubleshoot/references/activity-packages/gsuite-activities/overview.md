@@ -17,12 +17,12 @@ Failures can originate at any of those layers — connection resolution (Integra
 ### Gmail
 
 - **Get Newest Email** (`GetNewestEmailConnections`) — retrieves the single most recent message matching a configured filter.
-- **Send / Reply / Forward Email** (`SendEmailConnections`, `ReplyToEmailConnections`, `ForwardEmailConnections`) — send, reply, or forward a Gmail message. Uploads attachments via Gmail multipart upload, so they share Drive-class quota failures.
+- **Send / Reply / Forward Email** (`SendEmailConnections`, `ReplyToEmailConnections`, `ForwardEmailConnections`, plus legacy `SendEmail`) — send, reply, or forward a Gmail message. Uploads attachments via Gmail multipart upload, so they share Drive-class quota failures. Legacy `SendEmail` validates each attachment path locally first (`File does not exist: <path>`) and requires at least one of `To`/`Cc`/`Bcc` unless `IsDraft`.
 
 ### Drive
 
 - **Item write operations** (`CreateFolderConnections`, `CopyFileConnections`, `MoveFileConnections`, `RenameFileFolderConnections`, `UploadFilesConnections`, `CreateSpreadsheetConnections`, `CreateDocumentConnections`) — create, copy, move, rename, or upload Drive items; behavior on duplicate name in the destination is governed by the `ConflictResolution` enum (`Replace`, `Fail`, `Rename`, `AddSeparate`, `UseExisting`).
-- **Item resolution by ID, URL, or path** (most Drive activities, e.g., `GetFileFolderConnections`, `GetFileFolderInfoConnections`, `DownloadFileConnections`, `DeleteFileOrFolderConnections`, `ShareFileFolderConnections`, plus the write operations above) — resolve a target file or folder against the Drive API; fails with HTTP 404 when the identifier no longer resolves.
+- **Item resolution by ID, URL, or path** (most Drive activities, e.g., `GetFileFolderConnections`, `GetFileFolderInfoConnections`, legacy `GetFileInfo`, `DownloadFileConnections`, `DeleteFileOrFolderConnections`, `ShareFileFolderConnections`, plus the write operations above) — resolve a target file or folder against the Drive API; fails with HTTP 404 when the identifier no longer resolves, or with `ArgumentOutOfRangeException` (`Could not extract an object Id from the Url ...`) before the call when a passed URL has no extractable ID.
 - **Upload Files** (`UploadFilesConnections`, legacy `UploadFile`) — upload local files into Drive via multipart upload; subject to user storage quota and shared-drive file-count limit.
 
 ### Sheets
