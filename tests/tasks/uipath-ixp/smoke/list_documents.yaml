@@ -1,8 +1,8 @@
 task_id: skill-ixp-list-documents-smoke
 description: >
-  Smoke: agent lists the documents in a project with
-  `uip ixp documents list <Name>`. (Resolving a project by its display title
-  is a separate, auth-dependent concern — covered in integration.)
+  Smoke: agent lists the documents in a project. (Resolving a project by its
+  display title is a separate, auth-dependent concern — covered in
+  integration.)
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

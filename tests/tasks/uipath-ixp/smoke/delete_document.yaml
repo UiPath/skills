@@ -1,8 +1,7 @@
 task_id: skill-ixp-delete-document-smoke
 description: >
-  Smoke: agent deletes a document by id with
-  `uip ixp documents delete <Name> <document-id>`. Irreversible — triggers a
-  retrain. (Resolving a document by filename or list position is a separate,
+  Smoke: agent deletes a document by id — irreversible, triggers a retrain.
+  (Resolving a document by filename or list position is a separate,
   auth-dependent concern — covered in integration.)
 
   Harness is unauthenticated; CLI calls fail with auth errors.
