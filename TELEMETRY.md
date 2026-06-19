@@ -65,7 +65,6 @@ sends becomes an event property.
 | `toolName` | `Skill`, `Bash` | Claude Code tool |
 | `toolUseId` | `toolu_01ABC` | Unique per call — correlation key + ordering tiebreaker |
 | `sessionId` | `b3f1...` | Claude Code `session_id` — the coding-agent session; session correlation key |
-| `modelId` | `opus` / `sonnet` | Model family — best-effort from the payload's `model` id, mapped to a short name (`opus` / `sonnet` / `haiku` / `fable`). Empty if the payload carries no model id |
 | `skillName` | `uipath:uipath-platform` | `Skill` calls only |
 | `uipSubcommand` | `solution publish` | Derived first 1–2 verbs of a `uip` command — never the full command line |
 | `fileExtension` | `.flow` | File-tool calls only |
