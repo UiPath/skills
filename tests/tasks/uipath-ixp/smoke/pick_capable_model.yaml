@@ -1,8 +1,8 @@
 task_id: skill-ixp-pick-capable-model-smoke
 description: >
-  Smoke: faced with long, inference-heavy documents and low Flash F1, the agent
-  switches to a more capable model via
-  `uip ixp projects configure-model <Name> --model gemini_2_5_pro`.
+  Smoke: faced with long, inference-heavy documents and low Flash F1, the
+  agent switches to a more capable model via `configure-model --model
+  gemini_2_5_pro`.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
