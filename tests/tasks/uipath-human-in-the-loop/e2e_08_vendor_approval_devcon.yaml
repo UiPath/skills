@@ -1,0 +1,118 @@
+task_id: skill-hitl-e2e-vendor-approval-devcon
+description: >
+  DevCon flagship scenario: developer provides vague vendor onboarding requirements.
+  Agent must detect that the process requires human review checkpoints, design
+  appropriate HITL schemas for different risk tiers, build a complete flow with
+  risk-based routing (switch node), wire all HITL completed handles, and validate.
+  Mirrors the live DevCon demo flow.
+tags: [uipath-human-in-the-loop, e2e, green-field, vendor-approval, risk-routing, devcon]
+
+agent:
+  type: claude-code
+  max_turns: 75
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  We need to automate our vendor onboarding approval process. Here's the gist:
+
+  When a new vendor application comes in, our system scores the vendor and assigns
+  a risk tier. Low-risk vendors just need a procurement manager to sign off.
+  High-risk vendors are rejected automatically — we send them a rejection email.
+  Medium-risk vendors need both a procurement manager review and legal review.
+
+  The reviewers need to see the vendor's risk tier, confidence score, and the
+  AI's reasoning. They can add a recommendation and either approve or reject.
+
+  Build this as a UiPath Maestro solution called "VendorApproval". Use a manual
+  trigger and mock the risk assessment data in a script node (Risk_Tier = "medium",
+  Confidence = 0.72, Rationale = "Vendor has limited trade history").
+
+  Do NOT run flow debug. Validate after building.
+
+  Save a report.json:
+  {
+    "solution": "VendorApproval",
+    "flow_file": "<path>",
+    "hitl_nodes": ["<id1>", "<id2 if present>"],
+    "routing_node_id": "<switch or decision node id>",
+    "hitl_fields": {
+      "<nodeId>": {
+        "inputs": ["<field ids shown to reviewer>"],
+        "outputs": ["<field ids reviewer fills in>"],
+        "outcomes": ["<outcome names>"]
+      }
+    },
+    "handles_wired": ["completed"],
+    "validation_passed": true
+  }
+
+success_criteria:
+  - type: run_command
+    description: "uip flow validate passes"
+    command: "uip maestro flow validate VendorApproval/VendorApproval/VendorApproval.flow --output json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow file contains a HITL node"
+    path: "VendorApproval/VendorApproval/VendorApproval.flow"
+    includes:
+      - '"uipath.human-in-the-loop"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow file contains risk-based routing (switch or decision)"
+    path: "VendorApproval/VendorApproval/VendorApproval.flow"
+    includes:
+      - '"core.logic.switch"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "completed handle is wired in the flow"
+    path: "VendorApproval/VendorApproval/VendorApproval.flow"
+    includes:
+      - '"completed"'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "report.json confirms HITL nodes, routing, and validation"
+    path: "report.json"
+    assertions:
+      - expression: "length(hitl_nodes)"
+        operator: gte
+        expected: 1
+      - expression: "routing_node_id"
+        operator: not_equals
+        expected: ""
+      - expression: "validation_passed"
+        operator: equals
+        expected: true
+    weight: 3.0
+    pass_threshold: 0.75
+
+  - type: file_contains
+    description: "HITL schema includes reviewer inputs and a recommendation or notes output"
+    path: "report.json"
+    includes:
+      - '"inputs"'
+      - '"outputs"'
+      - '"outcomes"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran flow validate"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
