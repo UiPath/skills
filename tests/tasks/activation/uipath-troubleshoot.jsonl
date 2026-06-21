@@ -48,3 +48,9 @@
 {"id": "uipath-troubleshoot-048", "prompt": "Help me figure out what's wrong \u2014 the agent runs, loops, but the second tool call always returns an empty result", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-049", "prompt": "Process keeps faulting on Type Into with \"Cannot find UI element corresponding to this selector\" \u2014 was working last week. Why?", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-050", "prompt": "Why did the trigger fire but no job got created? Logs show the trigger but Orchestrator has no record of any job.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-051", "prompt": "why did my job 77dc53dd-5c45-4a77-b39f-a52e9e7ef163 from Shared folder has failed?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-052", "prompt": "Job in the Finance folder has been Running for 3 hours — diagnose", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-053", "prompt": "Queue items in the OrderProcessing folder keep faulting — investigate why", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-054", "prompt": "Asset retrieval is returning null in the Default folder even though the asset value is set in Orchestrator. What broke?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-055", "prompt": "Process in my Personal folder runs locally in Studio but fails the moment Orchestrator starts it. Why?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-056", "prompt": "Connection in the Marketing folder works in Studio Web but fails when the same flow runs unattended in that folder. Diagnose.", "expected_skill": "uipath-troubleshoot"}
