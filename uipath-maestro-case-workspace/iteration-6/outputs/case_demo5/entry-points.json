@@ -1,0 +1,14 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/case.stage.json.bpmn#trigger_1",
+      "uniqueId": "3388c9ec-9204-470c-8822-afb553ceb12f",
+      "type": "CaseManagement",
+      "input": { "type": "object", "properties": {} },
+      "output": { "type": "object", "properties": {} },
+      "displayName": "Trigger 1"
+    }
+  ]
+}

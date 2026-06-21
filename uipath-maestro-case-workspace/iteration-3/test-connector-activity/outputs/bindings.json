@@ -1,0 +1,20 @@
+[
+  {
+    "id": "bConn1234",
+    "name": "uipath-atlassian-jira connection",
+    "type": "string",
+    "resource": "Connection",
+    "propertyAttribute": "ConnectionId",
+    "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "default": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  {
+    "id": "bFldr5678",
+    "name": "FolderKey",
+    "type": "string",
+    "resource": "Connection",
+    "propertyAttribute": "folderKey",
+    "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "default": "f7861297-448e-4ce1-9415-3d50c8a3aff6"
+  }
+]

@@ -1,0 +1,129 @@
+{
+  "id": "tTestConn",
+  "elementId": "stage_1-tTestConn",
+  "displayName": "Get Jira Issue",
+  "type": "execute-connector-activity",
+  "data": {
+    "serviceType": "Intsvc.ExecuteConnectorActivity",
+    "context": [
+      { "name": "connectorKey", "value": "uipath-atlassian-jira", "type": "string" },
+      { "name": "connection", "value": "=bindings.bConn1234", "type": "string" },
+      { "name": "resourceKey", "value": "0d93ddc9-a512-4b60-8483-4a3a8fbee20e", "type": "string" },
+      { "name": "folderKey", "value": "=bindings.bFldr5678", "type": "string" },
+      { "name": "operation", "value": "list", "type": "string" },
+      { "name": "objectName", "value": "curated_get_issue", "type": "string" },
+      { "name": "method", "value": "GET", "type": "string" },
+      { "name": "path", "value": "/rest/api/3/issue/{issueIdOrKey}", "type": "string" },
+      { "name": "_label", "value": "Get Jira Issue", "type": "string" },
+      {
+        "name": "metadata",
+        "type": "json",
+        "body": {
+          "activityMetadata": {
+            "activity": {}
+          },
+          "designTimeMetadata": {
+            "connectorLogoUrl": "",
+            "activityConfig": { "isCurated": true, "operation": "list" }
+          },
+          "telemetryData": {
+            "connectorKey": "uipath-atlassian-jira",
+            "connectorName": "uipath-atlassian-jira"
+          },
+          "inputMetadata": {},
+          "errorState": { "hasError": false },
+          "activityPropertyConfiguration": {
+            "configuration": "",
+            "uiPathActivityTypeId": "0d93ddc9-a512-4b60-8483-4a3a8fbee20e",
+            "errorState": { "issues": [] }
+          }
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "name": "body",
+        "type": "json",
+        "target": "body",
+        "body": {},
+        "var": "vBdyInp01",
+        "id": "vBdyInp01",
+        "elementId": "stage_1-tTestConn"
+      },
+      {
+        "name": "pathParameters",
+        "type": "json",
+        "target": "pathParameters",
+        "body": { "issueIdOrKey": "" },
+        "var": "vPthPrm02",
+        "id": "vPthPrm02",
+        "elementId": "stage_1-tTestConn"
+      },
+      {
+        "name": "queryParameters",
+        "type": "json",
+        "target": "queryParameters",
+        "body": { "expand": "" },
+        "var": "vQryPrm03",
+        "id": "vQryPrm03",
+        "elementId": "stage_1-tTestConn"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "response",
+        "displayName": "Get Jira Issue",
+        "type": "jsonSchema",
+        "source": "=response",
+        "var": "response",
+        "id": "response",
+        "value": "response",
+        "target": "=response",
+        "elementId": "stage_1-tTestConn",
+        "body": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "key": { "type": "string" },
+            "summary": { "type": "string" }
+          }
+        }
+      },
+      {
+        "name": "Error",
+        "displayName": "Error",
+        "value": "error",
+        "type": "jsonSchema",
+        "source": "=Error",
+        "var": "error",
+        "id": "error",
+        "target": "=error",
+        "elementId": "stage_1-tTestConn",
+        "body": {
+          "type": "object",
+          "properties": {
+            "code": { "type": "string" },
+            "message": { "type": "string" },
+            "detail": { "type": "string" },
+            "category": { "type": "string" },
+            "status": { "type": "number" },
+            "element": { "type": "string" }
+          }
+        }
+      }
+    ],
+    "bindings": []
+  },
+  "entryConditions": [
+    {
+      "id": "cEntCond01",
+      "displayName": "Entry condition 1",
+      "rules": [
+        [
+          { "id": "rRule00001", "rule": "current-stage-entered" }
+        ]
+      ]
+    }
+  ]
+}

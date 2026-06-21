@@ -1,0 +1,249 @@
+{
+  "root": {
+    "id": "root",
+    "type": "case-management:root",
+    "name": "Agentic case 1",
+    "caseIdentifierType": "constant",
+    "caseIdentifier": "CASE",
+    "caseAppEnabled": true,
+    "caseExitConditions": [],
+    "version": "v13",
+    "data": {
+      "intsvcActivityConfig": "v2",
+      "uipath": {
+        "variables": {
+          "inputOutputs": []
+        },
+        "bindings": [
+          {
+            "id": "bTd2JJdUQ",
+            "name": "uipath-atlassian-jira connection",
+            "type": "string",
+            "resource": "Connection",
+            "propertyAttribute": "ConnectionId",
+            "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "default": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          },
+          {
+            "id": "b1XYH4XoI",
+            "name": "FolderKey",
+            "type": "string",
+            "resource": "Connection",
+            "propertyAttribute": "folderKey",
+            "resourceKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "default": "f7861297-448e-4ce1-9415-3d50c8a3aff6"
+          }
+        ]
+      }
+    },
+    "publishVersion": 1
+  },
+  "nodes": [
+    {
+      "id": "trigger_1",
+      "type": "case-management:Trigger",
+      "position": { "x": 160, "y": 208 },
+      "style": { "width": 96, "height": 96 },
+      "measured": { "width": 96, "height": 96 },
+      "data": {
+        "label": "Trigger 1",
+        "parentElement": { "id": "root", "type": "case-management:root" },
+        "isInvalidDropTarget": false,
+        "isPendingParent": false,
+        "uipath": {
+          "serviceType": "Intsvc.TimerTrigger",
+          "timerType": "timeCycle",
+          "timeCycle": "R/PT1S"
+        }
+      },
+      "width": 96,
+      "height": 96,
+      "zIndex": 0
+    },
+    {
+      "id": "stage_1",
+      "type": "case-management:Stage",
+      "position": { "x": 320, "y": 224 },
+      "style": { "width": 304 },
+      "measured": { "width": 304, "height": 138 },
+      "data": {
+        "label": "Stage 1",
+        "parentElement": { "id": "root", "type": "case-management:root" },
+        "tasks": [
+          {
+            "id": "tTestConn",
+            "elementId": "stage_1-tTestConn",
+            "displayName": "Get Jira Issue",
+            "type": "execute-connector-activity",
+            "data": {
+              "serviceType": "Intsvc.ExecuteConnectorActivity",
+              "context": [
+                { "name": "connectorKey", "value": "uipath-atlassian-jira", "type": "string" },
+                { "name": "connection", "value": "=bindings.bTd2JJdUQ", "type": "string" },
+                { "name": "resourceKey", "value": "0d93ddc9-a512-4b60-8483-4a3a8fbee20e", "type": "string" },
+                { "name": "folderKey", "value": "=bindings.b1XYH4XoI", "type": "string" },
+                { "name": "operation", "value": "list", "type": "string" },
+                { "name": "objectName", "value": "curated_get_issue", "type": "string" },
+                { "name": "method", "value": "GET", "type": "string" },
+                { "name": "path", "value": "/rest/api/3/issue/{issueIdOrKey}", "type": "string" },
+                { "name": "_label", "value": "Get Jira Issue", "type": "string" },
+                {
+                  "name": "metadata",
+                  "type": "json",
+                  "body": {
+                    "activityMetadata": {
+                      "activity": {
+                        "uiPathActivityTypeId": "0d93ddc9-a512-4b60-8483-4a3a8fbee20e",
+                        "connectorKey": "uipath-atlassian-jira",
+                        "operation": "list",
+                        "objectName": "curated_get_issue",
+                        "method": "GET",
+                        "path": "/rest/api/3/issue/{issueIdOrKey}"
+                      }
+                    },
+                    "designTimeMetadata": {
+                      "connectorLogoUrl": "icons/uipath-atlassian-jira",
+                      "activityConfig": {
+                        "isCurated": true,
+                        "operation": "list"
+                      }
+                    },
+                    "telemetryData": {
+                      "connectorKey": "uipath-atlassian-jira",
+                      "connectorName": "uipath-atlassian-jira"
+                    },
+                    "inputMetadata": {},
+                    "errorState": { "hasError": false },
+                    "activityPropertyConfiguration": {
+                      "configuration": "=jsonString:{\"connectorKey\": \"uipath-atlassian-jira\", \"connectionId\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\", \"folderKey\": \"f7861297-448e-4ce1-9415-3d50c8a3aff6\"}",
+                      "uiPathActivityTypeId": "0d93ddc9-a512-4b60-8483-4a3a8fbee20e",
+                      "errorState": { "issues": [] }
+                    }
+                  }
+                }
+              ],
+              "inputs": [
+                {
+                  "name": "body",
+                  "type": "json",
+                  "target": "body",
+                  "body": {},
+                  "var": "vRhyV0Zhc",
+                  "id": "vRhyV0Zhc",
+                  "elementId": "stage_1-tTestConn"
+                },
+                {
+                  "name": "pathParameters",
+                  "type": "json",
+                  "target": "pathParameters",
+                  "body": { "issueIdOrKey": "" },
+                  "var": "vFCuqqmye",
+                  "id": "vFCuqqmye",
+                  "elementId": "stage_1-tTestConn"
+                },
+                {
+                  "name": "queryParameters",
+                  "type": "json",
+                  "target": "queryParameters",
+                  "body": { "expand": "" },
+                  "var": "vLIrHJ1xN",
+                  "id": "vLIrHJ1xN",
+                  "elementId": "stage_1-tTestConn"
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "response",
+                  "displayName": "Get Jira Issue",
+                  "type": "jsonSchema",
+                  "source": "=response",
+                  "var": "response",
+                  "id": "response",
+                  "value": "response",
+                  "target": "=response",
+                  "elementId": "stage_1-tTestConn",
+                  "body": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "key": { "type": "string" },
+                      "summary": { "type": "string" }
+                    }
+                  }
+                },
+                {
+                  "name": "Error",
+                  "displayName": "Error",
+                  "value": "error",
+                  "type": "jsonSchema",
+                  "source": "=Error",
+                  "var": "error",
+                  "id": "error",
+                  "target": "=error",
+                  "elementId": "stage_1-tTestConn",
+                  "body": {
+                    "type": "object",
+                    "properties": {
+                      "code": { "type": "string" },
+                      "message": { "type": "string" },
+                      "detail": { "type": "string" },
+                      "category": { "type": "string" },
+                      "status": { "type": "number" },
+                      "element": { "type": "string" }
+                    }
+                  }
+                }
+              ],
+              "bindings": []
+            },
+            "entryConditions": [
+              {
+                "id": "cWssXjuK7",
+                "displayName": "Entry condition 1",
+                "rules": [[{ "id": "rR4gJEEFl", "rule": "current-stage-entered" }]]
+              }
+            ]
+          }
+        ],
+        "isRequired": true,
+        "entryConditions": [
+          {
+            "id": "cPGc86GQy",
+            "displayName": "Case entered",
+            "rules": [[{ "id": "r6hmnSS7s", "rule": "case-entered" }]]
+          }
+        ],
+        "exitConditions": [
+          {
+            "id": "cqZwpvW2Z",
+            "displayName": "All required tasks completed",
+            "rules": [[{ "id": "rv3Fk7SZl", "rule": "selected-tasks-completed", "selectedTasksIds": [] }]],
+            "type": "exit-only",
+            "marksStageComplete": false
+          }
+        ],
+        "isInvalidDropTarget": false,
+        "isPendingParent": false
+      },
+      "width": 304,
+      "zIndex": 0
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_initial",
+      "source": "trigger_1",
+      "target": "stage_1",
+      "sourceHandle": "trigger_1____source____right",
+      "targetHandle": "stage_1____target____left",
+      "type": "case-management:TriggerEdge",
+      "style": { "strokeWidth": 3 },
+      "zIndex": 1001,
+      "data": {
+        "parentElement": { "id": "root", "type": "case-management:root" },
+        "isIntersecting": false
+      }
+    }
+  ]
+}
