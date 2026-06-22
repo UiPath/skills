@@ -8,7 +8,7 @@ description: >
   retrievalMode, and that a `uipath.agent.resource.context.index` flow
   node is wired to the autonomous agent node's `context` handle.
   Indexes always live externally to the solution.
-tags: [uipath-agents, e2e, mode:build, low-code, inline-flow,context-grounding]
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow, context-grounding]
 
 run_limits:
   expected_turns: 90
