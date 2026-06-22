@@ -23,9 +23,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent changed the type via `fields change-type … --confirm-data-loss`"
+    description: "Agent changed field \"Total\" to type \"Exact Text\" via `fields change-type … --confirm-data-loss`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+change-type\b(?=.*--confirm-data-loss).*'
+    command_pattern: 'uip\s+ixp\s+fields\s+change-type\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--field\s+["'']?Total)(?=.*--type\s+["'']?Exact Text)(?=.*--confirm-data-loss).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
