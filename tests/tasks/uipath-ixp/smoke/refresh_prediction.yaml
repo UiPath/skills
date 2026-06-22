@@ -1,7 +1,6 @@
 task_id: skill-ixp-refresh-prediction-smoke
 description: >
-  Smoke: agent fetches the model's prediction for one document via
-  `labellings get-predictions`.
+  Smoke: agent fetches the model's prediction for one document.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

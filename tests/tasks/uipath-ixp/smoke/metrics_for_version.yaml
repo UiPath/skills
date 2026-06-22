@@ -1,8 +1,7 @@
 task_id: skill-ixp-metrics-for-version-smoke
 description: >
   Smoke: agent fetches validation metrics scoped to one model version
-  (`get-metrics --model-version 14`) — that version's per-field/per-group
-  scores, not the latest.
+  (version 14) — that version's per-field/per-group scores, not the latest.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

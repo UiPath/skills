@@ -1,8 +1,7 @@
 task_id: skill-ixp-confirm-all-predictions-smoke
 description: >
-  Smoke: agent confirms all predictions on a document as ground truth via
-  `labellings confirm <Name> <document-id>` with no `--fields` (the no-field
-  form bulk-confirms every predicted field in that document).
+  Smoke: agent confirms all predictions on a document as ground truth — the
+  no-`--fields` form bulk-confirms every predicted field in that document.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
