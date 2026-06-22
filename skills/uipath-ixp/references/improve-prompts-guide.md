@@ -51,7 +51,7 @@ uip ixp projects get-metrics <project-name> --output json
 
 Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; wait another 60 seconds and re-fetch.
 
-Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against.
+Save the metrics response as `baseline_metrics` (per-field scores live in `Metrics.FieldMetrics.FieldsMetrics`, keyed by group then field id, each with `F1Score.Value`). This is the starting point you compare against.
 
 **Correlating metrics to field names:** The metrics `Fields` array returns `FieldId` but not the field name. To map them, join against the taxonomy's `field` entries:
 
@@ -106,7 +106,7 @@ Repeat the following for each iteration (up to max iterations):
 
 ### 2a. Diagnose fields and field groups
 
-Use the current metrics (baseline on first iteration, post-relabel metrics on subsequent iterations). The metrics include both `FieldGroups` (per-group scores) and `Fields` (per-field scores).
+Use the current metrics (baseline on first iteration, post-relabel metrics on subsequent iterations). The metrics include both `Metrics.FieldMetrics.FieldGroupsMetrics` (per-group scores) and `Metrics.FieldMetrics.FieldsMetrics` (per-field scores).
 
 **Field group diagnosis:** Check `FieldGroups` first. If an entire group has low F1, the group-level instructions may need updating with `--groups` rather than fixing individual fields.
 
