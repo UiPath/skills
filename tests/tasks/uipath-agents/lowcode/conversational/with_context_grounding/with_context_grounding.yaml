@@ -51,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Agent discovered the index identity with uip solution resources list --kind Index"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+list\b.*--kind\s+Index'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+Index'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -59,7 +59,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the index configuration with uip solution resources get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -75,7 +75,7 @@ success_criteria:
   - type: command_executed
     description: "Agent refreshed solution resources with uip solution resources refresh"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources?\s+refresh'
+    command_pattern: 'uip\s+solution\s+resources\s+refresh'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
