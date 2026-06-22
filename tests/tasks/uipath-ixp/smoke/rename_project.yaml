@@ -1,0 +1,44 @@
+task_id: skill-ixp-rename-project-smoke
+description: >
+  Smoke: agent renames a project's title via `update-title`.
+  Trap: the agent must NOT delete/recreate.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Rename the IXP project my_invoices-f1afa9ef-ixp to "amazing IXP project".
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent renamed the project via `projects update-title … \"amazing IXP project\"`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+update-title\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*amazing IXP project).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT delete the project (rename must not destroy it)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+delete\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

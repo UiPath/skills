@@ -39,16 +39,11 @@ initial_prompt: |
   is received in the **Inbox** folder whose SUBJECT CONTAINS the string
   "TestWaitFor". Then End the flow.
 
-  Validate the flow. Do NOT run `uip maestro flow debug` — the task is complete
-  once `uip maestro flow validate` passes.
+  Validate the flow. Do not debug the flow.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build the complete flow end-to-end in a single
-  pass. Before starting, follow the
-  connector-trigger plugin "Wait for events" workflow exactly — the event node
-  is added mid-flow with `node add` and must NOT replace the start trigger, and
-  the subject filter must be a structured `filter` tree, not a
-  `filterExpression` string.
+  pass. 
 
 success_criteria:
   # ── Structural: flow builds and validates ──────────────────────────────
