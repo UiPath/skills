@@ -52,6 +52,7 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+    require_success: true
   - type: command_executed
     description: "Get Requirement"
     tool_name: "Bash"
@@ -59,6 +60,7 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+    require_success: true
   - type: command_executed
     description: "Update Requirement"
     tool_name: "Bash"
@@ -66,6 +68,7 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+    require_success: true
   - type: command_executed
     description: "Delete Requirement"
     tool_name: "Bash"
@@ -73,6 +76,7 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+    require_success: true
   - type: command_executed
     description: "Assign Test Cases to Requirement"
     tool_name: "Bash"

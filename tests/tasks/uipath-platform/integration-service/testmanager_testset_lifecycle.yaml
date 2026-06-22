@@ -53,6 +53,7 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+    require_success: true
   - type: command_executed
     description: "Get Test Set"
     tool_name: "Bash"
@@ -60,6 +61,7 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+    require_success: true
   - type: command_executed
     description: "Update Test Set"
     tool_name: "Bash"
@@ -67,6 +69,7 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+    require_success: true
   - type: command_executed
     description: "Delete Test Set"
     tool_name: "Bash"
@@ -74,6 +77,7 @@ success_criteria:
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
+    require_success: true
   - type: command_executed
     description: "Assign Test Cases to Test Set"
     tool_name: "Bash"
