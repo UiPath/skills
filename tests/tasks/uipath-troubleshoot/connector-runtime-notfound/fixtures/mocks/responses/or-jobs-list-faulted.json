@@ -13,7 +13,7 @@
       "State": "Faulted",
       "StartTime": "2026-06-19T13:02:08.450Z",
       "EndTime": "2026-06-19T13:02:10.991Z",
-      "ReleaseName": "AccountEnrichment",
+      "ReleaseName": "DriveSync",
       "Source": "Agent",
       "HostMachineName": "MOCK-HOST",
       "ErrorCode": "Robot",

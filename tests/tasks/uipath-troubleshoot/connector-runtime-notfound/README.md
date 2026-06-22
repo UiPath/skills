@@ -5,26 +5,31 @@ Faithful-replay scenario for the `uipath-troubleshoot` skill. Covers the
 
 ## What this exercises
 
-A `ConnectorActivity` ("Salesforce: Get Record") resolves its connection fine,
-sends the request, and the external service answers **HTTP 404**. The IS runtime
-surfaces this as `RuntimeException` with error code **DAP-RT-1101** /
-`Status code: NotFound`. The agent must distinguish this **operation-level**
-failure (missing record / wrong ID) from a connection-resolution failure
-(`DAP-GE-*`), and recommend correcting the referenced record identifier.
+A `ConnectorActivity` ("Google Drive: Get File or Folder") resolves its connection
+fine, sends the request, and Google responds **HTTP 404 (File not found)**. The IS
+runtime surfaces this as `RuntimeException` with error code **DAP-RT-1101** /
+`Status code: NotFound`, carrying a `ProviderMessage` block with the provider's own
+404 / `reason=notFound` / `location=fileId`. The agent must distinguish this
+**operation-level** failure (missing file / wrong ID) from a connection-resolution
+failure (`DAP-GE-*`), and recommend correcting the referenced file identifier.
 
-Signatures were mined verbatim from the failed-job telemetry CSV.
+> **Live-anchored:** the error text (signature, `ProviderMessage`, stack frames) was
+> captured from a **real Google Drive connector execution** on alpha — a
+> `Get File or Folder` call against a live connection with a non-existent file ID.
+> Verbatim, not synthesized. The job envelope (key, folder) is the only synthetic part.
 
 ## Mock surface
 
 | Command | Fixture |
 |---|---|
 | `or folders list` | `or-folders-list.json` |
-| `or jobs get <key>` | `or-jobs-get.json` (Faulted, Info = DAP-RT-1101 NotFound) |
+| `or jobs list --folder-key <Shared> [--state Faulted]` | `or-jobs-list-faulted.json` |
+| `or jobs get <key>` | `or-jobs-get.json` (Faulted, Info = real DAP-RT-1101 NotFound + ProviderMessage) |
 | `or jobs logs <key> --level Error` | `or-jobs-logs.json` |
 | `docsai ask` | passthrough |
 
 No project source is staged — the conclusion is reachable from the job evidence
-(the failing record ID is in `InputArguments`).
+(the failing file ID is in `InputArguments` and the `ProviderMessage`).
 
 ## Success criteria
 

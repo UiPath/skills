@@ -13,7 +13,7 @@ What this looks like — robot exception `UiPath.IntegrationService.Activities.R
 | `DAP-RT-1002` | `Connection ID is empty.` | No connection bound to the activity — the `ConnectionId` was never set (or its binding/asset resolved to empty at runtime). |
 | `DAP-RT-1003` | `<field> field is required.` | A required input field of the connector operation is empty/null at runtime. |
 | `DAP-RT-1052` | `Trigger activity could not find any matches.` | `ConnectorTriggerActivity` sample/debug lookup returned zero events — the trigger object has no matching records to pull. |
-| `DAP-RT-1101` | `Status code: BadRequest.` / `Status code: NotFound.` (and other HTTP statuses) | The connector operation reached the external service, which rejected the request (bad input, missing/renamed resource, unsupported operation). |
+| `DAP-RT-1101` | `Status code: BadRequest.` / `Status code: NotFound.` (and other HTTP statuses) — accompanied by a `ProviderMessage` / `ProviderErrorCode` block with the downstream provider's own error | The connector operation reached the external service, which rejected the request (bad input, missing/renamed resource, unsupported operation). |
 
 Which activities produce this:
 - **ConnectorActivity** — DAP-RT-1002, DAP-RT-1003, DAP-RT-1101.
@@ -30,7 +30,7 @@ What can cause it:
 1. **Read the exact `DAP-RT` code from the job log / Info** — it routes the rest. For 1002/1003/1052 the cause is known from the code alone; for 1101 read the full inner detail (status + body).
 2. For **1002**: if source is available, inspect the activity's `ConnectionId` binding in the workflow (XAML/code) and check whether it points at an asset/variable that resolved empty.
 3. For **1003**: identify which field — the message names it. Trace the upstream value.
-4. For **1101**: `uip is resources describe <connector-key> <object>` to confirm required fields and supported operations; compare against what the activity sent. Check whether the referenced record exists.
+4. For **1101**: read the `ProviderMessage` / `ProviderErrorCode` block in the error first — it carries the external provider's own error (e.g. `providerErrorCode - 404`, `reason=notFound`, `location=fileId`), which names the exact failing parameter and HTTP status. Then `uip is resources describe <connector-key> <object>` to confirm required fields and supported operations; compare against what the activity sent. Check whether the referenced record/file exists.
 
 ## Resolution
 

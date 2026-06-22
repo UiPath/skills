@@ -1,10 +1,11 @@
 task_id: skill-troubleshoot-connector-runtime-notfound
 description: >
-  Faithful replay of an Integration Service connector-activity failure. A
-  ConnectorActivity faults with RuntimeException DAP-RT-1101 after the external
-  service returns HTTP 404 (NotFound). The agent runs the uipath-troubleshoot
-  skill against a uip CLI mock whose responses carry the verbatim telemetry
-  signature. Success = the agent reaches the same root cause as RESOLUTION.md.
+  Faithful replay of an Integration Service connector-activity failure. A Google
+  Drive ConnectorActivity faults with RuntimeException DAP-RT-1101 after Google
+  returns HTTP 404 (File not found). The error text was captured from a real
+  connector execution on alpha. The agent runs the uipath-troubleshoot skill
+  against a uip CLI mock whose responses carry the verbatim signature. Success =
+  the agent reaches the same root cause as RESOLUTION.md.
 tags: [uipath-troubleshoot, integration-service, rpa, e2e, faithful-replay]
 
 agent:
@@ -58,28 +59,30 @@ success_criteria:
       under `.local/investigations/`.
 
       (a) FAULT — the job faulted because a `ConnectorActivity`
-          ("Salesforce: Get Record") threw
+          ("Google Drive: Get File or Folder") threw
           `UiPath.IntegrationService.Activities.Runtime.Exceptions.RuntimeException`
-          with error code `DAP-RT-1101` / `Status code: NotFound`.
+          with error code `DAP-RT-1101` / `Status code: NotFound` (and a
+          `ProviderMessage` block carrying `providerErrorCode 404` / `reason=notFound`).
 
-      (b) CAUSE — the connector operation reached the external service, which
-          returned HTTP 404 because the referenced record (RecordId
-          "001XX0000 ABCDEF") does not exist — an operation/input-level error.
+      (b) CAUSE — the connector operation reached Google Drive, which returned
+          HTTP 404 because the referenced file (FileId
+          "1AbCdEfGhIjKlMnOpQrStUvWxYz000NOTFOUND") does not exist — an
+          operation/input-level error.
           MUST NOT attribute the cause to: a disabled / invalid / no-access
           connection (`DAP-GE-*`); expired credentials or auth; an IPC /
           RemoteException; or a UiPath platform outage. The connection resolved
           and the service explicitly answered NotFound.
 
-      (c) RESOLUTION — correct the record identifier / verify the record exists
-          in the external service (and optionally guard for the not-found case).
+      (c) RESOLUTION — correct the file identifier / verify the file exists in
+          Google Drive (and optionally guard for the not-found case).
 
       SCORING RUBRIC:
         1.0  Names the RuntimeException / DAP-RT-1101 NotFound operation-level
-             cause (a + b) — the referenced record doesn't exist — AND
-             recommends correcting/validating the record ID (c). No
+             cause (a + b) — the referenced file doesn't exist — AND
+             recommends correcting/validating the file ID (c). No
              misattribution per the MUST NOT list.
         0.8  Identifies the operation-returned-NotFound cause and a fix but omits
-             the DAP-RT-1101 code or the specific record ID; no misattribution.
+             the DAP-RT-1101 code or the specific file ID; no misattribution.
         0.5  Identifies that the connector OPERATION failed (not the connection)
              but does not establish it is a NotFound / missing-record case, or
              gives the cause without an actionable fix.
