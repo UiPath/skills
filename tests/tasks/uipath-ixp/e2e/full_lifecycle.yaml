@@ -38,6 +38,10 @@ initial_prompt: |
   improve-prompts iteration.
 
   Capture these artifacts in the current working directory:
+  - `confirm_result.json` — the raw JSON response from your
+    `labellings confirm` step (`--output json`). Save it even if the
+    call reports an error, and if you confirm more than once, save the
+    response of the last confirm call.
   - `baseline_metrics.json` — full metrics response before the
     improvement.
   - `target_field.json` — the field you chose to improve, exactly:
@@ -96,6 +100,22 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm'
     min_count: 1
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Confirm response captured"
+    path: "confirm_result.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "labellings confirm actually succeeded (Result == Success, not a 5xx/error) — guards against grading invocation alone"
+    path: "confirm_result.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
