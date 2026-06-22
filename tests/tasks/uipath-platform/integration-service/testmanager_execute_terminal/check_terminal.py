@@ -11,7 +11,7 @@ import sys
 
 TERMINAL = {
     "passed", "failed", "completed", "cancelled", "canceled",
-    "error", "done", "stopped", "faulted", "successful", "partiallypassed",
+    "error", "done", "stopped", "faulted", "successful", "partiallypassed", "finished",
 }
 
 

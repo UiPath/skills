@@ -1,17 +1,18 @@
 # Asserts REAL EXECUTION (not just invocation): the agent executes a test set via
 # the TM connector, then polls until the execution reaches a TERMINAL status.
-# skip:true — needs a maintained FIXTURE: a runnable test set in the eval tenant
-# whose execution actually completes (linked automation + robot). TODO before
-# un-skipping: pin <FIXTURE_TEST_SET_KEY> below to such a test set in codereval.
+# Pinned to the runnable fixture HEALTH:21 ("Automated - Healthcare Compliance
+# Suite") in codereval — its executions complete in seconds (status "Finished").
+# Validated live on codereval: SUCCESS 1.000 (agent executed -> polled -> terminal).
+# integration tier -> runs in nightly, not the required PR smoke gate.
 task_id: skill-platform-is-testmanager-execute-terminal
 description: >
-  Data-grounded execution: agent runs a test set via the uipath-uipath-testmanager
-  connector (Execute Test Set), captures the ExecutionId, and polls the execution
-  (Get Test Execution) until it reaches a terminal status. Graded on invoking
-  Execute + Get AND on the execution actually reaching terminal (Passed/Failed/…),
-  i.e. a real run happened — not just that Execute was called.
+  Data-grounded execution: agent runs the test set HEALTH:21 via the
+  uipath-uipath-testmanager connector (Execute Test Set), captures the ExecutionId,
+  and polls the execution (Get Test Execution) until it reaches a terminal status.
+  Graded on invoking Execute + Get AND on the execution actually reaching terminal
+  (Finished/Passed/Failed/…), i.e. a real run happened — not just that Execute was
+  called.
 tags: [uipath-platform, integration, integration-service, resources, execute]
-skip: true
 
 sandbox:
   driver: tempdir
@@ -28,7 +29,7 @@ initial_prompt: |
   You are connected to a live tenant. Using the UiPath Test Manager Integration
   Service connector (`uipath-uipath-testmanager`):
 
-  1. Execute the test set `<FIXTURE_TEST_SET_KEY>` (`uip is resources run create
+  1. Execute the test set `HEALTH:21` (`uip is resources run create
      uipath-uipath-testmanager ExecuteTestSet ...`). Capture the returned
      ExecutionId.
   2. Poll the execution (`uip is resources run get uipath-uipath-testmanager
