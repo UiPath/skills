@@ -3,7 +3,7 @@ description: >
   Smoke test: agent scaffolds a new REST connector on disk, configures
   API-key authentication, and validates it. Verifies the core
   scaffold → auth → validate loop via `uip is connectors builder`.
-tags: [uipath-connector-builder, smoke, mode:build, lifecycle:generate]
+tags: [uipath-connector-builder, smoke, mode:build, lifecycle:generate, connector]
 
 run_limits:
   expected_turns: 6
@@ -15,13 +15,13 @@ initial_prompt: |
   Build it in a folder named `connector` (pass `--connector-dir ./connector`).
 
   Scaffold the connector, configure the authentication, and validate it.
-  Not complete until `connector validate` reports no Errors.
+  Not complete until `validate` reports no Errors.
 
 success_criteria:
   - type: command_executed
     description: "Agent scaffolded the connector"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connectors\s+builder\s+connector\s+scaffold'
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -37,7 +37,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the connector"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connectors\s+builder\s+connector\s+validate'
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+validate'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -51,8 +51,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "connector validate passes (exit 0 = no Errors) on the built connector"
-    command: "uip is connectors builder connector validate --connector-dir ./connector --output json"
+    description: "`validate` passes (exit 0 = no Errors) on the built connector"
+    command: "uip is connectors builder validate --connector-dir ./connector --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

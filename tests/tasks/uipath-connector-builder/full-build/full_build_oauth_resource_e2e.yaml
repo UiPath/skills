@@ -1,9 +1,9 @@
 task_id: skill-connector-builder-e2e-oauth-resource
 description: >
   E2E test: full authoring loop for a REST connector — scaffold, configure
-  OAuth2 authorization-code auth, add a CRUD resource, and validate until
-  green. Exercises scaffold → auth → resource create → validate.
-tags: [uipath-connector-builder, e2e, mode:build, lifecycle:generate]
+  OAuth2 authorization-code auth, add a CRUD activity, and validate until
+  green. Exercises init → auth → activity create → validate.
+tags: [uipath-connector-builder, e2e, mode:build, lifecycle:generate, connector]
 
 run_limits:
   expected_turns: 14
@@ -24,8 +24,8 @@ initial_prompt: |
   - One resource `contacts` at vendor path /v1/contacts supporting
     GET, GETBYID, POST, PATCH, DELETE, primary key `id`.
 
-  Validate the connector and fix anything `connector validate` reports.
-  Not complete until `connector validate` reports no Errors.
+  Validate the connector and fix anything `validate` reports.
+  Not complete until `validate` reports no Errors.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Before starting, load the
@@ -41,7 +41,7 @@ success_criteria:
   - type: command_executed
     description: "Agent scaffolded the connector"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connectors\s+builder\s+connector\s+scaffold'
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+init'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -55,9 +55,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent created the contacts resource"
+    description: "Agent created the contacts activity"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connectors\s+builder\s+resource\s+create'
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+activity\s+create'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -65,7 +65,7 @@ success_criteria:
   - type: command_executed
     description: "Agent validated the connector (validate is the primary success bar)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+connectors\s+builder\s+connector\s+validate'
+    command_pattern: 'uip\s+is\s+connectors\s+builder\s+validate'
     min_count: 1
     weight: 6.0
     pass_threshold: 1.0
@@ -79,8 +79,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "connector validate passes (exit 0 = no Errors) on the built connector"
-    command: "uip is connectors builder connector validate --connector-dir ./connector --output json"
+    description: "`validate` passes (exit 0 = no Errors) on the built connector"
+    command: "uip is connectors builder validate --connector-dir ./connector --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 6.0
