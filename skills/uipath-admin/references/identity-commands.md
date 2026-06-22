@@ -139,6 +139,12 @@ List all groups in a partition.
 uip admin groups list --output json
 ```
 
+To resolve a group by name or substring, do not use `--search`; `groups list` does not support it. Use the output filter instead:
+
+```bash
+uip admin groups list --output json --output-filter "Data[?contains(displayName, '<GROUP_NAME_OR_SUBSTRING>')]"
+```
+
 **Output code:** `GroupList`
 
 ### `groups get`
