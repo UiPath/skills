@@ -108,6 +108,7 @@ Comprehensive quality checklist for UiPath RPA projects — coded workflows (C#)
 | No empty Sequences | Info | Workflow Analyzer rule ST-MRD-008 |
 | No unreachable activities | Warning | Workflow Analyzer rule ST-MRD-004 |
 | No Write Line usage (use Log Message instead) | Warning | Workflow Analyzer rule ST-MRD-011 |
+| No oversized `InvokeCode` bodies (>~10 lines) | Warning | **Non-Legacy projects only** (`targetFramework: "Windows"` / `"Portable"`; skip Legacy). Grep XAML for `ui:InvokeCode`, count `&#xA;` in the `Code` attribute or lines in the `ui:InvokeCode.Code` element. If >10, recommend extraction to a Coded Source File or Coded Workflow invoked via `Invoke Workflow File`. See [rpa-common-issues.md § Oversized InvokeCode Bodies](rpa-common-issues.md#oversized-invokecode-bodies). |
 
 ### Naming Conventions
 

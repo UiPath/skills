@@ -67,13 +67,21 @@ Follow top-down. Stop at the first match.
 
 InvokeCode embeds C#/VB code inline in a XAML activity. It works for small snippets but becomes a maintenance problem quickly.
 
+**Applies to both new authoring and editing.** When generating a new workflow, do NOT write a large `InvokeCode` and "extract later" — if the planned body will exceed ~10 lines, create the Coded Source File / Coded Workflow first and emit an `Invoke Workflow File` activity in the XAML. When editing an existing XAML that already contains a >~10-line `InvokeCode`, extract it in the same pass.
+
+**Extraction target is C#.** Coded Source Files and Coded Workflows are C# only — there is no VB.NET equivalent. A VB.NET `InvokeCode` body cannot be moved verbatim; **translate the logic to C# during extraction**. The caller XAML keeps its own `expressionLanguage` (VB or C#) — only the extracted `.cs` file is C#. The `Invoke Workflow File` boundary handles the language transition: a VB XAML workflow can invoke a C# Coded Workflow without changes to the project's `expressionLanguage`.
+
 ### Extraction Rules
 
-1. **Code exceeds ~15 lines** → extract to a Coded Source File (utility) or Coded Workflow (if it needs `CodedWorkflow` services).
+1. **Code exceeds ~10 lines** → extract to a Coded Source File (utility) or Coded Workflow (if it needs `CodedWorkflow` services).
 2. **Code defines classes or types** → extract to a Coded Source File. InvokeCode cannot define reusable types.
 3. **Same code is copy-pasted across multiple XAML files** → extract to a Coded Workflow and invoke it via `Invoke Workflow File`.
 4. **Code needs unit tests** → extract to a Coded Workflow + Coded Test Case.
 5. **Code uses complex .NET APIs** (HttpClient, LINQ, JSON serialization) → extract to a Coded Workflow for better readability and error handling.
+
+### Explicit User Request Overrides Extraction
+
+If the user explicitly asks for `InvokeCode` — "use InvokeCode", "inline this code", "keep it in an Invoke Code activity", "I want it as InvokeCode" — honor the request and author the body inline regardless of length. Do not silently extract to a `.cs` file. State the readability/debuggability trade-off in one line ("InvokeCode at this length has no breakpoints and is hard to diff — extracting later is straightforward") so the user can confirm or redirect, then proceed inline. Same principle as anti-pattern 6 below: never override an explicit authoring-shape choice.
 
 ### Comparison Table
 
@@ -85,7 +93,7 @@ InvokeCode embeds C#/VB code inline in a XAML activity. It works for small snipp
 | **Can define classes/types** | No | Yes | No (one class per file, must be workflow) |
 | **Reusable across workflows** | No (copy-paste) | Yes (import namespace) | Yes (invoke from any workflow) |
 | **Unit testable** | No | Indirectly | Yes (via Coded Test Case) |
-| **Recommended max size** | ~15 lines | No limit | No limit |
+| **Recommended max size** | ~10 lines | No limit | No limit |
 | **Entry point in project.json** | N/A | No | Process only |
 
 ---
@@ -168,7 +176,7 @@ Both XAML workflows (via typed arguments) and coded workflows (via direct refere
 
 ## Anti-Patterns
 
-1. **50+ lines of C# in InvokeCode.** Extract to a Coded Source File or Coded Workflow.
+1. **50+ lines of code in InvokeCode (C# or VB.NET).** Extract to a Coded Source File or Coded Workflow. VB.NET bodies must be translated to C# during extraction (the extraction target is C# only; the calling XAML's `expressionLanguage` is unchanged).
 2. **Using `RunWorkflow("path")` when `workflows.*` is available.** The `workflows` property is strongly typed and works for both `.cs` and `.xaml` files.
 3. **Duplicating logic in both XAML and coded form.** Pick one, invoke it from the other.
 4. **Using `DataTable` or `Dictionary<string, object>` when a typed class would prevent errors.** Create a Coded Source File with a proper class.

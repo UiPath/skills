@@ -2,7 +2,7 @@
 
 `ui:InvokeCode` executes inline VB.NET or C# code within a workflow. Part of `UiPath.System.Activities` (`xmlns:ui="http://schemas.uipath.com/workflow/activities"`).
 
-InvokeCode is best suited as a quick escape hatch for simple, self-contained code. When a dedicated activity has unresolvable type issues, missing output properties, or complex configuration that resists XAML-level fixes, a few lines in InvokeCode can solve it in one pass. But if the code grows beyond a handful of lines or needs real dependencies, use a coded workflow instead.
+InvokeCode is best suited as a quick escape hatch for simple, self-contained code. When a dedicated activity has unresolvable type issues, missing output properties, or complex configuration that resists XAML-level fixes, a few lines in InvokeCode can solve it in one pass. But if the code grows beyond ~10 lines or needs real dependencies, use a coded workflow instead. (Exception: if the user explicitly asked for InvokeCode, honor that — see § When NOT to Use InvokeCode.)
 
 ## Language Attribute
 
@@ -161,8 +161,12 @@ Code="// Remove leading/trailing whitespace&#xA;var cleaned = rawInput.Trim();&#
 
 ## When NOT to Use InvokeCode
 
-Stop and switch to a coded workflow when:
-- The code exceeds ~15 lines — XML-escaped inline code becomes unreadable and unmaintainable
+**Authoring rule:** Apply this list **before** writing the activity, not as an after-the-fact refactor. If you are about to author an `InvokeCode` whose body will hit any condition below, do not write it inline — author the extraction (Coded Source File or Coded Workflow + `Invoke Workflow File`) from the start.
+
+**Exception — explicit user request:** If the user explicitly asks for `InvokeCode` (e.g. "use InvokeCode", "inline this", "keep it as an Invoke Code activity"), keep the body inline regardless of length. Surface the readability/debuggability trade-off in one line so the user can confirm, then author inline. Do not silently extract.
+
+Otherwise, do not author (or stop and refactor) an `InvokeCode` when:
+- The code exceeds ~10 lines — XML-escaped inline code becomes unreadable and unmaintainable
 - You need NuGet packages or third-party libraries not available in the inline context
 - The logic involves multiple classes, interfaces, or dependency injection
 - You need unit testing or structured error handling
