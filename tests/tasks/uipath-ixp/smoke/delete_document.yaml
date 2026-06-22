@@ -1,6 +1,7 @@
 task_id: skill-ixp-delete-document-smoke
 description: >
   Smoke: agent deletes a document by id — irreversible, triggers a retrain.
+  Must pass -y/--yes (documents delete never prompts; the flag is mandatory).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -20,9 +21,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent deleted the document via `documents delete <Name> doc-abc-123`"
+    description: "Agent deleted the document via `documents delete <Name> doc-abc-123 -y`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+documents\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123).*'
+    command_pattern: 'uip\s+ixp\s+documents\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123)(?=.*(--yes\b|-y\b)).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
