@@ -234,7 +234,7 @@ Display labels, choice-value UUIDs, and non-UUID relationship values are rejecte
 
 ### FILE fields — never write through insert/update
 
-Never include a FILE-typed key in `records insert` or `records update` payload (SKILL.md Rule 6). Expected behavior: the platform silently strips FILE values — paths, base64 blobs, filenames, UUIDs, and `null` — and returns `Result: Success` with the FILE column unchanged. Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. Required write path:
+**Anti-pattern.** Never include a FILE-typed key in `records insert` or `records update` payload (SKILL.md Rule 6). Expected behavior: the platform silently strips FILE values — paths, base64 blobs, filenames, UUIDs, and `null` — and returns `Result: Success` with the FILE column unchanged. Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. To attach, replace, or clear a file, use the `files` verbs documented in [`file-attachments.md`](file-attachments.md). Required write path:
 
 ```bash
 # 1. Insert the row WITHOUT the FILE column
@@ -246,7 +246,7 @@ uip df files upload <entity-id> <record-id> <file-field-name> \
   --file /local/path/report.pdf --output json
 ```
 
-To replace an existing attachment, call `files delete` then `files upload` (or just `files upload` if the field is currently empty). `files download` retrieves the binary. CSV `records import` drops `FILE` columns too — see Rule 20. Full file-attachment surface in [`file-attachments.md`](file-attachments.md).
+`files upload` is both attach and replace — call it directly against the record/field whether the field is currently empty or already has a file (no need to `files delete` first). `files delete` clears the field, `files download` retrieves the binary. CSV `records import` drops `FILE` columns too — see Rule 20. Full file-attachment surface in [`file-attachments.md`](file-attachments.md).
 
 ## Update Records
 

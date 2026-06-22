@@ -316,7 +316,8 @@ Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reaso
 |-----------|--------|
 | Change a field's data type | Not supported — type is fixed at creation and cannot be changed via `updateFields` |
 | Field name matching a SQL / language keyword | API returns `RESERVED_LANGUAGE_KEYWORDS` — rename before retrying (see Name Validation above) |
-| Write a `FILE` value through `records insert` / `records update` / `records import` | Do not attempt. Expected behavior: the platform silently strips the value, returns `Result: Success`, FILE column unchanged. Use `files upload` to attach/replace, `files delete` to clear. Never `records update receipt:null`. See Rule 6 and [FILE Fields](#file-fields). |
+
+Record-level writes against FILE fields (insert / update / import) are anti-patterns documented in SKILL.md Rule 6 and [`records-query.md` → FILE fields](records-query.md#file-fields--never-write-through-insertupdate). This file covers schema only.
 
 ---
 
