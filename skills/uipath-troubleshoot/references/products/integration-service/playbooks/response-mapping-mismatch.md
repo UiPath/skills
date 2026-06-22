@@ -4,6 +4,8 @@ confidence: medium
 
 # Response Mapping Mismatch (DAP-RT-1005 / DAP-RT-1155 / DAP-RT-1156)
 
+> **Fault bucket: 🛠 B1 — IS platform / connector defect (escalate to owner team).** The provider returned data but the connector's declared output schema no longer matches it (connector schema drift). `IsServiceError: false`. The customer cannot fix connector metadata; updating the activity package to a matching version is the only customer-side mitigation. Lead with: "This is a connector schema-drift issue on the service side — update the activity package if a matching version exists, otherwise contact the owner team (Integration Service)." See [dap-error-codes-reference.md](../dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
+
 ## Context
 
 What this looks like — the provider call succeeded but IS could not map the response into the activity's output type:

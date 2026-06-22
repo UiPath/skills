@@ -6,23 +6,49 @@ Integration Service emits a structured error code on every failure: `DAP-<LAYER>
 - **GE** — general (connection / auth / migration)
 - **DT** — design time (Studio canvas; **out of scope** for runtime triage — surfaced directly to the user in Studio, never in execution telemetry)
 
-This reference maps each runtime/general DAP code to its playbook. Use it to route from a code seen in execution telemetry to the right investigation.
+This reference maps each runtime/general DAP code to its **fault bucket** and its playbook. Classify the bucket first (who can fix it), then route to the playbook (how).
 
 ## Telemetry customEvent fields
 
-At runtime the failure is also emitted as a telemetry `customEvent`. Read these fields before matching a playbook — they are the primary evidence:
+At runtime the failure is also emitted as a telemetry `customEvent`. Read these fields before classifying — they are the primary evidence:
 
 | Field | Use for root-cause |
 |-------|--------------------|
 | `ErrorCode` | Numeric IS code — the primary classifier (maps to a playbook below). |
+| `IsServiceError` | **The key fault-owner signal.** `false` = an IS-side DAP exception (platform/connector defect → service-owner). `true` = a downstream provider response (then read the status code to split customer-vs-provider). |
+| `ProviderErrorCode` / `ProviderErrorMessage` | The connector / 3rd-party API's own status + message (e.g. the underlying 401/403/429/5xx). **Decisive for `DAP-RT-1101`.** |
 | `Error` | Exception type (`RuntimeException`, `GeneralException`). |
 | `ErrorMessage` | Human-readable IS message. |
-| `ProviderErrorCode` / `ProviderErrorMessage` | The connector / 3rd-party API's own code + message (e.g. the underlying 401/403 reason). **Decisive for `DAP-RT-1101`.** |
 | `RequestId` | Correlation ID — trace the call to the connector. |
-| `IsServiceError` | `true` = downstream API failure; `false` = IS-side exception. |
 | `ConnectionId` | Which connection failed (for auth / connection issues). |
 
 > If the failure surfaced through Maestro (BPMN service task), the same root cause also carries a Maestro IntSvc code (`102002`, `102003`, …). The DAP code is more specific — prefer it when present. The Maestro-keyed playbooks ([connection-invalid.md](./playbooks/connection-invalid.md), [connection-auth-expired.md](./playbooks/connection-auth-expired.md), [operation-failed.md](./playbooks/operation-failed.md), [trigger-not-firing.md](./playbooks/trigger-not-firing.md)) cover the same failures from the Maestro surface.
+
+## Fault ownership — the two-bucket decision
+
+Every IS runtime failure falls into one of two buckets. **Classify first, then explain.** Lead the user-facing answer with the bucket verdict — whether they can fix it themselves or must escalate to the owner team.
+
+### 👤 Bucket A — Customer-resolvable
+
+A configuration, credential, permission, or input problem on the customer's side. **The customer fixes it themselves.**
+
+> _Lead message:_ "This is a configuration/credential issue on your side. Here's what to change…" — then the specific fix from the playbook.
+
+### 🛠 Bucket B — Service-side (not customer-fixable → escalate)
+
+The customer cannot resolve it from their workflow. Two sub-cases:
+
+- **B1 — IS platform / connector defect** (typically `IsServiceError = false`): a bug in the activity pack or connector metadata. → _"This is a service-side issue, not something you can fix in your workflow. Contact the owner team (Integration Service)."_
+- **B2 — Third-party provider outage / instability** (`IsServiceError = true`, status `429` or `5xx`): the upstream connector API is failing. → _"The upstream provider is rate-limiting or down. Wait and retry; escalate if sustained."_
+
+### Fast decision rule
+
+1. `IsServiceError = false` → **Bucket B1** (IS-side exception — escalate to owner team).
+2. `IsServiceError = true` → read `ProviderErrorCode`:
+   - **4xx auth/input** (`401` / `403` / `404` / `400` / `422`) → **Bucket A** (customer fixes it).
+   - **`429` / `5xx`** → **Bucket B2** (provider-side — wait / escalate).
+
+`DAP-RT-1101` is the catch-all that **always** needs the status-code split above.
 
 ## Retry semantics
 
@@ -30,44 +56,50 @@ IS auto-retries before surfacing a failure. Knowing this disambiguates transient
 
 - **Retried (max 2):** `429`, `423`, `5xx`. Token auto-refreshed on `401`.
 - **Not retried (non-transient):** `408`, `501`, `502`, `504`.
-- A `retry-exception` SRE alert means **retries were exhausted** — treat as a sustained provider/network problem, not a transient blip.
+- A `retry-exception` SRE alert means **retries were exhausted** — treat as a sustained provider/network problem (Bucket B2), not a transient blip.
 
-## Code → playbook map
+## Code → bucket + playbook map
 
-### Connection & authentication
+### 👤 Bucket A — Customer-resolvable
 
-| Code | Name | Playbook |
-|------|------|----------|
-| `DAP-GE-3004` | FailedToGetAccessToken | [token-refresh-failed.md](./playbooks/token-refresh-failed.md) |
-| `DAP-GE-3000` | FailedToGetConnection | [connection-not-resolved.md](./playbooks/connection-not-resolved.md) |
-| `DAP-GE-3005` | ConnectionDisabled | [connection-not-resolved.md](./playbooks/connection-not-resolved.md) |
-| `DAP-RT-1002` | ConnectionIdNull | [connection-not-resolved.md](./playbooks/connection-not-resolved.md) |
+| Code | Name | Root cause | Playbook |
+|------|------|------------|----------|
+| `DAP-GE-3004` | FailedToGetAccessToken | OAuth token refresh failed — expired/revoked credentials | [token-refresh-failed.md](./playbooks/token-refresh-failed.md) |
+| `DAP-GE-3000` | FailedToGetConnection | Connection deleted, inaccessible, or wrong one selected | [connection-not-resolved.md](./playbooks/connection-not-resolved.md) |
+| `DAP-GE-3005` | ConnectionDisabled | Connection is disabled | [connection-not-resolved.md](./playbooks/connection-not-resolved.md) |
+| `DAP-RT-1002` | ConnectionIdNull | No connection bound to the activity | [connection-not-resolved.md](./playbooks/connection-not-resolved.md) |
+| `DAP-RT-1003` | ArgumentIsRequired | A required input argument is missing | [missing-required-input.md](./playbooks/missing-required-input.md) |
+| `DAP-RT-1007` | PropertyIsRequired | A required property is empty | [missing-required-input.md](./playbooks/missing-required-input.md) |
+| `DAP-RT-1053` | TriggerInvalidConfiguration | Trigger misconfigured (filters/parameters) | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
+| `DAP-RT-1101` _(4xx)_ | RequestFailed — auth/input subset | Provider `401`/`403` (creds/scope), `404` (not found), `400`/`422` (bad payload) | [request-failed.md](./playbooks/request-failed.md) |
 
-### HTTP / request execution
+### 🛠 Bucket B1 — IS platform / connector defect (escalate to owner team)
 
-| Code | Name | Playbook |
-|------|------|----------|
-| `DAP-RT-1101` | RequestFailed | [request-failed.md](./playbooks/request-failed.md) |
-| `DAP-RT-1103` | HttpClientException | [http-client-exception.md](./playbooks/http-client-exception.md) |
-| `DAP-RT-1100` | HttpMethodMissing | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
+Bugs in the activity pack or connector metadata; the customer cannot work around them. Typically `IsServiceError = false`.
 
-### Triggers (polling / webhook)
+| Code | Name | Root cause | Playbook |
+|------|------|------------|----------|
+| `DAP-RT-1000` | ActivityConfigurationNull | Corrupt/failed-to-deserialize config blob | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
+| `DAP-RT-1004` | InvalidConfigurationVersion | Config schema version not understood by runtime | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
+| `DAP-RT-1008` | InvalidActivityConfiguration | Activity configuration is malformed | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
+| `DAP-RT-1100` | HttpMethodMissing | Generated activity has no HTTP method — incomplete connector metadata | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
+| `DAP-RT-1001` | ServiceProviderNull | Runtime DI/service provider unavailable — internal error | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
+| `DAP-GE-3001` `DAP-GE-3002` `DAP-GE-3003` | InvalidMigration / FilterTree / FieldArguments | Activity failed to migrate to a newer schema version | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
+| `DAP-RT-1005` | ApiResponseMismatch | Response shape ≠ activity output type — connector schema drift | [response-mapping-mismatch.md](./playbooks/response-mapping-mismatch.md) |
+| `DAP-RT-1155` `DAP-RT-1156` | DataTableFieldTypeMismatch / TypedDataTableNotConstructedProperly | Output couldn't map into the expected TypedDataTable | [response-mapping-mismatch.md](./playbooks/response-mapping-mismatch.md) |
 
-| Code | Name | Playbook |
-|------|------|----------|
-| `DAP-RT-1051` | TriggerExecutionFailed | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
-| `DAP-RT-1050` | TriggerDataMissing | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
-| `DAP-RT-1052` | TriggerNoMatches | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
+### 🛠 Bucket B2 — Third-party provider outage / instability (wait / escalate)
 
-### Deserialization & output mapping
+`IsServiceError = true`, status `429` or `5xx`, or a network-level failure. Not an IS bug and not customer-fixable.
 
-| Code | Name | Playbook |
-|------|------|----------|
-| `DAP-RT-1005` | ApiResponseMismatch | [response-mapping-mismatch.md](./playbooks/response-mapping-mismatch.md) |
-| `DAP-RT-1155` | DataTableFieldTypeMismatch | [response-mapping-mismatch.md](./playbooks/response-mapping-mismatch.md) |
-| `DAP-RT-1156` | TypedDataTableNotConstructedProperly | [response-mapping-mismatch.md](./playbooks/response-mapping-mismatch.md) |
-| `DAP-RT-1000` | ActivityConfigurationNull | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
-| `DAP-GE-3001` | InvalidMigration | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
+| Code | Name | Root cause | Playbook |
+|------|------|------------|----------|
+| `DAP-RT-1101` _(429/5xx)_ | RequestFailed — provider subset | Provider `429` (rate limited) or `5xx` (outage); `ProviderErrorCode` confirms | [request-failed.md](./playbooks/request-failed.md) |
+| `DAP-RT-1103` | HttpClientException | Network-level failure — target host unreachable (DNS/connectivity/firewall) | [http-client-exception.md](./playbooks/http-client-exception.md) |
+| `DAP-RT-1051` | TriggerExecutionFailed | Trigger evaluation call failed/empty — connector trigger endpoint issue | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
+| `DAP-RT-1050` | TriggerDataMissing | Event payload missing expected event ID — malformed webhook/poll payload | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
+
+> **Not an error:** `DAP-RT-1052` (TriggerNoMatches) — the trigger filter matched zero events. Usually expected behavior. Do not flag unless the customer expected matches. See [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md).
 
 ### Design-time (DT) — out of scope
 

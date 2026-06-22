@@ -4,6 +4,8 @@ confidence: high
 
 # Token Refresh Failed (DAP-GE-3004)
 
+> **Fault bucket: 👤 A — Customer-resolvable.** Expired/revoked credentials on the customer's connection. Lead with: "This is a credential issue on your side — re-authenticate the connection." See [dap-error-codes-reference.md](../dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
+
 ## Context
 
 What this looks like:

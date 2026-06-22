@@ -4,6 +4,8 @@ confidence: high
 
 # Connection Not Resolved (DAP-GE-3000 / DAP-GE-3005 / DAP-RT-1002)
 
+> **Fault bucket: 👤 A — Customer-resolvable.** A connection/binding/permission problem on the customer's side (deleted, disabled, unbound, or wrong-folder connection). Lead with: "This is a connection configuration issue on your side — here's what to reselect/re-enable/rebind." See [dap-error-codes-reference.md](../dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
+
 ## Context
 
 What this looks like — three related codes, all meaning IS could not resolve a usable connection before calling the provider:

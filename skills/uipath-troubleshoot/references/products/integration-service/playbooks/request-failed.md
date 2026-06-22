@@ -4,6 +4,8 @@ confidence: high
 
 # Request Failed (DAP-RT-1101)
 
+> **Fault bucket:** depends on `ProviderErrorCode`. 4xx auth/input (`401`/`403`/`404`/`400`/`422`) → **👤 Bucket A** (customer fixes credentials/permissions/input). `429`/`5xx` → **🛠 Bucket B2** (provider-side outage/rate-limit — wait/retry, escalate if sustained). Always split on the status code before answering. See [dap-error-codes-reference.md](../dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
+
 ## Context
 
 What this looks like:

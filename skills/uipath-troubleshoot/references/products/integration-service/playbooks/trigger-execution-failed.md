@@ -2,22 +2,26 @@
 confidence: medium
 ---
 
-# Trigger Execution Failed (DAP-RT-1050 / DAP-RT-1051 / DAP-RT-1052)
+# Trigger Execution Failed (DAP-RT-1050 / DAP-RT-1051 / DAP-RT-1052 / DAP-RT-1053)
+
+> **Fault bucket: mixed — classify per code.** `1051`/`1050` → **🛠 B2** (connector trigger endpoint / malformed provider payload — provider-side, wait/escalate). `1053` → **👤 A** (trigger misconfigured — customer fixes the filter/parameters). `1052` → **not an error** (zero matches, usually expected). Lead with the bucket that matches the emitted code. See [dap-error-codes-reference.md](../dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
 
 ## Context
 
-What this looks like — three trigger (polling/webhook) runtime codes:
+What this looks like — trigger (polling/webhook) runtime codes:
 
-| Code | Name | Specific cause |
-|---|---|---|
-| `DAP-RT-1051` | TriggerExecutionFailed | Trigger evaluation call failed or returned empty — connector trigger endpoint issue |
-| `DAP-RT-1050` | TriggerDataMissing | Event payload missing the expected event ID — malformed webhook/poll payload |
-| `DAP-RT-1052` | TriggerNoMatches | Filter matched zero events — **often expected, not always an error** |
+| Code | Name | Specific cause | Bucket |
+|---|---|---|:---:|
+| `DAP-RT-1051` | TriggerExecutionFailed | Trigger evaluation call failed or returned empty — connector trigger endpoint issue | 🛠 B2 |
+| `DAP-RT-1050` | TriggerDataMissing | Event payload missing the expected event ID — malformed webhook/poll payload | 🛠 B2 |
+| `DAP-RT-1053` | TriggerInvalidConfiguration | Trigger misconfigured — bad filters/parameters | 👤 A |
+| `DAP-RT-1052` | TriggerNoMatches | Filter matched zero events — **often expected, not always an error** | — |
 
 What can cause it:
 - Connection used by the trigger is inactive or expired (`1051`)
 - Connector trigger endpoint changed, errored, or returned an unexpected shape (`1051`)
 - Webhook/poll payload from the provider is malformed or missing the event ID (`1050`)
+- Trigger filters/parameters set incorrectly by the user (`1053`)
 - Trigger filter genuinely matched no events in the polling window (`1052` — usually benign)
 
 What to look for:
@@ -40,4 +44,5 @@ What to look for:
 - **`DAP-RT-1051` — connection inactive:** re-authenticate via `uip is connections edit <connection-id>` (see [token-refresh-failed.md](./token-refresh-failed.md) for auth-expiry).
 - **`DAP-RT-1051` — endpoint issue:** verify the trigger object/operation is still supported by the connector; reconfigure if the connector changed.
 - **`DAP-RT-1050`:** verify the subscription in the external service emits the expected event shape; recreate the trigger subscription if the payload contract drifted.
+- **`DAP-RT-1053` (customer-resolvable):** fix the trigger's filter/parameter configuration — correct invalid filter expressions or required parameters, then re-save the trigger.
 - **`DAP-RT-1052`:** if zero matches is expected, no action — do not flag as a fault. If events *should* match, check the trigger filter and the polling window.
