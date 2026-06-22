@@ -1,4 +1,7 @@
-task_id: skill-ixp-delete-document-smoke
+# By id, not by filename/position: resolving a name or list-position to a
+# DocumentId needs a `documents list` lookup (auth) — that resolution path is
+# an integration concern (ACTV-88563), so the smoke hands the id directly.
+task_id: skill-ixp-delete-document-by-id-smoke
 description: >
   Smoke: agent deletes a document by id — irreversible, triggers a retrain.
 
