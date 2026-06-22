@@ -316,6 +316,94 @@ uip solution resources refresh --output json
 
 For agent.json prompt configuration and solution resource mechanics, see the `uipath-agents` skill (`lowcode/capabilities/inline-in-flow/inline-in-flow.md`).
 
+## Adding an IS Connector Tool Node
+
+IS connector tool nodes let the inline agent call Integration Service connector activities (e.g., Web Search, Jira Create Issue, Slack Send Message) as tools.
+
+### Discovery
+
+```bash
+uip maestro flow registry search "uipath.agent.resource.tool.connector" --output json
+uip maestro flow registry get "uipath.agent.resource.tool.connector.<connector-key>.<operation>" --output json
+```
+
+Node type pattern: `uipath.agent.resource.tool.connector.<connector-key>.<operation>`
+
+### Configuration — delegate to connector plugin
+
+Configure the IS connector tool node using `uip maestro flow node configure` — see [connector/impl.md § Agent Tool Connector Nodes](../connector/impl.md#agent-tool-connector-nodes). This single command populates the complete `inputs.detail` including the request buckets `bodyParameters` / `queryParameters` / `pathParameters` (body fields as `{{prompt:}}` chips, static values for enum/query/path params with defaults), so that `uip agent refresh --inline-in-flow` can generate a complete `resource.json`. No `fieldsContainer` is written.
+
+### Node instance
+
+```json
+{
+  "id": "webSearch1",
+  "type": "uipath.agent.resource.tool.connector.uipath-uipath-airdk.web-search",
+  "typeVersion": "1.0.0",
+  "display": { "label": "Web Search", "description": "<from definition>", "icon": "<from definition>", "shape": "circle" },
+  "inputs": {
+    "source": "<RESOURCE_UUID, set after agent refresh>",
+    "detail": { "...configured per connector/impl.md § Agent Tool Connector Nodes..." }
+  }
+}
+```
+
+`inputs.source` is set to the resource UUID after `uip agent refresh --inline-in-flow` generates the `resource.json` (see Resource generation below). On first authoring it can be omitted — the CLI generates a UUID automatically.
+
+### Flow-level bindings
+
+IS tool nodes need Connection bindings (not process bindings) in the top-level `bindings[]`:
+
+```json
+{
+  "id": "<UNIQUE_ID>",
+  "name": "<connectorKey> connection",
+  "type": "string",
+  "resource": "Connection",
+  "resourceKey": "<connectionId>",
+  "default": "<connectionId>",
+  "propertyAttribute": "ConnectionId"
+},
+{
+  "id": "<UNIQUE_ID_2>",
+  "name": "FolderKey",
+  "type": "string",
+  "resource": "Connection",
+  "resourceKey": "<connectionId>",
+  "default": "<connectionFolderKey>",
+  "propertyAttribute": "FolderKey"
+}
+```
+
+### Edge wiring
+
+Same artifact edge pattern as RPA tools:
+
+```json
+{
+  "id": "<EDGE_ID>",
+  "sourceNodeId": "autonomousAgent1",
+  "sourcePort": "tool",
+  "targetNodeId": "webSearch1",
+  "targetPort": "input"
+}
+```
+
+### Resource generation and validation
+
+After the IS tool node is fully configured in the flow (with `inputs.detail` request buckets populated), `uip agent refresh --inline-in-flow` **auto-generates** the corresponding `resource.json`, then regenerates `bindings_v2.json`. It **fetches the typed IS metadata** (field types, enum members, output schema) and joins it with the configured values from `inputs.detail` — `inputs.detail` alone has the values but not the types. No manual resource.json authoring is needed. `uip agent validate --inline-in-flow` is read-only: it confirms the expected `resource.json` files exist and reports drift (pointing back to refresh) if any are missing.
+
+```bash
+# Refresh generates the resource.json files and bindings (writes)
+uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow \
+  --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+# Validate checks (read-only) — fails with AgentValidationDrift if a resource.json is missing
+uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
+uip solution resources refresh --output json
+```
+
+Verify `ConnectorToolsGenerated` in the refresh output (each entry carries `nodeId`, `name`, `connectorKey`, `resourceId`). If nothing is generated, the tool node isn't wired to the agent's `tool` port or `node configure` wasn't run — see [connector/impl.md § Agent Tool Connector Nodes](../connector/impl.md#agent-tool-connector-nodes). Keep the flow node's `inputs.source` equal to the returned `resourceId` (refresh reuses an existing `inputs.source`), then re-run validate to confirm no drift.
+
 ## JSON Structure
 
 The instance carries only per-instance data (`inputs`, `outputs`, `display`). BPMN type, serviceType, version, and context templates come from the definition in `definitions[]`.
@@ -416,6 +504,7 @@ uip maestro flow validate <FlowName>.flow --output json
 | Studio Web debug: "Could not find process for tool" | Flow project's `bindings_v2.json` is missing the tool's process binding, so `uip solution resources refresh` never created the solution-level resource | Re-run `uip agent refresh --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` to propagate bindings, then `uip agent validate --inline-in-flow` to check schema, then `uip solution resources refresh`, then re-upload |
 | `bindings_v2.json` is empty or missing tool bindings | Tool bindings were not propagated to the flow project level, or a later tool overwrote the file | Re-run `uip agent refresh --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` after all flow node and edge edits are complete. Refresh is the verb that writes the file — do not hand-edit it |
 | Agent tool (process / agent / api / processOrchestration) cannot resolve at runtime | Missing top-level `bindings[]` entries, mismatched tool-node `inputs.source` / `resource.json` id, stale solution resources, or missing project-level `bindings_v2.json` | Add the resource bindings from the tool definition, keep the tool node's `inputs.source` equal to the resource UUID, run `uip agent refresh --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json` to write bindings, then `uip agent validate --inline-in-flow` to check, then run `uip solution resources refresh` |
+| `AGENT_RUNTIME.HTTP_ERROR` / "Integration service returned an error for tool" / status 400 | IS connector tool's `resource.json` has empty `inputSchema.properties` and/or `parameters[]`, or a required param is missing — the agent runtime cannot construct a valid IS request | The flow node's `inputs.detail` request buckets weren't populated (re-run `node configure`), or a required param like `send_as` is absent (add it under `--detail.queryParameters`). Then re-run `uip agent refresh --inline-in-flow` to regenerate. See § Adding an IS Connector Tool Node |
 | `inputs.agentProjectId` unrecognized | Wrong field name | Use `inputs.source` — `agentProjectId` is not valid for inline agents |
 | Inline agent rejected by `uip agent validate` | `entry-points.json` or `project.uiproj` present inside the inline agent dir | Delete those files — they belong only to standalone agent projects |
 | Folder name is human-readable instead of UUID | Folder renamed after scaffolding | Rename to the original `projectId` UUID — the folder name must match `inputs.source` and the `projectId` field inside `agent.json` |
