@@ -53,6 +53,9 @@ site
 **/.claude/**/*.local.md
 **/.claude/**/*local*
 
+# Local investigation scratch/evidence (uipath-troubleshoot diagnosis artifacts)
+**/.local/
+
 # Claude Code cache and temporary files
 **/.claude/cache/
 **/.claude/tmp/
