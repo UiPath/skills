@@ -1,4 +1,4 @@
-task_id: skill-ixp-import-taxonomy-smoke
+task_id: skill-ixp-import-taxonomy-from-file-smoke
 description: >
   Smoke: agent imports a taxonomy into an existing project from a local JSON
   file.
