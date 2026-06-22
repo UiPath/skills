@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import glob
 import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 
@@ -111,15 +112,28 @@ def require_sequence_integrity(root: ET.Element) -> None:
 
 
 def require_no_private_connector_values(root: ET.Element) -> None:
-    private_tokens = [
-        "connectionId",
-        "connectionKey",
-        "tenant",
-        "folderKey",
-        "folderId",
-        "https://",
-    ]
-    xml = ET.tostring(root, encoding="unicode")
-    present = [token for token in private_tokens if token in xml]
-    if present:
-        fail(f"connector boundary leaked private or CLI-owned fields: {present}")
+    # A faithful, registry-driven file legitimately contains field *names* like
+    # `folderId`/`connectionId` (registry context fields) and the standard
+    # `exporter="UiPath (https://bpmn.uipath.com)"` attribute on the root. The
+    # real boundary concern is a *populated value* that bakes in a private
+    # identifier: a tenant/cloud URL, a tenant hostname, or a GUID-shaped
+    # connection/folder key. Inspect populated values only, not field names.
+    guid = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+    tenant_host = re.compile(r"https?://|\b[\w-]+\.uipath\.com\b", re.IGNORECASE)
+
+    def values(element: ET.Element) -> list[str]:
+        found: list[str] = []
+        for el in element.iter():
+            v = el.attrib.get("value")
+            if v:
+                found.append(v)
+            if el.text and el.text.strip():
+                found.append(el.text.strip())
+        return found
+
+    leaked = []
+    for value in values(root):
+        if tenant_host.search(value) or guid.search(value):
+            leaked.append(value[:80])
+    if leaked:
+        fail(f"connector boundary leaked private values (URL/tenant/GUID): {leaked}")

@@ -51,6 +51,15 @@ The `uipath:` namespace URI is exactly `http://uipath.org/schema/bpmn`. All
 `uipath:*` tags inside `extensionElements` are lower-camelCase
 (`uipath:activity`, `uipath:variables`, `uipath:loopCharacteristics`, …).
 
+Every `uipath:activity` / `uipath:event` / `uipath:mapping` carries its node
+type as a **child** element — `<uipath:type value="<Type>" version="v1" />` —
+never as a `type=` attribute on the wrapper. This holds both for templated nodes
+and for any shell you author or preserve by hand.
+
+XML comments must not contain `--` (double-hyphen): it is invalid XML and the
+file will fail to parse. Never paste CLI commands or flags
+(`--output`, `--connection-id`) into `<!-- … -->`. Keep comments minimal.
+
 ## Variables (`BPMN.Variables`)
 
 Declare root variables with the `BPMN.Variables` registry template attached to
