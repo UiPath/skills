@@ -39,5 +39,5 @@ The error code already names the cause class; the remaining work is confirming o
 
 - **DAP-GE-3005 (disabled):** re-enable the connection in the Integration Service UI (or `uip is connections edit <connection-id>`). If it auto-disabled, re-authenticate — see [connection-auth-expired.md](./connection-auth-expired.md).
 - **DAP-GE-3000, invalid / no access / cross-workspace:** this is the activity-side surfacing of [connection-invalid.md](./connection-invalid.md) — follow its Resolution (create a connection in the runner's workspace and repoint the activity, or deploy to a shared folder with a shared connection).
-- **DAP-GE-3000, Connections.View:** grant the robot account at least `Connections.View` in the folder where the connection resides.
+- **DAP-GE-3000, Connections.View:** grant the robot account at least `Connections.View` in the folder where the connection resides, **or** move/recreate the connection in a folder the robot can access (the runtime message names the connection's folder GUID and states both options verbatim).
 - **DAP-GE-3000, Bad Gateway / 5xx:** transient platform error — retry the job. If it persists, check Integration Service / Identity status before treating it as a config problem.
