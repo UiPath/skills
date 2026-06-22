@@ -1,7 +1,6 @@
 task_id: skill-ixp-delete-document-smoke
 description: >
   Smoke: agent deletes a document by id — irreversible, triggers a retrain.
-  Must pass -y/--yes (documents delete never prompts; the flag is mandatory).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
