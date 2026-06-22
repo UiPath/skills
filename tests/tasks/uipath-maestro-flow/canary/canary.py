@@ -152,7 +152,15 @@ def cleanup(solution_id: str | None) -> None:
         print(f"$ uip solution delete {solution_id}", flush=True)
         try:
             r = subprocess.run(
-                ["uip", "solution", "delete", solution_id, "--output", "json"],
+                [
+                    "uip",
+                    "solution",
+                    "delete",
+                    solution_id,
+                    "--yes",
+                    "--output",
+                    "json",
+                ],
                 capture_output=True,
                 text=True,
                 timeout=DELETE_TIMEOUT,

@@ -67,10 +67,10 @@ uip solution deploy list --output json
 Remove a deployment, including all provisioned resources and the Orchestrator folder:
 
 ```bash
-uip solution deploy uninstall "MyDeployment" --output json
+uip solution deploy uninstall "MyDeployment" --yes --output json
 
 # With custom polling
-uip solution deploy uninstall "MyDeployment" --timeout 600 --poll-interval 10000 --output json
+uip solution deploy uninstall "MyDeployment" --timeout 600 --poll-interval 10000 --yes --output json
 ```
 
 | Option | Description | Default |
@@ -128,7 +128,7 @@ Use `--destination <path>` for the local output file or directory. Reserve `--ou
 Remove a specific version of a published package from the solution feed:
 
 ```bash
-uip solution packages delete "MySolution" "1.0.0" --output json
+uip solution packages delete "MySolution" "1.0.0" --yes --output json
 ```
 
 Arguments: `<package-name> <package-version>`. This deletes only the specified version, not all versions of the package.
@@ -138,7 +138,7 @@ Arguments: `<package-name> <package-version>`. This deletes only the specified v
 Remove a solution from Studio Web (browser-based editor). This is separate from deployment management:
 
 ```bash
-uip solution delete <solution-id> --output json
+uip solution delete <solution-id> --yes --output json
 ```
 
 This removes the solution from Studio Web. It does **not** affect any deployed instances in Orchestrator.
@@ -154,14 +154,14 @@ List deployments, uninstall an old one, and clean up the published package versi
 uip solution deploy list --limit 20 --output json
 
 # Uninstall the old deployment
-uip solution deploy uninstall "MySolution-v1" --output json
+uip solution deploy uninstall "MySolution-v1" --yes --output json
 
 # Verify it was removed
 uip solution deploy list --output json
 
 # Clean up the old package version from the feed
 uip solution packages list --output json
-uip solution packages delete "MySolution" "1.0.0" --output json
+uip solution packages delete "MySolution" "1.0.0" --yes --output json
 ```
 
 ---

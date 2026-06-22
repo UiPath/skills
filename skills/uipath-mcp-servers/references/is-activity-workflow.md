@@ -139,7 +139,7 @@ uip agenthub mcp-tools update <tool-id> --mcp <slug> --folder-path "<folder>" \
   --output-schema "$(jq -c . output-schema.json)" --output json
 ```
 
-Delete: `uip agenthub mcp-tools delete <tool-id> --mcp <slug> --folder-key <guid> --output json`.
+Delete: `uip agenthub mcp-tools delete <tool-id> --mcp <slug> --folder-key <guid> --yes --output json`.
 Skeleton for `--file`: `uip agenthub mcp-tools template is-activity --output json`.
 
 ## IS-Activity Troubleshooting
