@@ -74,7 +74,7 @@ Linear, step-by-step execution. Best for straightforward processes.
 ### Flowchart
 Branching logic with decision nodes. Best for complex decision flows.
 
-**Key pattern:** All FlowStep/FlowDecision/FlowSwitch nodes are direct children of `<Flowchart>`. Use `<x:Reference>` inside property elements (`Flowchart.StartNode`, `FlowStep.Next`, `FlowDecision.True/False`) to cross-reference nodes.
+**Key pattern:** All FlowStep/FlowDecision/FlowSwitch nodes are direct children of `<Flowchart>`; wire them via `<x:Reference>` inside property elements (`Flowchart.StartNode`, `FlowStep.Next`, `FlowDecision.True/False`). NEVER nest one `FlowStep` inside another's `<FlowStep.Next>` — nested-only steps are absent from `Flowchart.Nodes` and won't render.
 
 ```xml
 <Flowchart DisplayName="My Flowchart" sap2010:WorkflowViewState.IdRef="Flowchart_1">
@@ -99,11 +99,7 @@ Branching logic with decision nodes. Best for complex decision flows.
 </Flowchart>
 ```
 
-**Node registration:** If a node is defined inline within a property element (e.g., inside `FlowStep.Next`) instead of as a direct Flowchart child, it needs a trailing `<x:Reference>` entry as a direct child of `<Flowchart>`. See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for details.
-
-**Expression language:** VB projects use `<mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="condition" />` instead of `<CSharpValue>`.
-
-**ViewState is needed** for usable Flowchart layout. See [canvas-layout-guide.md § Flowchart Layout](canvas-layout-guide.md#3-flowchart-layout) for coordinate systems, sizes, and recipes.
+Node vocabulary, structure & wiring rules, the forbidden nested-chain pattern, node registration, condition expressions (VB/C#), and layout: [flowchart-guide.md](flowchart-guide.md). Layout coordinates and ViewState recipes: [canvas-layout-guide.md § Flowchart Layout](canvas-layout-guide.md#3-flowchart-layout).
 
 ### State Machine
 State-based workflow with transitions. Best for long-running processes with distinct states (e.g., REFramework).

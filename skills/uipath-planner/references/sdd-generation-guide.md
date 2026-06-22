@@ -133,6 +133,8 @@ Skip this step for non-RPA primaries (Agents, Coded Apps, Flow, Case, API Workfl
 
 Run the procedure in [tenant-library-search-guide.md](tenant-library-search-guide.md). Keyword source for step 2: PDD Application Inventory + org-prefix terms (`Common`, `Shared`, `<Company>` if mentioned in the PDD). Output mapping: every selected library → one row in every sub-project's §14 Packages table, and its package ID into §16 Deployment Environment → "Shared libraries referenced". If the auth preflight fails, use the guide's manual fallback and propagate the user's named libraries to §14 / §16 the same way.
 
+**This step is best-effort — it never blocks SDD output.** If the auth preflight errors or auth is unavailable, **Autonomous mode skips library discovery and proceeds with public NuGet only** — do not retry or troubleshoot auth mid-generation, and do not pause. Skip the step entirely if the user's prompt forbids running `uip` commands.
+
 ### Step 3: Detect Gaps
 
 Scan for missing or vague information. Use the Gap Detection Checklist in the [PDD Analysis Guide](pdd-analysis-guide.md) to classify each gap as `[DEFAULT]` or `[SME REVIEW]`.
@@ -302,6 +304,8 @@ Present the architectural core to the user. Wait for approval or adjustments.
 
 > **Progress:** Mark "Generate architecture (Phase 2)" as `completed`. Mark "Generate full SDD (Phase 3)" as `in_progress`.
 
+> **Write early, append incrementally — the file on disk is the deliverable.** Do NOT hold the entire SDD in context and write only at the very end. As soon as Phase 2 has produced the architectural core, write a first valid file: the header + `## Planner Handoff` header **and** the `<!-- planner-handoff:v1 -->` marker + `## Decisions Made` block (autonomous) + the Phase 1 / Phase 2 sections you already have. Then append the remaining Phase 3 sections to that file with follow-up `Edit`/`Write` calls. Rationale: a long autonomous turn can hit the per-turn watchdog mid-generation — an incrementally-written file leaves a gradeable, useful SDD on disk instead of nothing. The Planner Handoff header + marker MUST be in this first write so detection (and grading) works even on a partial file. Step 1.5 (SME resolution) and the Step 2 superset check still run; they patch and verify the already-on-disk file rather than gating the first write.
+
 ### Step 1: Generate Remaining Sections
 
 Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. Section assignments per phase:
@@ -358,7 +362,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 > **Progress:** Mark "Resolve SME review items" as `completed`. Mark "Write SDD to disk" as `in_progress`.
 
-1. Assemble all sections in template order.
+1. Assemble all sections in template order. If you followed the write-early principle above, the file already holds the header + handoff + Phase 1/2 sections — finalize it by appending/patching the remaining sections in template order rather than rewriting from scratch.
 2. **Fill the `## Planner Handoff` header** that appears in every template after `## Document History`. This is the load-bearing detection contract. The Entry Guard accepts **either** the heading OR the adjacent `<!-- planner-handoff:v1 -->` HTML marker as a detection signal — both ship in every template and both should survive into the generated file (so a later session, or a hand-written SDD, still routes to Lane A):
 
    ```markdown
@@ -458,7 +462,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 <SME_REVIEW_COUNT> unresolved SME review items (if any — list them).
 
-**Next:** Phase D is complete. Proceed into Lane A (task derivation) with this SDD path — Lane A derives the task list and emits live `TaskCreate` calls.
+**Next:** Phase D is complete and the SDD is on disk. Lane A (task derivation) continues on the next turn with this SDD path — it derives the task list and emits live `TaskCreate` calls.
 ```
 
 ### Step 2.5: Word (.docx) Delivery — only when requested
@@ -481,8 +485,9 @@ Skip this step entirely when the user did not ask for Word output.
 
 The SDD is the deliverable of Phase D. **Do not generate an Implementation Plan section inside the SDD. Do not create implementation `TaskCreate` calls during Phase D. Do not start executing.**
 
-Then transition based on the user's intent:
+> **The SDD write is a turn boundary — do not begin Lane A in the same turn as Phase D.** Once the SDD is on disk, the superset check has passed, and the Step 2 item 9 summary is emitted, that is the end of the current turn. Continue into Lane A on the **next** turn. Rationale: Phase D (read PDD + guides, author §1–§18) and Lane A (parse SDD, derive tasks, emit `TaskCreate`) are each heavy; stacking both in one unbroken autonomous turn is what pushes wall-clock past the per-turn watchdog and loses the whole run. Yielding after a durable SDD write keeps each turn bounded and guarantees the SDD is graded before any further work. This is a turn checkpoint, **not** an `AskUserQuestion` — do not prompt the user; simply let the turn end after the summary.
 
-> The SDD is written. **Fall through into Lane A** with `<sdd-path>` to generate the implementation task list. Lane A reads the `## Planner Handoff` header you just wrote, derives tasks, writes `<process-kebab>-tasks.md` alongside the SDD, and emits live tasks routing to specialist skills.
+Then continue based on the user's intent:
 
-If the user's intent implies implementation ("create / build / implement / set up / make"), continue directly into Lane A — see [pdd-driven-lane-guide.md](pdd-driven-lane-guide.md). If the user only asked to "design / architect / generate an SDD", stop here — the SDD is enough.
+- If the user's intent implies implementation ("create / build / implement / set up / make") → on the next turn, continue into Lane A with `<sdd-path>`. Lane A reads the `## Planner Handoff` header you wrote, derives tasks, writes `<process-kebab>-tasks.md` alongside the SDD, and emits live tasks routing to specialist skills — see [pdd-driven-lane-guide.md](pdd-driven-lane-guide.md).
+- If the user only asked to "design / architect / generate an SDD" → stop here; the SDD is enough.

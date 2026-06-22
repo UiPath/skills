@@ -13,10 +13,12 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 | `uip ixp projects update-title <project-name> "<new-title>" --output json` | Update the display title of a project |
 | `uip ixp projects update-prompt <project-name> --prompt "<text>" --output json` | Update the project's **Overall extraction instructions** — the taxonomy-wide prompt the model sees on every extraction (the field at the top of the IXP UI's Manage Taxonomy page). Distinct from per-field-group prompts (`groups update-prompts`) and per-field prompts (`fields update-prompts`). Replaces the existing value. |
 | `uip ixp projects get-taxonomy <project-name> --output json` | Get taxonomy (entity_defs + label_groups with field definitions) |
-| `uip ixp projects get-metrics <project-name> --output json` | Get validation metrics — `FieldGroups[]` (per-group) and `Fields[]` (per-field F1/Precision/Recall) |
+| `uip ixp projects get-metrics <project-name> [--model-version <N>] --output json` | Get validation metrics — `FieldGroups[]` (per-group) and `Fields[]` (per-field F1/Precision/Recall). Defaults to the latest version; pass `--model-version <N>` (`-m`) to scope to a specific trained version. |
 | `uip ixp projects configure-model <project-name> [options] --output json` | Configure extraction model. Options: `--model` (gemini_2_5_flash/gemini_2_5_pro/gpt_4o_2024_05_13) and `--preprocessing` (none/table_mini/table). |
 | `uip ixp projects list-models <project-name> --output json` | List all model versions and tags. Returns `Models[]` (Version, Pinned, TrainedTime) and `Tags[]` (Name, Version). |
-| `uip ixp projects publish <project-name> --output json` | Publish (pin) the latest model version. Options: `--model-version <N>` (specific version, default: latest), `--description "<text>"` (set description), `--tag <live\|staging>` (tag the pinned version — only `live` or `staging` are accepted). |
+| `uip ixp projects publish <project-name> [--model-version <N>] [--tag <live\|staging>] --output json` | Publish a model version — defaults to the latest; pass `--model-version <N>` to pick a specific one. `--description "<text>"` sets a description; `--tag <live\|staging>` tags the published version. |
+| `uip ixp projects unpublish <project-name> --model-version <N> --output json` | Unpublish a model version — it stays trained and listable; only its published status is removed. `--model-version` is **required**. Errors if the version isn't found or isn't currently published. To change which version is live, `publish` a different one instead. |
+| `uip ixp projects untag <project-name> --model-version <N> --output json` | Remove the tag from a model version (keyed by **version**, not tag name). `--model-version` is **required**. Version stays published; only the tag is cleared. Errors if the version has no tag. Only `untag` removes a tag — `publish` without `--tag` leaves the existing tag untouched. To switch `live`→`staging`, `publish --tag staging` instead. |
 | `uip ixp projects delete <project-name> --confirm-data-loss --output json` | **Permanently** delete a project — its documents, taxonomy, and trained models. **Irreversible.** Requires `--confirm-data-loss`; the command refuses to run without it. |
 
 ## Documents
@@ -114,4 +116,4 @@ For working with runtime (deployed) IXP models — separate from the training wo
 
 | Command | Description |
 |---------|-------------|
-| `uip ixp deployments get-taxonomy <project-name> --version <N> --output json` | Get the project taxonomy (data types + field groups) at a specific trained model version. `--version` is the model version number from `projects list-models`. Output mirrors `projects get-taxonomy` — `EntityDefs[]` + `LabelGroups[]` — pinned to the snapshot the version was trained on. |
+| `uip ixp deployments get-taxonomy <project-name> --version <N> --output json` | Get the project taxonomy (data types + field groups) at a specific trained model version. `--version` is the model version number from `projects list-models`. Output mirrors `projects get-taxonomy` — `EntityDefs[]` + `LabelGroups[]` — bound to the snapshot the version was trained on. |

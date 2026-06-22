@@ -1,6 +1,6 @@
 ---
 name: uipath-admin
-description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets), Authorization (custom roles, role assignments, permission catalog, effective-access via check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async operation polling), IP Restriction (allowlist, enforcement switch, bypass rules, lockout safety), Audit (event sources, paginated queries, day-wise-JSON-folder or single-CSV exports — login history, compliance dumps, who-did-what-when-where on a resource). For Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
+description: "UiPath Admin via `uip admin` — Identity Server (users, groups, robot accounts, external OAuth2 apps, secrets), Authorization (custom roles, role assignments, permission catalog, effective-access via check-access PDP), OMS (org read/update, tenant lifecycle, service provisioning, regions, async operation polling), IP Restriction (allowlist, enforcement switch, bypass rules, lockout safety), Audit (event sources, paginated queries, day-wise-JSON-folder or single-CSV exports — login history, compliance dumps, who-did-what-when-where on a resource). Troubleshoot: diagnose access-denied, investigate login failures, role misconfiguration, IP lockout, PAT/app auth issues. For Orchestrator-specific roles/permissions/folders/jobs→uipath-platform. For RPA workflows→uipath-rpa."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -59,6 +59,22 @@ Activate on both **explicit audit requests** and **natural-language investigatio
 - **Investigation intent** (full-sentence form) — "Who deleted the X folder last Tuesday?", "Show me failed logins for user Y this month.", "What changed on tenant Z between Jan 1 and Feb 1?", "Give me the audit log for the last 30 days.", "Was the API key rotated by someone in our org?", "Export everything for compliance for Q4."
 
 > **Scope routing** (which phrasing → `org` vs `tenant`, and why) lives in [audit-workflow-guide.md → Audit scope disambiguation](references/audit-workflow-guide.md#audit-scope-disambiguation--route-by-user-phrasing). Critical Rule 23 governs the stop-and-ask requirement when scope is ambiguous.
+
+### Troubleshoot
+
+Activate on **access/auth/identity troubleshooting** — users report symptoms, not audit verbs.
+
+- **Diagnose access denied** — "user can't access X", "403 on API", "new hire has no permissions" → resolve principal, check-access, inspect role assignments. Playbook: [identity-troubleshoot-guide.md → Playbook 1](references/identity-troubleshoot-guide.md#playbook-1--user-cant-access-resource-x)
+- **Investigate login failures** — "failed login attempts", "account compromised?", "suspicious sign-ins" → org-scoped audit login-history investigation. Playbook: [identity-troubleshoot-guide.md → Playbook 2](references/identity-troubleshoot-guide.md#playbook-2--suspicious-login-activity)
+- **Diagnose role misconfiguration** — "custom role doesn't work", "user has role but can't do X" → inspect role actions, verify scope alignment. Playbook: [identity-troubleshoot-guide.md → Playbook 3](references/identity-troubleshoot-guide.md#playbook-3--role-misconfiguration)
+- **Diagnose IP restriction lockout** — "can't access platform from new office", "all users blocked" → my-ip + ip-ranges list + enforcement get. Playbook: [identity-troubleshoot-guide.md → Playbook 4](references/identity-troubleshoot-guide.md#playbook-4--ip-restriction-lockout)
+- **Diagnose PAT / external app failures** — "API returns 401", "PAT stopped working", "external app can't authenticate" → check expiry, scopes, audit for revocation. Playbook: [identity-troubleshoot-guide.md → Playbook 5](references/identity-troubleshoot-guide.md#playbook-5--pat-or-external-app-not-working)
+- **Diagnose SMTP email delivery failures** — "invitations not sending", "SMTP broken" → smtp get + smtp test
+- **Investigate stuck tenant operations** — "tenant create not completing", "operation stuck" → poll operation status
+- **Identify service provisioning no-ops** — "service still enabled after remove" → platform-pinned services
+- **Triage robot account authentication issues** — "robot not authenticating" → identity vs credential model confusion
+
+> **Structured diagnose capability index** with failure-mode lookup and diagnostic priority ladder: [diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md). Quick investigation playbooks: [identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md).
 
 ## Critical Rules
 
@@ -214,3 +230,7 @@ For per-area full checklists, follow the table's inline links: Identity → [ide
 | Audit CLI reference | [references/audit-commands.md](references/audit-commands.md) |
 | Audit investigation workflows (scope disambiguation, who-did-X, login history, date-range dump, overview) | [references/audit-workflow-guide.md](references/audit-workflow-guide.md) |
 | Paginate audit events beyond 200 | [references/audit-commands.md](references/audit-commands.md) + Rule 25 |
+| Troubleshoot access denied, login failures, role misconfig, IP lockout, PAT/app auth | [references/identity-troubleshoot-guide.md](references/identity-troubleshoot-guide.md) |
+| Diagnose capability index (structured) | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
+| Failure mode lookup (12 named patterns) | [references/diagnose/references/failure-modes.md](references/diagnose/references/failure-modes.md) |
+| Diagnostic priority ladder (sequential triage) | [references/diagnose/references/troubleshooting-guide.md](references/diagnose/references/troubleshooting-guide.md) |

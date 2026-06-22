@@ -3,7 +3,7 @@ description: >
   Smoke test: agent uses the uipath-admin skill to create an external
   OAuth2 app with scopes. Tests correct --app-scope flag usage
   (Critical Rule #6) and positional name argument.
-tags: [uipath-admin, smoke, create]
+tags: [uipath-admin, smoke, mode:build, create]
 
 run_limits:
   expected_turns: 7

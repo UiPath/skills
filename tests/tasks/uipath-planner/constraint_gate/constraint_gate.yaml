@@ -11,7 +11,10 @@ tags: [uipath-planner, integration, mode:build]
 
 run_limits:
   expected_turns: 16
-  turn_timeout: 1200
+  # Full Phase D SDD authoring runs in one unbroken autonomous turn (read PDD +
+  # guides, select scope, generate §1–§18). 1200s is too tight and times out
+  # before the SDD lands. See fix/planner-sdd-turn-timeout.
+  turn_timeout: 1800
 
 initial_prompt: |
   Analyze the Process Design Document below and generate a Solution Design
