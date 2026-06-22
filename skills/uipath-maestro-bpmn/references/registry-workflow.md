@@ -105,6 +105,42 @@ Action dropdown** in Studio Web. Do not use it for a folder-deployed agent — t
 canvas treats the task as misconfigured. Use `StartAgentJob`/`StartJob` for
 folder-deployed resources.
 
+## API workflow — wait vs fire-and-forget
+
+Pick the wrapper by whether downstream needs the invocation result:
+`Orchestrator.ExecuteApiWorkflow` **waits** for completion (result available to
+later nodes); `Orchestrator.ExecuteApiWorkflowAsync` **returns immediately**
+(fire-and-forget). Both are `bpmn:serviceTask` activities. Resolve `ReleaseKey`
+(process GUID), `FolderKey`/`FolderPath`, and the request/response schemas before
+the node is runnable — make the wait-versus-async choice explicit in the model.
+
+## Integration Service triggers — bind trigger properties via the CLI
+
+`Intsvc.TimerTrigger` and `Intsvc.EventTrigger` (and connector waits like
+`Intsvc.WaitForEvent`) need their **trigger properties** enriched/bound through
+the CLI — the same enrichment path as `Intsvc.*` activities (§3). A hand-authored
+trigger shell stays **draft** until the CLI supplies the concrete trigger
+properties, connection binding, and schemas.
+
+## Connectionless vs connector HTTP
+
+- **Connector activity** (`Intsvc.ActivityExecution` / a connector-authenticated
+  operation): use when the call goes through a tenant connection, a dynamic
+  connector schema, or a connector object operation. Connection binding,
+  operation metadata, and schemas are CLI-owned (§3) — keep the node **draft**
+  until enriched.
+- **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or
+  `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):
+  use when the workflow itself owns the URL, method, payload, and response
+  parsing (no connection). Author `mode="manual"`, `method`, `url`, `headers`,
+  `parameters`, `body` directly from the registry template.
+
+Status vocabulary for an IS node in a summary: **executable** (activity, inputs,
+output variable, and downstream mappings present, runtime-verified if a run was
+done), **draft** (BPMN shape/intent present but enrichment missing), **mock**
+(returns fixed sample data instead of calling out), **blocked** (a required URL,
+auth, schema, or enrichment decision is missing).
+
 ## 5. Assemble
 
 1. Build the document scaffold and process (see

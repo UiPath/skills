@@ -237,8 +237,10 @@ UiPath-specific retry and error-mapping metadata live inside an activity's
   `flowElements` (start event, nodes, end event) and its own scoped
   `<uipath:variables>`. Variants: `collapsed`, `expanded`, `eventSubprocess`.
   The shape carries `isExpanded` for the collapsed/expanded distinction.
-- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent="true"`. Its
-  start event carries an event definition and an `isInterrupting` flag.
+- **Event subprocess**: a `bpmn:SubProcess` with `triggeredByEvent="true"`. It
+  must have **exactly one** start event, and that start event **must carry an
+  event definition** (with `isInterrupting`) — a blank start event is invalid for
+  an event subprocess.
 - **Call activity** (`bpmn:CallActivity`): invokes a *separate* Maestro
   instance. The registry provides the `uipath:activity` payload for the
   Orchestrator agentic/case-management call-activity types
@@ -272,6 +274,12 @@ serialize them (`elements/nodes.ts`), so author them from the canvas contract:
 - The collection/item binding lives in the `uipath:loopCharacteristics`
   extension (`inputCollection`, `inputElement`), **not** in `loopCardinality`
   (the canvas never reads `loopCardinality`).
+- The loop element **must declare `inputElement`** — do not rely on reading a
+  bare `iterator`/`iterator.item` downstream without it. For a multi-instance
+  **subprocess** body, bind `inputElement="iterator[0]"` on
+  `uipath:loopCharacteristics` and pass the current item into body activities
+  with `=iterator[0].item`. Do not assume a bare alias such as `=currentItem` is
+  in scope inside a marker subprocess body unless the file already uses it.
 - Inside the body, read the current item with the `iterator` namespace — see
   [expression-authoring.md](expression-authoring.md).
 - `bpmn:standardLoopCharacteristics` is also recognized (no uipath extension).
@@ -325,6 +333,41 @@ Example:
 </bpmndi:BPMNEdge>
 ```
 
+## Editing operations
+
+Safe, surgical edits on an existing `.bpmn` (preserve content you did not author
+— see [SKILL.md](../SKILL.md#editing-an-existing-bpmn-preserve-what-you-did-not-author)):
+
+- **Add / delete / reconnect a node**: add the element with a stable id and its
+  `<bpmn:incoming>`/`<bpmn:outgoing>` refs, add the sequence-flow elements in the
+  owning scope, and add/update its `BPMNShape` and edge waypoints. On delete,
+  remove orphaned flows and DI edges and recheck entry-point variables, output
+  mappings, and binding references.
+- **Insert a gateway**: split the existing sequence flow into an incoming and an
+  outgoing flow, add conditions to the outgoing flows plus one `default`, add a
+  matching join only if branches actually need synchronization, then re-waypoint
+  the diagram (gateway shape + all edges).
+- **Move logic into a subprocess**: move only elements that share a valid scope,
+  re-scope their variables, recreate legal subprocess flow boundaries, and add a
+  second diagram plane for the subprocess so nested content renders.
+- **Add an entry point**: use a root-level start event, add a stable unique
+  `uipath:entryPointId`, and declare input/output variables whose `elementId`
+  matches that start event.
+
+Do not patch generated JSON to fix source behavior — change the `.bpmn` and
+regenerate. For `Intsvc.*` activities/triggers, hand editing to CLI enrichment.
+
+### Edit red-flags
+
+Re-check after any edit:
+
+- A diagram plane references a missing process, collaboration, or subprocess.
+- A rendered element lacks a shape or its flow lacks an edge/waypoint.
+- An entry-point variable points at the wrong start event.
+- A `uipath:context` value references a missing binding.
+- A topology edit rewrote unrelated `uipath:*` extension XML.
+- An Integration Service element carries hand-authored connection details.
+
 ## Validation
 
 There is **no** `uip maestro bpmn validate` CLI command. The skill ships its own
@@ -356,6 +399,8 @@ Then walk the structural checklist:
 3. Every `sourceRef`/`targetRef`/`attachedToRef`/`*Ref` resolves to a declared id.
 4. Each XOR gateway: non-default flows have conditions; exactly one default.
 5. No activity/event has more than one incoming flow.
-6. Every `vars.<id>` reference resolves to a declared variable.
-7. Each `uipath:*` payload was produced from a `registry get` template, not
+6. Each event subprocess has exactly one start event, and it carries an event
+   definition (with `isInterrupting`).
+7. Every `vars.<id>` reference resolves to a declared variable.
+8. Each `uipath:*` payload was produced from a `registry get` template, not
    hand-written.
