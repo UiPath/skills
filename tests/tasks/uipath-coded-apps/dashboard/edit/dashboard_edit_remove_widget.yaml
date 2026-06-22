@@ -1,0 +1,92 @@
+task_id: uipath-coded-apps-dashboard-edit-remove-widget
+description: >
+  Incremental edit — REMOVE a widget from an existing dashboard WITHOUT
+  re-scaffolding. The agent builds a two-widget dashboard (active agents +
+  faulted jobs), then (as a follow-up) removes the faulted-jobs widget. Per
+  incremental-editor.md a REMOVE must route through the editor (writes
+  edit-intent.json with a REMOVE op, deletes that widget + its metric module +
+  detail view, regenerates Dashboard.tsx) and reuse the already-extracted
+  starter kit. Regression guard for the REMOVE op, which had no coverage.
+  Integration-tier: a full inline build + edit is too turn-heavy for the 40-turn
+  PR-smoke gate — runs nightly at 200 turns.
+tags: [uipath-coded-apps, integration, dashboard, feature:incremental, mode:build]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  First, build a UiPath dashboard with two widgets: active agents, and faulted
+  jobs. Let it finish building completely.
+
+  Then, as a follow-up edit to that now-existing dashboard, remove the faulted
+  jobs widget. Treat this as an incremental edit of the already-built dashboard,
+  not a rebuild from scratch.
+
+  This is a non-interactive automated test — there is NO user to approve plans.
+  Treat each plan as pre-approved: author the files and run each step (the build,
+  then the incremental edit) through to completion in this same session. Do NOT
+  stop at a plan, do NOT wait for confirmation, and do NOT ask any question.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Exactly one metric module remains after the remove (started with 2). A
+  # >=1 check would pass even if the remove silently failed, so assert == 1.
+  - type: run_command
+    description: "Exactly 1 metric module remains (the second was removed)"
+    command: "sh -c 'test \"$(find . -path \"*/src/metrics/*.ts\" -not -path \"*/node_modules/*\" | wc -l | tr -d \" \")\" = \"1\"'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Build integrity preserved (1 widget, still compiler-model — no fnBody regression).
+  - type: run_command
+    description: "Project is a valid 1-widget compiler-model dashboard after the remove"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 1 --min-widgets 1 --forbid-substr fnBody
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The remove went through the incremental editor as a REMOVE op.
+  - type: run_command
+    description: "edit-intent.json present with a REMOVE op"
+    command: "sh -c 'grep -rq --include=edit-intent.json --exclude-dir=node_modules REMOVE .'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Starter kit was extracted for the build, and the edit reused it — the REMOVE
+  # op + exact-count==1 above already prove the edit applied to the existing
+  # project, not a fresh re-scaffold. No max_count: the agent may re-issue the
+  # idempotent extract during build setup, which is benign.
+  - type: command_executed
+    description: "Starter kit extracted (kit set up; edit reused the existing project)"
+    tool_name: "Bash"
+    command_pattern: '(unzip|Expand-Archive).*governance-dashboard-starter-kit'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

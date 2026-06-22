@@ -1,0 +1,51 @@
+task_id: uipath-coded-apps-dashboard-gov-gated-routing
+description: >
+  Gate-OPEN path for governance-violation insights. When the user explicitly
+  asks about runtime compliance / standards / rule violations (e.g. ISO 42001
+  runtime rules), the skill must route to the trace-derived metrics: a metric
+  module that parses governance spans (parseGovernanceSpans) fetched via
+  Traces.getById. Guards that the explicit-runtime-compliance signal opens the
+  gate to the trace-derived family documented in sdk/governance-traces.md.
+tags: [uipath-coded-apps, integration, dashboard, feature:governance, mode:build]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  Build me a dashboard of ISO 42001 runtime rule violations across my agents,
+  broken down per agent.
+
+  This is a non-interactive automated test — there is NO user to approve the plan.
+  Treat the plan as pre-approved: in THIS SAME TURN, author intent.json and the metric
+  modules and run the build through to completion. Do NOT end your turn at the plan, do
+  NOT wait for confirmation, and do NOT ask any question.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Gate open: trace-derived governance — parse spans fetched via Traces.getById.
+  - type: run_command
+    description: "Metric module parses governance spans (parseGovernanceSpans) fetched via Traces.getById"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 1 --require-substr "parseGovernanceSpans" --require-substr "getById"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

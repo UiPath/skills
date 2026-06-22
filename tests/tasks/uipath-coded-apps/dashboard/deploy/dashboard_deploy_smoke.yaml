@@ -1,0 +1,84 @@
+task_id: uipath-coded-apps-dashboard-deploy-smoke
+description: >
+  Validates that the deploy pipeline runs the correct CLI commands in the
+  correct order: pack → publish → deploy. Checks command invocations only —
+  commands will fail with auth errors in CI (expected). Verifies the agent
+  follows the deploy/impl.md flow without shortcuts.
+tags: [uipath-coded-apps, smoke, dashboard, mode:operate, feature:scaffold]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  - command: |
+      mkdir -p .dashboard src/dashboard dist
+      cat > .dashboard/state.json << 'EOF'
+      {
+        "app": { "name": "Test Dashboard", "routingName": "test-dashboard-x1y2", "semver": "1.0.0" },
+        "env": "alpha", "org": "testorg", "tenant": "testTenant",
+        "cloudUrl": "https://alpha.uipath.com",
+        "widgets": ["ActiveAgentsKPI"],
+        "deployment": { "systemName": null, "folderKey": "abc123-folder-key", "appUrl": null, "lastDeployedAt": null }
+      }
+      EOF
+      echo "<html></html>" > dist/index.html
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  Deploy my dashboard to Automation Cloud. The project is in the current directory.
+
+  Important: The uip CLI is available but NOT connected to a live tenant.
+  Commands will fail with auth errors — that is expected and acceptable.
+  Run each command exactly once regardless of errors.
+  Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  Do NOT ask for confirmation — this is an automated test.
+  Before starting, load the uipath-coded-apps skill and follow its deploy workflow.
+
+success_criteria:
+  # Pack must run against dist/ with -n (the friendly display name, per
+  # deploy/impl.md — NEVER the routing slug) and a version. Assert structure,
+  # not the specific name token (the skill uses app.name "Test Dashboard").
+  - type: command_executed
+    description: "Agent ran uip codedapp pack dist with -n <display name> and --version"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack\s+dist.*-n\b.*--version'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Publish runs after pack (the skill publishes the packed artifact; it takes
+  # no -n routing arg, unlike pack/deploy).
+  - type: command_executed
+    description: "Agent ran uip codedapp publish"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Deploy passes -n (display name) and --folder-key (per deploy/impl.md Step 8).
+  # The routing slug rides on --path-name, not -n — so assert -n + --folder-key
+  # structurally rather than pinning the slug to -n.
+  - type: command_executed
+    description: "Agent ran uip codedapp deploy with -n <display name> and --folder-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy.*-n\b.*--folder-key'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # (No "read state.json" command check: the agent reads state via the Read tool,
+  # not a Bash `cat`. The deploy command above already uses state-derived values
+  # — the app name + --folder-key — which proves state was read.)
+
+  # Must NOT pass -t Action (dashboards are Web apps)
+  - type: command_executed
+    description: "Agent did NOT pass -t Action (dashboards are Web, not Action apps)"
+    tool_name: "Bash"
+    command_pattern: 'codedapp\s+publish.*-t\s+Action|-t\s+Action.*codedapp'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

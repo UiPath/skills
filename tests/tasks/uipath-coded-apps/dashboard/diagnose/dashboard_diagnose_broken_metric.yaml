@@ -1,0 +1,98 @@
+task_id: uipath-coded-apps-dashboard-diagnose-broken-metric
+description: >
+  Diagnose-mode regression guard for the validate→read-errors→fix loop. A
+  dashboard project is seeded with a metric module that calls a non-existent SDK
+  method (Agents.getActiveAgentCount — fabricated). Building it triggers the
+  Stage-A typecheck failure / METRICS_RETRY path; the skill must read the error,
+  recognize the method doesn't exist, substitute the real read method
+  (Agents.getAll), and re-run to a clean tsc build. Guards the entire diagnose
+  surface (currently 0% covered): an agent that can't recover from a bad SDK
+  call — or that leaves the fabricated method in place — fails this.
+  Integration-tier: a full inline build + fix is too turn-heavy for the 40-turn
+  PR-smoke gate — runs nightly at 200 turns.
+tags: [uipath-coded-apps, integration, dashboard, mode:diagnose]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  - command: |
+      mkdir -p agent-health/metrics
+      unzip -oq "$SKILLS_REPO_PATH/skills/uipath-coded-apps/assets/fixtures/governance-dashboard-starter-kit.zip" -d agent-health
+      cat > agent-health/intent.json << 'EOF'
+      {
+        "schemaVersion": 2,
+        "dashboardName": "Agent Health",
+        "timeRange": "30d",
+        "projectDir": "agent-health",
+        "routingName": "agent-health",
+        "orgName": "codereval",
+        "tenantName": "DefaultTenant",
+        "cloudUrl": "https://alpha.uipath.com",
+        "apiUrl": "https://alpha.api.uipath.com",
+        "clientId": "",
+        "metrics": [
+          { "name": "active-agents-kpi", "tier": "T1", "title": "Active Agents", "displayAs": "kpi-card", "valueField": "value", "valueLabel": "active agents" }
+        ]
+      }
+      EOF
+      cat > agent-health/metrics/active-agents-kpi.ts << 'EOF'
+      import type { MetricFn } from '@/lib/metric-contract'
+
+      export const fetchData: MetricFn = async (sdk) => {
+        const { Agents } = await import('@uipath/uipath-typescript/agents')
+        const svc = new Agents(sdk as never)
+        // BUG (seeded): getActiveAgentCount does not exist on the Agents service.
+        const count = await svc.getActiveAgentCount()
+        return [{ value: count }]
+      }
+      EOF
+    timeout: 60
+    fail_on_error: true
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  The UiPath dashboard project in ./agent-health does not build — its active
+  agents metric fails. Diagnose the failure, fix the metric module, and get the
+  build to a clean pass.
+
+  This is a non-interactive automated test — there is NO user to consult. Work
+  the failure through to completion in this same session: do NOT stop to ask a
+  question, and do NOT end your turn until the build's TypeScript check passes.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The fix landed in the BUILT metric module — src/metrics/active-agents-kpi.ts,
+  # the copy the Stage-A typecheck compiles and the file the METRICS_RETRY error
+  # names. The fabricated method (getActiveAgentCount) is gone and the real read
+  # method (getAll) replaced it. Grades the diagnose outcome directly (recognizing a
+  # non-existent SDK call and swapping it for the real one) without requiring a full
+  # dashboard rebuild. Scoped to src/metrics/ on purpose: the agent fixes the file
+  # the build error points to; the authored source metrics/<name>.ts (a build input)
+  # may legitimately differ here. Full-build compilation is covered by full_e2e.
+  - type: run_command
+    description: "Built metric module fixed: fabricated method gone, real getAll present"
+    command: "sh -c 'F=$(find . -path \"*/src/metrics/active-agents-kpi.ts\" -not -path \"*/node_modules/*\"); test -n \"$F\" && ! grep -lq getActiveAgentCount $F && grep -lq getAll $F'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
