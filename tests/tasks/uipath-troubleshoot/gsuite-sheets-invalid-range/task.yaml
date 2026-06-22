@@ -1,0 +1,128 @@
+task_id: skill-troubleshooting-gsuite-sheets-invalid-range
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose responses
+  are the verbatim, scrubbed sub-agent outputs from the real session
+  (.local/investigations/raw/*.json). The most-recent Faulted job in folder
+  Shared (GSuite_SheetsInvalidRange, job d5e0e6b0-55b8-4256-8494-c601cb986dab)
+  ran a single GSuite Write Range activity that sent a malformed A1 range
+  (Sheet1!A0, row 0 — Sheets is 1-indexed) and got HTTP 400 "Unable to parse
+  range: Sheet1!A0" from the Sheets API. Success = the agent reaches the same
+  root cause as RESOLUTION.md: a server-side Sheets 400 on an unparseable A1
+  range, NOT a 404/connection/auth/null-input/transient failure.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, faithful-replay, rpa]
+
+# Inherits from experiments/default.yaml: model, permission_mode, plugins
+# ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides
+# specific to this scenario. This scenario is CLI-driven — the root cause is
+# fully contained in `or jobs get` Info, so there is no process/ snapshot.
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why did my last job from folder Shared fail?
+  (The user is logged in to UiPath alpha cloud via the uip CLI.)
+
+success_criteria:
+  # Binary tool-invocation check: confirms the right skill ran at all.
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  # Single comprehensive check graded on the agent's FINAL RESPONSE only
+  # (include_tool_calls: false) against the authoritative RESOLUTION.md.
+  - type: llm_judge
+    description: "Agent reached the same root cause as RESOLUTION.md: a Sheets API 400 on a malformed A1 range (Sheet1!A0)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: false
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md from the real investigation that troubleshot this exact
+      failing job. Treat it as the authoritative ground truth. Grade ONLY the
+      agent's final response to the user — not its tool calls or intermediate
+      files.
+
+      The user's request was:
+        "why did my last job from folder Shared fail?"
+
+      The agent had to find the most-recent Faulted job in folder Shared and
+      diagnose it from evidence. Grade three dimensions together:
+
+      DIMENSION A -- FAULT
+        Identifies the most-recent Faulted job in folder Shared:
+        job d5e0e6b0-55b8-4256-8494-c601cb986dab, process
+        GSuite_SheetsInvalidRange, failing in the GSuite "Write Range"
+        activity (UiPath.GSuite.Activities.WriteRangeConnections).
+
+      DIMENSION B -- CAUSE
+        The Write Range activity sent a malformed A1 range — `Sheet1!A0` —
+        to the Google Sheets API, which rejected it with HTTP 400
+        BadRequest: "Unable to parse range: Sheet1!A0". Row 0 is invalid
+        because Google Sheets is 1-indexed. This is a server-side range-parse
+        (400) failure that occurred AFTER the spreadsheet resolved and the
+        connection authenticated.
+
+        MUST-NOT-ATTRIBUTE list. Attributing the fault to ANY of these is
+        WRONG and caps the score at 0.0 for the cause:
+          - an HTTP 404 / resource-not-found (e.g. a missing spreadsheet/file)
+          - an invalid / inaccessible connection or an auth failure
+          - a null or empty input (the range is present, just malformed)
+          - rate limiting / HTTP 429 / throttling
+          - a transient 5xx / Google server error
+          - a per-request timeout
+
+      DIMENSION C -- RESOLUTION
+        Use a valid 1-based A1 range (e.g. `Sheet1!A1` or `Sheet1!A1:B2`), or
+        fix the off-by-one in dynamically-built range construction so the row
+        index is >= 1. NOT a connection re-auth, NOT a file-id fix, NOT a
+        transient retry.
+
+      ANTI-FABRICATION: penalize invented connection IDs, an invented
+      file-not-found, invented quota/scope settings, or any claim of an
+      outage. The connections are Enabled and valid; the only fault is the
+      Sheets 400 on the unparseable range.
+
+      SCORING RUBRIC (single score):
+        1.0  Correct job (names d5e0e6b0 / GSuite_SheetsInvalidRange, GSuite
+             Write Range) AND 400/unparseable-range cause (names "Unable to
+             parse range" / "Sheet1!A0" / row-0 / 1-indexed) AND correct fix
+             direction (use a valid 1-based A1 range / fix the off-by-one).
+        0.7  Cause is right (Sheets 400 on a malformed A1 range) but the fix
+             is vague, or the agent did not clearly name the specific job.
+        0.5  Identified the GSuite / Google Sheets surface but gave no
+             range-parse (400) cause, or proposed the wrong fix.
+        0.2  Recognized a failure but the wrong domain.
+        0.0  Wrong cause — especially attributing to anything on the
+             MUST-NOT-ATTRIBUTE list — or no conclusion.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+# Override experiments/default.yaml's 600s limit -- the multi-agent troubleshooting
+# skill (triage -> hypothesis-generator -> tester -> presenter) routinely takes
+# 10-20 minutes when sub-agents run sequentially.
