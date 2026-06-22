@@ -48,6 +48,10 @@ from pathlib import Path
 from typing import Iterable
 
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+# Dashless 32-char hex IDs (e.g. trace IDs) are positionals, same as dashed
+# UUIDs. Without this, an all-[a-f] hex ID that starts with a letter parses
+# as a kebab-case subcommand token and the shape walk reports a false BAD.
+HEX32_RE = re.compile(r"^[0-9a-fA-F]{32}$")
 HELP_TIMEOUT_S = 30
 
 
@@ -87,7 +91,7 @@ def tokenize_match(match: str) -> tuple[list[str], list[str], list[str]]:
             flags.append(t)
             if i + 1 < len(toks) and not toks[i + 1].startswith("-"):
                 i += 1
-        elif not in_args and UUID_RE.match(t):
+        elif not in_args and (UUID_RE.match(t) or HEX32_RE.match(t)):
             in_args = True
             positionals.append(t)
         elif not in_args and re.fullmatch(r"[a-z][a-z0-9-]*", t):
