@@ -259,6 +259,12 @@ uip solution resources add --source local --kind Asset --name ApiKey --type Text
 # Import an existing remote queue (folder disambiguates same-name resources)
 uip solution resources add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
 
+# Import a Data Fabric entity created in Orchestrator's Shared folder via `uip df entities create`
+uip solution resources add --source remote --kind Entity --name Customer --folder-path Shared --output json
+
+# Import the choice set referenced by that entity's CHOICE_SET_SINGLE field
+uip solution resources add --source remote --kind ChoiceSet --name CustomerStatus --folder-path Shared --output json
+
 # Skip RCS lookup if you already know the cloud key
 uip solution resources add --source remote --kind Queue --name InvoiceQueue \
     --cloud-key 8f3a1b2c-1234-4abc-9def-0123456789ab --output json
@@ -267,7 +273,7 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 | Option | Values | Default |
 |--------|--------|---------|
 | `--source <source>` | `local`, `remote` | **required** |
-| `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
+| `--kind <kind>` | Any kind RCS indexes (Queue, Asset, Bucket, Process, Connection, App, Index, Trigger, **Entity**, **ChoiceSet**). Case-insensitive; trimmed and lowerFirstChar-applied before persistence. Data Fabric kinds (`Entity`, `ChoiceSet`) must already exist on the tenant — create them first via `uip df entities create` / `uip df choice-sets create`, then import as `--source remote`; local virtual stubs are not supported for DF kinds | **required** |
 | `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
 | `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection). On `--source remote` it is inferred from the matched resource when omitted; pass it only to override | None |
 | `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
