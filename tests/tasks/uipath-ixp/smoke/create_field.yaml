@@ -11,7 +11,7 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  In the IXP project my_invoices-f1afa9ef-ixp, add a new field named "name"
+  In the IXP project my_invoices-f1afa9ef-ixp, add a new field named "email"
   to the "Subscriber information" group.
 
   Important:
@@ -22,9 +22,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent added the field via `fields add … --group … --field`"
+    description: "Agent added field \"email\" to \"Subscriber information\" via `fields add` (with --type and --instructions)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+fields\s+add\b(?=.*--group)(?=.*--field).*'
+    command_pattern: 'uip\s+ixp\s+fields\s+add\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--group\s+["'']?Subscriber information)(?=.*--field\s+["'']?email)(?=.*--type)(?=.*--instructions).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
