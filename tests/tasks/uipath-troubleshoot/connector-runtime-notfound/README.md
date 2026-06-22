@@ -13,10 +13,10 @@ runtime surfaces this as `RuntimeException` with error code **DAP-RT-1101** /
 **operation-level** failure (missing file / wrong ID) from a connection-resolution
 failure (`DAP-GE-*`), and recommend correcting the referenced file identifier.
 
-> **Live-anchored:** the error text (signature, `ProviderMessage`, stack frames) was
-> captured from a **real Google Drive connector execution** on alpha — a
-> `Get File or Folder` call against a live connection with a non-existent file ID.
-> Verbatim, not synthesized. The job envelope (key, folder) is the only synthetic part.
+> **Live-anchored:** built from a **real Orchestrator faulted job** on alpha — a
+> Google Drive `Get File or Folder` ConnectorActivity run by a robot against a live
+> connection with a non-existent file ID. The error text (signature, `ProviderMessage`,
+> stack frames) and the job envelope are verbatim from that job (identities scrubbed).
 
 ## Mock surface
 
