@@ -20,32 +20,18 @@ sandbox:
       path: ../e2e/fixtures
 
 initial_prompt: |
-  Compare IXP model versions on the live tenant. `--output json` on every
-  `uip ixp` command.
+  I want to compare model configurations on an invoice project. Use the tenant
+  I'm already signed into (check I'm logged in; don't re-authenticate): start a
+  project from the files in `./fixtures/` — import the taxonomy, upload the three
+  invoices — and let it train.
 
-  Setup:
-  1. `uip login status --output json` — do NOT re-login.
-  2. Create a project WITHOUT a taxonomy (unique title `ixp-int-ver-<random>`),
-     import `./fixtures/taxonomy.json`, upload the three `./fixtures/` invoices,
-     and wait for the first model version to train.
+  Note the scores for the current model. Then change the model configuration —
+  heavier table preprocessing, or a different model — and retrain so there's a
+  second trained version. Once both are trained, tell me which version scored
+  better and by how much, calling out the fields that moved. Then give me all the
+  trained versions ranked best-to-worst by score, with the score you used for each.
 
-  Produce a second version (A/B):
-  3. Read `list-models` and `get-metrics` for the current version (this is "A").
-  4. Change the model configuration with `configure-model` (e.g. escalate
-     `--preprocessing` to `table`, or switch `--model`), then retrain and wait
-     for a new version ("B").
-
-  Compare + rank:
-  5. Pull `get-metrics --model-version <A>` and `get-metrics --model-version <B>`.
-  6. Compare the two: report which version has the higher overall/line-item
-     score and which fields changed. State the delta.
-  7. Rank ALL trained versions by score: join `list-models` with per-version
-     `get-metrics` and print an ordered list (best → worst), citing the score
-     used for each.
-
-  Cleanup (final step): delete the project with `--confirm-data-loss`.
-
-  - Do NOT ask for approval or pause between steps.
+  Delete the project when you're done.
 
 success_criteria:
   - type: command_executed

@@ -21,35 +21,21 @@ sandbox:
       path: ../e2e/fixtures
 
 initial_prompt: |
-  Exercise IXP labelling correctness against the live tenant. `--output json` on
-  every `uip ixp` command.
+  Set up a trained invoice project so I can clean up its labelling. Use the
+  tenant I'm already signed into (check I'm logged in; don't re-authenticate):
+  start a project from the files in `./fixtures/` — import the taxonomy and
+  upload the three invoices — and give it time to train before looking at
+  predictions.
 
-  Setup:
-  1. `uip login status --output json` — do NOT re-login.
-  2. Create a project WITHOUT a taxonomy (unique title `ixp-int-lbl-<random>`),
-     import `./fixtures/taxonomy.json`, and upload the three invoices in
-     `./fixtures/` (`hp_tax_invoice.png`, `york_solutions_invoice.png`,
-     `csi_tower_invoice.png`). Wait for training to settle before reading
-     predictions (poll `list-models` / follow the skill's retrain-wait guidance).
-  3. Pick the document with the MOST `Invoice > Line Items` occurrences via
-     `get-predictions`. Note the 0-based occurrence order.
+  Then, on the invoice that has the most line items:
+  - I only want to confirm the FIRST line — the other rows look wrong, leave them.
+  - I noticed one amount was mis-read by OCR on a couple of the lines; fix just
+    that value across those lines in one go.
+  - Actually, scrap all of that — roll back everything I just confirmed.
+  - And there's one field that's genuinely not on the document at all; mark it
+    missing.
 
-  Checks (re-read `get-predictions` after each mutation to verify):
-  4. Per-occurrence: confirm ONLY occurrence 0 of `Invoice > Line Items`
-     (`confirm --group "Invoice > Line Items" --occurrence 0`). Verify occurrence
-     0 is confirmed and the others remain unconfirmed.
-  5. Corrections forwarding: in ONE batched `confirm --group "Invoice > Line Items"
-     --updates '[...]'` call, include a `corrections` entry for a field on two
-     different occurrences; verify the correction applied to BOTH occurrences,
-     not just one.
-  6. Rollback: `unconfirm` the fields from step 4–5; verify they return to
-     un-annotated.
-  7. mark-missing: choose a field that is genuinely absent / has no predicted
-     value and `mark-missing --fields <id>`; verify the call succeeds.
-
-  Cleanup (final step): delete the project with `--confirm-data-loss`.
-
-  - Do NOT ask for approval or pause between steps.
+  Clean up by deleting the project when you're done.
 
 success_criteria:
   - type: command_executed

@@ -23,37 +23,26 @@ sandbox:
       path: ../e2e/fixtures
 
 initial_prompt: |
-  Exercise the IXP taxonomy-editing lifecycle against the live tenant. Use
-  `--output json` on every `uip ixp` command.
+  I want to reshape an invoice project's taxonomy. Use the tenant I'm already
+  signed into (check I'm logged in; don't re-authenticate). Start a fresh project
+  from the files in `./fixtures/` — import the taxonomy in `taxonomy.json` rather
+  than letting it auto-suggest one.
 
-  Setup:
-  1. `uip login status --output json` — do NOT re-login; use the active tenant.
-  2. Create a project WITHOUT a taxonomy (unique title `ixp-int-tax-<random>`),
-     then import the bundled `./fixtures/taxonomy.json`. Capture the project Name.
+  Then walk through these edits, and after each one check it actually took:
+  - Add a new field group "Charges" with a couple of fields — don't fuss over the
+    types, just use whatever sensible types fit the project.
+  - Add another field, "Surcharge", to that group.
+  - Rename "Charges" to "Adjustments" — its fields should carry over.
+  - Rename one of the fields in it.
+  - Change one field's type — warn me first that it's destructive.
+  - Tweak the instructions on two fields at once, and include one field name that
+    doesn't exist — I want to see that name come back as unmatched, not a silent
+    failure.
+  - Tell me exactly how many fields are in "Adjustments", then delete the whole
+    group.
+  - Finally, show me the taxonomy still has the original invoice groups.
 
-  Edits (re-read `get-taxonomy` after each and confirm the change landed):
-  3. Add a new field group "Charges" with two fields where you do NOT specify a
-     type — let the skill choose sensible types that resolve against the
-     project's existing entity_defs. Confirm the fields exist with resolvable types.
-  4. Add a field "Surcharge" to "Charges".
-  5. Rename the field group "Charges" → "Adjustments"; confirm the new name and
-     that its fields are still present.
-  6. Rename a field within it; confirm the new field name.
-  7. Change one field's type with `fields change-type … --confirm-data-loss`;
-     confirm `get-taxonomy` shows the new type. (Warn about data loss first.)
-  8. Bulk `fields update-prompts --updates` for two fields PLUS one name that does
-     not exist; confirm the real fields' instructions changed in `get-taxonomy`
-     and the non-existent name is reported under `Unmatched` without failing.
-  9. Before deleting, state the ACCURATE number of fields in "Adjustments" that
-     will be lost (read it from `get-taxonomy`), then delete the group with
-     `groups delete … --confirm-data-loss`; confirm it's gone from `get-taxonomy`.
-  10. Round-trip check: `get-taxonomy` of this project, save it, and confirm it
-     still contains the original imported groups.
-
-  Cleanup (final step): delete the project with `--confirm-data-loss`. The task
-  is NOT complete until the project is deleted.
-
-  - Do NOT ask for approval or pause between steps.
+  When you're done, delete the project.
 
 success_criteria:
   - type: command_executed

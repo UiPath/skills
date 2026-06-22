@@ -21,28 +21,20 @@ sandbox:
       path: ../e2e/fixtures
 
 initial_prompt: |
-  Work against the live tenant. `--output json` on every `uip ixp` command.
+  Use the tenant I'm already signed into (check I'm logged in; don't
+  re-authenticate). Set up an invoice project from the files in `./fixtures/` —
+  import the taxonomy and upload the three invoices — and give it a friendly
+  title like "IxP Int Resolve <something>" so its title reads differently from
+  its internal name.
 
-  Setup:
-  1. `uip login status --output json` — do NOT re-login.
-  2. Create a project WITHOUT a taxonomy. Give it the TITLE `IxP Int Resolve <random>`
-     (a human-readable title, distinct from the generated Name slug). Import
-     `./fixtures/taxonomy.json` and upload the three `./fixtures/` invoices.
+  Now, I'll only refer to things by their human names — work the ids out yourself:
+  - Delete the file `york_solutions_invoice.png`. I'm giving you the filename, not
+    an id, so find it first.
+  - Then delete the first document still left in the list.
+  - Rename the project — I'll point to it by that title, so you'll need to find
+    its actual name first.
 
-  Resolution tasks — you are given human labels, NOT ids. Resolve them yourself:
-  3. "Delete the file `york_solutions_invoice.png`." Resolve the filename to its
-     DocumentId via `documents list` (do NOT pass the filename as the id), then
-     `documents delete <project> <DocumentId> -y`. Re-list and confirm it's gone.
-  4. "Delete the first remaining document in the list." Resolve list position →
-     DocumentId via `documents list`, then delete it (with `-y`). Confirm via re-list.
-  5. "Rename the project titled `IxP Int Resolve <random>` to a new title."
-     Resolve the TITLE to the project Name via `projects list` (the CLI needs the
-     Name slug, not the Title), then `projects update-title`.
-
-  Cleanup (final step): delete the project with `--confirm-data-loss` (resolve the
-  title → Name again if needed).
-
-  - Do NOT ask for approval or pause between steps.
+  Clean up by deleting the project at the end.
 
 success_criteria:
   - type: command_executed
