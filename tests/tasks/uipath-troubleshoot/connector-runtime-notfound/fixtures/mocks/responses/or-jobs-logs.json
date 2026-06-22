@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-19T13:02:10.770Z",
+      "Message": "Salesforce: Get Record: Request failed with error: The requested resource was not found.\r\nStatus code: NotFound. Error code: DAP-RT-1101.\r\nin AccountEnrichment.xaml\r\n    at ConnectorActivity \"Salesforce: Get Record\"\r\n    at Sequence \"AccountEnrichment\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.IntegrationService.Activities.Runtime.Exceptions.RuntimeException: Request failed with error: The requested resource was not found.\r\nStatus code: NotFound. Error code: DAP-RT-1101.\r\n   at UiPath.IntegrationService.Activities.Runtime.Services.ExecutionService.SendAsync(String requestUri, ExecutionParameters executionParameters, CancellationToken token)\r\n   at UiPath.IntegrationService.Activities.Runtime.Activities.ConnectorActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken token)"
+    }
+  ]
+}
