@@ -1,19 +1,29 @@
 # Authentication in UiPath Integration Service connectors
 
-A connector's authentication block tells Udon which auth flow to run
-when a tenant creates a connection. Two pieces are involved:
+A connector's authentication block tells Integration Service which auth flow to run when a
+tenant creates a connection. `auth set` writes all of it in one call: the **config entries**
+in `element.json → configuration[]` (one per credential/endpoint URL — these render the
+connection form AND drive the OAuth dance / API-key wiring) plus the **top-level fields**
+`authentication.type`, `typeOauth`, `elementMetadata.authenticationTypes` (which select the
+flow). The definition holds only the auth TYPE, endpoint URLs, and scopes — never real creds.
 
-1. **Config entries** in element.json `configuration[]`: every credential
-   or endpoint URL gets one entry. Udon uses these to render the
-   connection form AND to drive the OAuth dance / API-key wiring at runtime.
-2. **Top-level fields**: `authentication.type`, `typeOauth`,
-   `elementMetadata.authenticationTypes`. Together they select the flow.
+## SECURITY — secrets are never stored in the connector
 
-`auth set` writes all of these in one shot.
+Secret config keys (client secret, API key, password, token) are written by `auth set` as
+`type: PASSWORD`, `encrypt: true`, `isPrivate: true` — masked, encrypted at rest, redacted
+in responses. Rules:
 
-## Supported auth types
+- NEVER echo, `cat`, log, or print a secret value. `auth get` / `inspect` return the config
+  SHAPE, not the value — there is nothing to dump.
+- NEVER put a real secret in an example command. Use placeholders (`<CLIENT_ID>`, the
+  vendor's header name) — secret VALUES are not part of the connector at all.
+- The tenant user supplies `client id`, `client secret`, `api key`, etc. at connection time.
 
-All 14 auth types periodic recognises are supported:
+## Auth types (`auth set --auth-type`)
+
+All 14 types are supported. `init --auth` is sugar for the two most common (`oauth2`,
+`customApiKey`) at create time; everything else (and the full flag surface) goes through
+`auth set`.
 
 | auth-type               | Use when                                        |
 |-------------------------|-------------------------------------------------|
@@ -32,70 +42,120 @@ All 14 auth types periodic recognises are supported:
 | googleServiceAccount    | Google service-account JSON.                    |
 | rsaCertificate          | RSA private-key certificate.                    |
 
-OAuth/JWT types additionally accept a rich scope surface (--scope-options,
---required-scopes, --preselected-scopes, --scope-delimiter, --scope-hint-text,
---scope-screen-type) that builds an `oauth.scope` MULTISELECT. The scope
-option list can also be managed standalone with `auth scope set|add|delete`.
-
-OAuth2 and customApiKey are detailed below as the two most common flows. For the other
-types, the required flags are discoverable with `auth set --help` (or `describe auth set`);
-[configuration.md](configuration.md) §"Auth as configuration" lists the config key set for
-the common ones (basic, jwtOauth, awsv4, PKCE, client credentials).
+Per-type config key sets (which secrets, which URLs) are in
+[configuration.md](configuration.md) §"Auth as configuration".
 
 ## OAuth 2.0 (authorization_code)
 
-Required CLI arguments:
-- --authorization-url    Login/consent page (where the user grants access)
-- --token-url            Token exchange endpoint
-- --scope                Space-delimited scope string
+```bash
+uip is connectors builder auth set --auth-type oauth2 \
+  --authorization-url https://acme.com/oauth/authorize \
+  --token-url https://acme.com/oauth/token \
+  --scope 'read write'
+```
+- `--authorization-url`, `--token-url`, `--scope` are the core flags.
+- `--token-refresh-url` defaults to `--token-url`; `--token-revoke-url` is optional.
+- **Extra authorize query params need NO script** — append them to `--authorization-url`
+  directly; they are preserved verbatim. Use this for vendors that require a refresh-token opt-in
+  on the consent URL: Dropbox `?token_access_type=offline`, Zoho `?access_type=offline`,
+  Google `?access_type=offline&prompt=consent`.
+- A per-region/instance/workspace host belongs in the URL as `{placeholder}` (e.g.
+  `https://accounts.{environment}/oauth/v2/token`) — the CLI auto-seeds a backing config; see
+  [configuration.md](configuration.md) §"Templated hosts". No hook needed.
+- For refresh-token OAuth types (not client credentials), `auth set` also creates an
+  `oauthOnTokenRefresh` system resource pointing at the refresh URL.
 
-Optional:
-- --token-refresh-url    Defaults to --token-url
-- --token-revoke-url
+## OAuth / JWT scope surface (FLAGS on `auth set` — there is NO `auth scope` command)
 
-What gets written to element.json:
-- 16 OAuth2 config entries — full key list in [configuration.md](configuration.md) §"Auth as configuration".
-- `authentication = { "type": "oauth2" }`, `typeOauth = true`,
-  `elementMetadata.authenticationTypes` appends "oauth2".
-- A resources[] entry of type "oauthOnTokenRefresh" pointing at the refresh URL —
-  periodic calls this when the access token expires.
+When the vendor offers selectable scopes, pass them as flags on the SAME `auth set` call
+(or re-run with `--force`). They build the `oauth.scope` MULTISELECT entry:
+
+| Flag | Purpose |
+|------|---------|
+| `--scope <str>` | Space-delimited scope string (the default scope value). |
+| `--scope-options <json>` | JSON array of `{description,value}` selectable options. |
+| `--scope-options-file <path>` | Read `--scope-options` JSON from a file. |
+| `--required-scopes <csv>` | Scopes the user cannot deselect. |
+| `--preselected-scopes <csv>` | Scopes pre-checked by default. |
+| `--scope-delimiter <char>` | Scope separator (default: space). |
+| `--scope-hint-text <text>` | Hint shown under the scope selector. |
+| `--scope-screen-type <type>` | configScreenType for the scope entry (default: pre). |
+
+```bash
+uip is connectors builder auth set --auth-type oauth2 \
+  --authorization-url https://acme.com/oauth/authorize \
+  --token-url https://acme.com/oauth/token \
+  --scope 'read write' \
+  --scope-options '[{"description":"Read","value":"read"},{"description":"Write","value":"write"}]' \
+  --required-scopes read --preselected-scopes read,write
+```
 
 ## customApiKey
 
-Required:
-- --api-key-param-name   Vendor's header or query parameter name
-                         (e.g. 'X-API-Key', 'Authorization',
-                         'subscription-key'). Decided from vendor docs.
-
-Optional:
-- --api-key-location     'header' (default) or 'query'
-- --api-key-prefix       Literal prefix prepended to the key value (e.g.
-                         'Bearer '). Empty = no prefix.
-- --key-config-name      Internal config key. Defaults to 'custom.api.key'.
-                         Override with a vendor-meaningful name if your
-                         docs/parameter mappings reference a different
-                         name (e.g. 'subscription.key').
-- --key-config-display-name  UI label. Defaults to 'API Key'.
-
-Copy-paste (key sent in an `X-API-Key` header):
 ```bash
 uip is connectors builder auth set --auth-type customApiKey \
   --api-key-param-name X-API-Key --api-key-location header \
-  --validation-vendor-path /me        # provisionAuthValidation is REQUIRED for static auth (no token exchange)
+  --validation-vendor-path /me      # provisionAuthValidation (see below) — recommended for static auth
 ```
-What `auth set` writes (the secret config entry, the `type:"value"` mapping parameter, and
-`authentication.type`/`typeOauth`) is documented once in [configuration.md](configuration.md)
-§customApiKey — this section owns only the CLI flow and flags.
+- `--api-key-param-name` (required): vendor header/query name (`X-API-Key`, `Authorization`,
+  `subscription-key`) from vendor docs.
+- `--api-key-location`: `header` (default) or `query`. `--api-key-prefix`: literal prefix
+  prepended to the value (e.g. `Bearer `).
+- `--key-config-name`: internal config key (default `custom.api.key`). `--key-config-display-name`:
+  UI label (default `API Key`).
+
+What it writes (the PASSWORD secret entry + the `type:"value"` parameter mapping
+`${configuration.<name>}` into the vendor header/query): [configuration.md](configuration.md) §"Auth as configuration".
+
+## Multiple credential headers (any auth type) — `--auth-header` / `--secret-auth-header`
+
+Some vendors authenticate with SEVERAL static headers (e.g. iContact: `API-AppId`, `API-Username`,
+`API-Password`, `API-Version`). `auth set` (esp. with `--auth-type custom`) takes repeatable flags —
+no script, no `state patch`:
+
+```bash
+uip is connectors builder auth set --auth-type custom \
+  --auth-header AppID=API-AppId \
+  --auth-header api.username=API-Username \
+  --secret-auth-header api.password=API-Password
+```
+
+Each `ConfigName=VendorHeader` writes a `pre`/required config entry (`--secret-auth-header` makes it a
+PASSWORD/encrypted) plus a global `${configuration.<ConfigName>}` → vendor-header parameter. The tenant
+user fills each on the connection form. Static (non-credential) headers like `API-Version` or
+`Content-Type` go through `init --header VendorName=value` (a `type:"value"` param). Bespoke config keys
+ARE accepted by the backend (the catalogue connectors use them) — just declare them through these flags
+rather than hand-editing `configuration[]`.
+
+## Auth-validation probe (any type)
+
+`--validation-vendor-path <path>` (with optional `--validation-method`, default GET) seeds
+a `provisionAuthValidation` system resource — one read-only call at connection creation that
+rejects bad creds immediately. The probe must be read-only and must not change vendor data,
+so keep it GET. Static auth (`customApiKey`, `personalAccessToken`, `basic`, `awsv4`) has no
+token exchange to catch bad creds, so this is effectively required there; `validate` warns
+when it is missing. Details: [system-resources.md](system-resources.md) §provisionAuthValidation.
+
+## System (lifecycle) resources — `auth system`
+
+Lifecycle/auth-flow endpoints with no SR file (provisionAuthValidation, onProvision,
+oauthOnTokenRefresh, …) are wired with `auth system create --type <type>` / `auth system list`.
+The full type list, override-path rules, and flags: [system-resources.md](system-resources.md).
+
+## Base URL derived from a token response (e.g. Salesforce `instance_url`)
+
+There is NO vendor-specific base-url flag (`init --base-url` is STATIC only). When the vendor
+returns the API host in its token response, it is skill-guided: a `postRequest` hook reads +
+validates the host (https scheme, non-empty), then `state patch` persists it. Full pattern:
+[hooks.md](hooks.md) §"Base URL from a token-exchange response".
 
 ## Re-running auth set
 
-`auth set` is idempotent on identical inputs — re-running with the
-same arguments returns `unchanged`. If any existing entry would be
-modified by the new inputs, it fails with a `configConflict` error
-listing every diff. Use `--force` to apply.
+Idempotent on identical inputs (returns `unchanged`). If a new input would modify an
+existing entry, it fails with a `configConflict` listing every diff — re-run with `--force`
+to apply. Use this to swap an existing connector's auth type.
 
 ## See also
-
-- [configuration.md](configuration.md) — config keys per auth type
+- [configuration.md](configuration.md) — config keys per auth type, widget/screen types
 - [system-resources.md](system-resources.md) — auth-validation, token-refresh overrides
-- [element-json.md](element-json.md) — what scaffold produces
+- [element-json.md](element-json.md) — element.json structure and the authentication block

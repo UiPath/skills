@@ -1,210 +1,175 @@
 ---
 name: uipath-connector-builder
-description: "UiPath Integration Service connector authoring (REST+JSON). Always invoke for `element.json`, `element-metadata.json`, `standard-resources/*.json`, or a `periodic-uipath-*` connector repo. Build on disk via `uip is connectors builder`: scaffold a connector, configure auth (any of 14 types), add resources/fields/params/methods, write JS pre/post hooks, add polling events, manage config and system resources, validate, and pull/push to a tenant. For operating a published connector (connections, ping, run an activity)→uipath-platform. For .flow connector nodes→uipath-maestro-flow."
+description: "UiPath Integration Service connector authoring (REST+JSON) on disk via `uip is connectors builder`. Triggers on `element.json`, `element-metadata.json`, `standard-resources/*.json`, a `periodic-uipath-*`/`periodic-design-*` connector repo, or any request to build/edit an IS connector: init the connector shell, configure auth (14 types via `auth set`), add activities with fields/params/methods/hooks, wire polling/webhook triggers, add auth-system resources, inspect, validate, and surgically read/write files via state. Import + publish live on the parent `uip is connectors` (need `uip login`). NOT for operating a published connector — connections, ping, run an activity→uipath-platform; NOT for `.flow` connector nodes→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
 # Connector Builder
 
-Author UiPath Integration Service connectors on disk with the `uip is connectors builder` CLI. A connector is a `periodic-*` repo (`periodic-uipath-{vendor}-{product}` for official, `periodic-design-{org}-{slug}` for custom/design — `scaffold --organization <ORG>` produces the `design-{org}-{slug}` element key) whose core is `app/element/element.json` plus `standard-resources/*.json` and JavaScript `hooks/`. Connectors wrap **REST APIs that return JSON only** — no SOAP, GraphQL, or XML.
+Author UiPath Integration Service connectors on disk with `uip is connectors builder`, then `import` + `publish` them through the parent `uip is connectors`. A connector is a `periodic-*` repo (`periodic-uipath-{vendor}-{product}` for official; `periodic-design-{org}-{slug}` for custom — `init` derives the `design-{org}-{slug}` element key from `--name` + `--organization`) whose core is `app/element/element.json` plus `standard-resources/*.json` and JavaScript `hooks/`. Connectors wrap **REST APIs that return JSON only** — no SOAP, GraphQL, or XML. Terminology: the authoring noun is **activity** (it maps to an element.json resource + a standard-resource file).
 
 ## When to Use This Skill
 
-- Creating a new connector from a vendor's API docs (scaffold → auth → resources → validate).
-- Editing an existing connector: adding endpoints/resources, fields, parameters, or methods.
+- Creating a new connector from a vendor's API docs (init → auth → activities → validate → import → publish).
+- Editing an existing connector: adding activities, fields, parameters, methods, or hooks.
 - Configuring or switching authentication (OAuth2, PKCE, client credentials, API key, basic, JWT, AWS v4, etc.).
 - Writing or fixing JavaScript request/response hooks.
-- Adding polling events to a resource.
-- Debugging a connection, resource, hook, or polling problem in `element.json` / a standard-resource file.
-- Validating a connector before release, or pulling/pushing a design connector to a tenant.
+- Wiring a polling or webhook trigger on an existing activity.
+- Debugging a connector, activity, hook, or trigger problem in `element.json` / a standard-resource file.
+- Validating before release, or pulling/pushing a design connector to a tenant.
 
 ## Critical Rules
 
-1. **Inspect before editing.** On any existing connector, run `connector inspect` first to map auth, config, resources, hooks, and events. Never edit blind.
-2. **Validate before you finish.** Run `connector validate` at the end of every workflow, and after each fix while debugging. It runs the full periodic check set and exits non-zero on failure. On failure, read the reported field, fix that specific entry, re-validate. After 3 failed attempts on the same error, stop and surface the `validate` output to the user — do not keep guessing.
-3. **`auth set` owns all authentication.** It writes the config entries, `authentication.type` / `typeOauth` / `authenticationTypes`, and — for refresh-token OAuth types (not client credentials) — the `oauthOnTokenRefresh` resource, in one call. Never hand-roll auth via `config create`.
-4. **`resource create` writes both sides in one call** — the standard-resource file AND the `element.json` resource entries. Pass `--skip-sr` (or use `resource system create`) only for system resources that need no SR file.
-5. **To edit one config field, `state query` the entry then `state patch` the COMPLETE object back with that field changed.** `state patch` REPLACES the whole node at the pointer (it does not merge), so any field you omit is dropped. Do NOT use `config create --force` to edit — it resets omitted fields to their defaults (e.g. `internal`, `hide`, `displayOrder`). Use orchestrator verbs (`resource create`, `auth set`, ...) for creation. Resource paths in `state` pointers are URL-encoded: `/contacts` → `%2Fcontacts`.
-6. **Never invent config keys, resource paths, or IDs.** Read the current state first (`connector inspect`, `state query`, `config list`, `resource list`) before writing.
-7. **Connector targeting.** Run builder commands from inside the connector directory — the CLI walks up from the cwd, then scans immediate subdirectories (this is why the examples omit the flag). Pass `--connector-dir <PATH>` to target one explicitly; required when multiple connectors are nearby or you run from elsewhere.
-8. **Output is the `{Result, Code, Data}` envelope.** Add `--output json` when you need to parse output. Never suppress stderr.
-9. **`remote import` / `remote get` need `uip login`.** Authenticate before any tenant pull/push.
-10. **One hook file per resource+method+phase.** Duplicate logic rather than sharing a file. Prefer a `type:"value"` parameter with `${configuration.<key>}` interpolation over a hook for static header/auth injection.
+1. **Inspect before editing.** On any existing connector, run `builder inspect` first to map auth, config, activities, hooks, and triggers. Never edit blind. Never invent config keys, activity paths, or IDs — read state first (`inspect`, `activity list`, `state query`).
+2. **Validate before you finish.** Run `builder validate` at the end of every workflow and after each fix — it runs the full periodic check set and exits non-zero on failure. On failure, read the reported field, fix that one entry, re-validate. After 3 failed attempts on the same error, stop and surface the `validate` output — don't keep guessing.
+3. **`auth set` owns all authentication.** It writes the config entries, `authentication.type` / `typeOauth` / `authenticationTypes`, and the token-refresh resource in one call. Define scopes here too (`--scope`, `--scope-options`, `--required-scopes`, `--preselected-scopes`) — there is no separate scope command. `init --auth oauth2|customApiKey` is inline sugar for the create-time common case; everything else goes through `auth set`. Never hand-roll auth via `state patch`.
+4. **`activity create` writes both sides in one call** — the standard-resource file AND one `element.json` entry per method. Re-running on an existing activity appends/merges. Pass `--skip-sr` (or use `auth system create`) only for system resources that need no SR file. Model `GETBYID`/`PATCH`/`DELETE` only for TRUE by-id endpoints (the `/{primaryKey}` path param is added automatically) — never for search.
+5. **`state patch` REPLACES the whole node at a pointer (no merge).** To change one field: `state query` the entry, edit it, then `state patch` the COMPLETE object back. `element-metadata.json` has no addressable sub-paths — round-trip the whole file. Activity paths in pointers are URL-encoded: `/contacts` → `%2Fcontacts`. Use the dedicated authoring verbs for creation, not `state patch`.
+6. **Connector targeting.** Builder verbs walk up from the cwd, then scan immediate subdirectories — run from inside the connector dir, or pass `--connector-dir <PATH>` to target one explicitly (required when multiple connectors are nearby). `import` / `download` use `--connector-dir` too.
+7. **Output is the `{Result, Code, Data}` envelope.** Add `--output json` to parse it. Failures exit non-zero. Never suppress stderr.
+8. **`import` / `download` / `publish` need `uip login`.** Authenticate before any tenant pull/push.
+9. **Never echo, log, or hard-code a secret.** Secret config keys (client secret, API key, password, token) are written by `auth set` as encrypted PASSWORD fields. End users supply real credentials at connection time; the connector holds only the auth TYPE + endpoint URLs + scopes. Use placeholders in every example command.
+10. **One hook file per activity+method+phase.** Duplicate logic rather than sharing a file. Hook JS is ES5/ES6 (the Denali engine) — no optional chaining `?.`. Prefer a `type:"value"` parameter with `${configuration.<key>}` interpolation over a hook for static header/auth injection.
 
-## Workflow
+## Workflows
 
-Each workflow is an ordered sequence of copy-paste-ready commands.
+Each workflow is an ordered sequence of copy-paste-ready commands. Use placeholders (`<ORG>`, `https://api.example.com`) — never real secrets.
 
-### New connector
+### New connector (full lifecycle)
 ```bash
-uip is connectors builder connector scaffold --name 'Acme Widgets' --description 'Acme Widgets connector'
-uip is connectors builder auth set --auth-type oauth2 \
+# 1. Scaffold the shell. --name is required when creating; key + folder are derived.
+uip is connectors builder init --name 'Acme Widgets' --organization <ORG> \
+  --description 'Acme Widgets connector' --categories 'CRM,Sales and marketing' \
+  --base-url https://api.acme.com --auth oauth2 \
   --authorization-url https://acme.com/oauth/authorize \
-  --token-url https://acme.com/oauth/token \
-  --scope 'read write' \
-  --scope-options '[{"value":"read"},{"value":"write"}]' \
-  --validation-vendor-path /me                            # seeds a provisionAuthValidation probe (recommended)
-uip is connectors builder global set --accept-type application/json --content-type application/json --paginator-version 2
-uip is connectors builder resource create --name accounts --methods GET,POST,PATCH,DELETE \
-  --vendor-path /v1/accounts --primary-key id
-uip is connectors builder metadata set --categories 'CRM,Sales and marketing'   # values must be from the approved list
-# Fill the vendor base URL (base.url exists empty after scaffold) so validate doesn't warn:
-uip is connectors builder config create --key base.url --name 'Base URL' \
-  --type TEXTFIELD_1000 --default-value https://api.acme.com --force
-uip is connectors builder connector validate   # run LAST — must be Errors:0
-# validate reports Errors (block release) AND Warnings (recommended, non-blocking). The only
-# Warning left here is oauth.scope — set its default to the vendor's scopes. Warnings don't fail.
-```
+  --token-url https://acme.com/oauth/token --scope 'read write'
+#   --categories must be approved DISPLAY-NAME values (e.g. 'CRM', 'Sales and marketing',
+#   'Collaboration', 'Productivity', 'E-commerce') — NOT lowercase slugs like `crm,sales`.
+#   Validated at init AND `validate`: wrong case is canonicalized, an unknown value fails fast
+#   and the error lists the approved enum. init seeds element-metadata.json:latestVersion = "1.0.0".
 
-### Add a resource
+# 2. Add an activity (writes element.json entries + standard-resources/accounts.json).
+uip is connectors builder activity create --name accounts --vendor-path /v1/accounts \
+  --methods GET,GETBYID,POST,PATCH,DELETE --primary-key id --has-ceql
+
+# 3. Add UI fields (visibility flags apply to every --method listed; re-runs merge).
+uip is connectors builder activity field create --resource accounts --name email \
+  --type string --method GET --method POST --response
+
+# 4. Validate — must be 0 errors before import.
+uip is connectors builder validate
+
+# 5. Import (create-or-update on the tenant) then publish.
+uip login
+uip is connectors import
+uip is connectors publish --wait        # polls to SUCCESS/FAILURE; visible in Studio Web ~5-10 min
+```
+Publishing a NEW connector needs no `--version` (init seeded `1.0.0`). **Re-publishing** an existing connector requires a HIGHER version — bump `element-metadata.json:latestVersion` (or pass `--version 1.0.1`); the server rejects an equal version.
+
+### Add an activity to an existing connector
 ```bash
-uip is connectors builder connector inspect --output json
+uip is connectors builder inspect --output json     # map what exists first
 # research the vendor API, then:
-uip is connectors builder resource create --name contacts --methods GET,GETBYID,POST \
-  --vendor-path /v1/contacts --primary-key id --fields-file ./contacts-fields.json
-uip is connectors builder hook create --resource-name contacts --method GET --hook-type postRequest \
-  --custom-code-file ./unwrap.js                                   # optional
-uip is connectors builder connector validate
+uip is connectors builder activity create --name contacts --vendor-path /v1/contacts \
+  --methods GET,GETBYID,POST --primary-key id --fields-file ./contacts-fields.json
+uip is connectors builder activity field create --resource contacts --name status \
+  --type string --method GET --response --searchable
+uip is connectors builder activity hook create --resource-name contacts --method GET \
+  --hook-type postRequest --transform-body          # optional response shaping
+uip is connectors builder validate
 ```
 
-### Pull resources from the SR cache
-Cache holds StandardResource artifacts for this connector (authored by `uip is resources
-standardize`). `sync-from-cache` writes ONLY `app/element/standard-resources/*.json` (NOT
-element.json) and normalizes each SR — path rewrite to the IS slug + auto-curation
-([references/standard-resources.md](references/standard-resources.md) §Cache-sync normalization).
-
-**Triage before mutating.** If a connector with this key already exists on the tenant, pull it and compare against the cached SRs so the user can pick add / rename / replace per activity:
+### Pull activities from the SR cache
+The cache holds StandardResource artifacts authored by `uip is resources standardize`. `activity sync-from-cache` writes ONLY `app/element/standard-resources/*.json` (not element.json). For each NEW object it surfaces, run `activity create` (idempotent upsert — never run it for objects you mean to keep separate). Depth: [references/standard-resources.md](references/standard-resources.md).
 ```bash
-uip login --output json                                  # all remote get/import/publish calls need it (Rule 9)
-uip is connectors builder remote get <ELEMENT_KEY> --output json
-#   404 → net-new connector. Run scaffold + the pipeline below.
-#   200 → existing connector. Pull files and inspect before any mutation:
-uip is connectors builder remote get <ELEMENT_KEY> --include files --output json
-uip is connectors builder resource list --output json    # activities already on it
-# For each cached object that matches one on the connector, ask the user (AskUserQuestion):
-# keep both (rename to <NAME>_v2) / replace / skip. If unsure, ask — see Anti-patterns.
+uip is connectors builder inspect --output json
+uip is connectors builder activity sync-from-cache --output json
+uip is connectors builder activity create --name <OBJECT> --vendor-path <VENDOR_PATH> --methods <VERBS>
+uip is connectors builder validate
 ```
 
-Then run the pipeline:
+### Add a polling (or webhook) trigger
+The target activity must already exist and have an SR file (`trigger create` hard-fails otherwise).
 ```bash
-uip is connectors builder connector inspect --output json        # confirm scaffold + element.json:key
-uip is connectors builder resource sync-from-cache --output json
-#   --connection-id <ID> | --object-name <OBJECT> to scope; --dry-run to preview
-#   --overwrite ONLY when the user confirmed Replace in triage; --no-curate for the generic shape
-# resource create each NEW object only (<OBJECT> from sync output, <VENDOR_PATH> from the SR).
-# It is an idempotent upsert that OVERWRITES — never run it for keep-both/skip objects (Anti-patterns):
-uip is connectors builder resource create --name <OBJECT> --methods <VERBS> \
-  --vendor-path <VENDOR_PATH>                                     # auto-curates; --no-curate to opt out
-uip is connectors builder connector validate
-# Push design-state, then promote to a tenant-wide CUSTOM connector:
-uip is connectors builder remote import --output json
-uip is connectors builder remote publish --output json           # fire-and-forget; returns { PublishId }
-#   add --wait to poll, or check later: remote publish-status <PUBLISH_ID>
-#   Studio Web shows the connector ~5-10 min later.
+uip is connectors builder activity list --output json    # confirm the activity exists
+uip is connectors builder trigger create --resource-name accounts --event-kind polling \
+  --updated-date-field LastModifiedDate --id-field Id     # seeds the event config + hasEvents flag
+uip is connectors builder validate
 ```
+`--event-kind` is `polling | webhook | all` (default `polling`); it folds the old event preset. Depth: [references/events.md](references/events.md).
 
-### Add or customize a curated activity (a method shown as a standalone Studio activity)
-`resource create` and `resource sync-from-cache` auto-curate every method by default (see
-[references/standard-resources.md](references/standard-resources.md) §`curated`). Use `method curate`
-below only to override the auto-generated activity name/displayName, or to curate a method created
-with `--no-curate`:
+### Customize a curated activity
+`activity create` auto-curates every method into a standalone Studio activity by default (opt out with `--no-curate`). Use `method curate` only to override the generated name/displayName, or to curate a `--no-curate` method.
 ```bash
-uip is connectors builder connector inspect --output json
-uip is connectors builder resource method curate --resource cases --method GET \
+uip is connectors builder activity method curate --resource cases --method GET \
   --display-name 'Get Support Request'
-uip is connectors builder resource field create --resource cases --name subject --type string \
-  --method GET --response --response-curated --design-position primary   # base --response + the curated flag
-uip is connectors builder connector validate
+uip is connectors builder activity field create --resource cases --name subject --type string \
+  --method GET --response --response-curated --design-position primary
+uip is connectors builder validate
 ```
 
 ### Debug
 ```bash
-uip is connectors builder connector inspect --output json
-# Read the WHOLE entry, change ONLY the field at fault, then patch the COMPLETE object back —
-# state patch REPLACES the node (omitted fields are dropped), so copy every field from the query.
-# (Do NOT use config create --force here: it resets omitted fields like internal/hide/displayOrder.)
+uip is connectors builder inspect --output json
+# state patch REPLACES the node — query the WHOLE entry, change ONLY the field at fault, patch it ALL back:
 uip is connectors builder state query element.json/configuration/oauth.token.url --output json
 uip is connectors builder state patch element.json/configuration/oauth.token.url \
-  --value '<the full entry from the query above, with defaultValue set to the correct token URL>'
-uip is connectors builder connector validate
-# If validate keeps failing, follow Critical Rule 2: fix the reported field, re-validate, stop after 3 attempts.
+  --value '<full entry from the query above, with defaultValue corrected>'
+uip is connectors builder validate
+```
+For a derived base URL (e.g. Salesforce `instance_url` from the token response): compose a `postRequest` hook (`activity hook create`) + `state patch`, and VALIDATE the derived URL (https scheme, non-empty host) before use — there is no vendor-specific base-url flag, only the static `init --base-url`. Investigation checklists: [references/debugging.md](references/debugging.md).
+
+## Command Map
+
+```text
+uip is connectors                      # tenant/catalog + design-connector lifecycle (needs `uip login`)
+  list | get <key> | swagger <key> | export <key> | audit-logs | event-operations
+  download <key> | import | publish | publish-status <id> | probe
+  builder                              # author a connector ON DISK
+    init                               # create-or-EDIT the connector shell in ONE verb
+                                       #   (folds the old scaffold / metadata / global / base+pagination preset)
+        preset apply --kind base|pagination
+        header delete <vendorName>
+    auth     set | get | system (create|list)
+    activity create | list | get | delete
+             field  (create|list|get|delete)
+             method (get|set|curate)
+             param  (create|list|get|delete)
+             hook   (create|list|get|delete)
+             sync-from-cache
+    trigger  create                    # --event-kind polling|webhook|all (folds the event preset + polling)
+    inspect                            # read-only whole-connector rollup
+    validate                           # full check set; exits non-zero on failure
+    state    query <pointer> | patch <pointer>
 ```
 
-### Review
-```bash
-uip is connectors builder connector inspect --output json
-uip is connectors builder connector validate
-# walk the checklist in references/debugging.md (auth, metadata, resources, params, hooks, events), then apply fixes
-```
-
-### Add polling events
-```bash
-uip is connectors builder resource list --output json    # the target resource (e.g. accounts) must already exist
-uip is connectors builder config preset create --kind event --event-type polling
-uip is connectors builder event polling add --resource-name accounts \
-  --updated-date-field LastModifiedDate --id-field Id   # also wires the hasEvents flag
-uip is connectors builder connector validate
-```
-
-### Publish to a tenant
-```bash
-uip login --output json                                  # if not already authenticated
-uip is connectors builder connector validate
-uip is connectors builder remote import --output json    # create first time, update by key after
-uip is connectors builder remote publish --output json   # promote to tenant-wide CUSTOM; returns { PublishId }
-#   add --wait to poll, or check later: remote publish-status <PUBLISH_ID>
-# pull a tenant connector for local editing:
-uip is connectors builder remote get <CONNECTOR_KEY> --include files --output json
-```
+`publish` returns a `PublishId`; `--wait` polls to SUCCESS/FAILURE (timeout via `--timeout-seconds`, default 600); check later with `publish-status <id>` (positional). Status enum: `IN_PROGRESS | SUCCESS | FAILURE`.
 
 ## Reference Navigation
 
-Depth lives in `references/` below — self-contained, no dependency on the CLI to supply it. For live discovery: `uip is connectors builder describe [<NOUN>]` lists the tool catalog (args, invariants, related topics); `uip is connectors builder <NOUN> <VERB> --help` is the always-current flag source.
+Depth lives in `references/` — each self-contained. SKILL.md owns the workflows, command map, and rules above; references must not repeat them. The always-current flag source is `uip is connectors builder <noun> <verb> --help`.
 
 | Task → read this | Reference |
 |---|---|
-| Understand what a connector is, file layout, the CRUD/curated/HTTP activities | [references/overview.md](references/overview.md) |
+| What a connector is, file layout, the CRUD/curated/HTTP activity model | [references/overview.md](references/overview.md) |
 | element.json internals: top-level fields, resources[], parameters[], value interpolation, hook order | [references/element-json.md](references/element-json.md) |
 | Standard-resource files: linking, metadata.method, curated, fields (visibility/design/searchable) | [references/standard-resources.md](references/standard-resources.md) |
 | configuration[] entries: widget types, screen types, per-auth key sets, pagination + event keys | [references/configuration.md](references/configuration.md) |
-| System resources: auth-validation, onProvision/onDelete, OAuth token overrides, webhook hooks | [references/system-resources.md](references/system-resources.md) |
+| Authentication setup: all 14 auth types and the OAuth/JWT scope surface | [references/auth.md](references/auth.md) |
+| Auth-system resources: auth-validation, onProvision/onDelete, OAuth token overrides | [references/system-resources.md](references/system-resources.md) |
 | Writing JS hooks: execution order, context vars, done(), naming, common patterns | [references/hooks.md](references/hooks.md) |
-| Polling and webhook events: config keys, event.poller.configuration schema | [references/events.md](references/events.md) |
-| Debugging auth / resource / hook / event / pagination issues (investigation workflow + checklists) | [references/debugging.md](references/debugging.md) |
-| Authentication setup: all 14 auth types and the OAuth scope surface | [references/auth.md](references/auth.md) |
-
-### Command map
-
-```text
-uip is connectors builder
-  connector   scaffold | inspect | validate
-  remote      get [key] | import | publish | publish-status   # tenant pull/search, push, promote (needs `uip login`)
-  metadata    get | set
-  global      set | header (create|list|delete)
-  auth        set | get | scope (set|add|delete)
-  config      list | get | create | delete | preset create
-  resource    list | get | create | delete | sync-from-cache
-              field  (list|get|create|delete)
-              method (get|set|curate)
-              param  (list|get|create|delete)
-              system (create|list)
-  hook        list | get | create | delete
-  event       polling add
-  state       query <POINTER> | patch <POINTER>  # surgical read/write at a structured path
-  reference   list | get <TOPIC>
-  describe    [<NOUN>]
-```
+| Polling and webhook triggers: config keys, event.poller.configuration schema | [references/events.md](references/events.md) |
+| Debugging auth / activity / hook / trigger / pagination issues (workflow + checklists) | [references/debugging.md](references/debugging.md) |
 
 ## Anti-patterns
 
-Highest-cost mistakes (each maps to a Critical Rule above):
-
-1. Editing without `connector inspect` first (Rule 1) — you'll invent keys/paths that don't exist.
-2. Hand-rolling auth with `config create` instead of `auth set` (Rule 3) — leaves the auth block inconsistent.
-3. Editing a config entry with a partial value (Rule 5) — `state patch` REPLACES the whole node (drops omitted fields), and `config create --force` RESETS omitted fields to defaults. To change one field, `state query` the entry and `state patch` the complete object back with only that field changed.
-4. Running `resource create` for an object marked keep-both/skip in triage — it is an idempotent upsert that OVERWRITES (it does NOT error), clobbering the existing activity.
-5. `sync-from-cache --overwrite` without explicit user confirmation — silently replaces SR files.
-6. Wrong auth flags: `--options` (use `--scope-options`), `remote get --key` (positional `[key]`), `remote publish --background` (it's fire-and-forget; use `--wait`).
-7. Non-ES5 hook syntax (optional chaining `?.`, etc.) — the Denali engine is ES5/ES6.
+1. Editing without `builder inspect` first (Rule 1) — you'll invent keys/paths that don't exist.
+2. Hand-rolling auth via `state patch` instead of `auth set` (Rule 3) — leaves the auth block inconsistent.
+3. Editing a config entry with a partial value (Rule 5) — `state patch` REPLACES the node, dropping omitted fields. Query the whole entry and patch the complete object back.
+4. Running `activity create` for an object you meant to keep separate during cache-sync triage — it's an idempotent upsert that OVERWRITES; it does not error.
+5. Modeling `GETBYID` for a search/list endpoint (Rule 4) — by-id verbs auto-add the `/{primaryKey}` param; reserve them for true single-record reads.
+6. Putting a real secret in an example or expecting the connector to store one (Rule 9) — secrets are PASSWORD fields supplied at connection time.
+7. Re-publishing without bumping the version — the server rejects an equal version; bump `latestVersion` or pass `--version`.
 8. Invented `--categories` values — they must come from the approved enum; `validate` reports the list.
-9. One hook file shared across resource+method+phase (Rule 10) — duplicate the file instead.
+9. Non-ES5/ES6 hook syntax (optional chaining `?.`, etc.), or one hook file shared across activity+method+phase (Rule 10) — duplicate the file instead.
+10. Reaching for a removed command — there is no `connector scaffold/inspect/validate` wrapper (use `init`/`inspect`/`validate` directly), no `global`/`metadata`/`config`/`resource*`/`event polling add`/`auth scope`/`remote*`/`describe`/`reference`.
