@@ -10,8 +10,8 @@ It writes the `.js` file under `hooks/` and registers the reference in element.j
 `--no-auto-register`.
 
 ```bash
-# resource-scoped post hook (unwrap a response array)
-uip is connectors builder activity hook create --resource-name Account --method GET \
+# resource-scoped post hook (unwrap a response array) — use the resource name as created
+uip is connectors builder activity hook create --resource-name accounts --method GET \
   --hook-type postRequest --wrap-array
 
 # global pre hook from a JS file
@@ -37,11 +37,13 @@ Files in `app/element/hooks/*.js`; registered in element.json `resources[].hooks
 ## Hook reference object
 
 ```json
-{"type": "preRequest", "mimeType": "application/javascript", "ref": "resource-Account-GET-preRequest.js", "contextParams": "request_vendor_body"}
+{"mimeType": "application/javascript", "type": "preRequest", "bodyOrRef": true, "ref": "resource-accounts-GET-preRequest.js", "contextParams": "request_body_map,request_vendor_body"}
 ```
-`type` (`preRequest` / `postRequest`), `mimeType` (always `application/javascript`),
-`ref` (filename in `hooks/` — the canonical link), `contextParams` (comma-separated
-context vars), `isLegacy` (false).
+`mimeType` (always `application/javascript`), `type` (`preRequest` / `postRequest`),
+`bodyOrRef` (always `true` — the hook body lives in the referenced file, not inline), `ref`
+(filename in `hooks/` — the canonical link), `contextParams` (comma-separated context vars).
+`activity hook create` defaults `contextParams` to `request_body_map,request_vendor_body`
+(preRequest) or `response_body,response_iserror` (postRequest); override with `--context-params`.
 
 ## Naming
 
@@ -52,17 +54,19 @@ resource+method+phase** — duplicate logic rather than sharing a file.
 
 ## ES5/ES6 (Denali) constraints
 
-Denali is ES5/ES6 only. NO optional chaining (`?.`), nullish coalescing (`??`),
-arrow-only constructs you rely on for `this`, spread in calls, or `async`/`await`. Use
-plain `var`/`function`, `&&`/`||` guards, and explicit `done()`.
+Denali runs ES5/ES6 — `let`/`const`, `function`, and arrow functions are all fine (the
+generated hook templates use `let`/`const`). What it does NOT support: optional chaining
+(`?.`), nullish coalescing (`??`), spread in calls, or `async`/`await`. Replace `?.` with
+`&&`/`||` guards, and always end with an explicit `done()`.
 
 ## PreRequest context vars
 
 `request_vendor_parameters`, `request_vendor_path`, `request_vendor_body`,
-`request_vendor_body_map` (curated input via `input[0]`), `request_vendor_headers`,
+`request_body_map` (curated input via `input[0]`), `request_vendor_headers`,
 `request_parameters` (includes `nextPage`, `pageSize`), `configuration` (all config
-keys), `multipart_hook_context_items`. Return changed keys via `done({...})`; bare
-`done()` passes everything through.
+keys), `multipart_hook_context_items`. `activity hook create` defaults a preRequest's
+`contextParams` to `request_body_map,request_vendor_body`. Return changed keys via
+`done({...})`; bare `done()` passes everything through.
 
 ## PostRequest context vars
 

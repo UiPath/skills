@@ -9,9 +9,11 @@ flow). The definition holds only the auth TYPE, endpoint URLs, and scopes — ne
 
 ## SECURITY — secrets are never stored in the connector
 
-Secret config keys (client secret, API key, password, token) are written by `auth set` as
-`type: PASSWORD`, `encrypt: true`, `isPrivate: true` — masked, encrypted at rest, redacted
-in responses. Rules:
+Secret config keys (client secret, API key, password, token) are written by `auth set` with
+`encrypt: true` — encrypted at rest and redacted in responses. Most are `type: PASSWORD` +
+`isPrivate: true` (also masked); some sensitive values use a non-PASSWORD widget but stay
+encrypted — e.g. an OAuth user token (`TEXTFIELD`) or a Google service-account JSON
+(`TEXTAREA`). Rules:
 
 - NEVER echo, `cat`, log, or print a secret value. `auth get` / `inspect` return the config
   SHAPE, not the value — there is nothing to dump.
@@ -67,8 +69,13 @@ uip is connectors builder auth set --auth-type oauth2 \
 
 ## OAuth / JWT scope surface (FLAGS on `auth set` — there is NO `auth scope` command)
 
-When the vendor offers selectable scopes, pass them as flags on the SAME `auth set` call
-(or re-run with `--force`). They build the `oauth.scope` MULTISELECT entry:
+`--scope` always sets the default scope string. To make scopes USER-SELECTABLE (the
+`oauth.scope` MULTISELECT with options/required/preselected), the TRIGGER is `--scope-options`
+(or `--scope-options-file`) OR `--required-scopes` — without one of those the MULTISELECT
+override is NOT built. The remaining flags are modifiers that take effect ONLY once the
+override exists, so `--preselected-scopes` (or `--scope-delimiter`/`--scope-hint-text`/
+`--scope-screen-type`) ALONE does nothing. Pass them on the SAME `auth set` call (or re-run
+with `--force`):
 
 | Flag | Purpose |
 |------|---------|
@@ -132,9 +139,10 @@ rather than hand-editing `configuration[]`.
 `--validation-vendor-path <path>` (with optional `--validation-method`, default GET) seeds
 a `provisionAuthValidation` system resource — one read-only call at connection creation that
 rejects bad creds immediately. The probe must be read-only and must not change vendor data,
-so keep it GET. Static auth (`customApiKey`, `personalAccessToken`, `basic`, `awsv4`) has no
-token exchange to catch bad creds, so this is effectively required there; `validate` warns
-when it is missing. Details: [system-resources.md](system-resources.md) §provisionAuthValidation.
+so keep it GET. Every non-OAuth/JWT auth type (any whose name isn't `oauth*`/`jwt*` — `basic`,
+`custom`, `customApiKey`, `personalAccessToken`, `awsv4`, `googleServiceAccount`,
+`rsaCertificate`) has no token exchange to catch bad creds, so `validate` flags it as missing
+there. Details: [system-resources.md](system-resources.md) §provisionAuthValidation.
 
 ## System (lifecycle) resources — `auth system`
 

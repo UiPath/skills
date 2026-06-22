@@ -69,9 +69,10 @@ scriptless way to handle dynamic hosts — do NOT reach for a hook.
 
 ## Auth as configuration
 Authentication is config keys + `authentication.type`, all written by `auth set`. Secret
-keys (client secret, API key, password, token) are PASSWORD widgets with `encrypt: true`
-and `isPrivate: true` — encrypted, masked, redacted. They hold NO value in the connector;
-the tenant user supplies the real secret at connection time. Key sets per type:
+keys (client secret, API key, password, token) are written with `encrypt: true` — encrypted
+and redacted; most are `PASSWORD` + `isPrivate` (masked), but some (OAuth tokens, a
+service-account JSON) are encrypted `TEXTFIELD`/`TEXTAREA`. They hold NO value in the
+connector; the tenant user supplies the real secret at connection time. Key sets per type:
 
 - **OAuth2** (16 entries — canonical list; `auth set` writes all of them):
   `oauth.api.key`, `oauth.api.secret` (PASSWORD, encrypt, isPrivate), `oauth.callback.url`
@@ -101,13 +102,17 @@ tagged with `groupBy`. Fields without `groupBy` always show; comma-separated `gr
 shows the field for multiple groups.
 
 ## Scope entry (`oauth.scope`, MULTISELECT)
-Built by the `auth set --scope*` flags (see [auth.md](auth.md)). The `design` block carries
-`requiredOptions` (cannot deselect), `preSelectedOptions` (pre-checked), `delimiter`,
-`enableUserOverride`; `options` is the `[{"description","value"}]` list.
+Built by the `auth set --scope*` flags — only when `--scope-options`/`--scope-options-file` or
+`--required-scopes` triggers it (condition + flag list in [auth.md](auth.md)). The `design`
+block carries `requiredOptions` (cannot deselect), `preSelectedOptions` (pre-checked),
+`delimiter`, `enableUserOverride`; `options` is the `[{"description","value"}]` list.
 
 ## Pagination keys (`init preset apply --kind pagination`)
-`pagination.type` (cursor/offset/page), `pagination.max`, `base.url` (TEXTFIELD_1000),
-`filter.response.nulls`. `paginatorVersion` at top level selects the engine.
+The pagination preset seeds exactly four keys: `pagination.max` (TEXTFIELD_32, default `100`),
+`pagination.type` (TEXTFIELD_32 — e.g. cursor/offset/page), `pagination` (TEXTFIELD_128, a
+pagination-config JSON string), and `pagination.page.startindex` (TEXTFIELD_32, default `1`).
+`base.url` and `filter.response.nulls` are seeded by the `--kind base` preset, NOT this one.
+`paginatorVersion` at top level selects the engine.
 
 ## Event keys
 Polling/webhook config keys (`event.notification.*`, `event.vendor.type`, `event.poller.*`,

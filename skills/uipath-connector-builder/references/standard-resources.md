@@ -48,9 +48,11 @@ Curated block: `{ "name", "displayName", "description", "isHidden" }`. A curated
 activity's fields also need field-level `requestCurated`/`responseCurated` visibility —
 see **fields** below.
 
-### by-id methods (GETBYID / PATCH / DELETE)
+### by-id methods (GETBYID / PATCH / PUT / DELETE)
 `activity create` auto-adds the `/{primaryKey}` path param for by-id methods, so a
-GETBYID method's path becomes `/<object>/{id}` without extra flags. A per-method
+GETBYID method's path becomes `/<object>/{id}` without extra flags. The suffix is added
+ALWAYS for `GETBYID`, and for `PATCH`/`PUT`/`DELETE` only when the activity is CRUD (it also
+defines `GET`/`GETBYID`); a write-only activity keeps its base path. A per-method
 `--method-vendor-path GETBYID=/foo` override that lacks `{id}` STILL works — the id param
 is derived from the canonical resource path. Only model GETBYID for TRUE by-id endpoints,
 not a search/list-by-filter endpoint.
@@ -105,9 +107,9 @@ the field's request/response side.
 
 **design** object (`--design-position primary|secondary|none`, `--component`, `--hidden`):
 `position`, `component` (FolderPicker, Button, Connectors, Resources, Fields, Processes,
-Queues), `isHidden`, `loadByDefault`, `isMultiSelect`, `enableUserOverride`,
-`dictionaryWidget`, `solutionResourceKind`, `fieldActions` (cascading show/hide based on
-another field's value).
+Queues), `hidden` (what `--hidden` writes — the field-level key is `design.hidden`, NOT
+`isHidden`), `loadByDefault`, `isMultiSelect`, `enableUserOverride`, `dictionaryWidget`,
+`solutionResourceKind`, `fieldActions` (cascading show/hide based on another field's value).
 
 **reference** object (lookup dropdown): `{ "lookupNames": ["name"], "lookupValue": "id",
 "path": "/accounts" }` — set via `state patch` (no field flag).

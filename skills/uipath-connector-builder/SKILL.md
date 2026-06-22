@@ -23,13 +23,22 @@ Author UiPath Integration Service connectors on disk with `uip is connectors bui
 1. **Inspect before editing.** On any existing connector, run `builder inspect` first to map auth, config, activities, hooks, and triggers. Never edit blind. Never invent config keys, activity paths, or IDs — read state first (`inspect`, `activity list`, `state query`).
 2. **Validate before you finish.** Run `builder validate` at the end of every workflow and after each fix — it runs the full periodic check set and exits non-zero on failure. On failure, read the reported field, fix that one entry, re-validate. After 3 failed attempts on the same error, stop and surface the `validate` output — don't keep guessing.
 3. **`auth set` owns all authentication.** It writes the config entries, `authentication.type` / `typeOauth` / `authenticationTypes`, and the token-refresh resource in one call. Define scopes here too (`--scope`, `--scope-options`, `--required-scopes`, `--preselected-scopes`) — there is no separate scope command. `init --auth oauth2|customApiKey` is inline sugar for the create-time common case; everything else goes through `auth set`. Never hand-roll auth via `state patch`.
-4. **`activity create` writes both sides in one call** — the standard-resource file AND one `element.json` entry per method. Re-running on an existing activity appends/merges. Pass `--skip-sr` (or use `auth system create`) only for system resources that need no SR file. Model `GETBYID`/`PATCH`/`DELETE` only for TRUE by-id endpoints (the `/{primaryKey}` path param is added automatically) — never for search.
+4. **`activity create` writes both sides in one call** — the standard-resource file AND one `element.json` entry per method. Re-running on an existing activity appends/merges. Pass `--skip-sr` (or use `auth system create`) only for system resources that need no SR file. Model `GETBYID`/`PATCH`/`PUT`/`DELETE` only for TRUE by-id endpoints — never for search. The `/{primaryKey}` path param is added automatically: ALWAYS for `GETBYID`, and for `PATCH`/`PUT`/`DELETE` only when the activity is CRUD (it also has a `GET`/`GETBYID`); a write-only/action activity keeps its base path.
 5. **`state patch` REPLACES the whole node at a pointer (no merge).** To change one field: `state query` the entry, edit it, then `state patch` the COMPLETE object back. `element-metadata.json` has no addressable sub-paths — round-trip the whole file. Activity paths in pointers are URL-encoded: `/contacts` → `%2Fcontacts`. Use the dedicated authoring verbs for creation, not `state patch`.
-6. **Connector targeting.** Builder verbs walk up from the cwd, then scan immediate subdirectories — run from inside the connector dir, or pass `--connector-dir <PATH>` to target one explicitly (required when multiple connectors are nearby). `import` / `download` use `--connector-dir` too.
+6. **Connector targeting.** Builder verbs walk up from the cwd, then scan immediate subdirectories — run from inside the connector dir, or pass `--connector-dir <PATH>` to target one explicitly (required when multiple connectors are nearby). `import` reads `--connector-dir` the same way (the connector root holding `app/element/element.json`); on `download` it instead names the OUTPUT directory to write the pulled connector into.
 7. **Output is the `{Result, Code, Data}` envelope.** Add `--output json` to parse it. Failures exit non-zero. Never suppress stderr.
 8. **`import` / `download` / `publish` need `uip login`.** Authenticate before any tenant pull/push.
-9. **Never echo, log, or hard-code a secret.** Secret config keys (client secret, API key, password, token) are written by `auth set` as encrypted PASSWORD fields. End users supply real credentials at connection time; the connector holds only the auth TYPE + endpoint URLs + scopes. Use placeholders in every example command.
+9. **Never echo, log, or hard-code a secret.** Secret config keys (client secret, API key, password, token) are written by `auth set` ENCRYPTED (`encrypt: true`) — most as `PASSWORD` fields, though some (OAuth tokens, a service-account JSON) are encrypted `TEXTFIELD`/`TEXTAREA`. End users supply real credentials at connection time; the connector holds only the auth TYPE + endpoint URLs + scopes. Use placeholders in every example command.
 10. **One hook file per activity+method+phase.** Duplicate logic rather than sharing a file. Hook JS is ES5/ES6 (the Denali engine) — no optional chaining `?.`. Prefer a `type:"value"` parameter with `${configuration.<key>}` interpolation over a hook for static header/auth injection.
+
+## Connection design (host, region, discovered values)
+
+Decide how each per-connection value reaches the request BEFORE scaffolding — getting this wrong is the most common rework:
+
+- **One config drives the host — not three URLs.** When the base, token, and authorize hosts share a per-connection part (an instance name, region, datacenter, or workspace), surface ONE config and template it into every URL: `init --base-url 'https://{instance}.../api'` + `auth set --token-url 'https://{instance}.../token' --authorization-url 'https://{instance}.../authorize'`. The CLI auto-seeds a single fillable `{instance}` field that resolves all three ([configuration.md](configuration.md) §Templated hosts). Do NOT expose `base.url`/`oauth.token.url`/`oauth.authorization.url` as separate connection fields.
+- **Open value → TEXTFIELD; fixed set → COMBO.** A free-form instance/workspace/account name is the auto-seeded templated TEXTFIELD — that is a legitimate, common shape, not a smell. Only a genuinely fixed datacenter/environment list becomes a COMBO (`state patch` the seeded entry to `type:COMBO` with `options`, whose `value` can be the host fragment itself).
+- **Derive or discover before you ask.** If a per-connection value (the API host, an org/account id) is returned in the token response or is discoverable via an authenticated call, capture it instead of adding a manual field — but ONLY when it is genuinely needed AND obtainable; a single templated config is the simpler default, so don't over-engineer discovery where a plain field suffices. Token-response host → a validated `postRequest` hook on the token exchange (https + non-empty host, never log the token) — [auth.md](auth.md) §"Base URL derived from a token response". Discoverable id → an `onProvision` system resource that calls the lookup at connection time ([system-resources.md](system-resources.md)).
+- **Multi-datacenter OAuth:** the accounts/token host itself varies by region — template the region config into `--token-url`/`--authorization-url` too, not just the base URL.
 
 ## Workflows
 
@@ -88,15 +97,15 @@ uip is connectors builder activity create --name <OBJECT> --vendor-path <VENDOR_
 uip is connectors builder validate
 ```
 
-### Add a polling (or webhook) trigger
-The target activity must already exist and have an SR file (`trigger create` hard-fails otherwise).
+### Add a polling trigger
+`trigger create` authors a POLLING trigger. The target activity must already exist and have an SR file (`trigger create` hard-fails otherwise).
 ```bash
 uip is connectors builder activity list --output json    # confirm the activity exists
 uip is connectors builder trigger create --resource-name accounts --event-kind polling \
   --updated-date-field LastModifiedDate --id-field Id     # seeds the event config + hasEvents flag
 uip is connectors builder validate
 ```
-`--event-kind` is `polling | webhook | all` (default `polling`); it folds the old event preset. Depth: [references/events.md](references/events.md).
+`--updated-date-field` is REQUIRED for every `--event-kind` — the command always authors a polling loop. `--event-kind polling|webhook|all` (default `polling`) only picks the config bundle; `webhook`/`all` add webhook config keys but don't implement delivery. Webhook delivery, the polling-vs-webhook semantics, and per-flag defaults all live in [references/events.md](references/events.md).
 
 ### Customize a curated activity
 `activity create` auto-curates every method into a standalone Studio activity by default (opt out with `--no-curate`). Use `method curate` only to override the generated name/displayName, or to curate a `--no-curate` method.
@@ -166,9 +175,9 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 1. Editing without `builder inspect` first (Rule 1) — you'll invent keys/paths that don't exist.
 2. Hand-rolling auth via `state patch` instead of `auth set` (Rule 3) — leaves the auth block inconsistent.
 3. Editing a config entry with a partial value (Rule 5) — `state patch` REPLACES the node, dropping omitted fields. Query the whole entry and patch the complete object back.
-4. Running `activity create` for an object you meant to keep separate during cache-sync triage — it's an idempotent upsert that OVERWRITES; it does not error.
+4. Running `activity create` for an object you meant to keep separate during cache-sync triage — it's an idempotent upsert that MERGES into any existing same-named activity (appends methods, preserves existing field definitions unless `--overwrite-fields`); it does not error, so a wrong name silently merges instead of warning.
 5. Modeling `GETBYID` for a search/list endpoint (Rule 4) — by-id verbs auto-add the `/{primaryKey}` param; reserve them for true single-record reads.
-6. Putting a real secret in an example or expecting the connector to store one (Rule 9) — secrets are PASSWORD fields supplied at connection time.
+6. Putting a real secret in an example or expecting the connector to store one (Rule 9) — secrets are encrypted fields (usually PASSWORD) supplied at connection time.
 7. Re-publishing without bumping the version — the server rejects an equal version; bump `latestVersion` or pass `--version`.
 8. Invented `--categories` values — they must come from the approved enum; `validate` reports the list.
 9. Non-ES5/ES6 hook syntax (optional chaining `?.`, etc.), or one hook file shared across activity+method+phase (Rule 10) — duplicate the file instead.

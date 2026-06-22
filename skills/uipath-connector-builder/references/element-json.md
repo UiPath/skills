@@ -49,17 +49,19 @@ GET/GETBYID/POST/PATCH/DELETE has 5 entries (one `activity create` call writes t
 | `hooks` | no | Hook refs for this resource+method (`activity hook create`). |
 | `expressions` | no | `requestBodyRoot` / `responseBodyRoot` for JSON-path wrap/unwrap. |
 
-For by-id methods (GETBYID/PATCH/DELETE) `activity create` auto-adds the `/{primaryKey}`
-path param to the path — details in [standard-resources.md](standard-resources.md)
-§"by-id methods".
+For by-id methods (`GETBYID`/`PATCH`/`PUT`/`DELETE`) `activity create` auto-adds the
+`/{primaryKey}` path param — ALWAYS for `GETBYID`, and for the write methods only on a CRUD
+activity (one that also has `GET`/`GETBYID`); a write-only activity keeps its base path.
+Details in [standard-resources.md](standard-resources.md) §"by-id methods".
 
 ### Resource types
 `api` (discoverable, in CRUD dropdowns), `apiNoDocumentation` (hidden but callable),
 `apiElementRequest` (routes back through Udon; still appears in CRUD unless `isHidden`),
-plus the **system types** (no SR file) created via `auth system create`:
-`onProvision`, `onDelete`, `onRefresh`, `oauthOnTokenRefresh`, `oauthOnTokenExchange`,
-`oauthOnTokenRevoke`, `oauthOnAuthroizeUrl` (historical typo — keep it),
-`provisionAuthValidation`, `onProvisionWebhook`, `onDeleteWebhook`.
+plus the 13 **system types** (no SR file) created via `auth system create`:
+`onProvision`, `onDelete`, `onRefresh`, `provisionAuthValidation`, `oauthOnAuthroizeUrl`
+(historical typo — keep it), `oauthOnTokenExchange`, `oauthOnTokenRefresh`,
+`oauthOnTokenRevoke`, `oauth1OnTokenRequest`, `oauth2ClientCredentials`,
+`onProvisionWebhook`, `onDeleteWebhook`, `onProvisionCacheVendorDataAsync`.
 [system-resources.md](system-resources.md) is the authoritative list with override paths.
 
 ## parameters[] (global and per-resource)
@@ -68,7 +70,8 @@ Same schema at both levels. element.json is the **source of truth** for contract
 (`name`, `vendorName`, `type`, `vendorType`, `dataType`, `vendorDataType`, `required`,
 `description`, `source`); linked SR params auto-reconcile on every write. SR-only UI
 fields (`displayName`, `requestCurated`, `sortOrder`, `design`) are preserved. Add with
-`activity param create --resource <name> --method <VERB> --name <p> --type <path|query|header|body>`.
+`activity param create --resource <name> --method <VERB> --name <p> --type <type>` (`--type`
+e.g. `path`/`query`/`header`/`body` — the full accepted enum is listed below).
 
 | Field | Required | Description |
 |-------|----------|-------------|
@@ -78,9 +81,9 @@ fields (`displayName`, `requestCurated`, `sortOrder`, `design`) are preserved. A
 | `vendorType` | yes | WHERE it goes in the vendor request (destination). |
 | `dataType` / `source` / `required` / `design` | no | Hints, request/response, requiredness, UI. |
 
-`type`/`vendorType` values: `configuration`, `header`, `path`, `query`, `form`,
-`body`, `bodyField`, `value`, `prevBody`, `prevBodyField`, `multipart`, `bodyToken`,
-`customValue`, `no-op`.
+`type`/`vendorType` values: `configuration`, `header`, `path`, `query`, `file`, `form`,
+`multipart`, `value`, `customValue`, `body`, `bodyField`, `prevBody`, `prevBodyField`,
+`bodyToken`, `no-op`.
 
 Common patterns:
 ```json
@@ -104,7 +107,7 @@ user. **Do NOT leave the constant in the vendor path as a query string** (e.g.
 into a `type:"query"` param that is *required user input with no value*, so every runtime
 call (and `provisionAuthValidation` / connection test) fails with "value for 'api-version'
 not passed". This applies everywhere a vendor path is set — activity resources AND the
-auth-validation path (`auth set --validation-vendor-path`). The CLI `resource`/`auth`
+auth-validation path (`auth set --validation-vendor-path`). The CLI `activity`/`auth`
 verbs now auto-extract a trailing `?k=v` into a `value` param for you, so prefer passing a
 clean base path; if you ever hand-edit `element.json`, follow the rule yourself. A `value`
 param is stored in **plaintext** — only for non-secret constants; a secret belongs in an
@@ -114,7 +117,7 @@ encrypted `configuration` entry referenced via `type:"configuration"`, never a l
 For `type:"value"` params, Udon substitutes `${<namespace>.<key>}` in the `name` field at
 request time. Namespaces: `configuration`, `header`, `body`. Special tokens (no prefix):
 `${webhookCallbackUrl}`, `${elementWebhookCallbackUrl}`, `${encodedId}`, `${date}`,
-`${date:FORMAT}` / `${gmtDate:FORMAT}` (event-poller only — see [events.md](events.md)).
+`${date:FORMAT}` / `${gmtDate:FORMAT}` / `${dateTimeZone:TZ:FORMAT}` (event-poller only — see [events.md](events.md)).
 This is how a prefix like `Bearer <token>` is applied without a hook:
 ```json
 {"name": "Bearer ${configuration.oauth.user.token}", "vendorName": "Authorization", "type": "value", "vendorType": "header"}

@@ -6,16 +6,23 @@ source is always an existing activity — wire it AFTER the activity exists.
 
 ## How events are configured NOW
 
-`uip is connectors builder trigger create` is the single entry point. It folds together what
-used to be two separate steps (the old `config preset --kind event` and `event polling add`,
-both REMOVED). One call seeds the event config bundle, writes the per-resource poller config,
-sets the SR `metadata.events`, and flips `hasEvents`. The activity must already exist —
-`trigger create` HARD-FAILS if its SR is missing. Runnable workflow: SKILL.md → "Add a polling (or webhook) trigger".
+`uip is connectors builder trigger create` is the single entry point, and it **authors a
+polling trigger** — it always wires the polling loop and always writes a polling-shaped SR
+`metadata.events` (`eventMode: ["polling"]`), regardless of `--event-kind`. One call seeds the
+event config bundle, writes the per-resource poller config, sets the SR `metadata.events`, and
+flips `hasEvents`. The activity must already exist — `trigger create` HARD-FAILS if its SR is
+missing. Runnable workflow: SKILL.md → "Add a polling trigger".
+
+**Webhook caveat.** `--event-kind webhook | all` only adds the webhook CONFIG KEYS (below) to
+the bundle; it does NOT implement webhook delivery and does NOT change the polling-shaped SR
+metadata. A working webhook still needs `onProvisionWebhook`/`onDeleteWebhook` system resources
+plus a post hook (see [system-resources.md](system-resources.md), [hooks.md](hooks.md)). And
+`--updated-date-field` is REQUIRED even for `webhook`/`all`.
 
 Key flags (`trigger create`):
 - `--resource-name <name>` — existing activity/standard-resource to wire (required).
 - `--event-kind polling | webhook | all` — which config bundle to seed (default `polling`).
-- `--updated-date-field <field>` — vendor last-modified field (e.g. `LastModifiedDate`).
+- `--updated-date-field <field>` — vendor last-modified field, e.g. `LastModifiedDate` (REQUIRED for every `--event-kind`).
 - `--created-date-field <field>` — defaults to `--updated-date-field`.
 - `--id-field <field>` — primary key (defaults to `Id`).
 - `--date-format <mask>` / `--created-date-format <mask>` — timestamp mask (created defaults to updated).
@@ -24,6 +31,9 @@ Key flags (`trigger create`):
 - `--date-timezone <tz>` — default `GMT`.
 - `--polling-resource-label <label>` — label in `elementMetadata.pollingResources`.
 - `--override <key>=<value>` — per-entry defaultValue override for the event preset (repeatable).
+
+These are the flags with non-obvious defaults/semantics; `trigger create --help` is the
+always-current full list.
 
 ## What gets written
 
@@ -40,11 +50,13 @@ Key flags (`trigger create`):
 
 ## event.poller.configuration JSON
 
-First resource is typically keyed `"events"`; others use the resource name.
+Each resource is keyed by its **normalized resource name** — `trigger create` derives the key
+as `resourceName` with `/` and `::` replaced by `_` (so `accounts` → `accounts`, `crm/leads`
+→ `crm_leads`). It is NEVER literally `"events"`.
 ```json
 {
-  "events": {
-    "url": "/accounts?where=LastModifiedDate>'${date:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}'",
+  "accounts": {
+    "url": "/accounts?where=LastModifiedDate>'${gmtDate:yyyy-MM-dd'T'HH:mm:ss.SSS'Z'}'",
     "idField": "Id",
     "datesConfiguration": {
       "updatedDateField": "LastModifiedDate",
@@ -57,8 +69,9 @@ First resource is typically keyed `"events"`; others use the resource name.
   }
 }
 ```
-Per-resource fields: `url` (required — IS slug path with `${date:FORMAT}` placeholder for
-last poll time), `idField` (required — unique key), `datesConfiguration` (required),
+Per-resource fields: `url` (required — IS slug path with the generated `${gmtDate:FORMAT}` /
+`${dateTimeZone:TZ:FORMAT}` poll-time placeholder; see the placeholder note below),
+`idField` (required — unique key), `datesConfiguration` (required),
 `createdCheckTolerance` (sec, default 10), `filterByUpdatedDate`, `filterByCurrentDate`,
 `pageSize`, `pollDelay`, `batchSize`, `postHooks`, `postHookPipelines`, `useLastPollDate`,
 `useHydrationBeforePostHooks`, `objectName`, `parameters`.
@@ -67,10 +80,12 @@ last poll time), `idField` (required — unique key), `datesConfiguration` (requ
 `updatedDateTimezone` (default GMT), `createdDateField`, `createdDateFormat`
 (defaults to updated), `createdDateTimezone`.
 
-The `${date:FORMAT}` placeholder (and `${gmtDate:FORMAT}`, the GMT-forced variant) is
-replaced at runtime with the last poll time; the format MUST match what the vendor accepts
-(e.g. Salesforce `yyyy-MM-dd'T'HH:mm:ss.SSSZ`, most REST `yyyy-MM-dd'T'HH:mm:ss'Z'`, ISO
-`yyyy-MM-dd'T'HH:mm:ssXXX`, or epoch millis).
+`trigger create` GENERATES the poll-time placeholder from `--date-timezone`: the default `GMT`
+yields `${gmtDate:FORMAT}`; any other timezone yields `${dateTimeZone:<TZ>:FORMAT}`. (`${date:FORMAT}`,
+local time, is also a valid runtime token if you hand-author a URL.) Each is replaced at runtime
+with the last poll time; the FORMAT must match what the vendor accepts (e.g. Salesforce
+`yyyy-MM-dd'T'HH:mm:ss.SSSZ`, most REST `yyyy-MM-dd'T'HH:mm:ss'Z'`, ISO `yyyy-MM-dd'T'HH:mm:ssXXX`,
+or epoch millis).
 
 To tweak one key after `trigger create`, `state query` the entry then `state patch` the
 complete object back (patch REPLACES — see [debugging.md](debugging.md)).

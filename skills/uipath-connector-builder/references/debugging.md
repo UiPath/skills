@@ -62,18 +62,14 @@ exits non-zero on failure). All run under `uip is connectors builder`.
   missing nextPage handling in a preRequest hook.
 
 ## Publish / import issues (tenant lifecycle — under `uip is connectors`, NOT builder)
-- **Order**: `import` packages + uploads the design connector (create first time, update by
-  key after); `publish` then promotes it to a tenant-wide CUSTOM connector. `publish` operates
-  on what was already imported — it does NOT push local file changes (re-`import` for that).
-- **`publish` returns a `PublishId`** and is fire-and-forget by default (Status `IN_PROGRESS`).
-  Pass `--wait` to poll to `SUCCESS` / `FAILURE` (default timeout 600s, `--timeout-seconds`).
-  Check later with `publish-status <publishId>` — the id is POSITIONAL, not a flag.
-- **"version must be higher"**: re-publishing an existing connector needs a HIGHER version
-  than the last published one. Bump `element-metadata.json:latestVersion` (or pass
-  `--version 1.0.1`). A brand-new connector publishes with NO `--version` — `init` seeds
-  `latestVersion = "1.0.0"`.
-- **Status enum is `IN_PROGRESS | SUCCESS | FAILURE`**; Studio Web shows a fresh publish
-  ~5–10 min after SUCCESS.
+`import` → `publish` order and the `publish`/`--wait`/`publish-status` mechanics live in
+SKILL.md; the symptoms below are debug-only:
+- **Local edits not reflected after publish**: `publish` promotes what was already imported —
+  it does NOT push local file changes. Re-`import` first, then `publish`.
+- **"version must be higher"**: re-publishing needs a HIGHER version than the last published
+  one. Bump `element-metadata.json:latestVersion` (or pass `--version 1.0.1`). A brand-new
+  connector publishes with NO `--version` (`init` seeds `latestVersion = "1.0.0"`).
+- **Published but not visible**: Studio Web shows a fresh publish ~5–10 min after `SUCCESS`.
 - **Live smoke test**: `uip is connectors probe --connection-id <id>` proxies each on-disk SR
   through a real connection (GET-only; `--include-mutations` to add POST/PUT/PATCH/DELETE).
   Catches `metadata.method.<VERB>.path` typos that static `validate` cannot.
