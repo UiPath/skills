@@ -33,10 +33,6 @@ initial_prompt: |
      Keep every other field (including the name) as-is.
   4. Delete the policy.
 
-  The uipath-governance skill knows the right CLI surface, how to
-  bootstrap product defaults, the full-replace semantics of update, and
-  what to re-pass to preserve fields. Trust it.
-
   Important:
   - Do not prompt the user for confirmation — this is an automated test.
   - The final delete cleans up the test policy — do not skip it, even if
