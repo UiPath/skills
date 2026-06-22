@@ -423,6 +423,82 @@ For workflows spanning multiple capture screens, add each screen's activities to
 
 Every UI automation workflow starts with an **Application Card** (`uix:NApplicationCard`) that opens or attaches to a desktop application or web browser. All UI activities (Click, TypeInto, GetText, etc.) must be placed inside an Application Card scope.
 
+##### Window Attach Mode
+
+`NApplicationCard` attaches via the `AttachMode` property (type `NAppAttachMode`, default `ByInstance`), which controls where inner activities search for their targets. Change it per the Application Card docs in the package docs (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/ApplicationCard.md`).
+
+**`ByInstance` — Application Instance (default, preferred).** The card finds the window from its selector, then attaches to ALL windows of that application instance (main window, dialogs, child windows). Per activity: it locates the target window among the instance's windows using the activity target's **scope selector**, then searches the target inside that window.
+
+Use when the app opens separate windows (e.g. a dialog) — one card covers all of them; no second card needed. An activity whose scope selector targets the dialog window finds its element there.
+
+```xml
+<uix:NApplicationCard AttachMode="ByInstance" DisplayName="Use App (Invoice app)"
+                      sap2010:WorkflowViewState.IdRef="NApplicationCard_1" Version="V2">
+    <uix:NApplicationCard.Body>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+            <!-- scope selector targets the main window -->
+            <uix:NClick DisplayName="Click New Invoice" sap2010:WorkflowViewState.IdRef="NClick_1" />
+            <!-- scope selector targets the dialog window of the same instance -->
+            <uix:NTypeInto DisplayName="Type amount in dialog" Text="[in_Amount]"
+                           sap2010:WorkflowViewState.IdRef="NTypeInto_1" />
+        </Sequence>
+    </uix:NApplicationCard.Body>
+</uix:NApplicationCard>
+```
+
+**`SingleWindow` — Single Window (only if Application Instance fails).** The card attaches ONLY to the window from its selector. A target in any other window of the same application (parent, child, dialog) is NOT found. The activity target's scope selector is **always** ignored in this mode. Use only when `ByInstance` fails to attach.
+
+```xml
+<uix:NApplicationCard AttachMode="SingleWindow" DisplayName="Use App (single window)"
+                      sap2010:WorkflowViewState.IdRef="NApplicationCard_2" Version="V2">
+    <uix:NApplicationCard.Body>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <!-- only targets in THIS window resolve; scope selector is ignored -->
+            <uix:NClick DisplayName="Click Save" sap2010:WorkflowViewState.IdRef="NClick_2" />
+        </Sequence>
+    </uix:NApplicationCard.Body>
+</uix:NApplicationCard>
+```
+
+##### Nesting Application Cards
+
+Application Cards can nest; a UI Automation activity can run inside any Application Card on its parent chain. To switch back and forth between two applications, nest two Application Cards and put all UI Automation activities inside the bottom-most one, attaching each activity to the correct card.
+
+Each `NApplicationCard` carries a `ScopeGuid`. A child activity attaches to a specific card by setting its `ScopeIdentifier` equal to that card's `ScopeGuid` — this is how an activity inside the inner card targets the outer card's application. Change an activity's attached card per the Application Card docs in the package docs.
+
+**IMPORTANT:** ONLY activities that have a target configured and set can have a `ScopeIdentifier`. If an activity does not have a target, do NOT add `ScopeIdentifier` to it.
+
+Example — copy a value from App A and paste it into App B. Outer card → App A, inner (nested) card → App B; both activities live in the inner card. The read sets `ScopeIdentifier` to App A's `ScopeGuid`; the write sets it to App B's. Repeat to move back and forth — no card re-entry between switches.
+
+```xml
+<uix:NApplicationCard AttachMode="ByInstance" DisplayName="App A (source)"
+                      ScopeGuid="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+                      sap2010:WorkflowViewState.IdRef="NApplicationCard_1" Version="V2">
+    <uix:NApplicationCard.Body>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+            <uix:NApplicationCard AttachMode="ByInstance" DisplayName="App B (target)"
+                                  ScopeGuid="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+                                  sap2010:WorkflowViewState.IdRef="NApplicationCard_2" Version="V2">
+                <uix:NApplicationCard.Body>
+                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+                        <!-- ScopeIdentifier = App A card's ScopeGuid → reads from App A (outer) -->
+                        <uix:NGetText DisplayName="Get value from App A" Text="[out_Value]"
+                                      ScopeIdentifier="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+                                      sap2010:WorkflowViewState.IdRef="NGetText_1" Version="V5" />
+                        <!-- ScopeIdentifier = App B card's ScopeGuid → pastes into App B (inner) -->
+                        <uix:NTypeInto DisplayName="Type value into App B" Text="[out_Value]"
+                                       ScopeIdentifier="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+                                       sap2010:WorkflowViewState.IdRef="NTypeInto_1" Version="V5" />
+                    </Sequence>
+                </uix:NApplicationCard.Body>
+            </uix:NApplicationCard>
+        </Sequence>
+    </uix:NApplicationCard.Body>
+</uix:NApplicationCard>
+```
+
+> GUIDs above are illustrative placeholders. A card's `ScopeGuid` is generated by `uip rpa activities get-default-xaml` (the starter XAML for `NApplicationCard`) — do not hand-author it. To attach an activity to a card, set the activity's `ScopeIdentifier` to that card's `ScopeGuid`.
+
 #### Target Configuration
 
 [uia-configure-target-workflows.md](uia-configure-target-workflows.md) MUST be read IN FULL first — it covers registering the Application Card's screen and each activity's elements in the Object Repository. Then write plain activities (NApplicationCard, NClick, NTypeInto, ...) with unique `sap2010:WorkflowViewState.IdRef` attributes and no `.Target` children, and attach targets per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
