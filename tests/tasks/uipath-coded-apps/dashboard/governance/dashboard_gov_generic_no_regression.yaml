@@ -1,0 +1,54 @@
+task_id: uipath-coded-apps-dashboard-gov-generic-no-regression
+description: >
+  Gate-CLOSED no-regression guard for governance routing. A GENERIC governance
+  prompt (policy denials, allow/deny verdicts, blocked actions) must route to
+  the pre-existing Insights-API metrics — Governance.getPolicyTraces and
+  Governance.getOperationSummary — and must NOT regress into the gated
+  trace-derived family (parseGovernanceSpans / scanViolations). This protects
+  the gate added so a generic governance dashboard keeps using the OOB Insights
+  metrics, not the interim trace-scan. See sdk/governance.md.
+tags: [uipath-coded-apps, integration, dashboard, feature:governance, mode:build]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  Build me a governance dashboard: policy denials this week and an allow vs
+  deny enforcement verdict breakdown.
+
+  This is a non-interactive automated test — there is NO user to approve the plan.
+  Treat the plan as pre-approved: in THIS SAME TURN, author intent.json and the metric
+  modules and run the build through to completion. Do NOT end your turn at the plan, do
+  NOT wait for confirmation, and do NOT ask any question.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Gate closed: generic governance uses the Insights-API metrics and does NOT
+  # regress into the trace-derived family.
+  - type: run_command
+    description: "Metric modules use Governance.getPolicyTraces + getOperationSummary; no trace-derived parsing"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 2 --require-substr "getPolicyTraces" --require-substr "getOperationSummary"
+      --forbid-substr "parseGovernanceSpans" --forbid-substr "scanViolations"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

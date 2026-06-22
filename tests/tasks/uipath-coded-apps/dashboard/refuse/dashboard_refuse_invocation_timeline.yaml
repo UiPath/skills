@@ -1,0 +1,61 @@
+task_id: uipath-coded-apps-dashboard-refuse-invocation-timeline
+description: >
+  T0 impossible-literal → documented substitution. "Agent invocation volume
+  over time" has no invocation-count SDK endpoint (capability-registry.json
+  hardRefuse + tier-resolution.md), but the skill prescribes a concrete
+  alternative: a T3 Jobs run-volume trend via getAll({ filter: "ProcessType eq
+  'Agent'" }) bucketed by date. The skill must substitute that real alternative
+  (not fabricate a non-existent invocation-count method) AND still build the
+  valid metric (active agents). Regression guard: an agent that hallucinates a
+  getInvocation*/invocation-timeline SDK call — or drops both metrics — fails.
+  Integration-tier: the substitution check requires a full inline build, too
+  turn-heavy for the 40-turn PR-smoke gate — runs nightly at 200 turns.
+tags: [uipath-coded-apps, integration, dashboard, feature:refuse, mode:build]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  Build me a dashboard with two things: agent invocation volume over time, and
+  the number of active agents.
+
+  This is a non-interactive automated test — there is NO user to approve the plan.
+  Treat the plan as pre-approved: in THIS SAME TURN, author intent.json and the
+  metric modules and run the build through to completion. Do NOT end your turn at
+  the plan, do NOT wait for confirmation, and do NOT ask any question.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Both metrics are built (the valid active-agents KPI + the documented Jobs
+  # run-volume substitution — 2 modules, 2 widgets), and the skill did NOT
+  # fabricate a non-existent invocation-count method. 'getInvocation' catches
+  # getInvocationTimeline / getInvocations / getInvocationCount — none exist in
+  # the SDK; legit substitution code uses getAll. (Forbidding the bare word
+  # 'invocation' would false-positive on the widget/title names, which the
+  # skill itself uses for the substituted run-volume trend.)
+  - type: run_command
+    description: "Both metrics built via real SDK calls (getAll); no fabricated invocation-count method"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 2 --min-widgets 2 --require-substr "getAll" --forbid-substr "getInvocation"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

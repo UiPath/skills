@@ -1,0 +1,62 @@
+task_id: uipath-coded-apps-dashboard-scaffold
+description: >
+  Validates that a minimal 2-widget dashboard build produces the current
+  compiler-model structure: intent.json (pure metadata, schemaVersion 2),
+  one metric module per metric under src/metrics/ exporting fetchData,
+  generated widgets under src/dashboard/widgets/, and the SDK config
+  contract in uipath.json (read by the uipathCodedApps() Vite plugin).
+  Asserts authored/generated shape; does not run tsc
+  (that belongs to e2e). Integration-tier: a full inline build is too
+  turn-heavy for the 40-turn PR-smoke gate — runs nightly at 200 turns.
+tags: [uipath-coded-apps, integration, dashboard, feature:scaffold, mode:build]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  Build a dashboard with two widgets: agent success rate (last 30 days)
+  and agent error trend (last 7 days).
+
+  This is a non-interactive automated test — there is NO user to approve the plan.
+  Treat the plan as pre-approved: in THIS SAME TURN, author intent.json and the metric
+  modules and run the build through to completion. Do NOT end your turn at the plan, do
+  NOT wait for confirmation, and do NOT ask any question.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # (No `npm ci` command_executed check: in the compiler architecture deps are
+  # installed inside `build-dashboard.mjs --prewarm`, not via a bare agent
+  # `npm ci`. The check_dashboard run below proves the build produced a valid,
+  # dependency-resolved project.)
+
+  # Compiler-model shape + SDK config contract. The checker auto-locates the
+  # generated project (the skill scaffolds into a <routingName> subdir) and
+  # validates: uipath.json with required SDK config keys + the uipathCodedApps()
+  # plugin wired in vite.config.ts, 2 metric modules, 2 widgets, pure-metadata
+  # intent.json (schemaVersion 2, no fnBody), and no legacy tokens.
+  - type: run_command
+    description: "Compiler-model structure + uipath.json SDK config (project auto-located under <routingName>/)"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 2 --min-widgets 2 --forbid-substr fnBody --forbid-substr useInsights
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -1,0 +1,80 @@
+task_id: uipath-coded-apps-dashboard-incremental-add
+description: >
+  Incremental edit — add a widget to an existing dashboard WITHOUT re-scaffolding.
+  The agent builds a one-widget dashboard, then (as a follow-up) adds a second
+  widget. Per incremental-editor.md the editor triggers after BUILD_RESULT /
+  on a present state.json: the add must route through the incremental editor
+  (writes edit-intent.json, regenerates only the affected widget) and reuse the
+  already-extracted starter kit — NOT re-extract it / re-scaffold. Regression
+  guard for the entire edit lifecycle (ADD), which had no coverage.
+tags: [uipath-coded-apps, e2e, dashboard, feature:incremental, mode:build]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  First, build a UiPath dashboard with a single widget: active agents. Let it
+  finish building completely.
+
+  Then, as a follow-up edit to that now-existing dashboard, add a second widget —
+  faulted jobs — to it. Treat this as an incremental edit of the already-built
+  dashboard, not a rebuild from scratch.
+
+  This is a non-interactive automated test — there is NO user to approve plans.
+  Treat each plan as pre-approved: author the files and run each step (the build,
+  then the incremental edit) through to completion in this same session. Do NOT
+  stop at a plan, do NOT wait for confirmation, and do NOT ask any question.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Both widgets end up in the project (the add succeeded).
+  - type: run_command
+    description: "Final project has 2 metric modules + 2 generated widgets"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 2 --min-widgets 2 --forbid-substr fnBody
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # The add went through the incremental editor (it writes edit-intent.json),
+  # not a second fresh build.
+  - type: run_command
+    description: "edit-intent.json present — the add used the incremental editor"
+    command: "sh -c 'find . -name node_modules -prune -o -name edit-intent.json -print | grep -q .'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The starter kit was extracted exactly once (initial build) — the incremental
+  # add reused it instead of re-scaffolding.
+  - type: command_executed
+    description: "Starter kit extracted exactly once (no re-scaffold on the add)"
+    tool_name: "Bash"
+    command_pattern: '(unzip|Expand-Archive).*governance-dashboard-starter-kit'
+    min_count: 1
+    max_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

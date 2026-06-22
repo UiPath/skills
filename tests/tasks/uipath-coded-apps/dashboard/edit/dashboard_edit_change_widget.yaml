@@ -1,0 +1,82 @@
+task_id: uipath-coded-apps-dashboard-edit-change-widget
+description: >
+  Incremental edit — CHANGE a widget's display type on an existing dashboard
+  WITHOUT re-scaffolding. The agent builds a one-widget dashboard (agent error
+  trend, an area chart), then (as a follow-up) changes it to a bar chart. Per
+  incremental-editor.md a CHANGE must route through the editor (writes
+  edit-intent.json with a CHANGE op, regenerates only that widget) and reuse the
+  already-extracted starter kit. Regression guard for the CHANGE op, which had
+  no coverage (only ADD was tested). Integration-tier: a full inline build + edit
+  is too turn-heavy for the 40-turn PR-smoke gate — runs nightly at 200 turns.
+tags: [uipath-coded-apps, integration, dashboard, feature:incremental, mode:build]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  First, build a UiPath dashboard with a single widget: agent error trend over
+  the last 30 days (a trend chart). Let it finish building completely.
+
+  Then, as a follow-up edit to that now-existing dashboard, change that widget
+  to a bar chart. Treat this as an incremental edit of the already-built
+  dashboard, not a rebuild from scratch.
+
+  This is a non-interactive automated test — there is NO user to approve plans.
+  Treat each plan as pre-approved: author the files and run each step (the build,
+  then the incremental edit) through to completion in this same session. Do NOT
+  stop at a plan, do NOT wait for confirmation, and do NOT ask any question.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The dashboard still has exactly its one widget after the edit (the change
+  # modified the existing widget, it did not add or drop one).
+  - type: run_command
+    description: "Project still has 1 metric module + 1 generated widget (changed in place)"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 1 --min-widgets 1 --forbid-substr fnBody
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The change went through the incremental editor as a CHANGE op (not a rebuild).
+  - type: run_command
+    description: "edit-intent.json present with a CHANGE op"
+    command: "sh -c 'grep -rq --include=edit-intent.json --exclude-dir=node_modules CHANGE .'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Starter kit was extracted for the build, and the edit reused it — the CHANGE
+  # op + 1-metric/1-widget structure above already prove the edit applied to the
+  # existing project, not a fresh re-scaffold. No max_count: the agent may
+  # re-issue the idempotent extract during build setup, which is benign.
+  - type: command_executed
+    description: "Starter kit extracted (kit set up; edit reused the existing project)"
+    tool_name: "Bash"
+    command_pattern: '(unzip|Expand-Archive).*governance-dashboard-starter-kit'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

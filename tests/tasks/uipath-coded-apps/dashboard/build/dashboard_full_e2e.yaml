@@ -1,0 +1,76 @@
+task_id: uipath-coded-apps-dashboard-full-e2e
+description: >
+  End-to-end build of a 4-widget agent health dashboard exercising KPI, area
+  chart, line chart, and table. Validates the full compiler pipeline on the
+  current architecture: intent.json (pure metadata, schemaVersion 2), one
+  metric module per metric under src/metrics/ authoring real SDK calls
+  (Agents.getAll + timelines), generated widgets under src/dashboard/widgets/,
+  named time constants, state.json written, and a clean `tsc --noEmit` over the
+  generated project (the gold-standard correctness gate).
+tags: [uipath-coded-apps, e2e, dashboard, feature:scaffold, feature:routing, mode:build]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+# No per-task cleanup needed: the experiment-level post_run prunes node_modules
+# (the heavy artifact) after every task, and the tempdir sandbox is discarded.
+# This build-only e2e creates no remote/tenant artifacts to tear down.
+
+# Reclaim the build's node_modules before artifact preservation. The build
+# installs a full ~200MB node_modules; the experiment-default prune (30s) can
+# time out on it, bloating the preserved artifact. This task-level prune runs
+# FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
+# a generous timeout so the heavy tree is gone before the sandbox is preserved.
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  Build me a UiPath agent health dashboard: active agents, agent consumption
+  over the last 24 hours, error rate trend for the week, and top agents by
+  usage with health scores.
+
+  This is a non-interactive automated test — there is NO user to approve the plan.
+  Treat the plan as pre-approved: in THIS SAME TURN, author intent.json and the metric
+  modules and run the build through to completion. Do NOT end your turn at the plan, do
+  NOT wait for confirmation, and do NOT ask any question.
+  Before starting, load the uipath-coded-apps skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # ── Routing: SDK calls authored in the metric modules (project auto-located) ──
+  - type: run_command
+    description: "Metric modules use Agents.getAll and the consumption + errors timelines"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 4 --min-widgets 4
+      --require-substr "getAll" --require-substr "getConsumptionTimeline" --require-substr "getErrors"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # ── Gold gate: full structural + routing + clean compile over the generated project ──
+  # (tsc runs inside build-dashboard.mjs, not as a direct agent Bash call, so the
+  #  compile is verified here via --tsc rather than a command_executed on tsc.)
+  - type: run_command
+    description: "Compiler-model gold gate: pure-metadata intent, state.json, named time constants, no legacy tokens, tsc --noEmit passes"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 4 --min-widgets 4 --require-starttime --require-state
+      --forbid-substr fnBody --forbid-substr useInsights --forbid-substr "as unknown as"
+      --tsc
+    timeout: 240
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

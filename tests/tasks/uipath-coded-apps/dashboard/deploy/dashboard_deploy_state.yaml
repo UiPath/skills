@@ -1,0 +1,72 @@
+task_id: uipath-coded-apps-dashboard-deploy-state
+description: >
+  Fresh-deploy path: state.json has deployment.systemName = null. Validates
+  the agent runs the full pack -> publish -> deploy sequence and pins the
+  routing slug from state.json on deploy (via -n). Credential-free: commands
+  fail with auth errors in CI, so this checks the command sequence/flags, not
+  a live deploy or post-deploy state.json mutation (those need a live tenant —
+  covered by a nightly live e2e, not here).
+tags: [uipath-coded-apps, integration, dashboard, mode:operate, feature:scaffold]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  - command: |
+      mkdir -p .dashboard dist
+      echo "<html></html>" > dist/index.html
+      cat > .dashboard/state.json << 'EOF'
+      {
+        "app": { "name": "Agent Health Dashboard", "routingName": "agent-health-x7k2", "semver": "1.0.0" },
+        "env": "alpha", "org": "testorg", "tenant": "testTenant",
+        "cloudUrl": "https://alpha.uipath.com",
+        "widgets": ["ActiveAgentsKPI", "ErrorRateTrend"],
+        "deployment": { "systemName": null, "folderKey": null, "appUrl": null, "lastDeployedAt": null }
+      }
+      EOF
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  Deploy my Agent Health dashboard to the "Shared" folder in Automation Cloud.
+
+  Important: The uip CLI is available but NOT connected to a live tenant.
+  Commands will fail with auth errors — expected and acceptable.
+  Run each command exactly once. Do NOT retry. Do NOT login.
+  Do NOT ask for confirmation or approval.
+  Before starting, load the uipath-coded-apps skill and follow its deploy workflow.
+
+success_criteria:
+  # Pack → publish → deploy sequence (commands fail with auth in CI — we check
+  # the agent ran the full sequence, not that the live deploy succeeded).
+  - type: command_executed
+    description: "Agent ran full pack-publish-deploy sequence"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Fresh deploy (folderKey null): the agent resolves a folder and deploys with
+  # -n <name> --folder-key <guid>. (On the fresh path the agent derives its own
+  # routing name from the dashboard title, so we assert the deploy shape, not the
+  # exact slug.)
+  - type: command_executed
+    description: "Agent ran uip codedapp deploy with -n <name> and a resolved --folder-key"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy.*-n\s+.*--folder-key\s+\S'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Fresh deploy (systemName null): no prior systemName to reuse — agent must NOT
+  # pass a baked system name as the routing slug (only the state routingName).
+  - type: command_executed
+    description: "Agent did NOT pass -t Action (dashboards are Web, not Action apps)"
+    tool_name: "Bash"
+    command_pattern: 'codedapp\s+publish.*-t\s+Action|-t\s+Action.*codedapp'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
