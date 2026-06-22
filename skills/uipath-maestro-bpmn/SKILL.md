@@ -59,18 +59,25 @@ Two halves make a valid Maestro `.bpmn`:
 
 ## Workflow
 
-1. **Discover.** `uip maestro bpmn registry pull`, then `list` / `search` to map
-   intent to extension types; `uip is connections list` for live connections.
-   Confirm every selection with the user (use AskUserQuestion). Never fabricate
-   an identifier. See [references/registry-workflow.md](references/registry-workflow.md).
+Work the four steps quickly and author early — do not pre-read every reference
+before writing. Read a reference only when you reach the structure it covers.
+
+1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
+   session — do not re-pull), then `list` / `search` to map intent to extension
+   types; `uip is connections list` for live connections. Confirm every
+   selection with the user (use AskUserQuestion). Never fabricate an identifier.
+   See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen node. Enrich `Intsvc.*` connector nodes with
    `--connection-id`/`--object-name`.
-3. **Assemble.** Build the document scaffold, declare variables and bindings,
-   paste each node's `xmlTemplate` (fill placeholders only), then author the
-   structural BPMN the registry does not emit — sequence flows, gateways,
-   events, boundary events, containers, multi-instance markers — and generate
-   the `bpmndi:BPMNDiagram`.
+3. **Assemble.** Author directly from the complete minimal file in
+   [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-fixtures)
+   plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
+   shows variables, the entry point, a branch, and the diagram. **Do not read the
+   validator's `test/fixtures/` to infer the pattern** — it is the top reason
+   authoring runs out of time. Add only the structural pieces your process needs
+   (extra gateways, events, boundary events, containers, multi-instance markers),
+   then generate one `BPMNShape`/`BPMNEdge` per node and flow.
 4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
    bundled validator — it reconstructs the canvas model and runs every
    PO.Frontend rule:
@@ -82,6 +89,8 @@ Two halves make a valid Maestro `.bpmn`:
 
    A well-formed-XML parse is the secondary fallback if Node is unavailable. See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+   Validate once; fix only ERROR-severity findings (warnings do not block import).
+   Do not re-validate in a loop chasing warnings.
 
 ## Operate and diagnose
 
