@@ -22,7 +22,7 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent bulk-confirmed all predictions on doc-abc-123 via `labellings confirm` (no --fields)"
+    description: "Agent confirmed predictions on doc-abc-123 via `labellings confirm`"
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+labellings\s+confirm\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123).*'
     min_count: 1
