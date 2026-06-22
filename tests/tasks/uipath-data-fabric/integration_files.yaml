@@ -6,66 +6,65 @@ description: >
   via SHA-256 hash, uploads a second version to confirm overwrite, deletes the
   attachment, and verifies the field is empty post-delete. Covers the full files
   upload/download/delete workflow including overwrite semantics and byte integrity.
-tags: [uipath-data-fabric, integration, files]
-
+tags: [uipath-data-fabric, integration, files, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 29
   turn_timeout: 600
 
 initial_prompt: |
   Perform a complete file attachment lifecycle. Use --output json on every uip df command.
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login — use
-     whatever tenant is currently active.
+  Then:
+    - Make a small local file called `original.txt` with the text
+      "hello data fabric v1".
+    - Attach it to that row's document field.
+    - Pull it back down as `downloaded.txt` and confirm it came back
+      exactly as it went up (a SHA-256 compare with `shasum -a 256`
+      or Python's hashlib works).
+    - Make another file `updated.txt` with the text "hello data fabric
+      v2" and attach that to the same field — it should replace the
+      first one.
+    - Pull it down again as `verify_update.txt` and confirm it matches
+      the new file, not the old one.
+    - Remove the attachment, then try to download it one more time —
+      that should fail. Just tell me what came back.
 
-  2. List native-only entities. Use an entity named "IntegrationAssets" if it
-     already exists. If not, create it with fields:
-       - AssetName (STRING)
-       - Document (FILE)
+  Also — I've got a few odd files I want to try attaching, just to
+  see what happens with each. For every one, try the upload and tell
+  me what came back; don't retry or swap in something else:
+    - Make an empty file `empty.txt` (zero bytes) and try to attach it.
+      Note whether a zero-byte file is accepted.
+    - Make a file with a unicode-and-emoji filename — `café-📎.txt` —
+      with some text in it. Note whether the filename comes back intact.
+    - Make a file whose name has a path-traversal sequence —
+      `../../etc-passwd.txt` (just a normal text file, weird name).
+      It should either get rejected or have the filename sanitized;
+      tell me which.
 
-  3. Insert one record: { "AssetName": "TestAsset" }
-     Save the record ID from the response.
+  Save your observations to `report.json`:
+    {
+      "entity_id": "<list ID>",
+      "record_id": "<row ID>",
+      "empty_file_accepted": <true|false>,
+      "unicode_filename_preserved": <true|false>,
+      "traversal_filename_outcome": "<rejected|sanitized|<error>>"
+    }
 
-  4. Create a local file named original.txt with content "hello data fabric v1".
-
-  5. Upload original.txt to the Document field of the record:
-       uip df files upload <entity-id> <record-id> Document --file original.txt
-
-  6. Download the file back, saving to downloaded.txt:
-       uip df files download <entity-id> <record-id> Document --destination downloaded.txt
-
-  7. Verify byte integrity: compute SHA-256 hashes of original.txt and downloaded.txt
-     using `shasum -a 256` or Python's hashlib. Confirm they match.
-
-  8. Create a second file named updated.txt with content "hello data fabric v2".
-
-  9. Upload updated.txt to the same Document field (overwrite v1):
-       uip df files upload <entity-id> <record-id> Document --file updated.txt
-
-  10. Download the file again to verify_update.txt and confirm the SHA-256 now
-      matches updated.txt, not original.txt.
-
-  11. Delete the file attachment:
-        uip df files delete <entity-id> <record-id> Document
-
-  12. Attempt to download again. The download should fail since the file was deleted.
-      Record the result (expected: error or empty response).
-
-  Do NOT delete the entity — only delete the file attachment.
+  Leave the list and its row in place — just remove the file
+  attachment when you're done.
 
 success_criteria:
   - type: command_executed
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted a record"
+    description: "Agent looked up the seed record (records query / list / get)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+insert'
+    command_pattern: 'uip\s+df\s+records\s+(query|list|get)\s+'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -91,6 +90,34 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+files\s+delete\s+'
     min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted to upload the empty / unicode / traversal-named files (3 extra edge attempts)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+files\s+upload\s+.*--file'
+    min_count: 5
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json with the edge-case observations was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Empty file was created (zero-byte edge)"
+    path: "empty.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Edge observations recorded as the right shape (booleans + traversal-outcome string)"
+    command: 'python3 -c "import json,sys; d=json.load(open(''report.json'')); ok=(isinstance(d.get(''empty_file_accepted''),bool) and isinstance(d.get(''unicode_filename_preserved''),bool) and isinstance(d.get(''traversal_filename_outcome''),str)); sys.exit(0 if ok else 1)"'
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
@@ -134,6 +161,19 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seed_entity.py
+      --entity-name CE_IntegrationAssets
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_assets.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_assets.records.json
+    timeout: 180
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
-    timeout: 60
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_IntegrationAssets
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_assets.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/seeds/integration_assets.records.json
+    timeout: 180

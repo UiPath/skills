@@ -1,0 +1,22 @@
+[
+  { "Title": "The Matrix",               "Score": 5.0,  "Active": true,  "ReleaseDate": "1999-03-31", "Email": "user1@test.com",  "Notes": "" },
+  { "Title": "The Matrix Reloaded",      "Score": 6.0,  "Active": false, "ReleaseDate": "2003-05-15", "Email": "user2@test.com",  "Notes": "" },
+  { "Title": "The Matrix Revolutions",   "Score": 7.0,  "Active": true,  "ReleaseDate": "2003-11-05", "Email": "user3@test.com",  "Notes": "" },
+  { "Title": "Star Wars",                "Score": 7.5,  "Active": true,  "ReleaseDate": "1977-05-25", "Email": "user4@test.com",  "Notes": "" },
+  { "Title": "The Dark Knight",          "Score": 8.0,  "Active": true,  "ReleaseDate": "2008-07-18", "Email": "user5@test.com",  "Notes": "" },
+  { "Title": "Inception",                "Score": 8.5,  "Active": true,  "ReleaseDate": "2010-07-16", "Email": "user6@test.com",  "Notes": "" },
+  { "Title": "Interstellar",             "Score": 9.0,  "Active": true,  "ReleaseDate": "2014-11-07", "Email": "user7@test.com",  "Notes": "" },
+  { "Title": "The Shawshank Redemption", "Score": 9.5,  "Active": true,  "ReleaseDate": "1994-09-23", "Email": "user8@test.com",  "Notes": "" },
+  { "Title": "Pulp Fiction",             "Score": 10.0, "Active": true,  "ReleaseDate": "1994-10-14", "Email": "user9@test.com",  "Notes": "" },
+  { "Title": "Fight Club",               "Score": 1.0,  "Active": false, "ReleaseDate": "1999-10-15", "Email": "user10@test.com", "Notes": "" },
+  { "Title": "Se7en",                    "Score": 1.5,  "Active": false, "ReleaseDate": "1995-09-22", "Email": "user11@test.com", "Notes": "" },
+  { "Title": "Goodfellas",               "Score": 2.0,  "Active": false, "ReleaseDate": "1990-09-19", "Email": "user12@test.com", "Notes": "" },
+  { "Title": "Forrest Gump",             "Score": 2.5,  "Active": true,  "ReleaseDate": "1994-07-06", "Email": "user13@test.com", "Notes": "A classic" },
+  { "Title": "The Silence of the Lambs", "Score": 3.0,  "Active": true,  "ReleaseDate": "1991-02-14", "Email": "user14@test.com", "Notes": "" },
+  { "Title": "Schindler's List",         "Score": 3.5,  "Active": true,  "ReleaseDate": "1993-12-15", "Email": "user15@test.com", "Notes": "" },
+  { "Title": "The Godfather",            "Score": 4.0,  "Active": true,  "ReleaseDate": "1972-03-24", "Email": "user16@test.com", "Notes": "" },
+  { "Title": "The Godfather Part II",    "Score": 4.5,  "Active": false, "ReleaseDate": "1974-12-20", "Email": "user17@test.com", "Notes": "" },
+  { "Title": "Casablanca",               "Score": 5.0,  "Active": false, "ReleaseDate": "1942-11-26", "Email": "user18@test.com", "Notes": "" },
+  { "Title": "Citizen Kane",             "Score": 5.5,  "Active": false, "ReleaseDate": "1941-09-05", "Email": "user19@test.com", "Notes": "" },
+  { "Title": "12 Angry Men",             "Score": 6.5,  "Active": false, "ReleaseDate": "1957-04-10", "Email": "user20@test.com", "Notes": "" }
+]

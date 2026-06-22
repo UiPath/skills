@@ -1,0 +1,250 @@
+task_id: skill-datafabric-integration-constraint-violations
+description: >
+  Integration test: agent probes per-type constraint boundaries with
+  paired positive/negative attempts that differ by exactly one variable.
+  Covers required vs null vs empty string (three distinct semantics),
+  STRING at lengthLimit and at limit+1, INTEGER at min/max and just
+  outside, DECIMAL at decimalPrecision and just over, DATE at year
+  boundaries plus an invalid calendar date, AUTO_NUMBER client-supplied
+  (server-managed — should reject), system fields client-supplied
+  (CreatedBy / Id), and a relationship pointing to a non-existent row.
+  Per skill Rule 18 the agent must surface the upstream error verbatim
+  and NOT silently substitute or retry — captured in report.json. End
+  state is validated via assert_record_count.py to confirm only the
+  positive attempts landed.
+tags: [uipath-data-fabric, integration, constraints, error-paths, mode:diagnose, lifecycle:setup]
+
+run_limits:
+  max_turns: 70
+  turn_timeout: 600
+
+initial_prompt: |
+  Hey, can you help me load our product inventory into Data Fabric?
+  Sales sent over a spreadsheet of new SKUs but I think a few rows
+  are a little iffy. Let's just try to load them all and see what
+  happens — for anything that doesn't go in cleanly, please tell me
+  what the system said and we'll go back to Sales to fix it. Don't
+  guess what they "probably meant" or rewrite any values; I need to
+  know exactly what was bad so we can correct the source.
+
+  Set up a list called `CE_ConstraintTest` with these columns:
+    - Code — required text, keep it short (no longer than 10 characters)
+    - Quantity — whole number, between 0 and 100
+    - Price — dollar amount with two decimals, never negative
+    - HireDate — when the SKU was first stocked (date only)
+    - Serial — let the system fill this in automatically
+    - ParentLink — optional, links to another SKU in the same list
+      (for variant products)
+
+  Here's what Sales sent. Please try to load each one — for the ones
+  that fail, just record the error message so I can show them:
+
+    1A. Code "OK1",      Quantity 5         — looks normal
+    1B. Code missing,    Quantity 5         — Sales forgot the SKU code
+    1C. Code = null,     Quantity 5         — the export tool left a literal null
+    1D. Code = "",       Quantity 5         — empty code from an old form
+    2A. Code "AAAAAAAAAA" (10 chars), Quantity 5  — long but should be at the limit
+    2B. Code "AAAAAAAAAAB" (11 chars), Quantity 5 — one character too long
+    3A. Code "MIN0",     Quantity 0         — out of stock
+    3B. Code "NEG1",     Quantity -1        — Sales says this was a return; not sure if it'll take
+    4A. Code "MAX",      Quantity 100       — top of the range
+    4B. Code "OVR",      Quantity 101       — over by one
+    4C. Code "INTOV",    Quantity 2147483648 — looks like Sales pasted a giant number by mistake
+    5A. Code "DP2",      Quantity 5, Price 9.99   — normal price
+    5B. Code "DP3",      Quantity 5, Price 9.999  — three decimal places, not sure how it handles that
+    6A. Code "DT1",      HireDate "2024-01-15"    — normal date
+    6B. Code "DTLOW",    HireDate "0001-01-01"    — placeholder used for legacy items
+    6C. Code "DTHI",     HireDate "9999-12-31"    — placeholder used for "never expires" items
+    6D. Code "DTBAD",    HireDate "2024-02-30"    — February 30th, clearly a typo
+    7A. Code "AUTO",     Quantity 5               — let Serial fill in itself; tell me what number you got
+    7B. Code "SET",      Quantity 5, Serial 999   — someone put a serial in by hand
+    7C. Code "SYS",      Quantity 5, CreatedBy "fake-user" — export tool included audit columns
+    7D. Code "IDSET",    Quantity 5, Id "00000000-0000-0000-0000-000000000001" — export included a row Id
+
+  And two more that are supposed to link to other products:
+    8A. Code "REL1",     ParentLink = the row ID of the first row you
+                         loaded successfully (1A)
+    8B. Code "RELBAD",   ParentLink = "00000000-0000-0000-0000-000000000099"
+                         — this ID isn't a real row; Sales is double-
+                         checking what variant this should point to
+
+  When you're done, write up the results in `report.json` so I can
+  forward it. For each entry, just put "succeeded" if it loaded, or
+  paste the actual error message if it didn't:
+
+    {
+      "entity_id": "<list ID>",
+      "pair_1_A": "succeeded" | "<error>",
+      "pair_1_B": "<error or 'succeeded'>",
+      "pair_1_C": "<error or 'succeeded'>",
+      "pair_1_D": "<error or 'succeeded'>",
+      "pair_2_A": "...", "pair_2_B": "...",
+      "pair_3_A": "...", "pair_3_B": "...",
+      "pair_4_A": "...", "pair_4_B": "...", "pair_4_C": "...",
+      "pair_5_A": "...", "pair_5_B": "...",
+      "pair_6_A": "...", "pair_6_B": "...", "pair_6_C": "...", "pair_6_D": "...",
+      "pair_7_A": "...", "pair_7_B": "...", "pair_7_C": "...", "pair_7_D": "...",
+      "pair_8_A": "...", "pair_8_B": "...",
+      "successful_inserts": <int>
+    }
+
+  `successful_inserts` is just the row count in the list at the end —
+  not how many we tried. Cleanup runs after, so don't delete anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the test list with the constraint columns"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_ConstraintTest)(?=.*lengthLimit)(?=.*decimalPrecision)(?=.*(minValue|maxValue))'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted several inserts (the 23 rows may be batched into fewer CLI calls if the agent uses array bodies)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 6
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT retry a failed insert with substituted values (allow batched inserts up to ~3 retries' worth)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 6
+    max_count: 50
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Pair 1 — required field handling captured for all three semantics"
+    path: "report.json"
+    assertions:
+      - expression: "pair_1_A"
+        operator: contains
+        expected: "succeeded"
+      - expression: "pair_1_B"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Pair 2 — string length boundary: at-limit succeeds, over-limit fails"
+    path: "report.json"
+    assertions:
+      - expression: "pair_2_A"
+        operator: contains
+        expected: "succeeded"
+      - expression: "pair_2_B"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Pair 3 — numeric minimum: at-min succeeds, below-min fails"
+    path: "report.json"
+    assertions:
+      - expression: "pair_3_A"
+        operator: contains
+        expected: "succeeded"
+      - expression: "pair_3_B"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Pair 4 — numeric maximum: at-max succeeds, over-max fails, int32+1 fails"
+    path: "report.json"
+    assertions:
+      - expression: "pair_4_A"
+        operator: contains
+        expected: "succeeded"
+      - expression: "pair_4_B"
+        operator: not_equals
+        expected: "succeeded"
+      - expression: "pair_4_C"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Pair 5 — decimal precision behavior captured"
+    path: "report.json"
+    assertions:
+      - expression: "pair_5_A"
+        operator: contains
+        expected: "succeeded"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Pair 6 — invalid calendar date rejected"
+    path: "report.json"
+    assertions:
+      - expression: "pair_6_A"
+        operator: contains
+        expected: "succeeded"
+      - expression: "pair_6_D"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Pair 7 — baseline insert without a client-supplied Serial succeeds (system / auto behavior is platform-dependent and just captured)"
+    path: "report.json"
+    assertions:
+      - expression: "pair_7_A"
+        operator: contains
+        expected: "succeeded"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Pair 7 — outcomes for client-supplied Serial / CreatedBy / Id all recorded (each may pass or fail depending on platform)"
+    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); sys.exit(0 if all(isinstance(d.get(k),str) and d[k] for k in ['pair_7_B','pair_7_C','pair_7_D']) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Pair 8 — relationship to non-existent row is rejected"
+    path: "report.json"
+    assertions:
+      - expression: "pair_8_A"
+        operator: contains
+        expected: "succeeded"
+      - expression: "pair_8_B"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Side-effect check: only the rows the server accepted actually landed"
+    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); pos=sum(1 for k,v in d.items() if k.startswith('pair_') and isinstance(v,str) and 'succeeded' in v.lower()); count=d.get('successful_inserts',-1); sys.exit(0 if count==pos and pos>=8 else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ConstraintTest"
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ConstraintTest"
+    timeout: 60

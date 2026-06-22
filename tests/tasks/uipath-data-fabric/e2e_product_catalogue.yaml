@@ -6,43 +6,40 @@ description: >
   out of stock, uploads a product image to the most expensive item, and
   produces a final inventory summary. Tests the full Discover → Act → Verify
   loop for a realistic e-commerce use case.
-tags: [uipath-data-fabric, e2e, product-catalogue]
+tags: [uipath-data-fabric, e2e, product-catalogue, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 35
   max_turns: 50
-  turn_timeout: 600
+  turn_timeout: 1200
 
 initial_prompt: |
   Build an e-commerce product catalogue in UiPath Data Fabric.
 
-  Create entity `ProductCatalogue_<EPOCH>` (Unix epoch seconds suffix —
-  e.g. `ProductCatalogue_1716163200`) with fields:
-    - ProductName  STRING
-    - Category     STRING   (values: Electronics | Clothing | Home)
-    - Price        DECIMAL
-    - InStock      BOOLEAN
-    - SKU          STRING
-    - Poster       FILE
+  Make a list called `CE_ProductCatalogue` with these fields:
+    - Product name
+    - Category (Electronics, Clothing, or Home)
+    - Price (decimal)
+    - In stock (yes / no)
+    - SKU
+    - A poster image attachment (call this field `Poster`)
 
-  Generate `products.csv` with 15 products, 5 per category (omit the
-  Poster column — file fields are not importable via CSV). Import via
-  `uip df records import --file products.csv`.
+  Then bulk-load 15 products from a CSV file you generate
+  (`products.csv`) — 5 per category.
 
-  Then:
-    - Query Electronics — confirm exactly 5 results.
-    - Apply +10% to the two most expensive products (across all
-      categories), updating each individually.
-    - Mark the three cheapest products `InStock=false`.
-    - Create `product_hero.jpg` locally and upload it to the `Poster`
-      field of the single most expensive product.
-    - Report final state: total products, in-stock count, Electronics
-      count.
+  Once the data is in, do a few quick things:
+    - Show me just the Electronics — there should be exactly 5.
+    - Bump the two most expensive products by 10% (across all
+      categories), one at a time.
+    - Mark the three cheapest as out of stock.
+    - Make a placeholder `product_hero.jpg` locally and attach it to
+      the single most expensive product.
+    - Tell me the final tally: total products, how many are in stock,
+      and how many are Electronics.
 
-  Before finishing, write `report.json` to the working directory:
+  When you're done, save `report.json`:
     {"entity_id": "<created-entity-id>"}
 
-  The harness deletes the entity using `report.json`. Do not delete it
+  Cleanup runs after using `report.json` — don't delete the list
   yourself.
 
 success_criteria:
@@ -55,9 +52,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent imported products from CSV"
+    description: "Agent bulk-loaded products (either CSV via `records import` or JSON via `records insert --file` — both are valid for Basic-type-only schemas)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+import'
+    command_pattern: 'uip\s+df\s+records\s+(?:import|insert\s+\S+\s+--file)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -136,6 +133,11 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue"
+    timeout: 60
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue"
     timeout: 60

@@ -1,0 +1,252 @@
+task_id: skill-datafabric-integration-filter-edge-cases
+description: >
+  Integration test: agent runs filter and pagination scenarios that
+  catch real-world regressions — null-vs-not-null semantics, special
+  characters in filter literals (single quote, percent, underscore,
+  backslash — SQL injection and LIKE-escape vectors), case sensitivity
+  on STRING equality, $top=0, $top above the documented max, $skip
+  past the end of the result set, $orderby on a nullable field
+  (null-first vs null-last consistency across pages), and pagination
+  consistency while the underlying data is modified mid-walk. Each
+  scenario has an expected outcome captured in report.json; an
+  independent record-count oracle verifies the entity ended up in the
+  expected state.
+tags: [uipath-data-fabric, integration, records, filter-edges, mode:operate, lifecycle:discover]
+
+run_limits:
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Hey, we got a batch of customer feedback to import and I need to
+  pull a few reports off it. The CSV is a bit messy — some folks
+  didn't fill in their score, some notes have apostrophes (we have
+  customers named O'Brien), one customer mentioned a discount in
+  percent terms ("50% off"), and so on. Could you set up a list and
+  run some searches for me?
+
+  Set up a list called `CE_FilterEdgeTest` with three columns:
+    - Title — required text, up to 200 characters (the customer name)
+    - Score — optional whole number (CSAT score 1-10; some rows blank)
+    - Notes — optional long text (free-form feedback)
+
+  Load these 10 entries in:
+    1.  Title "alpha",                 Score 10,    Notes "first"
+    2.  Title "beta",                  Score 20,    Notes left blank
+    3.  Title "Gamma",                 Score blank, Notes "" (empty string)
+    4.  Title "delta",                 Score 30,    Notes "with quote: O'Brien"
+    5.  Title "epsilon",               Score 40,    Notes "with percent 50%"
+    6.  Title "zeta",                  Score 50,    Notes "with underscore _ here"
+    7.  Title "eta",                   Score 60,    Notes "with backslash \\ here"
+    8.  Title "ALPHA",                 Score 70,    Notes "uppercase twin of row 1"
+    9.  Title "row with newline",      Score 80,    Notes "line1\nline2"
+    10. Title "unicode café résumé",   Score 90,    Notes "non-ascii"
+
+  Keep the IDs of each row as you load them — I'll want them in the
+  final report.
+
+  Reports I need:
+
+  Follow-up lists (we need to chase these customers):
+    - Pull the customers who didn't fill in a score.
+    - Pull the customers who DID fill in a score (for the thank-you mail).
+    - Pull the customers who left notes blank (no feedback at all).
+    - Pull the customers who left empty-string notes (they hit submit
+      with the box empty — we treat that differently from "didn't
+      open the form" but please confirm the counts come out separate).
+
+  Free-text search across the notes:
+    - Find the customer whose notes mention "O'Brien" — that
+      apostrophe used to break our old search.
+    - Find anyone who mentioned a percent sign in their notes (might
+      be talking about discounts).
+    - Find anyone whose notes contain an underscore (folks sometimes
+      paste their username).
+    - Find anyone whose notes contain a backslash (could be a Windows
+      file path).
+
+  One more — I'm worried about case-sensitivity:
+    - Search for the title exactly "alpha" and tell me how many came
+      back. If "ALPHA" (the uppercase one) also came through, mention
+      that — we may need to change how we de-dupe.
+
+  And then I want to make sure paging behaves itself before I wire
+  it into the dashboard:
+    - I once typed "0" into the page size by accident in another tool
+      and it broke things — please try page size 0 and let me know
+      whether the system handles it gracefully (empty page) or errors
+      out.
+    - The dashboard might let users type silly numbers. Please try
+      page size 100,000 and tell me whether it gets capped or just
+      hands back everything.
+    - If a user pages way past the end (say, asks for the page at
+      position 1000 when we only have 10 rows), please confirm we
+      just get an empty page and not an error.
+    - Sort everyone by score, lowest first. Where does the customer
+      with no score land — top, bottom, or somewhere in the middle?
+      Run the same sort one more time and check that they land in
+      the same spot — we need the order to be stable for the UI.
+    - Last one — I'm nervous about pagination if a colleague adds or
+      deletes someone mid-walk. Could you simulate this? Start paging
+      in chunks of 3, then between page 1 and page 2 add a customer
+      "midstream-add" (score 95) and delete row 5. Keep paging using
+      the cursor you already had from page 1. Tell me if anyone shows
+      up twice or if anyone got skipped — that's the kind of glitch
+      I'm worried about.
+
+  Save everything to `report.json` when you're done:
+    {
+      "entity_id": "<list ID>",
+      "row_ids": ["<r1>", "<r2>", ... "<r10>"],
+      "edge_1_A_count": <int>,
+      "edge_1_B_count": <int>,
+      "edge_1_C_count": <int>,
+      "edge_1_D_count": <int>,
+      "edge_2_A_count": <int>,
+      "edge_2_B_count": <int>,
+      "edge_2_C_count": <int>,
+      "edge_2_D_count": <int>,
+      "edge_3_A_count": <int>,
+      "edge_3_A_case_insensitive": <true|false>,
+      "edge_4_A_result": "<empty|error|count>",
+      "edge_4_B_result": "<count|error|clamped>",
+      "edge_4_C_result": "<empty|error>",
+      "edge_5_A_null_position": "<first|last|middle>",
+      "edge_5_A_position_stable": <true|false>,
+      "edge_6_C_duplicate_ids": [<list of ids that appeared in 2+ pages, or []>],
+      "edge_6_C_missing_ids": [<list of ids that should have appeared but didn't, or []>]
+    }
+
+  Leave everything in place when you're done — I'll sweep it later.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the test list"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*CE_FilterEdgeTest'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent loaded the 10 edge-case rows"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran null-handling searches (is null / is not null on Score and Notes)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*"value"\s*:\s*null'
+    min_count: 2
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent searched on special characters (quote / percent / underscore / backslash)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 10
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted page size 0 and a very large page size"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit\s+(0|100000)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent sorted by Score (nullable column)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*sortOptions.*Score'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Null vs empty vs missing distinction captured correctly"
+    path: "report.json"
+    assertions:
+      - expression: "edge_1_A_count"
+        operator: equals
+        expected: 1
+      - expression: "edge_1_B_count"
+        operator: equals
+        expected: 9
+      - expression: "edge_1_C_count"
+        operator: equals
+        expected: 1
+      - expression: "edge_1_D_count"
+        operator: equals
+        expected: 1
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Special-character searches at least found the target row (the platform treats %/_ as LIKE wildcards so they may match extra rows — captured separately)"
+    path: "report.json"
+    assertions:
+      - expression: "edge_2_A_count"
+        operator: gte
+        expected: 1
+      - expression: "edge_2_B_count"
+        operator: gte
+        expected: 1
+      - expression: "edge_2_C_count"
+        operator: gte
+        expected: 1
+      - expression: "edge_2_D_count"
+        operator: gte
+        expected: 1
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Case-sensitivity behavior recorded (test does not prescribe — agent must observe)"
+    path: "report.json"
+    assertions:
+      - expression: "edge_3_A_count"
+        operator: gte
+        expected: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Pagination edges captured (page size 0, oversized, past-end)"
+    path: "report.json"
+    assertions:
+      - expression: "edge_4_C_result"
+        operator: equals
+        expected: "empty"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Sort on nullable column is stable across repeated queries"
+    path: "report.json"
+    assertions:
+      - expression: "edge_5_A_position_stable"
+        operator: equals
+        expected: true
+    weight: 2.5
+    pass_threshold: 1.0
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FilterEdgeTest"
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FilterEdgeTest"
+    timeout: 60

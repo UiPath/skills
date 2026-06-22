@@ -42,6 +42,11 @@ RUN set -euo pipefail && \
     # Pre-install from the same @alpha feed so live `uip agenthub …` MCP e2e
     # tasks don't hit a missing-plugin 401.
     uip tools install @uipath/agenthub-tool && \
+    # Data Fabric command group (`uip df …`) — required by every
+    # tests/tasks/uipath-data-fabric/* task. Without this, `uip df entities …`
+    # / `records …` / `choice-sets …` / `files …` all return
+    # "unknown command 'df'" and pre_run seed scripts + agent calls both fail.
+    uip tools install @uipath/data-fabric-tool && \
     uip tools list
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.

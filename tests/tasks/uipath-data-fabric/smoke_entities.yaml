@@ -7,46 +7,41 @@ description: >
   identify field IDs from Fields[].ID, add new fields (addFields), and update an
   existing field's metadata and constraints (updateFields with id key). Tests
   all entity command syntax in a single pass.
-tags: [uipath-data-fabric, smoke, entities]
-
+tags: [uipath-data-fabric, smoke, entities, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 14
   max_turns: 30
 
 initial_prompt: |
-  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
-  Every uip df command will fail with an auth error — that is expected and normal.
-  Run each command exactly once, ignore the auth error, and continue to the next step.
-  Do NOT retry any command. Do NOT attempt to login.
+  Heads-up — I'm just sketching this out before I've actually logged in, so every command will error on auth. Don't worry about that, and please don't retry or try to log in — I just want to see the right steps in order.
 
   There is an existing entity "Employees" with entity ID "ent-456-xyz".
   Fields: FirstName (STRING), LastName (STRING), HireDate (DATE).
 
-  Do the following in order:
-  1. List native-only entities to discover what already exists.
-  2. Create a new entity "Departments" with these fields and advanced constraints:
-       - DeptName    (STRING,   lengthLimit 100, required)
-       - HeadCount   (INTEGER,  minValue 0, maxValue 10000)
-       - Budget      (DECIMAL,  decimalPrecision 2, minValue 0, maxValue 999999)
-       - Description (MULTILINE_TEXT, lengthLimit 2000)
-  3. Get the full schema for Employees using entities get.
-     Note which property in the Fields array contains each field's ID and that
-     existing field constraints are echoed under
-     Fields[].fieldDataType.{lengthLimit,maxValue,minValue,decimalPrecision}.
-  4. Add one new field to Employees: Salary (DECIMAL, decimalPrecision 2,
-     minValue 0).
-  5. Update the HireDate field on Employees: set displayName to "Date Hired"
-     and isRequired to true. Use placeholder field ID "field-hire-id" (which
-     would come from Fields[].ID in the entities get response) in the
-     updateFields body.
-  6. Tighten the DeptName field on Departments via updateFields: change its
-     lengthLimit to 200. Use placeholder field ID "field-deptname-id".
+  Could you help us with this:
 
-  Additional constraints:
-  - Use --output json on every uip df command.
-  - Do NOT apply lengthLimit to numeric types, and do NOT apply decimalPrecision
-    to STRING or INTEGER — those combinations are invalid.
-  - Do NOT use removeFields. Do NOT delete any entity.
+    - First, show me what lists are already in the tenant.
+
+    - Set up a new Departments list called `CE_SmokeDepartments` with
+      these columns:
+        - Department name — required, no longer than 100 characters
+        - Head count — whole number, between 0 and 10,000
+        - Budget — decimal, two places, between 0 and 999,999
+        - Description — long text, up to 2000 characters
+
+    - Read the Employees list's settings back so you have the column
+      IDs handy.
+
+    - Add a salary column to Employees: decimal, two places, never
+      negative.
+
+    - Rename the hire date column to "Date Hired" and make it required
+      (use the column ID you just read from Employees' settings).
+
+    - On the Departments list, bump the department-name length limit
+      to 200 (use the column ID from the Departments settings you just
+      created).
+
+  Please don't try to remove any columns and don't delete any lists.
 
 success_criteria:
   - type: command_executed
@@ -128,4 +123,3 @@ success_criteria:
     min_count: 2
     weight: 1.0
     pass_threshold: 1.0
-

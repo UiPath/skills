@@ -6,55 +6,35 @@ description: >
   verified server behavior in BulkUploadCSVHelper. The agent must use
   `records insert --file <json>` instead and must NOT put complex-field
   columns in a CSV file.
-tags: [uipath-data-fabric, smoke, complex-fields, bulk-import]
+tags: [uipath-data-fabric, smoke, complex-fields, bulk-import, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 15
   max_turns: 25
 
-sandbox:
-  driver: docker
 
 initial_prompt: |
-  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
-  Every uip df command will fail with an auth error — that is expected and normal.
-  Run each command exactly once, ignore the auth error, and continue to the next step.
-  Do NOT retry any command. Do NOT attempt to login.
+  Heads-up — I'm just sketching this out before I've actually logged in, so every command will error on auth. Don't worry about that, and please don't retry or try to log in — please run each step exactly once as a real Bash command so I can see the right shape.
 
-  Context — existing entity "Expense" (ID "exp-ent-001") with fields:
-  - amount       (DECIMAL)
-  - description  (MULTILINE_TEXT)
-  - category     (CHOICE_SET_SINGLE,   choiceSetId "cs-cat-001")
-  - tags         (CHOICE_SET_MULTIPLE, choiceSetId "cs-tags-001")
-  - customerId   (RELATIONSHIP → Customer)
+  There is an Expense entity with entity ID "exp-ent-001".
+  Its fields are:
+    - amount (DECIMAL)
+    - description (STRING)
+    - category (CHOICE_SET_SINGLE, choice-set ID "cs-cat-001")
+    - tags (CHOICE_SET_MULTIPLE, choice-set ID "cs-tags-001")
+    - customerId (RELATIONSHIP to a Customer entity)
 
-  Seed 3 Expense records covering plain + complex fields:
-    R1: amount=100, description="taxi", category=1 (travel), tags=[1,3],
-        customerId="c-uuid-A"
-    R2: amount=250, description="dinner", category=2 (meals), tags=[2],
-        customerId="c-uuid-A"
-    R3: amount=400, description="hotel", category=3 (lodging), tags=[3],
-        customerId="c-uuid-B"
+  Load these 3 rows:
+    R1 — amount 100, description "taxi",   category travel, tags travel + lodging, customer "c-uuid-A"
+    R2 — amount 250, description "dinner", category meals,  tags meals,            customer "c-uuid-A"
+    R3 — amount 400, description "hotel",  category lodging, tags lodging,         customer "c-uuid-B"
 
-  IMPORTANT — picking the right bulk path:
-  - `uip df records import <id> --file data.csv` only processes Basic field
-    types (STRING, INTEGER, DECIMAL, BOOLEAN, DATE, DATETIME, MULTILINE_TEXT,
-    UUID). For CHOICE_SET_*, RELATIONSHIP, FILE, and AUTO_NUMBER columns it
-    silently drops the row value — column header is accepted but the field
-    inserts as null with no warning. Verified server behavior.
-  - For entities that include any complex field, write a JSON array to a
-    file and pass it via `uip df records insert <id> --file <json>`. The
-    insert endpoint handles all field types.
+  Bulk-load all 3 rows in one go using whichever `uip df` bulk path is
+  the right one for this list's column types. Write the file in
+  whatever format your chosen command needs.
 
-  Do this in order. Use --output json on every uip df command.
-
-  1. Write the 3 seed records to a file. Pick the format that works for an
-     entity with complex fields. Name the file accordingly. Do not write
-     `category`, `tags`, or `customerId` columns into a CSV.
-  2. Run the matching uip df command to load the file.
-  3. Save a one-paragraph note in `decision.md` explaining which command you
-     chose (`records import` vs `records insert`) and why — specifically
-     referencing the CSV silent-drop behavior for complex fields.
+  When you're done, jot a short note in `decision.md` (one paragraph)
+  saying which uip df command you used and why it is the correct
+  choice for a list shaped like this one.
 
 success_criteria:
   - type: command_executed
