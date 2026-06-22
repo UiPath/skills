@@ -34,6 +34,8 @@ Every guardrail object in the `guardrails` array shares these base fields:
 
 The `selector` field controls where the guardrail applies.
 
+> **Conversational agents — use `["Tool"]` ONLY. `"Agent"` and `"Llm"` are NOT available; DO NOT use them.** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Rule 1).
+
 ```json
 "selector": {
   "scopes": ["Agent", "Llm", "Tool"],
@@ -43,7 +45,7 @@ The `selector` field controls where the guardrail applies.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required |
+| `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required. **Conversational agents: use `["Tool"]` ONLY — `"Agent"`/`"Llm"` are NOT available, DO NOT use them**. |
 | `matchNames` | string[] | Yes (when `Tool` in scopes) | Target tools by name. Required when `"Tool"` is in `scopes` — always list tool names explicitly. |
 
 ### Scope Definitions
