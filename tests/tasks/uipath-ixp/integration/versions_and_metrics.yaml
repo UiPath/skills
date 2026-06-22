@@ -1,0 +1,89 @@
+task_id: skill-ixp-integration-versions-and-metrics
+description: >
+  Integration: multi-version metrics reasoning on a live project. The agent
+  produces two trained versions (via a configure-model A/B change + retrain),
+  then pulls per-version metrics, compares them, and ranks the versions by score.
+  The value is the computed comparison/ranking — agent reasoning over live
+  metric values, which a command-shape smoke cannot produce.
+  Covers ACTV-88700 (model A/B), ACTV-88716 (compare versions), ACTV-88717 (rank by score).
+tags: [uipath-ixp, integration, mode:diagnose]
+
+run_limits:
+  expected_turns: 36
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../e2e/fixtures
+
+initial_prompt: |
+  Compare IXP model versions on the live tenant. `--output json` on every
+  `uip ixp` command.
+
+  Setup:
+  1. `uip login status --output json` — do NOT re-login.
+  2. Create a project WITHOUT a taxonomy (unique title `ixp-int-ver-<random>`),
+     import `./fixtures/taxonomy.json`, upload the three `./fixtures/` invoices,
+     and wait for the first model version to train.
+
+  Produce a second version (A/B):
+  3. Read `list-models` and `get-metrics` for the current version (this is "A").
+  4. Change the model configuration with `configure-model` (e.g. escalate
+     `--preprocessing` to `table`, or switch `--model`), then retrain and wait
+     for a new version ("B").
+
+  Compare + rank:
+  5. Pull `get-metrics --model-version <A>` and `get-metrics --model-version <B>`.
+  6. Compare the two: report which version has the higher overall/line-item
+     score and which fields changed. State the delta.
+  7. Rank ALL trained versions by score: join `list-models` with per-version
+     `get-metrics` and print an ordered list (best → worst), citing the score
+     used for each.
+
+  Cleanup (final step): delete the project with `--confirm-data-loss`.
+
+  - Do NOT ask for approval or pause between steps.
+
+success_criteria:
+  - type: command_executed
+    description: "Verified login status first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed model versions"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+list-models'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Changed model configuration (A/B)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+configure-model'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Pulled metrics scoped to a specific version (-m/--model-version)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics\b.*(--model-version|-m)\s'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the project as cleanup"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

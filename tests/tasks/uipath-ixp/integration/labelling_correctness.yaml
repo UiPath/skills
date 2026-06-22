@@ -1,0 +1,109 @@
+task_id: skill-ixp-integration-labelling-correctness
+description: >
+  Integration: labelling correctness on a live trained project with a repeatable
+  field group (Line Items). Verifies per-occurrence confirm targeting (only the
+  chosen occurrences are confirmed), OCR-correction forwarding across occurrences
+  under `--group`, unconfirm rollback, and mark-missing — each checked by
+  re-reading `get-predictions`. These are CLI payload-construction behaviors, not
+  backend semantics.
+  Covers ACTV-88563: per-occurrence confirm, corrections forwarding, mark-missing.
+tags: [uipath-ixp, integration, mode:operate]
+
+run_limits:
+  expected_turns: 34
+  turn_timeout: 900
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../e2e/fixtures
+
+initial_prompt: |
+  Exercise IXP labelling correctness against the live tenant. `--output json` on
+  every `uip ixp` command.
+
+  Setup:
+  1. `uip login status --output json` — do NOT re-login.
+  2. Create a project WITHOUT a taxonomy (unique title `ixp-int-lbl-<random>`),
+     import `./fixtures/taxonomy.json`, and upload the three invoices in
+     `./fixtures/` (`hp_tax_invoice.png`, `york_solutions_invoice.png`,
+     `csi_tower_invoice.png`). Wait for training to settle before reading
+     predictions (poll `list-models` / follow the skill's retrain-wait guidance).
+  3. Pick the document with the MOST `Invoice > Line Items` occurrences via
+     `get-predictions`. Note the 0-based occurrence order.
+
+  Checks (re-read `get-predictions` after each mutation to verify):
+  4. Per-occurrence: confirm ONLY occurrence 0 of `Invoice > Line Items`
+     (`confirm --group "Invoice > Line Items" --occurrence 0`). Verify occurrence
+     0 is confirmed and the others remain unconfirmed.
+  5. Corrections forwarding: in ONE batched `confirm --group "Invoice > Line Items"
+     --updates '[...]'` call, include a `corrections` entry for a field on two
+     different occurrences; verify the correction applied to BOTH occurrences,
+     not just one.
+  6. Rollback: `unconfirm` the fields from step 4–5; verify they return to
+     un-annotated.
+  7. mark-missing: choose a field that is genuinely absent / has no predicted
+     value and `mark-missing --fields <id>`; verify the call succeeds.
+
+  Cleanup (final step): delete the project with `--confirm-data-loss`.
+
+  - Do NOT ask for approval or pause between steps.
+
+success_criteria:
+  - type: command_executed
+    description: "Verified login status first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Fetched predictions to inspect occurrences (multiple calls: before + after mutations)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+get-predictions'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Confirmed a single occurrence via --group + --occurrence"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--occurrence)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Batched confirm with --updates carrying a corrections entry across occurrences"
+    tool_name: "Bash"
+    command_pattern: '(?s)(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b.*--group.*--updates.*corrections'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Rolled back with unconfirm"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+unconfirm'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Marked a genuinely-absent field missing"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+mark-missing\b.*--fields'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the project as cleanup"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

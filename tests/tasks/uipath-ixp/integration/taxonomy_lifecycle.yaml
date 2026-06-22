@@ -1,0 +1,129 @@
+task_id: skill-ixp-integration-taxonomy-lifecycle
+description: >
+  Integration: full taxonomy-editing lifecycle against a live tenant, verified by
+  reading taxonomy back with `get-taxonomy` after each edit. Covers create field
+  group + fields (with sensible default types), add field, rename group/field,
+  change-type, bulk update-prompts (incl. Unmatched reporting), import-taxonomy
+  round-trip, and delete group with an accurate cascade count. Asserts only
+  CLI-observable taxonomy state (names/types/instructions) and agent judgment —
+  NOT backend annotation semantics.
+  Covers ACTV-88563 (taxonomy block): change-type, group/field CRUD,
+  update-prompts + Unmatched, sensible default types, cascade counts, import round-trip.
+tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 30
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../e2e/fixtures
+
+initial_prompt: |
+  Exercise the IXP taxonomy-editing lifecycle against the live tenant. Use
+  `--output json` on every `uip ixp` command.
+
+  Setup:
+  1. `uip login status --output json` — do NOT re-login; use the active tenant.
+  2. Create a project WITHOUT a taxonomy (unique title `ixp-int-tax-<random>`),
+     then import the bundled `./fixtures/taxonomy.json`. Capture the project Name.
+
+  Edits (re-read `get-taxonomy` after each and confirm the change landed):
+  3. Add a new field group "Charges" with two fields where you do NOT specify a
+     type — let the skill choose sensible types that resolve against the
+     project's existing entity_defs. Confirm the fields exist with resolvable types.
+  4. Add a field "Surcharge" to "Charges".
+  5. Rename the field group "Charges" → "Adjustments"; confirm the new name and
+     that its fields are still present.
+  6. Rename a field within it; confirm the new field name.
+  7. Change one field's type with `fields change-type … --confirm-data-loss`;
+     confirm `get-taxonomy` shows the new type. (Warn about data loss first.)
+  8. Bulk `fields update-prompts --updates` for two fields PLUS one name that does
+     not exist; confirm the real fields' instructions changed in `get-taxonomy`
+     and the non-existent name is reported under `Unmatched` without failing.
+  9. Before deleting, state the ACCURATE number of fields in "Adjustments" that
+     will be lost (read it from `get-taxonomy`), then delete the group with
+     `groups delete … --confirm-data-loss`; confirm it's gone from `get-taxonomy`.
+  10. Round-trip check: `get-taxonomy` of this project, save it, and confirm it
+     still contains the original imported groups.
+
+  Cleanup (final step): delete the project with `--confirm-data-loss`. The task
+  is NOT complete until the project is deleted.
+
+  - Do NOT ask for approval or pause between steps.
+
+success_criteria:
+  - type: command_executed
+    description: "Verified login status first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Imported the bundled taxonomy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+import-taxonomy'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created a field group and added fields"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+add'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Renamed a field group"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+rename'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Changed a field's type with the data-loss guard"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+change-type\b.*--confirm-data-loss'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Bulk-updated field prompts"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b.*--updates'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the field group with the data-loss guard"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+delete\b.*--confirm-data-loss'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Read taxonomy back to verify edits (multiple get-taxonomy calls)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-taxonomy'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the project as cleanup"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

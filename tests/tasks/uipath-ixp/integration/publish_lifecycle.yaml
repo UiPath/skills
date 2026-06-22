@@ -1,0 +1,95 @@
+task_id: skill-ixp-integration-publish-lifecycle
+description: >
+  Integration: model publish/tag lifecycle on a live project, verified by
+  re-reading `list-models` after each transition. Covers publish, tag
+  staging/live, moving a tag to another version, unpublish, and untag — asserting
+  the published flag / tag pointer actually moved (wire-effect), not just command
+  shape.
+  Covers ACTV-88563: wire-effect of publish/tag/unpublish/untag.
+tags: [uipath-ixp, integration, mode:operate]
+
+run_limits:
+  expected_turns: 34
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../e2e/fixtures
+
+initial_prompt: |
+  Exercise the IXP publish/tag lifecycle on the live tenant. `--output json` on
+  every `uip ixp` command.
+
+  Setup:
+  1. `uip login status --output json` — do NOT re-login.
+  2. Create a project WITHOUT a taxonomy (unique title `ixp-int-pub-<random>`),
+     import `./fixtures/taxonomy.json`, upload the three `./fixtures/` invoices,
+     and wait for training. Produce a SECOND version (make any small taxonomy or
+     config change and retrain) so there are at least two versions to tag/move
+     between.
+
+  Transitions (re-read `list-models` after each and confirm the published flag /
+  tag pointer actually moved):
+  3. Publish the earlier version tagged `staging`.
+  4. Publish the later version tagged `live`.
+  5. Move the `live` tag to the other version (publish that version `--tag live`);
+     confirm `list-models` shows the tag now points at it.
+  6. `untag` one version; confirm the tag is cleared but the version stays published.
+  7. `unpublish` a version (`--model-version <N>`); confirm it's no longer
+     published but still listed.
+
+  Cleanup (final step): delete the project with `--confirm-data-loss`.
+
+  - Do NOT ask for approval or pause between steps.
+
+success_criteria:
+  - type: command_executed
+    description: "Verified login status first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Published with a tag (staging/live)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+publish\b.*--tag\s+(live|staging)'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Untagged a version"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+untag\b.*--model-version'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Unpublished a version"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+unpublish\b.*--model-version'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Re-read list-models to verify each transition (multiple calls)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+list-models'
+    min_count: 3
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the project as cleanup"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,101 @@
+task_id: skill-ixp-integration-name-resolution
+description: >
+  Integration: name/title resolution on a live tenant. The agent must resolve
+  user-facing references to the ids the CLI needs — a document by FILENAME (and
+  by list position) → DocumentId via `documents list`, and a project by its TITLE
+  → Name via `projects list` — rather than passing the human label straight
+  through. The resolution step is the integration part; smokes pass the id in the
+  prompt.
+  Covers ACTV-88563: doc name/position resolution, project title→Name resolution.
+tags: [uipath-ixp, integration, mode:operate]
+
+run_limits:
+  expected_turns: 24
+  turn_timeout: 600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../e2e/fixtures
+
+initial_prompt: |
+  Work against the live tenant. `--output json` on every `uip ixp` command.
+
+  Setup:
+  1. `uip login status --output json` — do NOT re-login.
+  2. Create a project WITHOUT a taxonomy. Give it the TITLE `IxP Int Resolve <random>`
+     (a human-readable title, distinct from the generated Name slug). Import
+     `./fixtures/taxonomy.json` and upload the three `./fixtures/` invoices.
+
+  Resolution tasks — you are given human labels, NOT ids. Resolve them yourself:
+  3. "Delete the file `york_solutions_invoice.png`." Resolve the filename to its
+     DocumentId via `documents list` (do NOT pass the filename as the id), then
+     `documents delete <project> <DocumentId> -y`. Re-list and confirm it's gone.
+  4. "Delete the first remaining document in the list." Resolve list position →
+     DocumentId via `documents list`, then delete it (with `-y`). Confirm via re-list.
+  5. "Rename the project titled `IxP Int Resolve <random>` to a new title."
+     Resolve the TITLE to the project Name via `projects list` (the CLI needs the
+     Name slug, not the Title), then `projects update-title`.
+
+  Cleanup (final step): delete the project with `--confirm-data-loss` (resolve the
+  title → Name again if needed).
+
+  - Do NOT ask for approval or pause between steps.
+
+success_criteria:
+  - type: command_executed
+    description: "Verified login status first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed documents to resolve filename/position → DocumentId (before + after)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+documents\s+list'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted documents by resolved id (with -y)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+documents\s+delete\b.*(-y|--yes)'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Listed projects to resolve Title → Name"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Renamed the project via update-title"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+update-title'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did NOT pass the raw filename through as a document id to delete"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+documents\s+delete\s+\S+\s+york_solutions_invoice\.png'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Deleted the project as cleanup"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
