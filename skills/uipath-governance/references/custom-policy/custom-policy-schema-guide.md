@@ -1,40 +1,94 @@
 # Custom Policy — Rego Authoring Reference
 
-Single source of truth for the JSON policy file format, the Rego input shape at each hook, common Rego patterns, and what can't be expressed in the current runtime.
+Single source of truth for the Rego file format, OPA METADATA annotations, the Rego input shape at each hook, common Rego patterns, and what can't be expressed in the current runtime.
 
 > **Audit mode only.** All rule verdicts (allow/deny) are recorded in the audit trail. The runtime does not yet stop or interrupt agent actions when a deny verdict fires. Be explicit with users: an active policy means its verdicts appear in audit logs, not that matching actions are blocked.
 
 ---
 
-## JSON Envelope (`--file` format)
+## Rego File Format (`--file` format)
 
-The `--file` argument for `create` and `update` must be a JSON file:
+The `--file` argument for `create` and `update` must be a plain `.rego` file. The server extracts all policy metadata from **OPA METADATA annotations** embedded directly in the Rego source — no separate JSON envelope is needed.
 
-```json
-{
-  "rego": "package policy.my_policy\n\ndefault deny = false\n\ndeny if {\n    input.hook == \"before_model\"\n    input.model_name == \"forbidden-model\"\n}",
-  "metadata": {
-    "name": "My Policy",
-    "version": "1.0",
-    "hooks": ["before_model"],
-    "rules": [
-      { "id": "__POLICY_ID__/RULE-1", "message": "Forbidden model used", "priority": 80 }
-    ]
-  }
+The server runs `opa inspect --annotations` on the submitted file to extract name, version, hooks, and rule messages/priorities. A submission missing the required package-level annotation is rejected with a descriptive error.
+
+---
+
+## OPA METADATA Annotations
+
+### Package-level annotation (required)
+
+Placed immediately before the `package` declaration. Declares the policy identity.
+
+```rego
+# METADATA
+# title: My Policy
+# custom:
+#   version: "1.0"
+#   hooks:
+#   - before_model
+#   - after_model
+package policy.my_policy
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `title` | **yes** | Policy display name. Must be unique within the tenant. |
+| `custom.version` | no | Free-form version string (default: `"1.0"`). |
+| `custom.hooks` | **yes** | Array of lifecycle hooks this policy fires on. Controls which hook WASMs are recompiled. |
+
+### Rule-level annotation (one per deny/allow rule)
+
+Placed immediately before the rule definition. Declares the audit message and evaluation priority.
+
+```rego
+# METADATA
+# title: MY_POLICY-model-approval
+# description: Model not in approved list.
+# custom:
+#   priority: 90
+deny_rules contains "MY_POLICY-model-approval" if {
+    input.hook in {"before_model"}
+    input.model_name != ""
+    not allowed_models[input.model_name]
 }
 ```
 
-Constraints:
+| Field | Required | Description |
+|-------|----------|-------------|
+| `title` | **yes** | Rule ID. Must match the string in `deny_rules contains "<ID>"` exactly. |
+| `description` | no | Message shown in the audit trail for this verdict. Defaults to the rule ID if omitted. |
+| `custom.priority` | no | Evaluation priority (higher = first). Default `0`. |
 
-- `rego` — full Rego source. Must pass Regal lint or the request is rejected.
-- `metadata.name` — must be unique within the tenant. Duplicate name returns an error.
-- `metadata.hooks` — controls which hook WASMs are recompiled. List only hooks the Rego actually fires on.
-- `metadata.rules[].id` — must follow `{policyId}/RULE-N` format. Use `__POLICY_ID__/RULE-1` as a placeholder at authoring time. Replace with the real `policyId` returned by `create` in any copy you keep locally.
-- `metadata.version` — free-form display string; does not affect compilation or evaluation order.
+**Constraint:** `title` in the annotation must exactly match the string literal used in `deny_rules`/`allow_rules`. The server enforces this at compile time.
 
-**Conflict resolution:**
-- `metadata.rules[].priority` — higher number evaluated first within this policy.
-- Cross-policy: each active policy is evaluated independently. Any `deny` verdict from any active policy is recorded in the audit trail. No `allow` verdict in one policy cancels a `deny` from another.
+---
+
+## Package Naming and Required Structure
+
+```rego
+package policy.<snake_case_name>
+```
+
+Use the policy name lowercased with spaces replaced by underscores. One package per file.
+
+Every policy **must** follow the `deny_rules` set pattern — NOT a `deny` boolean. The server's merge file aggregates across all active policies using:
+
+```rego
+deny_rules contains r if data.policy.<name>.deny_rules[r]
+```
+
+A policy that defines `deny if { ... }` (boolean) is a **silent no-op** — it contributes nothing to the merged bundle and produces no audit output.
+
+**Required boilerplate in every policy:**
+
+```rego
+# Sentinel lines — required so the merge file sees a non-empty set definition
+deny_rules  contains "__sentinel__" if false
+allow_rules contains "__sentinel__" if false
+```
+
+Rule ID naming: `<POLICY-PREFIX>-<description>` (e.g. `MY_POLICY-model-approval`). Must be unique within the policy and must match the annotation `title` exactly.
 
 ---
 
@@ -59,15 +113,28 @@ All fields available in `input` when Rego is evaluated. Fields not populated at 
 | `input.tool_args` | any | `tool_call` |
 | `input.tool_result` | any | `after_tool` |
 
----
+**Pre-computed features** — available in `input.features` when the policy declares them in `custom.required_features`:
 
-## Package Naming
+| Feature | Type | Description |
+|---------|------|-------------|
+| `word_count` | int | Word count of the primary content field |
+| `char_count` | int | Character count of the primary content field |
+| `shannon_entropy` | float | Shannon entropy of the primary content field |
+| `vader_compound` | float | VADER sentiment compound score (-1 to 1) |
+
+Declare features in the package annotation to have them pre-computed before evaluation:
 
 ```rego
-package policy.<snake_case_name>
+# METADATA
+# title: My Policy
+# custom:
+#   hooks:
+#   - before_model
+#   required_features:
+#   - word_count
+#   - vader_compound
+package policy.my_policy
 ```
-
-Use the policy name lowercased with spaces replaced by underscores. One package per file.
 
 ---
 
@@ -76,97 +143,148 @@ Use the policy name lowercased with spaces replaced by underscores. One package 
 ### 1. Regex match on model input
 
 ```rego
+# METADATA
+# title: Block SSN In Prompts
+# custom:
+#   version: "1.0"
+#   hooks:
+#   - before_model
 package policy.block_ssn_in_prompts
 
-default deny = false
+deny_rules  contains "__sentinel__" if false
+allow_rules contains "__sentinel__" if false
 
-deny if {
-    input.hook == "before_model"
-    regex.match(`\b\d{3}-\d{2}-\d{4}\b`, input.model_input)
+# METADATA
+# title: BLOCK_SSN-ssn-in-prompt
+# description: SSN pattern detected in model input.
+# custom:
+#   priority: 80
+deny_rules contains "BLOCK_SSN-ssn-in-prompt" if {
+    input.hook in {"before_model"}
+    regex.match(`\b\d{3}-\d{2}-\d{4}\b`, json.marshal(input.model_input))
 }
 ```
 
-Metadata hooks: `["before_model"]`
-
-> `input.model_input` may be a string or a structured object. For structured inputs, serialize before matching: `regex.match(pattern, json.marshal(input.model_input))`.
+> `input.model_input` may be a string or a structured object — always use `json.marshal()` before regex matching to handle both cases safely.
 
 ---
 
 ### 2. Model allowlist
 
 ```rego
+# METADATA
+# title: Approved Models Only
+# custom:
+#   version: "1.0"
+#   hooks:
+#   - before_model
 package policy.approved_models_only
-
-default deny = false
 
 allowed_models := {"gpt-4o", "claude-sonnet-4-6"}
 
-deny if {
-    input.hook == "before_model"
+deny_rules  contains "__sentinel__" if false
+allow_rules contains "__sentinel__" if false
+
+# METADATA
+# title: APPROVED_MODELS-model-approval
+# description: Model not in approved list.
+# custom:
+#   priority: 90
+deny_rules contains "APPROVED_MODELS-model-approval" if {
+    input.hook in {"before_model"}
+    input.model_name != ""
     not allowed_models[input.model_name]
 }
 ```
-
-Metadata hooks: `["before_model"]`
 
 ---
 
 ### 3. Tool allowlist
 
 ```rego
+# METADATA
+# title: Approved Tools Only
+# custom:
+#   version: "1.0"
+#   hooks:
+#   - tool_call
 package policy.approved_tools_only
-
-default deny = false
 
 allowed_tools := {"search", "calculator", "send_email"}
 
-deny if {
-    input.hook == "tool_call"
+deny_rules  contains "__sentinel__" if false
+allow_rules contains "__sentinel__" if false
+
+# METADATA
+# title: APPROVED_TOOLS-tool-allowlist
+# description: Tool not in approved list.
+# custom:
+#   priority: 85
+deny_rules contains "APPROVED_TOOLS-tool-allowlist" if {
+    input.hook in {"tool_call"}
+    input.tool_name != ""
     not allowed_tools[input.tool_name]
 }
 ```
-
-Metadata hooks: `["tool_call"]`
 
 ---
 
 ### 4. Session tool-call budget
 
 ```rego
+# METADATA
+# title: Tool Call Budget
+# custom:
+#   version: "1.0"
+#   hooks:
+#   - tool_call
 package policy.tool_call_budget
 
-default deny = false
+deny_rules  contains "__sentinel__" if false
+allow_rules contains "__sentinel__" if false
 
-deny if {
-    input.hook == "tool_call"
+# METADATA
+# title: TOOL_BUDGET-session-limit
+# description: Session tool call budget exceeded.
+# custom:
+#   priority: 75
+deny_rules contains "TOOL_BUDGET-session-limit" if {
+    input.hook in {"tool_call"}
     input.session_state.tool_calls >= 20
 }
 ```
-
-Metadata hooks: `["tool_call"]`
 
 ---
 
 ### 5. Scope to a specific agent or ring
 
-Restrict any rule to a specific agent name or deployment ring by adding conditions:
-
 ```rego
+# METADATA
+# title: Production Finance Model Guard
+# custom:
+#   version: "1.0"
+#   hooks:
+#   - before_model
 package policy.production_finance_model_guard
-
-default deny = false
 
 allowed_models := {"gpt-4o", "claude-sonnet-4-6"}
 
-deny if {
-    input.hook == "before_model"
+deny_rules  contains "__sentinel__" if false
+allow_rules contains "__sentinel__" if false
+
+# METADATA
+# title: FINANCE_GUARD-model-approval
+# description: Model not approved for finance agents in production.
+# custom:
+#   priority: 90
+deny_rules contains "FINANCE_GUARD-model-approval" if {
+    input.hook in {"before_model"}
     input.ring == "production"
     input.agent_name == "finance-agent"
+    input.model_name != ""
     not allowed_models[input.model_name]
 }
 ```
-
-Metadata hooks: `["before_model"]`
 
 Omit `input.ring` or `input.agent_name` conditions to apply the rule to all agents on the tenant.
 

@@ -22,7 +22,7 @@ Two modes inside this branch:
 3. **Never fabricate policy IDs.** Always resolve policy names to IDs via `list` — never guess a GUID.
 4. **For delete: always confirm.** Run `list` to confirm the policy's `policyName` and `active` status, then ask for explicit user confirmation before running `delete`.
 5. **For update: always get first.** Retrieve the current Rego via `get` and use it as the edit base — never start from scratch when updating.
-6. **Author mode produces a file, then offers to create.** Write the JSON envelope to a session file, show it to the user, and ask before running `create`.
+6. **Author mode produces a file, then offers to create.** Write the `.rego` file (with OPA METADATA annotations) to a session file, show it to the user, and ask before running `create`.
 
 ---
 
@@ -66,7 +66,7 @@ uip gov custom-policy list --output json
 
 ## Author Mode
 
-Goal: turn the user's natural-language description into a valid Rego policy, wrap it in the JSON envelope, then offer to upload it.
+Goal: turn the user's natural-language description into a valid Rego policy with embedded OPA METADATA annotations, then offer to upload it.
 
 ### Step 1 — Gather scope
 
@@ -79,33 +79,32 @@ Ask (or infer from context):
 ### Step 2 — Draft Rego
 
 - Select patterns from [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) that match the user's request.
-- Use `__POLICY_ID__` as a placeholder in all rule IDs (e.g. `__POLICY_ID__/RULE-1`). The server assigns the real `policyId` on create.
+- Embed all metadata in OPA `# METADATA` annotations — package-level for name/version/hooks, rule-level for message/priority. See [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) for the annotation format.
 - If the request requires a field not in `input.*`, refuse explicitly: "That rule requires access to [X], which isn't available in the Rego input at any hook." Do not approximate with an unsupported field. See the "What Can't Be Expressed" section of [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) for the full list.
 
 ### Step 3 — Show Rego and confirm
 
-Show the Rego to the user. Note: the server runs Regal lint on every create/update — if the submission is rejected, fix the lint error and retry.
+Show the complete `.rego` file (including METADATA annotations) to the user. Note: the server runs Regal lint on every create/update — if the submission is rejected, fix the lint error and retry.
 
-### Step 4 — Write JSON and offer create
+### Step 4 — Write .rego file and offer create
 
-Write the JSON envelope to a session file:
+Write the Rego to a session file:
 
 ```bash
-cat > /tmp/custom-policy-draft.json << 'EOF'
-<JSON_ENVELOPE_CONTENT>
+cat > /tmp/custom-policy-draft.rego << 'EOF'
+<REGO_FILE_CONTENT>
 EOF
 ```
 
-Show the JSON to the user and ask: "Ready to create this policy on the tenant? I'll run:
+Show the file to the user and ask: "Ready to create this policy on the tenant? I'll run:
 ```bash
 uip gov custom-policy create \
-  --file /tmp/custom-policy-draft.json \
+  --file /tmp/custom-policy-draft.rego \
   --output json
 ```"
 
 Run only after explicit confirmation. On success:
 - Show the returned `policyId`.
-- Remind the user to replace `__POLICY_ID__` in any local copy they keep with the real `policyId`.
 - Confirm the policy is active (verdicts will appear in the audit trail at the next agent run).
 - Remind: verdicts are currently recorded only — agent actions are not yet stopped by the policy.
 
@@ -117,3 +116,4 @@ Run only after explicit confirmation. On success:
 | Request uses a field not in `input.*` | Refuse explicitly, list available fields at the relevant hook from [`custom-policy-schema-guide.md`](./custom-policy-schema-guide.md) |
 | Model identifier unclear | Ask for the exact model string used at runtime (e.g. `gpt-4o`, `claude-sonnet-4-6`) |
 | Agent name / ring not needed | Omit the filter condition — policy applies to all agents on the tenant |
+| Missing METADATA annotations | Add a `# METADATA` block before `package` with `title` and `custom.hooks`; add rule-level `# METADATA` blocks with `title` matching each rule ID |
