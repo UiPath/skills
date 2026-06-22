@@ -72,7 +72,29 @@ def read_f1(field: dict) -> float | None:
         return None
 
 
+def check_confirm_succeeded() -> None:
+    """Fail fast if the labelling confirm did not actually succeed.
+
+    `command_executed` only proves the confirm command was *invoked*; a
+    write-path failure (e.g. a 502 on the confirm endpoint) still emits
+    `Result: Failure` to stdout with --output json. Assert the captured
+    response is a success so the e2e fails on a broken confirm instead of
+    grading invocation alone."""
+    confirm = load_json("confirm_result.json")
+    result = confirm.get("Result")
+    if result != "Success":
+        log_fail(
+            f"labellings confirm did not succeed (Result={result!r}, "
+            f"Code={confirm.get('Code')!r}): {confirm.get('Instructions') or confirm.get('Message')}"
+        )
+    log_info("labelling confirm succeeded (Result == Success)")
+
+
 def main() -> int:
+    # Validate the mutating step first so a broken confirm fails fast,
+    # before any metrics comparison.
+    check_confirm_succeeded()
+
     target = load_json("target_field.json")
     field_id = target.get("field_id")
     if not field_id or not isinstance(field_id, str):
