@@ -16,6 +16,8 @@ tags: [uipath-rpa, windows, legacy, smoke, create, validate]
 run_limits:
   expected_turns: 15
   max_turns: 40
+  turn_timeout: 900
+  task_timeout: 900
 initial_prompt: |
   Create a new legacy UiPath RPA project called "HelloLegacy" with a Main.xaml
   that logs "Hello from legacy" using a LogMessage activity. Follow the skill's

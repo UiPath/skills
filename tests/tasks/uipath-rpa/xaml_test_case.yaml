@@ -10,6 +10,9 @@ tags: [uipath-rpa, windows, integration, mode:build, feature:test-case]
 
 run_limits:
   expected_turns: 36
+  max_turns: 40
+  turn_timeout: 900
+  task_timeout: 900
 
 initial_prompt: |
   I need a UiPath XAML test project called "LoginTests" with a first XAML
