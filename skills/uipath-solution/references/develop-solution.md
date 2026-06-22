@@ -112,7 +112,7 @@ uip solution resources list --kind App --solution-folder ./InvoiceAutomation --o
 | Option | Values | Default |
 |--------|--------|---------|
 | `--solution-folder <path>` | Path to solution root | Current working directory |
-| `--kind <kind>` | `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`, `Trigger` (any RCS kind) | All kinds |
+| `--kind <kind>` | `Queue`, `Asset`, `Bucket`, `Process`, `Connection`, `App`, `Index`, `Trigger`, `Entity`, `ChoiceSet` (any RCS kind) | All kinds |
 | `--search <term>` | Name substring match | No filter |
 | `--source <source>` | `all`, `local`, `remote` | `all` |
 | `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
@@ -135,6 +135,8 @@ uip solution resources refresh --solution-folder ./InvoiceAutomation --output js
 | `Imported` | Cloud resources imported into the solution (artefact files written + linked) |
 | `Skipped` | Resources already tracked in the solution |
 | `Warnings` | Bindings that couldn't be resolved (logged for follow-up) |
+
+A project that binds to a Data Fabric `Entity` in its `bindings_v2.json` will have that entity imported on refresh, the same way refresh handles queues, assets, or buckets. Choice sets don't bind directly from a project — pull a choice set in with [Step 9](#step-9-add-a-resource-atomically), or let the packer pick it up as a dependency of an Entity that references it.
 
 ### What `refresh` actually does
 
@@ -247,7 +249,7 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 | Option | Values | Default |
 |--------|--------|---------|
 | `--source <source>` | `local`, `remote` | **required** |
-| `--kind <kind>` | Any kind RCS indexes (Queue, Asset, Bucket, Process, Connection, App, Index, Trigger, **Entity**, **ChoiceSet**). Case-insensitive; trimmed and lowerFirstChar-applied before persistence. Data Fabric kinds (`Entity`, `ChoiceSet`) must already exist on the tenant — create them first via `uip df entities create` / `uip df choice-sets create`, then import as `--source remote`; local virtual stubs are not supported for DF kinds | **required** |
+| `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger, Entity, ChoiceSet). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
 | `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
 | `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection) | None |
 | `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
@@ -275,6 +277,12 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 ```
 
 `Status` is `"Added"` (newly created), `"Updated"` (cloud spec re-applied when SDK detects drift on `--source remote`), or `"Unchanged"` (idempotency hit). For local stubs `Folder` is always `solution_folder` and `Source` is `"local"`; for remote imports, the resource lands locally under `solution_folder` regardless of which cloud folder it came from (debug overwrites carry the cloud-folder context for deploy).
+
+### Data Fabric kinds
+
+For `Entity` and `ChoiceSet`, the typical flow is to create the resource on the tenant first with `uip df entities create` / `uip df choice-sets create --folder-key <…>`, then import it with `--source remote`. The import captures the full schema (fields, types, choice values) and pins the binding to the source folder.
+
+`--source local` is also accepted for these kinds, but it creates an empty stub — no fields, no values — that is only usable if the schema is filled in later by hand or by another tool. Once added, a local DF stub cannot be removed with `uip solution resources remove` (the CLI reports it as a "hidden resource"); delete the JSON file under `resources/<folder>/Entity/` or `resources/<folder>/ChoiceSet/` directly if you need to drop one.
 
 ### Ambiguous remote match
 
