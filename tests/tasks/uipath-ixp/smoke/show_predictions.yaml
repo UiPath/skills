@@ -1,6 +1,7 @@
-task_id: skill-ixp-refresh-prediction-smoke
+task_id: skill-ixp-show-predictions-smoke
 description: >
-  Smoke: agent fetches the model's prediction for one document.
+  Smoke: agent reads the model's predicted values for one document (the
+  prediction layer, via get-predictions — not by reading the file itself).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -10,8 +11,8 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  In the IXP project my_invoices-f1afa9ef-ixp, refresh the prediction for
-  document doc-abc-123.
+  In the IXP project my_invoices-f1afa9ef-ixp, show the values the model
+  predicted for document doc-abc-123.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
