@@ -11,10 +11,8 @@ run_limits:
 
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, document doc-abc-123, the field
-  "Discount Code" (field id a7c3e9105f2b4d86) was annotated earlier but the
-  current model predicts no value for it, and the field is genuinely absent
-  from the document. Record that field as missing so the annotation reflects
-  the document.
+  "Discount Code" (field id a7c3e9105f2b4d86) is genuinely absent from the
+  document and the model predicted no value for it. Record it as missing.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
