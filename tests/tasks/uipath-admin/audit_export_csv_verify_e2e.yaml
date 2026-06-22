@@ -30,9 +30,10 @@ description: >
 tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
 
 initial_prompt: |
-  Export tenant audit events for the 3-day window ending 2 days ago
-  (UTC, whole days) as a single merged CSV to the ./audit-window base
-  directory in the current working directory. Resolve the dates with
+  Export tenant audit events for the 3-day window from 5 days ago
+  through 2 days ago (UTC, whole days) into the ./audit-window base
+  directory in the current working directory, as a single merged CSV
+  (not the default per-day JSON folder). Resolve the dates with
   `date -u -d '5 days ago' +%Y-%m-%d` and
   `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the
   run date.

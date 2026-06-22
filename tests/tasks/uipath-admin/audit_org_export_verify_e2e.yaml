@@ -36,16 +36,18 @@ description: >
 tags: [uipath-admin, e2e, mode:operate, audit, export, scope-org, real-artifact]
 
 initial_prompt: |
-  Export the previous-full-day of organization-level audit events
-  (memberships, license changes, tenant lifecycle) to the
-  ./audit-org-window base directory in the current working directory.
-  Pin the day to 2 days ago (UTC) with
-  `date -u -d '2 days ago' +%Y-%m-%d` so it slides with the run —
-  use the same resolved value for the start and end of the window.
+  Export organization-level audit events (memberships, license changes,
+  tenant lifecycle) for the single UTC day 2 days ago as day-wise JSON
+  files under the ./audit-org-window base directory in the current
+  working directory. Resolve the date with
+  `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the
+  run date — use the same resolved value for both the start and end of
+  the window.
 
   Important:
   - The `uip` CLI is available and connected via env-var auth to a real
-    tenant. The export should produce real files at the requested path.
+    tenant. The export should produce a real folder of JSON files at the
+    requested path.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
