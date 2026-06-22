@@ -1,13 +1,13 @@
 task_id: skill-datafabric-smoke-complex-fields
 description: >
-  Smoke test: agent uses the uipath-data-fabric skill to add complex field
+  Smoke test: agent uses the uipath-platform skill (Data Fabric area) to add complex field
   types (CHOICE_SET_SINGLE, CHOICE_SET_MULTIPLE, RELATIONSHIP) to an entity,
   insert records writing the correct value tokens (NumberId integer / integer
   array for choice; target UUID for relationship), filter records on those
   fields, and refuse to author / modify a choice set from the CLI (read-only).
   Exercises the same entity / record / query commands as the other smoke
   tests, but on fields whose value form requires lookup tokens.
-tags: [uipath-data-fabric, smoke, complex-fields]
+tags: [uipath-platform, smoke, data-fabric, complex-fields]
 
 run_limits:
   expected_turns: 24
@@ -68,7 +68,7 @@ initial_prompt: |
      the target record's UUID Id:
        - amount:    250
        - category:  1                   (travel — NumberId)
-       - tags:      [1, 2]              (NumberId array for CHOICE_SET_MULTIPLE)
+       - tags: [uipath-platform, data-fabric, 1, 2]              (NumberId array for CHOICE_SET_MULTIPLE)
        - submitter: "emp-rec-500"       (Employee record UUID)
 
   7. Filter Expense records on category == "travel" (NumberId 1) using a

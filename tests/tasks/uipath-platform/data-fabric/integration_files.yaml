@@ -6,7 +6,7 @@ description: >
   via SHA-256 hash, uploads a second version to confirm overwrite, deletes the
   attachment, and verifies the field is empty post-delete. Covers the full files
   upload/download/delete workflow including overwrite semantics and byte integrity.
-tags: [uipath-data-fabric, integration, files]
+tags: [uipath-platform, integration, data-fabric, files]
 
 run_limits:
   expected_turns: 29
@@ -135,5 +135,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
     timeout: 60

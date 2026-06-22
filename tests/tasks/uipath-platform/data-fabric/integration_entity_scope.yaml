@@ -6,7 +6,7 @@ description: >
   folder-scoped entity and confirms it is absent when listing from a
   different folder; and attempts to create an entity with a non-existent
   folder ID and verifies the error. Covers S-SC-01 through S-SC-05.
-tags: [uipath-data-fabric, integration, entity-scope]
+tags: [uipath-platform, integration, data-fabric, entity-scope]
 
 run_limits:
   expected_turns: 24
@@ -95,5 +95,5 @@ success_criteria:
     pass_threshold: 0.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
     timeout: 60

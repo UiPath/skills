@@ -8,7 +8,7 @@ description: >
   workforce summary. Tests entity schema evolution with live data, CSV
   bulk import, addFields after insert, batch updates, and filter+sort
   queries in a single end-to-end run.
-tags: [uipath-data-fabric, e2e, employee-directory]
+tags: [uipath-platform, e2e, data-fabric, employee-directory]
 
 run_limits:
   expected_turns: 30
@@ -138,5 +138,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
     timeout: 60

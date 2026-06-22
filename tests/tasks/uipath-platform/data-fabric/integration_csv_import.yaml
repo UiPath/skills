@@ -5,7 +5,7 @@ description: >
   schema to confirm exact field names (case-sensitive), creates a correctly
   formatted CSV (no system fields), runs the bulk import, then verifies results
   with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
-tags: [uipath-data-fabric, integration, records, import]
+tags: [uipath-platform, integration, data-fabric, records, import]
 
 run_limits:
   expected_turns: 9
@@ -107,5 +107,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
     timeout: 60

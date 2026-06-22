@@ -1,12 +1,12 @@
 task_id: skill-datafabric-smoke-csv-complex-drop
 description: >
-  Smoke test: agent uses the uipath-data-fabric skill to seed an entity whose
+  Smoke test: agent uses the uipath-platform skill (Data Fabric area) to seed an entity whose
   schema includes complex field types (CHOICE_SET_SINGLE, CHOICE_SET_MULTIPLE,
   RELATIONSHIP). `records import` silently drops complex-field columns —
   verified server behavior in BulkUploadCSVHelper. The agent must use
   `records insert --file <json>` instead and must NOT put complex-field
   columns in a CSV file.
-tags: [uipath-data-fabric, smoke, complex-fields, bulk-import]
+tags: [uipath-platform, smoke, data-fabric, complex-fields, bulk-import]
 
 run_limits:
   expected_turns: 15

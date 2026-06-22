@@ -10,7 +10,7 @@ description: >
   and file upload with missing local file (F-U-08). All commands are expected
   to fail; the test verifies the agent captures structured errors and does
   not retry or call the REST API directly.
-tags: [uipath-data-fabric, integration, error-paths]
+tags: [uipath-platform, integration, data-fabric, error-paths]
 
 run_limits:
   expected_turns: 33
@@ -125,5 +125,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
     timeout: 60

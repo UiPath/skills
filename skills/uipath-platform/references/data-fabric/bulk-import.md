@@ -1,6 +1,6 @@
 # Bulk Import Reference
 
-> **⚠ `records import` does not support complex field types — surface this to the user before invoking (SKILL.md Rule 20).** `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` columns are **not supported**: the CSV header is accepted but the values are ignored (no error, no `ErrorFileLink` entry — `null` on every imported row, or row failure if the field is `isRequired` without a `defaultValue`). This is current Data Fabric platform behavior, not a bug — do not work around it. Run `entities get <entity-id>` first; if any field is in that set, switch to `records insert --file <json>` (handles all types except `FILE` — use `files upload` for those, see Rule 6). See [Complex Field Types Not Supported](#complex-field-types-not-supported) below.
+> **⚠ `records import` does not support complex field types — surface this to the user before invoking (data-fabric.md Rule 20).** `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` columns are **not supported**: the CSV header is accepted but the values are ignored (no error, no `ErrorFileLink` entry — `null` on every imported row, or row failure if the field is `isRequired` without a `defaultValue`). This is current Data Fabric platform behavior, not a bug — do not work around it. Run `entities get <entity-id>` first; if any field is in that set, switch to `records insert --file <json>` (handles all types except `FILE` — use `files upload` for those, see Rule 6). See [Complex Field Types Not Supported](#complex-field-types-not-supported) below.
 
 ## Import Records from CSV
 
@@ -46,7 +46,7 @@ For an entity with fields: `Name` (STRING), `Score` (INTEGER), `Active` (BOOLEAN
 
 `records import` is **not supported** for those complex types — it only processes Basic types (`STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `MULTILINE_TEXT`, `UUID`). The complex-type columns are accepted in the CSV header but their row values are ignored — no error, nothing in `ErrorFileLink`, just `null` on every imported row (or row failure if the field is `isRequired` without a `defaultValue`).
 
-For entities with any complex field, use `records insert --file <json>` instead — the insert endpoint handles every type except `FILE` (which is exclusively written through `files upload`, SKILL.md Rule 6). See [`records-query.md`](records-query.md#writing-choice-set-and-relationship-values) for the value form.
+For entities with any complex field, use `records insert --file <json>` instead — the insert endpoint handles every type except `FILE` (which is exclusively written through `files upload`, data-fabric.md Rule 6). See [`records-query.md`](records-query.md#writing-choice-set-and-relationship-values) for the value form.
 
 ## Full Workflow
 

@@ -10,7 +10,7 @@ description: >
   records get, and deletes only the test records. Tests the full Discover →
   Act → Verify workflow combining schema management, advanced field
   constraints, and record CRUD in one multi-step run.
-tags: [uipath-data-fabric, integration, entities, records]
+tags: [uipath-platform, integration, data-fabric, entities, records]
 
 run_limits:
   expected_turns: 31
@@ -204,5 +204,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
     timeout: 60

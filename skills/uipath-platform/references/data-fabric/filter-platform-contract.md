@@ -1,6 +1,6 @@
 # Filter Platform Contract
 
-Which operators each field type accepts, so you can build a valid `records query` filter. For body usage and unsupported-operator handling, see [`records-query.md`](records-query.md) and SKILL.md Rule 17.
+Which operators each field type accepts, so you can build a valid `records query` filter. For body usage and unsupported-operator handling, see [`records-query.md`](records-query.md) and data-fabric.md Rule 17.
 
 ## Filter body
 
@@ -37,7 +37,7 @@ Example:
 
 ## Operator support by field type
 
-Build only within this matrix (✅ supported). The API *runs* some ❌ cells anyway (e.g. `<` on Text — lexicographic, so `"user2@…" < "user20@…"`) and 400s only on unknown operators (`==`, `Equals`, `like`). Never rely on that: when a request needs an unsupported operator/type combo, or has no value, ask the user — don't silently run it (SKILL.md Rule 17).
+Build only within this matrix (✅ supported). The API *runs* some ❌ cells anyway (e.g. `<` on Text — lexicographic, so `"user2@…" < "user20@…"`) and 400s only on unknown operators (`==`, `Equals`, `like`). Never rely on that: when a request needs an unsupported operator/type combo, or has no value, ask the user — don't silently run it (data-fabric.md Rule 17).
 
 | Operator | Text / Multiline | Number / Autonum | Date/Time | Boolean | Choice Set | Relationship | File | Unique ID |
 |---|---|---|---|---|---|---|---|---|

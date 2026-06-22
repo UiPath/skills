@@ -1,13 +1,13 @@
 task_id: skill-datafabric-smoke-records
 description: >
-  Smoke test: agent uses the uipath-data-fabric skill to manage records offline
+  Smoke test: agent uses the uipath-platform skill (Data Fabric area) to manage records offline
   — single insert (JSON object), batch insert (2+ element JSON array routes to
   batch endpoint), filterGroup query, pagination via --limit/--cursor and the
   new -o/--offset jump (mutually exclusive with --cursor), records get by ID,
   single update (Id required), batch update (Id required in every element),
   and records delete. Tests the full records command surface and the
   array-body routing rule in a single pass.
-tags: [uipath-data-fabric, smoke, records]
+tags: [uipath-platform, smoke, data-fabric, records]
 
 run_limits:
   expected_turns: 13

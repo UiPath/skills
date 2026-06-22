@@ -1,13 +1,13 @@
 task_id: skill-datafabric-smoke-entities
 description: >
-  Smoke test: agent uses the uipath-data-fabric skill to manage entity schemas
+  Smoke test: agent uses the uipath-platform skill (Data Fabric area) to manage entity schemas
   offline — list native entities, create a new entity with typed fields (fieldName
   key, EntityFieldDataType strings) including advanced per-type constraints
   (lengthLimit, decimalPrecision, minValue / maxValue), retrieve a schema and
   identify field IDs from Fields[].ID, add new fields (addFields), and update an
   existing field's metadata and constraints (updateFields with id key). Tests
   all entity command syntax in a single pass.
-tags: [uipath-data-fabric, smoke, entities]
+tags: [uipath-platform, smoke, data-fabric, entities]
 
 run_limits:
   expected_turns: 14

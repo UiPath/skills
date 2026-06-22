@@ -6,7 +6,7 @@ description: >
   out of stock, uploads a product image to the most expensive item, and
   produces a final inventory summary. Tests the full Discover → Act → Verify
   loop for a realistic e-commerce use case.
-tags: [uipath-data-fabric, e2e, product-catalogue]
+tags: [uipath-platform, e2e, data-fabric, product-catalogue]
 
 run_limits:
   expected_turns: 35
@@ -137,5 +137,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
     timeout: 60

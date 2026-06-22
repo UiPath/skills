@@ -6,7 +6,7 @@ description: >
   using records query (no body). Creates test records first, runs 5 query
   scenarios, then deletes the test records. Tests the full query body schema
   and the no-body pagination path end-to-end.
-tags: [uipath-data-fabric, integration, records]
+tags: [uipath-platform, integration, data-fabric, records]
 
 run_limits:
   expected_turns: 26
@@ -138,5 +138,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
     timeout: 60

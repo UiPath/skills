@@ -63,7 +63,7 @@ Pagination uses the same `--limit` / `--cursor` / `--offset` flags as `records l
 
 The `filterGroup` shape, operators, response, and per-type support are in [`filter-platform-contract.md`](filter-platform-contract.md). Beyond the filter, the query body accepts:
 
-- `"selectedFields": ["F1","F2"]` — projection. Default is all fields (SKILL.md Rule 16).
+- `"selectedFields": ["F1","F2"]` — projection. Default is all fields (data-fabric.md Rule 16).
 - `"sortOptions": [{ "fieldName": "Score", "isDescending": true }]` — server-side sort.
 
 ### Verifying a filter applied
@@ -234,7 +234,7 @@ Display labels, choice-value UUIDs, and non-UUID relationship values are rejecte
 
 ### FILE fields — never write through insert/update
 
-**Anti-pattern.** Never include a FILE-typed key in `records insert` or `records update` payload (SKILL.md Rule 6). Expected behavior: the platform silently strips FILE values — paths, base64 blobs, filenames, UUIDs, and `null` — and returns `Result: Success` with the FILE column unchanged. Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. To attach, replace, or clear a file, use the `files` verbs documented in [`file-attachments.md`](file-attachments.md). Required write path:
+**Anti-pattern.** Never include a FILE-typed key in `records insert` or `records update` payload (data-fabric.md Rule 6). Expected behavior: the platform silently strips FILE values — paths, base64 blobs, filenames, UUIDs, and `null` — and returns `Result: Success` with the FILE column unchanged. Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. To attach, replace, or clear a file, use the `files` verbs documented in [`file-attachments.md`](file-attachments.md). Required write path:
 
 ```bash
 # 1. Insert the row WITHOUT the FILE column

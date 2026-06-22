@@ -1,12 +1,12 @@
 task_id: skill-datafabric-smoke-choice-multiple-filter
 description: >
-  Smoke test: agent uses the uipath-data-fabric skill to filter records on a
+  Smoke test: agent uses the uipath-platform skill (Data Fabric area) to filter records on a
   CHOICE_SET_MULTIPLE field — picking `contains` for membership and the
   JSON-array string form of `=` for set equality, and avoiding the two known
   HTTP 400 failure modes (bare value with `=`, bracket value with `contains`).
   Verified server behavior — see references/records-query.md §
   "Filtering on Choice-Set Fields".
-tags: [uipath-data-fabric, smoke, complex-fields]
+tags: [uipath-platform, smoke, data-fabric, complex-fields]
 
 run_limits:
   expected_turns: 7

@@ -8,7 +8,7 @@ description: >
   (limit=60) to verify the 300-record Active=true subset across 5 pages.
   Covers large-dataset pagination stability, cursor continuity at scale, and
   offset-based page jumps.
-tags: [uipath-data-fabric, integration, bulk-pagination]
+tags: [uipath-platform, integration, data-fabric, bulk-pagination]
 
 run_limits:
   expected_turns: 36
@@ -16,10 +16,10 @@ run_limits:
   turn_timeout: 600
 
 pre_run:
-  - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/extract_page_ids.py $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/verify_pagination.py ."
+  - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/extract_page_ids.py $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_pagination.py ."
     timeout: 10
     fail_on_error: true
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/wipe_entity_records.py --entity-name LargePaginationTest"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/wipe_entity_records.py --entity-name LargePaginationTest"
     timeout: 300
     fail_on_error: true
 
@@ -167,5 +167,5 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
     timeout: 60

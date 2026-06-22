@@ -2,7 +2,7 @@
 
 Data Fabric supports file-type fields on entities. Files are stored per-record per-field.
 
-> **⚠ Do NOT put FILE-typed keys in `records insert`, `records update`, or `records import` payloads.** Expected behavior: the platform silently strips FILE values — paths, base64, filenames, UUIDs, CSV cells, `null` — and returns `Result: Success` with the FILE column unchanged (SKILL.md Rules 6 and 20). Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. Required write path: `records insert` (no FILE column) → capture `Data.Id` → `files upload <entity-id> <record-id> <field-name> --file <path>`. To clear: `files delete`. Never `records update`.
+> **⚠ Do NOT put FILE-typed keys in `records insert`, `records update`, or `records import` payloads.** Expected behavior: the platform silently strips FILE values — paths, base64, filenames, UUIDs, CSV cells, `null` — and returns `Result: Success` with the FILE column unchanged (data-fabric.md Rules 6 and 20). Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. Required write path: `records insert` (no FILE column) → capture `Data.Id` → `files upload <entity-id> <record-id> <field-name> --file <path>`. To clear: `files delete`. Never `records update`.
 
 ## Creating a FILE field correctly
 

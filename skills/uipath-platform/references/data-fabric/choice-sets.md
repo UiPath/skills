@@ -2,7 +2,7 @@
 
 Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entity fields. Full CRUD via CLI — sets and their values.
 
-> **Preview-then-confirm gate (SKILL.md Rule 14).** Before invoking `choice-sets create` or `choice-set-values create`, show the full proposed set — name, displayName, description, and every value (`Name` + `DisplayName`) in creation order — and wait for explicit user approval. Value order matters: `NumberId` is assigned 0-based by creation order and is immutable.
+> **Preview-then-confirm gate (data-fabric.md Rule 14).** Before invoking `choice-sets create` or `choice-set-values create`, show the full proposed set — name, displayName, description, and every value (`Name` + `DisplayName`) in creation order — and wait for explicit user approval. Value order matters: `NumberId` is assigned 0-based by creation order and is immutable.
 
 ## Commands
 
@@ -41,7 +41,7 @@ Bind a folder-scoped choice set to an entity in a **different** folder via per-f
 
 ## Value `Name` validation
 
-A choice-set value's `Name` must be alphanumeric, start with a letter, and avoid SQL / C# / VB reserved keywords — same rule as entity / field names (**SKILL.md Rule 4**). Domain words that commonly collide: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`.
+A choice-set value's `Name` must be alphanumeric, start with a letter, and avoid SQL / C# / VB reserved keywords — same rule as entity / field names (**data-fabric.md Rule 4**). Domain words that commonly collide: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`.
 
 When a desired label is reserved, namespace the system `Name` and leave `DisplayName` unchanged: `Name: "internal_audit"` with `DisplayName: "Internal"`. The dropdown shows "Internal"; the validator sees `internal_audit`.
 
