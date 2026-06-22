@@ -3,9 +3,7 @@
 
 Validates:
   1. Flow has a `uipath.agent.autonomous` node and a
-     `uipath.agent.resource.escalation.coded-action-app` node (the
-     solution-internal app-backed escalation node; the bare
-     `uipath.agent.resource.escalation` type is the external-app variant).
+     `uipath.agent.resource.escalation` node.
   2. Edge wires agent.escalation -> escalation.input.
   3. Inline agent dir has at least one escalation resource.json under
      its resources/ tree with:
@@ -44,16 +42,13 @@ from _shared.inline_wiring import (  # noqa: E402
 )
 
 FLOW_PATH = Path(os.getcwd()) / "ReviewFlowSol" / "ReviewFlow" / "ReviewFlow.flow"
-# Solution-internal escalation wired to a coded action app. The node type
-# carries a `.coded-action-app` suffix (vs the bare type used when the app
-# lives externally in Orchestrator), so match by prefix.
-ESCALATION_NODE_TYPE_PREFIX = "uipath.agent.resource.escalation.coded-action-app"
+ESCALATION_NODE_TYPE = "uipath.agent.resource.escalation"
 
 
 def main() -> None:
     flow = load_json(FLOW_PATH)
     agent_node = find_autonomous_agent_node(flow)
-    escalation_node = find_resource_node(flow, node_type_prefix=ESCALATION_NODE_TYPE_PREFIX)
+    escalation_node = find_resource_node(flow, node_type=ESCALATION_NODE_TYPE)
     print(f"OK: flow has {agent_node['type']} and {escalation_node['type']} nodes")
 
     assert_edge(
