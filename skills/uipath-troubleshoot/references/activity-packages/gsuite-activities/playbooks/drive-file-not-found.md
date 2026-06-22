@@ -20,7 +20,7 @@ The job faults synchronously the moment the activity tries to resolve the resour
 
 What activities can produce this error:
 Any `UiPath.GSuite.Activities` activity that addresses a resource by identifier:
-- **Drive / Sheets / Docs by ID, URL, or path** — `GetFileFolderConnections`, `GetFileFolderInfoConnections`, `DownloadFileConnections`, `MoveFileConnections`, `CopyFileConnections`, `DeleteFileOrFolderConnections`, `RenameFileFolderConnections`, `ShareFileFolderConnections`, `UploadFilesConnections` (existing parent), and any Sheets/Docs activity that opens a spreadsheet or document by ID. The `Cannot find item configured with connection ...` form comes from activities whose target was picked through the connection's item browser (typically Sheets/Drive `*Connections`).
+- **Drive / Sheets / Docs by ID, URL, or path** — `GetFileFolderConnections`, `GetFileFolderInfoConnections`, legacy `GetFileInfo`, `DownloadFileConnections`, `MoveFileConnections`, `CopyFileConnections`, `DeleteFileOrFolderConnections`, `RenameFileFolderConnections`, `ShareFileFolderConnections`, `UploadFilesConnections` (existing parent), and any Sheets/Docs activity that opens a spreadsheet or document by ID. The `Cannot find item configured with connection ...` form comes from activities whose target was picked through the connection's item browser (typically Sheets/Drive `*Connections`). Legacy `GetFileInfo` surfaces the 404 **raw** (`File not found: <id>. [404]`) and faults the job, rather than swallowing it the way the modern `*Connections` variants can — a faulted job, not a null result, is the expected legacy symptom.
 - **Gmail message by ID** — `GetEmailByIdConnections` ("Get Email By Id") when the configured `EmailId` doesn't exist; trigger fetches (`Gmail.Triggers.NewEmailReceived` / `EmailSent`) when the sampled message was deleted between selection and retrieval.
 
 What can cause it:
@@ -32,7 +32,7 @@ What can cause it:
 > - **`Permission to the resource was denied.`** / **`Invalid authentication credentials.`** (403 / 401) mean access was *denied*, not that the resource is missing — use [connection-and-auth-failures.md](./connection-and-auth-failures.md). (Note: a resource that exists but was never shared with the account can surface as either 404 or 403, depending on the API — check the status class.)
 > - **`ApplyFileLabelsConnections`** can throw `The resource was not found. Please make sure that the selected label is enabled for "Drive and Docs".` That is a label-configuration issue, not a missing file.
 > - **`The document with the name <name> was not found in the specified folder.`** is a name-based lookup miss (no document with that title in the parent), not a 404 against an ID. Treat as a separate scenario.
-> - **`File does not exist.`** (`FileNotFoundException`) refers to a missing **local filesystem** path (e.g., an upload source path or service-account key file), not a Drive resource.
+> - **`File does not exist: <path>`** (`FileNotFoundException`) refers to a missing **local filesystem** path (e.g., a `SendEmail` attachment, an upload source path, or a service-account key file), not a Drive resource — use [invalid-or-null-input.md](./invalid-or-null-input.md).
 
 ## Resolution
 
