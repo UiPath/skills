@@ -4,6 +4,8 @@ confidence: high
 
 # HTTP Client Exception (DAP-RT-1103)
 
+> **Fault bucket: 🛠 B2 — Service/provider-side (not customer-fixable in the workflow → escalate).** A network-level failure reaching the provider host. If it is the customer's own network egress (firewall/proxy/DNS on a self-hosted robot), that part is theirs to fix; the connectivity to the provider is not a workflow change. Lead with: "This is a connectivity/provider-reachability issue, not a workflow bug — check network egress or escalate." See [dap-error-codes-reference.md](../dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
+
 ## Context
 
 What this looks like:
