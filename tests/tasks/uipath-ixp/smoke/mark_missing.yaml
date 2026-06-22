@@ -1,9 +1,6 @@
 task_id: skill-ixp-mark-missing-smoke
 description: >
-  Smoke: agent records a field as missing when the model no longer predicts a
-  value for it. A prior annotation exists, so `confirm --fields` is a no-op —
-  `labellings mark-missing` is the fallback that overwrites the stale
-  annotation with a missing marker.
+  Smoke: agent records a field as missing with `labellings mark-missing`.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
