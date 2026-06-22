@@ -8,7 +8,7 @@ description: >
   (`uipath-llm-judge-trajectory-similarity`) — and runs them against
   a LangGraph classifier with `--no-report` and `--mocker-cache` so
   the judges are reproducible.
-tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval, mode:build]
 
 run_limits:
   expected_turns: 34

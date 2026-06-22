@@ -4,7 +4,7 @@ description: >
   `@traced(name=..., input_processor=..., output_processor=...)` to
   a function that handles sensitive data so both the input and the
   output are redacted before they reach the trace store.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:trace]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:trace, mode:build]
 
 run_limits:
   expected_turns: 31

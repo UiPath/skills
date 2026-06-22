@@ -5,7 +5,7 @@ description: >
   model and runs `uip codedagent init` so `entry-points.json` emits the
   `x-uipath-resource-kind: JobAttachment` schema that Studio Web and
   Orchestrator use to render a file picker at runtime.
-tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:framework-simple]
+tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:framework-simple, mode:build]
 
 run_limits:
   expected_turns: 33

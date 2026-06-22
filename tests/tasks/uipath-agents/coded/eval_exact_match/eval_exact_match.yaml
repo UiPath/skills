@@ -7,7 +7,7 @@ description: >
   `id`, and run `uip codedagent eval --no-report` against a
   deterministic Simple Function agent. All test cases must score 1.0
   and report PASSED in the output file.
-tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval, mode:build]
 
 run_limits:
   expected_turns: 23

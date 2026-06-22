@@ -5,7 +5,7 @@ description: >
   LangGraph `main.py` with `llm = UiPathChat(...)` at column zero,
   and the skill must drive the agent to refactor the construction
   inside a node body before `uip codedagent init` is run.
-tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern]
+tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern, mode:build]
 
 run_limits:
   expected_turns: 9

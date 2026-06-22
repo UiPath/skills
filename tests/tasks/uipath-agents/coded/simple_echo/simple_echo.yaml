@@ -6,7 +6,7 @@ description: >
   `entry-points.json` with Pydantic-derived schemas, then runs
   `uip codedagent run main` to execute deterministically (no LLM,
   no cloud auth needed).
-tags: [uipath-agents, smoke, coded, lifecycle:generate, lifecycle:execute, feature:framework-simple]
+tags: [uipath-agents, smoke, coded, lifecycle:generate, lifecycle:execute, feature:framework-simple, mode:build]
   # Default smoke max_turns is 20, but the full scaffold -> init -> run
   # loop (uv venv, uv sync, uip codedagent setup, uip codedagent new,
   # rewrite main.py, init, run, write marker) lands at ~25 turns even

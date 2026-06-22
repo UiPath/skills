@@ -6,7 +6,7 @@ description: >
   verifies one binding entry per resource with the right key
   construction (`<name>.<folder_path>` for most, bare
   `<connection_key>` for connections) and metadata fields.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:bindings, mode:build]
 
 run_limits:
   expected_turns: 11

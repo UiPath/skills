@@ -8,7 +8,7 @@ description: >
   and `_openai_shared.set_default_openai_client` are deferred
   (Critical Rule C4 — module-level setup breaks
   `uip codedagent init`), and runs the triage agent end-to-end.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, lifecycle:execute, feature:framework-openai-agents, mode:build]
 
 run_limits:
   expected_turns: 33

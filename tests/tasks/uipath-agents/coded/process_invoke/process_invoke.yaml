@@ -5,7 +5,7 @@ description: >
   `uipath.platform.common`, calls it from a LangGraph node with both
   `name` and `process_folder_path` set, and emits the `process`
   binding for the invoked process.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:process-invocation]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:process-invocation, mode:build]
 
 run_limits:
   expected_turns: 30

@@ -5,7 +5,7 @@ description: >
   pyproject (with `hatchling` declared as the build backend), and
   the skill must drive the agent to detect the violation and remove
   the section before any further work.
-tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern]
+tags: [uipath-agents, smoke, coded, lifecycle:edit, feature:antipattern, mode:build]
 
 run_limits:
   expected_turns: 8
