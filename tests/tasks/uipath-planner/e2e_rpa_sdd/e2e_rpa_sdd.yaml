@@ -8,14 +8,16 @@ tags: [uipath-planner, e2e, lifecycle:generate]
 
 run_limits:
   expected_turns: 16
-  # Full Phase D SDD authoring runs in one unbroken autonomous turn (read PDD +
-  # guides, select scope, generate §1–§18). The experiment default caps the
-  # whole task at task_timeout: 1200s — that fires before the SDD lands no
-  # matter how high turn_timeout is. Raise BOTH: task_timeout for the
-  # end-to-end wall clock, turn_timeout for the long authoring turn.
-  # See fix/planner-sdd-turn-timeout.
-  task_timeout: 2700
-  turn_timeout: 1800
+  # This is the comprehensive Master-Project PDD (Dispatcher + Performer +
+  # Queue architecture). Authoring the full §1–§18 SDD is a single unbroken
+  # autonomous turn that drafts ~100k output tokens / ~730 lines before the
+  # final Write. At turn_timeout: 1800 the turn was killed mid-wrap-up with a
+  # COMPLETE SDD already on disk — but agent_timeout is a hard ERROR, so the
+  # success criteria never ran (run 28012844870, score 0 on a finished SDD).
+  # Give the turn 2700s to finish and return so grading fires; keep
+  # task_timeout above it for criteria checking + container overhead.
+  task_timeout: 3600
+  turn_timeout: 2700
 
 initial_prompt: |
   Read the PDD below and generate a complete Solution Design Document (SDD).
