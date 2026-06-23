@@ -10,8 +10,6 @@ run_limits:
   expected_turns: 24
   max_turns: 90
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a local BPMN project named "ExpenseApprovalBpmn" for this process:
   - Manual start with input variable `expenseId` and `amount`, and output
     variable `decision`.

@@ -28,7 +28,6 @@ initial_prompt: |
 
   Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation.
-  Load the `uipath-rpa` skill and follow its workflow.
 
   First, scaffold the starting project on disk. Write exactly these two
   files (their content is authoritative — do not modify while writing):

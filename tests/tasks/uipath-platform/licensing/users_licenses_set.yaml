@@ -13,8 +13,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Assign two licenses to user `dan.dinu@uipath.com`:
   - Attended Named User
   - Automation Developer Named User

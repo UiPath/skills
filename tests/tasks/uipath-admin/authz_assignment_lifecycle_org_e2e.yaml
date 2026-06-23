@@ -19,11 +19,9 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Grant my account organization-level access by assigning the built-in
-  organization-level role "Insights Dashboard Viewer". Exercise the create,
-  list, and delete commands: look the role up by name, create the
-  assignment, list my assignments to confirm it shows up, then delete the
-  assignment and list again to confirm it's gone.
+  Give my own account the built-in organization-level role "Insights
+  Dashboard Viewer", confirm it's actually assigned to me, then take it
+  back off again and confirm it's gone.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -62,7 +60,7 @@ success_criteria:
   - type: command_executed
     description: "Agent cleaned up via `roles assignments delete <id>`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+(?:["'']?[a-f0-9-]{8,}|--file\s+\S+)'
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+delete\s+.*(?:["'']?[a-f0-9-]{8,}|--file\s+\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

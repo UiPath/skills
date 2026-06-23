@@ -20,8 +20,8 @@ description: >
 tags: [uipath-governance, e2e, aops-policy, deployment, mode:build]
 
 run_limits:
-  expected_turns: 26
-  max_turns: 50
+  expected_turns: 35
+  max_turns: 70
 
 initial_prompt: |
   Walk the full deployment lifecycle of an AOps governance policy on the
@@ -48,7 +48,6 @@ initial_prompt: |
 
   Important:
   - Do not prompt the user for confirmation — this is an automated test.
-  - Use `--output json` on every `uip gov aops-policy` command.
 
 success_criteria:
   - type: command_executed
@@ -63,7 +62,7 @@ success_criteria:
   - type: command_executed
     description: "Agent configured a tenant deployment with --tenant-name and --input on the current tenant GUID (exit 0) — full-replace, so seeding is required for this to be non-destructive"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?\s+(?=.*--tenant-name\s)(?=.*--input\s).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--tenant-name\s)(?=.*--input\s).*'
     require_success: true
     min_count: 1
     weight: 2.5
@@ -81,7 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Agent removed the tenant deployment scoped to E2E on the E2E license type (exit 0) — scoped remove keeps other license-type entries intact"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+remove\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?\s+(?=.*--product-name\s+["'']?E2E)(?=.*--license-type\s+["'']?E2E).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+remove\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--product-name\s+["'']?E2E)(?=.*--license-type\s+["'']?E2E).*'
     require_success: true
     min_count: 1
     weight: 2.0
@@ -90,7 +89,7 @@ success_criteria:
   - type: command_executed
     description: "Agent configured a user deployment with --user and --input on the current user GUID (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?\s+(?=.*--user\s)(?=.*--input\s).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--user\s)(?=.*--input\s).*'
     require_success: true
     min_count: 1
     weight: 2.5

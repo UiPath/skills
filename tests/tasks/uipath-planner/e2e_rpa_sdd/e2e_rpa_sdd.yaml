@@ -9,7 +9,14 @@ max_iterations: 1
 
 run_limits:
   expected_turns: 16
-  turn_timeout: 1200
+  # Full Phase D SDD authoring runs in one unbroken autonomous turn (read PDD +
+  # guides, select scope, generate §1–§18). The experiment default caps the
+  # whole task at task_timeout: 1200s — that fires before the SDD lands no
+  # matter how high turn_timeout is. Raise BOTH: task_timeout for the
+  # end-to-end wall clock, turn_timeout for the long authoring turn.
+  # See fix/planner-sdd-turn-timeout.
+  task_timeout: 2700
+  turn_timeout: 1800
 
 initial_prompt: |
   Read the PDD below and generate a complete Solution Design Document (SDD).
@@ -20,8 +27,6 @@ initial_prompt: |
   Important:
   - Do NOT attempt to create a UiPath project or run any `uip` commands.
   - Your only deliverable is the SDD markdown file.
-  - Before starting, load the uipath-planner skill. Read and follow
-    its workflow steps exactly.
 
   --- BEGIN PDD ---
 

@@ -258,6 +258,73 @@ Pick one:
 - **[Unresolved `$xref` marker]** — `vars.$xref('<stage>','<task>','<output>')` in <sink> did not resolve (output not found on the named task). The `=js:` expression throws at runtime until fixed. Correct the source output name in the SDD and rebuild.
 ```
 
+### Check 5 — Resolved-resource I/O completeness
+
+Verifies each resolved task's binding contract **covers** its resource's declared I/O — the build-side re-check of [sdd-generation-rules.md § Resolved-resource I/O completeness](../../../sdd-generation-rules.md#resolved-resource-io-completeness) (Approve-gate item 9 / Finalization step 19). Where Checks 1–4 verify that references which *exist* resolve, Check 5 verifies the *right set of references exists*: required inputs are not silently missing, and extract outputs name real fields.
+
+Read each resolved task's persisted contract from `tasks/registry-resolved.json` (per-input `name` + `required` flag, declared output-field list — written at §Resolve). **Skip** any task with no persisted contract (Rule 17 placeholder / `<UNRESOLVED>`) — same treatment as Check 2's unresolved-producer branch.
+
+```text
+# pseudocode — not executed. Realize via Read → reason → Write/Edit.
+for task in caseplan.json tasks where contract = registry_resolved[task].contract is present:
+    bound_inputs = { inp.name : inp.value for inp in task.data.inputs[] }
+    # (a) required-input coverage
+    for decl in contract.inputs where decl.required:
+        v = bound_inputs.get(decl.name)
+        if v is missing or v == "":            # no row, or row with empty value
+            ERROR → AskUserQuestion (unbound-required-input)
+    # (b) output-field fidelity
+    declared_out = set(contract.outputs[].name)
+    for out in task.data.outputs[]:            # extract rows: source = "=<path>"
+        leaf = top_level_segment(strip_leading_"=", out.source)   # strip envelope prefix: response. / Error. / data.
+        if leaf not in declared_out:
+            ERROR → AskUserQuestion (phantom-output-field)
+```
+
+An **upstream-output-fed** required input is covered like any other — its `value` is `=vars.<var>` (whole-value `<-`) or sits inside a `=js:` (resolved `$xref`); a non-empty `value` passes. Do NOT expect a §1.5 declaration for it.
+
+**On AskUserQuestion — unbound required input:**
+
+```
+Required input "<field>" on task "<task>" (resource "<resource>") is not bound:
+  Declared by the resource as required; no Inputs row with a value in the case plan.
+  Other required inputs on this task: <bound / unbound list>
+
+Pick one:
+  (a) Bind it — supply the source: a case variable, a literal, or an upstream task's output ("Stage"."Task".out). Skill writes the Inputs row and binds it.
+  (b) Mark <UNRESOLVED> — record a placeholder + a high review item; case builds, this input is runtime-null until wired.
+  (c) Continue with best-effort emit — leave it unbound; entry logged under Open Items; the job may fault at runtime.
+```
+
+**On AskUserQuestion — phantom output field:**
+
+```
+Output field "<field>" extracted by task "<task>" is not in resource "<resource>"'s declared outputs:
+  Available outputs on this resource: <name, name, ...>
+  Used in: outputs row "<field> -> <caseVar>"
+
+Pick one:
+  (a) Name the intended output — pick from the available list; skill rewrites the extract Field + re-resolves.
+  (b) Drop the extract row — the case does not consume this output.
+  (c) Continue with best-effort emit — left as-is; entry logged under Open Items; the extract resolves to runtime null.
+```
+
+**Skill response per pick:**
+
+- Unbound (a) — write the Inputs row to `tasks.md` + `caseplan.json`, run the Step 9.8 binding for that input, retry Check 5. (b) — set the input `value` to a placeholder and append a `high` review item (`rev_unbound_input_<task>_<field>`), continue. (c) — append the build-issues entry, continue. No re-run.
+- Phantom (a) — rewrite the output `source`/`Field` in `caseplan.json`, retry Check 5. (b) — delete the output row (and any now-orphaned `=vars.<caseVar>` consumer falls to Check 1). (c) — append the build-issues entry, continue.
+
+Check 5 honors the same **build-with-best** policy as Checks 1, 2, 4: option (c) appends a `## Open Items for User` entry and proceeds to Phase 4. Phase 4 `validate` stays green (a missing input / phantom extract is structurally valid); the runtime concern is surfaced for pre-publish review.
+
+**Build-issues entry templates:**
+
+```markdown
+## Open Items for User
+
+- **[Unbound required input]** — task "<task>" (resource "<resource>") input "<field>" is required but unbound; resolves to runtime null. Bind it in the SDD and rebuild.
+- **[Phantom output field]** — task "<task>" extracts "<field>", which resource "<resource>" does not emit; resolves to runtime null. Correct the output name in the SDD and rebuild.
+```
+
 ## Connector Tasks
 
 Connector task input values are written during Step 9.7 (connector detail), not during this I/O binding step. Resolve cross-task `var` IDs before constructing the `input-values` body from `tasks.md`, then apply the canonical wrap per sink:
@@ -301,6 +368,9 @@ All issues go to the shared issue list per [logging/impl-json.md](../../logging/
 | `$xref(...)` marker name-triple fails to resolve (Step 11.5 / Check 4) | `ERROR` | Leave token unsubstituted; AskUserQuestion (Check 4 above) — log unresolved triple + available outputs |
 | `=vars.X` not in any task `outputs[].id` or root `inputOutputs[].id` / `inputs[].id` | `ERROR` | Skip binding |
 | Out-arg formal entry has NO producer (no extraction, assignment, or bare-name match in any task outputs) AND companion has no `default` | `ERROR` | Log Out-arg pure-orphan issue (Check 2 above); AskUserQuestion |
+| Resolved resource's **required** input has no bound `value` in the case plan (Check 5) | `ERROR` | AskUserQuestion (unbound-required-input) — bind / `<UNRESOLVED>`+review-item / best-effort |
+| Extract output `Field` absent from resolved output contract (Check 5) | `ERROR` | AskUserQuestion (phantom-output-field) — re-point / drop row / best-effort |
+| Resolved task has no persisted contract (placeholder / `<UNRESOLVED>`) | `SKIPPED` | Skip Check 5 for that task |
 | Type mismatch (input vs variable) | `WARNING` | Proceed |
 
 Example log entry (pseudocode — record in-reasoning, not via subprocess):

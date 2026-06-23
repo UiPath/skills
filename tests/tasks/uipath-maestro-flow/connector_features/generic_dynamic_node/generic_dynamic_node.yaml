@@ -40,8 +40,7 @@ initial_prompt: |
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build, validate, and run end-to-end in a single
-  pass. Before starting, load the uipath-maestro-flow skill and follow its
-  connector node configuration workflow. Do NOT substitute a mock for the
+  pass. Do NOT substitute a mock for the
   connector.
 
 success_criteria:

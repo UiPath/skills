@@ -7,7 +7,7 @@ How to extract structured information from Process Design Documents in any forma
 | Format | How to Read | Notes |
 |---|---|---|
 | PDF | Use the Read tool with `pages` parameter. Read in chunks of up to 20 pages. | Screenshots are visible as images — see "Handling Screenshots" below. |
-| Word (.docx) | Read the file directly. | Tables may render differently — verify structure. |
+| Word (.docx) | Do NOT Read directly — convert first with `scripts/docx-extract.sh` (see sdd-generation-guide.md Step 1), then read the markdown + extracted media. | Complex tables may extract as raw HTML `<table>` blocks — parse them; verify structure. |
 | Markdown | Read the file directly. | Easiest format — structure is already parseable. |
 | Pasted text | Process from the conversation context. | Ask the user to paste section by section if the PDD is large. |
 
@@ -20,6 +20,7 @@ When you encounter screenshots in the PDD:
 3. **Do NOT extract** selectors, XPath, CSS, coordinates, colors, or visual layout details — these are determined at development time, not from static images.
 4. **Reference** the screenshot content in the relevant process step's "Remarks" field if useful.
 5. **DO extract concrete data values** shown in the screenshot — sample IDs, names, dates, expected outputs, error messages. These are oracles for the test strategy, not selectors. See "Extract Canonical Examples" below.
+6. **Unreadable media formats (.emf, .wmf):** the Read tool cannot render these (common in Word-extracted media). Do not guess their content — ask the user for a PNG export of the figure, or mark every extraction that depended on it as `[SME REVIEW]` naming the file.
 
 ## Extract Canonical Examples
 
@@ -199,6 +200,24 @@ Watch for:
 - **Email protocol** — when email is an application, extract the protocol signal: IMAP, Exchange/EWS, O365 Graph API, POP3, SMTP. Look for keywords like "IMAP", "Exchange", "O365", "Graph API", "dedicated mailbox". If not specified, mark as `[SME REVIEW]` — do not default to O365.
 - **FTP/SFTP** — note whether the PDD specifies FTP, SFTP, or cloud storage (S3, Azure Blob). Capture host/path if mentioned.
 
+### Environment & Constraint Signals
+
+**Mandatory scan on every PDD.** These constraints gate product selection (see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate)). Missing them produces architectures the customer cannot run — the most expensive SDD defect.
+
+| Signal | What to extract | Keyword signals |
+|---|---|---|
+| **Delivery model** | Automation Cloud vs Automation Suite (self-hosted) vs standalone Orchestrator. Capture the Automation Suite version if stated. | "Automation Suite", "self-hosted", "on-prem", "on-premises", "air-gapped", "sovereign", "data residency", "Automation Cloud", `cloud.uipath.com`, internal base URLs |
+| **Product exclusions** | Products the client rules out, with the stated reason. | "we don't want <product>", "can't use", "not licensed for", "no cloud services", "Maestro is excluded" |
+| **Orchestration constraints** | Preferred coordination style when the process needs long-running orchestration. | "Maestro", "Action Center", "state machine", "queues only", "Orchestrator queues" |
+| **Signing modality** | How documents get signed: embedded e-signature service vs token-based qualified signing in a local reader (download → sign locally → upload). | "e-signature", "DocuSign", "Adobe Sign", "qualified signature", "hardware token", "smart card", "signature verification" |
+| **Document storage** | Where documents live: SharePoint, network share, Orchestrator storage bucket, ECM/DMS. **Never assume SharePoint.** | "SharePoint", "shared drive", "network drive", "file server", "DMS", "document archive" |
+| **Robot attendance** | Attended vs unattended, and the reason when stated (e.g., physical 2FA token requires a human at the machine). | "attended", "unattended", "2FA", "hardware token", "OTP", "human present", "user's machine" |
+
+Destinations:
+
+- Delivery model + product exclusions → Phase 1 Step 0 skip rules and the [Constraint Gate](product-selection-guide.md#constraint-gate).
+- Signing modality, document storage, robot attendance → §9 Application Inventory / §16 Deployment Environment (or product equivalents); `[SME REVIEW]` when the PDD handles documents or signatures but leaves the modality ambiguous.
+
 ### Development Details
 
 Extract:
@@ -263,3 +282,6 @@ After extraction, verify these items exist. Flag missing ones:
 | Test data / canonical case | Run "Extract Canonical Examples" first. Only mark `[SME REVIEW]` if scanning every screenshot, every inline-quoted string, and every example table genuinely returns zero concrete values. Most PDDs carry at least one example. |
 | Reporting requirements | `[DEFAULT]` — Orchestrator logs only (no dedicated report) |
 | Email protocol (when email is used) | `[SME REVIEW]` — needed for package selection (IMAP vs O365 vs Exchange) |
+| Delivery model | Asked at Phase 1 Step 0 when the PDD doesn't state it — never silently default. Gates product availability. |
+| Document storage location (when the process handles documents) | `[SME REVIEW]` — never default to SharePoint |
+| Signing modality (when signatures are mentioned) | `[SME REVIEW]` — embedded e-signature service vs local token-based signing changes the architecture |

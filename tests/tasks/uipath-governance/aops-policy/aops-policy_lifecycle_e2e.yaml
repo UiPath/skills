@@ -33,10 +33,6 @@ initial_prompt: |
      Keep every other field (including the name) as-is.
   4. Delete the policy.
 
-  The uipath-governance skill knows the right CLI surface, how to
-  bootstrap product defaults, the full-replace semantics of update, and
-  what to re-pass to preserve fields. Trust it.
-
   Important:
   - Do not prompt the user for confirmation — this is an automated test.
   - The final delete cleans up the test policy — do not skip it, even if
@@ -55,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the policy by GUID returned from create (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+get\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+get\s+.*(?:\$\w+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})'
     require_success: true
     min_count: 1
     weight: 2.0
@@ -64,7 +60,7 @@ success_criteria:
   - type: command_executed
     description: "Agent updated the policy description to `Updated by CRUD lifecycle e2e test` AND the server accepted it (exit 0) — full-replace update, dropping a required field (e.g. --name) or a server-side rejection would fail this"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+update\s+(?=.*--identifier\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?=.*--description\s+["'']?Updated by CRUD lifecycle e2e test).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+update\s+(?=.*--identifier\s+["'']?(?:\$\w+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))(?=.*--description\s+["'']?Updated by CRUD lifecycle e2e test).*'
     require_success: true
     min_count: 1
     weight: 2.5
@@ -73,7 +69,7 @@ success_criteria:
   - type: command_executed
     description: "Agent deleted the test policy at end of lifecycle (cleanup, exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+delete\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+delete\s+.*(?:\$\w+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})'
     require_success: true
     min_count: 1
     weight: 2.0

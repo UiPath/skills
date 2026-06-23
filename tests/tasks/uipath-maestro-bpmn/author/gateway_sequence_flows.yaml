@@ -8,8 +8,6 @@ run_limits:
   expected_turns: 21
   max_turns: 80
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a local BPMN project named "InvoiceTriageBpmn" for this process:
   - Manual start with input variables `invoiceId` and `amount`
   - Record invoice intake
