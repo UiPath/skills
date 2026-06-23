@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelReconExport",
+  "ProjectType": "Process",
+  "Description": "Repro: Classic Excel Application Scope (COM-only) failing with InvalidCastException on System.__ComObject (E_NOINTERFACE) because the UiPath.Integration.ExcelAddin COM add-in loaded on the runtime host corrupts the interop QueryInterface. Exercises branch 3 of the excel-application-scope-failures playbook.",
+  "MainFile": "Main.xaml"
+}

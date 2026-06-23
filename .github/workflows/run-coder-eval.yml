@@ -32,10 +32,10 @@ on:
         description: 'Allow >50 tasks (cost guardrail).'
         type: boolean
         default: false
-      coder_eval_ref:
-        description: 'coder_eval branch/SHA.'
+      coder_eval_version:
+        description: 'coder_eval version to test (blank = pinned).'
         type: string
-        default: main
+        default: ''
       cli_version:
         description: '@uipath/cli version.'
         type: string
@@ -50,12 +50,28 @@ jobs:
     runs-on: ubuntu-latest
     name: Partition globs by `windows` tag
     outputs:
-      linux_globs:   ${{ steps.split.outputs.linux_globs }}
-      windows_globs: ${{ steps.split.outputs.windows_globs }}
-      linux_count:   ${{ steps.split.outputs.linux_count }}
-      windows_count: ${{ steps.split.outputs.windows_count }}
+      linux_globs:    ${{ steps.split.outputs.linux_globs }}
+      windows_globs:  ${{ steps.split.outputs.windows_globs }}
+      linux_count:    ${{ steps.split.outputs.linux_count }}
+      windows_count:  ${{ steps.split.outputs.windows_count }}
+      coder_eval_version: ${{ steps.ceref.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+
+      # Single source of truth for the coder_eval version: the pin in
+      # tests/.coder-eval-version. A non-blank coder_eval_version input overrides
+      # it for ad-hoc runs. Resolved once here and passed to both run jobs as the
+      # wheel version (host CLI) + agent image tag (sandbox).
+      - name: Resolve coder_eval version (pinned; input overrides)
+        id: ceref
+        env:
+          CE_VERSION_INPUT: ${{ inputs.coder_eval_version }}
+        run: |
+          if [ -n "$CE_VERSION_INPUT" ]; then
+            echo "version=$CE_VERSION_INPUT" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Resolve globs, split by tag, enforce large-run gate
         id: split
@@ -120,48 +136,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/coder_eval
-          ref: ${{ inputs.coder_eval_ref }}
-          token: ${{ secrets.GH_PAT }}
-          path: .coder_eval
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
       - uses: astral-sh/setup-uv@v4
 
+      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
+      # deps). No source checkout.
       - name: Install coder-eval
-        working-directory: .coder_eval
         env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system .
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
 
-      - name: Build coder-eval Docker image
-        working-directory: .coder_eval
-        env:
-          UV_INDEX_UIPATH_USERNAME: ${{ secrets.UV_INDEX_UIPATH_USERNAME }}
-          UV_INDEX_UIPATH_PASSWORD: ${{ secrets.UV_INDEX_UIPATH_PASSWORD }}
-        run: make docker-image
+      # Pull the pinned agent image from GHCR (never built from source); the
+      # skills image extends it below. GH_PAT needs read:packages.
+      - name: Pull pinned coder-eval-agent image
+        run: |
+          echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_version }}
 
       # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
       # on top of coder-eval-agent). Matches smoke-skills.yml + daily.sh.
       - name: Build skills Docker image
         run: |
           docker build \
-            --build-arg CODER_EVAL_IMAGE=coder-eval-agent:latest \
+            --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_version }} \
             --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             -t skills-image:latest \
             -f tests/docker/Dockerfile \
             .
 
-      # ROPC bot-user auth via coder_eval's shared script (same as VM cron).
-      # Required because `uip flow debug` needs a real user `sub` claim —
-      # s2s/client_credentials tokens lack one. Writes ~/.uipath/.auth which
-      # experiments/nightly.yaml mounts into each eval container.
+      # ROPC bot-user auth via this repo's vendored script (mirrors the VM
+      # cron's ROPC flow). Required because `uip flow debug` needs a real user
+      # `sub` claim — s2s/client_credentials tokens lack one. Writes
+      # ~/.uipath/.auth which experiments/nightly.yaml mounts into each eval
+      # container.
       - name: Mint UiPath bot token (ROPC)
         env:
           UIPATH_URL:               https://alpha.uipath.com
@@ -173,7 +184,7 @@ jobs:
           CLIENT_SECRET:            ${{ secrets.UIPATH_ROPC_CLIENT_SECRET }}
           CE_USERNAME:              ${{ secrets.UIPATH_BOT_USERNAME }}
           CE_PASSWORD:              ${{ secrets.UIPATH_BOT_PASSWORD }}
-        run: bash .coder_eval/dashboard/scripts/ci/refresh-auth.sh
+        run: bash .github/scripts/refresh-auth.sh
 
       # TASK_GLOBS here is the partition-resolved list of *file paths* (not
       # globs). Word-splitting is intentional — do not quote.
@@ -247,7 +258,7 @@ jobs:
           fi
           python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
-          rows = [json.loads(p.read_text()) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
           for r in rows:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')
@@ -267,13 +278,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/coder_eval
-          ref: ${{ inputs.coder_eval_ref }}
-          token: ${{ secrets.GH_PAT }}
-          path: .coder_eval
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -288,11 +292,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
+      # deps). Windows tasks run under the tempdir driver -- no agent image.
       - name: Install coder-eval
-        working-directory: .coder_eval
+        shell: bash
         env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system .
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
@@ -415,11 +421,24 @@ jobs:
           BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
+          # Redirect the temp root off the default %TEMP%. On the GH-hosted
+          # Windows runner %TEMP% resolves to its 8.3 short form
+          # (C:\Users\RUNNER~1\AppData\Local\Temp). coder-eval creates each
+          # agent sandbox under %TEMP%, so the sandbox path inherits the
+          # `RUNNER~1` tilde segment — and Claude Code's permission layer
+          # rejects writes to paths containing that 8.3 short-name pattern as
+          # "suspicious", blocking the agent's own file edits until the 1200s
+          # turn watchdog hard-kills it (false ERROR). `C:\cetmp` is ≤8 chars
+          # with no spaces, so Windows generates no `~1` alias for it.
+          TMP:  C:\cetmp
+          TEMP: C:\cetmp
         working-directory: tests
         id: eval
         shell: bash
         run: |
           shopt -s globstar nullglob
+          # Create the tilde-free temp root pinned via TMP/TEMP above.
+          mkdir -p /c/cetmp
           overall_exit=0
           for task in $TASK_GLOBS; do
             echo "--- Killing leftover Helm/Studio processes ---"
@@ -479,7 +498,7 @@ jobs:
           fi
           python - "$run_dir" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, pathlib, sys
-          rows = [json.loads(p.read_text()) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
+          rows = [json.loads(p.read_text(encoding='utf-8')) for p in sorted(pathlib.Path(sys.argv[1]).rglob('task.json'))]
           for r in rows:
               print(f"{r.get('task_id','?')}: {r.get('final_status','?')}")
           ok = sum(1 for r in rows if r.get('final_status') == 'SUCCESS')

@@ -19,6 +19,7 @@ Reference for comparing **coded** (Python) and **low-code** (agent.json) agents.
 | Full runtime control over LLM prompts | ❌ | ✅ |
 | Multi-model / multi-framework strategies | ❌ | ✅ |
 | Fastest path to first working agent | ✅ | ❌ |
+| Conversational (chat-style, multi-turn) use-cases | ✅ | currently not recommended for production, use low-code |
 | Embed inline in a flow project | ✅ | ❌ |
 | Embed as sibling project in same solution | ✅ | ✅ |
 | Invoke as published agent node in a flow | ✅ | ✅ |

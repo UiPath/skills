@@ -7,7 +7,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "20.0.0",
+  "version": "23.0.0",
   "name": "<case name>",
   "description": "<optional>",
   "metadata": {
@@ -16,6 +16,7 @@ Structural reference for the case definition JSON. Shared across all node types.
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
+    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2",
     "slaRules": [ ... ],
     "caseExitRules": [ ... ]
@@ -71,7 +72,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "20.0.0",
+  "version": "23.0.0",
   "name": "Loan Approval",
   "description": "case description",
   "metadata": {
@@ -80,6 +81,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
+    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2",
     "slaRules": [
       { "expression": "=js:true", "count": 5, "unit": "d" }
@@ -92,7 +94,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
-| `version` | string | Schema version — `"20.0.0"`. Emitted by the `case` plugin at T01. |
+| `version` | string | Schema version — `"23.0.0"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
@@ -100,6 +102,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | `metadata.caseAppEnabled` | boolean | Whether the Case App UI is enabled |
 | `metadata.publishVersion` | number? | Publish version — `2` for current schema |
 | `metadata.caseUnifiedSchemaEnabled` | boolean? | Unified-schema flag (`true`) |
+| `metadata.caseDirectlyPassTaskOutputs` | boolean? | Passes task outputs directly through messages instead of shared variables, fixing race conditions on task outputs in cases with parallel tasks. Schema-optional, defaults `true` when absent; skill emits the T01 `directly-pass-task-outputs` value (`true` unless sdd.md requested `false`). |
 | `metadata.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
 | `metadata.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
 | `metadata.caseExitRules` | CaseExitCondition[]? | Conditions that mark the case as complete |
@@ -451,7 +454,15 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `isRequired` | boolean? | Whether the task must complete for the stage to complete |
 | `description` | string? | Task description |
 
-> **Envelope fields are top-level, not `data`.** Every field above except `data` lives directly on the task object — `skipCondition`, `entryConditions`, `shouldRunOnlyOnce`, `isRequired`, etc. are siblings of `data`, never nested inside it. `data` holds only the type-specific config defined by the task's plugin.
+> **Envelope fields are top-level, not `data`.** Every field above except `data` lives directly on the task object — `skipCondition`, `entryConditions`, `shouldRunOnlyOnce`, `isRequired`, etc. are siblings of `data`, never nested inside it. `data` holds only the type-specific config defined by the task's plugin. An envelope field misplaced inside `data` passes `validate` silently (extra `data` keys aren't rejected) but is dead config the platform never reads.
+>
+> ```json
+> // WRONG — skipCondition nested in data, never applied:
+> { "displayName": "Hold", "data": { "timerType": "timeDuration", "timeDuration": "PT1H", "skipCondition": "=js:vars.skip === true" } }
+>
+> // RIGHT — skipCondition is a sibling of data:
+> { "displayName": "Hold", "skipCondition": "=js:vars.skip === true", "data": { "timerType": "timeDuration", "timeDuration": "PT1H" } }
+> ```
 
 **Positioning:** tasks have no `x`/`y`. They live in `stageNode.data.tasks[laneIndex][]` — a 2D array where the outer index is the lane (rendering column) and the inner index is the order within the lane. Default convention: one task per lane. Exception: within a `runs-sequentially` group, tasks that should run in parallel share the same lane (shared lane = parallel siblings, carries execution semantics).
 
@@ -469,6 +480,8 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
+> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.json` (SKILL.md Rule 16).
+
 ---
 
 ## 8. Minimal example
@@ -476,7 +489,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "20.0.0",
+  "version": "23.0.0",
   "name": "Simple Case",
   "metadata": {
     "caseIdentifier": "Simple Case",
@@ -484,6 +497,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
+    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2"
   },
   "bindings": [],

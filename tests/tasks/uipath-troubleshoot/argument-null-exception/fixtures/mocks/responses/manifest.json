@@ -31,11 +31,6 @@
       "file": "or-processes-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379.json"
     },
     {
-      "match": "or libraries list --output json",
-      "file": "or-libraries-list-output-json.json",
-      "exit_code": 1
-    },
-    {
       "match": "docsai ask",
       "passthrough": true,
       "_doc": "Per CLAUDE.md: docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."

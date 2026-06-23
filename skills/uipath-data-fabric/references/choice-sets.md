@@ -6,16 +6,32 @@ Reusable picklists that back `CHOICE_SET_SINGLE` and `CHOICE_SET_MULTIPLE` entit
 
 ## Commands
 
+Every command below accepts `--folder-key <GUID>` for folder-scoped choice sets — required on writes against a folder-scoped set, recommended on reads. `list` additionally accepts `--include-folders` (mutually exclusive with `--folder-key`). See [Folder scope](#folder-scope) below for the picker rules. CLI floor: `@uipath/data-fabric-tool@1.197.0+`.
+
 | Command | Use |
 |---------|-----|
-| `uip df choice-sets list --output json` | Find an existing choice set's `Id` |
-| `uip df choice-sets list-values <choice-set-id> --output json` | Page through values; pagination `{ Items, TotalCount, HasNextPage, … }` (use `--limit` / `--cursor` / `--offset`) |
-| `uip df choice-sets create <name> [--display-name <…>] [--description <…>] --output json` | Create a choice set; response `Code: ChoiceSetCreated`, `Data.Id` |
-| `uip df choice-sets update <choice-set-id> [--display-name <…>] [--description <…>] --output json` | Rename / re-describe the set |
-| `uip df choice-sets delete <choice-set-id> --confirm --reason "<why>" --output json` | Irreversible — `--confirm` and `--reason` are required |
-| `uip df choice-set-values create <choice-set-id> <name> [--display-name <…>] --output json` | Add a value; server assigns `NumberId` (0-based, monotonic by creation order) |
-| `uip df choice-set-values update <choice-set-id> <value-id> "<new display name>" --output json` | Display-name only — `Name` and `NumberId` are immutable |
-| `uip df choice-set-values delete <choice-set-id> --ids <value-id>[,<value-id>…] --confirm --reason "<why>" --output json` | Irreversible — same gating as `choice-sets delete` |
+| `uip df choice-sets list [--folder-key <…> \| --include-folders] --output json` | Find an existing choice set's `Id`. No flags → tenant only; `--folder-key` → that folder only; `--include-folders` → tenant + every visible folder. Each row carries `FolderId`. |
+| `uip df choice-sets list-values <choice-set-id> [--folder-key <…>] --output json` | Page through values; pagination `{ Items, TotalCount, HasNextPage, … }` (use `--limit` / `--cursor` / `--offset`) |
+| `uip df choice-sets create <name> [--folder-key <…>] [--display-name <…>] [--description <…>] --output json` | Create a choice set; response `Code: ChoiceSetCreated`, `Data.Id`. **Scope-bound**: pass `--folder-key` to place inside a folder; omit for tenant level. |
+| `uip df choice-sets update <choice-set-id> [--folder-key <…>] --display-name <…> --description <…> --output json` | Rename / re-describe the set. **Both `--display-name` and `--description` are required on every call** — sending only `--description` returns *"DisplayName is required."*; sending only `--display-name` returns `Internal Server Error`. To change one, re-send the other's current value (run `choice-sets list` first to read it). |
+| `uip df choice-sets delete <choice-set-id> [--folder-key <…>] --yes --reason "<why>" --output json` | Irreversible — `--yes` and `--reason` are required (`--confirm` accepted as deprecated alias) |
+| `uip df choice-set-values create <choice-set-id> <name> [--folder-key <…>] [--display-name <…>] --output json` | Add a value; server assigns `NumberId` (0-based, monotonic by creation order) |
+| `uip df choice-set-values update <choice-set-id> <value-id> "<new display name>" [--folder-key <…>] --output json` | Display-name only — `Name` and `NumberId` are immutable |
+| `uip df choice-set-values delete <choice-set-id> --ids <value-id>[,<value-id>…] [--folder-key <…>] --yes --reason "<why>" --output json` | Irreversible — same gating as `choice-sets delete` |
+
+## Folder scope
+
+Choice sets live at the tenant level or inside a folder. The flag matrix mirrors entities:
+
+| Goal | Flags |
+|---|---|
+| List only tenant-level choice sets | (none) — default |
+| List a single folder's choice sets | `--folder-key <folder-guid>` |
+| List tenant + every folder you can see | `--include-folders` |
+| Create/update/delete a folder-scoped set or value | `--folder-key <folder-guid>` (required) |
+| Read or operate on a tenant-scoped set | `--folder-key` is harmless when passed; the server resolves by UUID |
+
+Bind a folder-scoped choice set to an entity in a **different** folder via per-field `referenceFolderKey` — see [`entity-schema.md` → Cross-folder references](entity-schema.md#cross-folder-references).
 
 ## Use the IDs
 
@@ -132,7 +148,7 @@ Never fall back to `STRING`. Never auto-create without confirming the values.
 ## Deleting a choice set
 
 ```bash
-uip df choice-sets delete <choice-set-id> --confirm --reason "<why>" --output json
+uip df choice-sets delete <choice-set-id> [--folder-key <…>] --yes --reason "<why>" --output json
 ```
 
 Irreversible. Before invoking, run `entities list --output json` and find every entity whose `Fields[].ChoiceSetId == <choice-set-id>`. Surface those entities to the user and ask: *"This choice set is used by `<entity>.<field>` — delete it anyway (those fields will break), pick a replacement choice set, or stop?"* Apply only what the user confirms.

@@ -24,8 +24,7 @@ pre_run:
     fail_on_error: true
 
 initial_prompt: |
-  Load the uipath-data-fabric skill and follow its workflow. Pass
-  `--output json` on every `uip df` command.
+  Pass `--output json` on every `uip df` command.
 
   Two helper scripts are staged in the working directory by the harness:
 

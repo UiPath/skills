@@ -1,9 +1,0 @@
-{
-  "projectId": "Fixture.IntegrationServiceEnriched",
-  "main": "integration-service-enriched.bpmn",
-  "contentType": "ProcessOrchestration",
-  "targetFramework": "Portable",
-  "runtimeOptions": {
-    "requiresUserInteraction": false
-  }
-}

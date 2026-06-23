@@ -1,0 +1,39 @@
+task_id: skill-ixp-publish-tag-live-smoke
+description: >
+  Smoke: agent makes a specific version the live model with
+  `uip ixp projects publish <Name> --model-version <N> --tag live`.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  In the IXP project named `my_invoices-f1afa9ef-ixp`, make model version
+  27 the live model.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent tagged version 27 as live via `projects publish <Name> --model-version 27 --tag live`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+publish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+27\b)(?=.*--tag\s+["'']?live\b).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

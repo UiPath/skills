@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the shift-conflict (branch 3) of the excel-activities/delete-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException 0x800A03EC Application-defined or object-defined error from Excel Range.Delete) → jobs logs (resolved DeleteRange config ShiftCells=True ShiftOption=ShiftUp on A3:C5 + pre-execution merged-region scan detecting D5:D7 on the bottom edge) → workflow source. The merged-region collision is the smoking gun: ShiftUp cannot move rows 6-7 into row 5 without breaking the merge anchor at D5.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f0033333-3333-4444-5555-666677778888\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f0033333-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f0033333-3333-4444-5555-666677778888 --state Faulted --output json", "file": "or-jobs-list-folder-key-f0033333-state-faulted-output-json.json"},
+    {"match": "or jobs get \"dd222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-get-dd2222cc-output-json.json"},
+    {"match": "or jobs get dd222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-get-dd2222cc-output-json.json"},
+    {"match": "or jobs history \"dd222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-history-dd2222cc-output-json.json"},
+    {"match": "or jobs history dd222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-history-dd2222cc-output-json.json"},
+    {"match": "or jobs logs \"dd222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "or-jobs-logs-dd2222cc-output-json.json"},
+    {"match": "or jobs logs dd222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "or-jobs-logs-dd2222cc-output-json.json"}
+  ]
+}

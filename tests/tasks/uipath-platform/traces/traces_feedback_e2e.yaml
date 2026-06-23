@@ -14,8 +14,6 @@ run_limits:
   expected_turns: 16
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   Run a feedback round-trip on a real trace:
   - Start a job for process `$TRACES_SMOKE_PROCESS_KEY` and save the result to job.json
   - Fetch the LLM trace spans for that job and save to spans.json

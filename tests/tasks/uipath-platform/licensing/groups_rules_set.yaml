@@ -7,18 +7,12 @@ description: >
   and (3) calls `uip platform groups rules set <group> --input <path>
   --output json`. CLI auth failure is expected; this validates command shape
   only.
-tags: [uipath-platform, smoke-blocked, licensing, groups]
-skip: true
-# Blocked: `uip platform groups rules` is not in the public
-# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
-# Re-enable when the CLI ships the groups surface. See PLT-103133.
+tags: [uipath-platform, smoke, licensing, groups]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Configure the group rule for the "RPA Developers" group so that:
   - every member gets an Automation Developer Named User license (no quota)
   - up to 10 members can also get an Attended Named User license

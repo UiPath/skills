@@ -113,7 +113,11 @@ def main() -> None:
             "or =js:$vars.<node>.output.<field>"
         )
 
-    if not any(e.get("sourceNodeId") == hitl_id and e.get("sourcePort") == "completed" for e in edges):
+    if not any(
+        e.get("sourceNodeId") == hitl_id
+        and e.get("sourcePort") in ("completed", "outcome-completed")
+        for e in edges
+    ):
         fail("HITL completed handle must be wired")
 
     scripts = [

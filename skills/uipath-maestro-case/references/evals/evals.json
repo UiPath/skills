@@ -58,11 +58,11 @@
         {
             "id": 6,
             "prompt": "Build my case from ./sdd.md",
-            "expected_output": "Skill triggers, emits caseplan.json with the top-level shape (id: case-<10>, version: 20.0.0, metadata, top-level bindings/variables, layout: {}), runs Phase 4 validate authoritatively",
+            "expected_output": "Skill triggers, emits caseplan.json with the top-level shape (id: case-<10>, version: 23.0.0, metadata, top-level bindings/variables, layout: {}), runs Phase 4 validate authoritatively",
             "expectations": [
                 "The case-management skill was triggered",
                 "caseplan.json top-level keys are: id, version, name, metadata, bindings, variables, nodes, edges, layout",
-                "caseplan.json.version === '20.0.0'",
+                "caseplan.json.version === '23.0.0'",
                 "caseplan.json.id matches /^case-[A-Za-z0-9]{10}$/",
                 "No 'root' wrapper key in caseplan.json",
                 "metadata.caseExitRules is used once case-exit conditions are written",

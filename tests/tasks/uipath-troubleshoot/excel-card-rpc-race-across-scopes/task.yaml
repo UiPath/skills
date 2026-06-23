@@ -1,0 +1,184 @@
+task_id: skill-troubleshoot-excel-card-rpc-race-across-scopes
+description: >
+  UiPath troubleshoot agent must diagnose a Modern Use Excel File
+  failure (COMException 0x80010108 RPC_E_DISCONNECTED) where two
+  sequential cards with ReadFormatting=True COM-forcing race on
+  the EXCEL.EXE process lifecycle. The first card's scope-end
+  terminates EXCEL.EXE; the second card tries to reuse the dead
+  apartment. There is no outer Excel Process Scope wrapping the
+  two cards. Agent must match the activity-packages/excel-activities/playbooks/excel-application-card-failures.md
+  playbook, identify the COM/RPC-across-scopes branch from the
+  PID lifecycle Trace in the job logs + the missing Process Scope
+  in the workflow source, and recommend wrapping both cards in an
+  Excel Process Scope — NOT the Delay-as-fix anti-pattern.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, excel-application-card, rpc-race]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.Runtime.InteropServices.COMException (0x80010108): The object invoked has disconnected from its clients. (RPC_E_DISCONNECTED)`
+  Pinned job key: aa222222-cccc-dddd-eeee-ffffaaaabbbb. The
+  workflow opens two Excel files in sequence. The first one
+  succeeds, the second one always blows up. What's happening?
+
+  The project source for the failing process is at ./ExcelMultiReportProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the excel-application-card-failures playbook AND identified the COM/RPC-across-scopes branch (missing Excel Process Scope causing the second card to race on a terminated EXCEL.EXE) AND recommended wrapping in Excel Process Scope — NOT the Delay-as-fix anti-pattern"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.Runtime.InteropServices.COMException (0x80010108):
+         The object invoked has disconnected from its clients.
+         (RPC_E_DISCONNECTED)` Pinned job key:
+         aa222222-cccc-dddd-eeee-ffffaaaabbbb. The workflow opens
+         two Excel files in sequence. The first one succeeds, the
+         second one always blows up."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/excel-application-card-failures.md
+        because the runtime error is the canonical COMException
+        RPC_E_DISCONNECTED for branch 3 (COM/RPC failures across
+        scopes).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Two sequential Modern Use Excel File cards (sales-q1.xlsm,
+            sales-q2.xlsm), both with ReadFormatting=True forcing
+            COM fallback.
+          - NO outer Excel Process Scope wrapping the two cards.
+          - Card 1 launches EXCEL.EXE PID 8472, completes its body,
+            scope exits; scope-owned-lifecycle policy terminates
+            PID 8472 because no Process Scope governs the lifecycle.
+          - Card 2 tries to reuse the COM apartment from PID 8472
+            but the process is gone. RPC_E_DISCONNECTED 0x80010108.
+
+        The reference fix:
+          - Primary: wrap both Use Excel File cards in an outer
+            Excel Process Scope (the canonical fix per the playbook).
+          - Alternative: remove the ReadFormatting=True COM-forcing
+            property on both cards if the workflow doesn't actually
+            need formatting interaction (OpenXML default avoids the
+            COM lifecycle entirely).
+          - Alternative: consolidate the two workbooks into a
+            single file with multiple sheets.
+          - NOT acceptable: adding a Delay activity between the
+            cards (the playbook's anti-pattern #1 — Delay-as-fix
+            masks the race without solving it).
+
+        Evidence sources (in priority order):
+          1. Job logs -- the decisive PID lifecycle chain:
+             (a) "Use Excel File: sales-q1.xlsm — ReadFormatting=
+                 True forces COM fallback ... Launching new
+                 EXCEL.EXE process (PID 8472)"
+             (b) "Use Excel File: sales-q1.xlsm — scope exiting.
+                 No outer Excel Process Scope detected: terminating
+                 EXCEL.EXE PID 8472 per scope-owned-lifecycle
+                 policy."
+             (c) "Use Excel File: sales-q2.xlsm — Attempting to
+                 reuse Excel COM apartment from previous scope
+                 (PID 8472)"
+             (d) "Use Excel File: sales-q2.xlsm — COM apartment
+                 for PID 8472 is unreachable (process terminated).
+                 HRESULT 0x80010108 RPC_E_DISCONNECTED."
+             These four lines together name the missing Process
+             Scope, the PID, the termination, and the race.
+          2. Workflow source -- Main.xaml shows TWO sequential
+             `<uix:UseExcelFile>` activities with `ReadFormatting=
+             True` on both, and NO `<uix:ExcelProcessScope>`
+             wrapping them.
+          3. The "first one succeeds, second always blows up"
+             framing reinforces the cross-scope race pattern.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the excel-application-card-failures
+             playbook AND identified branch 3 (COM/RPC race)
+             AND named the missing Excel Process Scope as the
+             root cause AND recommended wrapping in Excel
+             Process Scope as the primary fix AND explicitly
+             rejected Delay-as-fix OR didn't mention Delay at
+             all.
+        0.9  Primary diagnosis + fix correct (Process Scope
+             wrap recommended), but agent didn't explicitly
+             reject the Delay anti-pattern (might have
+             mentioned Delay as an alternative without
+             rejecting it).
+        0.8  Both dimensions partially correct: matched the
+             playbook and identified the COM race but
+             recommended only a generic "review the scope
+             nesting" without naming Excel Process Scope
+             specifically; OR named Excel Process Scope but
+             didn't connect it to the PID lifecycle in the logs.
+        0.7  Recommended removing ReadFormatting=True as the
+             primary fix without acknowledging the Process
+             Scope canonical pattern — this works (collapses
+             to OpenXML, no race possible) but it changes the
+             workflow's data semantics if formatting matters.
+        0.5  Only one dimension correct: matched the playbook
+             but classified the cause-branch incorrectly
+             (Excel-not-installed, path, sensitivity) without
+             supporting evidence; OR identified the race
+             without matching the specific playbook.
+        0.2  Agent recognized the COMException but never
+             connected it to the cross-scope process lifecycle.
+        0.0  Recommended Delay-as-fix as the primary fix (the
+             playbook's anti-pattern #1); OR concluded a wrong
+             root cause (corruption, file lock, missing Excel);
+             OR got blocked / timed out.
+
+      Be substance-focused. The decisive chain is "Two Modern
+      Use Excel File cards with ReadFormatting=True COM-forcing
+      + no outer Excel Process Scope → first scope kills
+      EXCEL.EXE PID 8472 on exit → second scope races on the
+      dead apartment → RPC_E_DISCONNECTED." An agent that
+      names this chain AND recommends the Excel Process Scope
+      wrap scores 1.0. Penalize Delay-as-fix recommendations
+      specifically — that's the playbook's anti-pattern.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

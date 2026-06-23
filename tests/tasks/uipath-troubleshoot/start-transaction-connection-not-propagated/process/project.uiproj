@@ -1,0 +1,6 @@
+{
+  "Name": "OrderSettlementTxn",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Start Transaction failure where the scope opens its connection successfully but a child Execute Query is left with an empty ExistingDbConnection, so the child faults with a NullReferenceException because the transaction's connection was never propagated.",
+  "MainFile": "Main.xaml"
+}

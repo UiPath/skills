@@ -10,7 +10,7 @@ agent:
 
 pre_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
-    timeout: 10
+    timeout: 30
 
 post_run:
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
@@ -20,8 +20,6 @@ run_limits:
   expected_turns: 19
 
 initial_prompt: |
-  Use the `uipath-solution` skill.
-
   I'm trying to tweak the deploy config for our `e2e-stub` solution
   before rolling it out. The solution is already published on the
   tenant — if for some reason it isn't, you can re-publish it from
