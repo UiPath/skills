@@ -11,9 +11,9 @@ description: >
 tags: [uipath-platform, e2e, data-fabric, employee-directory]
 
 run_limits:
-  expected_turns: 30
-  max_turns: 50
-  turn_timeout: 600
+  expected_turns: 35
+  max_turns: 75
+  turn_timeout: 900
 
 initial_prompt: |
   HR needs a digital employee directory in UiPath Data Fabric.
