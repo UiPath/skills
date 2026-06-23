@@ -41,9 +41,6 @@ initial_prompt: |
      - Assignment: product `AITrustLayer` → policy GUID
        `22222222-2222-2222-2222-222222222222`.
 
-  Write each assignment file somewhere the `--input` flag can read
-  before calling `configure`.
-
   Important:
   - The `uip` CLI is available but is NOT connected to a live governance
     tenant in this environment. Commands WILL fail with auth errors —

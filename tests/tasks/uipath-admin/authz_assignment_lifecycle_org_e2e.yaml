@@ -19,11 +19,9 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Grant my account organization-level access by assigning the built-in
-  organization-level role "Insights Dashboard Viewer". Exercise the create,
-  list, and delete commands: look the role up by name, create the
-  assignment, list my assignments to confirm it shows up, then delete the
-  assignment and list again to confirm it's gone.
+  Give my own account the built-in organization-level role "Insights
+  Dashboard Viewer", confirm it's actually assigned to me, then take it
+  back off again and confirm it's gone.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be

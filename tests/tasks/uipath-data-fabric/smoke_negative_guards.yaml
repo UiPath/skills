@@ -1,12 +1,14 @@
 task_id: skill-datafabric-smoke-negative-guards
 description: >
-  Smoke test: agent is presented with three requests for operations that the
-  uipath-data-fabric skill's Not Supported table explicitly prohibits — changing
-  a field's data type, uploading a file to a FILE field via `uip df files
-  upload`, and writing records to a federated entity. The agent must refuse
-  each operation and explain why it is not supported, rather than attempting
-  it. Tests enforcement of the Not Supported section of the skill without
-  requiring a live tenant.
+  Smoke test: agent is presented with three requests — two that the
+  uipath-data-fabric skill's Not Supported table prohibits (changing a field's
+  data type, writing records to a federated entity) and one that IS supported
+  (uploading a file to a FILE field via `uip df files upload` — the canonical
+  write path per SKILL.md Rule 6). The agent must refuse the two unsupported
+  ops citing the Not Supported table, and attempt the supported one. Tests
+  that the agent reads SKILL.md carefully enough to distinguish the
+  prohibited record-level FILE writes (`records insert` / `records update` /
+  `records import`) from the supported `files upload` verb.
 tags: [uipath-data-fabric, smoke, entities, records]
 
 run_limits:
@@ -61,12 +63,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent refused FILE field upload via uip df files upload (task 2)"
+    description: "Agent attempted FILE field upload via uip df files upload (supported path — task 2)"
     path: "report.json"
     assertions:
       - expression: "task_2_action"
         operator: equals
-        expected: "refused"
+        expected: "attempted"
     weight: 3.0
     pass_threshold: 1.0
 

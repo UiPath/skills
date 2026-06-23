@@ -26,13 +26,13 @@ If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Se
 
 Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 
-- **Auth & tenant**: login, logout, switch tenant, `~/.uipath/.auth`, OAuth token, organization
+- **Auth & tenant**: login, logout, switch tenant, named login profiles via `--profile <name>`, `~/.uipath/.auth`, OAuth token, organization
 - **Orchestrator core**: folders (`list/get/create/edit/move/delete/runtimes`), processes/releases, jobs (`start/stop/logs/traces/healing-data`), packages (`upload/download/versions`), machines, users / roles / sessions (incl. DirectoryUser/DirectoryGroup/DirectoryRobot/DirectoryExternalApplication), licenses, calendars, settings, audit logs, credential stores, feeds, attachments
 - **Resources (Orchestrator-scoped)**: assets (text/integer/bool/credential), queues + queue items, storage buckets + bucket files (`upload/download/get-download-url/get-upload-url`), libraries (`.nupkg`), webhooks (HMAC signing), triggers (time/queue/api)
 - **Integration Service**: connectors, connections (OAuth flow), activities, IS triggers, agent-workflow reference resolution
 - **LLM Gateway — BYO product configurations**: `uip llm-configuration byo-connections` (`list / get / create / update / delete / list-product-configs`). Register tenant-owned OpenAI / Azure OpenAI / AWS Bedrock / Google Vertex / Anthropic / OpenAI-compatible keys against UiPath product features (agents, agenthub, jarvis, IXP, agent builder, ECS). Two input shapes: single-mapping (for `AnyModelWithOwnAdditions` features) and repeated `--mapping` (required for `AllModels` / `AnyModel`). Server-side validation is mandatory.
 - **LLM Gateway — diagnose a failing BYO config**: re-probe the underlying IS connection with `byo-connections get <id> --force-refresh`, force a fresh server-side probe with an idempotent `update`, audit the tenant with `list --include-connection-details` filtered on `connectionState != Enabled`, check catalog drift with `list-product-configs`, and cross-reference trace evidence with `uip traces spans get <trace-id>`. The gateway does **not** expose per-request invocation logs via CLI — diagnosis is current-state + trace evidence only. See [`references/llmgateway/byo-connections.md` § Diagnostics](references/llmgateway/byo-connections.md#diagnostics). For tenant-wide AI Trust Layer policy that may be overriding routing, see [uipath-governance](/uipath:uipath-governance).
-- **Traces**: `uip traces spans get [trace-id]` (LLM/agentic execution observability)
+- **Traces**: `uip traces spans get <trace-id>` (LLM/agentic execution observability)
 - **Context grounding**: knowledge indexes for semantic search / RAG — `uip context-grounding` (`list / create` from a bucket or connection `/ ingest / retrieve` to poll ingestion status `/ search / delete`). Agents and flows consume these indexes as tools. See [`references/context-grounding/index-management.md`](references/context-grounding/index-management.md).
 - **Platform licensing**: tenant license allocations, user/group bundle assignments, consumables reporting (`uip platform tenants licenses`, `users licenses`, `groups rules`, `licenses consumables`)
 - **CLI tooling itself**: `uip tools list/search/install`, `uip mcp serve`
@@ -41,7 +41,7 @@ For `uip solution` lifecycle (init / pack / publish / deploy / activate / upload
 
 ## Auth token location
 
-The CLI stores credentials at **`~/.uipath/.auth`** after login:
+The default login stores credentials at **`~/.uipath/.auth`**:
 ```
 UIPATH_URL=https://alpha.uipath.com
 UIPATH_ORGANIZATION_NAME=my_org
@@ -51,7 +51,22 @@ UIPATH_ORGANIZATION_ID=...
 UIPATH_TENANT_ID=...
 ```
 
-This token can be reused for direct Orchestrator REST API calls when CLI commands don't cover a use case.
+Named profiles store credentials at **`~/.uipath/profiles/<name>/.auth`**. Use named profiles when the user asks to keep multiple UiPath logins on the same machine:
+
+```bash
+uip login --profile dev --output json
+uip login status --profile dev --output json
+uip login which --profile dev --output json
+```
+
+Rules:
+- `--profile <name>` is a global option. Pass it on every `uip` command that should use that login, for example `uip --profile dev or folders list --output json`.
+- `default` means the built-in unprofiled login and maps back to `~/.uipath/.auth`.
+- Profile names may contain only letters, numbers, `.`, `_`, and `-`. Never use paths like `../prod`.
+- `--profile` and auth-command `--file <folder>` are mutually exclusive. Use one or the other.
+- A missing named profile does not fall back to `~/.uipath/.auth` or Robot credentials. Tell the user to run `uip login --profile <name>`.
+
+These tokens can be reused for direct Orchestrator REST API calls when CLI commands don't cover a use case. If a named profile is active, read the path from `uip login which --profile <name> --output json` rather than assuming `~/.uipath/.auth`.
 
 ## Quick Start
 
@@ -66,9 +81,19 @@ uip login status --output json
 
 If it reports `Logged in`, skip the rest of this step. There is no `--check` flag — `status` is the verification subcommand.
 
+If the user names a profile, check that profile explicitly:
+```bash
+uip login status --profile dev --output json
+```
+
 **Interactive login (browser OAuth2):** `uip login` opens a browser window on the user's machine and blocks until they complete it. In a non-interactive or automated session, do NOT run it yourself — tell the user to run it and wait.
 ```bash
 uip login --output json
+```
+
+For a named interactive login:
+```bash
+uip login --profile dev --output json
 ```
 
 For a custom authority (e.g., alpha.uipath.com):
@@ -227,6 +252,7 @@ Every `uip` command accepts:
 |---|---|---|
 | `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` | `table` (interactive), `json` (non-interactive) |
 | `--output-filter <expression>` | JMESPath expression to filter JSON output | -- |
+| `--profile <name>` | Use a named auth profile from `~/.uipath/profiles/<name>/.auth` | built-in default login |
 | `--verbose` | Enable verbose/debug logging | Off |
 | `--help` / `-h` | Display help for the command | -- |
 | `--version` / `-v` | Display CLI version | -- |

@@ -1,0 +1,150 @@
+task_id: skill-flow-eval-inline-agent
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-flow skill to build a
+  Flow whose work is done by an INLINE agent node (uipath.agent.autonomous),
+  then wires eval scaffolding that targets it — an `llm-judge-output` evaluator
+  (the correct choice for a non-deterministic agent output, NOT the
+  `exact-match` the deterministic script-node eval tasks use), an eval set, and
+  one data point. Purely local CRUD: no login, no upload, no run. Guards the
+  Author(inline-agent) → Evaluate handoff and the evaluator-type decision.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, node:inline-agent, feature:eval]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 75
+
+initial_prompt: |
+  Build a UiPath Flow whose reasoning is done by an inline agent, then add
+  evaluation scaffolding for it — purely local, no Studio Web round-trip.
+  Use the `uipath-maestro-flow` skill — both the `author` and `evaluate`
+  capabilities apply.
+
+  Flow:
+  - Solution `TriageEval`, Flow project `TriageEval`. The flow file MUST live
+    at `TriageEval/TriageEval/TriageEval.flow` (double-nested layout) and be
+    linked via `uip solution project add`.
+  - One start trigger with a string input variable named `email`.
+  - One inline agent node (uipath.agent.autonomous) that classifies the
+    inbound `email` into a category and a priority. Scaffold it with
+    `uip agent init --inline-in-flow`. Configure it to a production bar:
+    pick a current model (not the scaffold default), write a real system
+    prompt for the classification task, and declare a typed outputSchema
+    with `category` and `priority` fields.
+  - One end node whose output is mapped from the inline agent's result.
+  - Validate the flow with `uip maestro flow validate` before adding eval
+    scaffolding.
+
+  Eval scaffolding (the agent output is non-deterministic LLM text — choose
+  the evaluator type accordingly):
+  - One evaluator named `triage-judge`. Pick the `--type` that scores
+    natural-language / semantic similarity of a non-deterministic output
+    against an expected value. Pass `--model gpt-4.1-2025-04-14`. Do NOT use
+    a deterministic evaluator type (`exact-match`/`contains`) — the agent's
+    wording will vary run to run.
+  - One eval set named `Triage Cases`. Create it after the evaluator and omit
+    `--evaluators` so the CLI links the current evaluators via generated file
+    refs. Do NOT pass the display name `triage-judge` to `--evaluators`.
+  - One data point named `password-reset` with inputs
+    `{"email":"Subject: Can't log in\n\nI forgot my password and the reset
+    link is broken. Please help ASAP."}` and an expected output describing
+    the classification, e.g. `{"category":"Account Access","priority":"High"}`.
+
+  Important:
+  - Use `--output json` on every `uip maestro flow eval ...` command.
+  - Local CRUD only. Do NOT call `uip login`. Do NOT call `uip solution
+    upload`. Do NOT call `uip maestro flow eval run *`. Do NOT run
+    `uip maestro flow debug`.
+  - Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+    planning and implementation. Build it end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the inline agent with uip agent init --inline-in-flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--inline-in-flow'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created at the double-nested path"
+    path: "TriageEval/TriageEval/TriageEval.flow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Flow contains the inline agent node type"
+    path: "TriageEval/TriageEval/TriageEval.flow"
+    includes:
+      - '"uipath.agent.autonomous"'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the flow"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added an llm-judge-output evaluator with a --model"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+llm-judge-output.*--model|(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--model.*--type\s+llm-judge-output'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT pick a deterministic evaluator for the non-deterministic agent output"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+evaluator\s+add\s+.*--type\s+(exact-match|contains)\b'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created an eval set"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not pass evaluator display name to eval set add"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add\s+.*--evaluators(=|\s+)["'']?(?:[^"''\s,]+,\s*)*triage-judge["'']?(?![-\w])'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a data point with --inputs and --expected"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Local CRUD only — agent did not start an eval run"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+start'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on eval commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+.*--output\s+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline agent + llm-judge evaluator + eval set with a data point all exist on disk"
+    command: 'python3 "$TASK_DIR/check_inline_agent_eval.py"'
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

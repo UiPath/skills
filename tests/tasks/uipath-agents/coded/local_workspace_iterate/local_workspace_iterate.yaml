@@ -1,15 +1,13 @@
 task_id: skill-agent-coded-local-workspace-iterate
 description: >
-  Coded-agent iteration inside a Studio Web Local Workspace. The
-  prompt seeds an existing Local Workspace layout (`.sw-path-marker`,
-  `.local/folder.lock`, `project.uiproj`, `.env` with a sentinel
-  `UIPATH_PROJECT_ID`, and a pre-scaffolded LangGraph agent with no
-  `.venv/`). The user asks for a behavior change; the skill must
-  detect `project_state == local-workspace`, prep the venv,
-  regenerate the schema, run the agent locally — and MUST NOT scaffold
-  a new project, manually push, delete `project.uiproj`, or change
-  `UIPATH_PROJECT_ID`. Closes the entire `local-workspace` branch of
-  the One-Prompt Flow (steps 2, 3, 8) plus Local-Workspace anti-patterns.
+  Iterating on a UiPath coded agent that lives inside a Studio Web
+  Local Workspace. The project is seeded on disk as a real Local
+  Workspace (path marker, folder lock, project.uiproj, and a pre-built
+  LangGraph agent with no venv yet). The user just asks for a small
+  behavior change, so this checks the skill recognizes the Local
+  Workspace setup and edits in place: prep the venv, regenerate the
+  schema, run locally, without scaffolding a fresh project, pushing by
+  hand, or deleting project.uiproj.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:edit, feature:framework-langgraph, feature:local-workspace]
 max_iterations: 1
 
@@ -18,21 +16,17 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  Studio Web already set up the `GateSol/` Local Workspace solution
-  on disk — nothing here should be scaffolded from scratch. Inside it,
-  `gate-agent/` is a pre-built LangGraph coded agent with no `.venv/`
-  yet. Work in the existing tree; do not recreate anything.
+  I've got a UiPath coded agent in `GateSol/gate-agent/` that I set up
+  through Studio Web. Right now it only tells me a `size`, but I also
+  want it to tell me a `category`: "tiny" when the value is under 5,
+  "huge" when it's over 100, and otherwise just the size it already
+  gives.
 
-  The classifier currently only returns a `size` ("small" or
-  "large"). Extend it to also return a `category` field — "tiny"
-  if `value < 5`, "huge" if `value > 100`, otherwise repeat the
-  existing `size` label. After the change, run the agent twice
-  locally — once with `value=2` (expect category `tiny`) and once
-  with `value=150` (expect category `huge`) — and save both
-  outputs side-by-side to `GateSol/gate-agent/outputs.json`.
+  Make that change and run it on 2 and on 150 to check both ends work,
+  then save the results to `GateSol/gate-agent/outputs.json`.
 
-  Do NOT publish, upload, or deploy. Complete end-to-end in a
-  single pass.
+  Don't publish, upload, or deploy. Just work through it to the end in
+  one go — only stop if you hit a real blocker.
 
 success_criteria:
   - type: skill_triggered
