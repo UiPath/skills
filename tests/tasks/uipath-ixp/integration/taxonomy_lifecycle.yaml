@@ -31,7 +31,7 @@ initial_prompt: |
   - Add a new field group "Charges" with two fields, "Discount" and "Late Fee" —
     I don't mind what types they are, just pick sensible ones that fit.
   - Add a third field, "Surcharge", to "Charges".
-  - Rename the group "Charges" to "Adjustments" — its three fields should carry over.
+  - Rename the group "Charges" to "Adjustments".
   - Rename the field "Late Fee" to "Penalty Fee".
   - Change the "Discount" field's type to "Number" — warn me first that it's destructive.
   - Update the instructions on "Discount" and "Surcharge" in one call, and include
