@@ -19,10 +19,6 @@ initial_prompt: |
   After creation, poll the returned operation to check whether the tenant
   was created successfully. Report the final status.
 
-  If the create command fails and returns no operation ID, use a
-  placeholder ID (e.g. "00000000-0000-0000-0000-000000000000") and
-  still run the poll command so we can verify the command shape.
-
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
     installed and/or the CLI is not connected to a live tenant.
