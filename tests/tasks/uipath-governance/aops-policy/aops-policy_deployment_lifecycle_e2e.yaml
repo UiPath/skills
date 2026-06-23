@@ -20,7 +20,7 @@ description: >
   deletes the policy.
   post_run clears stale deployments (cleanup_deployments.py) then deletes
   the policy (cleanup_policy.py) so a failed run never poisons the next.
-tags: [uipath-governance, e2e, aops-policy, deployment, mode:build]
+tags: [uipath-governance, e2e, aops-policy, deployment, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 55
