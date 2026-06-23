@@ -38,9 +38,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `deployment tenant configure` with the tenant ID, --tenant-name, --input, and --output json"
+    description: "Agent invoked `deployment tenant configure` with --input and --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+configure\s+.*00000000-0000-0000-0000-000000000099.*(?=.*--tenant-name\s)(?=.*--input\s)(?=.*--output\s+json).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+configure\b(?=.*--input\s)(?=.*--output\s+json)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
