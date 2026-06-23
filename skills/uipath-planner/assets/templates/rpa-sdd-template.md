@@ -21,6 +21,7 @@
 | Field | Value |
 |---|---|
 | **Execution autonomy** | <autonomous \| interactive> |
+| **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
 | **Project list section** | <§11 \| §10 + §11 \| Project Inventory> |
 | **Tasks file** | `<PROCESS_NAME_KEBAB>-tasks.md` |
@@ -36,14 +37,28 @@ See sdd-generation-guide.md Phase 3 Step 2 item 3 for the format spec.
 -->
 ## Decisions Made
 
-> Autonomous mode picked the four architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
+> Autonomous mode picked the five architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode or by editing the relevant SDD section.
 
 | # | Decision | Picked | One-sentence reason |
 |---|---|---|---|
-| 1 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON> |
-| 2 | **RPA sub-type** (Level 1.5) | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON> |
-| 3 | **Authoring mode** (Level 2) | <XAML_OR_CODED_OR_HYBRID> | <REASON> |
-| 4 | **Framework** | <REFRAMEWORK_OR_SEQUENCE> | <REASON> |
+| 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; BLOCKED_PRODUCTS_OR_NONE> | <REASON> |
+| 2 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON> |
+| 3 | **RPA sub-type** (Level 1.5) | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON> |
+| 4 | **Authoring mode** (Level 2) | <XAML_OR_CODED_OR_HYBRID> | <REASON> |
+| 5 | **Framework** | <REFRAMEWORK_OR_SEQUENCE> | <REASON> |
+
+---
+
+<!--
+EMIT THIS BLOCK ALWAYS (both execution modes).
+Durable copy of the Phase 1 Recommended Scope summary — the SDD record of the
+Constraint Gate outcome. See product-selection-guide.md → Summary block for the full format.
+-->
+## Recommended Scope
+
+**Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, ...)>
+**Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
+**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... | none>
 
 ---
 
@@ -592,6 +607,11 @@ The planner will:
 Implementation tasks **do not live in this SDD** — they live in the planner's output. The planner is the single source of truth for skill routing and task ordering.
 
 ### Terminal artefact — a packed `.uipx` solution
+
+<!-- CONSTRAINT GATE: if the platform-availability-guide blocks Solutions for this SDD's
+     Delivery model (standalone, AS older than 2.2510, or user exclusion), REWRITE this
+     subsection: per-package Orchestrator publish, deploy tasks route to uipath-platform
+     instead of uipath-solution. -->
 
 The build is not finished when the project folder compiles. **The terminal artefact of an SDD-driven build is a packed `.uipx` solution**, not a bare project folder. After the implementation specialist (`uipath-rpa`, `uipath-agents`, etc.) reports its tasks complete, load the **`uipath-solution`** skill and run:
 

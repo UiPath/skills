@@ -58,7 +58,11 @@ Combine `Title` and `Authors` filters with `||` when the org uses both conventio
 
 ## Procedure
 
-1. **Auth preflight.** Run a benign call once: `uip or libraries list --limit 1 --output json`. If `Result == "Failure"` with an auth-related message, surface it and switch to the manual fallback (below). Do NOT retry silently.
+1. **Auth preflight (never blocks SDD output).** Run a benign call once: `uip or libraries list --limit 1 --output json`. If it errors or returns `Result == "Failure"` with an auth-related message: do NOT retry, and do NOT troubleshoot auth mid-generation. Then branch by mode:
+   - **Autonomous mode** — skip tenant library discovery entirely: proceed with public NuGet only and record the reuse mandate as a forward note in §16 (equivalent to fallback option 1). Do not pause.
+   - **Interactive mode** — surface the failure and switch to the manual fallback (below).
+
+   Also skip this step (autonomous: public NuGet only) when the user's prompt forbids running `uip` commands.
 2. **Extract keywords** from the source (PDD Application Inventory, user prompt, project intent). Cap at 6:
    - Org-prefix terms: `Common`, `Shared`, `Utils`, `Helpers`, `<Company>` if known
    - Capability terms: `Excel`, `SAP`, `ServiceNow`, `Salesforce`, `Email`, `PDF`, `SharePoint`, `Outlook`, `Citrix`, etc. — drawn from the in-scope applications

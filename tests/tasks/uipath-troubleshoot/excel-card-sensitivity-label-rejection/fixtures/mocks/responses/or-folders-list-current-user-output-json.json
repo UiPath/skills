@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f00ddddd-3333-4444-5555-666677778888",
+      "DisplayName": "ClientReports",
+      "FullyQualifiedName": "ClientReports",
+      "Description": "Folder for monthly client-report automations against AIP-protected workbooks.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6130001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

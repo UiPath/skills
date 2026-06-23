@@ -3,7 +3,7 @@ description: >
   End-to-end test: agent configures SMTP settings following the
   recommended test-first-then-save workflow. Tests the settings,
   saves them, and verifies they were applied.
-tags: [uipath-admin, e2e, lifecycle:generate]
+tags: [uipath-admin, e2e, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 7

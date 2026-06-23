@@ -21,8 +21,7 @@ post_run:
 
 initial_prompt: |
   Build a deterministic UiPath Flow and run a Studio Web evaluation
-  end-to-end. Use the `uipath-maestro-flow` skill — both the `author` and
-  `evaluate` capabilities apply.
+  end-to-end.
 
   Flow shape (the simplest thing that produces a deterministic output):
   - One start trigger with input variable `name` (string).

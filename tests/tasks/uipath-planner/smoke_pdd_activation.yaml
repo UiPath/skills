@@ -9,6 +9,7 @@ tags: [uipath-planner, smoke, lifecycle:generate]
 
 run_limits:
   expected_turns: 4
+  turn_timeout: 1800  # 30-min per-turn cap
 
 initial_prompt: |
   I have a Process Design Document I want to turn into a UiPath solution

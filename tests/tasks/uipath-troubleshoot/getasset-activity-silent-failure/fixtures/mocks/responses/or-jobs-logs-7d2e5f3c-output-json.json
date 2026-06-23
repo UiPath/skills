@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-13T18:02:11.804Z",
+      "Message": "AssetSilentFailure execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-13T18:02:12.118Z",
+      "Message": "Get Credential: execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-13T18:02:12.221Z",
+      "Message": "Get Credential: execution ended (no exception)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-13T18:02:12.244Z",
+      "Message": "Log Message: execution started"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T18:02:12.299Z",
+      "Message": "Log Message: Object reference not set to an instance of an object.\r\nin Main.xaml\r\n    at LogMessage \"Log Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-13T18:02:12.310Z",
+      "Message": "System.NullReferenceException: Object reference not set to an instance of an object.\r\n   at GlobalVariablesNamespace.GlobalVariablesNamespace.Container_DesignedProcess.LambdaValue1(ActivityContext context)\r\n   at System.Activities.CodeActivity`1.InternalExecuteInResolutionContextUntyped(CodeActivityContext context)\r\n   at System.Activities.Runtime.ActivityExecutor.ExecuteActivityWorkItem.ExecuteBody(ActivityExecutor executor, BookmarkManager bookmarkManager, Location resultLocation)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-13T18:02:12.341Z",
+      "Message": "AssetSilentFailure execution ended"
+    }
+  ]
+}

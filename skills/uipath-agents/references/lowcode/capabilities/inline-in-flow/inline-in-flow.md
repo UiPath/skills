@@ -1,6 +1,6 @@
 # Inline Agent in a Flow
 
-Walkthrough for embedding a low-code agent directly inside a flow project. The agent lives as a UUID-named subdirectory inside the flow project and is published with the parent flow.
+Walkthrough for embedding a low-code autonomous agent directly inside a flow project. The agent lives as a UUID-named subdirectory inside the flow project and is published with the parent flow.
 
 Flow authoring itself is the responsibility of the `uipath-maestro-flow` skill — this file covers only the inline-agent side (creating the agent subdirectory, configuring it, and the shape of the `uipath.agent.autonomous` flow node that references it).
 
@@ -57,7 +57,7 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 
 This generates a UUID for the `projectId`, creates the subdirectory `<FlowProjectDir>/<uuid>/`, and scaffolds `agent.json`, `flow-layout.json`, and empty directories.
 
-> The scaffold sets `settings.model: "gpt-4o-2024-11-20"` (stale) and empty prompts. **Override the model** (`uip agent model list` → [model-selection-guide.md](../../model-selection-guide.md)) and write robust prompts ([agent-prompting-guide.md](../../agent-prompting-guide.md)) before validating.
+> The scaffold sets `settings.model: "gpt-4o-2024-11-20"` (stale) and empty prompts. **Override the model** (`uip agent model list` → [model-selection-guide.md](../../model-selection-guide.md)) and write robust prompts ([prompting/agent-prompting-guide.md](../../prompting/agent-prompting-guide.md)) before validating.
 
 ### Option B: Manual creation
 
@@ -150,7 +150,7 @@ uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow \
 
 After creating the inline agent, the flow needs a `uipath.agent.autonomous` node whose `inputs.source` is the inline agent's `projectId` UUID, plus edges connecting it to the rest of the flow.
 
-**Hand off to the `uipath-maestro-flow` skill for the actual node and edge authoring.** Per Critical Rule 16, this skill does not invoke flow operations directly. Tell the user:
+**Hand off to the `uipath-maestro-flow` skill for the actual node and edge authoring.** Per Critical Rule 15, this skill does not invoke flow operations directly. Tell the user:
 
 > The inline agent has been scaffolded at `<FlowProjectDir>/<projectId>/`. To wire it into the flow, use the `uipath-maestro-flow` skill — pass it `projectId = <uuid>` so it can add a `uipath.agent.autonomous` node with `inputs.source = <uuid>` and connect the input/success edges via direct `.flow` authoring. **After all flow graph edits are complete**, run `uip agent refresh --inline-in-flow`, then `uip agent validate --inline-in-flow`; for inline agents with external capabilities, include `--bindings-target <FlowProjectDir>/bindings_v2.json` on the refresh call.
 
@@ -171,7 +171,7 @@ Resource body shape is identical to the standalone-agent docs — only the folde
 
 ### Tool-specific notes
 
-- **`location`**: Follows the same rule as standalone agents — set `"solution"` when the row from `uip solution resources list` has `Source: "Local"`, set `"external"` when `Source: "Remote"`. See [../process/process.md](../process/process.md) and [../../critical-rules.md](../../critical-rules.md) Rule 12.
+- **`location`**: Follows the same rule as standalone agents — set `"solution"` when the row from `uip solution resources list` has `Source: "Local"`, set `"external"` when `Source: "Remote"`. See [../process/process.md](../process/process.md) and [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Rule 12.
 - **`properties.folderPath`**: Must be the **literal folder path from discovery** (e.g., `"Shared/Sales"`) — do **not** leave it empty. An empty `folderPath` prevents `uip solution resources refresh` from resolving the tool at runtime.
 - **`inputSchema.properties`**: Must include `"guardrails": { "type": "array" }` alongside the tool arguments — the runtime expects it.
 - **All fields from the template in [../process/process.md](../process/process.md) are required** — especially `$resourceType: "tool"`, `guardrail`, `properties.processName`, `properties.exampleCalls`, `isEnabled`, and `argumentProperties`. A `resource.json` missing `$resourceType` will not be recognized by `uip agent validate` (the tool reports `"resources": 0`); `uip agent refresh` will then write an empty `bindings_v2.json`.
@@ -297,7 +297,7 @@ uip agent init "<FlowProjectDir>" --inline-in-flow --output json
 #    uipath.agent.autonomous node (inputs.source = <projectId>),
 #    tool resource nodes, and wire all edges (input/success/tool).
 #    Do NOT run uip maestro flow commands from this skill —
-#    Critical Rule 16.
+#    Critical Rule 15.
 
 # 6. Refresh — regenerates entry-points.json and bindings_v2.json,
 #    and (with --bindings-target) propagates capability bindings into the flow
@@ -360,7 +360,7 @@ The execution is asynchronous. The flow pauses at the agent node and resumes whe
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Critical Rule 15. The skill explicitly defers flow authoring to `uipath-maestro-flow` — it does not invoke that skill automatically (Critical Rule 16).
+See [../../critical-rules/autonomous-critical-rules.md](../../critical-rules/autonomous-critical-rules.md) Critical Rule 1. The skill explicitly defers flow authoring to `uipath-maestro-flow` — it does not invoke that skill automatically ([../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rule 15).
 
 **Capability bindings must be propagated to the flow project's `bindings_v2.json`.** Only project-level bindings are scanned by `uip solution resources refresh`. Pass `--bindings-target <FlowProjectDir>/bindings_v2.json` to `uip agent refresh --inline-in-flow` — refresh is the command that writes the bindings. Without project-level propagation, Studio Web debug can fail because no solution-level resource file is created for the external capability.
 
@@ -369,4 +369,4 @@ Run the final `uip agent refresh --inline-in-flow --bindings-target …` as the 
 ## References
 
 - [../../agent-definition.md](../../agent-definition.md) — agent.json schema (same as standalone, with the inline-specific differences listed above)
-- [../../critical-rules.md](../../critical-rules.md) Critical Rule 15
+- [../../critical-rules/autonomous-critical-rules.md](../../critical-rules/autonomous-critical-rules.md) Critical Rule 1

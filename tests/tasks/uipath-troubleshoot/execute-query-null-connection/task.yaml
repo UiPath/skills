@@ -1,0 +1,183 @@
+task_id: skill-troubleshoot-execute-query-null-connection
+description: >
+  UiPath diagnostic agent must diagnose an Execute Query failure where
+  the activity throws System.NullReferenceException ("Object reference
+  not set to an instance of an object") because the DatabaseConnection
+  it consumes is Nothing. The Connect to Database activity opens the
+  connection inside a nested Sequence, so the connection variable is
+  out of scope (and disposed) by the time Execute Query runs outside
+  that sequence. The agent must recognize the failing layer is the
+  connection handle's scope, not the SQL, the driver, or the database,
+  and recommend declaring the connection variable at an enclosing scope
+  (or moving Execute Query into the connect scope) and confirming the
+  ExistingDbConnection wiring.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-query, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My CustomerQuery process is faulting in Orchestrator on every run.
+  Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-query-failures playbook (Branch 1) AND identified the null / out-of-scope DatabaseConnection as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    files:
+      - .local/investigations/state.json
+      - .local/investigations/hypotheses.json
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My CustomerQuery process is faulting in Orchestrator on every
+         run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/execute-query-failures.md
+        specifically BRANCH 1 (null / expired / out-of-scope
+        connection), because the runtime exception
+          "System.NullReferenceException: Object reference not set to an
+           instance of an object"
+        thrown at the Execute Query activity is the verbatim Branch 1
+        signature.
+
+        Evidence sources (in priority order):
+          1. state.json's `matched_playbooks` -- the
+             execute-query-failures playbook should appear (absolute or
+             relative path).
+          2. The agent's tool-call summary -- a Read on the file under
+             references/activity-packages/database-activities/playbooks/.
+          3. state.json's `scope.domain` -- should include the
+             database-activities or activity-packages domain.
+
+        Acceptable / non-penalized: the agent may also Read neighboring
+        database-activities playbooks (connect-to-database failures) or
+        rule out other Execute Query branches (provider mismatch, SQL
+        syntax, timeout, CLR crash, wrong activity) while reasoning.
+        Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Execute Query activity in Main.xaml binds its
+            `ExistingDbConnection` to the variable `dbConnection`.
+          - `dbConnection` is declared inside a nested `Sequence`
+            ("Open Connection") that also hosts the `Connect to
+            Database` activity.
+          - Execute Query runs in the PARENT sequence, AFTER the nested
+            sequence closes. By then `dbConnection` is out of scope and
+            disposed -- it resolves to Nothing.
+          - Passing a null DatabaseConnection into Execute Query raises
+            System.NullReferenceException. The failing layer is the
+            connection variable's SCOPE -- the connection was opened
+            correctly; it just isn't live where the query runs.
+        The reference fix:
+          - Declare the `dbConnection` variable at a scope that encloses
+            BOTH Connect to Database and Execute Query (move it up to
+            the Main Sequence), OR move Execute Query inside the same
+            nested scope as Connect to Database.
+          - Confirm the Connect output variable is the exact variable
+            wired into the query's ExistingDbConnection (they match;
+            only the scope is wrong).
+
+        Evidence sources (in priority order):
+          1. state.json -- `requirements`/`triage_summary`: the
+             NullReferenceException at Execute Query, the connection
+             being null/out-of-scope, scope/domain.
+          2. hypotheses.json -- the hypothesis flagged
+             `is_root_cause: true` should describe the null /
+             out-of-scope DatabaseConnection (NOT a SQL syntax error,
+             NOT a driver/provider mismatch, NOT a timeout, NOT a CLR
+             crash, NOT a wrong-activity-for-statement issue, NOT a
+             database/connectivity outage).
+          3. The agent's last text response.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched execute-query-failures Branch 1 AND
+             identified the null / out-of-scope DatabaseConnection.
+             Conclusion must (a) name the NullReferenceException at
+             Execute Query, (b) attribute it to the connection variable
+             being declared inside the nested Sequence (out of scope /
+             disposed where the query runs), and (c) recommend
+             declaring the variable at an enclosing scope (or moving
+             Execute Query into the connect scope) and confirming the
+             ExistingDbConnection wiring.
+        0.8  Both partial: e.g., correct playbook but conclusion says
+             "null connection" without identifying the SCOPE as the
+             reason; or identifies the scope issue but matched the
+             database-activities overview rather than the specific
+             execute-query-failures playbook.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Execute Query failed / null
+             connection) but neither matched the playbook nor explained
+             the out-of-scope cause.
+        0.0  Misdiagnosed (e.g., concluded SQL syntax error,
+             driver/provider mismatch, command timeout, CLR crash
+             0xE0434352, wrong activity for statement type, or a
+             database/network outage) or got blocked.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -69,6 +69,14 @@ Discount                 | MISSING       | IXP predicted no value AND no discoun
 Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
 ```
 
+**Repeatable field groups produce one extraction per row.** Count them in `get-predictions` — `Line Items` on a multi-line invoice has N entries under that label, indexed 0..N-1. When validation differs across rows, give per-occurrence verdicts:
+
+```text
+Line Items > Description (occurrence 0) | CONFIRMED     | "Widget A" matches line 1
+Line Items > Description (occurrence 1) | CONFIRMED     | "Widget B" matches line 2
+Line Items > Description (occurrence 3) | NOT CONFIRMED | Predicted "Widget D" but line 4 shows "Widget Z"
+```
+
 For **CORRECTED** fields: state the mangled predicted value, the corrected value, and where it appears. The mistake must be at the character level — same field, same location, garbled bytes.
 For **MISSING** fields: state that the prediction was empty AND describe how you verified the field is absent (e.g., "no payment-terms section anywhere in the document").
 For **NOT CONFIRMED** fields: state the predicted value, the actual value (if visible) and location. Includes any non-OCR mistake — wrong source, wrong boolean, wrong inferred value, hallucination, value the document doesn't contain. **Do NOT use `--corrections` to fix these** — improve the field's prompt instructions instead.
@@ -116,7 +124,29 @@ uip ixp labellings confirm <project-name> <document-id> \
 
 **Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 12. If IXP predicted a wrong value, omit the field entirely (don't list it).
 
-Use `labellings mark-missing` only as a fallback when `confirm --fields` is a no-op for a field you expected it to handle — typically a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain). Verify by re-running `labellings get-predictions <project-name> <document-id>` and checking whether the field appears in the Fields[] array: if yes, `confirm --fields` is the right tool; if no, `mark-missing` reaches the stale annotation that `confirm` can't.
+Use `labellings mark-missing <project-name> <document-id> --fields <ids>` to record a genuinely-missing field. It marks the listed fields directly, so it also handles the case where `confirm --fields` no-ops — a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain), which `confirm` can't reach. Either records the missing marker; only do so when `get-predictions` shows IXP predicted no value for the field — never to override a wrong prediction.
+
+**Per-occurrence confirm for repeatable groups.** When a repeatable group's verdicts differ across occurrences (some lines correct, some not), `confirm --fields a7c3e9105f2b4d86` is the wrong shape — it confirms `a7c3e9105f2b4d86` in **every** occurrence, including the wrong ones. Target each correct occurrence by index:
+
+```bash
+# All predicted fields in occurrence 0:
+uip ixp labellings confirm <project-name> <document-id> \
+  --group "Line Items" --occurrence 0 --output json
+
+# Just Quantity in occurrence 2:
+uip ixp labellings confirm <project-name> <document-id> \
+  --group "Line Items" --occurrence 2 --fields c4e1907a3b8f25d6 --output json
+```
+
+Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated). For batching many occurrences in one call, use `--updates '[…]'` — see [CLI Reference § Labellings](cli-reference.md#labellings). See Critical Rule 13.
+
+**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 14.
+
+```bash
+# Roll back only occurrence 2 of Line Items (every field in that line):
+uip ixp labellings unconfirm <project-name> <document-id> \
+  --group "Line Items" --occurrence 2 --output json
+```
 
 ### 2e. Move to the next document
 

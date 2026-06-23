@@ -32,8 +32,7 @@ pre_run:
 
 initial_prompt: |
   Build a UiPath coded Python agent named `mailer` that sends an email
-  via the Outlook 365 Integration Service connector. Use the
-  `uipath-agents` skill and its coded Integration Service capability.
+  via the Outlook 365 Integration Service connector.
 
   Test connection: in folder `Shared/uipath-agents`, named
   `outlook-coded-eval`. Bind to it under the key `outlook-coded-eval`.

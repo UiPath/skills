@@ -74,7 +74,7 @@ Linear, step-by-step execution. Best for straightforward processes.
 ### Flowchart
 Branching logic with decision nodes. Best for complex decision flows.
 
-**Key pattern:** All FlowStep/FlowDecision/FlowSwitch nodes are direct children of `<Flowchart>`. Use `<x:Reference>` inside property elements (`Flowchart.StartNode`, `FlowStep.Next`, `FlowDecision.True/False`) to cross-reference nodes.
+**Key pattern:** All FlowStep/FlowDecision/FlowSwitch nodes are direct children of `<Flowchart>`; wire them via `<x:Reference>` inside property elements (`Flowchart.StartNode`, `FlowStep.Next`, `FlowDecision.True/False`). NEVER nest one `FlowStep` inside another's `<FlowStep.Next>` — nested-only steps are absent from `Flowchart.Nodes` and won't render.
 
 ```xml
 <Flowchart DisplayName="My Flowchart" sap2010:WorkflowViewState.IdRef="Flowchart_1">
@@ -99,11 +99,7 @@ Branching logic with decision nodes. Best for complex decision flows.
 </Flowchart>
 ```
 
-**Node registration:** If a node is defined inline within a property element (e.g., inside `FlowStep.Next`) instead of as a direct Flowchart child, it needs a trailing `<x:Reference>` entry as a direct child of `<Flowchart>`. See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for details.
-
-**Expression language:** VB projects use `<mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="condition" />` instead of `<CSharpValue>`.
-
-**ViewState is needed** for usable Flowchart layout. See [canvas-layout-guide.md § Flowchart Layout](canvas-layout-guide.md#3-flowchart-layout) for coordinate systems, sizes, and recipes.
+Node vocabulary, structure & wiring rules, the forbidden nested-chain pattern, node registration, condition expressions (VB/C#), and layout: [flowchart-guide.md](flowchart-guide.md). Layout coordinates and ViewState recipes: [canvas-layout-guide.md § Flowchart Layout](canvas-layout-guide.md#3-flowchart-layout).
 
 ### State Machine
 State-based workflow with transitions. Best for long-running processes with distinct states (e.g., REFramework).
@@ -204,7 +200,7 @@ ViewState controls how activities appear in the visual designer. Rules differ by
 
 **Sequences:** ViewState is optional — Studio auto-manages `IsExpanded` state. No coordinates needed.
 
-**Flowcharts, State Machines, Long Running Workflows:** ViewState determines node positions on the 2D canvas. Without it, Studio stacks all nodes at (0,0) — producing an unusable overlapping layout. Studio will auto-arrange when the file is opened, but the result may not match your intended layout.
+**Flowcharts, State Machines, Long Running Workflows:** ViewState is **mandatory** — it determines node positions on the 2D canvas. Without it, Studio stacks every node at (0,0): they overlap into what looks like **a single node**. Studio does **not** auto-arrange on open — the stacked layout persists until a user manually triggers Auto Arrange. Always generate ViewState for these workflow types.
 
 **When editing existing files:**
 - Do NOT modify the global `<sap2010:WorkflowViewState.ViewStateManager>` section — it can corrupt the designer layout
@@ -212,10 +208,10 @@ ViewState controls how activities appear in the visual designer. Rules differ by
 - When adding new nodes to a Flowchart/StateMachine, read existing node positions first to avoid overlap
 
 **When generating new Flowchart/StateMachine/ProcessDiagram files:**
-- Generate ViewState (ShapeLocation, ShapeSize, ConnectorLocation) for every node to produce a usable layout
+- Generate ViewState for every node to produce a usable layout: `ShapeLocation` + `ShapeSize` are required; `ConnectorLocation` is optional (Studio auto-routes connectors from node positions)
 - See [canvas-layout-guide.md](canvas-layout-guide.md) for coordinate systems, standard sizes, and layout recipes
 
-> **Why the distinction?** The `uip rpa` commands communicate with Studio via IPC, and Studio regenerates layout when opening files. However, auto-arrange produces arbitrary layouts. If you need a specific visual structure (e.g., decision tree, loop pattern), generate ViewState explicitly.
+> **Why the distinction?** Sequences stack children vertically on their own, so coordinates are unnecessary. Flowcharts, State Machines, and ProcessDiagrams are 2D canvases with no implicit ordering — Studio cannot place nodes it has no coordinates for, so it leaves them all at (0,0). The result reads as one overlapping node. Generate ViewState for every node so the workflow renders as separate, connected nodes.
 
 ### Preserve xmlns Declarations
 Never remove existing `xmlns` attributes from the root `<Activity>` element. Only add new ones as needed. Removing a namespace declaration that is referenced anywhere in the file will cause validation errors.

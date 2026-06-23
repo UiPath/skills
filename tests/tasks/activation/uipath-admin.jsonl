@@ -1,0 +1,52 @@
+{"id": "uipath-admin-001", "prompt": "Invite a new user to the organization and add them to the Developers group", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-002", "prompt": "List all users in my UiPath organization", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-003", "prompt": "Create a robot account for unattended automation and assign it to the Robots group", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-004", "prompt": "Delete the external application we used for the old CI pipeline", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-005", "prompt": "Create an OAuth2 external application with OR.Folders and OR.Execution scopes and show me the client secret", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-006", "prompt": "Generate a new client secret for our CI external app", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-007", "prompt": "Create a personal access token scoped to Orchestrator API access", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-008", "prompt": "Revoke the personal access token named old-laptop", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-009", "prompt": "Create a new group called FinanceBots and add three users to it", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-010", "prompt": "Remove a user from the Administrators group", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-011", "prompt": "Configure the org SMTP server and send a test email", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-012", "prompt": "List the OAuth2 scopes available for an external application", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-013", "prompt": "Onboard a new contractor: invite them and assign to the ReadOnly group", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-014", "prompt": "Update a user's display name and surname in Identity", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-015", "prompt": "Set up a robot account identity in Identity Server for our nightly automation", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-016", "prompt": "Create a custom Studio role with a specific set of permissions at tenant scope", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-017", "prompt": "Grant a new user the tenant roles they need to access the Finance folder in Orchestrator", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-018", "prompt": "Assign the Automation User role to alice@contoso.com at tenant scope", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-019", "prompt": "Show me what permissions bob@contoso.com effectively has at the Finance folder", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-020", "prompt": "List all custom roles defined in our Authorization service", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-021", "prompt": "Grant me Apps publish permission", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-022", "prompt": "Give the data team read access to the IXP service", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-023", "prompt": "Remove the Tenant Administrator role assignment from a departing employee", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-024", "prompt": "Update a custom role to add two more permissions without dropping the existing ones", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-025", "prompt": "List the full permission catalog for the Orchestrator service", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-026", "prompt": "Check whether the FinanceBots group can manage connections at tenant scope", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-027", "prompt": "Assign a role to a robot account principal", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-028", "prompt": "Which roles is the FinanceBots group currently assigned?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-029", "prompt": "Create a new tenant called QA in our organization", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-030", "prompt": "List all tenants in my organization", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-031", "prompt": "Disable the staging tenant", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-032", "prompt": "Delete the old sandbox tenant", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-033", "prompt": "Add the Test Manager service to my QA tenant", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-034", "prompt": "List the services provisioned on the Finance tenant", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-035", "prompt": "What regions can I provision a tenant in?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-036", "prompt": "List the available services I can add to a tenant", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-037", "prompt": "Show me our organization's details and licensing", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-038", "prompt": "Poll the status of the tenant-creation operation I just started", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-039", "prompt": "Enable the tenant we disabled last week", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-040", "prompt": "Update our organization's display name", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-041", "prompt": "Add my current outbound IP to the org's IP allowlist, then turn on enforcement", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-042", "prompt": "Add our office CIDR range to the IP allowlist", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-043", "prompt": "Turn on IP-restriction enforcement for the org", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-044", "prompt": "Add a bypass rule so our webhook endpoint skips IP allowlisting", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-045", "prompt": "Remove a stale CIDR entry from the IP allowlist", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-046", "prompt": "Who deleted the Invoices folder last Tuesday?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-047", "prompt": "Show me failed login attempts for user carol@contoso.com this month", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-048", "prompt": "Export the last 30 days of audit events to a CSV for compliance", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-049", "prompt": "List the audit event sources available at tenant scope", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-050", "prompt": "Who was made an organization admin in the last quarter?", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-051", "prompt": "Give me the sign-in history for the whole org for the past week", "expected_skill": "uipath-admin"}
+{"id": "uipath-admin-052", "prompt": "What changed on the Finance tenant between January 1 and February 1?", "expected_skill": "uipath-admin"}
