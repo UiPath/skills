@@ -8,7 +8,7 @@ description: >
   `uipath.core.agent.<resourceKey>` node with a matching top-level
   `bindings[]` entry — no duplicates per
   `(resourceKey, propertyAttribute)` pair.
-tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, shape:single-node, resource]
+tags: [smoke, uipath-agents, e2e, coded, mode:build, lifecycle:generate, shape:single-node, resource]
 
 run_limits:
   max_turns: 80

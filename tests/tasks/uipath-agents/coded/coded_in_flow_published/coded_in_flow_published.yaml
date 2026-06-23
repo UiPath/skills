@@ -11,7 +11,7 @@ description: >
   coded-agent capability gap. **Cloud auth required** — the test runner
   must have UiPath auth pre-configured and the deploy will create a
   real published resource in the tenant's personal workspace.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, shape:single-node, resource, feature:framework-langgraph]
+tags: [smoke, uipath-agents, e2e, mode:build, coded, lifecycle:generate, shape:single-node, resource, feature:framework-langgraph]
 max_iterations: 1
 
 initial_prompt: |
