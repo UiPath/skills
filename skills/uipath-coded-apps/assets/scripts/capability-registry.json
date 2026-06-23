@@ -3,6 +3,7 @@
     "active-agents-kpi": {
       "aliases": ["active agents", "active agent count", "how many agents", "agent count", "agents running"],
       "template": "kpi-card",
+      "detailRecipe": "Click → the active agents behind the count. Export `fetchDetail` alongside `fetchData`: `import { Agents } from '@uipath/uipath-typescript/agents'; export const fetchDetail: MetricFn = async (sdk) => (await new Agents(sdk as never).getAll(THIRTY_DAYS_AGO, NOW)).items` — the agent records over the window.",
       "description": "Count of agents active in the window, with a vs-previous-period delta. SDK: `new Agents(sdk as never).getAll(start, end)` (positional Dates) → `{ items }`. Module returns `[{ value, previous }]`: value = count over the dashboard window; previous = count over the equal-length prior window via `priorWindow(start, end)` from @/lib/time (works for any time range, not a fixed 30/60-day offset). The card renders the delta badge automatically from `previous`. For a plain KPI with no badge, return `[{ value }]` (omit previous).",
       "defaults": {
         "title": "Active Agents",
@@ -11,7 +12,14 @@
         "valueField": "value",
         "valueLabel": "active agents",
         "previousField": "previous",
-        "deltaPolarity": "up-good"
+        "deltaPolarity": "up-good",
+        "detail": true,
+        "detailColumns": [
+          { "key": "agentName", "label": "Agent" },
+          { "key": "healthScore", "label": "Health", "align": "right", "color": "goodHigh" },
+          { "key": "lastRun", "label": "Last Run", "format": "timeAgo" },
+          { "key": "lastIncidentType", "label": "Last Incident" }
+        ]
       }
     },
     "agent-consumption": {
@@ -48,6 +56,7 @@
     "agent-error-timeline": {
       "aliases": ["agent error", "error timeline", "errors over time", "agent errors over time", "error trend", "error rate trend", "agent error rate", "error spike", "errors by day"],
       "template": "area-chart",
+      "detailRecipe": "Drill to the faulted agent runs behind the trend. Export `fetchDetail` alongside `fetchData`: `import { Jobs } from '@uipath/uipath-typescript/jobs'; export const fetchDetail: MetricFn = async (sdk) => (await new Jobs(sdk as never).getAll({ filter: \"ProcessType eq 'Agent' and State eq 'Faulted'\", orderby: 'CreationTime desc', pageSize: 200 }))?.items ?? []`. Rows: each faulted agent job (processName, state, startTime).",
       "description": "Agent error counts over time (total across agents). SDK: `new Agents(sdk as never).getErrorsTimeline(startTime, endTime, { limit })` (positional Dates) → BARE array `[{ name (agent), value (count), date }]`. Module aggregates per date — sum `value` grouped by `date` → `[{ date, value }]`. Import from @uipath/uipath-typescript/agents.",
       "defaults": {
         "title": "Agent Errors Over Time",
@@ -56,12 +65,18 @@
         "xKey": "date",
         "yKey": "value",
         "headlineMode": "sum",
-        "deltaPolarity": "up-bad"
+        "deltaPolarity": "up-bad",
+        "detailColumns": [
+          { "key": "processName", "label": "Agent" },
+          { "key": "state", "label": "State" },
+          { "key": "startTime", "label": "When", "format": "timeAgo" }
+        ]
       }
     },
     "agent-latency-timeline": {
       "aliases": ["agent latency", "latency timeline", "latency over time", "p95 latency", "p50 latency", "latency trend", "agent latency p95", "response time over time"],
       "template": "multi-line-chart",
+      "detailRecipe": "Drill to the agent runs with computed duration. Export `fetchDetail` alongside `fetchData`: fetch agent jobs and compute each run's wall-clock duration — `import { Jobs } from '@uipath/uipath-typescript/jobs'; export const fetchDetail: MetricFn = async (sdk) => { const items = (await new Jobs(sdk as never).getAll({ filter: \"ProcessType eq 'Agent'\", orderby: 'CreationTime desc', pageSize: 200 }))?.items ?? []; return items.map((j: any) => ({ processName: j.processName, state: j.state, startTime: j.startTime, durationSec: (j.startTime && j.endTime) ? (new Date(j.endTime).getTime() - new Date(j.startTime).getTime()) / 1000 : null })) }`.",
       "description": "Agent latency percentiles over time. SDK: `new Agents(sdk as never).getLatencyTimeline(startTime, endTime)` (positional Dates) → BARE array `[{ name ('P50'|'P95'), value (ms), date }]`. Module pivots long→wide per date — `[{ date, P50, P95 }]`. xKey: date; series plots P50/P95.",
       "defaults": {
         "title": "Agent Latency",
@@ -70,12 +85,19 @@
         "xKey": "date",
         "series": "[{key:\"P50\",color:\"hsl(var(--chart-1))\"},{key:\"P95\",color:\"hsl(var(--chart-2))\"}]",
         "headlineMode": "latest",
-        "deltaPolarity": "up-bad"
+        "deltaPolarity": "up-bad",
+        "detailColumns": [
+          { "key": "processName", "label": "Agent" },
+          { "key": "state", "label": "State" },
+          { "key": "durationSec", "label": "Duration (s)", "align": "right", "format": "number" },
+          { "key": "startTime", "label": "When", "format": "timeAgo" }
+        ]
       }
     },
     "agent-consumption-timeline": {
       "aliases": ["consumption timeline", "consumption over time", "consumption trend", "agu over time", "units consumed over time"],
       "template": "area-chart",
+      "noDetail": true,
       "description": "AGU consumption over time. SDK: `new Agents(sdk as never).getConsumptionTimeline(startTime, endTime)` (positional Dates) → BARE array `[{ timeSlice, aguConsumption }]` (native chart shape — return as-is).",
       "defaults": {
         "title": "AGU Consumption Over Time",
@@ -120,24 +142,28 @@
     "agent-incident-distribution": {
       "aliases": ["incident distribution", "agent incidents", "incidents breakdown", "errors vs escalations vs policy", "incident types", "agent incident breakdown"],
       "template": "donut-chart",
+      "noDetail": true,
       "description": "Agent incidents broken down by type — errors, escalations, policy violations — over the window (≥ 1.5.0). SDK: `const r = await new Agents(sdk as never).getIncidentDistribution(startTime, endTime)` → `{ errorCount, escalationCount, policyCount }`. Module transforms the flat response into chart rows: `return [{ name: 'Errors', value: r.errorCount }, { name: 'Escalations', value: r.escalationCount }, { name: 'Policy', value: r.policyCount }]`. Options: folderKeys. Scope: Insights Insights.RealTimeData OR.Folders.Read.",
       "defaults": { "title": "Incident Distribution", "description": "Errors vs escalations vs policy", "icon": "ShieldAlert", "xKey": "name", "yKey": "value", "emptyMessage": "No incidents in the selected window." }
     },
     "agent-success-rate": {
       "aliases": ["agent success rate", "job success rate", "agent job success", "success rate", "percent successful jobs", "agent reliability"],
       "template": "kpi-card",
+      "detailRecipe": "Click → the agent job runs behind the rate. Export `fetchDetail` alongside `fetchData`: `import { Jobs } from '@uipath/uipath-typescript/jobs'; export const fetchDetail: MetricFn = async (sdk) => (await new Jobs(sdk as never).getAll({ filter: \"ProcessType eq 'Agent'\", orderby: 'CreationTime desc', pageSize: 200 }))?.items ?? []` — each agent run with its state.",
       "description": "Overall agent job success rate (%) over the window, with a vs-previous-period delta (≥ 1.5.0). SDK: `const r = await new Agents(sdk as never).getSummary(startTime, endTime, { lookbackPeriodAnalysis: true })`. Module returns `[{ value: r.currentPeriodSummary.successRate, previous: r.lookbackPeriodSummary?.successRate }]` — the card renders the delta badge from `previous`. For runtime-only, pass `{ executionType: AgentExecutionType.Runtime, lookbackPeriodAnalysis: true }`. Scope: Insights Insights.RealTimeData OR.Folders.Read.",
-      "defaults": { "title": "Success Rate", "description": "Job success rate vs prior period", "icon": "ShieldCheck", "valueField": "value", "valueLabel": "% successful", "previousField": "previous", "deltaPolarity": "up-good" }
+      "defaults": { "title": "Success Rate", "description": "Job success rate vs prior period", "icon": "ShieldCheck", "valueField": "value", "valueLabel": "% successful", "previousField": "previous", "deltaPolarity": "up-good", "detail": true, "detailColumns": [ { "key": "processName", "label": "Agent" }, { "key": "state", "label": "State" }, { "key": "startTime", "label": "When", "format": "timeAgo" } ] }
     },
     "agent-unit-consumption-summary": {
       "aliases": ["total agent units", "total agu consumed", "agent unit consumption summary", "total unit consumption", "aggregate agu", "total platform units"],
       "template": "kpi-card",
+      "detailRecipe": "Click → per-agent unit consumption behind the total. Export `fetchDetail` alongside `fetchData`: `import { AgentTraces } from '@uipath/uipath-typescript/traces'; export const fetchDetail: MetricFn = async (sdk) => await new AgentTraces(sdk as never).getUnitConsumption({ startTime: THIRTY_DAYS_AGO, endTime: NOW })` — per-agent AGU/PLTU rows.",
       "description": "Aggregate Agent Units (AGU) consumed across all agents over the window, with a vs-previous-period delta (≥ 1.5.0). DISTINCT from agent-unit-consumption, which is a per-agent trace-level table. SDK: `const r = await new Agents(sdk as never).getUnitConsumptionSummary(startTime, endTime, { lookbackPeriodAnalysis: true })`. Module sums complete + incomplete jobs: `const c = r.currentPeriodSummary.totalAgentUnitConsumption; const p = r.lookbackPeriodSummary?.totalAgentUnitConsumption; return [{ value: c.completeJobs + c.incompleteJobs, previous: p ? p.completeJobs + p.incompleteJobs : undefined }]`. Scope: Insights Insights.RealTimeData OR.Folders.Read.",
-      "defaults": { "title": "Agent Units Consumed", "description": "Total AGU vs prior period", "icon": "Activity", "valueField": "value", "valueLabel": "AGU", "previousField": "previous", "deltaPolarity": "neutral" }
+      "defaults": { "title": "Agent Units Consumed", "description": "Total AGU vs prior period", "icon": "Activity", "valueField": "value", "valueLabel": "AGU", "previousField": "previous", "deltaPolarity": "neutral", "detail": true, "detailColumns": [ { "key": "agentId", "label": "Agent" }, { "key": "agentUnitsConsumed", "label": "AGU", "align": "right", "format": "number" }, { "key": "platformUnitsConsumed", "label": "PLTU", "align": "right", "format": "number" } ] }
     },
     "trace-error-timeline": {
       "aliases": ["trace errors", "trace error timeline", "errors by trace", "trace level errors", "errors grouped by name", "error name timeline"],
       "template": "area-chart",
+      "noDetail": true,
       "description": "Trace-level error counts over time (grouped by error name; module sums per date for a total trend). SDK: `new AgentTraces(sdk as never).getErrorsTimeline({ startTime, endTime })` (options object) → BARE array `[{ name (error name), value, date }]`. Subpath: @uipath/uipath-typescript/traces.",
       "defaults": {
         "title": "Trace Errors Over Time",
@@ -152,6 +178,7 @@
     "trace-latency-timeline": {
       "aliases": ["trace latency", "trace latency timeline", "trace level latency", "span latency over time", "trace response time"],
       "template": "area-chart",
+      "noDetail": true,
       "description": "Trace-level latency over time (decimal SECONDS). SDK: `new AgentTraces(sdk as never).getLatencyTimeline({ startTime, endTime })` → BARE array `[{ name (series), value (seconds), date }]`. The `name` values are not fixed percentiles — module averages `value` per `date` across series → `[{ date, value }]`. To plot distinct series, inspect the live `name` values and switch to multi-line-chart with those exact keys. Subpath: @uipath/uipath-typescript/traces.",
       "defaults": {
         "title": "Trace Latency",
@@ -182,6 +209,7 @@
     "agent-memory-timeline": {
       "aliases": ["agent memory", "memory timeline", "memory state", "memory entries over time", "in-memory count"],
       "template": "area-chart",
+      "noDetail": true,
       "description": "Agent memory entries over time. SDK: `new AgentMemory(sdk as never).getTimeline({ startTime, endTime })` (options object — Dates INSIDE it) → BARE array `[{ timeSlice, totalCount, inMemoryCount, ... }]`. Subpath: @uipath/uipath-typescript/agent-memory.",
       "defaults": {
         "title": "Agent Memory",
@@ -196,6 +224,7 @@
     "memory-calls-trend": {
       "aliases": ["memory calls", "memory access", "memory usage trend", "memory calls over time"],
       "template": "area-chart",
+      "noDetail": true,
       "description": "Agent memory access volume over time. SDK: `new AgentMemory(sdk as never).getCallsTimeline({ startTime, endTime })` → BARE array `[{ timeSlice, memoryCallsCount }]`.",
       "defaults": {
         "title": "Memory Calls",
@@ -241,13 +270,20 @@
     "governance-verdicts": {
       "aliases": ["governance summary", "policy summary", "allow deny breakdown", "enforcement summary", "governance overview"],
       "template": "donut-chart",
+      "detailRecipe": "Drill to the individual policy-evaluation records behind the verdict split. Export `fetchDetail` alongside `fetchData`: `import { Governance } from '@uipath/uipath-typescript/governance'; export const fetchDetail: MetricFn = async (sdk) => (await new Governance(sdk as never).getPolicyTraces(THIRTY_DAYS_AGO))?.items ?? []` (pass the dashboard window start Date). Rows: policyName, evaluationResult, actorProcessId, startTime.",
       "description": "Allow/Deny/NoOp enforcement breakdown. SDK: `new Governance(sdk as never).getOperationSummary(startTime)` → SINGLE object `{ totalEvaluations, allowedCount, deniedCount, noOpCount }`. fnBody must transform to rows: `return [{ name: 'Allowed', value: s.allowedCount }, { name: 'Denied', value: s.deniedCount }, { name: 'Simulated', value: s.noOpCount }]`.",
       "defaults": {
         "title": "Governance Verdicts",
         "description": "Policy enforcement breakdown",
         "icon": "Shield",
         "xKey": "name",
-        "yKey": "value"
+        "yKey": "value",
+        "detailColumns": [
+          { "key": "policyName", "label": "Policy" },
+          { "key": "evaluationResult", "label": "Result" },
+          { "key": "actorProcessId", "label": "Actor" },
+          { "key": "startTime", "label": "When", "format": "timeAgo" }
+        ]
       }
     },
     "job-failures": {
@@ -283,13 +319,21 @@
     "case-sla-status": {
       "aliases": ["sla status", "sla breakdown", "sla overview", "cases by sla", "sla health"],
       "template": "donut-chart",
+      "detailRecipe": "Drill to the case instances behind the SLA split. Export `fetchDetail` alongside `fetchData`: `import { fetchAll } from '@/lib/paginate'; export const fetchDetail: MetricFn = async (sdk) => { const { CaseInstances } = await import('@uipath/uipath-typescript/cases'); return await fetchAll(cursor => new CaseInstances(sdk as never).getSlaSummary({ pageSize: 200, cursor })) }`. Rows: each case instance (name, externalId, slaStatus, slaDueTime, instanceStatus).",
       "description": "Case-instance SLA status breakdown. SDK: page `new CaseInstances(sdk as never).getSlaSummary({ pageSize: 200, cursor })` via fetchAll → rows on `.items`, each `{ slaStatus, ... }`. Module groups by `String(slaStatus)` ('On Track'|'At Risk'|'Overdue'|'Completed'|'Unknown') → `[{ name, value }]`. Subpath @uipath/uipath-typescript/cases. Scope: Insights Insights.RealTimeData OR.Folders.Read PIMS (SLA needs PIMS). 403 ⇒ permissions message.",
       "defaults": {
         "title": "Case SLA Status",
         "description": "Case instances by SLA status",
         "icon": "ShieldCheck",
         "xKey": "name",
-        "yKey": "value"
+        "yKey": "value",
+        "detailColumns": [
+          { "key": "name", "label": "SLA Rule" },
+          { "key": "externalId", "label": "Case" },
+          { "key": "slaStatus", "label": "Status" },
+          { "key": "slaDueTime", "label": "Due", "format": "timeAgo" },
+          { "key": "instanceStatus", "label": "Instance" }
+        ]
       }
     },
     "case-sla-breaches": {
@@ -371,6 +415,7 @@
     "maestro-process-status-timeline": {
       "aliases": ["process status over time", "process instance status", "process status timeline", "completed vs faulted processes"],
       "template": "multi-line-chart",
+      "noDetail": true,
       "description": "Maestro process instance status over time. SDK: `new MaestroProcesses(sdk as never).getInstanceStatusTimeline(THIRTY_DAYS_AGO, NOW)` → BARE `[{ startTime, status, count }]` (`status` Completed/Faulted/Cancelled). Module pivots per `startTime`, seeding all 3 series to 0 → `[{ date, Completed, Faulted, Cancelled }]`. xKey: date. Subpath @uipath/uipath-typescript/maestro-processes. Scope: Insights Insights.RealTimeData OR.Folders.Read.",
       "defaults": {
         "title": "Process Status Over Time",
@@ -442,6 +487,7 @@
     "case-status-timeline": {
       "aliases": ["case status over time", "case instance status", "case status timeline", "completed vs faulted cases"],
       "template": "multi-line-chart",
+      "noDetail": true,
       "description": "Case instance status over time. SDK: `new Cases(sdk as never).getInstanceStatusTimeline(THIRTY_DAYS_AGO, NOW)` → BARE `[{ startTime, status, count }]` (Completed/Faulted/Cancelled). Module pivots per `startTime`, seeding all 3 series to 0 → `[{ date, Completed, Faulted, Cancelled }]`. xKey: date. Subpath @uipath/uipath-typescript/cases. Scope: Insights Insights.RealTimeData OR.Folders.Read.",
       "defaults": {
         "title": "Case Status Over Time",
@@ -471,14 +517,16 @@
     "agent-governance-violations": {
       "aliases": ["runtime governance violations", "runtime compliance violations", "rule violations", "agent rule violations", "standards violations", "standard violations", "runtime policy violations"],
       "template": "kpi-card",
+      "detailRecipe": "Click → the individual rule violations behind the count. Export `fetchDetail` alongside `fetchData`: `import { scanViolations } from '@/lib/governance-scan'; export const fetchDetail: MetricFn = async (sdk) => await scanViolations(sdk)` — same last-15-runs bound (see sdk/governance-traces.md).",
       "description": "GATED — runtime compliance / standards / rule-violation intent ONLY (trace-derived; interim). NOT for generic governance/policy/denials — those are the Insights-API metrics `policy-denials` / `governance-verdicts`. See sdk/governance-traces.md. Total runtime rule violations across the LAST 15 AGENT RUNS (job runs, no dedup; hard cap). Module: scanViolations(sdk) (governance-traces.md) → `[{ value: violations.length }]`. Subtitle MUST state the window (WINDOW_LABEL). Scope: OR.Jobs.Read Traces.Api Insights Insights.RealTimeData OR.Folders.Read.",
-      "defaults": { "title": "Governance Violations", "description": "Rules fired in the last 15 agent runs", "icon": "ShieldAlert", "valueField": "value", "valueLabel": "violations", "deltaPolarity": "up-bad", "emptyMessage": "No violations in the last 15 agent runs — rules are passing. Add a Rule Evaluations widget to see all checks." }
+      "defaults": { "title": "Governance Violations", "description": "Rules fired in the last 15 agent runs", "icon": "ShieldAlert", "valueField": "value", "valueLabel": "violations", "deltaPolarity": "up-bad", "emptyMessage": "No violations in the last 15 agent runs — rules are passing. Add a Rule Evaluations widget to see all checks.", "detail": true, "detailColumns": [ { "key": "agentName", "label": "Agent" }, { "key": "ruleName", "label": "Rule" }, { "key": "standard", "label": "Standard" }, { "key": "hook", "label": "Hook" }, { "key": "action", "label": "Action" }, { "key": "time", "label": "When", "format": "timeAgo" } ] }
     },
     "violations-by-standard": {
       "aliases": ["violations by standard", "violations by pack", "compliance by standard", "iso violations", "violations by iso", "governance violations by standard"],
       "template": "donut-chart",
+      "detailRecipe": "Drill to the individual matched-rule records. Export `fetchDetail` alongside `fetchData`: `import { scanViolations } from '@/lib/governance-scan'; export const fetchDetail: MetricFn = async (sdk) => await scanViolations(sdk)` — same last-15-runs bound (see sdk/governance-traces.md). Rows: agentName, ruleName, standard, hook, action, time.",
       "description": "GATED — runtime/standard/pack/ISO intent ONLY (trace-derived; interim; NOT generic governance — see `policy-denials`/`governance-verdicts`). See sdk/governance-traces.md. Runtime rule violations (last 15 agent runs) grouped by standard/pack. Module: `return countBy(await scanViolations(sdk), v => v.standard)` → `[{ name, value }]`. ⚠ LOW VALUE TODAY: UiPath currently ships ONE governance standard, so this donut is usually a single slice. Prefer by-hook / by-action / by-rule / by-agent groupings; only propose by-standard when >1 standard exists. Subtitle MUST state the window (WINDOW_LABEL). Scope: OR.Jobs.Read Traces.Api Insights Insights.RealTimeData OR.Folders.Read.",
-      "defaults": { "title": "Violations by Standard", "description": "Which standards are firing (last 15 agent runs)", "icon": "ShieldAlert", "xKey": "name", "yKey": "value", "emptyMessage": "No violations in the last 15 agent runs — rules are passing. Add a Rule Evaluations widget to see all checks." }
+      "defaults": { "title": "Violations by Standard", "description": "Which standards are firing (last 15 agent runs)", "icon": "ShieldAlert", "xKey": "name", "yKey": "value", "emptyMessage": "No violations in the last 15 agent runs — rules are passing. Add a Rule Evaluations widget to see all checks.", "detailColumns": [ { "key": "agentName", "label": "Agent" }, { "key": "ruleName", "label": "Rule" }, { "key": "standard", "label": "Standard" }, { "key": "hook", "label": "Hook" }, { "key": "action", "label": "Action" }, { "key": "time", "label": "When", "format": "timeAgo" } ] }
     },
     "violations-by-rule": {
       "aliases": ["violations by rule", "top governance rules", "most fired rules", "which rules fired", "top violated rules", "rule violations breakdown"],
@@ -489,14 +537,16 @@
     "violations-by-hook": {
       "aliases": ["violations by hook", "rule violations by hook", "violations by lifecycle hook", "violations by stage", "violations by lifecycle"],
       "template": "donut-chart",
+      "detailRecipe": "Drill to the individual matched-rule records. Export `fetchDetail` alongside `fetchData`: `import { scanViolations } from '@/lib/governance-scan'; export const fetchDetail: MetricFn = async (sdk) => await scanViolations(sdk)` — same last-15-runs bound (see sdk/governance-traces.md). Rows: agentName, ruleName, standard, hook, action, time.",
       "description": "GATED — runtime/rule-violation intent ONLY (trace-derived; interim; NOT generic governance — see `policy-denials`/`governance-verdicts`). See sdk/governance-traces.md. Runtime rule violations (last 15 agent runs) grouped by lifecycle hook (BEFORE_AGENT/BEFORE_MODEL/AFTER_MODEL/AFTER_AGENT). Module: `return countBy(await scanViolations(sdk), v => v.hook)`. Subtitle MUST state the window (WINDOW_LABEL). Scope: OR.Jobs.Read Traces.Api Insights Insights.RealTimeData OR.Folders.Read.",
-      "defaults": { "title": "Violations by Hook", "description": "Which lifecycle stage flags violations (last 15 agent runs)", "icon": "Workflow", "xKey": "name", "yKey": "value", "emptyMessage": "No violations in the last 15 agent runs — rules are passing. Add a Rule Evaluations widget to see all checks." }
+      "defaults": { "title": "Violations by Hook", "description": "Which lifecycle stage flags violations (last 15 agent runs)", "icon": "Workflow", "xKey": "name", "yKey": "value", "emptyMessage": "No violations in the last 15 agent runs — rules are passing. Add a Rule Evaluations widget to see all checks.", "detailColumns": [ { "key": "agentName", "label": "Agent" }, { "key": "ruleName", "label": "Rule" }, { "key": "standard", "label": "Standard" }, { "key": "hook", "label": "Hook" }, { "key": "action", "label": "Action" }, { "key": "time", "label": "When", "format": "timeAgo" } ] }
     },
     "matched-rules-by-action": {
       "aliases": ["matched rules by action", "violations by action", "enforcement actions", "block vs audit vs allow", "rules by enforcement", "enforcement action breakdown", "blocked vs audited"],
       "template": "donut-chart",
+      "detailRecipe": "Drill to the individual matched-rule records. Export `fetchDetail` alongside `fetchData`: `import { scanViolations } from '@/lib/governance-scan'; export const fetchDetail: MetricFn = async (sdk) => await scanViolations(sdk)` — same last-15-runs bound (see sdk/governance-traces.md). Rows: agentName, ruleName, standard, hook, action, time.",
       "description": "GATED — runtime/rule-violation intent ONLY (trace-derived; interim; NOT generic governance — see `policy-denials`/`governance-verdicts`). See sdk/governance-traces.md. Matched (fired) runtime rules grouped by enforcement action — block / audit / allow — across the last 15 agent runs. High-value default governance view (works with the single shipped standard). Module: `return countBy(await scanViolations(sdk), v => v.action)` → `[{ name, value }]`. Subtitle MUST state the window (WINDOW_LABEL). Scope: OR.Jobs.Read Traces.Api Insights Insights.RealTimeData OR.Folders.Read.",
-      "defaults": { "title": "Matched Rules by Action", "description": "Block vs audit vs allow (last 15 agent runs)", "icon": "ShieldAlert", "xKey": "name", "yKey": "value", "emptyMessage": "No matched rules in the last 15 agent runs — rules are passing." }
+      "defaults": { "title": "Matched Rules by Action", "description": "Block vs audit vs allow (last 15 agent runs)", "icon": "ShieldAlert", "xKey": "name", "yKey": "value", "emptyMessage": "No matched rules in the last 15 agent runs — rules are passing.", "detailColumns": [ { "key": "agentName", "label": "Agent" }, { "key": "ruleName", "label": "Rule" }, { "key": "standard", "label": "Standard" }, { "key": "hook", "label": "Hook" }, { "key": "action", "label": "Action" }, { "key": "time", "label": "When", "format": "timeAgo" } ] }
     },
     "agents-by-violations": {
       "aliases": ["agents by rule violations", "agents by standard violations", "agents with most violations", "non-compliant agents", "worst agents by violations"],
@@ -554,14 +604,16 @@
     "rule-evaluations-by-outcome": {
       "aliases": ["rule evaluations by outcome", "pass vs matched", "rule pass rate", "compliance coverage", "rules passing vs matched"],
       "template": "donut-chart",
+      "detailRecipe": "Drill to every rule check (PASS + MATCHED) behind the outcome split. Export `fetchDetail` alongside `fetchData`: `import { scanEvaluations } from '@/lib/governance-scan'; export const fetchDetail: MetricFn = async (sdk) => await scanEvaluations(sdk)` — same last-15-runs bound (see sdk/governance-traces.md). Rows: agentName, ruleName, standard, hook, outcome, time.",
       "description": "GATED — runtime/standard/rule intent ONLY (trace-derived; see sdk/governance-traces.md). NOT generic governance/policy/denials — those are the Insights-API metrics `policy-denials` / `governance-verdicts`. Shows ALL rule checks (PASS + MATCHED), so a compliant fleet is visible (not just violations). All-evaluations scan grouped by outcome (Pass vs Matched). Module: `return countBy(await scanEvaluations(sdk), e => e.outcome)` → `[{ name, value }]`. Scope: Insights Insights.RealTimeData OR.Folders.Read OR.Jobs.Read Traces.Api.",
-      "defaults": { "title": "Rule Outcomes (Pass vs Matched)", "description": "All rule checks by outcome", "icon": "ShieldCheck", "xKey": "name", "yKey": "value" }
+      "defaults": { "title": "Rule Outcomes (Pass vs Matched)", "description": "All rule checks by outcome", "icon": "ShieldCheck", "xKey": "name", "yKey": "value", "detailColumns": [ { "key": "agentName", "label": "Agent" }, { "key": "ruleName", "label": "Rule" }, { "key": "standard", "label": "Standard" }, { "key": "hook", "label": "Hook" }, { "key": "outcome", "label": "Result" }, { "key": "time", "label": "When", "format": "timeAgo" } ] }
     },
     "rule-evaluations-by-hook": {
       "aliases": ["rule evaluations by hook", "all checks by hook", "rule coverage by hook"],
       "template": "donut-chart",
+      "detailRecipe": "Drill to every rule check (PASS + MATCHED) behind the hook split. Export `fetchDetail` alongside `fetchData`: `import { scanEvaluations } from '@/lib/governance-scan'; export const fetchDetail: MetricFn = async (sdk) => await scanEvaluations(sdk)` — same last-15-runs bound (see sdk/governance-traces.md). Rows: agentName, ruleName, standard, hook, outcome, time.",
       "description": "GATED — runtime/standard/rule intent ONLY (trace-derived; see sdk/governance-traces.md). NOT generic governance/policy/denials — those are the Insights-API metrics `policy-denials` / `governance-verdicts`. Shows ALL rule checks (PASS + MATCHED), so a compliant fleet is visible (not just violations). All-evaluations scan grouped by lifecycle hook (BEFORE_AGENT/BEFORE_MODEL/AFTER_MODEL/AFTER_AGENT). Module: `return countBy(await scanEvaluations(sdk), e => e.hook)`. Scope: Insights Insights.RealTimeData OR.Folders.Read OR.Jobs.Read Traces.Api.",
-      "defaults": { "title": "Rule Checks by Hook", "description": "All rule checks by lifecycle hook", "icon": "Workflow", "xKey": "name", "yKey": "value" }
+      "defaults": { "title": "Rule Checks by Hook", "description": "All rule checks by lifecycle hook", "icon": "Workflow", "xKey": "name", "yKey": "value", "detailColumns": [ { "key": "agentName", "label": "Agent" }, { "key": "ruleName", "label": "Rule" }, { "key": "standard", "label": "Standard" }, { "key": "hook", "label": "Hook" }, { "key": "outcome", "label": "Result" }, { "key": "time", "label": "When", "format": "timeAgo" } ] }
     },
     "rule-compliance": {
       "aliases": ["rule compliance", "rule compliance table", "rules evaluated vs matched", "compliance by rule"],

@@ -92,10 +92,14 @@ Each row has `mt-6` (24px) top margin. The header has no margin below it.
 
 If the user requests 5+ KPIs, split into two rows. Never shrink tiles to fit more than 4.
 
-### Rule 10 — Tables do NOT have `cursor-pointer` on the card
+### Rule 10 — Card-level `cursor-pointer` only when the card navigates
 
-Individual table rows can be clickable, but the Card wrapper on a data-table or ranked-table should NOT be `cursor-pointer` — the row click is enough.
-KPI tiles and chart cards ARE `cursor-pointer` because the whole card navigates to the detail view.
+A card is `cursor-pointer` only when clicking the whole card opens a detail view:
+- **Chart cards** are clickable (unless the metric is a registry `noDetail` chart, which renders inert).
+- **KPI cards** are clickable only with `detail: true` (a record-grain drill-down); a plain KPI is not.
+- **Tables** are NOT `cursor-pointer` — individual rows can be clickable via `rowLink`, but the card wrapper is not.
+
+The build wires this automatically (empty detail route → non-clickable). Never hand-add `cursor-pointer` to a card that has no detail view.
 
 ---
 

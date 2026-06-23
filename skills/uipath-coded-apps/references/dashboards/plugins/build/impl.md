@@ -48,6 +48,7 @@ The plan must feel like a thoughtful product recommendation, not a technical spe
 
 - Lead with a name and widget count on one line
 - One bullet per widget — widget name in bold, time range in parentheses, one sentence on what it shows and why it matters, **then a short plain-language clause on how it renders** (the visual form + the key elements they will see: a single number, a sortable table with named columns, an area-chart trend with a headline, a percentage line, a donut split, etc.) so the user can picture the visualization and adjust it
+- **For a chart or drill-down KPI, name what clicking it reveals** — a short `click → …` clause (the record grain behind the chart: "click → the individual faulted runs", "click → each policy evaluation"). Use the registry entry's `detailRecipe` for the wording. Omit the clause for a `noDetail` chart (no drill-down) and for plain KPIs/tables
 - Close with 3–4 concrete things the user can ask for, phrased as natural language
 - If a metric was hard-refused: one sentence inline, strikethrough style, with the alternative offered
 - No API names, no tier labels, no metric IDs, no JSON, no code
@@ -73,12 +74,12 @@ The plan message ends there — no OAuth talk in the plan, no tool calls in the 
 > **The plan response is text-only by design.** Never put a question/option tool call in the same response as the plan — live runs showed it reliably replaces the plan with a bare options list (the user approves widgets they never saw). Structured-choice questions fire only on later, short turns: the post-approval OAuth question (Phase 3), intent disambiguation, and the deploy pin choice.
 
 **Widget types — icon + how to describe the rendering** (always state the visual form so the user can adjust it):
-- 🔢 **KPI card** — "as a single headline number". Add "with a vs-previous-period change badge" ONLY if the metric module returns `{ value, previous }` — value over the dashboard window, previous over the equal-length prior window via `priorWindow(start, end)` (works for any time range). A plain KPI returns `{ value }` and shows no badge — don't promise a badge you won't compute.
-- 📈 **Line or area chart** — "as an area/line trend over time, with a headline [total/latest/average] and a vs-previous change"
+- 🔢 **KPI card** — "as a single headline number". Add "with a vs-previous-period change badge" ONLY if the metric module returns `{ value, previous }` — value over the dashboard window, previous over the equal-length prior window via `priorWindow(start, end)` (works for any time range). A plain KPI returns `{ value }` and shows no badge — don't promise a badge you won't compute. **Cataloged KPIs with a feasible record query default to a drill-down** (active-agents, success-rate, agent-units, governance-violations) — name what clicking reveals ("click → the active agents") and write the `fetchDetail` the registry `detailRecipe` describes. For a T3 KPI, set `detail: true` + export `fetchDetail` to make it clickable; set `detail: false` to suppress a defaulted-on one.
+- 📈 **Line or area chart** — "as an area/line trend over time, with a headline [total/latest/average] and a vs-previous change". Add the `click → …` record-grain clause unless it's a `noDetail` chart.
 - 📈 **Rate chart** — "as a percentage line over time with an overall headline" (a ratio: numerator ÷ denominator per period)
-- 📊 **Bar or donut chart** — "as a bar chart" / "as a donut split by category"
+- 📊 **Bar or donut chart** — "as a bar chart" / "as a donut split by category". Add the `click → …` clause (the records behind the split) unless `noDetail`.
 - 📋 **Table or ranked list** — "as a sortable table with columns [A, B, C]", or "ranked worst/highest-first". To make rows clickable (drill into the clicked entity), set `rowLink: { key: "<rowField>" }` and export `fetchDetailByKey(sdk, key, getToken)` — generates a `/<widget>/:key` detail page.
-- 🔷 **Multi-line chart** — "as multiple lines over time (e.g. P50/P95)"
+- 🔷 **Multi-line chart** — "as multiple lines over time (e.g. P50/P95)". Add the `click → …` clause unless `noDetail`.
 
 > **Governance violations are GATED.** Only propose the governance/compliance widgets (violations by
 > standard/rule/hook, agents-by-violations, recent-violations, per-agent compliance report) when the prompt
@@ -99,7 +100,7 @@ Here's your **Agent Operations Dashboard** — 4 widgets ready to build.
 🔢 **Active Agents** — agents that ran at least once in the last 30 days, so you can see fleet utilisation at a glance, shown as a single headline number
 📋 **Agent Health** (30 days) — where to focus your attention, shown as a sortable table ranked worst-first, with columns for agent, health score, and last incident
 📈 **Memory Calls** (7 days) — agent memory access volume so you can spot unusual activity early, shown as an area-chart trend over time with a running total and a vs-previous-week change
-📊 **Governance Verdicts** (7 days) — how policy enforcement is splitting across your agents, shown as a donut split by allow / deny / no-op
+📊 **Governance Verdicts** (7 days) — how policy enforcement is splitting across your agents, shown as a donut split by allow / deny / no-op; click → each individual policy evaluation (agent, result, hook, time)
 
 Confirm to build, or tell me what to change:
 → "make all charts 7 days"
@@ -153,9 +154,10 @@ Charts and tables render shallow without these. Set them on each metric in `inte
 - `fetchData` returns rows carrying **both** a numerator and denominator per bucket, e.g. `[{ date, faulted, total }]`.
 - `rateNum` / `rateDen` (**required**) — those field names (`"faulted"`, `"total"`). The build plots num/den % per bucket, headline = overall %, delta in `pp`.
 
-**Detail views** (any chart) — the drill-down must show records, not the chart's buckets:
-- `"detail": true` in the intent entry + `export const fetchDetail: MetricFn` in the module — a record-grain query (individual rows behind the chart). Falls back to `fetchData` if absent (shows buckets — avoid for chart metrics).
-- `detailColumns` — array of `{ key, label, align?, format?, color? }`. `format`: `number` | `percent` | `duration` | `timeAgo` | `text`. `color`: `goodHigh` | `goodLow` (threshold colouring). The build compiles these into formatted/coloured cells.
+**Detail views** — the drill-down must show records, not the chart's buckets:
+- **Every chart module MUST `export const fetchDetail: MetricFn`** — the record-grain query (individual rows behind the chart). The build infers the drill-down from this export (no `detail` flag on charts) and **hard-fails with `CHART_DETAIL_MISSING`** if it's missing. For cataloged charts, the registry entry's `detailRecipe` is the exact SDK call — copy it. The only exception is a registry `"noDetail": true` chart (endpoint has no record data): no `fetchDetail`, no drill-down, non-clickable card.
+- **KPI drill-down:** set `"detail": true` on the kpi-card metric + export `fetchDetail` → clickable card + record view. Use for event-counting KPIs (errors/failures/violations/denials); a scalar KPI (rate %, total) needs none.
+- `detailColumns` — array of `{ key, label, align?, format?, color? }`. `format`: `number` | `percent` | `duration` | `timeAgo` | `text`. `color`: `goodHigh` | `goodLow` (threshold colouring). Cataloged metrics ship these in the registry; set them yourself for T3. The build compiles them into formatted/coloured cells.
 - `detailSortKey` — raw field to sort on (e.g. an ISO `startTime`), so chronological order is correct even when a column renders a friendly label.
 
 Full detail-view contract (record grain, toRows, anti-patterns): `references/dashboards/primitives/detail-views.md`.

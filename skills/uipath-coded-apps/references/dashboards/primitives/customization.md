@@ -33,6 +33,8 @@ node <skill>/assets/scripts/build-dashboard.mjs eject-intent.json
 
 It flips `regime` to `"ejected"` in `state.json` and emits `EJECTED` — no files are regenerated. From then on the dashboard behaves exactly like a template's modify face: edit `src/` per NLP → `npm run build` → deploy. Deploy is unaffected (it only reads `state.json`).
 
+> **Ejected metric modules live in `src/metrics/`, not the root `metrics/`.** In the compiler-managed regime the build copies root `metrics/*.ts` → `src/metrics/*.ts` each run. After eject it no longer copies — `src/metrics/*.ts` is canonical. Edit the data fetch there; editing the root copy has no effect on the running app.
+
 ## Ownership map — what the build script overwrites
 
 | File | Regenerated when | Safe to hand-edit? |

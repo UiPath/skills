@@ -95,65 +95,36 @@ governance spans; `Traces.getById` does. Get the `traceId` from the agent's Job.
 - **Latest-per-agent scan (opt-in):** the deduped variant (one row per distinct agent). Use ONLY when the user
   explicitly wants per-agent rollup, not recent runs. Same 15-run bound.
 
+**Use the shipped `@/lib/governance-scan` — never hand-roll the Jobs→Traces loop.** It ships the
+bounded scanners (`scanRecentRuns`, `scanLatestPerAgent`) and the two public helpers
+(`scanViolations`, `scanEvaluations`) with the `MAX_RUNS = 15` cap baked in. Both `fetchData` AND a
+chart's `fetchDetail` reuse the same call, so they never drift.
+
 ```ts
 import type { MetricFn } from '@/lib/metric-contract'
-import { parseGovernanceSpans, parseRuleEvaluations, countBy } from '@/lib/governance'
-
-const MAX_RUNS = 15 // hard cap — see the INTERIM callout above
-
-// DEFAULT scanner: last MAX_RUNS agent runs, NO dedup. `parse` is
-// `s => parseGovernanceSpans(s).violations` (violations) or `parseRuleEvaluations` (all checks).
-// pageSize > MAX_RUNS so we still reach 15 *traced* runs if some jobs lack a traceId.
-async function scanRecentRuns(sdk: any, parse: (spans: any) => any[]) {
-  const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  const { Traces } = await import('@uipath/uipath-typescript/traces')
-  const jobs = (await new Jobs(sdk as never).getAll(
-    { filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc', pageSize: 50 }))?.items ?? []
-  const out: any[] = []
-  let scanned = 0
-  for (const j of jobs as Array<{ traceId?: string | null }>) {
-    if (!j.traceId) continue
-    const spans = await new Traces(sdk as never).getById(j.traceId)
-    out.push(...parse(spans))
-    if (++scanned >= MAX_RUNS) break
-  }
-  return out // caller groups/aggregates; widget shows EmptyState when []
-}
-
-// OPT-IN: latest run per distinct agent (dedup). Same 15-run bound.
-async function scanLatestPerAgent(sdk: any, parse: (spans: any) => any[]) {
-  const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  const { Traces } = await import('@uipath/uipath-typescript/traces')
-  const jobs = (await new Jobs(sdk as never).getAll(
-    { filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc', pageSize: 100 }))?.items ?? []
-  const seen = new Set<string>()
-  const out: any[] = []
-  for (const j of jobs as Array<{ processName?: string | null; traceId?: string | null }>) {
-    const agent = j.processName ?? ''
-    if (!j.traceId || (agent && seen.has(agent))) continue
-    seen.add(agent)
-    const spans = await new Traces(sdk as never).getById(j.traceId)
-    out.push(...parse(spans))
-    if (seen.size >= MAX_RUNS) break
-  }
-  return out
-}
-
-// Public scanners — DEFAULT to recent-runs (no dedup). Swap to scanLatestPerAgent only on explicit request.
-const scanViolations  = (sdk: any) => scanRecentRuns(sdk, s => parseGovernanceSpans(s).violations)
-const scanEvaluations = (sdk: any) => scanRecentRuns(sdk, parseRuleEvaluations)
+import { countBy } from '@/lib/governance'
+import { scanViolations, scanEvaluations } from '@/lib/governance-scan'
 
 // violations-by-standard (donut: xKey name, yKey value) — subtitle = WINDOW_LABEL.
 export const fetchData: MetricFn = async (sdk) => countBy(await scanViolations(sdk), v => v.standard)
+
+// fetchDetail = the individual matched-rule records behind the donut (record-grain drill-down).
+export const fetchDetail: MetricFn = async (sdk) => await scanViolations(sdk)
 ```
+
+`scanViolations` = recent-runs scan mapped through `parseGovernanceSpans().violations` (matched only);
+`scanEvaluations` = the same scan through `parseRuleEvaluations` (every check, PASS + MATCHED). Both
+default to **recent runs, no dedup**. For a per-agent rollup, call `scanLatestPerAgent(sdk, parse)`
+directly (dedup by agent name, same 15-run bound).
 
 ### All-evaluations scan (PASS + MATCHED) — `scanEvaluations`
 
-`scanEvaluations` (above) is `scanRecentRuns` with `parseRuleEvaluations` — EVERY rule check, so a compliant
-fleet is visible (not just violations). Same last-15-runs bound.
+`scanEvaluations` is the recent-runs scan through `parseRuleEvaluations` — EVERY rule check, so a
+compliant fleet is visible (not just violations). Same last-15-runs bound.
 
 ```ts
 import { countBy } from '@/lib/governance'
+import { scanEvaluations } from '@/lib/governance-scan'
 
 // rule-evaluations-by-hook (donut)
 const byHook = countBy(await scanEvaluations(sdk), e => e.hook)

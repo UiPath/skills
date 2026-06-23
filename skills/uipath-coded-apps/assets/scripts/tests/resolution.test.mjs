@@ -5,7 +5,7 @@ import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { execSync } from 'node:child_process'
-import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, generateKeyedDetailViewFile, buildViewSpec, compileColumns, compileDetailWidgets, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, setWidgetsDir, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, readScaffoldVersion, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift, runIntentMigrations, VALID_EDIT_OPS, MIN_SDK_VERSION } from '../build-dashboard.mjs'
+import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, generateKeyedDetailViewFile, buildViewSpec, compileColumns, compileDetailWidgets, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, widgetGetsDetailView, setWidgetsDir, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, readScaffoldVersion, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift, runIntentMigrations, VALID_EDIT_OPS, MIN_SDK_VERSION } from '../build-dashboard.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REGISTRY_PATH = resolve(__dirname, '../capability-registry.json')
@@ -1479,4 +1479,116 @@ test('emptyMessage: falls back to registry defaults.emptyMessage', () => {
     )
     assert.ok(content.includes('Nothing to report'), 'emptyMessage must fall back to registry defaults')
   })
+})
+
+// ── Record-grain detail views: noDetail opt-out, KPI drill-down, contract ──────
+
+test('widgetGetsDetailView: chart gets a view; noDetail chart does not', () => {
+  assert.equal(widgetGetsDetailView('area-chart', { name: 'm' }, null), true, 'plain chart drills down')
+  assert.equal(widgetGetsDetailView('donut-chart', { name: 'm' }, { noDetail: true }), false, 'noDetail chart does not')
+})
+
+test('widgetGetsDetailView: kpi-card drills down on metric or registry-default detail', () => {
+  assert.equal(widgetGetsDetailView('kpi-card', { name: 'm' }, null), false, 'plain KPI links nowhere')
+  assert.equal(widgetGetsDetailView('kpi-card', { name: 'm', detail: true }, null), true, 'metric detail:true drills down')
+  // Cataloged KPI defaults the drill-down on via the registry entry.
+  assert.equal(widgetGetsDetailView('kpi-card', { name: 'm' }, { defaults: { detail: true } }), true, 'registry defaults.detail drills down')
+  // Metric override wins — suppress a defaulted-on KPI.
+  assert.equal(widgetGetsDetailView('kpi-card', { name: 'm', detail: false }, { defaults: { detail: true } }), false, 'metric detail:false suppresses')
+})
+
+test('registry contract: every default-on KPI ships a detailRecipe + detailColumns', () => {
+  for (const [name, entry] of Object.entries(registry.t1)) {
+    if (entry.template !== 'kpi-card' || entry.defaults?.detail !== true) continue
+    assert.ok(entry.detailRecipe, `${name}: default-drill-down KPI needs a detailRecipe`)
+    assert.ok(entry.defaults?.detailColumns, `${name}: default-drill-down KPI needs defaults.detailColumns`)
+  }
+})
+
+test('buildWidgetFile: cataloged default-on KPI renders a clickable card', () => {
+  withSiblingTemplates(() => {
+    const content = buildWidgetFile(
+      { name: 'active-agents-kpi', tier: 'T1', title: 'Active Agents', displayAs: 'kpi-card' },
+      registry.t1['active-agents-kpi'], '30d'
+    )
+    assert.ok(content.includes("const KPI_DETAIL_ROUTE = '/activeagentskpi'"), 'registry default-on KPI must get a detail route')
+    assert.ok(content.includes('KPI_DETAIL_ROUTE ? () => navigate(KPI_DETAIL_ROUTE)'), 'KPI card must be clickable')
+  })
+})
+
+test('widgetGetsDetailView: tables never get a chart-style view', () => {
+  assert.equal(widgetGetsDetailView('data-table', { name: 'm' }, null), false)
+  assert.equal(widgetGetsDetailView('ranked-table', { name: 'm' }, null), false)
+})
+
+test('widgetGetsDetailView: T3 chart opts out via metric-level noDetail (no registry entry)', () => {
+  // A T3 custom chart on an aggregate-only endpoint sets "noDetail": true in
+  // intent.json — there is no registry entry to carry the flag.
+  assert.equal(widgetGetsDetailView('area-chart', { name: 'm', tier: 'T3', noDetail: true }, null), false)
+  // Without the flag, a T3 chart still requires a drill-down (fetchDetail enforced).
+  assert.equal(widgetGetsDetailView('area-chart', { name: 'm', tier: 'T3' }, null), true)
+})
+
+test('registry contract: every T1 chart is either noDetail or has detailRecipe + detailColumns', () => {
+  const CHARTS = new Set(['area-chart', 'line-chart', 'bar-chart', 'donut-chart', 'multi-line-chart', 'rate-chart'])
+  for (const [name, entry] of Object.entries(registry.t1)) {
+    if (!CHARTS.has(entry.template)) continue
+    if (entry.noDetail === true) {
+      assert.ok(!entry.detailRecipe, `${name}: noDetail chart must not also carry a detailRecipe`)
+      continue
+    }
+    assert.ok(entry.detailRecipe, `${name}: detail-capable chart needs a detailRecipe`)
+    assert.ok(entry.defaults?.detailColumns, `${name}: detail-capable chart needs defaults.detailColumns`)
+  }
+})
+
+test('buildWidgetFile: noDetail chart renders a non-clickable card (empty detailRoute, no ViewAllLink)', () => {
+  withSiblingTemplates(() => {
+    const content = buildWidgetFile(
+      { name: 'agent-memory-timeline', tier: 'T1', title: 'Agent Memory', displayAs: 'area-chart', xKey: 'timeSlice', yKey: 'totalCount' },
+      registry.t1['agent-memory-timeline'], '30d'
+    )
+    assert.ok(content.includes("const detailRoute = ''"), 'noDetail chart must have an empty detailRoute')
+    // The ViewAllLink + card click are runtime-guarded on detailRoute, so an empty
+    // route renders them inert (no navigation, no cursor-pointer) without a separate template.
+    assert.ok(content.includes('detailRoute ? <ViewAllLink'), 'ViewAllLink must be guarded on detailRoute')
+    assert.ok(content.includes('detailRoute ? () => navigate(detailRoute)'), 'card click must be guarded on detailRoute')
+  })
+})
+
+test('buildWidgetFile: detail-capable chart renders a clickable card with a route', () => {
+  withSiblingTemplates(() => {
+    const content = buildWidgetFile(
+      { name: 'agent-error-timeline', tier: 'T1', title: 'Agent Errors', displayAs: 'area-chart', xKey: 'date', yKey: 'value' },
+      registry.t1['agent-error-timeline'], '30d'
+    )
+    assert.ok(content.includes("const detailRoute = '/agenterrortimeline'") ||
+              content.includes("const detailRoute = '/agenterrors'"), 'capable chart must have a non-empty detailRoute')
+    assert.ok(content.includes('detailRoute ? () => navigate(detailRoute)'), 'card click must be guarded on detailRoute')
+  })
+})
+
+test('buildWidgetFile: kpi-card with detail:true is clickable; plain KPI is not', () => {
+  withSiblingTemplates(() => {
+    const withDetail = buildWidgetFile(
+      { name: 'failure-rate', tier: 'T3', title: 'Failure Rate', displayAs: 'kpi-card', valueField: 'value', detail: true },
+      null, '30d'
+    )
+    assert.ok(withDetail.includes("const KPI_DETAIL_ROUTE = '/failurerate'"), 'KPI detail route must be set')
+    assert.ok(withDetail.includes('KPI_DETAIL_ROUTE ? () => navigate(KPI_DETAIL_ROUTE)'), 'KPI card must be clickable')
+
+    const plain = buildWidgetFile(
+      { name: 'active-agents', tier: 'T3', title: 'Active Agents', displayAs: 'kpi-card', valueField: 'value' },
+      null, '30d'
+    )
+    assert.ok(plain.includes("const KPI_DETAIL_ROUTE = ''"), 'plain KPI must have an empty detail route')
+  })
+})
+
+test('buildViewSpec: detailColumns + detailSortKey fall back to registry defaults; export is fetchDetail', () => {
+  const entry = registry.t1['violations-by-standard']
+  const spec = buildViewSpec('ViolationsByStandard', { name: 'violations-by-standard', title: 'Violations by Standard' }, entry, '30d')
+  assert.equal(spec.detailExport, 'fetchDetail', 'detail view runs the record-grain fetchDetail export')
+  assert.ok(spec.detailColumns, 'detailColumns must come from registry defaults when intent omits them')
+  assert.ok(spec.detailColumns.includes('agentName'), 'compiled detailColumns should carry the registry keys')
 })
