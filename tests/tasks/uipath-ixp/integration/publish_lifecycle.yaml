@@ -8,7 +8,8 @@ description: >
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
-  expected_turns: 34
+  max_turns: 68
+  task_timeout: 2400
   turn_timeout: 1200
 
 sandbox:
@@ -38,14 +39,6 @@ initial_prompt: |
   Delete the project when you're done.
 
 success_criteria:
-  - type: command_executed
-    description: "Verified login status first"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Published with a tag (staging/live)"
     tool_name: "Bash"

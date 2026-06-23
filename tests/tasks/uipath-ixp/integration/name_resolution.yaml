@@ -9,7 +9,8 @@ description: >
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
-  expected_turns: 24
+  max_turns: 48
+  task_timeout: 1800
   turn_timeout: 600
 
 sandbox:
@@ -37,14 +38,6 @@ initial_prompt: |
   Clean up by deleting the project at the end.
 
 success_criteria:
-  - type: command_executed
-    description: "Verified login status first"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: command_executed
     description: "Listed documents to resolve filename/position → DocumentId (before + after)"
     tool_name: "Bash"

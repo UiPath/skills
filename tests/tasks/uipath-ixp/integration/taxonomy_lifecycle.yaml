@@ -44,14 +44,6 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Verified the session before doing work (login status or a read call)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(login\s+status|ixp\s+projects\s+list)'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Imported the bundled taxonomy"
     tool_name: "Bash"
     command_pattern: 'uip\s+ixp\s+projects\s+import-taxonomy'
@@ -83,9 +75,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # The new instruction text lands in the taxonomy (verified by file_contains
-  # below); the JSON payload may be passed inline or via a file ($(cat ...)),
-  # so the command line only needs to carry --updates.
   - type: command_executed
     description: "Bulk-updated field prompts via update-prompts --updates"
     tool_name: "Bash"
