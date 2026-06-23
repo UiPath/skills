@@ -1,0 +1,74 @@
+task_id: skill-bpmn-smoke-registry-discovery
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to discover
+  Maestro BPMN extension types via the registry CLI (pull, list/search, get)
+  before authoring anything. Tests that the skill teaches the registry-driven
+  discovery loop instead of hand-authoring uipath:* XML from prose.
+tags: [uipath-maestro-bpmn, smoke, "mode:build"]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I want to author a UiPath Maestro BPMN process that starts an RPA job and
+  waits for an internal message. Before authoring anything, load and follow the
+  uipath-maestro-bpmn skill and use the registry to discover the right
+  extension types and their templates.
+
+  Save the raw JSON output of every registry command you run into a
+  `registry-evidence/` directory (one file per command), for example:
+    - `uip maestro bpmn registry pull --output json > registry-evidence/pull.json`
+    - `uip maestro bpmn registry list --output json > registry-evidence/list.json`
+    - `uip maestro bpmn registry get <type> --output json > registry-evidence/get-<type>.json`
+
+  Do not summarize or paraphrase the output — preserve the raw CLI JSON so the
+  RPA-job and receive-message extension types and their templates are present in
+  the saved files.
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Use `--output json` on all uip commands.
+  - Do not author the BPMN yet — just discover and save the raw evidence. Do not
+    upload, publish, deploy, debug, run, or pack anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent pulled the registry"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+pull'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed or searched registry extension types"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+(list|search)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched a template with registry get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on registry commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Raw registry evidence covers the RPA-job and receive-message types"
+    command: "python3 $TASK_DIR/check_registry_discovery.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

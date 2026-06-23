@@ -13,7 +13,9 @@ run_limits:
   expected_turns: 4
 
 initial_prompt: |
-  What public IP does my UiPath organization see for me right now?
+  I need to check what public IP the UiPath platform sees for my
+  machine before I add it to our IP restriction allowlist. What's my
+  current outbound IP?
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
