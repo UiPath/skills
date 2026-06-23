@@ -10,10 +10,11 @@ What this looks like:
 - A `UiPath.Web.Activities.HttpClient` activity faults with `System.Net.WebException`.
 - The job `Info` / `JobError.Type` names `System.Net.WebException`; the message is framework-originated (not a UiPath string), e.g.:
   - `The remote server returned an error: (404) Not Found.` / `(401) Unauthorized.` / `(500) Internal Server Error.`
-  - `The remote name could not be resolved: '<host>'`
+  - DNS failure — `No such host is known. (<host>:<port>)` on modern .NET (`targetFramework: Windows`, .NET 6+; confirmed by repro on .NET 8) or `The remote name could not be resolved: '<host>'` on legacy .NET Framework
   - `Unable to connect to the remote server`
   - `The underlying connection was closed: Could not establish trust relationship for the SSL/TLS secure channel.`
 - The exception is the raw RestSharp/transport exception unwrapped from the request task — `HttpClient` does not wrap it.
+- **A timeout also surfaces as `System.Net.WebException` on modern .NET, with message `The operation has timed out.`** If that is the message, this is a timeout, not a connection failure — go to [http-request-timeout.md](./http-request-timeout.md).
 
 What can cause it (branch from the message):
 - **Non-success HTTP status (4xx/5xx)** — the server was reached and answered with an error status. `401/403` = auth/permission; `404` = wrong path/resource; `429` = rate limited; `5xx` = server-side fault.

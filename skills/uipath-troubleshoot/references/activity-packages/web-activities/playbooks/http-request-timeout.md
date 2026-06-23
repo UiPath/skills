@@ -7,8 +7,11 @@ confidence: medium
 ## Context
 
 What this looks like:
-- A `UiPath.Web.Activities.HttpClient` activity faults with `System.TimeoutException` and the default message `The operation has timed out.`
-- `HttpClient` throws this explicitly when the underlying RestSharp request returns status `TimedOut` — the request exceeded `TimeoutMS` (default `6000` ms).
+- A `UiPath.Web.Activities.HttpClient` activity faults with the message `The operation has timed out.` because the request exceeded `TimeoutMS` (default `6000` ms).
+- **The exception type is runtime-dependent** — verify both:
+  - Modern .NET (project `targetFramework: Windows`, .NET 6+): surfaces as **`System.Net.WebException: The operation has timed out.`** (the RestSharp request task faults and the raw transport exception is rethrown before the activity's explicit timeout path runs). Confirmed by repro on .NET 8.
+  - Legacy (.NET Framework 4.6.1, `Windows - Legacy`): `HttpClient` throws **`System.TimeoutException`** explicitly when RestSharp reports status `TimedOut`.
+  - Either way the **message is `The operation has timed out.`** — match on the message, not just the type. On modern .NET this overlaps with the connection-failure `WebException` ([http-request-connection-failure.md](./http-request-connection-failure.md)); the message text is the discriminator.
 - For the modern `NetHttpRequest` activity a timeout instead surfaces as `System.AggregateException` → inner `TaskCanceledException` — see [net-http-request-aggregate-failure.md](./net-http-request-aggregate-failure.md).
 
 What can cause it:
