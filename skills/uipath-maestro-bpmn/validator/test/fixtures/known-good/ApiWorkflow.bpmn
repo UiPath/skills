@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath Studio Web (https://uipath.com)" exporterVersion="e9d4d2b5">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="voQrcS9Fe" name="firstName" type="string" elementId="Activity_5VAjZC"/>
+        <uipath:inputOutput id="v8ehInscn" name="lastName" type="string" elementId="Activity_5VAjZC"/>
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="6317e2d1-69ab-464b-9d6c-95172d72f6fc"/>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>edge___Event_start-Activity_5VAjZC</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_5VAjZC" name="API-Demo">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.ExecuteApiWorkflowAsync" version="v1"/>
+          <uipath:context>
+            <uipath:input name="releaseKey" type="string" value="c4a041a3-b50c-4a2c-952d-1b9f9ea74a5e"/>
+            <uipath:input name="name" type="string" value="API-Demo"/>
+            <uipath:input name="folderKey" type="string" value="717ede25-7494-44d5-9d65-5dab660653f6"/>
+            <uipath:input name="folderPath" type="string" value="Shared"/>
+          </uipath:context>
+          <uipath:output name="firstName" type="string" source="=firstName" var="voQrcS9Fe"/>
+          <uipath:output name="lastName" type="string" source="=lastName" var="v8ehInscn"/>
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>edge___Event_start-Activity_5VAjZC</bpmn:incoming>
+      <bpmn:outgoing>edge___Activity_5VAjZC-Event_dNN82a</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_dNN82a">
+      <bpmn:incoming>edge___Activity_5VAjZC-Event_dNN82a</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="edge___Event_start-Activity_5VAjZC" sourceRef="Event_start" targetRef="Activity_5VAjZC"/>
+    <bpmn:sequenceFlow id="edge___Activity_5VAjZC-Event_dNN82a" sourceRef="Activity_5VAjZC" targetRef="Event_dNN82a"/>
+  </bpmn:process>
+</bpmn:definitions>

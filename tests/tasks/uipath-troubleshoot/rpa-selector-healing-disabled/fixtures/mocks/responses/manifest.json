@@ -11,8 +11,8 @@
       "file": "or-jobs-help-2-1-uip-or-processes-help.json"
     },
     {
-      "match": "or processes edit --help",
-      "file": "or-processes-edit-help.json"
+      "match": "or processes update --help",
+      "file": "or-processes-update-help.json"
     },
     {
       "match": "or jobs start --help",

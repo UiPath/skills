@@ -1,0 +1,108 @@
+{
+  "version": "3.0.0.0",
+  "bundleHash": "jitv4tov3-d973d2d2-d660-4e38-b8a3-a6710a3bcda6",
+  "addedAssemblyNames": [],
+  "discardedAssemblyNames": [
+    "Apps.action.g0maeQGn3Qg",
+    "Apps.action.g6eZPGn3Qg",
+    "Apps.form.SimpleApproval.Expressions.RbXDP2xJVlM1YBpVX19P0i13",
+    "Apps.form.SimpleApproval.Expressions.zKdoD1WweZC1xNUmShFq6e2",
+    "Apps.form.SimpleApproval.Expressions.fSMUu2XGsmR1cITkX2rsij3",
+    "Apps.action.grra5bPGn3Qg",
+    "Apps.form.SimpleApproval.gk2tNOvGn3Qg",
+    "Apps.form.SimpleApproval.Expressions.qQMYxXIfrK1ZZFHg3jvMJU2",
+    "Apps.form.SimpleApproval.Expressions.PZYDL4MsX2Q1RmPP61UO5hV2",
+    "Apps.action.gg34Dw3k3Qg",
+    "Apps.form.SimpleApproval.Expressions.yhgnY2pNI9J1tGkLw2eknAM4",
+    "Apps.form.SimpleApproval.Expressions.AaFbi2eyjKJ1hdVt72aLXm54",
+    "Apps.form.SimpleApproval.Expressions.u4ZKU4QCh1O11gyen3DUEaT3",
+    "Apps.form.SimpleApproval.g2xqKxHk3Qg"
+  ],
+  "discardedAssemblyReplacements": {
+    "Apps.action.g0maeQGn3Qg": "Apps.action.g6eZPGn3Qg",
+    "Apps.action.g6eZPGn3Qg": "Apps.action.grra5bPGn3Qg",
+    "Apps.form.SimpleApproval.Expressions.RbXDP2xJVlM1YBpVX19P0i13": "Apps.form.SimpleApproval.Expressions.zKdoD1WweZC1xNUmShFq6e2",
+    "Apps.form.SimpleApproval.Expressions.zKdoD1WweZC1xNUmShFq6e2": "Apps.form.SimpleApproval.Expressions.fSMUu2XGsmR1cITkX2rsij3",
+    "Apps.form.SimpleApproval.Expressions.fSMUu2XGsmR1cITkX2rsij3": "Apps.form.SimpleApproval.Expressions.qQMYxXIfrK1ZZFHg3jvMJU2",
+    "Apps.action.grra5bPGn3Qg": "Apps.action.gg34Dw3k3Qg",
+    "Apps.form.SimpleApproval.gk2tNOvGn3Qg": "Apps.form.SimpleApproval.g2xqKxHk3Qg",
+    "Apps.form.SimpleApproval.Expressions.qQMYxXIfrK1ZZFHg3jvMJU2": "Apps.form.SimpleApproval.Expressions.PZYDL4MsX2Q1RmPP61UO5hV2",
+    "Apps.form.SimpleApproval.Expressions.PZYDL4MsX2Q1RmPP61UO5hV2": "Apps.form.SimpleApproval.Expressions.yhgnY2pNI9J1tGkLw2eknAM4",
+    "Apps.action.gg34Dw3k3Qg": "Apps.action.gdc005Xk3Qg",
+    "Apps.form.SimpleApproval.Expressions.yhgnY2pNI9J1tGkLw2eknAM4": "Apps.form.SimpleApproval.Expressions.AaFbi2eyjKJ1hdVt72aLXm54",
+    "Apps.form.SimpleApproval.Expressions.AaFbi2eyjKJ1hdVt72aLXm54": "Apps.form.SimpleApproval.Expressions.u4ZKU4QCh1O11gyen3DUEaT3",
+    "Apps.form.SimpleApproval.Expressions.u4ZKU4QCh1O11gyen3DUEaT3": "Apps.form.SimpleApproval.Expressions.ti3x2w0i2K1yKGWw2o5eeo1",
+    "Apps.form.SimpleApproval.g2xqKxHk3Qg": "Apps.form.SimpleApproval.gNneTWgEI3gg"
+  },
+  "assembliesJitInfo": {
+    "Apps.form.SimpleApproval.gk2tNOvGn3Qg": {
+      "createdAt": "2025-06-10T07:34:26.6096792+00:00",
+      "providerName": "Apps",
+      "rootNamespace": "\u003Cundefined\u003E",
+      "typeNames": [
+        "Controls.SimpleApproval"
+      ]
+    },
+    "Apps.action.g0maeQGn3Qg": {
+      "createdAt": "2025-06-10T07:34:42.0477594+00:00",
+      "providerName": "Apps",
+      "rootNamespace": "\u003Cundefined\u003E",
+      "typeNames": [
+        "__Action_ActionSchema.outcomes",
+        "action.ActionProperties"
+      ]
+    },
+    "Apps.action.g6eZPGn3Qg": {
+      "createdAt": "2025-06-10T07:35:37.3655591+00:00",
+      "providerName": "Apps",
+      "rootNamespace": "\u003Cundefined\u003E",
+      "typeNames": [
+        "__Action_ActionSchema.outcomes",
+        "action.ActionProperties"
+      ]
+    },
+    "Apps.action.grra5bPGn3Qg": {
+      "createdAt": "2025-06-10T07:35:50.9623768+00:00",
+      "providerName": "Apps",
+      "rootNamespace": "\u003Cundefined\u003E",
+      "typeNames": [
+        "__Action_ActionSchema.outcomes",
+        "action.ActionProperties"
+      ]
+    },
+    "Apps.action.gg34Dw3k3Qg": {
+      "createdAt": "2025-08-26T09:05:54.4636774+00:00",
+      "providerName": "Apps",
+      "rootNamespace": "\u003Cundefined\u003E",
+      "typeNames": [
+        "__Action_ActionSchema.outcomes",
+        "action.ActionProperties"
+      ]
+    },
+    "Apps.form.SimpleApproval.g2xqKxHk3Qg": {
+      "createdAt": "2025-08-26T09:05:56.6202276+00:00",
+      "providerName": "Apps",
+      "rootNamespace": "\u003Cundefined\u003E",
+      "typeNames": [
+        "Controls.SimpleApproval"
+      ]
+    },
+    "Apps.action.gdc005Xk3Qg": {
+      "createdAt": "2025-08-26T09:06:51.4123029+00:00",
+      "providerName": "Apps",
+      "rootNamespace": "\u003Cundefined\u003E",
+      "typeNames": [
+        "__Action_ActionSchema.outcomes",
+        "action.ActionProperties"
+      ]
+    },
+    "Apps.form.SimpleApproval.gNneTWgEI3gg": {
+      "createdAt": "2025-10-10T13:31:44.3883591+00:00",
+      "providerName": "Apps",
+      "rootNamespace": "\u003Cundefined\u003E",
+      "typeNames": [
+        "Controls.SimpleApproval"
+      ]
+    }
+  }
+}

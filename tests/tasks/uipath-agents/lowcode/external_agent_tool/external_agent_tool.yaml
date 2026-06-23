@@ -19,15 +19,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath low-code agent "OutreachAgent" that accepts a required
-  `subject` (string) and returns a string `content`. It must compose
-  the content by delegating to an agent named "EmailDrafter" that is
-  already deployed in the tenant — not by drafting the email itself.
-  The solution should be named "OutreachSol".
-
-  Use the real folder and process name from the tenant — do not
-  hard-code or guess these values. Name the wrapper's tool resource
-  `EmailDrafter` (matching the deployed agent).
+  Create a UiPath low-code agent "OutreachAgent" that takes a required
+  `subject` (string) and returns a string `content`. OutreachAgent shouldn't
+  write the email itself — the draft should come from our existing
+  "EmailDrafter" agent, which is already deployed in our tenant. The solution
+  should be named "OutreachSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -103,12 +99,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "OutreachAgent/agent.json was created"

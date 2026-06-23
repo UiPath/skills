@@ -14,8 +14,6 @@ run_limits:
   max_turns: 35
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   I have a project called CLAIM. Organise testcases for the "disbursement"
   feature into logical test sets (e.g. happy path, edge cases, regression).
   List the testcases filtered by "disbursement", group them, and create the

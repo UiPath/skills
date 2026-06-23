@@ -8,7 +8,7 @@ description: >
   uipath.platform.context_grounding, uses plain interrupt() from
   langgraph.types — and does NOT instantiate UiPath() at module top
   level.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, context-grounding]
+tags: [uipath-agents, e2e, coded, lifecycle:generate, context-grounding, mode:build]
 max_iterations: 1
 
 initial_prompt: |

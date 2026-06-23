@@ -23,6 +23,8 @@ If the entry guard classified a provided document as "Other context", read it be
 
 The batch contains only the questions that survive the skip rules. Build the `AskUserQuestion` call as one tool invocation with one `questions` array entry per surviving item.
 
+**Delivery-model constraint (no standing question).** When the request carries self-hosted signals ("Automation Suite", "on-prem", "self-hosted", "air-gapped"), apply the [Constraint Gate](product-selection-guide.md#constraint-gate) against [platform-availability-guide.md](platform-availability-guide.md) before recommending any product, and record `Delivery model: <value>` in the plan header. If the signals are present but ambiguous (can't tell Suite from standalone), add the delivery-model question from [sdd-generation-guide.md → Step 0](sdd-generation-guide.md#step-0-determine-execution-mode--delivery-model) to the Step 1 batch. No signals → omit the field; do not ask.
+
 ### Question 1 — Generation approach
 
 > How would you like me to work?

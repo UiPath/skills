@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn">
+    <bpmn:process id="Process_1">
+        <bpmn:startEvent id="Start_1" name="Start">
+            <bpmn:outgoing>Flow_1</bpmn:outgoing>
+        </bpmn:startEvent>
+
+        <bpmn:task id="Task_1" name="Do Something">
+            <bpmn:incoming>Flow_1</bpmn:incoming>
+            <bpmn:outgoing>Flow_2</bpmn:outgoing>
+            <bpmn:extensionElements>
+                <uipath:ioMapping>
+                    <uipath:input target="input1" source="inputExpr" />
+                </uipath:ioMapping>
+                <uipath:task>
+                    <uipath:taskParameters>
+                        <parameter name="param1" value="paramValue1" />
+                    </uipath:taskParameters>
+                    <uipath:ioMapping>
+                        <uipath:output target="output1" />
+                    </uipath:ioMapping>
+                </uipath:task>
+            </bpmn:extensionElements>
+        </bpmn:task>
+
+        <bpmn:unknownNode>
+            <bpmn:unknownAttribute>unknownValue</bpmn:unknownAttribute>
+        </bpmn:unknownNode>
+
+        <bpmn:exclusiveGateway id="Gateway_1" name="Decision">
+            <bpmn:incoming>Flow_2</bpmn:incoming>
+            <bpmn:outgoing>Flow_3</bpmn:outgoing>
+            <bpmn:outgoing>Flow_4</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+
+        <bpmn:endEvent id="End_1" name="End 1">
+            <bpmn:incoming>Flow_3</bpmn:incoming>
+        </bpmn:endEvent>
+
+        <bpmn:endEvent id="End_2" name="End 2">
+            <bpmn:incoming>Flow_5</bpmn:incoming>
+        </bpmn:endEvent>
+
+        <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_1" targetRef="Task_1" />
+        <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_1" targetRef="Gateway_1" />
+        <bpmn:sequenceFlow id="Flow_3" sourceRef="Gateway_1" targetRef="End_1">
+            <bpmn:unknownElement>
+                <bpmn:unknownAttribute>unknownValue</bpmn:unknownAttribute>
+            </bpmn:unknownElement>
+            <bpmn:conditionExpression>x > 5</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_4" sourceRef="Gateway_1" targetRef="intermediateCatchEvent_1" />
+        <bpmn:sequenceFlow id="Flow_5" sourceRef="intermediateCatchEvent_1" targetRef="End_2" />
+
+        <bpmn:documentation>
+            <bpmn:text>This is a documentation</bpmn:text>
+        </bpmn:documentation>
+
+        <bpmn:boundaryEvent
+                id="boundaryEvent_1" name="Non-Interrupting Boundary Event" attachedToRef="Task_1" cancelActivity="false">
+            <bpmn:timerEventDefinition>
+                <bpmn:timeDuration>R3/PT30M</bpmn:timeDuration>
+            </bpmn:timerEventDefinition>
+        </bpmn:boundaryEvent>
+
+        <bpmn:intermediateCatchEvent id="intermediateCatchEvent_1" name="Intermediate Catch Event">
+            <bpmn:incoming>Flow_4</bpmn:incoming>
+            <bpmn:outgoing>Flow_5</bpmn:outgoing>
+            <bpmn:timerEventDefinition>
+                <bpmn:timeDuration>PT1H</bpmn:timeDuration>
+            </bpmn:timerEventDefinition>
+        </bpmn:intermediateCatchEvent>
+    </bpmn:process>
+</bpmn:definitions>

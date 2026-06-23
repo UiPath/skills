@@ -1,11 +1,13 @@
 # Debug a Low-Code Agent
 
-Run a low-code agent end-to-end on Studio Web and stream the result — without publishing it to Orchestrator. Use this to test an agent against real inputs during iteration. `uip agent debug` **uploads the agent's enclosing solution** to Studio Web, starts it on the serverless debug runtime, polls to completion, and returns the agent's output.
+Run a low-code autonomous agent end-to-end on Studio Web and stream the result — without publishing it to Orchestrator. Use this to test an agent against real inputs during iteration. `uip agent debug` **uploads the agent's enclosing solution** to Studio Web, starts it on the serverless debug runtime, polls to completion, and returns the agent's output.
+
+> The debug command is currently not supported for conversational agents, so only attempt to debug autonomous agents.
 
 ## Pre-flight
 
 1. **Logged in.** `uip login status --output json` returns success.
-2. **Solution resources refreshed — only if the agent has solution-level bindings.** If it uses external process/IS tools, index contexts, memory spaces, or escalations, refresh first so those declarations stay in sync with its bindings. Agents with only built-in tools (or no resources) don't need this (see [critical-rules.md](critical-rules.md) Rule 21):
+2. **Solution resources refreshed — only if the agent has solution-level bindings.** If it uses external process/IS tools, index contexts, memory spaces, or escalations, refresh first so those declarations stay in sync with its bindings. Agents with only built-in tools (or no resources) don't need this (see [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 20):
 
    ```bash
    uip solution resources refresh --solution-folder <SOLUTION_DIR> --output json
@@ -13,7 +15,7 @@ Run a low-code agent end-to-end on Studio Web and stream the result — without 
 
 ## Consent gate
 
-`uip agent debug` **executes the agent for real** — it calls its tools, escalations, and external APIs, and consumes model tokens. It also overwrites the agent's Studio Web solution. Per [critical-rules.md](critical-rules.md) Rule 8 (consent before upload/publish/deploy — debug uploads), confirm with the user before running it.
+`uip agent debug` **executes the agent for real** — it calls its tools, escalations, and external APIs, and consumes model tokens. It also overwrites the agent's Studio Web solution. Per [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 8 (consent before upload/publish/deploy — debug uploads), confirm with the user before running it.
 
 ## Debug — controlled end-to-end run
 
@@ -53,3 +55,4 @@ uip traces spans get <TraceId> --output json
 
 - **Never use `uip agent debug` as a validation step.** Use `uip agent validate` for correctness; debug is for end-to-end execution.
 - **Don't skip `uip solution resources refresh` before debug when the agent has solution-level bindings** (external tools, IS, indexes, memory spaces, escalations). Stale declarations cause runtime binding failures even when `agent.json` is correct. Agents with only built-in tools don't need it.
+- **Never attempt `uip agent debug` for low-code conversational agents.** The debug command for conversational agents is not yet supported.

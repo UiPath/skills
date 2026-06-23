@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelMultiReportProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Sequential Modern Use Excel File cards against two different .xlsm workbooks with Read Formatting=True (COM-forcing), without an outer Excel Process Scope. The first card's EXCEL.EXE terminates after the body completes; the second card hits RPC_E_DISCONNECTED attempting to reuse the apartment. Exercises the COM/RPC-across-scopes branch of the excel-application-card-failures playbook.",
+  "MainFile": "Main.xaml"
+}
