@@ -8,16 +8,6 @@ description: >
   Phase D / SDD generation only).
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 
-agent:
-  # type is the discriminator coder_eval needs to accept sdk_options; model,
-  # allowed_tools, etc. still inherit from the experiment via field-merge.
-  type: claude-code
-  # Cap per-turn extended thinking so the agent writes the tasks file instead of
-  # deliberating the whole derivation as thinking tokens. Keeps the turn short —
-  # see the Master-Project SDD turn-budget finding (run 28012844870).
-  sdk_options:
-    max_thinking_tokens: 10000
-
 run_limits:
   expected_turns: 12
   # Lane A only derives tasks from an existing SDD (no full SDD authoring), so a
@@ -36,9 +26,11 @@ initial_prompt: |
   A Solution Design Document already exists at `vendor-payment-sync-sdd.md` in
   the current directory. It carries a populated `## Planner Handoff` header.
 
-  Derive the implementation task list from this SDD: read the handoff header and
+  Load the uipath-planner skill and follow its PDD-driven (Lane A) workflow to
+  derive the implementation task list from this SDD: read the handoff header and
   the project structure, then produce the task breakdown that routes each piece
-  of work to the right specialist skill.
+  of work to the right specialist skill, using the skill's documented tasks-file
+  format.
 
   Work autonomously — do NOT ask any questions, do NOT re-design or rewrite the
   SDD, and do NOT build or scaffold any project. Your only deliverable is the
@@ -73,20 +65,19 @@ success_criteria:
     pass_threshold: 0.8
 
   - type: file_contains
-    description: "Tasks file carries the PDD-driven header fields"
+    description: "Tasks file references its source SDD and carries the autonomy mode"
     path: "vendor-payment-sync-tasks.md"
     includes:
-      - "Source SDD"
-      - "Execution autonomy"
+      - "vendor-payment-sync-sdd"
       - "autonomous"
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "A mandatory Testing task is present"
-    path: "vendor-payment-sync-tasks.md"
-    includes:
-      - "Testing"
+  - type: run_command
+    description: "A dedicated testing task is present (Testing / test case / uipath-test)"
+    command: "grep -Eiq 'testing|test case|uipath-test' vendor-payment-sync-tasks.md"
+    timeout: 10
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
