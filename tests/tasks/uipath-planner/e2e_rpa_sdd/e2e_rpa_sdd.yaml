@@ -5,7 +5,6 @@ description: >
   SDD with all template sections populated. A Python check script validates
   structural completeness and content quality.
 tags: [uipath-planner, e2e, lifecycle:generate]
-max_iterations: 1
 
 run_limits:
   expected_turns: 16
@@ -26,7 +25,8 @@ initial_prompt: |
 
   Important:
   - Do NOT attempt to create a UiPath project or run any `uip` commands.
-  - Your only deliverable is the SDD markdown file.
+  - Your only deliverable is the SDD markdown file, saved as
+    `employee-onboarding-data-entry-sdd.md` in the current directory.
 
   --- BEGIN PDD ---
 
