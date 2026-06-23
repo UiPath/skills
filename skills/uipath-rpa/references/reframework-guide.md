@@ -108,7 +108,7 @@ Counter semantics — `MaxRetryNumber` (per transaction, resets per item) vs `Ma
 ## Configuration Management
 
 - Store all configurable values in `Config.xlsx` — three sheets: `Settings` (key-value, edited per environment), `Constants` (rarely change), `Assets` (Orchestrator asset names, fetched at runtime).
-- Sensitive values (credentials, API keys, tokens) → **Orchestrator Assets**, never `Config.xlsx` cell values.
+- Sensitive values (credentials, API keys, tokens) → **Orchestrator Assets**, never `Config.xlsx` cell values (Common Rule 5a). Retrieval forms, `SecureString` handling, log masking: [orchestrator-resources-guide.md](orchestrator-resources-guide.md).
 - Asset names on the Assets sheet must match Orchestrator exactly (case-sensitive).
 - Config values come back as `String` — convert explicitly: `CInt(in_Config("MaxRetryNumber"))`, `CDate(in_Config("Deadline"))`.
 - Guard missing keys: check `in_Config.ContainsKey(<name>)` or set defaults before first read.
