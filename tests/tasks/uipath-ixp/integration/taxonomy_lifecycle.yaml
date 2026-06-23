@@ -21,15 +21,11 @@ sandbox:
       path: ../_shared/fixtures
 
 initial_prompt: |
-  I want to reshape an invoice project's taxonomy. Use the tenant I'm already
-  signed into (check I'm logged in; don't re-authenticate). Create a fresh project
-  and import the taxonomy from `./fixtures/taxonomy.json`.
-  The taxonomy is the ONLY thing to import here — do NOT label or train, and don't
-  do anything else with the documents. (Creating the project still needs the
-  `./fixtures/` folder because the `projects create` command requires a folder
-  with at least one document and uploads them as part of creating the project —
-  that's the only reason the sample invoices are there; ignore them once the
-  project exists.)
+  I want to set up an invoice project with a specific taxonomy and then reshape it.
+  Use the tenant I'm already signed into (check I'm logged in; don't re-authenticate).
+  Create the project using the taxonomy in `./fixtures/taxonomy.json` (not an
+  auto-suggested one). I only care about the taxonomy structure here, so don't
+  label or train anything.
 
   Then make these exact edits, checking after each that it took:
   - Add a new field group "Charges" with two fields, "Discount" and "Late Fee" —
