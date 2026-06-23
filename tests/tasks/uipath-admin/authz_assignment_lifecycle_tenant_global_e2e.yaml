@@ -18,11 +18,10 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  My account needs the built-in global template role "Tenant Administrator",
-  which is available across every tenant in the organization. Exercise the
-  create, list, and delete commands: look the role up by name, create the
-  assignment, list my assignments to confirm it appears, then delete the
-  assignment and list again to confirm it's gone.
+  My account needs the built-in global template role "Tenant
+  Administrator", which is available across every tenant in the
+  organization. Assign it to me, confirm the assignment is there, then
+  remove it and confirm it's gone.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be

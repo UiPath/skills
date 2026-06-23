@@ -124,7 +124,7 @@ uip ixp labellings confirm <project-name> <document-id> \
 
 **Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 12. If IXP predicted a wrong value, omit the field entirely (don't list it).
 
-Use `labellings mark-missing` only as a fallback when `confirm --fields` is a no-op for a field you expected it to handle — typically a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain). Verify by re-running `labellings get-predictions <project-name> <document-id>` and checking whether the field appears in the Fields[] array: if yes, `confirm --fields` is the right tool; if no, `mark-missing` reaches the stale annotation that `confirm` can't.
+Use `labellings mark-missing <project-name> <document-id> --fields <ids>` to record a genuinely-missing field. It marks the listed fields directly, so it also handles the case where `confirm --fields` no-ops — a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain), which `confirm` can't reach. Either records the missing marker; only do so when `get-predictions` shows IXP predicted no value for the field — never to override a wrong prediction.
 
 **Per-occurrence confirm for repeatable groups.** When a repeatable group's verdicts differ across occurrences (some lines correct, some not), `confirm --fields a7c3e9105f2b4d86` is the wrong shape — it confirms `a7c3e9105f2b4d86` in **every** occurrence, including the wrong ones. Target each correct occurrence by index:
 

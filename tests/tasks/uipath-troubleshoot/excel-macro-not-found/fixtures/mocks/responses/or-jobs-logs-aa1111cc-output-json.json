@@ -1,0 +1,76 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa1111cc-001",
+      "JobKey": "aa111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111cc-002",
+      "JobKey": "aa111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelMacroProcess] Starting daily import — running macro RunImport on C:\\Robot\\Data\\sales-macro.xlsm",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111cc-003",
+      "JobKey": "aa111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: sales-macro.xlsm — workbook opened",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111cc-004",
+      "JobKey": "aa111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.110Z",
+      "Message": "Execute Macro: RunImport — enumerating VBA modules in workbook",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111cc-005",
+      "JobKey": "aa111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.310Z",
+      "Message": "Execute Macro: RunImport — VBA modules: ['Module1.ProcessData', 'Module2.UpdateReport']",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111cc-006",
+      "JobKey": "aa111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:02.510Z",
+      "Message": "Execute Macro: RunImport — dispatching macro via COM (Application.Run 'RunImport')",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa1111cc-007",
+      "JobKey": "aa111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:02.802Z",
+      "Message": "Execute Macro: RunImport — System.Runtime.InteropServices.COMException: Cannot run the macro 'RunImport'. The macro may not be available in this workbook or all macros may be disabled.",
+      "ProcessName": "ExcelMacroProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

@@ -10,7 +10,13 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Add user alice@example.com to the "Automation Users" group.
+  Add user alice@example.com to the "Automation Users" group. Run
+  these steps in order:
+  1. Resolve the user: `uip admin users list --search alice --output json`
+  2. Find the group: `uip admin groups list --output json`
+  3. Add the user: `uip admin groups members add <group-id> --user-ids <user-id> --output json`
+
+  If a command fails, move on to the next — use placeholder IDs.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be

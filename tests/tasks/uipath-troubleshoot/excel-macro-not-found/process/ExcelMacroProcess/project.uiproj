@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelMacroProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Execute Macro with MacroName 'RunImport' that doesn't exist in the workbook's VBA project. Exercises the macro-not-found branch of the execute-macro-failures playbook.",
+  "MainFile": "Main.xaml"
+}

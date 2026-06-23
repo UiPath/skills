@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-22T05:52:28Z",
-  "cli_version": "1.197.0-alpha.20260619.7595",
+  "generated_at": "2026-06-23T05:25:02Z",
+  "cli_version": "1.197.0-alpha.20260622.7610",
   "verbs": [
     "admin",
     "admin audit",
@@ -1188,6 +1188,13 @@
     "tm testcases list-testsets",
     "tm testcases remove",
     "tm testcases run",
+    "tm testcases steps",
+    "tm testcases steps add",
+    "tm testcases steps delete",
+    "tm testcases steps get",
+    "tm testcases steps list",
+    "tm testcases steps move",
+    "tm testcases steps update",
     "tm testcases unlink-automation",
     "tm testcases update",
     "tm testsets",

@@ -36,26 +36,18 @@ description: >
 tags: [uipath-admin, e2e, mode:operate, audit, export, scope-org, real-artifact]
 
 initial_prompt: |
-  Export ORGANIZATION-level audit events (memberships, license changes,
-  tenant lifecycle) for the single UTC day **2 days ago** as day-wise
-  JSON files under the ./audit-org-window base directory in the current
-  working directory (the CLI creates a uniquely-named subfolder inside it).
-  Resolve the date with `date -u -d '2 days ago' +%Y-%m-%d`
-  so the window slides with the run date — use the same value for both
-  `--from-date` and `--to-date`.
+  Export organization-level audit events (memberships, license changes,
+  tenant lifecycle) for the single UTC day 2 days ago as day-wise JSON
+  files under the ./audit-org-window base directory in the current
+  working directory. Resolve the date with
+  `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the
+  run date — use the same resolved value for both the start and end of
+  the window.
 
   Important:
-  - The `uip` CLI is available and connected via env-var auth to a
-    real tenant. The export should produce a real folder of JSON files
-    at the requested path.
-  - Use the canonical `--from-date YYYY-MM-DD` / `--to-date YYYY-MM-DD`
-    bounds (no inline `T00:00:00Z` for these flags — the CLI treats
-    them as whole-day boundaries). json is the default format;
-    `--output-path` is a base directory — the CLI creates a uniquely-named
-    `audit_<from>_<to>_<generated-at>` subfolder inside it.
-  - The 2-days-ago boundary preserves the >48h LTS-lag buffer.
-  - This is ORG scope, not tenant. Do NOT pass `--tenant-id` (org
-    silently ignores it).
+  - The `uip` CLI is available and connected via env-var auth to a real
+    tenant. The export should produce a real folder of JSON files at the
+    requested path.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

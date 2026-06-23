@@ -1,0 +1,76 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa3333cc-001",
+      "JobKey": "aa333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T10:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelClientReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa3333cc-002",
+      "JobKey": "aa333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T10:00:01.418Z",
+      "Message": "[ExcelClientReportProcess] Writing client metrics to C:\\Robot\\Data\\client-report.xlsx",
+      "ProcessName": "ExcelClientReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa3333cc-003",
+      "JobKey": "aa333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T10:00:01.910Z",
+      "Message": "Invoke: ComputeClientMetrics.xaml — returned dtClientMetrics with 89 rows, 6 columns (ClientId, ClientName, Revenue, ChurnRisk, NPSScore, RenewalDate)",
+      "ProcessName": "ExcelClientReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa3333cc-004",
+      "JobKey": "aa333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T10:00:02.210Z",
+      "Message": "Use Excel File: client-report.xlsx — opened workbook (OpenXML provider). Package version: UiPath.Excel.Activities 2.24.7 (>= 2.23.4: SensitivityLabel and SensitivityOperation properties available).",
+      "ProcessName": "ExcelClientReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa3333cc-005",
+      "JobKey": "aa333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T10:00:02.510Z",
+      "Message": "Use Excel File: client-report.xlsx — Microsoft Purview sensitivity label detected on workbook: 'Confidential - Client Data' (label ID: 8c2f3a4d-1234-5678-abcd-a17000c11e001). This label requires programmatic acknowledgement before write operations.",
+      "ProcessName": "ExcelClientReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa3333cc-006",
+      "JobKey": "aa333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T10:00:02.810Z",
+      "Message": "Use Excel File: client-report.xlsx — card property inspection: SensitivityLabel=<unset>, SensitivityOperation=<unset>. Both properties are required for write operations against labeled workbooks under v2.23.4+.",
+      "ProcessName": "ExcelClientReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa3333cc-007",
+      "JobKey": "aa333333-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-30T10:00:04.602Z",
+      "Message": "Use Excel File: client-report.xlsx — UiPath.Excel.BusinessException: The workbook is protected by a Microsoft Purview sensitivity label ('Confidential - Client Data') that requires explicit handling. The SensitivityLabel and SensitivityOperation properties on the Use Excel File activity are not configured.",
+      "ProcessName": "ExcelClientReportProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

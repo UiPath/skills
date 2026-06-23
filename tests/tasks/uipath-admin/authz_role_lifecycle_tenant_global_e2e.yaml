@@ -24,24 +24,20 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Set up a reusable read-only role template called "AdminPageViewerGlobal_clie2e"
-  that can be assigned in every tenant of our organization — a template
-  not bound to any single tenant. It should grant view-only access to the
-  Administration page (read-only admin-page access, nothing else).
+  Set up a reusable read-only role template called
+  "AdminPageViewerGlobal_clie2e" that can be assigned in every tenant of
+  our organization — a template not bound to any single tenant. It should
+  grant view-only access to the Administration page (read-only
+  admin-page access, nothing else).
 
-  Walk the full lifecycle, exercising the create, get, update, and delete
-  commands:
-    1. First confirm no role named "AdminPageViewerGlobal_clie2e" already
-       exists, then create it.
-    2. Update it — change its description to note it is read-only.
-    3. Get the role's details so I can confirm the update.
-    4. Delete the role and confirm it's gone.
+  Create it, then update its description to note it is read-only and
+  confirm the change, and finally remove it and confirm it's gone.
 
   Important:
-  - If the `uip admin` subcommand is unavailable or a command fails, that
-    is acceptable — run each command exactly once and continue. Do NOT
-    retry, do NOT attempt to login, do NOT try to install tools, do NOT
-    troubleshoot errors.
+  - If the `uip admin` subcommand is unavailable or a command fails,
+    that is acceptable — run each command exactly once and continue. Do
+    NOT retry, do NOT attempt to login, do NOT try to install tools, do
+    NOT troubleshoot errors.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

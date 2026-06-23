@@ -2,6 +2,7 @@
 
 import glob
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -39,8 +40,17 @@ def main() -> None:
         Path(p).read_text(encoding="utf-8")
         for p in glob.glob("SlackDigestBoundaryBpmn/**/*.md", recursive=True)
     )
-    required = ["connection binding", "dynamic schemas", "bindings_v2.json", "package metadata"]
-    missing = [token for token in required if token.lower() not in notes.lower()]
+    low = notes.lower()
+    # Each blocker is satisfied by any reasonable phrasing of the concept, not a
+    # single exact bigram. "Dynamic input schema" is as correct as "dynamic
+    # schemas"; the check verifies the agent named the blocker, not its wording.
+    required = {
+        "connection binding": "connection binding" in low,
+        "dynamic schema(s)": bool(re.search(r"dynamic\s+(\w+\s+){0,2}schema", low)),
+        "bindings_v2.json": "bindings_v2.json" in low,
+        "package metadata": "package metadata" in low,
+    }
+    missing = [name for name, ok in required.items() if not ok]
     if missing:
         fail(f"boundary notes missing CLI-owned blockers: {missing}")
     require_sequence_integrity(root)
