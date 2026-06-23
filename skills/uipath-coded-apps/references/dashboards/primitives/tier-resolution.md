@@ -83,13 +83,20 @@ Import from `@/lib/time` — do NOT redeclare them:
 
 ### Drill-down detail
 
-For record-grain drill-downs: export `fetchDetail: MetricFn` in the same module AND set `"detail": true` on the metric in `intent.json`. If `detail` is absent, the detail view reuses `fetchData` (shows the chart's buckets — avoid for chart metrics).
+**Every chart metric MUST export `fetchDetail: MetricFn`** — the record-grain query for the individual rows *behind* the chart (e.g. each faulted run, each policy evaluation, each matched rule), not the chart's aggregated buckets. The build infers the drill-down from this export: it generates a clickable card + detail view automatically; you do NOT set `detail: true` on a chart.
+
+- The build **hard-fails with `CHART_DETAIL_MISSING`** when a chart module omits `fetchDetail` and the registry entry is not `noDetail` — fix it like a `METRICS_RETRY` (add the export, re-run). For cataloged charts, the registry entry's `detailRecipe` gives the exact SDK call + fields; copy it.
+- **`noDetail` charts** are the only exception: their endpoint returns only pre-aggregated data (latency percentiles, time-bucketed counts, a single distribution object), so there is no record-grain query. The build skips the detail view and the card renders non-clickable. Do NOT write `fetchDetail` for these. Opt out with `"noDetail": true` — on the **registry entry** for a T1/T2 catalog metric, or on the **metric in `intent.json`** for a T3 custom chart (which has no registry entry). Use this only when no record-grain endpoint exists; the default for a chart is to provide `fetchDetail`.
+- **KPI cards** drill down when `detail` is on AND the module exports `fetchDetail` — the card becomes clickable with a record-grain view. `detail` is on when you set `"detail": true` on the metric, OR the **cataloged KPI defaults it on** (`defaults.detail: true` for KPIs with a feasible record query — e.g. `active-agents-kpi` → the agents, `agent-success-rate` → the runs, `agent-governance-violations` → the violations). Those ship a `detailRecipe` + `detailColumns`, so the drill-down is built automatically — write the `fetchDetail` the recipe describes. To suppress a defaulted-on KPI drill-down, set `"detail": false` on the metric. A KPI with no `detail` signal links nowhere.
+
+`detailColumns` styles the detail table — set it on the metric, or inherit the registry entry's `defaults.detailColumns` (cataloged charts ship them, so the drill-down is styled with no intent.json config). See `detail-views.md`.
 
 ### Build type-check loop
 
 The build type-checks all `metrics/*.ts` modules in isolation (Stage A) before generating widgets.
 - `METRICS_PASS` — silent; build continues.
 - `METRICS_RETRY:{ files: [...], errors: [...] }` — fix the named `src/metrics/<name>.ts` file(s) and re-run. Max 2 attempts; if still failing, drop the metric. (This replaces any older retry mechanism — there is no `T3_RETRY`.)
+- `CHART_DETAIL_MISSING:{ metrics: [{ metric, module, recipe }] }` — a chart (or `detail: true` KPI) module is missing its `export const fetchDetail`. Add it to the named module (follow the `recipe`), then re-run. Treat like `METRICS_RETRY` (max 2 attempts).
 
 ---
 
@@ -338,7 +345,7 @@ export const fetchData: MetricFn = async (sdk) => {
 
 ### T3 chart with drill-down detail
 
-Intent entry (note `"detail": true`):
+Intent entry — no `detail` flag on charts; the `fetchDetail` export drives the drill-down:
 
 ```json
 {
@@ -351,7 +358,6 @@ Intent entry (note `"detail": true`):
   "headlineMode": "sum",
   "deltaPolarity": "up-bad",
   "subtitle": "Faulted jobs — last 7 days",
-  "detail": true,
   "detailColumns": [
     { "key": "processName", "label": "Process" },
     { "key": "state", "label": "State" },
@@ -361,7 +367,7 @@ Intent entry (note `"detail": true`):
 }
 ```
 
-Module at `metrics/faulted-jobs-trend.ts` (exports both `fetchData` and `fetchDetail`):
+Module at `metrics/faulted-jobs-trend.ts` — a chart **must** export both `fetchData` (the trend buckets) and `fetchDetail` (the records behind them), or the build hard-fails with `CHART_DETAIL_MISSING`:
 
 ```ts
 import type { MetricFn } from '@/lib/metric-contract'

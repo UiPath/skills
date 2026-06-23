@@ -78,8 +78,8 @@ const REGISTRY = JSON.parse(readFileSync(resolve(__dirname, 'capability-registry
  * @property {string}      [rateDen]     - rate-chart: denominator field per bucket
  * @property {string}      [columns]     - ColumnDef array literal string (tables)
  * @property {Array<{key:string,label:string,align?:string,format?:string,color?:string}>} [columnDefs] - Structured columns; compiled to formatted/coloured cells
- * @property {string}      [detailFnBody]   - Record-grain query for the chart's detail view
- * @property {Array}       [detailColumns]  - Structured columns for the detail view
+ * @property {boolean}     [detail]         - kpi-card only: opt into a record-grain drill-down (module must export fetchDetail)
+ * @property {Array}       [detailColumns]  - Structured columns for the detail view (falls back to registry defaults.detailColumns)
  * @property {string}      [detailSortKey]  - Raw field the detail table sorts on
  * @property {string}      [series]      - multi-line-chart series literal
  * @property {string}      [pivotExpression] - multi-line-chart pivot expression
@@ -153,7 +153,7 @@ const TIME_RANGE_CONSTANTS = {
 
 const KNOWN_EVENTS = new Set([
   'PREWARM_START', 'PREWARM_DONE', 'PREWARM_FAILED', 'SCAFFOLD_READY', 'ENV_WRITTEN',
-  'WIDGET_READY', 'METRICS_PASS', 'METRICS_RETRY', 'T3_FAILED', 'TSC_PASS', 'TSC_FAIL',
+  'WIDGET_READY', 'METRICS_PASS', 'METRICS_RETRY', 'CHART_DETAIL_MISSING', 'T3_FAILED', 'TSC_PASS', 'TSC_FAIL',
   'BUILD_RESULT', 'PARTIAL_BUILD_DETECTED', 'AUTH_MISSING',
   'HAND_EDIT_DETECTED', 'T2_SCHEMA_ERROR', 'INCREMENTAL_READY', 'UPGRADE_AVAILABLE', 'UPGRADE_DONE',
   'TEMPLATE_BUILD', 'EJECTED', 'EJECTED_PROJECT', 'TEMPLATE_PACKED',
@@ -349,7 +349,7 @@ export function rebuildAllWidgets(P, state, timeRange) {
     writeAtomic(join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`), content)
     info.hash = hashContent(content)
     const viewPath = join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`)
-    if (widgetLayoutGroup(info.template ?? '') === 'chart') {
+    if (widgetGetsDetailView(info.template ?? '', m, entry)) {
       writeAtomic(viewPath, generateViewFile(buildViewSpec(componentName, m, entry, timeRange)))
     } else if (existsSync(viewPath)) {
       unlinkSync(viewPath)
@@ -671,8 +671,8 @@ function applyTemplate(templateName, subs) {
 /**
  * Generate a detail view file for a widget.
  *
- * Drills to RECORD GRAIN: the view runs `detailFnBody` — the individual records
- * behind the chart (e.g. each job run), not the chart's aggregated buckets. When
+ * Drills to RECORD GRAIN: the view runs the module's `fetchDetail` export — the
+ * individual records behind the chart (e.g. each job run), not the aggregate. When
  * `detailColumns` (a compiled ColumnDef literal) is supplied, it drives the table
  * (formatted/coloured cells); otherwise columns are auto-detected at runtime.
  * `defaultSortKey` keys the initial sort on the raw field (e.g. an ISO timestamp)
@@ -963,6 +963,40 @@ export function widgetLayoutGroup(template) {
 }
 
 /**
+ * Decide whether a widget gets a generated record-grain detail view (+ route).
+ * Single source of truth for fresh build, incremental ADD/CHANGE, rebuild, and
+ * upgrade — keeps the "is this card clickable / does a view file exist" decision
+ * consistent everywhere.
+ *
+ * - Chart widgets get a detail view UNLESS opted out with `noDetail: true` — set
+ *   on the registry entry (T1/T2 catalog) OR on the metric in intent.json (T3,
+ *   which has no registry entry). Used when the endpoint returns only
+ *   pre-aggregated data, so a record drill-down would be fake. Opted-out charts
+ *   render non-clickable.
+ * - KPI cards get a detail view when `detail` is true — either set on the metric
+ *   (`detail: true` in intent.json) or defaulted on by the registry entry
+ *   (`defaults.detail: true`, for cataloged KPIs that have a feasible record-grain
+ *   query). A metric can force it off with `detail: false`. The module must export
+ *   `fetchDetail`. A KPI with no `detail` signal links nowhere.
+ * - Tables never get a chart-style view here (they use `rowLink` keyed views).
+ *
+ * @param {string} template  displayAs / registry template
+ * @param {object} [metric]  intent metric (KPI `detail`, T3 `noDetail`)
+ * @param {object|null} [entry]  registry entry (catalog `noDetail` / `defaults.detail`)
+ * @returns {boolean}
+ */
+export function widgetGetsDetailView(template, metric = {}, entry = null) {
+  if (entry?.noDetail === true || metric?.noDetail === true) return false
+  if (widgetLayoutGroup(template) === 'chart') return true
+  if (template === 'kpi-card') {
+    // Metric override wins; otherwise the registry entry may default it on for a
+    // cataloged KPI whose drill-down records are queryable.
+    return (metric?.detail ?? entry?.defaults?.detail ?? false) === true
+  }
+  return false
+}
+
+/**
  * Inject generated import and route blocks into App.tsx markers.
  * @param {string} projectPath
  * @param {string[]} viewWidgetNames - Widget names that have a generated view file
@@ -1225,23 +1259,31 @@ function columnRender(c) {
 }
 
 /**
- * Build the spec passed to generateViewFile for a chart widget's detail view.
+ * Build the spec passed to generateViewFile for a widget's detail view.
  * Shared by the fresh build and incremental ADD/CHANGE so detail views stay
- * consistent. Prefers a record-grain detailFnBody; falls back to the chart fnBody.
+ * consistent. The view always runs the module's record-grain `fetchDetail` export.
  * @param {string} componentName
  * @param {IntentMetric} metric
  * @param {object|null} entry - registry entry (for defaults)
  * @param {string} timeRange
  */
 export function buildViewSpec(componentName, metric, entry, timeRange) {
+  // Detail views show RECORD GRAIN: a chart/KPI exports `fetchData` (the
+  // aggregate the widget renders) AND `fetchDetail` (the individual records
+  // behind it). The view always runs `fetchDetail` — every chart metric is
+  // required to export it (enforced by the CHART_DETAIL_MISSING gate), and a
+  // KPI reaches this path only with `detail: true`. detailColumns fall back to
+  // the registry defaults so a cataloged metric's drill-down is styled with no
+  // intent.json config.
+  const detailColumns = metric.detailColumns ?? entry?.defaults?.detailColumns
   return {
     componentName,
     title: metric.title ?? entry?.defaults?.title ?? componentName,
     subtitle: autoSubtitle(metric, entry?.defaults ?? {}, timeRange),
     moduleSpecifier: metricModuleSpecifier(metric),
-    detailExport: metric.detail === true ? 'fetchDetail' : 'fetchData',
-    detailColumns: metric.detailColumns ? compileColumns(metric.detailColumns) : null,
-    defaultSortKey: metric.detailSortKey,
+    detailExport: 'fetchDetail',
+    detailColumns: detailColumns ? compileColumns(detailColumns) : null,
+    defaultSortKey: metric.detailSortKey ?? entry?.defaults?.detailSortKey,
     detailView: metric.detailView ?? entry?.defaults?.detailView ?? null,
   }
 }
@@ -1270,10 +1312,14 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
   // ── Chart path ─────────────────────────────────────────────────────────────
   if (CHART_TYPES.has(displayAs)) {
     const moduleSpecifier = metricModuleSpecifier(metric)
+    // noDetail charts (Insights endpoints with only pre-aggregated data) get NO
+    // drill-down: an empty DETAIL_ROUTE makes the template render a non-clickable
+    // card (no cursor-pointer, no ViewAllLink). Step 5a then skips the view file.
+    const hasDetail = widgetGetsDetailView(displayAs, metric, registryEntry)
     const spec = {
       componentName,
       template:          displayAs,
-      detailRoute:       metric.detailRoute ?? `/${componentName.toLowerCase()}`,
+      detailRoute:       hasDetail ? (metric.detailRoute ?? `/${componentName.toLowerCase()}`) : '',
       icon:              iconName,
       title:             metric.title,
       subtitle:          autoSubtitle(metric, defaults, timeRange),
@@ -1329,6 +1375,12 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
   const deltaPolarity = metric.deltaPolarity ?? defaults.deltaPolarity ?? 'neutral'
   const rowLinkKey   = metric.rowLink?.key ?? defaults.rowLink?.key ?? ''
   const rowLinkRoute = rowLinkKey ? `/${componentName.toLowerCase()}` : ''
+  // KPI drill-down: a kpi-card with `detail: true` (module exports fetchDetail)
+  // becomes a clickable card that navigates to its record-grain view. Empty for
+  // a plain KPI or any table (tables drill via ROW_LINK, not the card). Step 5a
+  // generates the matching view + route when this is set.
+  const kpiDetailRoute = widgetGetsDetailView(displayAs, metric, registryEntry)
+    ? (metric.detailRoute ?? `/${componentName.toLowerCase()}`) : ''
   const defaultSortAsc = metric.defaultSortAsc === true ? 'true' : 'false'
   const emptyMessage = metric.emptyMessage ?? defaults.emptyMessage ?? 'No data'
   const subtitle     = autoSubtitle(metric, defaults, timeRange)
@@ -1348,6 +1400,7 @@ export function buildWidgetFile(metric, registryEntry = null, timeRange = '30d')
     .split('<<DELTA_POLARITY>>').join(deltaPolarity)
     .split('<<ROW_LINK_KEY>>').join(rowLinkKey)
     .split('<<ROW_LINK_ROUTE>>').join(rowLinkRoute)
+    .split('<<KPI_DETAIL_ROUTE>>').join(kpiDetailRoute)
     .split('<<DEFAULT_SORT_ASC>>').join(defaultSortAsc)
     .split('<<EMPTY_MESSAGE>>').join(emptyMessage)
   return content
@@ -1583,6 +1636,36 @@ async function runDashboardBuild(intent, intentPath) {
     }
     emit('METRICS_PASS')
 
+    // Step 3.6 — Enforce record-grain detail. Every widget that exposes a
+    // drill-down (a chart not opted out via registry `noDetail`, or a kpi-card
+    // with `detail: true`) MUST export `fetchDetail` — the record-grain query
+    // behind the aggregate. Without it the detail view would re-table the chart's
+    // own buckets and add no information. This is the chart analogue of the
+    // existing T3-table-without-columns hard-fail.
+    const missingDetail = []
+    for (const metric of metrics) {
+      const isT3 = metric.tier === 'T3'
+      const { entry } = isT3 ? { entry: null } : resolveMetric(metric)
+      const displayAs = metric.displayAs ?? entry?.template ?? 'data-table'
+      if (!widgetGetsDetailView(displayAs, metric, entry)) continue
+      const rel = metric.module ?? `metrics/${metric.name}.ts`
+      const moduleSrc = readFileSync(join(metricsDestDir, basename(rel)), 'utf8')
+      if (!/export\s+const\s+fetchDetail\b/.test(moduleSrc)) {
+        missingDetail.push({ metric: metric.name, module: rel, recipe: entry?.detailRecipe })
+      }
+    }
+    if (missingDetail.length > 0) {
+      emit('CHART_DETAIL_MISSING', { metrics: missingDetail, intentPath })
+      log(
+        `⚠ These widgets expose a drill-down but their modules don't export "fetchDetail" ` +
+        `(the record-grain query behind the chart). Add it to each module (see the metric's ` +
+        `detailRecipe), or — for a chart that genuinely has no record data — set "noDetail": true ` +
+        `(on the registry entry for a catalog metric, or on the metric in intent.json for a T3 custom chart):\n` +
+        missingDetail.map(m => `  • ${m.metric} (${m.module})${m.recipe ? `\n      ${m.recipe}` : ''}`).join('\n'),
+      )
+      process.exit(2)
+    }
+
     // Step 4 — Resolve + generate widgets
     const widgetHashes = {}
     const widgetMeta = []    // { componentName, template }
@@ -1615,10 +1698,11 @@ async function runDashboardBuild(intent, intentPath) {
       widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: metric.tier, metric: metric.name, template: displayAs, module: metric.module ?? `metrics/${metric.name}.ts`, intentMetric: metric }
       widgetMeta.push({ componentName, template: displayAs })
 
-      // Detail views: only chart widgets emit navigate/ViewAllLink (the shell
-      // template for KPI/table links nowhere), so only charts need a generated
-      // view + route — any tier. Columns are auto-detected at runtime in the view.
-      if (widgetLayoutGroup(displayAs) === 'chart') {
+      // Detail views: charts (unless registry `noDetail`) and kpi-cards with
+      // `detail: true` get a generated record-grain view + route — any tier. The
+      // view runs `fetchDetail`; columns come from detailColumns (intent or
+      // registry defaults), else auto-detected at runtime.
+      if (widgetGetsDetailView(displayAs, metric, entry)) {
         widgetSpecs[componentName] = buildViewSpec(componentName, metric, entry, timeRange)
       }
 
@@ -1858,10 +1942,20 @@ async function runIncrementalEdit(editIntent, intentPath) {
     }
     if (o.op === 'ADD') {
       if (!o.metric?.name) { violations.push(`ops[${i}] ADD: missing metric`); continue }
-      try { resolveMetric(o.metric) } catch (e) { violations.push(`ops[${i}] ADD "${o.metric.name}": ${e.message}`) }
+      let addEntry = null
+      try { addEntry = resolveMetric(o.metric).entry } catch (e) { violations.push(`ops[${i}] ADD "${o.metric.name}": ${e.message}`) }
       const rel = o.metric.module ?? `metrics/${o.metric.name}.ts`
-      if (!existsSync(join(intentDir, rel))) {
+      const addFrom = join(intentDir, rel)
+      if (!existsSync(addFrom)) {
         violations.push(`ops[${i}] ADD "${o.metric.name}": metric module not found — write ${rel} exporting "fetchData"`)
+      } else if (
+        widgetGetsDetailView(o.metric.displayAs ?? addEntry?.template ?? 'data-table', o.metric, addEntry) &&
+        !/export\s+const\s+fetchDetail\b/.test(readFileSync(addFrom, 'utf8'))
+      ) {
+        violations.push(
+          `ops[${i}] ADD "${o.metric.name}": drill-down widget needs a record-grain "fetchDetail" export in ${rel}` +
+          `${addEntry?.detailRecipe ? ` — ${addEntry.detailRecipe}` : ''} (or set "noDetail": true on the metric/registry entry for a chart with no record data)`,
+        )
       }
     }
   }
@@ -1883,8 +1977,9 @@ async function runIncrementalEdit(editIntent, intentPath) {
     writeAtomic(widgetPath, widgetContent)
     state.widgets = state.widgets ?? {}
     state.widgets[componentName] = { hash: hashContent(widgetContent), tier, metric: metric.name, template: addTemplate, module: metric.module ?? `metrics/${metric.name}.ts`, intentMetric: metric }
-    // Chart widgets emit a drill-down link — generate the detail view so the route resolves
-    if (widgetLayoutGroup(addTemplate) === 'chart') {
+    // Charts (unless noDetail) and kpi-cards with detail:true get a record-grain
+    // detail view so the drill-down route resolves.
+    if (widgetGetsDetailView(addTemplate, metric, entry)) {
       const viewContent = generateViewFile(buildViewSpec(componentName, metric, entry, timeRange))
       writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
     }
@@ -1913,9 +2008,10 @@ async function runIncrementalEdit(editIntent, intentPath) {
     writeAtomic(widgetPath, widgetContent)
     const changeTemplate = metricRef.displayAs ?? entry?.template ?? stored?.template ?? 'data-table'
     if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name, template: changeTemplate, module: metricRef.module ?? `metrics/${metricRef.name}.ts`, intentMetric: metricRef }
-    // Keep the detail view in sync: regenerate for charts, drop it if no longer a chart
+    // Keep the detail view in sync: regenerate when the widget drills down
+    // (chart unless noDetail, or kpi-card with detail:true), drop it otherwise.
     const changeViewPath = join(P, 'src', 'dashboard', 'views', `${target}View.tsx`)
-    if (widgetLayoutGroup(changeTemplate) === 'chart') {
+    if (widgetGetsDetailView(changeTemplate, metricRef, entry)) {
       const viewContent = generateViewFile(buildViewSpec(target, metricRef, entry, delta?.timeRange ?? timeRange))
       writeAtomic(changeViewPath, viewContent)
     } else if (existsSync(changeViewPath)) {

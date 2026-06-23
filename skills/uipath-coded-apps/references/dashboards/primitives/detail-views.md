@@ -6,9 +6,13 @@ A chart widget drills down to a detail view at `/<foo>`. The view shows **indivi
 
 For each chart widget `Foo`, the build generates `src/dashboard/views/FooView.tsx` and registers its route in `App.tsx`.
 
-Detail views are generated for **chart widgets** (`line-chart`, `area-chart`, `bar-chart`, `donut-chart`, `multi-line-chart`, `rate-chart`) — any tier — at `/<foo>`, and for **tables with a `rowLink`** (see below). KPI cards and plain tables (no `rowLink`) link nowhere and show their value/rows in place.
+Detail views are generated for:
 
-> **Contract:** every widget that emits a navigation link must have a generated view + route. Never emit `navigate()` / `ViewAllLink` / `onRowClick` without the build generating the matching view.
+- **Chart widgets** (`line-chart`, `area-chart`, `bar-chart`, `donut-chart`, `multi-line-chart`, `rate-chart`) — any tier — at `/<foo>`. Every chart module **must** export `fetchDetail` (the build hard-fails with `CHART_DETAIL_MISSING` otherwise) **unless** its registry entry sets `"noDetail": true`. A `noDetail` chart (endpoint returns only pre-aggregated data) gets no view and renders a non-clickable card.
+- **KPI cards with `detail: true`** — at `/<foo>`. The card becomes clickable (cursor-pointer + a "View all" link) and the module must export `fetchDetail`. A plain KPI (no `detail`) links nowhere.
+- **Tables with a `rowLink`** (see below). A plain table (no `rowLink`) links nowhere and shows its rows in place.
+
+> **Contract:** every widget that emits a navigation link must have a generated view + route, and vice-versa — `widgetGetsDetailView()` in the build is the single decision. Never emit `navigate()` / `ViewAllLink` / `onRowClick` without the build generating the matching view.
 
 ## Row-click drill-down (tables)
 
@@ -20,10 +24,10 @@ A `data-table`/`ranked-table` metric with `rowLink: { key: "<rowField>" }` becom
 
 ## Record grain — the detail must add information
 
-The chart's `fnBody` returns **aggregated buckets** (e.g. `{ date, count }`). A detail view that re-tables those buckets adds nothing. So a metric supplies a separate record-grain query:
+The chart's `fetchData` returns **aggregated buckets** (e.g. `{ date, count }`). A detail view that re-tables those buckets adds nothing. So the module supplies a separate record-grain query:
 
-- **`detailFnBody`** — fetches the individual records (e.g. each faulted job: `{ processName, state, createdTime, ... }`). The view runs this, not the chart's aggregate. If omitted, it falls back to the chart's `fnBody` — which only restates the buckets, so **always provide `detailFnBody` for charts**.
-- **`detailColumns`** — `{ key, label, align?, format?, color? }[]`. `format`: `number` | `percent` | `duration` | `timeAgo` | `text`; `color`: `goodHigh` | `goodLow`. The build compiles these into formatted/coloured `render` functions. If omitted, columns are auto-detected from the first row at runtime (`autoColumns`) — workable but generic.
+- **`fetchDetail: MetricFn`** (in the same module) — fetches the individual records (e.g. each faulted job: `{ processName, state, createdTime, ... }`). The view runs this, not the chart's aggregate. It is **required** for every chart (and `detail: true` KPI); the build hard-fails with `CHART_DETAIL_MISSING` if it is missing and the registry isn't `noDetail`. For cataloged metrics the registry entry's `detailRecipe` gives the exact SDK call.
+- **`detailColumns`** — `{ key, label, align?, format?, color? }[]`. `format`: `number` | `percent` | `duration` | `timeAgo` | `text`; `color`: `goodHigh` | `goodLow`. The build compiles these into formatted/coloured `render` functions. Set on the metric, or inherit the registry entry's `defaults.detailColumns` (cataloged charts ship them). If neither is present, columns are auto-detected from the first row at runtime (`autoColumns`) — workable but generic.
 - **`detailSortKey`** — the raw field to sort on (e.g. ISO `createdTime`). Render a friendly label in the column but sort on the raw value so chronological order is correct.
 
 ## toRows() — safe array extraction
@@ -45,16 +49,16 @@ A detail view can render multiple sub-widgets via an optional `detailView: { wid
 > `assets/scripts/capability-registry.json` for a `multi-line-chart` (Pass vs Matched by hook) + `donut-chart`
 > + `ranked-table` + `data-table` in one view.
 
-The detail fetch (`fetchDetailByKey` for `rowLink`, `fetchDetail` for `detail: true`) must return a **named-source map** `{ rows, byHook, byRule, … }` whose keys match each sub-widget's `source`. A bare array = legacy single-table behaviour (the view normalizes `array → { rows }`).
+The detail fetch (`fetchDetailByKey` for `rowLink`, `fetchDetail` for a `detail: true` chart/KPI) must return a **named-source map** `{ rows, byHook, byRule, … }` whose keys match each sub-widget's `source`. A bare array = legacy single-table behaviour (the view normalizes `array → { rows }`).
 
 Charts render via presentational components in `@/dashboard/charts` (`Donut` / `Bars` / `TrendArea` / `MultiLine`); tables via `RecordsTable`. Each sub-widget renders its own EmptyState when its `source` is empty.
 
-`detailView` is valid only on a metric with `rowLink.key` or `detail: true`.
+The RICH multi-widget `detailView` is valid only on a metric with `rowLink.key` (table) or `detail: true` (chart/KPI). A **basic** chart drill-down (single records table) needs only `fetchDetail` — no `detailView` and no `detail` flag.
 
 ## Anti-patterns
 
-- **Never** ship a chart detail view backed by the chart's aggregate `fnBody` — supply `detailFnBody` so the drill-down shows records.
+- **Never** ship a chart detail view backed by the chart's aggregate `fetchData` — export `fetchDetail` so the drill-down shows records. The build hard-fails (`CHART_DETAIL_MISSING`) if you forget; the only opt-out is a registry `noDetail` chart.
 - **Never** sort a time column on its rendered label — key the sort on the raw ISO field via `detailSortKey`.
 - **Never** emit `navigate()` / `ViewAllLink` from a widget the build won't generate a view for.
-- **Never** declare `detailView` on a metric without `rowLink.key` or `detail:true` — the build rejects it.
+- **Never** declare the rich `detailView` on a metric without `rowLink.key` or `detail:true` — the build rejects it.
 - **Never** return an aggregate-only array when `detailView` declares chart sources — return the named-source map so each sub-widget has data.
