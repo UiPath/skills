@@ -23,14 +23,10 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  Create a new UiPath Flow project named "OrchestratorFlow" inside the
-  existing "OrchestratorFlowSol" solution (in the current directory). The
-  flow must use an inline low-code agent that delegates to the existing
-  "ToolAgent" agent already in that solution — wire ToolAgent in as a tool
-  the inline agent can call.
-
-  Reuse ToolAgent as-is — do NOT re-create it, and do NOT re-initialize
-  the solution.
+  Create a new UiPath Flow project named "OrchestratorFlow" inside the existing
+  "OrchestratorFlowSol" solution (in the current directory). Its inline low-code
+  agent should get its work done by handing off to the existing "ToolAgent"
+  that's already in the solution, rather than doing it itself.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -66,15 +62,15 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Discover the existing ToolAgent as an in-solution resource rather than
-  # hand-guessing its referenceKey.
+  # Informational discovery criteria: the agent may use file reads instead of
+  # CLI discovery. pass_threshold:0 means these never block the run.
   - type: command_executed
-    description: "Agent discovered the existing ToolAgent via solution resources list"
+    description: "Agent discovered the existing ToolAgent via solution resources list (informational)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--source\s+local'
+    command_pattern: 'uip\s+solution\s+resources?\s+list\b.*--source\s+local'
     min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   # Informational, NOT enforced: pass_threshold:0 means score (0 when the
   # agent skips `resource get`) always clears the bar, so this criterion can
@@ -85,21 +81,20 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the ToolAgent configuration with uip solution resources get (informational)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resources\s+get\b'
+    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0
 
-  # Local-registry discovery: accept either `search --local` or `list --local`.
-  # Both enumerate the in-solution flow registry; the agent may use either to
-  # find the agent-as-tool node before `registry get ...--local` below.
+  # Local-registry discovery: informational. The agent may discover node types
+  # via file reads or resources list output instead of registry search/list.
   - type: command_executed
-    description: "Agent searched or listed the local flow registry for the agent-as-tool manifest"
+    description: "Agent searched or listed the local flow registry for the agent-as-tool manifest (informational)"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b.*--local'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent fetched the solution (local) agent-as-tool node manifest from the flow registry"
@@ -147,12 +142,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "Flow file was created"

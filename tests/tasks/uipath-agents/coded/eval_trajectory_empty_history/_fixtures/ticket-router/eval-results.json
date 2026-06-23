@@ -1,0 +1,8 @@
+{
+  "evaluationSetName": "Smoke Test",
+  "evaluationSetResults": [
+    {"evaluationName": "billing - double charge", "evaluationRunResults": [{"evaluatorId": "TrajectoryEvaluator", "result": {"score": 0.0}}]},
+    {"evaluationName": "technical - login fails", "evaluationRunResults": [{"evaluatorId": "TrajectoryEvaluator", "result": {"score": 0.0}}]},
+    {"evaluationName": "billing - refund request", "evaluationRunResults": [{"evaluatorId": "TrajectoryEvaluator", "result": {"score": 0.0}}]}
+  ]
+}

@@ -14,8 +14,6 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Load the uipath-maestro-flow skill and follow its workflow exactly.
-
   PRECONDITION CHECK — do this FIRST, before any flow work:
   Run `uip is connections list --all-folders --output json` once. Group the
   enabled connections by `ConnectorKey` and find a connector with two or

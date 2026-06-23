@@ -1,0 +1,28 @@
+name: Maestro BPMN Validator
+
+on:
+  pull_request:
+    paths:
+      - 'skills/uipath-maestro-bpmn/**'
+      - '.github/workflows/test-maestro-bpmn-validator.yml'
+  workflow_dispatch:
+
+jobs:
+  validator-tests:
+    runs-on: ubuntu-latest
+    name: validator rule coverage + fixture integration
+    defaults:
+      run:
+        working-directory: skills/uipath-maestro-bpmn/validator
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run validator test suite
+        run: npm test

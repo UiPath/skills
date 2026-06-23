@@ -39,19 +39,34 @@ uip --version 2>&1
 
 Gather all context automatically. Run these substeps silently.
 
-#### 2a. Detect skill context
+#### 2a. Detect the area
 
-Check the current working directory. Stop at first match:
+The **area** (which product) becomes the title tag and a Jira label for filtering. Identify it from the last `uip <verb>` the user ran in this conversation. If no `uip` command is identifiable, fall back to the working directory, then to conversation context. Map command/signal → area:
 
-| Check | Skill context |
+| Last command / signal | Area |
 |---|---|
-| `*.flow` file exists | **Flow** |
-| `pyproject.toml` with `uipath` dependency | **Agents** |
-| `project.json` + `*.cs` and/or `*.xaml` files | **RPA** |
-| `package.json` + `.uipath/` directory | **Apps** |
-| None of the above | **Platform** |
+| `uip rpa …`, or `project.json` + `*.cs`/`*.xaml` | `RPA` |
+| `uip maestro flow …`, or `*.flow` file | `Flow` |
+| `uip maestro bpmn …`, or `*.bpmn` file | `BPMN` |
+| `uip maestro case …`, or `caseplan.json` | `Case` |
+| `uip <agent…>`, or `pyproject.toml` with `uipath` / `agent.json` | `Agents` |
+| `uip codedapp …`, or `app.config.json` / `action-schema.json` | `CodedApps` |
+| `uip api-workflow …` | `ApiWorkflow` |
+| `uip df …` | `DataFabric` |
+| `uip solution …`, or `*.uipx` | `Solution` |
+| `uip tm …` (Test Manager) | `Test` |
+| `uip tasks …` | `Tasks` |
+| `uip admin …` | `Admin` |
+| `uip gov …` | `Governance` |
+| anything else (`uip login`, generic Orchestrator / Integration Service / platform) | `Platform` |
 
 If ambiguous, infer from the conversation. Do NOT ask the user -- pick the best match.
+
+**Optional CLI vs Skill marker.** Only when it is *clearly* one or the other, add a second tag so triagers can route the report:
+- `CLI` -- a `uip` command crashed, returned wrong output, or lacked a verb/flag.
+- `Skill` -- you followed this skill's instructions and they were wrong, misleading, or missing.
+
+Omit it when the cause is mixed or unclear -- don't force a guess.
 
 #### 2b. Capture environment
 
@@ -67,13 +82,13 @@ From tools list, extract tool `name` and `version` from each row.
 
 #### 2c. Capture skill-specific troubleshooting
 
-| Skill context | What to capture | Limits |
+| Area | What to capture | Limits |
 |---|---|---|
 | **Flow** | `uip maestro flow validate <file> --output json`, `.flow` file content, directory listing | `.flow`: first 150 lines; directory: max 30 entries |
 | **RPA** (`.cs` or `.xaml`) | `project.json` dependencies, `uip rpa validate --output json`, list of workflow files (`.cs` and/or `.xaml`) | File list: max 20 files; `project.json`: dependencies section only; failing workflow: first 150 lines |
 | **Agents** | `pyproject.toml`, `bindings.json` (redact connection values), directory listing | `bindings.json`: redact all values; directory: max 30 entries |
-| **Apps** | `package.json` (name, version, dependencies only), `.uipath/` listing | `package.json`: name + version + dependencies only |
-| **Platform** | `uip login status --output json` output only | Strip tokens from output |
+| **CodedApps** | `package.json` (name, version, dependencies only), `.uipath/` listing | `package.json`: name + version + dependencies only |
+| **Other** (Platform, Solution, Admin, …) | `uip login status --output json` output only | Strip tokens from output |
 
 #### 2d. Capture the failing command
 
@@ -148,19 +163,16 @@ Otherwise, skip directly to Step 3.
 #### Title format
 
 ```
-[Product] short description
+[<Area>] short description
 ```
 
-Product names:
+- `<Area>` -- the area tag from Step 2a: `RPA`, `Flow`, `BPMN`, `Case`, `Agents`, `CodedApps`, `ApiWorkflow`, `DataFabric`, `Solution`, `Platform`, `Tasks`, `Test`, `Admin`, `Governance`.
+- Optionally add a `[CLI]` or `[Skill]` tag after the area **only when it is clearly one or the other** (Step 2a): `[<Area>] [CLI] …` or `[<Area>] [Skill] …`.
+- Do NOT put the type (Bug/Improvement) in the title -- that is the issuetype, set via `--type`.
 
-| Skill context | Title prefix |
-|---|---|
-| Flow | `[Flow]` |
-| RPA | `[RPA]` |
-| Agents | `[Agents]` |
-| Apps | `[Apps]` |
-| Platform | `[Platform]` |
-| Interact | `[Interact]` |
+Examples: `[RPA] uip rpa run fails when project.json has no dependencies` · `[Flow] [Skill] Flow skill should list IxP models before adding an extraction node`
+
+The CLI derives Jira labels from these leading `[Tag]` segments of the title, so the same tags are both visible in the title and filterable as labels -- no extra flags.
 
 #### Description body
 
@@ -179,7 +191,7 @@ Build the `--description` content:
 {The actual error message or validation output -- if available, otherwise omit this section}
 
 ## Environment
-- Skill context: {detected skill name}
+- Area: {area}
 - uip version: {version}
 - CLI tools: {name version, name version, ...}
 - OS: {os info}
@@ -206,7 +218,7 @@ Build the `--description` content:
 4. Use `-` for unordered bullet points.
 5. For numbered items within a section body, use `1.`, `2.`, etc. on their own lines. Do not escape the dots.
 6. Do NOT escape markdown characters. No `\*`, `\#`, `\-`, `\.`. Write `**bold**`, not `\*\*bold\*\*`.
-7. The description MUST be plain markdown. No Jira wiki markup, no HTML, no ADF.
+7. The description MUST be plain markdown. No Jira wiki markup, no HTML, no ADF — the CLI converts this markdown to the tracker's native format (Jira wiki markup) on send, so it renders cleanly.
 8. Do NOT include the user's email in the description body. Pass it only via the `--email` flag.
 
 #### Example of a well-formatted description
@@ -225,7 +237,7 @@ When running `uip maestro flow validate` on a flow with nested loops, the CLI re
 ExpressionError: Invalid expression at unknown location — currentItem is not defined
 
 ## Environment
-- Skill context: Flow
+- Area: Flow
 - uip version: 0.1.20
 - CLI tools: docsai-tool 0.1.12
 - OS: Windows 11 Enterprise 10.0.26100
@@ -254,11 +266,11 @@ Write sanitized copies of relevant project files to a temp directory:
 mkdir -p "${TMPDIR:-${TMP:-/tmp}}/uip-feedback-attachments"
 ```
 
-Copy and sanitize files based on skill context:
+Copy and sanitize files based on the detected area:
 - Flow: the `.flow` file
 - RPA: `project.json`, the failing workflow file (`.cs` or `.xaml`)
 - Agents: `pyproject.toml`, `bindings.json` (redacted)
-- Apps: `package.json`
+- CodedApps: `package.json`
 
 Max 10 files, max 10MB each. Skip files that exceed limits.
 
@@ -269,14 +281,14 @@ Display to the user:
 ```
 **Type:** bug
 **Priority:** normal
-**Title:** [Flow] Expression error in nested loop currentItem
+**Title:** [Flow] [CLI] Expression error in nested loop currentItem
 **Description:** (first 3 lines...)
 **Attachments:** MyFlow.flow, project.json
 
 Send this to UiPath? (yes/no)
 ```
 
-The user can adjust type, priority, or title before confirming. **Never send without explicit "yes".**
+The user can adjust type, priority, or title (the title carries the area / optional CLI-or-Skill tag) before confirming. **Never send without explicit "yes".**
 
 ### Step 4 -- Send feedback
 
@@ -293,7 +305,9 @@ FEEDBACK_EOF
   --output json
 ```
 
-If an email is available from `uip login status`, include `--email "<EMAIL>"`.
+The title's leading `[Tag]` segments (the area, plus an optional `[CLI]`/`[Skill]` marker) become Jira labels automatically -- no extra flags.
+
+If an email is available from `uip login status`, include `--email "<EMAIL>"`. The CLI places it in the issue's Environment field, never in the description body.
 
 Parse the JSON output. On success, show the user a confirmation with any reference ID returned.
 

@@ -1,9 +1,0 @@
-{
-  "projectId": "Fixture.SubprocessMultiInstance",
-  "main": "subprocess-multi-instance.bpmn",
-  "contentType": "ProcessOrchestration",
-  "targetFramework": "Portable",
-  "runtimeOptions": {
-    "requiresUserInteraction": false
-  }
-}

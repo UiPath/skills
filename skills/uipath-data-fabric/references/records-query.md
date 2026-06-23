@@ -10,19 +10,33 @@ uip df records list <entity-id> --limit 50 --output json
 uip df records list <entity-id> --limit 50 --cursor <NextCursor> --output json
 ```
 
-Response: `{ TotalCount, Records, HasNextPage, NextCursor?, CurrentPage?, TotalPages? }`
+Response wrapper: `{ Result, Code: "RecordList" | "RecordQuery", Data: { Items, TotalCount, HasNextPage, NextCursor, CurrentPage, TotalPages, SupportsPageJump } }`.
 
-- Use `HasNextPage` to check if more records exist
-- Pass the `NextCursor` string value to `--cursor` to fetch the next page
+- **Records live in `Data.Items`** (array). Not `Data.Records` — the older docs used that name; the actual key the CLI emits is `Items`.
+- **`Data.NextCursor` is an object `{ "Value": "<base64-string>" }`, not a flat string.** Pass `Data.NextCursor.Value` to `--cursor` on the next call (unwrap one level). Passing the whole `NextCursor` object errors out.
+- Use `Data.HasNextPage` to check if more records exist. Stop when it's `false`.
 
 ## Pagination
 
 Offset-based under the hood. Available on both `records list` and `records query`:
 
 - `-l, --limit <number>` — page size, default `50`, min `1`. Keep constant across a sweep (changing it re-slices the offset and can skip/duplicate records).
-- `--cursor <NextCursor>` — opaque string from previous response. Pass verbatim; never hand-craft.
+- `--cursor <NextCursor.Value>` — the inner `Value` string from the previous response's `Data.NextCursor` object. Pass verbatim; never hand-craft. Do **not** pass the wrapper object.
 - `-o, --offset <number>` — non-negative record index. Rounded down to the nearest page boundary (`jumpToPage = floor(offset / limit) + 1`). **Mutually exclusive with `--cursor`** — passing both errors with *"--offset and --cursor are mutually exclusive"*.
-- Stop when `HasNextPage: false`. `CurrentPage` / `TotalPages` are informational.
+- Stop when `HasNextPage: false`. `CurrentPage` / `TotalPages` / `SupportsPageJump` are informational.
+
+## Folder scope (`--folder-key`)
+
+`records list`, `records get`, `records insert`, `records update`, `records delete`, `records query`, and `records import` all accept `--folder-key <GUID>` (CLI ≥ `1.197.0`). Required when the parent entity is folder-scoped; recommended on every destructive op. Look up the parent's folder key from `entities list --include-folders --output json` (`FolderId` per row).
+
+```bash
+uip df records list  <entity-id> --folder-key <folder-guid> --output json
+uip df records query <entity-id> --folder-key <folder-guid> \
+  --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Status","operator":"=","value":"active"}]}}' \
+  --output json
+```
+
+`--folder-key` is forwarded as `X-UIPATH-FolderKey` and threaded through to the SDK — for tenant-scoped entities it's harmless (server resolves by UUID), so passing it defensively never breaks reads.
 
 ```bash
 # Sequential sweep
@@ -137,7 +151,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response: `Data.Records` is a single row — `[{ "total": 250 }]`.
+Response: `Data.Items` is a one-row array — e.g. `[{ "Total": 250 }]`. The server **PascalCases your alias** in the response (`alias: "total"` → key `"Total"`). Read by the PascalCase key when parsing.
 
 ```bash
 # Count per group (one result row per distinct value)
@@ -146,7 +160,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response: one row per group, each with the group fields + every aggregate alias — `[{ "Status": "Open", "total": 12 }, { "Status": "Closed", "total": 5 }]`.
+Response: `Data.Items` — one row per group, each with the group fields + every aggregate alias (PascalCased) — e.g. `[{ "Status": "Open", "Total": 12 }, { "Status": "Closed", "Total": 5 }]`.
 
 ### Functions
 
@@ -209,6 +223,7 @@ Batch insert response: `{ Code: "RecordsBatchInserted", Data: { SuccessCount, Fa
 | `CHOICE_SET_SINGLE` | Integer `NumberId` | `choice-sets list-values <choice-set-id>` |
 | `CHOICE_SET_MULTIPLE` | Integer `NumberId` array | `choice-sets list-values <choice-set-id>` |
 | `RELATIONSHIP` | Target record's UUID `Id` (always — the binding `referenceFieldId` controls the join, not the stored value) | `records query <target-entity-id>` on the unique field |
+| `FILE` | **Not writable through `records insert` / `records update`** — see below | `files upload` |
 
 ```bash
 uip df records insert <entity-id> \
@@ -216,6 +231,22 @@ uip df records insert <entity-id> \
 ```
 
 Display labels, choice-value UUIDs, and non-UUID relationship values are rejected — resolve first. Reads echo the same shape.
+
+### FILE fields — never write through insert/update
+
+**Anti-pattern.** Never include a FILE-typed key in `records insert` or `records update` payload (SKILL.md Rule 6). Expected behavior: the platform silently strips FILE values — paths, base64 blobs, filenames, UUIDs, and `null` — and returns `Result: Success` with the FILE column unchanged. Do not interpret Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. To attach, replace, or clear a file, use the `files` verbs documented in [`file-attachments.md`](file-attachments.md). Required write path:
+
+```bash
+# 1. Insert the row WITHOUT the FILE column
+uip df records insert <entity-id> --body '{"title":"Q1 report"}' --output json
+#    → Data.Id is the new record's UUID
+
+# 2. Attach the file to the FILE field on that record
+uip df files upload <entity-id> <record-id> <file-field-name> \
+  --file /local/path/report.pdf --output json
+```
+
+`files upload` is both attach and replace — call it directly against the record/field whether the field is currently empty or already has a file (no need to `files delete` first). `files delete` clears the field, `files download` retrieves the binary. CSV `records import` drops `FILE` columns too — see Rule 20. Full file-attachment surface in [`file-attachments.md`](file-attachments.md).
 
 ## Update Records
 
@@ -239,8 +270,13 @@ Batch update response: `{ Code: "RecordsBatchUpdated", Data: { SuccessCount, Fai
 
 ## Delete Records
 
+Irreversible — `--yes` and `--reason` are required (server-gated, same as `entities delete` / `choice-sets delete`). Pass each record ID as a **separate positional argument**; do not space-join them inside one quoted string (the CLI then tries to parse the whole string as a single GUID and errors with *"Error converting value '… …' to type 'System.Guid'"*).
+
 ```bash
-uip df records delete <entity-id> <id1> <id2> <id3> --output json
+uip df records delete <entity-id> <id1> <id2> <id3> \
+  [--folder-key <…>] \
+  --yes --reason "<why>" \
+  --output json
 ```
 
-Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
+Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords, Reason } }` — `Reason` echoes the `--reason` value for audit logging.

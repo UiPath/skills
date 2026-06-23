@@ -12,73 +12,20 @@ run_limits:
   expected_turns: 11
   turn_timeout: 1200
 
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/bindings_queue_app_index/_fixtures/five-bindings/. ."
+    timeout: 10
+
 initial_prompt: |
-  Hand-author a UiPath coded agent project — do NOT scaffold via
-  the CLI. Inside the working directory create:
+  I have a hand-authored UiPath coded agent project in the current
+  directory. Its `main.py` makes five resource calls — a
+  queue, an app (Action Center), an index (Context Grounding), a
+  connection (Integration Service), and an mcpServer — and its
+  `bindings.json` is currently empty.
 
-  **pyproject.toml**:
-  ```toml
-  [project]
-  name = "five-bindings"
-  version = "0.0.1"
-  description = "Five binding types in one project"
-  authors = [{ name = "Test" }]
-  requires-python = ">=3.11"
-  dependencies = ["uipath"]
-
-  [dependency-groups]
-  dev = ["uipath-dev"]
-  ```
-
-  **uipath.json**:
-  ```json
-  {"projectType": "CodedAgent", "functions": {"main": "main.py:main"}}
-  ```
-
-  **entry-points.json**:
-  ```json
-  {
-    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
-    "$id": "entry-points.json",
-    "entryPoints": [
-      {
-        "filePath": "main",
-        "uniqueId": "bb111111-2222-3333-4444-555566667777",
-        "type": "agent",
-        "input": {"type": "object", "properties": {}, "required": []},
-        "output": {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]}
-      }
-    ]
-  }
-  ```
-
-  **main.py**:
-  ```python
-  from uipath.platform import UiPath
-
-  async def main(input):
-      sdk = UiPath()
-      # queue
-      await sdk.queues.create_item_async(item={"Name": "OrderQueue", "SpecificContent": {"id": "1"}})
-      # app (Action Center)
-      await sdk.tasks.create_async(title="Review", data={"id": "1"}, app_name="ReviewApp", app_folder_path="Ops")
-      # index (Context Grounding)
-      await sdk.context_grounding.retrieve_async(name="kb_index", folder_path="Shared")
-      # connection (Integration Service)
-      await sdk.connections.retrieve_async("salesforce-prod-conn")
-      # mcpServer
-      await sdk.mcp.retrieve_async(slug="weather-mcp", folder_path="Tools")
-      return {"ok": True}
-  ```
-
-  **bindings.json** (start empty):
-  ```json
-  {"version": "2.0", "resources": []}
-  ```
-
-  Then sync `bindings.json` so it reflects all five resource calls.
-  Each resource must produce one binding entry: queue, app, index,
-  connection, mcpServer.
+  Set up the project, then sync `bindings.json` so it reflects all
+  five resource calls. Each resource must produce one binding entry:
+  queue, app, index, connection, mcpServer.
 
   Do NOT publish, upload, or deploy. Do NOT pause between planning
   and implementation. Complete end-to-end in a single pass.

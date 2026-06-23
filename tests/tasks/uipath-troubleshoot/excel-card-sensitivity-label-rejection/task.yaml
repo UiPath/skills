@@ -1,0 +1,194 @@
+task_id: skill-troubleshoot-excel-card-sensitivity-label-rejection
+description: >
+  UiPath troubleshoot agent must diagnose a Modern Use Excel File
+  failure (BusinessException) where the target workbook has a
+  Microsoft Purview sensitivity label ('Confidential - Client Data')
+  applied, but the card's SensitivityLabel and SensitivityOperation
+  properties (available in v2.23.4+) are not configured. The card
+  detects the label and refuses the write before the inner Write
+  Range runs. Agent must match the activity-packages/excel-activities/playbooks/excel-application-card-failures.md
+  playbook, identify the sensitivity-label-rejection branch from the
+  label-detection + unset-properties Trace in the job logs, and
+  recommend configuring SensitivityLabel + SensitivityOperation
+  (typically Keep) — NOT the package-downgrade anti-pattern.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, excel-application-card, sensitivity-label]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `UiPath.Excel.BusinessException: The workbook is protected by a Microsoft Purview sensitivity label ('Confidential - Client Data') that requires explicit handling. The SensitivityLabel and SensitivityOperation properties on the Use Excel File activity are not configured.`
+  Pinned job key: aa333333-cccc-dddd-eeee-ffffaaaabbbb. This worked
+  in dev — the dev workbook didn't have a label. We rolled out to
+  prod and the client team labels every workbook. What's the fix?
+
+  The project source for the failing process is at ./ExcelClientReportProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the excel-application-card-failures playbook AND identified the sensitivity-label-rejection branch (Purview label on workbook + unset SensitivityLabel/SensitivityOperation on card under v2.23.4+) AND recommended configuring the two card properties — NOT the package-downgrade anti-pattern"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `UiPath.Excel.BusinessException: The workbook is protected by
+         a Microsoft Purview sensitivity label ('Confidential - Client
+         Data') that requires explicit handling. The SensitivityLabel
+         and SensitivityOperation properties on the Use Excel File
+         activity are not configured.` Pinned job key:
+         aa333333-cccc-dddd-eeee-ffffaaaabbbb. This worked in dev —
+         the dev workbook didn't have a label. We rolled out to prod
+         and the client team labels every workbook. What's the fix?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/excel-application-card-failures.md
+        because the runtime error is the canonical BusinessException
+        for branch 5 (sensitivity label rejection).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workbook 'client-report.xlsx' has a Microsoft Purview
+            sensitivity label applied: 'Confidential - Client Data'.
+          - Package version is 2.24.7 (>= v2.23.4 where the
+            SensitivityLabel / SensitivityOperation card properties
+            were introduced).
+          - The Use Excel File card has neither property set.
+          - Under v2.23.4+ semantics, write operations against
+            labeled workbooks require explicit acknowledgement
+            (Keep / Apply / Remove).
+          - The card throws at label validation, BEFORE the inner
+            Write Range runs.
+
+        The reference fix:
+          - Primary: set `SensitivityLabel` = exact label string
+            (`"Confidential - Client Data"`) AND
+            `SensitivityOperation` = `Keep` on the Use Excel File
+            card. Keep preserves the existing label during writes —
+            the most common case.
+          - Alternative: use `Apply` if the workflow's intent is to
+            CHANGE the label (requires Robot user has AIP rights to
+            apply that specific label).
+          - Verify: Robot user has AIP rights for the operation in
+            Microsoft Purview.
+          - NOT acceptable: downgrade UiPath.Excel.Activities to
+            pre-v2.23.4 (the playbook's anti-pattern #4 —
+            pre-v2.23.4 silently strips labels on write, a
+            compliance violation).
+
+        Evidence sources (in priority order):
+          1. Job logs -- the decisive four-line chain:
+             (a) "Use Excel File: client-report.xlsx — opened
+                 workbook (OpenXML provider). Package version:
+                 UiPath.Excel.Activities 2.24.7 (>= 2.23.4:
+                 SensitivityLabel and SensitivityOperation properties
+                 available)."
+             (b) "Use Excel File: client-report.xlsx — Microsoft
+                 Purview sensitivity label detected on workbook:
+                 'Confidential - Client Data' (label ID: ...)."
+             (c) "Use Excel File: client-report.xlsx — card property
+                 inspection: SensitivityLabel=<unset>,
+                 SensitivityOperation=<unset>. Both properties are
+                 required for write operations against labeled
+                 workbooks under v2.23.4+."
+             (d) The BusinessException naming the label.
+             These four lines together pin: package version supports
+             the fix, label is present, properties are not configured,
+             exception names the requirement.
+          2. Workflow source -- Main.xaml shows
+             `<uix:UseExcelFile WorkbookPath="..." ReferenceName="...">`
+             with no SensitivityLabel or SensitivityOperation
+             attributes.
+          3. The "dev workbook didn't have a label / prod workbooks
+             are labeled" framing reinforces the deployment-context
+             mismatch: dev environment didn't exercise the label
+             code path.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the excel-application-card-failures
+             playbook AND identified branch 5 (sensitivity label
+             rejection) AND named the Microsoft Purview label
+             (specifically 'Confidential - Client Data') AND
+             recommended configuring SensitivityLabel +
+             SensitivityOperation=Keep on the card AND explicitly
+             rejected the package-downgrade anti-pattern OR didn't
+             mention downgrade at all.
+        0.9  Primary diagnosis + fix correct (configure label
+             properties), but the agent didn't explicitly reject
+             the package-downgrade anti-pattern (mentioned downgrade
+             as an alternative without rejecting it).
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified the label issue but recommended only a
+             vague "configure label properties" without naming
+             SensitivityOperation=Keep specifically; OR named the
+             properties but didn't connect to the deployment-context
+             dev-vs-prod mismatch.
+        0.5  Only one dimension correct: matched the playbook but
+             classified the cause-branch incorrectly (path,
+             Excel-not-installed, RPC) without supporting evidence;
+             OR identified the label issue without matching the
+             specific playbook.
+        0.2  Agent recognized the BusinessException as label-related
+             but never connected it to the unset card properties
+             or the v2.23.4+ semantics.
+        0.0  Recommended downgrading UiPath.Excel.Activities as the
+             primary fix (the playbook's anti-pattern #4); OR
+             concluded a wrong root cause (file lock, wrong path,
+             corrupt workbook); OR recommended removing the label
+             from the workbook (a compliance violation); OR got
+             blocked / timed out.
+
+      Be substance-focused. The decisive chain is "Workbook has
+      Purview label 'Confidential - Client Data' + Card has
+      SensitivityLabel/SensitivityOperation unset + Package
+      v2.24.7 (>= 2.23.4) → card validates label vs. unset
+      properties → BusinessException." An agent that names this
+      chain AND recommends the explicit property configuration
+      (SensitivityOperation=Keep is the canonical choice) scores
+      1.0. Penalize package-downgrade recommendations
+      specifically — that's the playbook's anti-pattern that
+      silently strips labels on write.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

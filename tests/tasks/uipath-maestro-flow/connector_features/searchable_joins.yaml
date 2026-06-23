@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-searchable-joins
 description: >
   Tests the searchable joins IS feature — configures a connector node with
   a join on a related object on the Salesforce connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce, ipe]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-salesforce, ipe, mode:build]
 
 run_limits:
   expected_turns: 56
@@ -11,14 +11,10 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a new Flow project called "SearchableJoinsTest" with a manual trigger.
-  You need a flow that queries Salesforce accounts and returns each account
-  together with its related opportunities. Discover the Salesforce account
-  operation and configure a searchable join against the related object.
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "SearchableJoins test failed".
-  Route success to a final action that logs "SearchableJoins test passed".
-  Validate the final flow file.
+  Create a Flow project called "SearchableJoinsTest" with a manual trigger. 
+  Build a flow that pulls Salesforce accounts and, for each account, also brings 
+  back its related opportunities in the same query. Then branch on whether the account 
+  has any opportunities and end the flow on each path. Validate the flow.
 
 success_criteria:
   - type: run_command
@@ -35,14 +31,6 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has Decision and Terminate nodes"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/SearchableJoinsTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

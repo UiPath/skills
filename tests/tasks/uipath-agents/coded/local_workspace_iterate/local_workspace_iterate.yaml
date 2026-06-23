@@ -1,115 +1,41 @@
 task_id: skill-agent-coded-local-workspace-iterate
 description: >
-  Coded-agent iteration inside a Studio Web Local Workspace. The
-  prompt seeds an existing Local Workspace layout (`.sw-path-marker`,
-  `.local/folder.lock`, `project.uiproj`, `.env` with a sentinel
-  `UIPATH_PROJECT_ID`, and a pre-scaffolded LangGraph agent with no
-  `.venv/`). The user asks for a behavior change; the skill must
-  detect `project_state == local-workspace`, prep the venv,
-  regenerate the schema, run the agent locally — and MUST NOT scaffold
-  a new project, manually push, delete `project.uiproj`, or change
-  `UIPATH_PROJECT_ID`. Closes the entire `local-workspace` branch of
-  the One-Prompt Flow (steps 2, 3, 8) plus Local-Workspace anti-patterns.
+  Iterating on a UiPath coded agent that lives inside a Studio Web
+  Local Workspace. The project is seeded on disk as a real Local
+  Workspace (path marker, folder lock, project.uiproj, and a pre-built
+  LangGraph agent with no venv yet). The user just asks for a small
+  behavior change, so this checks the skill recognizes the Local
+  Workspace setup and edits in place: prep the venv, regenerate the
+  schema, run locally, without scaffolding a fresh project, pushing by
+  hand, or deleting project.uiproj.
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:edit, feature:framework-langgraph, feature:local-workspace]
 max_iterations: 1
 
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/local_workspace_iterate/_fixtures/GateSol ."
+    timeout: 10
+
 initial_prompt: |
-  Recreate the working tree below exactly — Studio Web has already
-  set this Local Workspace solution up; nothing here should be
-  scaffolded from scratch.
+  I've got a UiPath coded agent in `GateSol/gate-agent/` that I set up
+  through Studio Web. Right now it only tells me a `size`, but I also
+  want it to tell me a `category`: "tiny" when the value is under 5,
+  "huge" when it's over 100, and otherwise just the size it already
+  gives.
 
-  **GateSol/.sw-path-marker** — empty file
-  **GateSol/.local/folder.lock** — empty file
-  **GateSol/GateSol.uipx** — empty file
+  Make that change and run it on 2 and on 150 to check both ends work,
+  then save the results to `GateSol/gate-agent/outputs.json`.
 
-  **GateSol/gate-agent/project.uiproj** — empty file (managed by
-  Studio Web; leave it alone)
-
-  **GateSol/gate-agent/.env**:
-  ```
-  UIPATH_PROJECT_ID=ws-baseline-00000000-0000-0000-0000-000000000000
-  ```
-
-  **GateSol/gate-agent/pyproject.toml**:
-  ```toml
-  [project]
-  name = "gate-agent"
-  version = "0.0.1"
-  description = "Threshold classifier (Studio Web Local Workspace baseline)"
-  authors = [{ name = "Test" }]
-  requires-python = ">=3.11"
-  dependencies = ["uipath", "uipath-langchain"]
-
-  [dependency-groups]
-  dev = ["uipath-dev"]
-  ```
-
-  **GateSol/gate-agent/main.py**:
-  ```python
-  from typing_extensions import TypedDict
-  from langgraph.graph import StateGraph, START, END
-  from pydantic import BaseModel
-
-  class GraphInput(BaseModel):
-      value: int
-
-  class GraphOutput(BaseModel):
-      size: str
-
-  class GraphState(TypedDict):
-      value: int
-      size: str
-
-  async def classify(state: GraphState):
-      size = "small" if state["value"] < 50 else "large"
-      return {"size": size}
-
-  builder = StateGraph(GraphState, input_schema=GraphInput, output_schema=GraphOutput)
-  builder.add_node("classify", classify)
-  builder.add_edge(START, "classify")
-  builder.add_edge("classify", END)
-  graph = builder.compile()
-  ```
-
-  **GateSol/gate-agent/langgraph.json**:
-  ```json
-  {"graphs": {"agent": "./main.py:graph"}}
-  ```
-
-  **GateSol/gate-agent/entry-points.json**:
-  ```json
-  {
-    "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
-    "$id": "entry-points.json",
-    "entryPoints": [
-      {
-        "filePath": "agent",
-        "uniqueId": "ws-baseline-entrypoint",
-        "type": "agent",
-        "input": {"type": "object", "properties": {"value": {"type": "integer"}}, "required": ["value"]},
-        "output": {"type": "object", "properties": {"size": {"type": "string"}}, "required": ["size"]}
-      }
-    ]
-  }
-  ```
-
-  **GateSol/gate-agent/bindings.json**:
-  ```json
-  {"version": "2.0", "resources": []}
-  ```
-
-  The classifier currently only returns a `size` ("small" or
-  "large"). Extend it to also return a `category` field — "tiny"
-  if `value < 5`, "huge" if `value > 100`, otherwise repeat the
-  existing `size` label. After the change, run the agent twice
-  locally — once with `value=2` (expect category `tiny`) and once
-  with `value=150` (expect category `huge`) — and save both
-  outputs side-by-side to `GateSol/gate-agent/outputs.json`.
-
-  Do NOT publish, upload, or deploy. Complete end-to-end in a
-  single pass.
+  Don't publish, upload, or deploy. Just work through it to the end in
+  one go — only stop if you hit a real blocker.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent consulted the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent regenerated the schema after editing main.py"
     tool_name: "Bash"

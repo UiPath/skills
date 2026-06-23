@@ -70,22 +70,29 @@ Common `uip tm` commands organized by resource type.
 |---|---|
 | `uip tm testcases create --project-key <PROJECT_KEY> --name <TEST_CASE_NAME>` | Create a new test case in a Test Manager project. |
 | `uip tm testcases list --project-key <PROJECT_KEY>` | List all test cases in a Test Manager project. Optional `--filter <text>` to search by name/key. |
-| `uip tm testcases update --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY> --name <TEST_CASE_NAME>` | Update a test case name or description (at least one of `--name` or `--description` required). |
+| `uip tm testcases update --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY> --name <TEST_CASE_NAME>` | Update a test case name, description, precondition, or postcondition (at least one field required). |
 | `uip tm testcases delete --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | Delete a test case by its key. |
 | `uip tm testcases link-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY> --folder-key <FOLDER_KEY> --package-name <PACKAGE_NAME> --test-name <TEST_NAME>` | Link an Orchestrator package automation to a test case. |
 | `uip tm testcases unlink-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | Unlink the automation from a test case. |
 | `uip tm testcases list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` | List test entry points available in an Orchestrator folder (optional: `--package-name <PACKAGE_NAME>` to filter). |
 | `uip tm testcases list-testsets --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` | List test sets that contain a given test case. |
-| `uip tm testcases list-steps --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test steps for a test case. **Uses `--test-case-id <UUID>`, not `--test-case-key`.** |
+| `uip tm testcases steps list --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List manual test steps for a test case. **Uses `--test-case-id <UUID>`, not `--test-case-key`.** `uip tm testcases list-steps` is a supported alias. |
+| `uip tm testcases steps get --project-key <PROJECT_KEY> --step-id <UUID>` | Get a single test step by its UUID. |
+| `uip tm testcases steps add --project-key <PROJECT_KEY> --test-case-id <UUID> --description <text>` | Add a step using flags (`--description` required). |
+| `uip tm testcases steps add --project-key <PROJECT_KEY> --test-case-id <UUID> --step '<json>' [--step '<json>' ...]` | Add multiple steps by repeating `--step '<json>'`. Mutually exclusive with flag mode. **Not atomic** — earlier steps persist if a later one fails. |
+| `uip tm testcases steps update --project-key <PROJECT_KEY> --step-id <UUID>` | Update a step's fields. Only fields you pass change; the rest stay. |
+| `uip tm testcases steps move --project-key <PROJECT_KEY> --step-id <UUID> --target-position <n>` | Move a step to a new 0-based position. |
+| `uip tm testcases steps delete --project-key <PROJECT_KEY> --step-id <UUID> --yes` | Delete a step. |
 | `uip tm testcases list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | List test case log result history for a specific test case. Optional `--only-failed`, `--filter`, `--limit`, `--offset`. |
 | `uip tm testcases run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` | Start a new execution for one or more test cases. **Uses `--test-case-id <UUID>` (space-separated for multiple).** Optional `--async`, `--name`, `--folder-key`, `--robot-user-key`, `--machine-key`. |
 | `uip tm testcases add --test-set-key <TEST_SET_KEY> --test-case-keys <KEY1,KEY2,...>` | Add test cases to a test set (comma-separated keys). |
 | `uip tm testcases remove --test-set-key <TEST_SET_KEY> --test-case-keys <KEY1,KEY2,...>` | Remove test cases from a test set (comma-separated keys). |
 
-> **Three flag shapes for test case identifiers — do not interchange:**
-> - `--test-case-id <UUID>` — used by `run`, `list-steps`, `list-result-history`. Get the UUID from `uip tm testcases list --output json` (`Id` field).
+> **Flag shapes for test case and step identifiers — do not interchange:**
+> - `--test-case-id <UUID>` — used by `run`, `steps list`, `steps add`, `list-result-history`. Get the UUID from `uip tm testcases list --output json` (`Id` field).
 > - `--test-case-key <PROJECT_KEY:NUMBER>` — singular, used by `update`, `delete`, `link-automation`, `unlink-automation`, `list-testsets`. Example: `DEMO:1`.
 > - `--test-case-keys <KEY1,KEY2,...>` — **plural**, comma-separated, used by `testcases add` and `testcases remove` for bulk membership changes on a test set.
+> - `--step-id <UUID>` — used by all `steps` subcommands except `list` and `add`. Get the UUID from `steps list` (`Id` field).
 
 ### Test Sets Commands
 
@@ -214,7 +221,7 @@ Object labels are tag-style metadata applied to Requirement, TestCase, TestSet, 
 3. **Always pass `--output json`** to every `uip` command — no exceptions. Structured JSON output is what you need to reason about results reliably, even when you only plan to summarize them back to the user.
 4. **Cap retries at 3** for any failing `uip` CLI command. After 3 failures, stop and report the error to the user (see Rule — never fall back to direct REST APIs).
 5. **Handle empty results** — if a list command returns an empty array, stop and inform the user rather than proceeding with a null key.
-6. **Confirm before delete** — always confirm the target resource key with the user before running any `delete` command.
+6. **Confirm before delete** — always confirm the target resource key with the user before running any `delete` command. All delete commands require `--yes` (or `-y`) to proceed; omitting it exits without deleting.
 7. **For operations requiring folder key** — use `uip or folders list -n <folder-name> --all --output json` (run `/uipath-platform` for folder management details).
 8. **Discover before assuming** — never guess automation names, folder keys, project IDs, or test case keys. Always run the matching `list` command first (e.g., `uip tm testcases list-automations`, `uip or folders list -n <folder-name> --all`).
 9. **Narrow `list` calls server-side when the user names an entity.** When the user provides a name, key, label, or tag, check `uip tm <resource> list --help` (or `uip or <resource> list --help`) for the narrowing flag the command exposes and pass it on the `list` call. Never list all results and filter client-side — it wastes tokens and misses paginated entries. Applies to every entity across `uip tm` and `uip or`.

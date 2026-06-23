@@ -100,11 +100,11 @@ Namespaces: `UiPath.MicrosoftOffice365.Activities`
 
 ## Excel Activities
 
-Activities for automating Microsoft Excel on Windows via COM interop (modern `Excel Process Scope` activities) and OpenXML file access (legacy workbook activities). Issues here involve `Invoke VBA` failures — Trust Center security blocks, malformed external code files, entry method name mismatches, parameter marshaling errors, and COM interop instability (`0x80010100 RPC_E_SYS_CALL_FAILED` and related HRESULTs).
+Desktop Excel activities from `UiPath.Excel.Activities` — read, write, delete, and manipulate `.xlsx` / `.xls` workbooks, run VBA macros (`Invoke VBA`, `Execute Macro`), and look up ranges on the host filesystem via Excel COM (Excel installed) or the OpenXML provider (Excel not required). Issues here involve workbooks locked by other processes, sheet names not found, range parsing failures, provider-specific parsing errors on heavily formatted or sensitivity-labeled files, Trust Center macro blocks, entry-method / parameter marshaling errors, COM-interop instability (`0x80010100 RPC_E_SYS_CALL_FAILED` and related HRESULTs), and Application Scope / Use Excel File container failures. For cloud Excel via Microsoft Graph, see Microsoft Office 365 Activities above.
 
 Namespaces: `UiPath.Excel.Activities`
 
-- [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, `Invoke VBA` execution model, and common failure patterns
+- [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, providers, scopes, execution models, and common failure patterns
 - [activity-packages/excel-activities/summary.md](./activity-packages/excel-activities/summary.md) — All playbooks for Excel Activities issues
 
 ## Word Activities
@@ -115,6 +115,14 @@ Namespaces: `UiPath.Word.Activities`
 
 - [activity-packages/word-activities/overview.md](./activity-packages/word-activities/overview.md) — Package overview, `Add Picture` execution model, and common failure patterns
 - [activity-packages/word-activities/summary.md](./activity-packages/word-activities/summary.md) — All playbooks for Word Activities issues
+## Database Activities
+
+Activities for querying and modifying relational databases over ADO.NET (SQL Server, Oracle, MySQL, ODBC, OLE DB). A `DatabaseConnection` opened by `Connect to Database` / `Start Transaction` is consumed by `Execute Query`, `Execute Non Query`, `Run Command`, and the bulk/insert activities. Issues here involve null/out-of-scope connections, provider/driver mismatches after Windows-Legacy → Windows migration, SQL syntax / unsafe concatenation, query text in the connection-string field, command timeouts, `0xE0434352` CLR crashes, and using the wrong activity for the statement type.
+
+Namespaces: `UiPath.Database.Activities`
+
+- [activity-packages/database-activities/overview.md](./activity-packages/database-activities/overview.md) — Package overview, connection model, key activities, and common failure patterns
+- [activity-packages/database-activities/summary.md](./activity-packages/database-activities/summary.md) — All playbooks for Database Activities issues
 
 
 ## Playbooks

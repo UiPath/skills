@@ -1,0 +1,40 @@
+task_id: skill-platform-context-grounding-list
+description: >
+  Smoke test: the uipath-platform skill should trigger for a read-only request
+  to enumerate context-grounding (knowledge) indexes in a folder, and the agent
+  should reach for the `uip context-grounding list` CLI. Verifies the platform
+  skill owns the index-management CLI surface.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, context-grounding]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Before I wire a knowledge base into one of our agents, I want to see which
+  context-grounding indexes already exist in our "Shared" folder. Can you show
+  me what's there? I don't want to create or change anything yet — just list
+  what we already have.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-platform skill"
+    skill_name: "uipath-platform"
+    expected_skill: "uipath-platform"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed indexes with uip context-grounding list"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+context-grounding\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json (informational, non-gating)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+context-grounding\s+list\b.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0

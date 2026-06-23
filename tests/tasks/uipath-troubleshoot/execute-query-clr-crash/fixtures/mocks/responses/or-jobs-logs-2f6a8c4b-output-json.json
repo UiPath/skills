@@ -1,0 +1,31 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-22T02:05:12.180Z",
+      "Message": "TransactionExport execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-22T02:05:12.940Z",
+      "Message": "Connect to Database: opened connection 'Server=sqlprod02;Database=Finance' using provider Microsoft.Data.SqlClient"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-22T02:05:13.220Z",
+      "Message": "Execute Query: executing SQL against connection 'Server=sqlprod02;Database=Finance': SELECT * FROM Transactions"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-22T02:05:38.502Z",
+      "Message": "Execute Query: still reading result set into DataTable (no row limit set)..."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-22T02:06:48.871Z",
+      "Message": "The robot execution process terminated unexpectedly with exit code 0xE0434352. No activity-level exception was caught; the process ended while Execute Query \"Execute Query\" was materializing its result set."
+    }
+  ]
+}
