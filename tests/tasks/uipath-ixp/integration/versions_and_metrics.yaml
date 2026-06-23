@@ -5,7 +5,6 @@ description: >
   then pulls per-version metrics, compares them, and ranks the versions by score.
   The value is the computed comparison/ranking — agent reasoning over live
   metric values, which a command-shape smoke cannot produce.
-  Covers ACTV-88700 (model A/B), ACTV-88716 (compare versions), ACTV-88717 (rank by score).
 tags: [uipath-ixp, integration, mode:diagnose]
 
 run_limits:

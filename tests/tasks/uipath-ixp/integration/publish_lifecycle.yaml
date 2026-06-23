@@ -5,7 +5,6 @@ description: >
   staging/live, moving a tag to another version, unpublish, and untag — asserting
   the published flag / tag pointer actually moved (wire-effect), not just command
   shape.
-  Covers ACTV-88563: wire-effect of publish/tag/unpublish/untag.
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:

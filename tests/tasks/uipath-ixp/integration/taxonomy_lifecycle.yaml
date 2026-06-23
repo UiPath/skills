@@ -7,8 +7,6 @@ description: >
   round-trip, and delete group with an accurate cascade count. Asserts only
   CLI-observable taxonomy state (names/types/instructions) and agent judgment —
   NOT backend annotation semantics.
-  Covers ACTV-88563 (taxonomy block): change-type, group/field CRUD,
-  update-prompts + Unmatched, sensible default types, cascade counts, import round-trip.
 tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
 
 run_limits:

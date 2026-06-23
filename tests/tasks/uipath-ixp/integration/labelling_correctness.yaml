@@ -6,7 +6,6 @@ description: >
   under `--group`, unconfirm rollback, and mark-missing — each checked by
   re-reading `get-predictions`. These are CLI payload-construction behaviors, not
   backend semantics.
-  Covers ACTV-88563: per-occurrence confirm, corrections forwarding, mark-missing.
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:

@@ -6,7 +6,6 @@ description: >
   → Name via `projects list` — rather than passing the human label straight
   through. The resolution step is the integration part; smokes pass the id in the
   prompt.
-  Covers ACTV-88563: doc name/position resolution, project title→Name resolution.
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
