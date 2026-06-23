@@ -1,0 +1,41 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T04:00:00.140Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T04:00:00.305Z",
+      "Message": "Robot session is running Unattended (no interactive desktop) as UIPATH\\ROBOTUSER1 on MOCK-HOST"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T04:00:01.882Z",
+      "Message": "[Get Outlook Mail Messages] no running Outlook instance detected for the current Windows session; attempting to attach failed"
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-06-03T04:00:03.410Z",
+      "Message": "[Get Outlook Mail Messages] could not bind to the Outlook COM server (OUTLOOK.EXE not running for UIPATH\\ROBOTUSER1); verify Outlook is started and runs at the same privilege level as the Robot"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T04:00:04.061Z",
+      "Message": "[Get Outlook Mail Messages] The Outlook application is not running."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-03T04:00:04.140Z",
+      "Message": "Get Outlook Mail Messages: The Outlook application is not running.\r\nin Main.xaml\r\n    at GetOutlookMailMessages \"Get Outlook Mail Messages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\nUiPath.Mail.Exception: The Outlook application is not running. ---> System.Runtime.InteropServices.COMException: The RPC server is unavailable. (Exception from HRESULT: 0x800706BA)"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-03T04:00:04.205Z",
+      "Message": "Execution ended in: 00:00:04"
+    }
+  ]
+}

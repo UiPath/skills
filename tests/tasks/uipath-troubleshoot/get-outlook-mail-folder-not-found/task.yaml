@@ -1,0 +1,151 @@
+task_id: skill-troubleshoot-get-outlook-mail-folder-not-found
+description: >
+  UiPath troubleshooting agent must diagnose a Get Outlook Mail Messages
+  failure where the InvoiceMailReader process faults on every run with
+  "The specified folder does not exist." The MailFolder is configured as
+  the backslash nested path "Inbox\Invoices", which does not resolve under
+  the default Outlook profile on the project's Mail-package version. The
+  Outlook COM session itself is fine. Success = agent matches the
+  get-outlook-mail-failures playbook Branch 1 (folder not resolved) AND
+  recommends the absolute-path form (\\<account>\Inbox\Invoices), or
+  targeting the top-level folder, or setting Account for a shared mailbox.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My InvoiceMailReader process is faulting in Orchestrator on every run.
+  The folder is "RPA Production". Can you investigate why?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched get-outlook-mail-failures Branch 1 AND attributed the fault to the MailFolder backslash nested-path that does not resolve, recommending the absolute-path / top-level / Account fix"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      Grade only what the agent PRESENTED: its final response to the user
+      plus its tool calls. Do NOT inspect internal investigation state
+      (.local/investigations/, state.json, hypotheses.json, etc.). What the
+      agent presents IS the contract.
+
+      The user's request was:
+        "My InvoiceMailReader process is faulting in Orchestrator on every
+         run. The folder is 'RPA Production'. Can you investigate why?
+         The project source is in the current working directory."
+
+      DIMENSION A -- Correct playbook (Branch 1)
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/get-outlook-mail-failures.md
+        specifically Branch 1 (folder not resolved), because the runtime
+        error is the verbatim signature "The specified folder does not
+        exist." raised by a Get Outlook Mail Messages activity.
+        Evidence the agent should present:
+          (1) its final response names the get-outlook-mail-failures
+              playbook / Branch 1 (folder not resolved); and/or
+          (2) a tool call reading a file under
+              references/.../mail-activities/playbooks/.
+        Grade only what the agent presented (final response + tool calls);
+        do NOT inspect internal investigation state.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is that Get Outlook Mail Messages could
+        not resolve MailFolder="Inbox\Invoices" -- the backslash
+        nested-path syntax does not resolve on the project's Mail-package
+        version. The fix is the absolute path form
+        "\\<account>\Inbox\Invoices" (or target the top-level folder, or
+        set the Account field if it is a shared mailbox). The Outlook COM
+        session itself is fine -- only the folder string is wrong.
+        Evidence the agent should present:
+          (1) its final response names the folder-resolution failure AND
+              the nested-path / absolute-path fix; and
+          (2) it cited Main.xaml (the MailFolder value) and the job logs.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
+      any of these):
+        - a timeout / large folder (Branch 2);
+        - Outlook not running / a COM cast failure / a privilege mismatch
+          (Branch 3);
+        - a malformed Filter (Branch 4);
+        - Cached Exchange Mode desync (Branch 5);
+        - "the mailbox / account is wrong" without the folder-path insight;
+        - a generic connectivity error.
+
+      SCORING RUBRIC:
+        1.0  Agent (a) names the "specified folder does not exist" /
+             folder-resolution failure, (b) attributes it to the
+             MailFolder string (a backslash nested path that does not
+             resolve), AND (c) recommends the absolute-path form (or the
+             top-level folder, or the Account fix).
+        0.8  Correct playbook AND folder-resolution conclusion, but the
+             recommended fix is vague or missing one of the alternatives
+             (e.g., says "fix the folder path" without naming the
+             absolute-path form).
+        0.5  Recognized "specified folder does not exist" / Branch 1 but
+             did not attribute it to the MailFolder nested-path string or
+             offered no actionable fix.
+        0.2  Surfaced the error to the user without diagnosis, OR matched
+             a wrong branch (timeout, COM/Outlook-not-running, Filter,
+             Cached Exchange Mode), OR blamed the account/mailbox without
+             the folder-path insight.
+        0.0  Wrong cause entirely (generic connectivity), or fabricated a
+             host action it could not perform.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You have Orchestrator access and the project source in the working
+    directory. You trust the agent's expertise and are waiting for a
+    diagnosis and a fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

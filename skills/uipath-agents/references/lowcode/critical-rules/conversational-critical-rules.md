@@ -4,7 +4,7 @@ These rules are the canonical source for rules specific to low-code conversation
 
 ## Critical Rules
 
-1. **Conversational agents support only Tool-scoped guardrails.** `selector.scopes` for conversational must be `["Tool"]` only — `"Agent"` and `"Llm"` scopes are not honored by the conversational runtime. `uip agent validate` accepts other scopes but they have no runtime effect. Author conversational guardrails in each affected tool's `resources/<Tool>/resource.json` under `guardrail.policies[]` (runtime-effective) AND mirror them at `agent.json` root `guardrails[]` (Studio Web display). See [../capabilities/guardrails/guardrails.md § Conversational Support](../capabilities/guardrails/guardrails.md#conversational-support).
+1. **Conversational agents support only Tool-scoped guardrails.** `selector.scopes` for conversational must be `["Tool"]` only — `"Agent"` and `"Llm"` scopes are not available. Author conversational guardrails in each affected tool's `resources/<Tool>/resource.json` under `guardrail.policies[]` (runtime-effective) AND mirror them at `agent.json` root `guardrails[]` (Studio Web display). See [../capabilities/guardrails/guardrails.md § Conversational Support](../capabilities/guardrails/guardrails.md#conversational-support).
 
 ## What NOT to Do
 
