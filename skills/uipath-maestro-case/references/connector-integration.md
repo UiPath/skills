@@ -114,6 +114,8 @@ Spec output carries the full operation contract:
 | `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.json` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
 | `diagnostics` | Per-endpoint `fetched` / `fallbacks` |
 
+> **Splice scope.** Only `caseShape` reaches `caseplan.json` (≈5–12 KB). Rest of the envelope — `outputs`, `filter`, `identity`, `references`, `diagnostics` (≈14–49 KB total) — is discovery metadata, never written. Size the splice off `caseShape`, not the cache file.
+
 Full input-details contract (the `--input-details` JSON shape): [`case-spec-input-details.md`](case-spec-input-details.md).
 
 > **Generic-typed activities** (`Config.activityType === "Generic"`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord`). The CLI fails fast on `case spec --type activity` without `--object-name`. Discover the available objects via `uip is resources list --connector-key <connector-key>` and `uip is resources describe --connector-key <connector-key> --object-name <name>`, then pass the picked name as `--object-name` on the Phase 3 call.
