@@ -18,9 +18,12 @@ node validate-bpmn.mjs <bpmn-file> [resources]
 - Prints `VALID` and exits `0` when there are no ERROR-severity findings.
 - Otherwise lists every finding (rule code + message) and exits `1`.
 - WARNING-severity findings are printed but do not gate.
-- A strict XML well-formedness gate runs **before** the parse and exits `2` on
-  malformed input (e.g. `--` inside a comment), which `bpmn-moddle`'s lenient SAX
-  parser would otherwise accept but the canvas import rejects.
+- A strict XML well-formedness gate (sax strict mode) runs **before** the
+  `bpmn-moddle` parse and exits `2` on malformed input — unescaped `&`/`<`, `--`
+  inside a comment, mismatched tags. `bpmn-moddle`'s SAX parser is lenient and
+  would accept these, but the Studio Web canvas import rejects them, so the
+  validator must too: a safety net that is more permissive than the real import
+  gives false confidence.
 - `resources` (optional): a numeric folder id (or comma-separated release names)
   for the connection-liveness ping via the `uip` CLI. Best-effort; a missing or
   unauthenticated CLI is reported as a NOTE, never a hard failure.

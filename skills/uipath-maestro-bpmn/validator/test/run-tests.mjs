@@ -494,16 +494,24 @@ console.log("\n== CLI well-formedness gate ==");
     }
   };
   const head = '<?xml version="1.0"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"';
-  const badComment = `${head}><!-- run uip foo --connection-id x --output json --><bpmn:process id="P"/></bpmn:definitions>`;
-  const okComment = `${head}><!-- run uip foo with connection id and json output --><bpmn:process id="P"/></bpmn:definitions>`;
-  const badExit = runExit(badComment);
+  // Each malformed case is well-formedness-invalid (strict parsers / canvas import
+  // reject it) but bpmn-moddle's lenient SAX parser would accept it.
+  const malformed = {
+    '"--" inside comment': `${head}><!-- uip foo --connection-id x --><bpmn:process id="P"/></bpmn:definitions>`,
+    "unescaped ampersand": `${head}><bpmn:process id="P" name="Tom & Jerry"/></bpmn:definitions>`,
+    "&& in text (not CDATA)": `${head}><bpmn:process id="P">a && b</bpmn:process></bpmn:definitions>`,
+    "stray <": `${head}><bpmn:process id="P">a < b</bpmn:process></bpmn:definitions>`,
+  };
+  for (const [name, xml] of Object.entries(malformed)) {
+    const exit = runExit(xml);
+    const ok = exit !== 0;
+    console.log(`${ok ? "PASS" : "FAIL"}  rejects ${name} (exit ${exit})`);
+    if (!ok) failures++;
+  }
+  const okComment = `${head}><!-- uip foo with connection id and json output --><bpmn:process id="P"/></bpmn:definitions>`;
   const okExit = runExit(okComment);
-  // bad: must be rejected (non-zero); ok comment: must not be rejected for well-formedness (exit != 2)
-  const badOk = badExit !== 0;
   const okOk = okExit !== 2;
-  console.log(`${badOk ? "PASS" : "FAIL"}  "--" inside comment rejected (exit ${badExit})`);
   console.log(`${okOk ? "PASS" : "FAIL"}  clean comment not flagged for well-formedness (exit ${okExit})`);
-  if (!badOk) failures++;
   if (!okOk) failures++;
 }
 
