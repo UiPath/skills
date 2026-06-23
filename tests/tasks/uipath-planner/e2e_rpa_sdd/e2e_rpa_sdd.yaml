@@ -34,6 +34,9 @@ initial_prompt: |
   process as `pdd.md` in the current directory. Read it and produce the complete
   Solution Design Document.
 
+  Before starting, load the uipath-planner skill. Read and follow its
+  workflow steps exactly.
+
   Work autonomously — don't pause for checkpoints; for any [SME REVIEW] items
   use sensible defaults and proceed.
 
