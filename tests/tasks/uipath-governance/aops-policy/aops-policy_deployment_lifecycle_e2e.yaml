@@ -1,0 +1,119 @@
+task_id: skill-gov-aops-policy-deployment-lifecycle
+description: >
+  E2E against staging tenant: agent walks the AOps governance policy
+  *deployment* lifecycle — configure, get, remove at tenant and user scope —
+  driven by the uipath-governance skill. Prompt states only the goal; skill
+  teaches identity sourcing (current tenant + user), tenant
+  `(product, license type)` keying, full-replace `configure`, and per-subject
+  display-name flags.
+
+  Test-only `E2E` product + `E2E` license type minimize blast radius. Tenant
+  flow is seed-first (configure merges into what `tenant get` returns) +
+  scoped remove (`--product-name E2E --license-type E2E`) so other tenant
+  deployments survive. `aops-policy delete` is BLOCKED while referenced by any
+  deployment (no cascade — see aops-policy-commands.md), so clear tenant +
+  user deployments first, delete policy last. `require_success: true` fails
+  wrong-order or seed-skip workflows instead of passing them; retries OK.
+  post_run is a best-effort safety net for leftover
+  `e2e-deployment-lifecycle-clie2e*` — if a run dies mid-flow, a live
+  deployment may block it; clear it and delete the policy manually.
+tags: [uipath-governance, e2e, aops-policy, deployment, mode:build]
+
+run_limits:
+  expected_turns: 35
+  max_turns: 70
+
+initial_prompt: |
+  Walk the full deployment lifecycle of an AOps governance policy on the
+  current login tenant, exercising both the tenant scope and the user scope.
+
+  Setup:
+  1. Create a policy named `e2e-deployment-lifecycle-clie2e` for the
+     `E2E` product using the product's default settings. This is
+     the policy you will deploy.
+
+  Tenant scope (current login tenant, license type `E2E`):
+  2. Configure a tenant deployment that maps the `E2E` product on
+     the `E2E` license type to the policy from step 1. Preserve every other
+     existing tenant deployment.
+  3. Get the tenant's deployments to confirm the new entry is present.
+  4. Remove that deployment again — scope the removal to the `E2E`
+     product on the `E2E` license type only, so nothing else is touched.
+
+  User scope (current login user):
+  5. Configure a user deployment that maps the `E2E` product to the
+     policy from step 1.
+  6. Get the user's deployments to confirm the new entry is present.
+  7. Remove all of that user's deployments.
+
+  Important:
+  - Do not prompt the user for confirmation — this is an automated test.
+  - Use `--output json` on every `uip gov aops-policy` command.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the deployment-test policy named `e2e-deployment-lifecycle-clie2e` for E2E AND the server accepted it (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+(?=.*--name\s+["'']?e2e-deployment-lifecycle-clie2e["'']?\s)(?=.*--product-name\s+["'']?E2E["'']?).*'
+    require_success: true
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent configured a tenant deployment with --tenant-name and --input on the current tenant GUID (exit 0) — full-replace, so seeding is required for this to be non-destructive"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--tenant-name\s)(?=.*--input\s).*'
+    require_success: true
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the tenant's deployments to verify the new entry (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+get\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent removed the tenant deployment scoped to E2E on the E2E license type (exit 0) — scoped remove keeps other license-type entries intact"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+remove\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--product-name\s+["'']?E2E)(?=.*--license-type\s+["'']?E2E).*'
+    require_success: true
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent configured a user deployment with --user and --input on the current user GUID (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--user\s)(?=.*--input\s).*'
+    require_success: true
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the user's deployments to verify the new entry (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+get\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent removed all of the user's deployments via deployment user delete (exit 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+delete\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?'
+    require_success: true
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="e2e-deployment-lifecycle-clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 30

@@ -13,7 +13,7 @@ Create configuration assets, share them across folders, and manage credential ro
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Target folder exists (see [setup-environment.md](setup-environment.md))
 - For Credential/Secret types: a credential store must exist (`uip or credential-stores list`)
 
@@ -83,6 +83,9 @@ uip or assets list --folder-path "Finance" --name "Api" --output json
 
 # Filter by type
 uip or assets list --folder-path "Finance" --type Secret --output json
+
+# List assets across all accessible folders
+uip or assets list --all-folders --output json
 ```
 
 If the user already gives a folder name or path, pass it directly as
@@ -247,7 +250,7 @@ uip or assets create "WinCred" "DOMAIN\\user:p@ssw0rd" \
 
 | Command | Folder required? |
 |---------|-----------------|
-| `list` | Yes (`--folder-path` or `--folder-key`) |
+| `list` | Yes (`--folder-path` or `--folder-key`), or pass `--all-folders` to list across all accessible folders |
 | `create` | Yes |
 | `get-asset-value` | Yes |
 | `get` | No (cross-folder) |

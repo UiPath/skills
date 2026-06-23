@@ -42,6 +42,8 @@ MySolution/
 
 > **Coded apps are not registered in `.uipx`.** UiPath Coded Web Apps and Coded Action Apps have no `project.uiproj` / `project.json` — `uip solution project add` does not apply, and they are not packed by `uip solution pack`. They deploy independently via `uip codedapp publish` / `deploy`. A coded app directory can sit alongside a solution but is not part of its manifest. See [/uipath:uipath-coded-apps](/uipath:uipath-coded-apps).
 
+> **`.uis` bundles and the `pack` `.zip` are plain zip archives — unzip to inspect bundled contents.**
+
 ---
 
 ## Solution Lifecycle

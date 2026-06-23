@@ -1,0 +1,121 @@
+task_id: skill-flow-solution-select-ask
+description: >
+  Interactive-mode variant of init-validate. The working directory already
+  contains two existing solutions (SolarReports, TideTracker). When asked to
+  create a new Flow project, the skill's greenfield rule
+  (`author/references/greenfield.md` — "Check the current directory for
+  existing .uipx files") requires the agent to STOP and present a dropdown via
+  `AskUserQuestion` (one option per discovered solution + "Create a new
+  solution" + "Something else") instead of guessing. A simulated user answers
+  the prompt. Grades that the gate fired AND that the flow still builds and
+  validates afterward.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate]
+
+agent:
+  # Add AskUserQuestion to the default tool set so the gate can actually fire.
+  # allowed_tools uses replace strategy — restate the full default list.
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+
+run_limits:
+  # Simulation interleaves user+agent turns, so visible-turn count runs higher
+  # than a single-shot task. Advisory only — max_turns (experiment) is the cap.
+  expected_turns: 18
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures/existing_solutions
+
+# No initial_prompt — in simulation mode the simulator generates the opening
+# user message from the persona and goal below. A simulated user then answers the skill's AskUserQuestion solution-selection
+# prompt so the test runs end-to-end without a human. The user asks for a
+# brand-new solution named WeatherAlert, which keeps the build path
+# deterministic (WeatherAlert/WeatherAlert/WeatherAlert.flow).
+simulation:
+  enabled: true
+  persona: |
+    You are a UiPath developer working in a directory that already holds a
+    couple of unrelated solutions (SolarReports and TideTracker). You want a
+    fresh, separate solution for this new work and you trust the agent to
+    drive the CLI.
+  goal: |
+    Get a new Flow project called WeatherAlert created in its own brand-new
+    solution and validated successfully.
+  constraints:
+    - "If the agent asks which solution the new Flow project should live in, do NOT pick SolarReports or TideTracker — choose the 'Create a new solution' option."
+    - "If the agent asks for the new solution's name, answer exactly `WeatherAlert`."
+    - "If asked any other clarifying question, pick the recommended / first sensible option and keep moving."
+    - "Keep replies short — one sentence or a single chosen option."
+    - "Never tell the agent to stop, skip validation, or reuse an existing solution."
+  max_turns: 6
+
+success_criteria:
+  # ── Primary: the interactive gate fired ────────────────────────────────
+  - type: command_executed
+    description: "Agent surfaced the solution choice via AskUserQuestion instead of guessing"
+    tool_name: "AskUserQuestion"
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── Did NOT silently adopt an existing solution ────────────────────────
+  - type: command_executed
+    description: "Agent did not init the Flow project inside a pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init\b.*(SolarReports|TideTracker)'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # ── Build still completes correctly after the interaction ──────────────
+  - type: command_executed
+    description: "Agent created a solution with uip solution init (or legacy new)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(init|new)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized a Flow project with uip maestro flow init"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the .flow file"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "New Flow project is registered in the new parent solution .uipx"
+    path: "WeatherAlert/WeatherAlert.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+      - expression: "length(Projects[?Type=='Flow'])"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created inside the new solution"
+    path: "WeatherAlert/WeatherAlert/WeatherAlert.flow"
+    weight: 1.5
+    pass_threshold: 1.0

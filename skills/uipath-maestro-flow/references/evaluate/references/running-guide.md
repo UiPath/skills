@@ -46,7 +46,7 @@ Polling cadence is not part of the public CLI contract — do not depend on a sp
 
 ```json
 {
-  "Code": "MaestroFlowEvalRunStarted",
+  "Code": "FlowEvalRunStarted",
   "Data": {
     "EvalSetRunId": "a1b2c3d4-...",
     "EvalSetName": "Smoke Tests",
@@ -71,7 +71,7 @@ uip maestro flow eval run status <eval_set_run_id> \
 
 ```json
 {
-  "Code": "MaestroFlowEvalRunStatus",
+  "Code": "FlowEvalRunStatus",
   "Data": {
     "EvalSetRunId": "a1b2c3d4-...",
     "Status": "Completed",
@@ -150,7 +150,7 @@ Output:
 
 ```json
 {
-  "Code": "MaestroFlowEvalRunComparison",
+  "Code": "FlowEvalRunComparison",
   "Data": {
     "RunA": { "Id": "...", "Score": 0.86, "Status": "Completed" },
     "RunB": { "Id": "...", "Score": 0.80, "Status": "Completed" },

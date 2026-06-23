@@ -16,7 +16,7 @@ initial_prompt: |
   add an inline agent node that classifies an inbound support email into a
   category and priority.
 
-  Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
+  A Flow project MUST be created
   inside a solution, so the inline agent lands at:
     EmailTriage/EmailTriage/<agent-uuid>/agent.json
 

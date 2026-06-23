@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-case
-description: "Always invoke for `caseplan.json` files. UiPath Case Management authoring (caseplan.json) from sdd.md, or via lightweight interview if sdd.md absent. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For PDD→SDD or complex/multi-product→uipath-design."
+description: "Always invoke for `caseplan.json` files. UiPath Case Management authoring (caseplan.json) from sdd.md, or via lightweight interview if sdd.md absent. Produces tasks.md plan, writes caseplan.json via per-plugin JSON recipes. For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For PDD→SDD or complex/multi-product→uipath-planner."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite
 
 Builds UiPath Case Management definitions from `sdd.md`. Generates `tasks.md` plan, then writes `caseplan.json` directly via per-plugin JSON recipes. CLI is reserved for read-only metadata fetches (registry, validate, debug, tasks describe, case spec) and solution boundary operations (`uip solution init` / `project add` / `upload`).
 
-When `sdd.md` is absent, **Phase 0 interview** generates one interactively (listen → sketch → progressive ask-walk → resolve → approve, with optional HTML preview before handing off). Complex / multi-product cases redirect to `uipath-design` — see [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds) for caps.
+When `sdd.md` is absent, **Phase 0 interview** generates one interactively (listen → sketch → progressive ask-walk → resolve → approve, with optional HTML preview before handing off). Complex / multi-product cases redirect to `uipath-planner` — see [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds) for caps.
 
 **Scope:** new case from `sdd.md` (user-provided or Phase 0-generated). Modifying existing case not supported (no remote fetch tooling).
 
@@ -25,7 +25,7 @@ When `sdd.md` is absent, **Phase 0 interview** generates one interactively (list
 
 ## Critical Rules
 
-1. **Phase 0 interview when `sdd.md` absent.** Generate `sdd.md` via a guided interview (listen → sketch → progressive ask-walk → resolve → approve); output requires explicit user approval (Approve hard-stop) before treating as Rule 2 input. Apply complexity thresholds — soft-redirect to `uipath-design` on breach. Never overwrite an existing `sdd.md`. See [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds).
+1. **Phase 0 interview when `sdd.md` absent.** Generate `sdd.md` via a guided interview (listen → sketch → progressive ask-walk → resolve → approve); output requires explicit user approval (Approve hard-stop) before treating as Rule 2 input. Apply complexity thresholds — soft-redirect to `uipath-planner` on breach. Never overwrite an existing `sdd.md`. See [references/phase-0-interview.md § Thresholds](references/phase-0-interview.md#thresholds).
 2. **sdd.md is sole input post-Phase-0.** After Phase 0 approval (or when user-provided), trust as written. Skill does not validate or gap-fill. If ambiguous, use AskUserQuestion — never infer silently.
 3. **Run `uip maestro case registry pull` before planning.** Discovery reads cache files at `~/.uip/case-resources/<type>-index.json` directly. `registry search` has known gaps (esp. action-apps). See [references/registry-discovery.md](references/registry-discovery.md).
 4. **`--output json` on every parsed read.**
@@ -34,12 +34,12 @@ When `sdd.md` is absent, **Phase 0 interview** generates one interactively (list
 7. **HARD STOP after `tasks.md`.** AskUserQuestion: `Approve and proceed` / `Request changes`. Re-read `tasks.md` before executing.
 8. **Unresolved resource → placeholder, never fabricate IDs.** Keep `<UNRESOLVED: ...>` markers in `tasks.md`. Placeholder **task**: node with `type` + `displayName` + structural fields, `data: {}`; conditions still reference the TaskId. Placeholder **event trigger**: node with render fields + `data.uipath: { serviceType: "Intsvc.EventTrigger" }` only (no other `data.uipath` keys); `entry-points.json` entry appended. No trigger-edge is created (edges retired) — the first stage's `case-entered` entry condition starts the case. See [references/placeholder-tasks.md](references/placeholder-tasks.md) and [references/plugins/triggers/event/impl-json.md § Placeholder fallback](references/plugins/triggers/event/impl-json.md).
 9. **Persist every registry resolution to `registry-resolved.json`** — search query, all matches, selected result, rationale.
-10. **Cross-task refs:** `"Stage Name"."Task Name".output_name` in planning, resolve to `=vars.<outputId>` at execution by reading source's `id` field (the resolver match key; `var` mirrors `id` on self-declaring task outputs but `.id` is symmetric with the runtime resolver per io-binding validator). Discover output names via `uip maestro case spec` (connector tasks) or `uip maestro case tasks describe` (non-connector tasks) — never fabricate. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md).
+10. **Cross-task refs:** plan as `"Stage Name"."Task Name".output_name`. Resolve to `=vars.<outputId>` at execution by reading the source's `id` field (the resolver match key — `var` mirrors `id` on self-declaring task outputs, but `.id` is symmetric with the runtime resolver per the io-binding validator). Discover output names via `uip maestro case spec` (connector tasks) or `uip maestro case tasks describe` (non-connector tasks) — never fabricate. **Inside** a larger `=js:` expression (composite payload, condition, SLA), use the in-expression marker `vars.$xref('Stage','Task','output')` instead — resolved at Step 11.5. See [references/bindings-and-expressions.md](references/bindings-and-expressions.md) and [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md).
 11. **HARD STOP between Phase 2 (Prototyping) and Phase 3 (Implementation) — unconditional, every run.** Run `validate --skeleton` (structural checks only — skips tasks/SLAs/escalations/entry-exit rules), surface counts, present AskUserQuestion: `Publish for review` / `Skip publish and continue` / `Abort`. Do NOT halt on Phase 2 validate errors — advisory only; user inspects via `Abort`. Never skip prompt for auto mode, non-interactive mode, prior approval. If harness forbids prompts, halt with error. **On `Publish for review`: print `DesignerUrl` as plain-text output BEFORE invoking the second AskUserQuestion — never embed URL only inside question body.** Additional hard stops gate Phase 4 retry exhaustion (`Retry with fix` / `Pause for manual edit` / `Abort`), Phase 5 entry (`Run debug session` / `Skip to Publish`), and Phase 6 entry (`Publish to Studio Web` / `Done`). Full contract in [`references/phased-execution.md`](references/phased-execution.md).
 12. **Never run `uip maestro case debug` automatically.** Executes case for real — emails, messages, API calls. Explicit user consent only.
 13. **All skill artifacts: Read + Write/Edit only.** Applies to `caseplan.json`, `sdd.md`, `sdd.draft.md`, `tasks.md`, `tasks/registry-resolved.json`, `tasks/trigger-spec-cache.json`, `tasks/spec-cache.<elementId>.json`, `bindings_v2.json`, `id-map.json`, `entry-points.json`, `build-issues.md`. No `python`, `node`, `jq`, `sed`, `awk`, or scripts that open/parse/modify/save these files. **Specifically forbidden** (common slip): `node -e "...fs.writeFileSync..."`, `node -e "...fs.readFileSync..."`, `node -e "..." > <artifact>`, `jq '...' <artifact> > <artifact>`, `python -c "...open(...,'w')..."`, `sed -i`, `awk -i inplace`, or any shell redirection (`>`, `>>`, `| tee`) onto a skill artifact regardless of interpreter. **Writing a helper script under `/tmp` or anywhere else to assemble a skill artifact is also forbidden** — the build-assembler pattern (`/tmp/build-caseplan.js`, `/tmp/gen-tasks.py`, etc.) is the same Rule 13 violation as inline `node -e`, regardless of "mechanical copy" or "avoid Read+Write churn" framing. If `caseplan.json` exceeds ~30KB and a single Write feels too large, split into the Phase-2-skeleton-then-Phase-3-fill cadence (per [case-editing-operations.md § Per-section batch write contract](references/case-editing-operations.md#per-section-batch-write-contract--canonical)) — never via helper script. Bash subprocesses OK ONLY for UUID v4 generation (`node -e "console.log(crypto.randomUUID())"` for `operate.json.projectId` and `entry-points.json` `uniqueId` — subprocess MUST NOT `require('fs')` or use redirection), CLI metadata fetches, validate, debug, and solution scaffold/upload. **Prefixed IDs (`Stage_`, `t`, `Rule_`, etc.) are picked inline by the agent — no subprocess.** See [references/case-editing-operations.md § Tool usage](references/case-editing-operations.md#tool-usage--mandatory).
-14. **Always run `uip solution resource refresh` before `uip solution upload` or `uip maestro case debug`** — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies.
-15. **Never auto-invoke `uipath-design`.** On Phase 0 threshold breach or stuck-round detection, print plain-text suggestion of the skill name. User re-invokes manually. No tool-call cross-skill handoff.
+14. **Always run `uip solution resources refresh` before `uip solution upload` or `uip maestro case debug`** — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies.
+15. **Never auto-invoke `uipath-planner`.** On Phase 0 threshold breach or stuck-round detection, print plain-text suggestion of the skill name. User re-invokes manually. No tool-call cross-skill handoff.
 16. **Caseplan task `type` enum is closed — 9 values, schema-kebab.** Any task node written into `caseplan.json` MUST have `type` exactly one of: `process` | `agent` | `rpa` | `action` | `api-workflow` | `case-management` | `execute-connector-activity` | `wait-for-connector` | `wait-for-timer`. **Never** write the plugin folder name (`connector-activity`, `connector-trigger`) or the CLI `--type` flag value into the JSON node — those name the planning artifacts, not the schema. Never write `external-agent`, `external-workflow`, `document-extraction`, `flow-process`, `wait-for-event`, or any hallucinated value — there is no plugin to back them. `external-agent`, `external-workflow`, `document-extraction`, and `flow-process` are **not supported yet**. See [references/case-schema.md § Task type](references/case-schema.md) and the Plugin Index naming-asymmetry table below.
 17. **Empty registry lookup → AskUserQuestion for force pull BEFORE any placeholder fallback.** When a planning-phase lookup returns 0 matches across all relevant cache files, present AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` BEFORE writing any placeholder T-entries or invoking per-plugin Unresolved Fallback paths. Apply per lookup-batch (one prompt covers all empties in the batch — do not prompt per-task). Do NOT pre-judge based on resource-name heuristics ("looks vendor-specific, won't match anyway") — that is the user's call. Placeholder fallback is only valid AFTER the user explicitly picks `Skip`. See [references/registry-discovery.md § MUST: Confirm Before Placeholder Fallback](references/registry-discovery.md#must-confirm-before-placeholder-fallback).
 18. **Layout state lives in top-level `layout`, not on the node/edge.** Do NOT emit node-level `position`, `style`, `measured`, `width`, `height`, `zIndex`. Do NOT compute stage `position.x = 100 + count * 500`. Do NOT emit edge `data.waypoints`. Emit top-level `layout: {}` (empty object) — FE auto-layouts on canvas load. The frontend's `transformCaseInMemoryJsonToDiskJson` strips these fields anyway when round-tripping through canvas; emitting them is harmless on read but wastes tokens. See [`references/case-editing-operations.md`](references/case-editing-operations.md).
@@ -68,6 +68,8 @@ Read [references/planning.md](references/planning.md). Produces:
 - `tasks/tasks.md` — T-numbered entries (stages → tasks → conditions → SLA)
 - `tasks/registry-resolved.json` — audit trail
 
+> **`tasks/` is created at the working root, adjacent to `sdd.md` — NEVER inside the solution/project folder (`<Solution>/`).** This holds regardless of where the case file lives: `caseplan.json` sits at `<Solution>/<Project>/caseplan.json`, but the planning artifacts (`tasks.md`, `registry-resolved.json`) stay next to `sdd.md` at the root.
+
 HARD STOP: AskUserQuestion approval. Loop on `Request changes`.
 
 ### Phase 2 — Prototyping
@@ -80,7 +82,7 @@ Read [references/implementation.md](references/implementation.md) + [references/
 4. Stages (Step 7)
 5. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `case spec`); unresolved as placeholders per Rule 8
 6. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
-7. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resource refresh --solution-folder <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 3` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
+7. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resources refresh --solution-folder <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 3` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
 
 ### Phase 3 — Implementation
 
@@ -90,6 +92,7 @@ Re-read `tasks.md` AND `caseplan.json` (Step 9.6). Then:
 2. I/O binding all task classes (Step 9.8) — per [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md)
 3. Conditions all 4 scopes (Step 10)
 4. SLA + escalation (Step 11)
+5. In-expression `vars.$xref` marker resolution (Step 11.5) — per [`plugins/variables/io-binding/impl-json.md`](references/plugins/variables/io-binding/impl-json.md)
 
 No hard stop on Phase 3 exit — proceed directly to Phase 4.
 
@@ -100,11 +103,11 @@ No hard stop on Phase 3 exit — proceed directly to Phase 4.
 
 ### Phase 5 — Debug
 
-Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session` / `Skip to Publish`. On `Run`: `uip solution resource refresh` then `uip maestro case debug` (never auto-run — Rule 12). Loop on completion until `Skip to Publish`.
+Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session` / `Skip to Publish`. On `Run`: `uip solution resources refresh` then `uip maestro case debug` (never auto-run — Rule 12). Loop on completion until `Skip to Publish`.
 
 ### Phase 6 — Publish
 
-**HARD STOP** AskUserQuestion (Step 14): `Publish to Studio Web` / `Done`. On `Publish`: `uip solution resource refresh` then `uip solution upload`, print DesignerUrl (Step 15). Exit on either choice.
+**HARD STOP** AskUserQuestion (Step 14): `Publish to Studio Web` / `Done`. On `Publish`: `uip solution resources refresh` then `uip solution upload`, print DesignerUrl (Step 15). Exit on either choice.
 
 ## Reference Navigation
 
@@ -186,6 +189,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 - **One task per lane — except parallel members of a `runs-sequentially` group.** Default: each task own `lane` index in `stageNode.data.tasks[laneIndex][]`, lane is FE layout only. Exception: tasks sharing a `runs-sequentially` task-entry condition that are meant to run in parallel share the same lane (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get their own lane.
 - **Do NOT edit `content/*.bpmn`.** Auto-generated, will be overwritten. Edit `content/*.json` only.
 - **Do NOT fabricate expression syntax for conditional SLA rules.** Describe condition in natural language; execution phase determines exact form.
+- **Do NOT place `tasks/` inside the solution or project directory.** `tasks/` (and its `tasks.md`, `registry-resolved.json`) lives next to `sdd.md` at the working root — NOT inside `<Solution>/` or `<Solution>/<Project>/`. The case file path (`<Solution>/<Project>/caseplan.json`) does NOT root the planning artifacts; they track `sdd.md`, not `caseplan.json`.
 - **Do NOT invoke other skills automatically.** If case needs process/agent/action that doesn't exist, emit placeholder task (Rule 8) and list missing resources in completion report. On-demand resource creation is future milestone.
 
 > **Trouble?** Use `/uipath-feedback` to send report.

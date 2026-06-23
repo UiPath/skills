@@ -35,6 +35,8 @@ Every stage with an **Exit Condition** declared in sdd.md gets its own stage-exi
 | `wait-for-user` | Exit requires manual user decision or approval. |
 | `return-to-origin` | Rework / exception loop — sends the case back to the previous stage. |
 
+> **Routing the origin INTO a decision/signal-routed exception lane.** The origin stage carries the route: a gated divert exit (`marks-stage-complete: false`, `selected-tasks-completed("<decider>")`, `conditionExpression =js:(<signal> === <exception-value>)`, `exit-to-stage-id` → the lane) PLUS its completion exit gated by the inverse `IF`. The two must be mutually exclusive (ungated completion → dual-fire; gated completion with no divert → deadlock). The lane returns via `return-to-origin`. See [stage-exit-conditions/impl-json.md § Divert into an exception lane](impl-json.md#divert-into-an-exception-lane-gated-routing-exit) and [`sdd-generation-rules.md` § Logical integrity step 5](../../../sdd-generation-rules.md#logical-integrity--stage-graph).
+
 ## Rule-Type Catalog (stage-exit scope)
 
 Allowed `ruleType` values depend on `marks-stage-complete`:

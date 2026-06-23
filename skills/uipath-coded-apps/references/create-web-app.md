@@ -175,6 +175,8 @@ const records = await entities.getAllRecords('<entity-id>'); // entity ID is a U
 
 See [oauth-scopes.md](oauth-scopes.md) for the full list of methods and their required scopes.
 
+If the user wants a **Document Understanding validation UI** (review/correct extraction results), embed the Validation Station widget — see [widgets/validation-station.md](widgets/validation-station.md). Required scope: `OR.Buckets` (plus `OR.Tasks` if the widget completes an Action Center task on save). Add to `VITE_UIPATH_SCOPE` during scaffold (Step 1).
+
 When implementing specific SDK services, read the corresponding reference:
 
 | Service | Reference |

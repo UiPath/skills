@@ -5,14 +5,12 @@ description: >
   teaches the correct connection workflow (list, present options, ping) and
   that the agent knows the create/edit recovery paths without executing them
   (both require browser interaction).
-tags: [uipath-platform, smoke, integration-service, connections]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector, feature:connections]
 
 run_limits:
   expected_turns: 7
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   I want to use the Salesforce connector through UiPath Integration Service.
   Help me find and verify a connection for the "uipath-salesforce-sfdc"
   connector.

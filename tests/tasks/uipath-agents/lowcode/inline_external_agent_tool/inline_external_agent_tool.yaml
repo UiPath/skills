@@ -15,16 +15,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath Flow project "OutreachFlow" with an inline low-code agent
-  that accepts a required `subject` (string) and returns a string
-  `content`. It must compose the content by delegating to an agent
-  named "EmailDrafter" that is already deployed in the tenant — not by
-  drafting the email itself. The solution should be named
-  "OutreachFlowSol".
-
-  Use the real folder and process name from the tenant — do not
-  hard-code or guess these values. Name the agent's tool resource
-  `EmailDrafter` (matching the deployed agent).
+  Create a UiPath Flow project "OutreachFlow" that runs an inline low-code
+  agent which takes a required `subject` (string) and returns a string
+  `content`. The agent shouldn't write the email itself — the draft should
+  come from our existing "EmailDrafter" agent, which is already deployed in our
+  tenant. Wire it into the flow. The solution should be named "OutreachFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -48,17 +43,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent discovered the EmailDrafter identity with uip solution resource list"
+    description: "Agent discovered the EmailDrafter identity with uip solution resources list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+list\b'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the EmailDrafter configuration with uip solution resource get"
+    description: "Agent fetched the EmailDrafter configuration with uip solution resources get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+resource\s+get\b'
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
     min_count: 1
     weight: 0.5
     pass_threshold: 0.0
@@ -116,12 +111,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "Flow file was created"

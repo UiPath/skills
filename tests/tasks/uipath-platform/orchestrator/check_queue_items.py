@@ -34,7 +34,7 @@ if not (uuid8 and folder_path):
 
 expected_name = f"e2e-queue-{uuid8}"
 
-env = uip_json("resource", "queues", "list", "--folder-path", folder_path)
+env = uip_json("or", "queues", "list", "--folder-path", folder_path)
 if env.get("Result") != "Success":
     sys.exit(f"FAIL: queues list Result={env.get('Result')!r}")
 items = env.get("Data") or []
@@ -46,7 +46,7 @@ if not match:
     names = [_pick(q, "QueueDefinitionName", "Name") for q in items]
     sys.exit(f"FAIL: no queue named {expected_name!r} in {folder_path!r}; saw {names}")
 
-env2 = uip_json("resource", "queue-items", "list", "--folder-path", folder_path, "--queue-name", expected_name, "--status", "New")
+env2 = uip_json("or", "queue-items", "list", "--folder-path", folder_path, "--queue-name", expected_name, "--status", "New")
 if env2.get("Result") != "Success":
     sys.exit(f"FAIL: queue-items list Result={env2.get('Result')!r}")
 qi = env2.get("Data") or []

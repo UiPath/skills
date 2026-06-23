@@ -1,0 +1,54 @@
+task_id: skill-solution-diagnose-deploy-virtual-resource-value
+description: >
+  Integration test (diagnose mode): agent root-causes a deploy-time
+  `[1009] Invalid argument 'Value'` failure caused by a virtual resource
+  with no value set, and prescribes setting/linking it via deploy config.
+  Local reasoning task — no tenant interaction.
+
+  Ground truth verified against references/scenarios/failure-modes.md row
+  "[1009] <kind> <name>: Invalid argument 'Value' at deploy" → virtual
+  resource without `value` set → `deploy config set <file> <name> value
+  <val>` or `deploy config link <file> <name> --name <existing>`.
+tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Deploying my solution fails. `uip solution deploy run` reports:
+
+      [1009] asset MyApiKey: Invalid argument 'Value'
+
+  The asset is declared in the solution. What's the root cause, and exactly
+  how do I fix it so the deploy succeeds?
+
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-solution"
+    expected_skill: "uipath-solution"
+    description: "Agent invoked the uipath-solution Skill to diagnose"
+    weight: 1.5
+
+  - type: llm_judge
+    description: "Agent identifies an unset virtual-resource value and prescribes deploy config set/link"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: a `[1009] <kind>
+      <name>: Invalid argument 'Value'` at deploy means a virtual /
+      provisioned resource was deployed without a `value` set. The fix is
+      to supply the value through the deploy config — either
+      `uip solution deploy config set <config-file> <name> value <val>`
+      (provide a concrete value) OR
+      `uip solution deploy config link <config-file> <name> --name <existing>`
+      (bind it to an existing Orchestrator entity) — then deploy again.
+
+      Score 1.0 if the reply identifies the missing/unset value on the
+      (virtual) resource as the cause AND prescribes setting the value via
+      `deploy config set ... value` or linking it via `deploy config link`.
+      English or Romanian both fine; mentioning either config command (set
+      value or link) counts.
+
+      Score 0.0 if it blames a CLI bug, a malformed package, or auth, or
+      fails to point at the unset resource value / deploy config as the fix.
+    weight: 3.0
+    pass_threshold: 0.7

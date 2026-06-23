@@ -1,0 +1,59 @@
+task_id: skill-solution-diagnose-resource-edit
+description: >
+  Integration test (diagnose mode): agent uses the uipath-solution skill's
+  knowledge of refresh-vs-edit semantics to root-cause why a changed
+  resource value isn't reflected after `resources refresh`, and prescribes
+  `resources edit`. Complements the missing-refresh diagnose test with the
+  opposite failure mode. Local reasoning task — no tenant interaction.
+
+  Ground truth verified against references/develop-solution.md (Step 11) and
+  scenarios/manual-edits.md: `refresh` is import-only and NEVER overwrites a
+  resource already in the solution; `resources edit` is the only command
+  that mutates an existing resource's spec.
+tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  I need to change an asset resource's value in my UiPath solution before
+  I package it.
+
+  I ran `uip solution resources refresh` expecting it to update the
+  resource to the new value, but the solution still has the old value and
+  the package keeps shipping the old one.
+
+  Why didn't refresh update it, and how do I actually change an existing
+  resource's value?
+
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-solution"
+    expected_skill: "uipath-solution"
+    description: "Agent invoked the uipath-solution Skill to diagnose"
+    weight: 1.5
+
+  - type: llm_judge
+    description: "Agent explains refresh is import-only and prescribes resources edit"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: `uip solution
+      resources refresh` is import-only — it reconciles/imports bindings
+      for projects but NEVER overwrites a resource that is already in the
+      solution, so it will not apply a changed value to an existing
+      resource. To change an existing resource's spec value you must use
+      `uip solution resources edit <resource-key> --patch '{...}'` — that
+      is the only command that mutates an existing resource.
+
+      Score 1.0 if the reply explains that refresh does not overwrite /
+      update an existing resource (that's why nothing changed) AND
+      prescribes `uip solution resources edit` to change the value.
+      English or Romanian both acceptable; naming the exact command is a
+      plus, a clear "use resources edit to change the existing resource"
+      is sufficient.
+
+      Score 0.0 if the reply says to just run refresh again, blames a CLI
+      bug / cache / wrong file, or prescribes hand-editing JSON as the
+      primary fix without mentioning `resources edit`.
+    weight: 3.0
+    pass_threshold: 0.7

@@ -199,14 +199,28 @@ When a procedure exists specifically to check something against ground truth, do
 
 ## Common UIA Pitfalls
 
-- **SelectItem on web dropdowns** — `SelectItem` may fail on custom `<select>` elements. Workaround: use `TypeInto` instead.
+- **SelectItem on web dropdowns** — use `SelectItem` for native HTML `<select>` elements (deterministic). It fails on custom dropdown widgets (div/`<ul>`/ARIA hierarchies that only *look* like a `<select>`) — there, click to open and click the option, or use `TypeInto`. Detail: [uia-elements-interaction-guide.md § Web Controls](uia-elements-interaction-guide.md).
 - **ScreenPlay overuse** — UITask/ScreenPlay is non-deterministic and slow. Always try proper selectors first.
 - **Wrong Object Repository references** — never copy references from examples or other projects. Always use `uia-configure-target` to generate them for the current application state.
 - **Using `InjectJsScript` instead of standard activities** — do NOT use `InjectJsScript` when standard UI activities (GetText, Click, TypeInto, ExtractTableData, etc.) with configured targets would work. `InjectJsScript` is a last resort — it's hard to debug, fragile to page changes, and bypasses the Object Repository.
 - **Hallucinated keyboard shortcuts instead of UIA targets** — do NOT send keyboard shortcuts (`Ctrl+S`, `Alt+F4`, `Tab` navigation, menu mnemonics, etc.) as a substitute for clicking or typing into a real UI element. `Click` and `TypeInto` against configured targets are deterministic, survive layout changes, and are observable in logs; guessed shortcuts depend on focus, locale, and version. Reserve keyboard shortcuts for genuinely hotkey-only operations (commands with no clickable surface) and confirm the shortcut exists in the live app — never infer from OS convention or muscle memory.
-- **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient.
+- **Unnecessary `Delay` activities before UIA actions** — UIA activities (`NClick`, `NTypeInto`, `NSelectItem`, `NGoToUrl`, etc.) have embedded target-finding resilience: they retry the selector lookup for a configurable timeout before failing. A `Delay` placed in front of a UIA activity to "let the UI settle" is almost always redundant and inflates workflow runtime without changing correctness. Include `Delay` only when ALL of: the wait is NOT for a UI element that a following UIA activity will target; a concrete non-retry reason exists (post-action animation with no UIA anchor, fixed-duration business pause, background job the UI doesn't reflect); and the caller can state in one sentence why the next UIA activity's built-in retry is insufficient. A button that is present but **disabled** during async validation/load/refresh is a separate case retry does not cover — use the activity's `DelayBefore`/`DelayAfter` *properties* (not a `Delay` activity): [uia-elements-interaction-guide.md § Web Controls](uia-elements-interaction-guide.md).
 - **`Cannot send input ... outside of screen bounds` on hover-revealed elements** — pop-up menu items, autocomplete entries, and dropdown rows that only appear after a hover/click frequently fail under the default input method. Switch the affected activity (or its UIA interact CLI counterpart) to a simulated input method. Available input-method values: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
 - **`HealingAgentBehavior` enum split between card and child activities.** `NApplicationCard` (Use Application/Browser) accepts `NHealingAgentBehavior` — values `Job`, `Disabled`, `RecommendationOnly`. Child activities (`NClick`, `NTypeInto`, `NCheckState`, etc.) accept `NChildHealingAgentBehavior`, which adds `SameAsCard`. Putting `SameAsCard` on the card itself fails with `Failed to create a 'HealingAgentBehavior' from the text 'SameAsCard'`. When introducing a new card (e.g., a nested card for a sign-in subprocess), set its `HealingAgentBehavior` to `Job`/`Disabled`/`RecommendationOnly` — never copy the value from a child activity. Confirm via `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/activities/common/NHealingAgentBehavior.md` and `NChildHealingAgentBehavior.md`.
+
+---
+
+## Control-Specific Interaction Patterns
+
+> **MANDATORY — read and apply before authoring.** Before writing any `TypeInto`, `SelectItem`, or `Click` (XAML `NTypeInto` / `NSelectItem` / `NClick`, or coded `uiAutomation.*`) against a captured target, classify the control. If **any** target is a date / time input, a dropdown, or a button that can be disabled during async work, you MUST read [uia-elements-interaction-guide.md](uia-elements-interaction-guide.md) IN FULL and apply it **before** authoring that activity — the same bar as target capture ([§ Configuring Targets](#configuring-targets-object-repository)). The correct technique is type-specific and documented there: a date field must be typed in its **displayed** format (not ISO) via a key-event method, dropdowns split into native (`SelectItem`) vs. custom (click-to-open), and async-disabled buttons need `DelayBefore`. Apply the documented method up front — do not guess a value (e.g. ISO into a date field) and iterate against the running app.
+
+After a target is captured, these control types need type-specific handling to drive correctly:
+
+- **Date / formatted date-time inputs** — type the field's **displayed** format (e.g. en-US `MM/DD/YYYY`), not the ISO `value`.
+- **Dropdowns** — native HTML `<select>` → `SelectItem`; custom widgets → click-to-open + click option / `TypeInto`.
+- **Buttons disabled during async ops** — present but `disabled` during validation/load/refresh; use the activity's `DelayBefore`/`DelayAfter` properties (not a `Delay` activity).
+
+Patterns are organized by UI technology (currently web controls, `webctrl`): [uia-elements-interaction-guide.md](uia-elements-interaction-guide.md).
 
 ---
 
@@ -217,6 +231,43 @@ When a procedure exists specifically to check something against ground truth, do
 ### Multi-Step UI Flows (Advancing Application State)
 
 Procedure: [uia-configure-target-workflows.md § Multi-Step UI Flows](uia-configure-target-workflows.md) — the capture loop and Complete-then-advance rule.
+
+---
+
+## Object Repository as a Published UI Library
+
+Selector breakage is the #1 maintenance cost in UI automation. A **UI Library** is a published library project whose Object Repository ships inside the `.nupkg` — descriptors defined once, consumed by every automation against the same application. Fix a descriptor once, bump the version, and all consumers inherit the fix.
+
+### Hierarchy and naming
+
+```
+Application (InvoicePortal)
+  └── Screen (LoginPage)
+      └── Element (UsernameField)
+```
+
+- Reference form: `App.Screen.Element` — `InvoicePortal.LoginPage.UsernameField`
+- Business-meaningful PascalCase element names: `SubmitOrderButton`, not `Button32`
+- One descriptor per distinct UI element; screens mirror the application's logical screens
+
+### Extract-and-publish pattern
+
+Precondition: the source project has captured descriptors (`.objects/` content). If it has none, capture targets first ([§ Configuring Targets](#configuring-targets-object-repository)) — there is nothing to promote, and hand-writing descriptors is forbidden.
+
+1. Develop the first process against its **local** Object Repository, configuring targets as usual ([§ Configuring Targets](#configuring-targets-object-repository)).
+2. Promote the reusable descriptors into a dedicated UI Library project — a library project ([library-authoring-guide.md](library-authoring-guide.md)) holding the shared Object Repository; pack and upload per [library-authoring-guide.md § Pack & Publish](library-authoring-guide.md). Concrete OR manipulation steps: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/`.
+3. **One UI Library per corporate application** (SAP, Salesforce, Workday) — an update to one app's selectors must not force re-deployment of another's.
+4. New automations against that application consume the UI Library from the start. Process-specific one-off descriptors stay in the local Object Repository.
+
+### Consumption
+
+Install the UI Library as a package dependency; its descriptors appear under **UI Libraries** in the Object Repository and are targetable like local descriptors. Coded workflows resolve them via [§ Finding Descriptors Step 2](#step-2--check-uilibrary-nuget-packages). Selector updates propagate by bumping the dependency version — no per-workflow changes.
+
+### Update rules — MANDATORY
+
+1. **Update descriptors in place — NEVER delete-and-re-add an element.** The element-to-activity link is identity-based; deleting the element severs it and every consumer activity bound to it breaks, even if a same-named element is re-created.
+2. **Version by SemVer** ([library-authoring-guide.md § Versioning](library-authoring-guide.md)): selector fix without renaming = patch; element/screen rename or restructure = breaking = major.
+3. **Promote accepted healing fixes.** When a selector recovery ([§ Runtime Selector Failure Recovery](#runtime-selector-failure-recovery)) is accepted in a workflow that consumes a shared UI Library, apply the fix in the UI Library and bump the version — do not re-fix the same selector consumer by consumer.
 
 ---
 
@@ -321,6 +372,8 @@ Read `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs`. This file conta
 >
 > A pure-CLI flow with no Studio Desktop attached will not produce `ObjectRepository.cs`. Plan for a Studio Desktop step in any workflow that depends on `Descriptors.*`.
 
+When `ObjectRepository.cs` is missing or stale (see above), enumerate the project's registered apps/screens/elements as JSON with `uip rpa object-repository get` ([cli-reference.md § object-repository](cli-reference.md#object-repository)) — it reads the saved Object Repository without a Studio Desktop regen. Use it to confirm a screen/element exists before authoring; the strongly-typed `Descriptors.<App>.<Screen>.<Element>` reference still comes from `ObjectRepository.cs`.
+
 **Important:** Add the ObjectRepository using statement:
 ```csharp
 using <ProjectNamespace>.ObjectRepository;
@@ -329,6 +382,8 @@ using <ProjectNamespace>.ObjectRepository;
 #### Step 2 — Check UILibrary NuGet packages
 
 Look in `project.json` → `dependencies` for packages matching `*.UILibrary`, `*.ObjectRepository`, `*.Descriptors`, or `*.UIAutomation`. Inspect with `uip rpa packages inspect`.
+
+To list the apps/screens/elements a library actually exposes — not just its assembly API — read its Object Repository directly with `uip rpa object-repository get-library` ([cli-reference.md § object-repository](cli-reference.md#object-repository)), pointing at the library `.nupkg` path(s).
 
 For UILibrary packages, use the **package** namespace, not the project namespace:
 ```csharp
@@ -389,6 +444,8 @@ Do NOT hand-write `<uix:TargetApp>` or `<uix:TargetAnchorable>` XAML from scratc
 | **Take Screenshot** | Captures a screenshot of an app or element |
 | **Extract Table Data** | Extracts tabular data from a web page or application |
 | **ScreenPlay** | AI-powered UI task execution (last resort — non-deterministic and slow) |
+
+> **Before authoring `TypeInto` / `SelectItem` / `Click`:** reading [§ Control-Specific Interaction Patterns](#control-specific-interaction-patterns) is mandatory.
 
 ### XAML-Specific Pitfalls
 
