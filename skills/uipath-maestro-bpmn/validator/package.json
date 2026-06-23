@@ -3,10 +3,15 @@
   "private": true,
   "type": "module",
   "description": "Offline semantic validator for UiPath Maestro BPMN XML. Reconstructs the PO.Frontend Node/Edge/CanvasState model from the parsed BPMN and runs all 19 PO.Frontend validation rules.",
-  "bin": { "validate-bpmn": "./validate-bpmn.mjs" },
-  "scripts": { "test": "node test/run-tests.mjs" },
+  "bin": {
+    "validate-bpmn": "./validate-bpmn.mjs"
+  },
+  "scripts": {
+    "test": "node test/run-tests.mjs"
+  },
   "dependencies": {
     "bpmn-moddle": "^9.0.2",
-    "luxon": "^3.4.4"
+    "luxon": "^3.4.4",
+    "sax": "^1.6.0"
   }
 }

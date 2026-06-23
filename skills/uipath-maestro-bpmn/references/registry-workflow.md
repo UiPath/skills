@@ -10,12 +10,20 @@ into registry-backed XML.
 uip maestro bpmn registry pull            # sync + cache (login for connectors/processes)
 uip maestro bpmn registry list --limit -1 --output json   # all extension types
 uip maestro bpmn registry search <keyword> --output json  # find a type by intent
-uip is connections list --output json     # live Integration Service connections
+uip is connections list --all-folders --output json   # live IS connections (all folders)
 ```
 
 Map the user's intent to an extension type from the list. Confirm the choice
 with the user (and the specific connection / process / queue) before authoring.
 **Never fabricate an identifier** — see [cli-conventions.md](cli-conventions.md).
+
+**Connection discovery must be exhaustive.** Always pass `--all-folders` to
+`uip is connections list` — connections live in many folders and a folder-scoped
+listing silently misses them. An empty or unmatched result from a missing
+`--all-folders`, or from a connector key guessed from a brand name rather than
+found via `registry search`, is a **false negative** — never conclude "no
+connection exists" or ask the user to create one until you have searched the
+registry for the real connector key and listed across all folders.
 
 `registry list` returns three buckets in `Data`: `ExtensionTypes` (the OOTB
 extension types, always available), `Connectors` and `Processes` (only after
@@ -56,7 +64,7 @@ For connector types (`requiresDiscovery: Yes`, e.g.
 resolve a live connection and object, then enrich:
 
 ```bash
-uip is connections list --output json     # pick a connection id + its connector
+uip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)
 uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```

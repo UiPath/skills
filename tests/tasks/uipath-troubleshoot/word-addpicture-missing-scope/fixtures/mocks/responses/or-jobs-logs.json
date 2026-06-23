@@ -1,0 +1,66 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa111199-001",
+      "JobKey": "aa111111-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T07:30:02.180Z",
+      "Message": "Execution started.",
+      "ProcessName": "WordLogoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111199-002",
+      "JobKey": "aa111111-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T07:30:02.402Z",
+      "Message": "[WordLogoStamp] Stamping the company logo into the monthly report.",
+      "ProcessName": "WordLogoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111199-003",
+      "JobKey": "aa111111-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T07:30:02.640Z",
+      "Message": "Use Word File: monthly-report.docx — document opened (Path='C:\\Robot\\Reports\\monthly-report.docx').",
+      "ProcessName": "WordLogoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111199-004",
+      "JobKey": "aa111111-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-19T07:30:02.710Z",
+      "Message": "[WordLogoStamp] Report document opened — ready to stamp logo.",
+      "ProcessName": "WordLogoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111199-005",
+      "JobKey": "aa111111-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Trace",
+      "Timestamp": "2026-05-19T07:30:02.880Z",
+      "Message": "Use Word File: monthly-report.docx — scope exited; document context closed.",
+      "ProcessName": "WordLogoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111199-006",
+      "JobKey": "aa111111-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Error",
+      "Timestamp": "2026-05-19T07:30:03.050Z",
+      "Message": "Add Picture: System.InvalidOperationException: The 'Add Picture' activity must be used inside a 'Use Word File' or 'Word Application Scope' activity. No Word document is open in the current scope.",
+      "ProcessName": "WordLogoStamp",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

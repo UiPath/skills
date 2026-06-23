@@ -1,0 +1,143 @@
+task_id: skill-troubleshoot-word-hangs
+description: >
+  UiPath troubleshooting agent must diagnose a Word Application Scope hang:
+  the scope opens a password-protected document, Word blocks on a background
+  password prompt (invisible because the scope runs unattended), and the job
+  never advances past the scope until it is cancelled (State=Stopped, no error
+  logs). Success = agent matches the word-scope-hangs-background-prompt
+  playbook AND recommends surfacing/clearing the blocking dialog (run Word
+  visible to observe it, supply the password / clear the prompt) without
+  fabricating host actions.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, word-application-scope, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My NDAFiller process never finishes. When I run it in Orchestrator
+  (folder "Legal Docs", machine MOCK-HOST) it just hangs - it sits there
+  doing nothing for half an hour and I end up cancelling it. There's no
+  error message anywhere, it just freezes.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can. If the fix needs something checked or done on the host, give me the
+  exact steps and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the word-scope-hangs-background-prompt playbook AND recommended surfacing/clearing the blocking dialog"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My NDAFiller process never finishes - in Orchestrator (folder
+         'Legal Docs', machine MOCK-HOST) it hangs for half an hour with no
+         error and I have to cancel it."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/word-scope-hangs-background-prompt.md
+        because the symptom - a Word Application Scope that starts Word,
+        opens the document, then never advances (no error, job runs ~30 min
+        and is cancelled, State=Stopped) - is the signature of Word blocking
+        on a hidden modal dialog.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Word Application Scope opens 'NDA-Protected.docx', a
+            password-protected document, with no Password supplied and
+            Visible=False.
+          - Word raises a password prompt that the unattended robot cannot
+            answer; the modal dialog blocks all COM calls, so the scope
+            hangs until the job is cancelled.
+          - No error log line is the tell: a blocking dialog produces a
+            hang, not an exception. The logs stop at "Starting Microsoft
+            Word" / "Opening document".
+        The reference fix:
+          - Reproduce with the scope Visible=True (on the host, as the robot
+            user) to see the blocking dialog, then EITHER supply the
+            document password in the scope properties / remove protection,
+            OR clear whatever prompt appears (recovery sidebar, Safe Mode,
+            activation, trust-this-file). Also guard against indefinite
+            hangs (finite timeout) and dispose orphaned WINWORD.EXE.
+
+      DIMENSION C -- No fabricated host actions
+        The user is off-host, so the agent must hand over the
+        run-visible/observe steps and the fix; it must NOT claim to have run
+        Word, supplied a password, or run host commands itself.
+
+      SCORING RUBRIC:
+        1.0  Agent matched word-scope-hangs-background-prompt AND identified
+             a hidden/background Word dialog (password prompt for the
+             protected doc, or recovery/Safe Mode/activation) blocking COM
+             as the cause AND recommended at least one valid step: reproduce
+             with Word visible to surface the dialog, supply the password /
+             remove protection, or clear the prompt - without fabricating
+             host actions.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "clear
+             the dialog" without naming run-visible / password / specific
+             prompt).
+        0.5  Recognized a hang / blocking-dialog class of problem but did
+             not tie it to a Word modal prompt (e.g., blamed performance or
+             network), or matched a sibling Word playbook instead.
+        0.2  Noted the job hangs without diagnosing why.
+        0.0  Wrong cause (e.g., Word not installed, missing package, file
+             corrupt, file path wrong), or fabricated a host action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the hanging process. It freezes for
+    ~30 minutes with no error and you cancel it. You are away from the robot
+    host and only have Orchestrator access. You trust the agent and want a
+    diagnosis plus exact steps.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the steps at the end."
+    - "If asked whether the document is password-protected or whether a dialog appears when Word runs, say you are not sure and cannot check right now - that is exactly what you need the agent to tell you to verify."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "JobsList",
+  "Data": [
+    {
+      "Key": "cc333333-3333-bbbb-cccc-ddddeeeeffff",
+      "StartTime": "2026-05-22T09:14:02.300Z",
+      "EndTime": "2026-05-22T09:14:08.742Z",
+      "State": "Faulted",
+      "ReleaseName": "ResumePhotoStamp",
+      "Source": "Manual",
+      "Reference": "ResumePhotoRun",
+      "HostMachineName": "MOCK-HOST",
+      "FolderKey": "f0022244-2222-3333-4444-555566667777",
+      "Info": "System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. ... (Exception from HRESULT: 0x8001010E (RPC_E_WRONG_THREAD)).",
+      "ErrorCode": "Activity"
+    }
+  ]
+}

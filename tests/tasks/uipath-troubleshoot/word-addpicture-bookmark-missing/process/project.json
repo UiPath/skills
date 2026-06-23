@@ -1,0 +1,41 @@
+{
+  "name": "WordTemplateFill",
+  "projectId": "c3c2e1f0-5a60-4178-92a3-cc335599c8d9",
+  "description": "Repro: Word Add Picture process configured InsertRelativeTo=Bookmark with BookmarkName=LogoAnchor, but the runtime document instance lacks that bookmark. Exercises the insertion-target / bookmark-not-found branch of the add-picture-failures playbook (C3).",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.Word.Activities": "[1.21.0]",
+    "UiPath.System.Activities": "[26.2.6]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "26.0.194.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "netFrameworkLazyLoading": false,
+    "isPausable": false,
+    "isAttended": false,
+    "requiresUserInteraction": false,
+    "supportsPersistence": false,
+    "workflowSerialization": "NewtonsoftJson",
+    "excludedLoggedData": ["Private:*", "*password*"],
+    "executionType": "Workflow",
+    "readyForPiP": false,
+    "startsInPiP": false,
+    "mustRestoreAllDependencies": true,
+    "pipType": "ChildSession"
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {"privateWorkflows": []},
+    "processOptions": {"ignoredFiles": []},
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "VisualBasic",
+  "modernBehavior": true,
+  "targetFramework": "Windows"
+}

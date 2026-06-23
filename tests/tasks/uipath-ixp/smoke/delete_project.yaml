@@ -1,7 +1,7 @@
 task_id: skill-ixp-delete-project-smoke
 description: >
   Smoke: agent deletes a project — destructive and irreversible, so it must
-  pass --confirm-data-loss (the CLI refuses without it), acknowledging the
+  pass -y/--yes (the CLI refuses without it), acknowledging the
   data loss.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
@@ -22,9 +22,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent deleted the project via `projects delete … --confirm-data-loss`"
+    description: "Agent deleted the project via `projects delete … -y/--yes`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--confirm-data-loss).*'
+    command_pattern: 'uip\s+ixp\s+projects\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--yes\b|-y\b)).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
