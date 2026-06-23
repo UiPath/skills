@@ -39,7 +39,7 @@ initial_prompt: |
   - Save the taxonomy to `taxonomy_before_delete.json`, then delete the
     "Adjustments" group.
   - Save the taxonomy again to `taxonomy_final.json` and confirm the original
-    invoice groups (Invoice, Bill To, Line Items, Ship To) are still there.
+    invoice groups are still there.
 
   When you're done, delete the project.
 
