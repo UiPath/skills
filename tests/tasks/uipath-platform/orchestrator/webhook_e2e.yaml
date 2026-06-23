@@ -20,8 +20,6 @@ run_limits:
   expected_turns: 9
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I want to register a webhook on our tenant but keep it paused for now
   until I'm ready to wire up the receiver. Use the unique prefix in
   `seed.json` so the name doesn't collide.

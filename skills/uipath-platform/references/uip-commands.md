@@ -5,6 +5,7 @@
 **Global flags:**
 - `--output json` — always use when calling programmatically
 - `--output-filter <expr>` — JMESPath filter for JSON output
+- `--profile <name>` — use a named auth profile from `~/.uipath/profiles/<name>/.auth`; `default` keeps the built-in unprofiled login
 - `--tenant <name>` — tenant override (defaults to authenticated tenant)
 - `--verbose` — enable debug logging
 
@@ -24,9 +25,17 @@
 |---|---|
 | `uip login` | Authenticate with UiPath Cloud |
 | `uip login status` | Show current login status |
+| `uip login which` | Show which `.auth` file backs the current login |
 | `uip login tenant list` | List available tenants |
 | `uip login tenant set <name>` | Set active tenant |
 | `uip logout` | End session and clear tokens |
+
+Named profiles:
+- Use `uip login --profile dev`, then pass `--profile dev` on each command that should use that login.
+- Profile credentials live at `~/.uipath/profiles/dev/.auth`; the built-in default stays at `~/.uipath/.auth`.
+- Missing profiles do not fall back to the default login or Robot credentials.
+- Valid profile names use letters, numbers, `.`, `_`, and `-`; `default` is reserved for the built-in login.
+- Do not combine `--profile <name>` with auth-command `--file <folder>`.
 
 ---
 
@@ -98,7 +107,7 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 
 | Command | Description |
 |---|---|
-| `uip traces spans get [trace-id]` | Get spans by trace ID or `--job-key` |
+| `uip traces spans get <trace-id>` | Get spans by trace ID or `--job-key` |
 | `uip traces feedback create` | Add positive/negative feedback to a trace |
 | `uip traces feedback get <id>` | Fetch one feedback record |
 | `uip traces feedback list` | List feedback for a trace |
@@ -113,7 +122,7 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | Group | Command | Description |
 |---|---|---|
 | **Integration Service** | `uip is --help` | See [`uipath-integration-service`](integration-service/integration-service.md) |
-| **Traces** | `uip traces spans get [trace-id]` | LLM execution trace observability (`--job-key` to scope) |
+| **Traces** | `uip traces spans get <trace-id>` | LLM execution trace observability (`--job-key` to scope) |
 | **Test Manager** | `uip tm --help` | Test projects, sets, cases, executions |
 | **RPA** | `uip rpa --help` | RPA workflow management |
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |

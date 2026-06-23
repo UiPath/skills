@@ -11,6 +11,8 @@ When an automation creates a human task (via `CreateAppTask` RPA activity/Maestr
 
 The data contract is defined in `action-schema.json`.
 
+> **Document Understanding validation app?** If the user wants a human-review form for DU extraction results (correct fields, edit tables, approve a document), embed the **Validation Station widget** instead of generating a custom form. Follow [widgets/validation-station.md](widgets/validation-station.md) — it replaces the `src/components/Form.tsx` produced by Q4 below.
+
 ---
 
 ## Pre-flight: Collect Required Information

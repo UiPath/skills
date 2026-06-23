@@ -42,9 +42,16 @@
 {"id": "negative-042", "prompt": "Create a Camunda BPMN process", "expected_skill": ""}
 {"id": "negative-043", "prompt": "Design a Process Maker workflow", "expected_skill": ""}
 {"id": "negative-044", "prompt": "Set up UiPath AI Center to deploy my fraud detection ML model", "expected_skill": ""}
-{"id": "negative-045", "prompt": "Configure UiPath Document Understanding to extract invoice line items from scanned PDFs", "expected_skill": ""}
+{"id": "negative-045", "prompt": "Set up a classic Document Understanding ML extractor in Studio with a labeling session and AI Center training for scanned invoices", "expected_skill": ""}
 {"id": "negative-046", "prompt": "Build a UiPath Insights dashboard to visualize bot performance over the last quarter", "expected_skill": ""}
 {"id": "negative-047", "prompt": "Migrate my Automation Anywhere bots to a new environment", "expected_skill": ""}
 {"id": "negative-048", "prompt": "Refactor my Blue Prism object to use a work queue instead of a collection", "expected_skill": ""}
 {"id": "negative-049", "prompt": "Train a sklearn random forest classifier on my customer churn dataset", "expected_skill": ""}
 {"id": "negative-050", "prompt": "Set up Kubernetes ingress with cert-manager and Let's Encrypt", "expected_skill": ""}
+{"id": "negative-051", "prompt": "Reset a user's password in our corporate Active Directory", "expected_skill": ""}
+{"id": "negative-052", "prompt": "Configure Okta SSO for our internal Salesforce instance", "expected_skill": ""}
+{"id": "negative-053", "prompt": "Write a CNCF Serverless Workflow spec to run on my Knative cluster", "expected_skill": ""}
+{"id": "negative-054", "prompt": "Add an MCP server to my Claude Desktop config file", "expected_skill": ""}
+{"id": "negative-055", "prompt": "Build a FastMCP server in Python that exposes a calculator tool", "expected_skill": ""}
+{"id": "negative-056", "prompt": "Summarize what my team talked about in Slack this week", "expected_skill": ""}
+{"id": "negative-057", "prompt": "Run Tesseract OCR on a folder of scanned receipts", "expected_skill": ""}

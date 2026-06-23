@@ -16,8 +16,6 @@ initial_prompt: |
   Run each command exactly once, ignore the auth error, and continue to the next step.
   Do NOT retry any command. Do NOT attempt to login.
 
-  Before starting, load the uipath-data-fabric skill and follow its workflow.
-
   There is a "Products" entity with entity ID "prod-002-ent".
   Its fields are: ProductName (STRING), UnitPrice (DECIMAL), InStock (BOOLEAN).
 

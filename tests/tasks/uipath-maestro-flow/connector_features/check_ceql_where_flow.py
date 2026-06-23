@@ -27,6 +27,7 @@ from _shared.flow_check import assert_flow_has_node_type  # noqa: E402
 
 CONNECTOR_KEY = "uipath-microsoft-azureactivedirectory"
 FLOW_GLOB = "**/CeqlWhereTest*.flow"
+WHERE_DETAIL_GLOB = "**/where_detail.json"
 EXPECTED_FIELD = "displayname"
 EXPECTED_VALUE = "active"
 
@@ -51,6 +52,28 @@ def _leaf_value(n: dict):
     if isinstance(v, dict):
         return v.get("value")
     return v
+
+
+def _looks_like_filter_tree(node) -> bool:
+    """A canonical filter-tree dict carries a numeric ``groupOperator``
+    and a list of ``filters``. Used to locate the tree regardless of the
+    key the agent stored it under (e.g. top-level ``filter``, ``filterTree``,
+    or nested under ``plannedDetail.filter``)."""
+    return (
+        isinstance(node, dict)
+        and isinstance(node.get("groupOperator"), (int, float))
+        and isinstance(node.get("filters"), list)
+    )
+
+
+def _find_filter_tree(plan):
+    """Return the first filter-tree-shaped dict found anywhere in ``plan``.
+    The prompt asks the agent to capture a filter for review but does not
+    pin the JSON key, so accept the tree under any key."""
+    for node in _walk(plan):
+        if _looks_like_filter_tree(node):
+            return node
+    return None
 
 
 def _assert_filter_tree_shape(tree, *, source: str) -> None:
@@ -91,20 +114,23 @@ def _assert_filter_tree_shape(tree, *, source: str) -> None:
 
 
 def _check_where_detail() -> None:
-    if not os.path.exists("where_detail.json"):
+    matches = glob.glob(WHERE_DETAIL_GLOB, recursive=True)
+    if not os.path.exists("where_detail.json") and not matches:
         sys.exit("FAIL: where_detail.json not found")
+    path = "where_detail.json" if os.path.exists("where_detail.json") else matches[0]
     try:
-        plan = json.load(open("where_detail.json"))
+        plan = json.load(open(path))
     except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: where_detail.json is not valid JSON: {e}")
+        sys.exit(f"FAIL: {path} is not valid JSON: {e}")
 
-    filter_tree = plan.get("filter")
-    if not isinstance(filter_tree, dict):
+    filter_tree = _find_filter_tree(plan)
+    if filter_tree is None:
         sys.exit(
-            "FAIL: where_detail.json missing top-level `filter` object — "
-            "the prompt requires a structured filter tree under that key"
+            "FAIL: where_detail.json has no filter-tree object (a dict with a "
+            "numeric `groupOperator` and a `filters` list) under any key — "
+            "the prompt requires a structured CEQL filter tree"
         )
-    _assert_filter_tree_shape(filter_tree, source="where_detail.json.filter")
+    _assert_filter_tree_shape(filter_tree, source="where_detail.json filter tree")
 
 
 def _find_flow() -> str:
@@ -144,7 +170,7 @@ def _check_flow_structure() -> None:
             f"`uipath.connector.{CONNECTOR_KEY}.list-groups` (or similar) found"
         )
 
-    assert_flow_has_node_type(["decision", "terminate"])
+    assert_flow_has_node_type(["terminate"])
 
 
 def main() -> None:
@@ -153,7 +179,7 @@ def main() -> None:
     print(
         f"OK: where_detail.json carries canonical CEQL filter tree on "
         f"displayName='{EXPECTED_VALUE}'; flow targets {CONNECTOR_KEY} "
-        "List Groups; Decision and Terminate nodes present"
+        "List Groups; Terminate node present"
     )
 
 

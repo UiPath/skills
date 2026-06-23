@@ -174,7 +174,7 @@ For each event:
 
 **User asks:** "Export everything for compliance for Q4." / "I need the full audit log for January for the security review." / "Pull last month's events for tenant X as JSON files."
 
-**Approach:** `export` straight to disk. Default (`json`) writes a **folder** of day-wise JSON files; add `--file-format csv` for a single merged CSV when the user wants a flat, spreadsheet/Excel-friendly dump. No need to query `events` first unless the user wants a preview. Give `--output-file` a folder path (no extension) for `json`, or a `.csv` path for `csv`.
+**Approach:** `export` straight to disk. Default (`json`) writes a **folder** of day-wise JSON files; add `--file-format csv` for a single merged CSV when the user wants a flat, spreadsheet/Excel-friendly dump. No need to query `events` first unless the user wants a preview. Pass `--output-path` a **base directory** — the CLI creates a uniquely-named `audit_<from>_<to>_<generated-at>` folder (`json`) or `.csv` (`csv`) inside it; don't hand-craft the per-export name.
 
 ### Step 1 — Confirm scope and window
 
@@ -183,11 +183,11 @@ If the user is ambiguous about scope, ask once. For compliance reviews, **both**
 ### Step 2 — Export
 
 ```bash
-# Tenant scope — most events (default json: a folder of day-wise JSON files)
+# Tenant scope — most events (default json: a uniquely-named folder of day-wise JSON files under the base dir)
 uip admin audit tenant export \
   --from-date 2026-01-01 \
   --to-date   2026-02-01 \
-  --output-file ./audit-tenant-2026-01 \
+  --output-path ./audit-exports \
   --output json
 
 # Tenant scope as a single merged CSV (flat, Excel-friendly)
@@ -195,44 +195,45 @@ uip admin audit tenant export \
   --from-date 2026-01-01 \
   --to-date   2026-02-01 \
   --file-format csv \
-  --output-file ./audit-tenant-2026-01.csv \
+  --output-path ./audit-exports \
   --output json
 
 # Org scope — admin events (memberships, license, tenant lifecycle)
 uip admin audit org export \
   --from-date 2026-01-01 \
   --to-date   2026-02-01 \
-  --output-file ./audit-org-2026-01 \
+  --output-path ./audit-exports \
   --output json
 ```
 
-The CLI issues one HTTP call per UTC day under the hood. `json` writes one JSON file per UTC day into the output folder; `csv` parses the same daily JSON and merges every event into one CSV. `Days` and `NonEmptyDays` in the result tell you how many calendar days had data; `json` reports `Files` (files written) and `csv` reports `Events` (total rows).
+The CLI issues one HTTP call per UTC day under the hood, then creates a uniquely-named `audit_<from>_<to>_<generated-at>` output under `--output-path`: `json` writes a folder of one JSON file per UTC day; `csv` parses the same daily JSON and merges every event into one `.csv`. The result's `Path` is the generated folder/file (and `GeneratedAt` its timestamp); `Days`/`NonEmptyDays` say how many calendar days had data; `json` reports `Files`, `csv` reports `Events`.
 
 ### Step 3 — Verify the export
 
-**JSON (default)** — list the folder's per-day files:
+**JSON (default)** — the export created a generated folder under the base dir; list its per-day files:
 
 ```bash
-ls ./audit-tenant-2026-01
+ls ./audit-exports/*/        # the generated audit_<from>_<to>_<generatedAt>/ folder
 ```
 
-Typical layout (one file per UTC day with events):
+Typical layout (the base dir holds one generated folder; one file per UTC day with events):
 
 ```
-audit-tenant-2026-01/
-├── 2026-01-01.json
-├── 2026-01-02.json
-├── ...
-└── 2026-01-31.json
+audit-exports/
+└── audit_2026-01-01_2026-02-01_20260617T112630/
+    ├── 2026-01-01.json
+    ├── ...
+    └── 2026-01-31.json
 ```
 
 Each `.json` file is a JSON array of audit events with **PascalCase** keys (`Id`, `CreatedOn`, `OrganizationId`, `ActorId`, `ActorName`, `EventType`, …) — different from the camelCase shape returned by the live `events` endpoint. Note this in the user's hand-off if they're going to feed the dump into other tooling.
 
-**CSV** — inspect the header and row count:
+**CSV** — find the generated file, then inspect the header and row count:
 
 ```bash
-head -1 ./audit-tenant-2026-01.csv          # shared header (PascalCase columns)
-python3 -c "import csv; print(sum(1 for _ in csv.reader(open('./audit-tenant-2026-01.csv'))) - 1, 'rows')"
+csv=$(ls ./audit-exports/audit_*.csv | head -1)   # the generated audit_<from>_<to>_<generatedAt>.csv
+head -1 "$csv"                                      # shared header (PascalCase columns)
+python3 -c "import csv,sys; print(sum(1 for _ in csv.reader(open(sys.argv[1]))) - 1, 'rows')" "$csv"
 ```
 
 One header row, then every event across all days as a data row (same PascalCase column names as the JSON files' keys). The row count should match `Events` in the result envelope.
@@ -301,7 +302,7 @@ Two or more signals? Run them in sequence and stitch the results in the final re
 - **`tenant` events without an active tenant fail loudly.** If `uip login` has no tenant selected, every tenant-scoped command throws. Either re-`uip login` and pick a tenant, or pass `--tenant-id <guid>` on every call.
 - **`events` cursor pagination is chronologically reversed from intuition.** `next` = newer (often null), `previous` = older (the typical "load more"). The CLI tool follows `previous` automatically when you bump `--limit > 200` — don't re-implement this in the agent.
 - **Date-only ISO strings are interpreted as UTC midnight.** `--from-date 2026-01-01` means `2026-01-01T00:00:00Z`. To capture the full final day in `--to-date`, use `2026-02-01` (exclusive next day) or `2026-01-31T23:59:59.999Z`.
-- **Export format depends on `--file-format`.** The default `json` writes one **JSON** file per UTC day (named `<YYYY-MM-DD>.json`) into the `--output-file` **folder**, with **PascalCase** keys; `--file-format csv` produces a single merged **CSV** whose header uses those same PascalCase field names. Both differ from the camelCase live `events` endpoint — don't paste an export into a parser expecting the live shape. In the CSV, `Status` is numeric (`0`/`1`) and `ClientInfo` is a JSON-stringified cell.
+- **Export format depends on `--file-format`.** The default `json` writes one **JSON** file per UTC day (named `<YYYY-MM-DD>.json`) into a generated subfolder under `--output-path`, with **PascalCase** keys; `--file-format csv` produces a single merged **CSV** whose header uses those same PascalCase field names. Both differ from the camelCase live `events` endpoint — don't paste an export into a parser expecting the live shape. In the CSV, `Status` is numeric (`0`/`1`) and `ClientInfo` is a JSON-stringified cell.
 - **Org sources and tenant sources are different sets.** Don't reuse a GUID from `org sources` in a `tenant events` query — the filter will silently match nothing.
 
 ## Output Etiquette — after an audit query or export

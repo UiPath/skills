@@ -16,7 +16,7 @@ Never execute the work. Outputs are SDD markdown, plan/tasks markdown, and live 
 
 The skill has three paths, decided by the **Entry Guard**:
 
-- **Phase D — Design.** Input is a PDD, or an explicit "design / architect this" request. Author the SDD, then fall through into Lane A. See [sdd-generation-guide.md](references/sdd-generation-guide.md).
+- **Phase D — Design.** Input is a PDD, or an explicit "design / architect this" request. Author the SDD; the SDD write ends the turn, and Lane A continues on the next turn. See [sdd-generation-guide.md](references/sdd-generation-guide.md).
 - **Lane A — PDD-driven.** Input is an SDD with the `## Planner Handoff` marker (written by Phase D, or hand-written). Read it, derive tasks, emit live tasks. Zero to two user prompts. See [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
 - **Lane B — Non-PDD.** No SDD; a non-PDD multi-project request. Elicit preferences, detect project type, write a plan, emit live tasks. 0–3 prompts (5-call cap). See [non-pdd-lane-guide.md](references/non-pdd-lane-guide.md).
 
@@ -84,7 +84,7 @@ When triggered: input is a PDD, or an explicit design/architect request. Three p
 
 1. **Phase 1 — PDD Analysis & Scope Selection.** Ask execution mode (Autonomous or Interactive) and delivery model (Cloud / Automation Suite / standalone) in one batched call — skip the delivery question when the PDD or request states it, or when the `uip login status` preflight resolves it from the session `BaseUrl`. Read the full PDD, extract structured information (including environment & constraint signals), run Constraint Gate → Level 1 (primary scope) → Level 1.5 (RPA sub-type) → Level 1.75 (Solution composition) → Level 2.5 (project decomposition). Step 2.5 runs an authenticated `uip` library search (CLI auth required). In Interactive mode, present a summary with the recommended scope at the top and alternatives below; in Autonomous mode, proceed.
 2. **Phase 2 — Architecture Review.** Load the product-specific template. Generate the architectural core sections. Present for review in Interactive mode.
-3. **Phase 3 — Full SDD Generation.** Generate all remaining sections including the thorough §17 Testing Strategy. Resolve `[SME REVIEW]` items first. Write the `## Planner Handoff` header + marker. Write the SDD to disk. **Fall through into Lane A** to derive tasks.
+3. **Phase 3 — Full SDD Generation.** Generate all remaining sections including the thorough §17 Testing Strategy. Resolve `[SME REVIEW]` items first. Write the `## Planner Handoff` header + marker. Write the SDD to disk — write early and append incrementally so a long turn still leaves a gradeable file. The SDD write is a **turn boundary**: in autonomous mode, end the turn after the SDD summary and continue into Lane A on the next turn (do not stack both phases in one turn).
 
 ## Lane A — PDD-driven (summary)
 

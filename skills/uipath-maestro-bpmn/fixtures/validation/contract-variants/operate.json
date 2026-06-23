@@ -1,9 +1,0 @@
-{
-  "projectId": "Fixture.ContractVariants",
-  "main": "contract-variants.bpmn",
-  "contentType": "ProcessOrchestration",
-  "targetFramework": "Portable",
-  "runtimeOptions": {
-    "requiresUserInteraction": false
-  }
-}

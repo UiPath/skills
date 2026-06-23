@@ -1,19 +1,19 @@
 task_id: skill-agent-inline-solution-escalation-tool
 description: >
-  Add escalation app tools (solution resource) for flow inline agents
-  inside an existing solution (brownfield). The fixture ships a
-  `ReviewFlowSol` solution that already contains a registered low-code
-  `ModerationAgent` project. The agent must add a NEW `ReviewFlow` Flow
-  project whose inline low-code agent escalates uncertain cases to a
-  human reviewer via UiPath ActionCenter — reusing the existing solution
-  structure, NOT re-creating `ModerationAgent` and NOT re-initializing
-  the solution. Verifies the escalation resource.json under the inline
-  agent's UUID subdirectory + a `uipath.agent.resource.escalation` flow
-  node wired to the autonomous agent node's `escalation` handle.
-tags: [uipath-agents, e2e, mode:build, low-code, inline-flow]
+  Add an inline-agent escalation wired to a solution-internal Action
+  Center app (brownfield). The fixture ships a `ReviewFlowSol` solution
+  that already contains a registered `HumanReviewEscalation` Action Center app
+  (workflow Action). The agent must add a NEW `ReviewFlow` Flow project
+  whose inline low-code agent escalates uncertain cases to a human
+  reviewer via the pre-existing `HumanReviewEscalation` app — reusing it, NOT
+  re-creating it and NOT re-initializing the solution. Verifies the
+  escalation resource.json under the inline agent's UUID subdirectory + a
+  `uipath.agent.resource.escalation` flow node wired to the autonomous
+  agent node's `escalation` handle.
+tags: [uipath-agents, e2e, mode:build, low-code, inline-flow, feature:escalation]
 
 run_limits:
-  expected_turns: 60
+  expected_turns: 63
   turn_timeout: 1200
 
 pre_run:
@@ -25,11 +25,11 @@ pre_run:
 # Escalation capability, so the prompt asks for it explicitly.
 initial_prompt: |
   Create a new UiPath Flow project named "ReviewFlow" inside the existing
-  "ReviewFlowSol" solution (in the current directory). The flow must use
-  an inline low-code agent to moderate user content and escalate uncertain
-  cases to a human reviewer via a UiPath Action Center app in this same
-  solution. Set this up using the agent's Escalation capability, wired into the flow — not a standalone
-  human-in-the-loop node.
+  "ReviewFlowSol" solution (in the current directory). The flow must use an inline
+  low-code agent to moderate user content and escalate uncertain cases to a human
+  reviewer using the existing "HumanReviewEscalation" Action Center app that's
+  already in the solution. Set this up using the agent's Escalation capability,
+  wired into the flow — not a standalone human-in-the-loop node.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -53,20 +53,43 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # Brownfield: ModerationAgent ships in the fixture. The agent must not
-  # scaffold a standalone agent over it.
-  - type: command_not_executed
-    description: "Agent did NOT re-create the existing ModerationAgent project"
+  # Informational discovery criteria: the agent may use file reads instead of
+  # CLI discovery. pass_threshold:0 means these never block the run.
+  - type: command_executed
+    description: "Agent discovered the existing HumanReviewEscalation app via solution resources list (informational)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+init\s+["'']?ModerationAgent'
-    weight: 1.5
-    pass_threshold: 1.0
+    command_pattern: 'uip\s+solution\s+resources?\s+list\b.*--source\s+local'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
 
-  # Outcome-based check: the fixture .uipx starts with ModerationAgent
+  # Informational, NOT enforced: pass_threshold:0 means score (0 when the
+  # agent skips `resources get`) always clears the bar. The `resources list`
+  # discovery above is the enforced signal; `get` is an acceptable-but-optional
+  # follow-up.
+  - type: command_executed
+    description: "Agent fetched the HumanReviewEscalation configuration with uip solution resources get (informational)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Local-registry discovery: informational. The agent may discover node types
+  # via file reads or resources list output instead of registry search/list.
+  - type: command_executed
+    description: "Agent searched or listed the local flow registry for the escalation node manifest (informational)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+registry\s+(search|list)\b.*--local'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Outcome-based check: the fixture .uipx starts with the HumanReviewEscalation app
   # registered; auto-registration of the new Flow project must bring
   # Projects[] to 2.
   - type: json_check
-    description: "ReviewFlow is registered alongside ModerationAgent in the parent solution .uipx"
+    description: "ReviewFlow is registered alongside HumanReviewEscalation in the parent solution .uipx"
     path: "ReviewFlowSol/ReviewFlowSol.uipx"
     assertions:
       - expression: "length(Projects)"

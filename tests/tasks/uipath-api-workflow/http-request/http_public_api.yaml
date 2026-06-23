@@ -21,8 +21,6 @@ initial_prompt: |
   it locally to confirm it returns a fact.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation.
-  Before starting, load the uipath-api-workflow skill and follow its
-  connector-activity discovery flow.
 
 success_criteria:
   - type: file_exists
