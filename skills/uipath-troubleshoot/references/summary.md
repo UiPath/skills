@@ -116,6 +116,15 @@ Namespaces: `UiPath.Database.Activities`
 - [activity-packages/database-activities/overview.md](./activity-packages/database-activities/overview.md) — Package overview, connection model, key activities, and common failure patterns
 - [activity-packages/database-activities/summary.md](./activity-packages/database-activities/summary.md) — All playbooks for Database Activities issues
 
+## Web Activities
+
+Activities for outbound HTTP calls and payload deserialization. `HttpClient` (legacy, RestSharp) and `NetHttpRequest` (modern, `System.Net.Http`) issue HTTP requests; `DeserializeJson`, `DeserializeJsonArray`, and `DeserializeXml` parse a string into a typed object / `JArray` / `XDocument`. Issues here involve HTTP request failures (`System.Net.WebException` — status / DNS / connection / SSL), request timeouts (`System.TimeoutException`), null request inputs (`System.NullReferenceException`), modern-activity faults wrapped in `System.AggregateException`, malformed JSON/XML payloads (`Newtonsoft.Json.JsonReaderException` / `System.Xml.XmlException`), JSON type mismatches (`Newtonsoft.Json.JsonSerializationException`), and null/empty payloads (`System.ArgumentNullException`). These activities propagate raw framework exceptions — the faulted activity class + exception class is the discriminator. A malformed/null deserialize fault is frequently a symptom of an upstream HTTP call.
+
+Namespaces: `UiPath.Web.Activities`
+
+- [activity-packages/web-activities/overview.md](./activity-packages/web-activities/overview.md) — Package overview, activity families, and common failure patterns
+- [activity-packages/web-activities/summary.md](./activity-packages/web-activities/summary.md) — All playbooks for Web Activities issues
+
 
 ## Playbooks
 
