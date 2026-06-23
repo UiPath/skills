@@ -107,6 +107,15 @@ Namespaces: `UiPath.Excel.Activities`
 - [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, providers, scopes, execution models, and common failure patterns
 - [activity-packages/excel-activities/summary.md](./activity-packages/excel-activities/summary.md) — All playbooks for Excel Activities issues
 
+## Word Activities
+
+Activities for automating Microsoft Word documents on Windows. Document operations run inside a `Use Word File` (`WordProcessScope`) or `Word Application Scope` container and drive Word through Office Interop (COM). Issues here include package-wide COM / host failures common to all Word activities — type library / class not registered (`0x8002801D` / `0x80040154`), bitness mismatch, Word busy/blocked (`0x8001010A`), and `WINWORD.EXE` crashing mid-operation with a `RPC_E_WRONG_THREAD` (`0x8001010E`) cast error — as well as `Add Picture` (`WordAddImage`)-specific failures: activity placed outside a Word scope, insertion target (text/bookmark) not found, invalid image path / unusable image input, and a very large image crashing Word on insert.
+
+Namespaces: `UiPath.Word.Activities`
+
+- [activity-packages/word-activities/overview.md](./activity-packages/word-activities/overview.md) — Package overview, `Add Picture` execution model, and common failure patterns
+- [activity-packages/word-activities/summary.md](./activity-packages/word-activities/summary.md) — All playbooks for Word Activities issues
+
 ## Database Activities
 
 Activities for querying and modifying relational databases over ADO.NET (SQL Server, Oracle, MySQL, ODBC, OLE DB). A `DatabaseConnection` opened by `Connect to Database` / `Start Transaction` is consumed by `Execute Query`, `Execute Non Query`, `Run Command`, and the bulk/insert activities. Issues here involve null/out-of-scope connections, provider/driver mismatches after Windows-Legacy → Windows migration, SQL syntax / unsafe concatenation, query text in the connection-string field, command timeouts, `0xE0434352` CLR crashes, and using the wrong activity for the statement type.
