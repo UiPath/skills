@@ -1,0 +1,139 @@
+.pdf-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.pdf-shell--center {
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.5rem 0.75rem;
+}
+
+.pdf-toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.6rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.pdf-btn:not(:disabled):hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.pdf-btn:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.pdf-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pdf-btn--zoom-label {
+  min-width: 3.5rem;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdf-btn--download {
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.pdf-btn--download:not(:disabled):hover {
+  background: var(--accent-bg);
+}
+
+.pdf-page-info {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 0 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pdf-page-info__current {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.pdf-viewport {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1.5rem;
+}
+
+.pdf-page {
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+
+.pdf-page--rendering {
+  opacity: 0.6;
+}
+
+.pdf-page-loading,
+.pdf-page-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.pdf-page-error {
+  color: #b91c1c;
+}
+
+.pdf-empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

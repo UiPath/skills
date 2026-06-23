@@ -1,9 +1,11 @@
 # Bulk Import Reference
 
+> **⚠ `records import` does not support complex field types — surface this to the user before invoking (SKILL.md Rule 20).** `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` columns are **not supported**: the CSV header is accepted but the values are ignored (no error, no `ErrorFileLink` entry — `null` on every imported row, or row failure if the field is `isRequired` without a `defaultValue`). This is current Data Fabric platform behavior, not a bug — do not work around it. Run `entities get <entity-id>` first; if any field is in that set, switch to `records insert --file <json>` (handles all types except `FILE` — use `files upload` for those, see Rule 6). See [Complex Field Types Not Supported](#complex-field-types-not-supported) below.
+
 ## Import Records from CSV
 
 ```bash
-uip df records import <entity-id> --file data.csv --output json
+uip df records import <entity-id> --file data.csv [--folder-key <folder-guid>] --output json
 ```
 
 Response: `{ Code: "RecordsImported", Data: { InsertedRecords, TotalRecords, ErrorFileLink? } }`
@@ -11,6 +13,15 @@ Response: `{ Code: "RecordsImported", Data: { InsertedRecords, TotalRecords, Err
 - `InsertedRecords` — number of rows successfully imported
 - `TotalRecords` — total rows in the CSV (including failures)
 - `ErrorFileLink` — download URL for a CSV of failed rows (only present if there were failures)
+- `--folder-key` — required when the parent entity is folder-scoped (CLI ≥ `1.197.0`)
+
+**Pre-flight check (required by Rule 20):**
+
+```bash
+# Inspect schema before importing — tell the user which columns will be dropped
+uip df entities get <entity-id> --output json
+# Flag every field whose Fields[].fieldDataType.Name ∈ {CHOICE_SET_SINGLE, CHOICE_SET_MULTIPLE, RELATIONSHIP, FILE, AUTO_NUMBER}
+```
 
 ## CSV Format Requirements
 
@@ -29,13 +40,13 @@ Charlie,74,false,2024-03-05
 
 For an entity with fields: `Name` (STRING), `Score` (INTEGER), `Active` (BOOLEAN), `CreatedDate` (DATE).
 
-### Complex Field Types Are Silently Dropped
+### Complex Field Types Not Supported
 
 **Complex field types** in Data Fabric are the ones that need extra config or lookup tokens beyond the value itself: `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER`. Everything else is a Basic type.
 
-`records import` only processes Basic types (`STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `MULTILINE_TEXT`, `UUID`). Columns for the complex types listed above are accepted in the header but the row values are discarded — no error, nothing in `ErrorFileLink`, just `null` on every imported row (or row failure if the field is `isRequired` without a `defaultValue`).
+`records import` is **not supported** for those complex types — it only processes Basic types (`STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `MULTILINE_TEXT`, `UUID`). The complex-type columns are accepted in the CSV header but their row values are ignored — no error, nothing in `ErrorFileLink`, just `null` on every imported row (or row failure if the field is `isRequired` without a `defaultValue`).
 
-For entities with any complex field, use `records insert --file <json>` instead — the insert endpoint handles all types. See [`records-query.md`](records-query.md#writing-choice-set-and-relationship-values) for the value form.
+For entities with any complex field, use `records insert --file <json>` instead — the insert endpoint handles every type except `FILE` (which is exclusively written through `files upload`, SKILL.md Rule 6). See [`records-query.md`](records-query.md#writing-choice-set-and-relationship-values) for the value form.
 
 ## Full Workflow
 

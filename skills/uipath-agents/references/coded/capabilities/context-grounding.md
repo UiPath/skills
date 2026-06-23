@@ -17,6 +17,8 @@ Before using context grounding, you must first create an index in your Orchestra
 
 Once indexed, you can reference the index by name in your agent code.
 
+To create, ingest, poll, search, or delete the index from the CLI instead of the Orchestrator UI, see [uipath-platform/references/context-grounding/index-management.md](../../../../uipath-platform/references/context-grounding/index-management.md).
+
 ## Folder Targeting
 
 Context Grounding indexes live in Orchestrator folders. Pass a folder identifier whenever the index is not in the default folder resolved from your auth context — otherwise the service may return `400 FolderKey required`. `ContextGroundingRetriever` accepts `folder_path` or `folder_key`; `ContextGroundingVectorStore` accepts `folder_path`.

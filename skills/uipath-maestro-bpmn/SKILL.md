@@ -1,75 +1,173 @@
 ---
 name: uipath-maestro-bpmn
-description: "Always invoke for `.bpmn`, `project.uiproj`, `entry-points.json`, `operate.json`, `bindings_v2.json`, or `package-descriptor.json` files. UiPath Maestro BPMN / Process Orchestration — author, inspect, validate, package, operate, diagnose. Model writes BPMN skeleton + non-IS UiPath XML; CLI owns Integration Service nodes/templates and generated package files. For .flow JSON→uipath-maestro-flow. For XAML/coded workflows→uipath-rpa. For Python agents→uipath-agents. For Case plans→uipath-maestro-case."
+description: "UiPath Maestro BPMN / Process Orchestration: author (registry-driven), validate, package, operate, and diagnose .bpmn projects. For .flow use uipath-maestro-flow; for case plans use uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
-# UiPath Maestro BPMN Skill
+# UiPath Maestro BPMN
 
-Guide for authoring, inspecting, validating, packaging, operating, and diagnosing UiPath Maestro BPMN Process Orchestration projects. BPMN XML is the source of record. Generated JSON package files and Integration Service details are owned by CLI tooling.
+Work with UiPath Maestro (Process Orchestration) `.bpmn` projects across their
+lifecycle: author, validate, package, operate, and diagnose. **Authoring is
+registry-driven**: every `uipath:*` extension payload comes from a template the
+registry serves; the structural BPMN that holds those nodes together (process
+scaffold, sequence flows, gateways, events, boundary events, containers,
+multi-instance markers, and the diagram) is authored from the documented spec +
+canvas contract. Packaging, operating (upload, publish, run, manage), and
+diagnosing are driven through the UiPath CLI, covered in the capability
+references below.
 
-## When to use this skill
+## When to use
 
-**Author** - creating or editing local BPMN project source. Read [references/author/CAPABILITY.md](references/author/CAPABILITY.md).
+- Create a Maestro `.bpmn` from a description.
+- Edit `.bpmn` structure: gateways, events, boundary events, subprocesses, call
+  activities, multi-instance loops, sequence-flow conditions, variables.
+- Add a UiPath extension node (RPA job, agent, HITL, queue, business rule, API
+  workflow, Integration Service connector, internal message, timer).
+- Validate a `.bpmn` against the canvas rules before import.
+- Package, upload, publish, or run a project, and manage its jobs and instances.
+- Diagnose a failed or misbehaving run.
 
-- Create a Maestro BPMN project skeleton
-- Edit `.bpmn` XML for process structure, variables, mappings, timers, messages, gateways, subprocesses, script tasks, and documented non-Integration-Service UiPath extensions
-- Plan where Integration Service activities/triggers require CLI enrichment instead of model-authored XML
-- Validate XML, diagrams, entry points, bindings, and generated package metadata locally
+### Editing an existing `.bpmn` (preserve what you did not author)
 
-**Operate** - packaging, uploading, publishing, running, or managing cloud lifecycle. Read [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
+The skill can edit an existing file. Make **surgical** edits and preserve
+content you did not author: unknown `uipath:*` elements, `uipath:migrationVersion`,
+tags, imported Integration Service payloads, and stable element IDs. Do not
+regenerate the whole file or drop extension data the skill does not recognize —
+preserve-only structures (see the blocklist in
+[references/structural-bpmn.md](references/structural-bpmn.md)) round-trip
+untouched.
 
-- Package a BPMN Process Orchestration project
-- Upload to Studio Web or publish/deploy when explicitly requested
-- Run/debug a process instance only after explicit user consent
-- Manage jobs, instances, incidents, variables, and lifecycle actions
+For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
+`uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
+`uipath-maestro-case`.
 
-**Diagnose** - investigating failed or misbehaving runs. Read [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
+## The model
 
-- Fetch incidents, variables, element executions, and deployed BPMN assets
-- Correlate runtime failures back to BPMN element IDs and local XML
-- Identify authoring, packaging, binding, and Integration Service enrichment failures
+Two halves make a valid Maestro `.bpmn`:
 
-## Capability router
+1. **`uipath:*` payloads — registry-owned.** Each node's extension XML
+   (`uipath:activity` / `uipath:event` / `uipath:mapping`, its `context`,
+   `input`, `output`, and `bindingInfo`) comes from
+   `uip maestro bpmn registry get <type>`'s `xmlTemplate`. **Never hand-author a
+   `uipath:*` element from prose.**
+2. **Structural BPMN — spec/canvas-owned.** The registry emits no
+   `<bpmn:definitions>`/`<bpmn:process>`, no sequence flows, no gateway
+   conditions/defaults, no event-definition payloads, no boundary-event
+   attributes, no subprocess/loop structure, and no diagram. Author all of these
+   from [references/structural-bpmn.md](references/structural-bpmn.md), which is
+   grounded in the registry spec and the Studio Web canvas serializer.
 
-| I want to... | Read |
+## Workflow
+
+Work the four steps quickly and author early — do not pre-read every reference
+before writing. Read a reference only when you reach the structure it covers.
+
+1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
+   session — do not re-pull), then `list` / `search` to map intent to extension
+   types; `uip is connections list` for live connections. Confirm every
+   selection with the user (use AskUserQuestion). Never fabricate an identifier.
+   See [references/registry-workflow.md](references/registry-workflow.md).
+2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
+   each chosen node. Enrich `Intsvc.*` connector nodes with
+   `--connection-id`/`--object-name`.
+3. **Assemble.** Author directly from the complete minimal file in
+   [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-fixtures)
+   plus each node's `xmlTemplate` (fill placeholders only). That skeleton already
+   shows variables, the entry point, a branch, and the diagram. **Do not read the
+   validator's `test/fixtures/` to infer the pattern** — it is the top reason
+   authoring runs out of time. Add only the structural pieces your process needs
+   (extra gateways, events, boundary events, containers, multi-instance markers),
+   then generate one `BPMNShape`/`BPMNEdge` per node and flow.
+4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
+   bundled validator — it reconstructs the canvas model and runs every
+   PO.Frontend rule:
+
+   ```bash
+   cd skills/uipath-maestro-bpmn/validator && npm install --silent
+   node validate-bpmn.mjs <file.bpmn>   # prints VALID (exit 0) or the errors (exit 1)
+   ```
+
+   A well-formed-XML parse is the secondary fallback if Node is unavailable. See
+   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+   Validate once; fix only ERROR-severity findings (warnings do not block import).
+   Do not re-validate in a loop chasing warnings.
+
+## Operate and diagnose
+
+Beyond authoring, this skill packages, ships, runs, and diagnoses Maestro
+projects through the UiPath CLI.
+
+- **Package and operate** (package a project, upload to Studio Web, publish or
+  deploy, run or debug instances, and manage jobs, instances, incidents, and
+  lifecycle actions): see [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
+- **Diagnose** (fetch incidents, variables, and element executions, and trace a
+  failed run back to its BPMN element): see [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md).
+
+Any cloud-side change (upload, publish, deploy, run, pause, resume, cancel,
+retry, migrate) requires explicit user consent, and local validation should pass
+first.
+
+## Structural coverage
+
+This skill teaches authoring of the full surface the canvas supports. What the
+registry serves a template for vs. what you author by hand:
+
+| Structure | Source |
 | --- | --- |
-| Create or edit BPMN source | [references/author/CAPABILITY.md](references/author/CAPABILITY.md) |
-| Package, upload, publish, run, or manage lifecycle | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
+| Node `uipath:*` payloads (RPA, agent, HITL, queue, business rule, API workflow, IS connector, internal message, timer, script, variables) | **Registry** `xmlTemplate` |
+| `<bpmn:definitions>`/`<bpmn:process>` scaffold + namespaces | Authored (registry gap) |
+| Sequence flows, `conditionExpression`, gateway `default` | Authored (registry gap) |
+| Gateways: exclusive, parallel, inclusive, event-based (complex is preserve-only) | Authored (registry gap) |
+| Events + event-definition matrix: message, timer, error, terminate (end-only). Signal/escalation/conditional/link/compensate/cancel/multiple are preserve-only | Authored (registry gap); payload per canvas serializer |
+| Boundary events: `attachedToRef`, interrupting/non-interrupting (`cancelActivity`) | Authored (registry gap) |
+| Subprocess, event subprocess (`triggeredByEvent`), call activity | Authored (registry gap); call-activity payloads from registry |
+| Multi-instance / loop characteristics | Authored from canvas contract — **registry exposes no template (registry gap)** |
+| `bpmndi:BPMNDiagram` (shape per node, edge per flow) | Always generated — **registry emits none (registry gap)** |
+
+Flagged registry gaps: the registry serves no template for structural BPMN,
+sequence-flow conditions, event-definition payloads, boundary-event attributes,
+multi-instance markers, or the diagram. These are authored from the spec +
+canvas contract in [references/structural-bpmn.md](references/structural-bpmn.md)
+and honestly surfaced to the user as gaps when asked.
+
+## Rules
+
+1. **Registry owns every `uipath:*` payload.** Author from
+   `registry get` templates; never hand-write `uipath:` XML from prose.
+2. **Never fabricate an identifier.** Connection IDs, process/queue/connector
+   keys, app IDs, folder ids/paths come from discovery or the user.
+3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
+   contract in [references/structural-bpmn.md](references/structural-bpmn.md);
+   flag honestly what the registry does not expose.
+4. **Confirm before authoring.** Confirm the chosen connector/connection/process
+   and the process structure with the user (AskUserQuestion).
+5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
+   `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
+6. **Node type is a child element, never an attribute.** Every `uipath:activity`
+   / `uipath:event` / `uipath:mapping` declares its type as
+   `<uipath:type value="<Type>" version="v1" />` inside the wrapper. Never write
+   `<uipath:activity type="…">` — the canvas will not recognize the node.
+7. **No `--` in XML comments.** XML forbids `--` (double-hyphen) inside
+   `<!-- … -->`, so never paste CLI commands or flags (`--output`,
+   `--connection-id`, `--object-name`) into a comment — it makes the file
+   unparseable. Keep comments minimal.
+8. **Use `--output json` for parsed CLI calls.**
+9. **Public-safe always.** No customer XML, tenant URLs, real IDs, or private
+   names — see [references/public-safety.md](references/public-safety.md).
+10. **Confirm before any cloud change.** Upload, publish, deploy, run, pause,
+   resume, cancel, retry, and migrate require explicit user consent; validate
+   locally first.
+
+## References
+
+| Topic | Read |
+| --- | --- |
+| Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
+| Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
+| Runtime expressions, `vars.`/`bindings.`/`iterator.`, `=js:` (Jint) syntax | [references/expression-authoring.md](references/expression-authoring.md) |
+| CLI conventions and the side-effect boundary | [references/cli-conventions.md](references/cli-conventions.md) |
+| Keeping content public-safe | [references/public-safety.md](references/public-safety.md) |
+| Bundled offline validator (every PO.Frontend rule) | [validator/README.md](validator/README.md) |
+| Package, upload, publish, run, or manage instances | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
 | Diagnose a failed or misbehaving run | [references/diagnose/CAPABILITY.md](references/diagnose/CAPABILITY.md) |
-| Understand project layout and package files | [references/shared/project-layout.md](references/shared/project-layout.md) |
-| Regenerate or verify local package metadata | [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md) |
-| Understand BPMN XML authoring boundaries | [references/shared/bpmn-xml-contract.md](references/shared/bpmn-xml-contract.md) |
-| Copy minimal XML shells per supported wrapper | [references/shared/wrapper-shells.md](references/shared/wrapper-shells.md) |
-| Understand variables, bindings, entry points, and expressions | [references/shared/variables-bindings-expressions.md](references/shared/variables-bindings-expressions.md) |
-| Author lint-compatible runtime expressions | [references/shared/expression-authoring.md](references/shared/expression-authoring.md) |
-| Author Maestro retry and error handling | [references/shared/error-handling.md](references/shared/error-handling.md) |
-| Understand CLI conventions and side-effect boundaries | [references/shared/cli-conventions.md](references/shared/cli-conventions.md) |
-| Keep examples and commits public-safe | [references/shared/public-safety.md](references/shared/public-safety.md) |
-
-## Critical rules (universal)
-
-1. **BPMN XML is the source of record** - edit `.bpmn` for process structure; treat generated package JSON as derived unless a CLI contract explicitly says otherwise.
-2. **Model owns skeleton and documented non-IS XML only** - generate BPMN control flow, diagram coordinates, root variables, mappings, entry point IDs, script tasks, retry/error metadata, and documented non-Integration-Service UiPath extensions. Do not invent undocumented UiPath extension payloads.
-3. **Use two-pass authoring for substantial changes** - write the standard BPMN skeleton first, get operator confirmation of the process shape, then fill model-owned UiPath extension XML.
-4. **CLI owns Integration Service enrichment** - Integration Service activities/triggers, connection bindings, connector metadata, dynamic schemas, trigger properties, and generated output templates must come from registry-backed CLI enrichment or validation.
-5. **Never use private source material in skill content** - no exported customer BPMN, tenant URLs, folder keys, connection IDs, user names, process names, local paths, screenshots, or temporary mission notes. Examples must be synthetic.
-6. **Use JSON output for parsed CLI calls** - whenever CLI output is parsed programmatically, request JSON output from the CLI and preserve the raw command result in the local transcript or a sanitized report.
-7. **Do not run debug or deployed process execution without explicit user consent** - debug/run can trigger real side effects in external systems.
-8. **Ask before cloud-side mutations** - upload, publish, deploy, run, pause, resume, cancel, retry, migrate, and move-cursor operations require a clear user decision.
-9. **Do not automatically invoke sibling skills** - when BPMN references an RPA process, agent, app, API workflow, or case asset that is missing, identify the dependency and provide handoff instructions.
-10. **Validate before operate** - run local XML/project/package validation before upload, publish, or debug. Treat validation warnings about CLI-owned enrichment as blockers for real runs when the target element can execute.
-11. **Preserve unknown extension payloads unless normalizing explicitly** - do not delete or rewrite user-authored or imported UiPath extension XML just because the skill cannot fully interpret it.
-
-## Anti-patterns (universal)
-
-- **Do not hand-author Integration Service connection details** - connection IDs, resource keys, connector labels, trigger property bindings, and generated schemas are CLI-owned.
-- **Do not rely on BPMN without diagrams for Studio Web import** - a valid diagram and plane are required, and visible elements need shapes or waypoints.
-- **Do not edit derived package files as the primary fix** - fix the BPMN source or rerun the CLI generator/enricher unless the package file itself is the documented source for that field.
-- **Do not include real exported XML snippets in docs or examples** - summarize patterns using public-safe synthetic IDs and placeholder values.
-- **Do not use validation fixtures as greenfield templates** - fixtures are
-  coverage examples, not the authoring source of truth. Use capability docs,
-  shared contracts, wrapper shells, and the specific plugin or task recipe
-  instead.
-
-> Trouble? Send public-safe product feedback through the repository's normal feedback path.
+| Project layout and generated package files | [references/shared/project-layout.md](references/shared/project-layout.md) |

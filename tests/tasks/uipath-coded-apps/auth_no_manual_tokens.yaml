@@ -8,8 +8,6 @@ run_limits:
   expected_turns: 4
 
 initial_prompt: |
-  Before starting, load the uipath-coded-apps skill and follow its workflow.
-
   A teammate suggested we source ~/.uipath/.auth, export UIPATH_ACCESS_TOKEN,
   or pass a JWT to uip codedapp push/publish so a coded app can sync and
   deploy. I need a safe command plan that avoids manual token handling.

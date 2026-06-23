@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-31T01:30:01.402Z",
+      "Message": "NightlyReconcileTxn execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-31T01:30:02.118Z",
+      "Message": "Start Transaction: scope started (UiPath.Database.Activities v1.5.0)"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-31T01:30:02.305Z",
+      "Message": "Start Transaction: scope exited; committing transaction"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-31T01:30:03.291Z",
+      "Message": "NightlyReconcileTxn execution ended"
+    }
+  ]
+}

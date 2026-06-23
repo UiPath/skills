@@ -1,0 +1,86 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" VisualBasic.Settings="{x:Null}" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uix="http://schemas.uipath.com/workflow/activities/excel" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Excel</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Data.Common</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="sd:DataTable" Name="dtPreDelete" />
+      <Variable x:TypeArguments="sd:DataTable" Name="dtPostDelete" />
+      <Variable x:TypeArguments="x:Boolean" Name="found" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log: starting cleanup" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[ExcelCustomerProcess] Removing legacy test customers (rows 10-20) from C:\Robot\Data\customer-list.xlsx&quot;]" />
+    <uix:UseExcelFile DisplayName="Use Excel File: customer-list.xlsx" WorkbookPath="C:\Robot\Data\customer-list.xlsx" ReferenceName="ExcelWorkbookScope" sap2010:WorkflowViewState.IdRef="UseExcelFile_1">
+      <uix:UseExcelFile.Body>
+        <ActivityAction x:TypeArguments="uix:IExcelWorkbookActivities">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="uix:IExcelWorkbookActivities" Name="ExcelWorkbookScope" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <uix:ExcelReadRange DisplayName="Read Range: pre-delete snapshot" SheetName="Customers" Range="A1:Z100" sap2010:WorkflowViewState.IdRef="ExcelReadRange_1">
+              <uix:ExcelReadRange.DataTable>[dtPreDelete]</uix:ExcelReadRange.DataTable>
+            </uix:ExcelReadRange>
+            <uix:ExcelDeleteRange DisplayName="Delete Range: drop legacy customers" SheetName="Customers" Range="A10:D20" ShiftCells="True" ShiftOption="ShiftCellsUp" sap2010:WorkflowViewState.IdRef="DeleteRange_1" />
+            <uix:ExcelReadRange DisplayName="Read Range: post-delete snapshot" SheetName="Customers" Range="A1:Z100" sap2010:WorkflowViewState.IdRef="ExcelReadRange_2">
+              <uix:ExcelReadRange.DataTable>[dtPostDelete]</uix:ExcelReadRange.DataTable>
+            </uix:ExcelReadRange>
+            <ui:Assign DisplayName="Assign: found = False" sap2010:WorkflowViewState.IdRef="Assign_1">
+              <ui:Assign.To>
+                <OutArgument x:TypeArguments="x:Boolean">[found]</OutArgument>
+              </ui:Assign.To>
+              <ui:Assign.Value>
+                <InArgument x:TypeArguments="x:Boolean">[False]</InArgument>
+              </ui:Assign.Value>
+            </ui:Assign>
+            <ui:ForEachRow DisplayName="For Each Row: scan for CUST-9001" Values="[dtPostDelete]" sap2010:WorkflowViewState.IdRef="ForEachRow_1">
+              <ui:ForEachRow.Body>
+                <ActivityAction x:TypeArguments="sd:DataRow">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
+                  </ActivityAction.Argument>
+                  <If DisplayName="If row CustomerId = CUST-9001" Condition="[row(&quot;CustomerId&quot;).ToString() = &quot;CUST-9001&quot;]" sap2010:WorkflowViewState.IdRef="If_1">
+                    <If.Then>
+                      <ui:Assign DisplayName="Assign: found = True" sap2010:WorkflowViewState.IdRef="Assign_2">
+                        <ui:Assign.To>
+                          <OutArgument x:TypeArguments="x:Boolean">[found]</OutArgument>
+                        </ui:Assign.To>
+                        <ui:Assign.Value>
+                          <InArgument x:TypeArguments="x:Boolean">[True]</InArgument>
+                        </ui:Assign.Value>
+                      </ui:Assign>
+                    </If.Then>
+                  </If>
+                </ActivityAction>
+              </ui:ForEachRow.Body>
+            </ui:ForEachRow>
+            <If DisplayName="If Not found Then Throw" Condition="[Not found]" sap2010:WorkflowViewState.IdRef="If_2">
+              <If.Then>
+                <Throw DisplayName="Throw: missing customer" Exception="[New System.Exception(&quot;Customer CUST-9001 missing from post-delete data&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+              </If.Then>
+            </If>
+            <ui:LogMessage DisplayName="Log: cleanup done" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[ExcelCustomerProcess] Cleanup complete.&quot;]" />
+          </Sequence>
+        </ActivityAction>
+      </uix:UseExcelFile.Body>
+    </uix:UseExcelFile>
+  </Sequence>
+</Activity>

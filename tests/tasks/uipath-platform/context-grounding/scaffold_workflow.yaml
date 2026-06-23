@@ -1,0 +1,81 @@
+task_id: skill-platform-context-grounding-scaffold-workflow
+description: >
+  Integration test: the agent produces a repeatable setup script that stands up
+  a searchable context-grounding index, exercising the full lifecycle the
+  platform skill teaches — create from a bucket, ingest (a separate step, since
+  create does not ingest), poll the index until it is ready, then search.
+  Graded on the script's contents, so it does not depend on a live tenant, auth,
+  or async ingestion, and mutates nothing. The prompt states the goal only; the
+  skill supplies the commands.
+tags: [uipath-platform, integration, mode:build, lifecycle:generate, context-grounding]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  Our ops team keeps standing up knowledge bases by hand and getting it wrong —
+  half the time the index comes back empty when someone searches it. I want a
+  repeatable setup script they can run.
+
+  Write me `provision-index.sh` that stands up a knowledge index called
+  "support-kb" in our "Shared" folder from our existing "SupportDocs" storage
+  bucket, makes sure it's actually ready to search (not empty), and then runs a
+  test search for "refund policy" so they can confirm it works.
+
+  Just write the script — don't run anything against our tenant. Don't ask me
+  to confirm; produce the full script in one pass.
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote the provisioning script"
+    path: "provision-index.sh"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Script creates the index from a bucket source"
+    path: "provision-index.sh"
+    includes:
+      - "context-grounding create"
+      - "--bucket-source"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Script triggers ingestion separately (create does not ingest)"
+    path: "provision-index.sh"
+    includes:
+      - "context-grounding ingest"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Script polls index status with retrieve before searching"
+    path: "provision-index.sh"
+    includes:
+      - "context-grounding retrieve"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Script searches the index"
+    path: "provision-index.sh"
+    includes:
+      - "context-grounding search"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Advisory: script reads status as JSON (informational, non-gating)"
+    path: "provision-index.sh"
+    includes:
+      - "--output json"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Agent scaffolded the commands rather than mutating the tenant"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+context-grounding\s+(create|ingest|delete)\b'
+    weight: 2.0
+    pass_threshold: 1.0

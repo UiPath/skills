@@ -11,8 +11,6 @@ run_limits:
   expected_turns: 10
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   I want to bring my own LLM key for the UiPath agenthub feature
   `agenthub-llm-call`. Before I create anything, I need to know:
 

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "3b8d5c2e-1a4f-4e6c-8b9d-5c7a2e3f4b6d",
+      "State": "Faulted",
+      "ProcessName": "ExcelDbReport",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-21T09:14:02.118Z",
+      "EndTime": "2026-05-21T09:14:03.602Z",
+      "CreationTime": "2026-05-21T09:14:01.880Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

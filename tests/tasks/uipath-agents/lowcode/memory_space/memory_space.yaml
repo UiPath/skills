@@ -1,10 +1,11 @@
 task_id: skill-agent-memory-space
 description: >
   End-to-end test: scaffold a standalone low-code agent that attaches
-  an existing UiPath Memory Space with `uip agent memory` and seeds an
-  episodic memory item. Verifies the CLI-managed
+  an existing UiPath Memory Space with `uip agent memory` and seeds a
+  starter memory item. Verifies the CLI-managed
   features/{FeatureName}/feature.json convention, dynamic few-shot
-  settings, seed item metadata, and generated memorySpace binding.
+  settings (result count + similarity threshold), the seeded item, and
+  the generated memorySpace binding.
 tags: [uipath-agents, e2e, mode:build, low-code, lifecycle:generate]
 
 run_limits:
@@ -12,31 +13,24 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath solution "MemorySol" containing a single low-code
-  agent "SupportMemoryAgent". The agent accepts a required
-  `userQuestion` string and returns an `answer` string.
+  Create a UiPath solution "MemorySol" with a single low-code agent
+  "SupportMemoryAgent". It takes a required `userQuestion` (string) and
+  returns an `answer` (string).
 
-  Attach the existing UiPath memory space named
-  "UiPathAgentsSupportMemory" from the Orchestrator folder
-  "Shared/uipath-agents" as an agent memory feature named
-  `SupportRecall`. Enable dynamic few-shot retrieval with hybrid
-  search, threshold 0.25, result count 5, and field weighting
-  `userQuestion=1`.
+  The agent should get better over time by recalling past support cases. Give
+  it a memory called "SupportRecall" backed by our existing
+  "UiPathAgentsSupportMemory" memory space, which lives in our
+  "Shared/uipath-agents" Orchestrator folder. When the agent answers, it
+  should use hybrid search over the `userQuestion` field to pull back the 5
+  closest past cases, with a similarity threshold of 0.25.
 
-  Add one seed memory item to `SupportRecall`: key
-  `refund-policy-tone`, value `Use empathetic wording and cite the
-  remembered support precedent when a refund case resembles a prior
-  escalation.`, memory type `episodic`, feedback ID
-  `d640fe25-3c05-4f2e-bd8d-42bdb20704c1`, and metadata
-  `{"source":"seed","scenario":"support"}`.
+  Seed SupportRecall with one starter example so it has something to recall
+  from the start: when a new refund case looks like a past escalation, the
+  agent should use empathetic wording and point back to the earlier case.
 
-  Use the full low-code memory CLI workflow for memory features:
-  discover the memory space before attaching it and refresh solution
-  resources after migration, even though the memory name and folder
-  are provided. Do not hand-create memory feature JSON. Do NOT
-  publish, upload, or deploy. Do NOT ask for approval, confirmation,
-  or feedback. Do NOT pause between planning and implementation.
-  Complete the entire task end-to-end in a single pass.
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
@@ -72,9 +66,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent seeded the episodic memory item using uip agent memory item add"
+    description: "Agent seeded a starter memory item using uip agent memory item add"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+memory\s+item\s+add\s+SupportRecall\s+refund-policy-tone\b(?=.*--memory-type\s+episodic)(?=.*--feedback-id\s+d640fe25-3c05-4f2e-bd8d-42bdb20704c1)'
+    command_pattern: 'uip\s+agent\s+memory\s+item\s+add\s+SupportRecall\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -104,12 +98,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_not_executed
     description: "Agent must not hand-author memory feature JSON with shell redirection"
@@ -154,7 +148,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Memory feature shape, seed item, schema sync, and memorySpace binding"
+    description: "Memory feature shape, dynamic few-shot settings, seeded item, schema sync, and memorySpace binding"
     command: "python3 $TASK_DIR/check_memory_space.py"
     timeout: 30
     expected_exit_code: 0

@@ -1,0 +1,38 @@
+task_id: skill-ixp-import-taxonomy-from-file-smoke
+description: >
+  Smoke: agent imports a taxonomy into an existing project from a local JSON
+  file.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, import the taxonomy from
+  ./taxonomy.json.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent imported the file via `projects import-taxonomy <Name> ./taxonomy.json`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+import-taxonomy\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*taxonomy\.json).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

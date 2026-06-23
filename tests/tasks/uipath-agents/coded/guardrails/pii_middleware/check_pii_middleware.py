@@ -11,9 +11,16 @@ Validates:
 - PIIDetectionEntityType.EMAIL and PIIDetectionEntityType.PHONE_NUMBER are referenced
 """
 
-import re
+import ast
+import os
 import sys
 from pathlib import Path
+
+sys.path.insert(
+    0,
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+)
+from _shared.guardrail_middleware import call_name, spread_middleware_calls  # noqa: E402
 
 GRAPH = Path("graph.py")
 
@@ -31,6 +38,10 @@ def check(condition: bool, msg: str) -> None:
 
 def main() -> None:
     src = read()
+    try:
+        tree = ast.parse(src)
+    except SyntaxError as exc:
+        sys.exit(f"FAIL: graph.py no longer parses as Python: {exc}")
 
     check(
         "UiPathPIIDetectionMiddleware" in src,
@@ -44,12 +55,15 @@ def main() -> None:
     )
     print("OK: GuardrailScope referenced")
 
-    # Spread pattern: *UiPathPIIDetectionMiddleware(
+    # Spread pattern — accept inline `[*UiPathPIIDetectionMiddleware(...)]` OR the
+    # equivalent variable form `m = UiPathPIIDetectionMiddleware(...); middleware=[*m]`.
     check(
-        bool(re.search(r"\*UiPathPIIDetectionMiddleware\s*\(", src)),
-        "UiPathPIIDetectionMiddleware not spread with * into middleware list",
+        any(call_name(c) == "UiPathPIIDetectionMiddleware" for c in spread_middleware_calls(tree)),
+        "UiPathPIIDetectionMiddleware not spread with * into the middleware list "
+        "(accepts inline `[*UiPathPIIDetectionMiddleware(...)]` or a variable "
+        "`m = UiPathPIIDetectionMiddleware(...); middleware=[*m]`)",
     )
-    print("OK: *UiPathPIIDetectionMiddleware(...) spread pattern found")
+    print("OK: UiPathPIIDetectionMiddleware spread with * into middleware list")
 
     check(
         "middleware=" in src,

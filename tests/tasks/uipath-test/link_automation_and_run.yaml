@@ -17,8 +17,6 @@ run_limits:
   max_turns: 35
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   Link the testcase "TestCase1" from the orchestrator package "Testcases.with.parameters" published to the Orchestrator folder "uipath-test-folder-feed" to the Test Manager testcase
   "Claim Approval - Manager Escalation" in the project CLAIM. Then trigger an automated execution of
   that testcase.

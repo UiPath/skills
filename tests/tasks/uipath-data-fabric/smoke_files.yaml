@@ -18,8 +18,6 @@ initial_prompt: |
   Run each command exactly once, ignore the auth error, and continue to the next step.
   Do NOT retry any command. Do NOT attempt to login.
 
-  Before starting, load the uipath-data-fabric skill and follow its workflow.
-
   There is an entity "Documents" with entity ID "doc-001-ent".
   It has a FILE-type field named "Attachment".
   There is a record with ID "rec-001-id" in that entity.
