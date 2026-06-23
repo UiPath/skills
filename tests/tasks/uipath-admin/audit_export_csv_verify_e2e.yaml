@@ -33,21 +33,15 @@ initial_prompt: |
   Export tenant audit events for the 3-day window from 5 days ago
   through 2 days ago (UTC, whole days) into the ./audit-window base
   directory in the current working directory, as a single merged CSV
-  (not the default per-day JSON folder) — the CLI creates a uniquely-named
-  `.csv` inside the base directory.
-  Resolve the dates with `date -u -d '5 days ago' +%Y-%m-%d` and
-  `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the run
-  date.
+  (not the default per-day JSON folder). Resolve the dates with
+  `date -u -d '5 days ago' +%Y-%m-%d` and
+  `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the
+  run date.
 
   Important:
   - The `uip` CLI is available and connected via env-var auth to a real
-    tenant. The export should produce a real CSV file inside the
-    ./audit-window base directory.
-  - Use the canonical `--from-date YYYY-MM-DD` / `--to-date YYYY-MM-DD`
-    bounds (no inline `T00:00:00Z` for these flags — the CLI treats them
-    as whole-day boundaries) and select the single-file CSV shape with
-    `--file-format csv`.
-  - The 2-days-ago upper bound preserves the >48h LTS-lag buffer.
+    tenant. The export should produce a real CSV file at the requested
+    path.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

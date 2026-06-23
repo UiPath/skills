@@ -42,11 +42,6 @@ initial_prompt: |
      every other field as-is.
   4. Delete the policy.
 
-  The uipath-governance skill knows the required `PolicyDefinition` shape,
-  the default status / enforcement values, how to source org and tenant
-  identity from the active login session, and the full-replace semantics
-  of update. Trust it.
-
   Important:
   - Do not prompt the user for confirmation — this is an automated test.
   - The final delete cleans up the test policy — do not skip it, even if

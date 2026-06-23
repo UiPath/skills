@@ -1,0 +1,39 @@
+# By id, not by filename/position: resolving a name or list-position to a
+# DocumentId needs a `documents list` lookup (auth) — that resolution path is
+# an integration concern (ACTV-88563), so the smoke hands the id directly.
+task_id: skill-ixp-delete-document-by-id-smoke
+description: >
+  Smoke: agent deletes a document by id — irreversible, triggers a retrain.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, delete document doc-abc-123.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent deleted the document via `documents delete <Name> doc-abc-123 -y`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+documents\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123)(?=.*(--yes\b|-y\b)).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

@@ -29,22 +29,15 @@ tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
 initial_prompt: |
   Export tenant audit events for the 3-day window from 5 days ago
   through 2 days ago (UTC, whole days) as day-wise JSON files under the
-  ./audit-window base directory in the current working directory (the CLI
-  creates a uniquely-named subfolder inside it). Resolve the
-  dates with `date -u -d '5 days ago' +%Y-%m-%d` and
-  `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the run
-  date.
+  ./audit-window base directory in the current working directory.
+  Resolve the dates with `date -u -d '5 days ago' +%Y-%m-%d` and
+  `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the
+  run date.
 
   Important:
   - The `uip` CLI is available and connected via env-var auth to a real
     tenant. The export should produce a real folder of JSON files at the
     requested path.
-  - Use the canonical `--from-date YYYY-MM-DD` / `--to-date YYYY-MM-DD`
-    bounds (no inline `T00:00:00Z` for these flags — the CLI treats them
-    as whole-day boundaries). json is the default format; `--output-path`
-    is a base directory — the CLI creates a uniquely-named
-    `audit_<from>_<to>_<generated-at>` subfolder inside it.
-  - The 2-days-ago upper bound preserves the >48h LTS-lag buffer.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
