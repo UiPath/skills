@@ -17,7 +17,7 @@ run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  A Studio policy we deployed to the Finance team isn't being enforced.
+  An AI Trust Layer policy we deployed to the Finance team isn't being enforced.
   Investigate what policy is actually deployed for that group and the
   AITrustLayer product. Save every command's stdout+stderr to
   ./output.txt (use `> output.txt 2>&1` for the first command and

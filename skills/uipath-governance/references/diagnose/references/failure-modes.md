@@ -188,7 +188,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 2. For AOps — verify template structure:
    ```bash
    uip gov aops-policy template list --output json
-   uip gov aops-policy template get "<TEMPLATE_ID>" --output json
+   uip gov aops-policy template get "<PRODUCT_NAME>" --output json
    ```
 3. For Access — validate JSON structure:
    ```bash
