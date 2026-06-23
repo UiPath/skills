@@ -31,8 +31,8 @@ initial_prompt: |
   - Delete the file `york_solutions_invoice.png`. I'm giving you the filename, not
     an id, so find it first.
   - Then delete the first document still left in the list.
-  - Rename the project — I'll point to it by that title, so you'll need to find
-    its actual name first.
+  - Rename the project (I'll point to it by its title, so find its actual name
+    first) to the title "IxP Int Resolve Renamed".
 
   Clean up by deleting the project at the end.
 

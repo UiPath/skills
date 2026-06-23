@@ -24,11 +24,11 @@ initial_prompt: |
   project from the files in `./fixtures/` — import the taxonomy, upload the three
   invoices — and let it train.
 
-  Note the scores for the current model. Then change the model configuration —
-  heavier table preprocessing, or a different model — and retrain so there's a
-  second trained version. Once both are trained, tell me which version scored
-  better and by how much, calling out the fields that moved. Then give me all the
-  trained versions ranked best-to-worst by score, with the score you used for each.
+  Note the scores for version 1 (the current model). Then reconfigure the model to
+  use `table` preprocessing and retrain to produce version 2. Once both are
+  trained, compare version 1 and version 2: tell me which scored better and by how
+  much, calling out the fields that moved. Then give me both versions ranked
+  best-to-worst by score, with the score you used for each.
 
   Delete the project when you're done.
 

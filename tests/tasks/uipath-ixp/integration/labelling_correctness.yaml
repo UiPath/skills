@@ -26,13 +26,12 @@ initial_prompt: |
   upload the three invoices — and give it time to train before looking at
   predictions.
 
-  Then, on the invoice that has the most line items:
-  - I only want to confirm the FIRST line — the other rows look wrong, leave them.
-  - I noticed one amount was mis-read by OCR on a couple of the lines; fix just
-    that value across those lines in one go.
-  - Actually, scrap all of that — roll back everything I just confirmed.
-  - And there's one field that's genuinely not on the document at all; mark it
-    missing.
+  Then, on `csi_tower_invoice.png` (the multi-line invoice):
+  - Confirm only the first line item — the other rows look wrong, leave them.
+  - The "Amount" field was mis-read by OCR on the first two line items; correct it
+    on both of them in one batched call.
+  - Actually, scrap that — roll back everything you just confirmed on this document.
+  - The "Receipt Number" field isn't on this document at all — mark it missing.
 
   Clean up by deleting the project when you're done.
 

@@ -27,19 +27,19 @@ initial_prompt: |
   auto-suggest one. This is taxonomy editing only — you don't need to train or
   label anything (the sample invoices are just there so the project can be created).
 
-  Then walk through these edits, and after each one check it actually took:
-  - Add a new field group "Charges" with a couple of fields — don't fuss over the
-    types, just use whatever sensible types fit the project.
-  - Add another field, "Surcharge", to that group.
-  - Rename "Charges" to "Adjustments" — its fields should carry over.
-  - Rename one of the fields in it.
-  - Change one field's type — warn me first that it's destructive.
-  - Tweak the instructions on two fields at once, and include one field name that
-    doesn't exist — I want to see that name come back as unmatched, not a silent
-    failure.
-  - Tell me exactly how many fields are in "Adjustments", then delete the whole
-    group.
-  - Finally, show me the taxonomy still has the original invoice groups.
+  Then make these exact edits, checking after each that it took:
+  - Add a new field group "Charges" with two fields, "Discount" and "Late Fee" —
+    don't specify their types; let the skill pick sensible ones that fit.
+  - Add a third field, "Surcharge", to "Charges".
+  - Rename the group "Charges" to "Adjustments" — its three fields should carry over.
+  - Rename the field "Late Fee" to "Penalty Fee".
+  - Change the "Discount" field's type to "Number" — warn me first that it's destructive.
+  - Update the instructions on "Discount" and "Surcharge" in one call, and include
+    a field named "Nonexistent Field" that isn't in the taxonomy — I want that name
+    to come back as unmatched, not a silent failure.
+  - Tell me exactly how many fields are in "Adjustments", then delete that group.
+  - Finally, show me the taxonomy still has the original invoice groups (Invoice,
+    Bill To, Line Items, Ship To).
 
   When you're done, delete the project.
 
