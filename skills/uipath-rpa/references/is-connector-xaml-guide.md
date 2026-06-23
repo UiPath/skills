@@ -296,6 +296,12 @@ uip rpa run --file-path "<your-workflow>.xaml" --project-dir "<PROJECT_DIR>" --o
 
 If `HasErrors: true`, the `ErrorMessage` field carries the compile/runtime error.
 
+## Operation output is strongly typed
+
+The operation's result is exposed as an output FieldObject named `Jit_<operation>`, typed to a **generated record type** for that object — so downstream expressions that read its members (`record.id`, `records.First().name`) compile, and `uip rpa build` binds the consuming variable to the right type.
+
+That typed shape is generated from the **live connection's** schema while `get-default-xaml` resolves the activity; there is no flag for it — typing is automatic when resolution succeeds against a connection. If it cannot be generated — no usable connection at resolve time, or a connector schema that won't compile — the output **degrades to `System.Object`**: the activity stays valid, but typed member access no longer compiles. Re-resolve with a valid, enabled connection; treat a `System.Object` output as the signal that typing was skipped.
+
 ## Typed Operation vs Generic HTTP
 
 Every connector exposes a `ConnectorHttpActivity` with a typeId suffixed like `...httpRequest...` — a generic escape hatch for arbitrary HTTP calls. Prefer a **typed operation** (e.g. `send_message_to_channel_v2`) whenever one exists: it encodes the endpoint, method, and field schema for you. Only fall back to the HTTP activity when the connector lacks a modeled operation for what you need.
