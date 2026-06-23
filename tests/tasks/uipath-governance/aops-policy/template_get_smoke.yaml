@@ -16,7 +16,8 @@ run_limits:
 initial_prompt: |
   I need to update an existing AITrustLayer governance policy. Before
   editing, fetch the current form template for the AITrustLayer product
-  into a session directory. Save command output to ./output.txt.
+  into a session directory using `--output-dir`. Save command output
+  to ./output.txt.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live governance
