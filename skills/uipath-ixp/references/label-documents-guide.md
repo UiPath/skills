@@ -166,7 +166,7 @@ uip ixp documents delete <project-name> <document-id> -y --output json
 
 | You have | How to get the DocumentId |
 |----------|---------------------------|
-| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is now a paged envelope) |
+| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope) |
 | A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | Run `uip ixp labellings get-predictions <project-name> --output json`, find the entry in `Predictions[]` whose `Labels[].Fields[].FormattedValue` matches, take its `DocumentId` |
 | Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and read with the Read tool |
 
