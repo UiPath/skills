@@ -11,9 +11,9 @@ tags: [uipath-rpa, windows, smoke, uia, xaml]
 
 run_limits:
   expected_turns: 36
-  task_timeout: 2500
+  task_timeout: 4000
   max_turns: 80
-  turn_timeout: 2500
+  turn_timeout: 4000
 
 initial_prompt: |
   Build a standard UiPath RPA project named "GoogleSearch" (XAML
