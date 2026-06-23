@@ -1,0 +1,80 @@
+task_id: skill-solution-packages-download-delete
+description: >
+  E2E (operate): agent packs + publishes a uuid8-named solution package to
+  the feed, downloads it to a local file, then deletes that package version
+  from the feed. Covers the `packages download` + `packages delete` operate
+  surface. A uuid8-named package avoids the name+version publish collision
+  and is cleanup-scoped.
+
+  Requires a tenant — runs in CI (run-coder-eval.yml) or against a local
+  `uip login`, not the tempdir gate.
+tags: [uipath-solution, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 120
+
+run_limits:
+  expected_turns: 16
+  turn_timeout: 600
+
+initial_prompt: |
+  I need to round-trip a solution package through the feed.
+
+  `seed.json` has a unique `uuid8` — use it in the solution name so the
+  published package is unique.
+
+  1. Create a solution called `pkgdemo<uuid8>` and register a project into it.
+  2. Sync its resources, pack it, and publish it to the solution feed.
+  3. Download the published `pkgdemo<uuid8>` package to a file named
+     `downloaded.zip` in the current directory.
+  4. Then delete that package version from the feed.
+  5. Confirm the package is no longer in the feed.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent published the package to the feed (set-up step)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+publish\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent downloaded the package via uip solution packages download"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+packages\s+download\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the package version via uip solution packages delete"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+packages\s+delete\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Downloaded package artifact exists locally"
+    path: "downloaded.zip"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Feed: artifact downloaded and no uuid8 package remains after delete"
+    command: "python3 $TASK_DIR/check_packages_deleted.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

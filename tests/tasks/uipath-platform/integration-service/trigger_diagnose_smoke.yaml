@@ -1,0 +1,64 @@
+task_id: skill-platform-is-trigger-diagnose-smoke
+description: >
+  Smoke test (mode:diagnose): agent uses the uipath-platform skill to diagnose
+  a non-firing Integration Service trigger by inspecting the trigger object's
+  payload schema (`uip is triggers describe`) and the webhook configuration
+  (`uip is webhooks config`). First diagnose-mode test on the IS axis.
+tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, integration-service, connector]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  An Outlook365 EMAIL_RECEIVED trigger is not firing. Diagnose by inspecting
+  the trigger object's payload shape and the webhook configuration so I can
+  verify the upstream system is wired correctly.
+
+  Connector: uipath-microsoft-outlook365
+  Trigger object: EMAIL_RECEIVED
+
+  Use `uip` to (a) describe the trigger payload schema and (b) fetch the
+  webhook configuration (URL + secret hint).
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands WILL fail with auth errors — that is expected.
+    You MUST still run both commands (triggers describe and webhooks config).
+    Do NOT skip a command just because a previous one failed.
+    Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - Use placeholders like "placeholder-connection-id" / "placeholder-instance-id"
+    for IDs you cannot obtain from a live tenant.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent described the trigger payload schema"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+triggers\s+describe'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent described the EMAIL_RECEIVED trigger object specifically"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+triggers\s+describe.*EMAIL_RECEIVED'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the webhook configuration"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+webhooks\s+config'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on diagnose commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+(triggers|webhooks)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

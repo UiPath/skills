@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Invalid" targetNamespace="http://uipath.com/synthetic/maestro-bpmn/invalid">
+  <bpmn:process id="Process_Invalid" name="Invalid Sample" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="Var_Request" name="request" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start"><bpmn:outgoing>Flow_S_G</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gw" name="Route"><bpmn:incoming>Flow_S_G</bpmn:incoming><bpmn:outgoing>Flow_G_A</bpmn:outgoing><bpmn:outgoing>Flow_G_B</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:task id="A"><bpmn:incoming>Flow_G_A</bpmn:incoming></bpmn:task>
+    <bpmn:task id="B"><bpmn:incoming>Flow_G_B</bpmn:incoming></bpmn:task>
+    <bpmn:sequenceFlow id="Flow_S_G" sourceRef="Start" targetRef="Gw" />
+    <bpmn:sequenceFlow id="Flow_G_A" sourceRef="Gw" targetRef="A"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.DoesNotExist == "x"</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_G_B" sourceRef="Gw" targetRef="B" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Invalid">
+    <bpmndi:BPMNPlane id="Plane_Invalid" bpmnElement="Process_Invalid">
+      <bpmndi:BPMNShape id="Sh_Start" bpmnElement="Start"><dc:Bounds x="100" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Sh_Gw" bpmnElement="Gw"><dc:Bounds x="200" y="93" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Sh_A" bpmnElement="A"><dc:Bounds x="320" y="40" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Sh_B" bpmnElement="B"><dc:Bounds x="320" y="160" width="100" height="80" /></bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

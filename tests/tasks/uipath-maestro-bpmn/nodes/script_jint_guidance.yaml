@@ -8,8 +8,6 @@ run_limits:
   expected_turns: 15
   max_turns: 60
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a local BPMN project named "RiskScoreScriptBpmn".
   The process should manually start with `amount` and `daysOverdue` inputs,
   calculate a risk score in a BPMN script task, and end with a `riskScore`

@@ -1,0 +1,54 @@
+task_id: skill-admin-role-assignment-grant-smoke
+description: >
+  Operate smoke: agent assigns a role to a user. Tests the resolve
+  principal → verify role → create assignment workflow per Rules 5,
+  16, and 17.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, authz, role-assignment, grant]
+
+run_limits:
+  expected_turns: 7
+
+initial_prompt: |
+  Grant user bob@example.com the "Automation Developer" role
+  (role id: 11111111-2222-3333-4444-555555555555) on this tenant.
+  Run these steps in order:
+  1. Resolve the user: `uip admin users list --search bob --output json`
+  2. Create the assignment: `uip admin authorization roles assignments create --role-id 11111111-2222-3333-4444-555555555555 --identity-id <user-id-from-step-1> --identity-type User --output json`
+
+  If step 1 fails, use a placeholder user ID for step 2.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent resolved the user via users list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+list\s+.*--search\s+.*bob'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the role assignment"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+assignments\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json consistently"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 2
+    weight: 1.0
+    pass_threshold: 1.0

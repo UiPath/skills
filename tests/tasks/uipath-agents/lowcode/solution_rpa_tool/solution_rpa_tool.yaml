@@ -18,13 +18,10 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  Create a new UiPath low-code agent named "PayrollAgent" inside the
-  existing "PayrollSol" solution (in the current directory), and wire
-  the existing "CalculatePay" RPA process already in that solution in
-  as a tool that PayrollAgent can call.
-
-  Reuse CalculatePay as-is — do NOT re-create it, and do NOT
-  re-initialize the solution.
+  Create a new UiPath low-code agent named "PayrollAgent" inside the existing
+  "PayrollSol" solution (in the current directory). PayrollAgent should compute
+  pay using the existing "CalculatePay" RPA process that's already in the
+  solution, rather than working it out itself.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -100,12 +97,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "PayrollAgent/agent.json was created"

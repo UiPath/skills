@@ -1,0 +1,72 @@
+task_id: skill-solution-deploy-activate-standalone
+description: >
+  E2E (operate): agent publishes the committed e2e-stub solution, deploys it
+  with activation SKIPPED, then activates it as a STANDALONE step. A
+  --skip-activate deploy does not materialize its folder/process until
+  activate runs, so the activated end-state (folder + process present) proves
+  the standalone activate worked. Covers the `deploy run --skip-activate` +
+  standalone `deploy activate` operate surface.
+
+  Reuses check_deploy_round_trip.py (the activated end-state is identical to
+  a round-trip deploy); the --skip-activate / standalone-activate path is
+  asserted via command_executed. Requires a tenant — runs in CI
+  (run-coder-eval.yml) or against a local `uip login`, not the tempdir gate.
+tags: [uipath-solution, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 120
+
+run_limits:
+  expected_turns: 12
+  turn_timeout: 600
+
+initial_prompt: |
+  I want to roll out our `e2e-stub` solution in TWO steps — deploy it
+  WITHOUT activating, then activate it separately — so I control go-live.
+
+  `seed.json` has a unique `uuid8` (use it in all names so they don't
+  collide) and `parent_folder_path` (where the deploy's folder should land).
+  The source .zip is at
+  `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`.
+
+  1. Publish it.
+  2. Deploy it under the name `e2e-deploy-<uuid8>`, provisioning a folder
+     named `e2e-deploy-folder-<uuid8>` under `parent_folder_path`, but SKIP
+     activation at deploy time.
+  3. Then activate the deployment as a standalone step, and confirm it is
+     active.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent deployed with activation skipped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+run\b.*--skip-activate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent activated the deployment as a standalone step"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+activate\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Tenant: deploy present and activation materialized its folder + process"
+    command: "python3 $TASK_DIR/check_deploy_round_trip.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

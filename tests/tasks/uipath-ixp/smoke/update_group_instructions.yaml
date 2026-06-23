@@ -1,0 +1,49 @@
+task_id: skill-ixp-update-group-instructions-smoke
+description: >
+  Smoke: agent updates a field group's instructions.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, update the instructions for the
+  field group "Invoice Header" to: "Header section of the invoice — vendor,
+  invoice number, dates, and totals."
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran `groups update-prompts … --updates` on the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+groups\s+update-prompts\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--updates).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The skill builds --updates via a heredoc, so the group name + instruction
+  # text live in the `cat > …json` command, not on the update-prompts line.
+  # Verify the payload was constructed (matches the heredoc, or an inline JSON).
+  - type: command_executed
+    description: "Agent built the payload targeting \"Invoice Header\" with the new instructions"
+    tool_name: "Bash"
+    command_pattern: '(?=.*Invoice Header)(?=.*Header section of the invoice).*'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

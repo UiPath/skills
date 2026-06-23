@@ -9,6 +9,12 @@ if [ -z "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   exit 0
 fi
 
+# Codex exposes Claude-compatible plugin environment variables for hook
+# compatibility. This nudge is Claude-specific, so keep Codex sessions silent.
+if [ -n "${PLUGIN_ROOT:-}" ]; then
+  exit 0
+fi
+
 # Candidate settings files, most-to-least specific.
 candidates=()
 if [ -n "${CLAUDE_PROJECT_DIR:-}" ]; then

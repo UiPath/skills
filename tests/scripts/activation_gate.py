@@ -2,7 +2,7 @@
 """Activation smoke gate for a single skill.
 
 Runs the activation eval restricted to one skill's positives and fails if
-recall.yes drops more than 15pp below the rounded 2026-05-08 baseline.
+recall.yes drops more than DROP_PP (10pp) below the skill's baseline.
 Re-baseline by editing BASELINES_PCT after a fresh full activation run.
 
 Usage: activation_gate.py --skill uipath-data-fabric
@@ -17,46 +17,38 @@ import sys
 import tempfile
 from pathlib import Path
 
-# Rounded recall.yes baseline (in %) per skill, from the 2026-05-08 full
-# activation run. Nearest 5%. Skills omitted have no activation test set
-# yet (uipath-admin, uipath-ixp) — the gate SKIPs them.
-# uipath-solution (`uip solution` lifecycle) was split out of the former
-# merged uipath-solution skill; omitted here pending a fresh full activation
-# run — the gate SKIPs it.
-#
-# uipath-planner: 90 was measured 2026-05-08 against the pre-merge
-# 41-prompt yes-set and the old description. PDD→SDD design has since been
-# merged into uipath-planner (formerly a standalone design skill): the
-# yes-set is now 91 prompts (~55% design-shaped) and the description was
-# rewritten, so the 90 figure is unmeasured for the merged skill.
-# Re-baseline after the first full activation run on the merged dataset.
-#
-# uipath-rpa: held at the pre-merge modern value of 70 after the
-# uipath-rpa-legacy merge (PILOT-5232). The legacy half's 75% baseline
-# was measured against the dedicated legacy skill description; the
-# merged uipath-rpa description dilutes legacy signals, so the
-# combined recall is expected to land closer to the modern half.
-# Re-baseline after the first full activation run on the merged dataset.
+# Rounded recall.yes baseline (in %) per skill, measured 2026-06-17 over each
+# skill's FULL positive set on claude-sonnet-4-6 via Bedrock — the same model
+# and full-set measurement the gate itself runs, so baseline and gate stay
+# directly comparable. Nearest 5%. The gate fails a skill whose recall.yes
+# drops more than DROP_PP below its baseline. Re-baseline by re-running the
+# full activation positives and updating the values here.
 BASELINES_PCT: dict[str, int] = {
-    "uipath-feedback": 90,
-    "uipath-data-fabric": 90,
-    "uipath-planner": 90,
-    "uipath-tasks": 85,
-    "uipath-governance": 85,
-    "uipath-platform": 70,
-    "uipath-maestro-flow": 70,
-    "uipath-human-in-the-loop": 70,
-    "uipath-test": 70,
-    "uipath-rpa": 70,
-    "uipath-troubleshoot": 70,
-    "uipath-maestro-bpmn": 60,
-    "uipath-coded-apps": 60,
-    "uipath-agents": 55,
-    "uipath-maestro-case": 45,
-    "uipath-review": 20,
+    "uipath-automation-discovery": 100,
+    "uipath-data-fabric": 100,
+    "uipath-troubleshoot": 100,
+    "uipath-feedback": 100,
+    "uipath-governance": 100,
+    "uipath-ixp": 100,
+    "uipath-mcp-servers": 100,
+    "uipath-tasks": 100,
+    "uipath-human-in-the-loop": 100,
+    "uipath-rpa": 100,
+    "uipath-test": 100,
+    "uipath-platform": 100,
+    "uipath-maestro-flow": 95,
+    "uipath-maestro-bpmn": 95,
+    "uipath-admin": 95,
+    "uipath-review": 95,
+    "uipath-planner": 95,
+    "uipath-coded-apps": 90,
+    "uipath-solution": 90,
+    "uipath-agents": 90,
+    "uipath-maestro-case": 90,
+    "uipath-api-workflow": 90,
 }
 
-DROP_PP = 15
+DROP_PP = 10
 
 
 def _build_task_yaml(skill: str, dataset: Path) -> str:

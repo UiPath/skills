@@ -10,7 +10,7 @@ plus a confusion matrix.
 |------|---------|
 | `<skill>.jsonl` | Positives for that skill — every prompt should fire that skill. `expected_skill` is injected per file by `activation.yaml`. |
 | `negative.jsonl` | Shared negatives — prompts that should fire **no** skill (small talk, unrelated dev tasks, adjacent UiPath products, other workflow tools). |
-| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 20 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
+| `activation.yaml` | coder-eval task config. Uses `dataset.paths` to merge all skill jsonls + `negative.jsonl`, and stacks 22 `skill_triggered` criteria — one per skill — each computing its own confusion matrix from the same agent traces. |
 
 The `expected_skill` field on each row is the row's true label (the skill it should fire, or `""` for negatives). Each criterion compares its own `skill_name` to `expected_skill`: `expected="yes"` iff they match. So for skill X:
 - `<X>.jsonl` rows are positives.
@@ -34,7 +34,7 @@ uv run --project /path/to/coder_eval coder-eval run \
   --backend bedrock --sample 20 -j 4
 ```
 
-Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.yes < 0.70`. Class imbalance (~50 yes / ~900 no per skill) makes accuracy and recall.no trivially high; recall.yes is the only meaningful gate.
+Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.yes < 0.70`. Class imbalance (~50 yes / ~1140 no per skill) makes accuracy and recall.no trivially high; recall.yes is the only meaningful gate.
 
 ## Adding a new skill
 
@@ -44,18 +44,23 @@ Reports land in `tmp/<run-id>/`. The suite gate fails per criterion on `recall.y
 
 ## Cost
 
-On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~950 rows total. The agent runs ONCE per row regardless of criteria count, and the 20 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark across all 20 skills costs **~$50–95**. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
+On Sonnet 4.6 via Bedrock, ~$0.05–$0.10 per row. The dataset is ~1190 rows total. The agent runs ONCE per row regardless of criteria count, and the 22 stacked criteria are pure-Python evaluation against the same trace, so the full benchmark across all 22 skills costs **~$60–120**. Use `--sample N` for cheaper iteration (note: `--sample` slices first-N, which biases toward the first-listed paths; useful for smoke runs, not for metrics).
 
 ## Provenance
 
 Per-skill positives were curated by mining real user prompts from skill-specific
 Slack channels (read-only) and synthesizing the rest from each `SKILL.md`'s
-canonical task verbs. Some skills have narrower scope than 50 prompts can fill
-without padding (e.g., `uipath-feedback` at 26, `uipath-tasks` at 34) — the
-file just stops at the highest count quality could sustain.
+canonical task verbs. `negative.jsonl` also carries adversarial negatives that
+sit deliberately close to a skill's domain but must NOT fire it (e.g. classic
+Document Understanding / AI Center vs `uipath-ixp`, a CNCF Serverless Workflow
+spec vs `uipath-api-workflow`, a Claude Desktop / FastMCP server vs
+`uipath-mcp-servers`) — these exercise cross-skill precision, not just recall.
 
 ## Coverage
 
-Covers most skills in the repo. Brand-new skills (especially Preview-tagged
-ones whose CLI surface is still in flux) may be added on a delay so prompt
-curation doesn't chase a moving target.
+Covers all 22 skills in the repo. Skill positives target user **intent** (the
+task a prompt is asking for), not exact CLI surface, so coverage stays valid
+while a Preview skill's commands are still in flux. Narrower-scope skills hold
+fewer rows than 50 without padding (e.g. `uipath-ixp` at 30,
+`uipath-automation-discovery` at 32, `uipath-feedback` at 26, `uipath-tasks` at
+34) — the file stops at the highest count quality sustains.
