@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-dd444499-001",
+      "JobKey": "dd444444-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-22T09:15:02.180Z",
+      "Message": "Execution started.",
+      "ProcessName": "WordReportImage",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444499-002",
+      "JobKey": "dd444444-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Info",
+      "Timestamp": "2026-05-22T09:15:02.402Z",
+      "Message": "[WordReportImage] Building monthly report — capturing chart screenshot and inserting into the document.",
+      "ProcessName": "WordReportImage",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444499-003",
+      "JobKey": "dd444444-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Trace",
+      "Timestamp": "2026-05-22T09:15:03.640Z",
+      "Message": "Use Word File: monthly-report.docx — document opened (Path='C:\\Robot\\Reports\\monthly-report.docx').",
+      "ProcessName": "WordReportImage",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444499-004",
+      "JobKey": "dd444444-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Trace",
+      "Timestamp": "2026-05-22T09:15:04.110Z",
+      "Message": "Add Picture — inserting image from path 'UiPath.Core.Image' (ImagePath expression resolved to this string).",
+      "ProcessName": "WordReportImage",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd444499-005",
+      "JobKey": "dd444444-9999-aaaa-bbbb-ccccddddeeee",
+      "Level": "Error",
+      "Timestamp": "2026-05-22T09:15:04.290Z",
+      "Message": "Add Picture: System.IO.FileNotFoundException: Could not find file 'C:\\Users\\automation1\\AppData\\Local\\UiPath\\Packages\\WordReportImage\\1.0.0\\UiPath.Core.Image'.",
+      "ProcessName": "WordReportImage",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}
