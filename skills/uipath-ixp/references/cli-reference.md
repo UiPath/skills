@@ -81,7 +81,7 @@ Manage field groups (label_defs) — the document type containers for fields. To
 | Command | Description |
 |---------|-------------|
 | `uip ixp groups add <project-name> --name <group-name> --instructions <text> --fields <json> --output json` | Create a new field group with instructions and at least one field. `--instructions` describes what document/section the group covers (the model sees it during extraction). `--fields` is a JSON array `[{"name":"...","type":"<type-name>","instructions":"..."}]` (at least one entry); every entry must include `name`, `type`, and a non-empty `instructions`. `type` resolves against the project's `entity_defs`. |
-| `uip ixp groups delete <project-name> --name <group-name> --yes --output json` | Delete a field group. **IRREVERSIBLE** — deletes all annotations on all fields in the group. `-y, --yes` is required; the CLI never prompts. (`--confirm-data-loss` is a deprecated no-op.) |
+| `uip ixp groups delete <project-name> --name <group-name> --confirm-data-loss --yes --output json` | Delete a field group. **IRREVERSIBLE** — deletes all annotations on all fields in the group. Requires **both** `--confirm-data-loss` and `-y, --yes` (the CLI never prompts). |
 | `uip ixp groups rename <project-name> --name <group-name> --new-name <name> --output json` | Rename a field group. Preserves all fields and annotations. |
 | `uip ixp groups update-prompts <project-name> --updates <json> --output json` | Bulk-update field group (label_def) instructions. `--updates` is a JSON array `[{"name":"<group>","instructions":"..."}]` matched by group name. Existing fields are preserved. Unmatched names are reported in the response without failing the command. |
 
