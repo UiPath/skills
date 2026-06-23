@@ -29,8 +29,8 @@ initial_prompt: |
   - Publish version 1 with the `staging` tag.
   - Publish version 2 with the `live` tag. Now save the model list to `models_tagged.json`.
   - Move the `live` tag to version 1, then save the model list to `models_after_move.json`.
-  - Remove the tag from version 1 — it should stay published.
-  - Unpublish version 2 — it should still show up as trained.
+  - Remove the tag from version 1, but keep that version published.
+  - Unpublish version 2 — don't delete it, it stays a trained version.
 
   After each step, show me the model list so I can see the tag and published
   state actually moved.

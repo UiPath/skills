@@ -33,7 +33,7 @@ initial_prompt: |
   - Add a third field, "Surcharge", to "Charges".
   - Rename the group "Charges" to "Adjustments".
   - Rename the field "Late Fee" to "Penalty Fee".
-  - Change the "Discount" field's type to "Number" — warn me first that it's destructive.
+  - Change the "Discount" field's type to "Number".
   - Update the instructions on "Discount" and "Surcharge" in one call, and include
     a field named "Nonexistent Field" that isn't in the taxonomy — I want that name
     to come back as unmatched, not a silent failure. Save that command's JSON
