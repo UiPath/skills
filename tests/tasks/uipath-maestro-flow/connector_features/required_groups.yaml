@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-required-groups
 description: >
   Tests the required groups IS feature — configures a connector node where at
   least one field from each required group must be populated on the Teams connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-microsoft-teams, ipe]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-microsoft-teams, ipe, mode:build]
 
 run_limits:
   expected_turns: 51
@@ -13,12 +13,7 @@ run_limits:
 initial_prompt: |
   Create a new Flow project called "RequiredGroupsTest" with a manual trigger.
   You need a flow that replies to a Microsoft Teams channel message with one or
-  more file attachments. Discover the reply-to-channel-message operation and
-  populate the attachments field — the activity enforces required-group rules,
-  so at least one field from each required group must be filled in.
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "RequiredGroups test failed".
-  Route success to a final action that logs "RequiredGroups test passed".
+  more file attachments. Populate the attachments field.
   Validate the final flow file.
 
 success_criteria:
@@ -36,14 +31,6 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has Decision and Terminate nodes"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/RequiredGroupsTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

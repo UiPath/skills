@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f0044444-3333-4444-5555-666677778888",
+      "DisplayName": "CustomerOps",
+      "FullyQualifiedName": "CustomerOps",
+      "Description": "Folder for customer-list maintenance automations.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6040001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

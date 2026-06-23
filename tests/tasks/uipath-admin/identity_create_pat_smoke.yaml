@@ -4,7 +4,7 @@ description: >
   a personal access token with scopes and expiration. Tests correct
   flag usage and token-shown-once awareness.
 
-tags: [uipath-admin, smoke, create]
+tags: [uipath-admin, smoke, mode:build, create]
 
 run_limits:
   expected_turns: 6

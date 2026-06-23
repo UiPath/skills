@@ -10,8 +10,6 @@ run_limits:
   expected_turns: 12
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Configuration `c1d2e3f4-1111-2222-3333-444455556666` is a multi-mapping BYO
   LLM record for product=uipath-ecs feature=uipath-ecs-batch-transform-web-search.
   Today it contains two mappings:

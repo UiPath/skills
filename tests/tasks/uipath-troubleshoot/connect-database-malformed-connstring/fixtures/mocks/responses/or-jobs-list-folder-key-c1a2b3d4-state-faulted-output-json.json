@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d2b3c4e5-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "State": "Faulted",
+      "ProcessName": "MonthlyReconImport",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-01T07:05:00.142Z",
+      "EndTime": "2026-06-01T07:05:00.948Z",
+      "CreationTime": "2026-06-01T07:04:59.910Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

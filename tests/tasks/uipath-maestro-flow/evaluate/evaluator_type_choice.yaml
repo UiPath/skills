@@ -15,7 +15,7 @@ run_limits:
   max_turns: 50
 
 initial_prompt: |
-  Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a
+  Scaffold a
   project and add three evaluators — one per goal — picking the correct
   `--type` for each.
 

@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "7c3e9a1d-5b8f-4a2c-9e6d-3f1a2b4c5d6e",
+      "Name": "Finance Automations",
+      "Path": "Finance Automations",
+      "Description": "Production folder for finance database automations.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "d9a1c245-6e3b-48f7-b1c9-2a4d5e6f7a8b",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

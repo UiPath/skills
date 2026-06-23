@@ -4,17 +4,34 @@
 
 ## Resource Shape
 
-`resources/<resource-name>/resource.json`:
+`resources/<resource-name>/resource.json` — the full shape `uip agent refresh`/`validate` accept:
 
 ```json
 {
   "$resourceType": "tool",
-  "id": "<UUID>",
+  "id": "<FRESH_UUID>",
+  "name": "BatchTransform",
+  "description": "<what this batch transform does, e.g. add MCC Code and Confidence columns to each CSV row>",
   "type": "internal",
-  "referenceKey": null,
+  "inputSchema":  { "type": "object", "properties": {} },
+  "outputSchema": { "type": "object", "properties": {} },
+  "settings": {},
   "isEnabled": true,
+  "referenceKey": null,
+  "guardrail": { "policies": [] },
+  "argumentProperties": {},
   "properties": {
-    "toolType": "batch-transform"
+    "toolType": "batch-transform",
+    "settings": {
+      "contextType": "attachments",
+      "query": { "variant": "dynamic" },
+      "folderPathPrefix": { "variant": "static", "value": "<output-bucket-path>" },
+      "outputColumns": [
+        { "name": "MCC Code",   "description": "Return the 4-digit MCC code for this row. Output only the 4-digit string, e.g. 5411; output 0000 if undeterminable." },
+        { "name": "Confidence", "description": "Confidence the MCC Code is correct. Output exactly one of: HIGH, MEDIUM, or LOW." }
+      ],
+      "webSearchGrounding": { "value": "Disabled" }
+    }
   }
 }
 ```
@@ -22,26 +39,35 @@
 | Field | Constraint |
 |---|---|
 | `$resourceType` | `"tool"` |
-| `id` | UUID-shaped string |
+| `id` | Fresh UUID-shaped string |
+| `name` | Required — and the resource folder MUST be named exactly this (`resources[0].name: missing name` if absent; `folder must be named after the resource name` if the folder differs) |
+| `description` | Free text |
 | `type` | `"internal"` (built-in tools) |
+| `inputSchema` / `outputSchema` | Empty object schema `{ "type": "object", "properties": {} }` — batch-transform declares no I/O schema; the CSV and columns flow through `properties.settings` |
+| `settings`, `argumentProperties` | `{}` (backward-compat scaffolding) |
+| `guardrail.policies` | `[]` |
 | `referenceKey` | `null` (non-null identifies an external tool) |
 | `isEnabled` | truthy |
 | `properties.toolType` | `"batch-transform"` (others: `analyze-attachments`, `load-attachments`, `deep-rag`) |
+| `properties.settings` | Tool config — see [Tool Configuration](#tool-configuration) |
 
-Resource directory name is free-form. Validator scans `<agent>/resources/**/resource.json`.
+Validator scans `<agent>/resources/**/resource.json`; each `resource.json`'s parent folder must equal its `name`.
+
+> The repo's static checker asserts only `$resourceType`, `type`, `referenceKey`, `id`, `isEnabled`, and `properties.toolType`. The full shape above is what `uip agent refresh`/`validate` require — author it directly. Do not reduce it to that minimal field set, and do not treat a `refresh` schema rejection as a reason to reverse-engineer the CLI: fix the resource against this template.
 
 ## Tool Configuration
 
-`resource.json` only registers the tool's existence — it does NOT carry per-call inputs (prompt, output columns, destination, web grounding). Those are derived at runtime from the agent's instructions and tool-call output.
+batch-transform's `inputSchema`/`outputSchema` are empty — the per-run config lives in `properties.settings`:
 
-What the agent must produce at invocation time (the runtime forwards these to the underlying API):
+| Setting | Meaning |
+|---|---|
+| `contextType` | `"attachments"` — CSV arrives as a runtime attachment |
+| `query.variant` | `"dynamic"` — per-row prompt derived at runtime |
+| `folderPathPrefix` | Output destination: `{ "variant": "static", "value": "<bucket-path>" }`. Use a unique suffix per run to avoid overwrites |
+| `outputColumns[]` | Per-column LLM instructions — `name` (1–500 chars, regex `^[\w\s\.,!?-]+$`) + `description` (1–20000 chars, the per-column instruction). See [Output Column Descriptions](#output-column-descriptions) |
+| `webSearchGrounding.value` | `"Disabled"` by default; enable only when rows need fresh external data |
 
-- A non-empty top-level prompt
-- A list of `BatchTransformOutputColumn` entries (`name` 1–500 chars, regex `^[\w\s\.,!?-]+$`; `description` 1–20000 chars, the per-column LLM instruction)
-- An output destination
-- Whether to enable web grounding
-
-The exact JSON field names the runtime sends to the platform (e.g., `useWebSearchGrounding`, `targetFileGlobPattern`) are SDK-version-specific — see the SDK source `uipath/platform/context_grounding/_context_grounding_service.py` (`_batch_transform_*_creation_spec` methods) for the body shape your version emits. Authoring the agent's system prompt (next section) is what shapes the runtime call, not editing `resource.json`.
+The `properties.settings` keys above are the Studio Web authoring shape. At runtime the platform receives a separate API body (e.g. `useWebSearchGrounding`, `targetFileGlobPattern`) whose names are SDK-version-specific — see `uipath/platform/context_grounding/_context_grounding_service.py` (`_batch_transform_*_creation_spec`). If `uip agent refresh` rejects a setting, verify the key against your CLI version.
 
 ## Standalone vs Inline-in-Flow
 

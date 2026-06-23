@@ -1,9 +1,0 @@
-{
-  "projectId": "Fixture.WrapperFamilyContract",
-  "main": "wrapper-family-contract.bpmn",
-  "contentType": "ProcessOrchestration",
-  "targetFramework": "Portable",
-  "runtimeOptions": {
-    "requiresUserInteraction": false
-  }
-}

@@ -11,8 +11,7 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  I want to discover automation opportunities at my company using the
-  uipath-automation-discovery skill.
+  I want to discover automation opportunities at my company.
 
   Here is the context for Phase 0 intake:
 

@@ -10,8 +10,6 @@ run_limits:
   expected_turns: 28
   max_turns: 60
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Use the installed `uip` CLI's Maestro BPMN registry surface to discover the
   documented wrapper surface for agent, queue, and connector resource types.
   Save evidence locally without uploading, publishing, deploying, debugging, or

@@ -1,0 +1,10 @@
+[project]
+name = "ticket-router"
+version = "0.0.1"
+description = "Support ticket router"
+authors = [{ name = "Test" }]
+requires-python = ">=3.11"
+dependencies = ["uipath", "uipath-langchain"]
+
+[dependency-groups]
+dev = ["uipath-dev"]

@@ -7,7 +7,7 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
 > **Where you came from / where to go next.** Diagnose is downstream of Operate (a debug or deployed run failed, hung,
 > or behaved unexpectedly) and points back to Author for source fixes.
 > Running and lifecycle live in [operate/CAPABILITY.md](../operate/CAPABILITY.md);
-> source fixes live in [author/CAPABILITY.md](../author/CAPABILITY.md).
+> source fixes live in [registry-workflow.md](../registry-workflow.md).
 >
 > **Inherits universal rules from [SKILL.md](../../SKILL.md).** BPMN source is model-authored; generated package files
 > and Integration Service enrichment are CLI-owned.
@@ -62,10 +62,10 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
 | Diagnose binding or generated JSON issues | [failure modes](references/failure-modes.md), [project layout](../shared/project-layout.md) |
 | Diagnose Integration Service runtime issues | [failure modes](references/failure-modes.md) |
 | Decide whether retry is safe | [troubleshooting guide](references/troubleshooting-guide.md), [manage guide](../operate/references/manage.md) |
-| Fix the source | [author/CAPABILITY.md](../author/CAPABILITY.md) |
+| Fix the source | [registry-workflow.md](../registry-workflow.md) |
 
 For Integration Service enrichment details, read
-[author/references/plugins/integration-service/impl.md](../author/references/plugins/integration-service/impl.md).
+[registry-workflow.md](../registry-workflow.md).
 
 ## Anti-patterns
 
@@ -85,7 +85,7 @@ For Integration Service enrichment details, read
 
 ### Cross-capability
 
-- [shared/bpmn-xml-contract.md](../shared/bpmn-xml-contract.md) - XML authoring and validation boundaries
+- [shared/bpmn-xml-contract.md](../structural-bpmn.md) - XML authoring and validation boundaries
 - [shared/project-layout.md](../shared/project-layout.md) - generated files and package shape
-- [shared/variables-bindings-expressions.md](../shared/variables-bindings-expressions.md) - mappings and binding expressions
-- [shared/public-safety.md](../shared/public-safety.md) - redaction and sanitization
+- [shared/variables-bindings-expressions.md](../expression-authoring.md) - mappings and binding expressions
+- [shared/public-safety.md](../public-safety.md) - redaction and sanitization

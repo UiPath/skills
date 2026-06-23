@@ -25,7 +25,6 @@
 {"id": "uipath-coded-apps-025", "prompt": "Use buckets.getAll() in my coded app \u2014 pass folderId so the value comes back", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-026", "prompt": "Build a coded app that queries Data Fabric entities and displays them in a table", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-027", "prompt": "How do I list and complete Action Center tasks from a coded app using the TS SDK?", "expected_skill": "uipath-coded-apps"}
-{"id": "uipath-coded-apps-028", "prompt": "What's the right base URL? I'm seeing 401s \u2014 should I use api.uipath.com or cloud.uipath.com?", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-029", "prompt": "vite.config.ts \u2014 what should base be set to for a coded app?", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-030", "prompt": "Use getAppBase() for the React Router basename in my coded app", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-031", "prompt": "Set up env vars VITE_UIPATH_CLIENT_ID, VITE_UIPATH_SCOPE, VITE_UIPATH_ORG_NAME, VITE_UIPATH_TENANT_NAME for the SDK", "expected_skill": "uipath-coded-apps"}
@@ -46,5 +45,4 @@
 {"id": "uipath-coded-apps-046", "prompt": "Coded app deploy hangs on the spinner forever in Orchestrator UI \u2014 any idea why?", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-047", "prompt": "Build a coded web app with a multi-step wizard, OAuth login, charts, and a print/PDF report", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-048", "prompt": "How do I pass folderId vs folderKey in SDK calls? Maestro vs Orchestrator services use different params", "expected_skill": "uipath-coded-apps"}
-{"id": "uipath-coded-apps-049", "prompt": "Add the redirect URI to my external app \u2014 invalid_redirect_uri error after deploy", "expected_skill": "uipath-coded-apps"}
 {"id": "uipath-coded-apps-050", "prompt": "Render a coded action app inside Action Center \u2014 what URL/routing setup do I need?", "expected_skill": "uipath-coded-apps"}

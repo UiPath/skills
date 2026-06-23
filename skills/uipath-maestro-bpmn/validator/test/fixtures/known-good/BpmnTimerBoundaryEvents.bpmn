@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="x-uipath-initial-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="UiPath Studio Web (https://uipath.com)" exporterVersion="7e6db508">
+  <bpmn:process id="Process_1" name="Process" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="error" name="Error" type="jsonSchema" elementId="Event_U6alpL"><![CDATA[{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"}}}]]></uipath:inputOutput>
+        <uipath:inputOutput id="scriptResponse" name="scriptResponse" type="jsonSchema" elementId="Activity_Vbbfqo" />
+        <uipath:inputOutput id="error2" name="Error" type="jsonSchema" elementId="Activity_Vbbfqo"><![CDATA[{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"}}}]]></uipath:inputOutput>
+        <uipath:inputOutput id="error3" name="Error" type="jsonSchema" elementId="Activity_PYC2fm"><![CDATA[{"type":"object","properties":{"code":{"type":"string"},"message":{"type":"string"},"detail":{"type":"string"},"category":{"type":"string"},"status":{"type":"number"}}}]]></uipath:inputOutput>
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="bdMNScrer" name="folderPath" type="string" resource="process" resourceKey="RPA Workflow" propertyAttribute="folderPath" />
+        <uipath:binding id="bsjJ0kJI0" name="name" type="string" default="RPA Workflow" resource="process" resourceKey="RPA Workflow" propertyAttribute="name" />
+      </uipath:bindings>
+      <uipath:migrationVersion version="11" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="Start event">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="f58b4db9-96d7-47df-997d-9f6660668df2" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>edge_Event_start-Activity_PYC2fm</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Activity_PYC2fm" name="RPA Workflow">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Orchestrator.StartJob" version="v2" />
+          <uipath:context>
+            <uipath:input name="name" type="string" value="=bindings.bsjJ0kJI0" />
+            <uipath:input name="folderPath" type="string" value="=bindings.bdMNScrer" />
+            <uipath:input name="_label" type="string" value="RPA Workflow" />
+            <uipath:inputSchema type="jsonSchema"><![CDATA[{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"Error":{"type":"object"}},"required":[]}]]></uipath:inputSchema>
+          </uipath:context>
+          <uipath:input name="JobArguments" type="json" target="bodyField"><![CDATA[{"Error":""}]]></uipath:input>
+          <uipath:output name="Error" type="jsonSchema" source="=Error" var="error3" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>edge_Event_start-Activity_PYC2fm</bpmn:incoming>
+      <bpmn:outgoing>edge_Activity_PYC2fm-Event_vhtBn2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Event_U6alpL" attachedToRef="Activity_PYC2fm">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="uipath:Activity" version="v1" />
+          <uipath:output name="Error" type="jsonSchema" source="=Error" var="error" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>edge_Event_U6alpL-Activity_Vbbfqo</bpmn:outgoing>
+      <bpmn:errorEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Event_aLyjoW" attachedToRef="Activity_PYC2fm">
+      <bpmn:outgoing>edge_yGapVi</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1500S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="Event_vhtBn2">
+      <bpmn:incoming>edge_Activity_PYC2fm-Event_vhtBn2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:scriptTask id="Activity_Vbbfqo" name="Error" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:context>
+            <uipath:inputSchema type="jsonSchema"><![CDATA[{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"vars":{"type":"object"},"metadata":{"type":"object"}},"required":[]}]]></uipath:inputSchema>
+          </uipath:context>
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"vars":"=vars","metadata":"=metadata"}]]></uipath:input>
+          <uipath:output name="scriptResponse" type="jsonSchema" source="=result.response" var="scriptResponse" />
+          <uipath:output name="Error" type="jsonSchema" source="=Error" var="error2" />
+        </uipath:mapping>
+        <uipath:scriptVersion value="v3" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>edge_Event_U6alpL-Activity_Vbbfqo</bpmn:incoming>
+      <bpmn:incoming>edge_yGapVi</bpmn:incoming>
+      <bpmn:outgoing>edge_Activity_Vbbfqo-Event_4ZxKbFiZnNqy</bpmn:outgoing>
+      <bpmn:script><![CDATA[return {"val":"errored"};]]></bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="Event_4ZxKbF">
+      <bpmn:incoming>edge_Activity_Vbbfqo-Event_4ZxKbFiZnNqy</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="edge_Event_start-Activity_PYC2fm" sourceRef="Event_start" targetRef="Activity_PYC2fm" />
+    <bpmn:sequenceFlow id="edge_Activity_PYC2fm-Event_vhtBn2" sourceRef="Activity_PYC2fm" targetRef="Event_vhtBn2" />
+    <bpmn:sequenceFlow id="edge_Event_U6alpL-Activity_Vbbfqo" sourceRef="Event_U6alpL" targetRef="Activity_Vbbfqo" />
+    <bpmn:sequenceFlow id="edge_yGapVi" sourceRef="Event_aLyjoW" targetRef="Activity_Vbbfqo" />
+    <bpmn:sequenceFlow id="edge_Activity_Vbbfqo-Event_4ZxKbFiZnNqy" sourceRef="Activity_Vbbfqo" targetRef="Event_4ZxKbF" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="176" y="192" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="176" y="233" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_PYC2fm" bpmnElement="Activity_PYC2fm">
+        <dc:Bounds x="344" y="178" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="344" y="263" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_U6alpL" bpmnElement="Event_U6alpL">
+        <dc:Bounds x="334" y="240" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="334" y="281" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_aLyjoW" bpmnElement="Event_aLyjoW">
+        <dc:Bounds x="414" y="240" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="414" y="281" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_vhtBn2" bpmnElement="Event_vhtBn2">
+        <dc:Bounds x="492" y="200" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="492" y="241" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_Vbbfqo" bpmnElement="Activity_Vbbfqo">
+        <dc:Bounds x="368" y="432" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="368" y="517" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_4ZxKbF" bpmnElement="Event_4ZxKbF">
+        <dc:Bounds x="468" y="608" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="468" y="649" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Event_start-Activity_PYC2fm" bpmnElement="edge_Event_start-Activity_PYC2fm">
+        <di:waypoint x="228" y="218" />
+        <di:waypoint x="344" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Activity_PYC2fm-Event_vhtBn2" bpmnElement="edge_Activity_PYC2fm-Event_vhtBn2">
+        <di:waypoint x="444" y="218" />
+        <di:waypoint x="492" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Event_U6alpL-Activity_Vbbfqo" bpmnElement="edge_Event_U6alpL-Activity_Vbbfqo">
+        <di:waypoint x="334" y="258" />
+        <di:waypoint x="314" y="258" />
+        <di:waypoint x="314" y="472" />
+        <di:waypoint x="368" y="472" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_yGapVi" bpmnElement="edge_yGapVi">
+        <di:waypoint x="450" y="258" />
+        <di:waypoint x="488" y="258" />
+        <di:waypoint x="488" y="472" />
+        <di:waypoint x="468" y="472" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_edge_Activity_Vbbfqo-Event_4ZxKbFiZnNqy" bpmnElement="edge_Activity_Vbbfqo-Event_4ZxKbFiZnNqy">
+        <di:waypoint x="468" y="472" />
+        <di:waypoint x="488" y="472" />
+        <di:waypoint x="488" y="549" />
+        <di:waypoint x="448" y="549" />
+        <di:waypoint x="448" y="626" />
+        <di:waypoint x="468" y="626" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

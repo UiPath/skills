@@ -1,0 +1,82 @@
+task_id: skill-ixp-per-occurrence-unconfirm-smoke
+description: >
+  Smoke: a repeatable field group was confirmed with 4 line-item
+  occurrences; one is an invented row that isn't on the document and was
+  confirmed by mistake. The agent must number the occurrences itself
+  (0-based, extraction order) and roll back ONLY that one with
+  `unconfirm --group + --occurrence` (or `--updates`) — NOT plain
+  `--fields` (which removes the field id from every occurrence,
+  un-confirming the correct lines too). Mirrors per_occurrence_confirm;
+  locks in the unconfirm half of Critical Rules 13/14.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, lifecycle:execute]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  On project `freight_docs-df33115f-ixp`, document `doc-freight-9`, the
+  `Line Items` field group was confirmed earlier with four extractions,
+  one per line. In extraction order, as `get-predictions` returns them,
+  they are:
+
+  - "Steel bolts", Qty 200, Total $400 — a real line on the invoice.
+  - "Copper wire", Qty 50, Total $150 — a real line on the invoice.
+  - "Premium freight surcharge", Qty 1, Total $9,999 — there is NO such
+    line on the invoice; the model invented this row and it was confirmed
+    by mistake.
+  - "Pallet wrap", Qty 12, Total $36 — a real line on the invoice.
+
+  Roll back only the invented "Premium freight surcharge" line so it goes
+  back to un-annotated. Leave the other three confirmed lines, and every
+  other annotation on the document, intact.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # The invented "Premium freight surcharge" row is extraction-order
+  # occurrence 2 (Steel bolts=0, Copper wire=1, surcharge=2, Pallet
+  # wrap=3). The agent must derive that index itself — the prompt never
+  # states it — and roll it back with the per-occurrence shape. Either
+  # `--occurrence 2` or an `--updates` entry `"occurrence":2` satisfies it.
+  - type: command_executed
+    description: "Rolls back occurrence 2 (the invented row) via --group + occurrence 2"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-9["'']?.*--group\s+["'']?Line Items["'']?.*(--occurrence\s+2\b|"occurrence"\s*:\s*2\b)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The correct lines (occurrences 0, 1, 3) must stay confirmed — no
+  # unconfirm call may target them.
+  - type: command_not_executed
+    description: "Agent did NOT unconfirm any of the correct occurrences 0, 1, or 3"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-9["'']?.*(--occurrence\s+[013]\b|"occurrence"\s*:\s*[013]\b)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Anti-pattern: plain --fields without --group removes the field id from
+  # EVERY occurrence (occurrences share field ids), un-confirming the
+  # correct lines too. Forbidden here.
+  - type: command_not_executed
+    description: "Agent did NOT use plain `--fields` without --group"
+    tool_name: "Bash"
+    command_pattern: '^(?!.*--group).*uip\s+ixp\s+labellings\s+unconfirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-9["'']?\s+.*--fields'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

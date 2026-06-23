@@ -3,6 +3,7 @@
 
 # CI workflows and review config
 /.github/ @uipreliga @bai-uipath @akshaylive
+/tests/.coder-eval-version @uipreliga @bai-uipath @akshaylive
 
 # Hooks
 /hooks/ @DragosUnguru @RaduAna-Maria
@@ -40,8 +41,9 @@
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
 /tests/tasks/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
+/tests/tasks/uipath-agents/lowcode/conversational/ @maxduu @andrewwan-uipath
 
-# Context grounding capabilities (DeepRAG + BatchTransform) — now part of uipath-agents
+# Context grounding capabilities — DeepRAG + BatchTransform (uipath-agents) and index-management CLI (uipath-platform)
 /skills/uipath-agents/references/coded/capabilities/deeprag/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 /skills/uipath-agents/references/coded/capabilities/batch-transform/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 /skills/uipath-agents/references/lowcode/capabilities/built-in-tools/deeprag/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
@@ -51,6 +53,9 @@
 /tests/tasks/uipath-agents/batch_transform_coded/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 /tests/tasks/uipath-agents/lowcode/deeprag/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 /tests/tasks/uipath-agents/lowcode/batch_transform/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
+# Context grounding — index-management CLI (moved to uipath-platform); overrides the platform-team entries above
+/skills/uipath-platform/references/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
+/tests/tasks/uipath-platform/context-grounding/ @gcuip @JeremyReist2 @cfauchere @CalebMartinUiPath @jordan-uipath @eteodorovici @pateljay43 @swathiJayav
 
 # Guardrails capability docs
 /skills/uipath-agents/references/lowcode/capabilities/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath

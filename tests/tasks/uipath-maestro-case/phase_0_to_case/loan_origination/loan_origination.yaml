@@ -55,8 +55,6 @@ initial_prompt: |
   get the draft down and stop there — we'll finalize and build it later, so don't
   polish or validate it yet, just capture the design.
 
-  Use the uipath-maestro-case skill.
-
 success_criteria:
   # The interview grades the captured DESIGN, in whichever file Phase 0 leaves it:
   # sdd.draft.md if it stopped at the draft, or sdd.md if it finalized. All

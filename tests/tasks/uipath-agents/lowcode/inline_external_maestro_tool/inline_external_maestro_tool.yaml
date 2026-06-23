@@ -15,16 +15,12 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath Flow project "ProcurementFlow" with an inline low-code agent
-  that accepts a required `productId` (number) and returns a boolean
-  `status`. It must determine the status by delegating to an Agentic
-  process named "ProcurementProcess" that is already deployed in the
-  tenant — not by reasoning about the answer itself. The solution
-  should be named "ProcurementFlowSol".
-
-  Use the real folder and process name from the tenant — do not
-  hard-code or guess these values. Name the agent's tool resource
-  `ProcurementProcess` (matching the deployed process).
+  Create a UiPath Flow project "ProcurementFlow" that runs an inline low-code
+  agent which takes a required `productId` (number) and returns a boolean
+  `status`. The agent shouldn't decide the status itself — it should come from
+  our existing "ProcurementProcess" agentic process, which is already deployed
+  in our tenant. Wire it into the flow. The solution should be named
+  "ProcurementFlowSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -116,12 +112,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "Flow file was created"

@@ -12,17 +12,24 @@ Validates:
        - isEnabled is truthy
        - channels contains at least one entry with
          type == "actionCenter" (lowercase) and a non-empty name
+  4. The ActionCenter channel is bound to the solution-internal
+     HumanReviewEscalation app:
+       - properties.appName == "HumanReviewEscalation"
+       - properties.folderName == "solution_folder"
 
   Note: the escalation resource.json format documented in
   agent-json-format.md does not expose a `location` field on escalation
-  resources. The solution-vs-external distinction is captured by where
-  the ActionCenter app actually lives (separate project inside this
-  solution for F13) and by the test prompt wording.
+  resources. The solution-vs-external distinction is captured by the
+  ActionCenter channel binding to the solution-internal app
+  (folderName == "solution_folder").
 """
 
 import os
 import sys
 from pathlib import Path
+
+EXPECTED_APP_NAME = "HumanReviewEscalation"
+EXPECTED_FOLDER_NAME = "solution_folder"
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.inline_wiring import (  # noqa: E402
@@ -78,6 +85,21 @@ def main() -> None:
             f"and a non-empty name"
         )
     print(f"OK: escalation resource at {path.name} is valid (id={rid}, {len(ac)} actionCenter channel(s))")
+
+    bound = [c for c in ac if (c.get("properties") or {}).get("appName") == EXPECTED_APP_NAME]
+    if not bound:
+        sys.exit(
+            f"FAIL: {path} has no actionCenter channel bound to the solution-internal app "
+            f"{EXPECTED_APP_NAME!r} (properties.appName) — got appNames: "
+            f"{[(c.get('properties') or {}).get('appName') for c in ac]}"
+        )
+    fname = (bound[0].get("properties") or {}).get("folderName")
+    if fname != EXPECTED_FOLDER_NAME:
+        sys.exit(
+            f"FAIL: channel properties.folderName should be {EXPECTED_FOLDER_NAME!r} "
+            f"(solution-internal app), got {fname!r}"
+        )
+    print(f"OK: actionCenter channel is bound to appName={EXPECTED_APP_NAME!r}, folderName={EXPECTED_FOLDER_NAME!r}")
 
 
 if __name__ == "__main__":

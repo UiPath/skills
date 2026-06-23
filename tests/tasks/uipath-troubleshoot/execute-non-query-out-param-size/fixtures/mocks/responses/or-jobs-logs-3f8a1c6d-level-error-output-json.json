@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:32.840Z",
+      "Message": "[Execute Non Query - usp_FinalizeOrder] A database error occurred. The Size property has an invalid size of 0."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:32.855Z",
+      "Message": "A database error occurred. The Size property has an invalid size of 0.\r\nin Main.xaml\r\n    at ExecuteNonQuery \"Execute Non Query - usp_FinalizeOrder\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

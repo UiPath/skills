@@ -13,8 +13,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Configure the group rule for the "RPA Developers" group so that:
   - every member gets an Automation Developer Named User license (no quota)
   - up to 10 members can also get an Attended Named User license

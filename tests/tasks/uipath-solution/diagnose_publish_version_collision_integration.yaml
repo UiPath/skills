@@ -1,0 +1,49 @@
+task_id: skill-solution-diagnose-publish-version-collision
+description: >
+  Integration test (diagnose mode): agent root-causes a `solution publish`
+  failure caused by republishing the same name+version. Local reasoning
+  task — no tenant interaction.
+
+  Ground truth verified against references/scenarios/failure-modes.md row
+  "processKey collision on solution publish" → republishing same
+  name+version (the feed rejects duplicate name+version pairs) → bump the
+  version (e.g. `solution pack --version 1.0.1`) and re-publish.
+tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  My `uip solution publish` is failing. It packed fine, but publish errors
+  out complaining about a processKey / name+version collision. I published
+  this same solution earlier today and it worked.
+
+  What's the root cause, and how do I get the publish to go through?
+
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-solution"
+    expected_skill: "uipath-solution"
+    description: "Agent invoked the uipath-solution Skill to diagnose"
+    weight: 1.5
+
+  - type: llm_judge
+    description: "Agent identifies duplicate name+version and prescribes bumping the version"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: the publish feed
+      rejects a duplicate name+version pair — republishing the SAME
+      solution name at the SAME version collides. The fix is to bump the
+      version (e.g. `uip solution pack --version 1.0.1 ...`) and re-publish.
+
+      Score 1.0 if the reply identifies the duplicate / already-published
+      same name+version as the cause AND prescribes bumping the version
+      (a new version number) before re-publishing. English or Romanian
+      both fine; naming the `--version` flag is a plus but "publish under
+      a new version" is sufficient.
+
+      Score 0.0 if it blames a CLI bug, auth, or a transient error, or
+      tells the user to retry the same version / force-overwrite without
+      changing the version.
+    weight: 3.0
+    pass_threshold: 0.7
