@@ -148,6 +148,24 @@ uip df records query <entity-id> \
 
 For Complex types field shapes and value formats, see [`entity-schema.md`](entity-schema.md#supported-field-types) and [`records-query.md`](records-query.md#filtering-on-choice-set-fields).
 
+### `records query` body schema — exact keys (agents commonly mis-guess)
+
+The CLI accepts a strict schema. These are the four most-missed keys:
+
+| Position | Correct | Common wrong guess |
+|---|---|---|
+| Entity ID | positional: `uip df records query <entity-id>` | `--entity-id <id>` (no such flag) |
+| Wrap object | `filterGroup` | `filter`, `where`, `query` |
+| Boolean operator | `logicalOperator: 0` (AND) or `1` (OR) — **integer** | `"AND"` / `"OR"` (string) |
+| Filter list | `queryFilters: [...]` | `filters`, `conditions` |
+| Per-filter field key | `fieldName: "..."` | `field`, `name`, `column` |
+
+`CHOICE_SET_MULTIPLE` value forms:
+- `contains` / `not contains` → bare-NumberId **string** (`"1"`, not `"[1]"`)
+- `=` / `!=` → JSON-array **string** (`"[1,3]"`, not bare `"1"`)
+
+Full per-type operator support matrix: [`filter-platform-contract.md`](filter-platform-contract.md).
+
 ---
 
 ## Folder Scope
