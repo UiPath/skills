@@ -105,11 +105,11 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
 
 - `properties.toolType` MUST be exactly `"analyze-attachments"` (kebab-lowercase). Anything else is silently ignored.
 - The `definitions.job-attachment` block belongs inside the tool's `inputSchema`, not at the agent root. Each schema (agent input, agent output, tool input) carries its own copy.
-- `{{input.<field>}}` only surfaces metadata; without this tool the agent has no way to read file contents. See [../../critical-rules.md](../../critical-rules.md) Critical Rule 18.
+- `{{input.<field>}}` only surfaces metadata; without this tool the agent has no way to read file contents. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rule 17.
 - Agents can return a `job-attachment` from `outputSchema` (e.g. a generated file), but `analyze-attachments` itself only reads — it does not produce attachments.
 
 ## References
 
 - [built-in-tools.md](built-in-tools.md) — capability overview
 - [../../agent-definition.md](../../agent-definition.md) § File Attachments — `job-attachment` schema
-- [../../critical-rules.md](../../critical-rules.md) Critical Rules 18–21
+- [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 17–20

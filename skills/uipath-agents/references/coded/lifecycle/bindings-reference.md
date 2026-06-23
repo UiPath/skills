@@ -51,11 +51,12 @@ Bindable resource types:
 | `.context_grounding.*` (all methods: `retrieve`, `search`, `add_to_index`, `create_index`, etc.) | `(name="name", folder_path="folder")` | `index` | `name` or `index_name` |
 | `.connections.retrieve` / `.retrieve_async` | `("connection_key")` | `connection` | `key` (positional) |
 | `.mcp.retrieve` / `.retrieve_async` | `(slug="slug", folder_path="folder")` | `mcpServer` | `slug` |
+| `EscalateAction(...)` (guardrail HITL action) | `(app_name="name", app_folder_path="folder", recipient=...)` | `app` | `app_name` |
 | `interrupt(InvokeProcess(...))` (LangGraph HITL) | `(name="name", process_folder_path="folder", input_arguments={...})` | `process` | `name` |
 | `interrupt(CreateTask(...))` (LangGraph HITL) | `(app_name="name", app_folder_path="folder", title="...", data={...})` | `app` | `app_name` |
 | `interrupt(CreateEscalation(...))` (LangGraph HITL) | `(app_name="name", app_folder_path="folder", title="...", data={...})` | `app` | `app_name` |
 
-> **Interrupt-based patterns also produce bindings.** LangGraph agents pause and delegate work via `interrupt(InvokeProcess|CreateTask|CreateEscalation(...))` imported from `uipath.platform.common`. These produce the **same binding entries** as their `sdk.processes.invoke` / `sdk.tasks.create` counterparts — same `resource` type, same key format, same `ActivityName`. Scan for the class names (`InvokeProcess`, `CreateTask`, `CreateEscalation`) in addition to the `sdk.*` method calls. Note: `InvokeProcess` uses `process_folder_path` (not `folder_path`).
+> **Guardrail and interrupt-based patterns also produce bindings.** Guardrail HITL escalation uses `EscalateAction(app_name=..., app_folder_path=...)`; LangGraph agents pause and delegate work via `interrupt(InvokeProcess|CreateTask|CreateEscalation(...))` imported from `uipath.platform.common`. These produce the **same binding entries** as their `sdk.processes.invoke` / `sdk.tasks.create` counterparts — same `resource` type, same key format, same `ActivityName`. Scan for the class/action names (`EscalateAction`, `InvokeProcess`, `CreateTask`, `CreateEscalation`) in addition to the `sdk.*` method calls. Note: `InvokeProcess` uses `process_folder_path` (not `folder_path`).
 
 Use Grep to find calls matching these patterns across all project Python files. Then read the surrounding code to extract the literal string values for resource name and folder path.
 
@@ -456,7 +457,27 @@ task = sdk.tasks.create(title="...", data={...}, app_name="app_name", app_folder
 - `app_name` — keyword argument `app_name=`
 - `app_folder_path` — keyword argument `app_folder_path=`
 
-**Note:** The `DisplayLabel` in metadata uses the literal app name value, not `"FullName"`. Both Action Center tasks and escalations use this resource type — `CreateEscalation` extends `CreateTask` with the same `app_name`/`app_folder_path` fields.
+**Note:** The `DisplayLabel` in metadata uses the literal app name value, not `"FullName"`. Action Center tasks, manual escalations, and guardrail `EscalateAction` use this resource type — `CreateEscalation` extends `CreateTask` with the same `app_name`/`app_folder_path` fields, and `EscalateAction` references the same deployed Action App.
+
+**Guardrail-action variant — `EscalateAction(...)`:**
+
+Guardrail HITL escalation references an Action Center app directly from the guardrail action:
+
+```python
+from uipath_langchain.guardrails import EscalateAction
+
+action = EscalateAction(
+    app_name="Guardrail.Escalation.Action.App",
+    app_folder_path="Shared",
+    recipient=recipient,
+)
+```
+
+Binding entry is **identical** to `sdk.tasks.create` — same `resource: "app"`, same `key` (`<app_name>.<app_folder_path>`), same `ActivityName: "create_async"`, same `DisplayLabel: <app_name>`.
+
+**Parameter extraction:**
+- `app_name` — keyword argument `app_name=` to `EscalateAction(...)`
+- `app_folder_path` — keyword argument `app_folder_path=`
 
 **Interrupt-based variant — `interrupt(CreateTask(...))` / `interrupt(CreateEscalation(...))`:**
 

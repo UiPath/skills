@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa6666cc-001",
+      "JobKey": "aa666666-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T07:30:01.520Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelReconExport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa6666cc-002",
+      "JobKey": "aa666666-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T07:30:01.640Z",
+      "Message": "[ExcelReconExport] Opening C:\\Robot\\Data\\recon-daily.xlsx to export the reconciliation summary",
+      "ProcessName": "ExcelReconExport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa6666cc-003",
+      "JobKey": "aa666666-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T07:30:01.820Z",
+      "Message": "Excel Application Scope: recon-daily.xlsx — surface: Classic ExcelApplicationScope (COM-only). Attempting to acquire Excel.Application COM server.",
+      "ProcessName": "ExcelReconExport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa6666cc-004",
+      "JobKey": "aa666666-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T07:30:02.300Z",
+      "Message": "Excel Application Scope: recon-daily.xlsx — Excel.Application object instantiated, but QueryInterface for Microsoft.Office.Interop.Excel._Application (IID {000208D5-0000-0000-C000-000000000046}) returned E_NOINTERFACE. Host: MOCK-HOST. Excel install state: INSTALLED (Microsoft 365 Apps, launches interactively). COM add-ins auto-loaded into this Excel instance at startup: 'UiPath.Integration.ExcelAddin' (LoadBehavior=3, HKLM — the Studio design-time Excel Add-in, present on this runtime host) and 'AcmeBudgetTools.Connect' (LoadBehavior=3). Diagnostic: launching 'excel.exe /safe' (all add-ins disabled) on the host succeeds and a manual COM bind to _Application works.",
+      "ProcessName": "ExcelReconExport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa6666cc-005",
+      "JobKey": "aa666666-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-30T07:30:02.620Z",
+      "Message": "Excel Application Scope: recon-daily.xlsx — System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Excel._Application'. QueryInterface for IID {000208D5-0000-0000-C000-000000000046} failed: 0x80004002 E_NOINTERFACE (No such interface supported).",
+      "ProcessName": "ExcelReconExport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

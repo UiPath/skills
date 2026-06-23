@@ -11,8 +11,6 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Allocate 5 Unattended Robots and 10 Robot Units to tenant
   `c0ffee00-0000-0000-0000-000000000001`. Save the input JSON file as
   `tenant-allocation.json` in the current directory, then apply it.

@@ -13,8 +13,6 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Before starting, load the uipath-data-fabric skill and follow its workflow.
-
   1. Check login: run `uip login status --output json`. Do NOT re-login — use
      whatever tenant is currently active.
 

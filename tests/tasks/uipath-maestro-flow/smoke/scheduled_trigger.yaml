@@ -51,9 +51,6 @@ initial_prompt: |
     - Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
       planning and implementation. Build the complete flow end-to-end in a
       single pass.
-    - Before starting, load the uipath-maestro-flow skill and follow its
-      scheduled-trigger plugin docs and the "Replace manual trigger with
-      scheduled trigger" procedure exactly.
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────

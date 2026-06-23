@@ -78,7 +78,7 @@ def main() -> int:
             continue
 
         r = subprocess.run(
-            ["uip", "solution", "delete", sid, "--output", "json"],
+            ["uip", "solution", "delete", sid, "--yes", "--output", "json"],
             capture_output=True,
             text=True,
             timeout=60,

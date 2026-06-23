@@ -1,0 +1,55 @@
+task_id: skill-admin-oms-service-provisioning-smoke
+description: >
+  Smoke test: agent provisions a service on a tenant by discovering
+  available services and adding one. Tests list-available → add
+  workflow and correct --tenant-id + --service flags.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, oms, service-provisioning]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Add the Test Manager service to our "Development" tenant. Run these
+  steps in order:
+  1. List available services: `uip admin tenants services list-available --output json`
+  2. Add the service: `uip admin tenants services add --tenant-id <id> --service testmanager --output json`
+
+  If step 1 fails, still run step 2 with a placeholder tenant ID.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed available services or current tenant services first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+services\s+(list-available|list)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked services add with tenant and service"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+services\s+add\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

@@ -7,8 +7,6 @@ description: >
 tags: [uipath-platform, smoke, licensing, groups]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Who in the "RPA Developers" group currently holds which license bundle?
 
   Important:

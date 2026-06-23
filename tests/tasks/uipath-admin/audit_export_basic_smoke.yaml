@@ -2,7 +2,7 @@ task_id: skill-admin-audit-export-basic-smoke
 description: >
   Skill-guided evaluation: agent uses the uipath-admin skill to run
   a minimal `export` against a small window. Validates the three
-  required flags (`--from-date`, `--to-date`, `--output-file`) and
+  required flags (`--from-date`, `--to-date`, `--output-path`) and
   that the agent picks a reasonable output path inside the working
   directory.
 
@@ -15,9 +15,10 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  An admin needs a ZIP of all tenant audit events from yesterday for
-  archival. Write the ZIP to ./audit-yesterday.zip in the current
-  working directory.
+  An admin needs all tenant audit events from yesterday exported as
+  day-wise JSON files for archival. Write them into the ./audit-yesterday
+  base directory in the current working directory (the CLI creates a
+  uniquely-named folder inside it).
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -30,17 +31,19 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, AND --output-file"
+    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, AND --output-path"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--from-date\s+\S+.*--to-date\s+\S+.*--output-file\s+\S+'
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--from-date\s+\S+.*--to-date\s+\S+.*--output-path\s+\S+'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent's export targeted the requested ./audit-yesterday.zip path"
+    description: "Agent's export targeted the requested ./audit-yesterday folder (json default; no .zip/.csv extension)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-file\s+\.?/?audit-yesterday\.zip'
+    # Match the audit-yesterday folder path; the negative lookahead rejects a .zip/.csv
+    # file (the retired ZIP shape) so this confirms the json-folder default is used.
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-path\s+\S*audit-yesterday(?![\w.])'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
