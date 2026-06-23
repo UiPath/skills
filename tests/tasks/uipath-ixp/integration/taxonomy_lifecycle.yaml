@@ -33,7 +33,7 @@ initial_prompt: |
   - Add a third field, "Surcharge", to "Charges".
   - Rename the group "Charges" to "Adjustments".
   - Rename the field "Late Fee" to "Penalty Fee".
-  - Change "Discount" to a Number type — it should be numeric, not text.
+  - Change "Discount" to a Number type.
   - Update the instructions on "Discount" and "Surcharge".
   - Delete the "Adjustments" group.
   - Afterwards, confirm the original invoice groups (Invoice, Bill To, Line Items,
