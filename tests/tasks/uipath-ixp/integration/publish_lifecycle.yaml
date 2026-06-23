@@ -27,8 +27,8 @@ initial_prompt: |
 
   Then:
   - Publish version 1 with the `staging` tag.
-  - Publish version 2 with the `live` tag.
-  - Move the `live` tag to version 1.
+  - Publish version 2 with the `live` tag. Now save the model list to `models_tagged.json`.
+  - Move the `live` tag to version 1, then save the model list to `models_after_move.json`.
   - Remove the tag from version 1 — it should stay published.
   - Unpublish version 2 — it should still show up as trained.
 
@@ -84,4 +84,28 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
     min_count: 1
     weight: 1.0
+    pass_threshold: 1.0
+
+  # --- Outcome verification: tag pointers actually moved (read back via list-models) ---
+  - type: json_check
+    description: "After tagging: staging points to v1, live points to v2"
+    path: "models_tagged.json"
+    assertions:
+      - expression: "Data.Tags[?Name=='staging'].Version | [0]"
+        operator: equals
+        expected: 1
+      - expression: "Data.Tags[?Name=='live'].Version | [0]"
+        operator: equals
+        expected: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "After move: the live tag now points to v1"
+    path: "models_after_move.json"
+    assertions:
+      - expression: "Data.Tags[?Name=='live'].Version | [0]"
+        operator: equals
+        expected: 1
+    weight: 2.0
     pass_threshold: 1.0

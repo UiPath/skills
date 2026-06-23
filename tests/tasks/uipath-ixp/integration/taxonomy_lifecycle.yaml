@@ -36,10 +36,12 @@ initial_prompt: |
   - Change the "Discount" field's type to "Number" — warn me first that it's destructive.
   - Update the instructions on "Discount" and "Surcharge" in one call, and include
     a field named "Nonexistent Field" that isn't in the taxonomy — I want that name
-    to come back as unmatched, not a silent failure.
-  - Tell me exactly how many fields are in "Adjustments", then delete that group.
-  - Finally, show me the taxonomy still has the original invoice groups (Invoice,
-    Bill To, Line Items, Ship To).
+    to come back as unmatched, not a silent failure. Save that command's JSON
+    response to `update_prompts_result.json`.
+  - Now save the full taxonomy to `taxonomy_before_delete.json`, tell me exactly how
+    many fields are in "Adjustments", and delete that group.
+  - Finally, save the taxonomy again to `taxonomy_final.json` and confirm it still
+    has the original invoice groups (Invoice, Bill To, Line Items, Ship To).
 
   When you're done, delete the project.
 
@@ -114,4 +116,50 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
     min_count: 1
     weight: 1.0
+    pass_threshold: 1.0
+
+  # --- Outcome verification (read-back content, not just command shape) ---
+  - type: file_exists
+    description: "Captured the taxonomy before deleting the group"
+    path: "taxonomy_before_delete.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Rename + add landed: Adjustments / Penalty Fee / Surcharge present, old names gone"
+    path: "taxonomy_before_delete.json"
+    includes: ["Adjustments", "Penalty Fee", "Surcharge"]
+    excludes: ["Charges", "Late Fee"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "change-type took effect: the Discount field is now type Number"
+    path: "taxonomy_before_delete.json"
+    assertions:
+      - expression: "Data.dataset.label_groups[].label_defs[].moon_form[?name=='Discount'].kind | [0]"
+        operator: equals
+        expected: "Number"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "update-prompts reported the non-existent field under Unmatched, not a silent failure"
+    path: "update_prompts_result.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+      - expression: "Data.Unmatched"
+        operator: contains
+        expected: "Nonexistent Field"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "After delete, Adjustments is gone and the original invoice groups remain"
+    path: "taxonomy_final.json"
+    includes: ["Invoice", "Line Items"]
+    excludes: ["Adjustments"]
+    weight: 1.5
     pass_threshold: 1.0

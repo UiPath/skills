@@ -30,9 +30,11 @@ initial_prompt: |
   Now, I'll only refer to things by their human names — work the ids out yourself:
   - Delete the file `york_solutions_invoice.png`. I'm giving you the filename, not
     an id, so find it first.
-  - Then delete the first document still left in the list.
+  - Then delete the first document still left in the list. Afterwards, save the
+    remaining document list to `documents_after.json`.
   - Rename the project (I'll point to it by its title, so find its actual name
-    first) to the title "IxP Int Resolve Renamed".
+    first) to the title "IxP Int Resolve Renamed", then save the project's details
+    to `project_after.json`.
 
   Clean up by deleting the project at the end.
 
@@ -90,4 +92,19 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
     min_count: 1
     weight: 1.0
+    pass_threshold: 1.0
+
+  # --- Outcome verification: resolution actually deleted the named doc + renamed the project ---
+  - type: file_contains
+    description: "The named document is gone from the remaining list"
+    path: "documents_after.json"
+    excludes: ["york_solutions_invoice.png"]
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "The project was renamed to the new title"
+    path: "project_after.json"
+    includes: ["IxP Int Resolve Renamed"]
+    weight: 2.0
     pass_threshold: 1.0

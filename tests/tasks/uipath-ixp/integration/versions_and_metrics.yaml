@@ -24,10 +24,11 @@ initial_prompt: |
   project from the files in `./fixtures/` — import the taxonomy, upload the three
   invoices — and let it train.
 
-  Note the scores for version 1 (the current model). Then reconfigure the model to
-  use `table` preprocessing and retrain to produce version 2. Once both are
-  trained, compare version 1 and version 2: tell me which scored better and by how
-  much, calling out the fields that moved. Then give me both versions ranked
+  Note the scores for version 1 (the current model) and save that metrics response
+  to `metrics_v1.json`. Then reconfigure the model to use `table` preprocessing and
+  retrain to produce version 2, and save its metrics to `metrics_v2.json`. With
+  both saved, compare version 1 and version 2: tell me which scored better and by
+  how much, calling out the fields that moved. Then give me both versions ranked
   best-to-worst by score, with the score you used for each.
 
   Delete the project when you're done.
@@ -71,4 +72,25 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
     min_count: 1
     weight: 1.0
+    pass_threshold: 1.0
+
+  # --- Outcome verification: real per-version metrics were captured ---
+  - type: json_check
+    description: "Version 1 metrics captured with real per-field scores"
+    path: "metrics_v1.json"
+    assertions:
+      - expression: "length(Data.Fields)"
+        operator: gte
+        expected: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Version 2 metrics captured with real per-field scores"
+    path: "metrics_v2.json"
+    assertions:
+      - expression: "length(Data.Fields)"
+        operator: gte
+        expected: 1
+    weight: 2.0
     pass_threshold: 1.0

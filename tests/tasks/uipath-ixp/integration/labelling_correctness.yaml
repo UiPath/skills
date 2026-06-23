@@ -29,9 +29,11 @@ initial_prompt: |
   Then, on `csi_tower_invoice.png` (the multi-line invoice):
   - Confirm only the first line item — the other rows look wrong, leave them.
   - The "Amount" field was mis-read by OCR on the first two line items; correct it
-    on both of them in one batched call.
+    on both of them in one batched call, and save that command's JSON response to
+    `confirm_result.json`.
   - Actually, scrap that — roll back everything you just confirmed on this document.
-  - The "Receipt Number" field isn't on this document at all — mark it missing.
+  - The "Receipt Number" field isn't on this document at all — mark it missing, and
+    save that response to `mark_missing_result.json`.
 
   Clean up by deleting the project when you're done.
 
@@ -90,4 +92,27 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
     min_count: 1
     weight: 1.0
+    pass_threshold: 1.0
+
+  # --- Outcome verification: the mutating calls actually succeeded ---
+  # (annotation state isn't readable via any uip command, so the verifiable
+  #  outcome is the write response itself returning Result == Success)
+  - type: json_check
+    description: "Batched per-occurrence correction confirm succeeded"
+    path: "confirm_result.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "mark-missing succeeded"
+    path: "mark_missing_result.json"
+    assertions:
+      - expression: "Result"
+        operator: equals
+        expected: "Success"
+    weight: 2.0
     pass_threshold: 1.0
