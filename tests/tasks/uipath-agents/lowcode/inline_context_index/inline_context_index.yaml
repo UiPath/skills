@@ -45,13 +45,17 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Advisory, non-gating: inline agents can discover the index identity via the
+  # flow registry (uip maestro flow registry search/get) instead of solution
+  # resources list, so don't gate on it here. Standalone agents (context_index)
+  # have no flow registry and keep this gating.
   - type: command_executed
-    description: "Agent discovered the index identity with uip solution resources list"
+    description: "Advisory: agent discovered the index identity with uip solution resources list (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+resources\s+list\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent fetched the index configuration with uip solution resources get"
