@@ -1,0 +1,36 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-02T08:45:00.150Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-02T08:45:00.820Z",
+      "Message": "[Log Message] Preparing welcome mail for recipient: "
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-02T08:45:01.640Z",
+      "Message": "[Send Outlook Mail Message] preparing message: To='' (empty); Subject='Welcome'; Attachments=0"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-02T08:45:02.120Z",
+      "Message": "[Send Outlook Mail Message] Object reference not set to an instance of an object."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-02T08:45:02.165Z",
+      "Message": "System.NullReferenceException: Object reference not set to an instance of an object.\r\nin Main.xaml\r\n    at SendOutlookMail \"Send Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-02T08:45:02.180Z",
+      "Message": "Execution ended in: 00:00:02"
+    }
+  ]
+}

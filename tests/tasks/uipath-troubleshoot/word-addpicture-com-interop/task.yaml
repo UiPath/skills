@@ -1,0 +1,169 @@
+task_id: skill-troubleshoot-word-addpicture-com-interop
+description: >
+  UiPath troubleshoot agent must diagnose a Word "Add Picture"
+  (WordAddImage) failure that is ENVIRONMENTAL, not a source defect.
+  The workflow is correct: Add Picture is properly nested inside the
+  Use Word File scope, ImagePath is a valid absolute path, and
+  InsertRelativeTo=Document. The job faults during Word COM startup
+  with System.InvalidCastException ... (Exception from HRESULT:
+  0x8002801D (TYPE_E_LIBNOTREGISTERED)) because the Word interop type
+  library is not registered on the robot host (after a partial/failed
+  Office update). Agent must match the
+  activity-packages/word-activities/playbooks/word-com-interop-failures.md
+  playbook (type-library-not-registered branch / E1 — reached directly
+  or via add-picture-failures.md C2, which delegates to it), conclude
+  the fault is environmental (NOT a workflow edit), and recommend an
+  online repair of Office to re-register the COM libraries (and/or fix
+  bitness, kill orphaned WINWORD.EXE, or migrate to file-based Word
+  Document activities).
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, com-interop]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My WordContractStamp job from folder Shared just faulted. It opens a
+  contract draft and stamps our company logo into it, but it dies with:
+  `System.InvalidCastException: Unable to cast COM object of type 'Microsoft.Office.Interop.Word.ApplicationClass' to interface type 'Microsoft.Office.Interop.Word._Application'. ... (Exception from HRESULT: 0x8002801D (TYPE_E_LIBNOTREGISTERED))`
+  The weird part: this exact workflow used to work, and it still runs
+  fine on my own machine in Studio. It only fails on the robot. What's
+  wrong, and how do I fix it?
+
+  The failing project source is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the word-com-interop-failures playbook (E1, reached directly or via add-picture-failures.md C2) AND identified an environmental Word interop type-library-not-registered fault (HRESULT 0x8002801D / TYPE_E_LIBNOTREGISTERED), NOT a workflow defect; fix is an online repair of Office (and/or bitness, orphaned WINWORD.EXE, or migrate to file-based Word Document activities)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The attached Reference (RESOLUTION.md) is the
+      authoritative ground truth.
+
+      The user's request was:
+        "My WordContractStamp job from folder Shared just faulted ... it dies
+         with System.InvalidCastException: Unable to cast COM object of type
+         'Microsoft.Office.Interop.Word.ApplicationClass' to interface type
+         'Microsoft.Office.Interop.Word._Application'. ... (Exception from
+         HRESULT: 0x8002801D (TYPE_E_LIBNOTREGISTERED)). This exact workflow
+         used to work and still runs fine on my own machine in Studio. It only
+         fails on the robot. What's wrong, and how do I fix it?"
+
+      Grade what the agent PRESENTED to the user (its final response is the
+      contract). Score BOTH dimensions in a single number.
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/word-activities/playbooks/word-com-interop-failures.md
+        (the package-level Word COM / Office Interop failures playbook). The
+        relevant branch is E1 — COM type library / class not registered.
+        Reaching it via the neighbouring add-picture-failures.md playbook and
+        its C2 branch (which delegates to this playbook) is ACCEPTABLE.
+        Evidence (any one suffices): the agent names/reads either playbook,
+        state.json references it, or the agent's narrative clearly identifies
+        the Word COM/interop failure family and the type-library/registration
+        branch. NOT penalized: reading neighbouring branches (missing scope,
+        bookmark, image variable) while ruling them out.
+
+      DIMENSION B -- Same root cause + fix as RESOLUTION.md
+        Correct root cause (REQUIRED for a high score): the fault is
+        ENVIRONMENTAL — the Word interop type library is NOT registered on the
+        robot host. When the Word activities drive Word via Office Interop, the
+        COM cast `Microsoft.Office.Interop.Word.ApplicationClass` → `_Application`
+        fails with `System.InvalidCastException`, HRESULT `0x8002801D` =
+        `TYPE_E_LIBNOTREGISTERED` ("Library not registered"), during Word COM
+        startup (`EnsureWordApplication`) before any image is inserted. The
+        workflow itself is CORRECT (Add Picture nested in Use Word File, valid
+        absolute ImagePath, InsertRelativeTo=Document) and runs fine on the
+        developer's machine — the problem lives on the robot host, typically
+        after a partial/failed Office update or repair.
+        Both signals should be present for full credit: (1) the agent decodes
+        0x8002801D / TYPE_E_LIBNOTREGISTERED as a Word interop type-library
+        registration problem, and (2) it concludes the fault is ENVIRONMENTAL
+        on the host, not a workflow/source defect.
+
+        Correct fix (at least one): run an ONLINE REPAIR of Microsoft Office on
+        the robot host to re-register the COM type libraries; and/or verify
+        Studio/Robot and Office share the same bitness; kill any orphaned
+        WINWORD.EXE; or, if Office can't be made reliable, migrate to the
+        file-based `Word Document` activities (System > File > Word Document).
+
+        CRITICAL DISTINCTION: trying to "fix" the XAML/ImagePath/scope, editing
+        the workflow, or concluding a source-code bug is the WRONG root cause —
+        the workflow is correct and the fault is environmental on the host. Cap
+        such answers at 0.5.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+        1.0  Matched the word-com-interop-failures playbook (E1, directly or
+             via add-picture-failures.md C2) AND identified the COM/interop
+             environmental root cause (0x8002801D /
+             TYPE_E_LIBNOTREGISTERED = Word interop type library not registered
+             on the host; workflow is correct) AND recommended an Office online
+             repair (and/or bitness check, kill WINWORD.EXE, or migrate to
+             file-based Word Document activities).
+        0.8  COM/interop environmental root cause + correct fix, but playbook
+             match is weak/implicit; OR playbook + cause correct but fix is vague.
+        0.5  Tried to edit/"fix" the XAML, ImagePath, or scope, or concluded a
+             source-code bug, when the workflow is correct and the fault is
+             environmental; OR only one dimension correct.
+        0.2  Recognized a COM/HRESULT failure but neither matched the playbook
+             nor reached the environmental type-library-not-registered cause.
+        0.0  Wrong conclusion (missing scope, bookmark, image variable, missing
+             file) or got blocked.
+
+      Be substance-focused, not schema-focused. The decisive signals are the
+      0x8002801D / TYPE_E_LIBNOTREGISTERED decode AND the conclusion that this
+      is an environmental host problem (not a workflow edit) — penalize agents
+      that try to fix the source.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and root cause>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing WordContractStamp process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information in your initial
+    report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, rpa, ui-automation), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

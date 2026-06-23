@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T13:30:04.402Z",
+      "Message": "[Delete Outlook Mail Message] Collection was modified; enumeration operation may not execute."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T13:30:04.451Z",
+      "Message": "Collection was modified; enumeration operation may not execute.\r\nin Main.xaml\r\n    at DeleteOutlookMailMessage \"Delete Outlook Mail Message\"\r\n    at ForEach<MailMessage> \"For Each\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}
