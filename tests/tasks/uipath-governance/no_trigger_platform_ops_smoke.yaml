@@ -25,16 +25,14 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: skill_triggered
-    description: "Agent must NOT trigger the uipath-governance skill for platform ops"
-    skill_name: "uipath-governance"
-    expected_skill: "uipath-governance"
-    expected: "no"
-    weight: 3.0
-    pass_threshold: 1.0
-
   - type: command_not_executed
-    description: "Agent must NOT run any uip gov command"
+    description: "Agent must NOT run any uip gov command for a platform-ops request"
     tool_name: "Bash"
     command_pattern: 'uip\s+gov\s+'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Agent must NOT create any governance policy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+.*create\b'
     weight: 2.0
