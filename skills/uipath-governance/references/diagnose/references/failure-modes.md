@@ -11,8 +11,9 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 **Causes:**
 1. A user-level assignment overrides the group/tenant assignment (user > group > tenant)
 2. A group-level assignment overrides the tenant assignment for members of that group
-3. User has an explicit `null` (No Policy) override at a narrower scope
-4. Policy deployed to wrong subject (e.g. wrong group ID)
+3. User belongs to multiple groups with different policies — the group with the **lower priority number wins** (lower = more important)
+4. User has an explicit `null` (No Policy) override at a narrower scope
+5. Policy deployed to wrong subject (e.g. wrong group ID)
 
 **Investigation:**
 1. Check effective policy for the user:
@@ -40,7 +41,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
    uip gov aops-policy deployment tenant get "$TENANT_ID" --output json
    ```
 
-**Fix:** Cause 1/2 → remove the narrower-scope override (`deployment user delete` or `deployment group delete`) or update it to match intent. Cause 3 → remove the explicit `null` override. Cause 4 → redeploy to the correct subject after resolving the right ID.
+**Fix:** Cause 1/2 → remove the narrower-scope override (`deployment user delete` or `deployment group delete`) or update it to match intent. Cause 3 → lower the priority number of the intended group's policy to make it win (lower priority = more important). Cause 4 → remove the explicit `null` override. Cause 5 → redeploy to the correct subject after resolving the right ID.
 
 ---
 

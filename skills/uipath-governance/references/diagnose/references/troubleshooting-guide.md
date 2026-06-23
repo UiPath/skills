@@ -60,6 +60,7 @@ uip gov aops-policy deployment tenant get "$TENANT_ID" --output json
 Compare the assignments at each level for the target product:
 - If a user override exists (including explicit `null`), it wins over group and tenant.
 - If a group override exists, it wins over tenant for members of that group.
+- If the user belongs to **multiple groups** with different policies, the group with the **lower priority number wins** (lower = more important). Compare group priorities to identify which policy takes effect.
 - A `null` override means explicit "No Policy" — it is NOT the same as "no assignment" (which would inherit from the next level).
 
 List all deployment subjects to find unexpected overrides:
