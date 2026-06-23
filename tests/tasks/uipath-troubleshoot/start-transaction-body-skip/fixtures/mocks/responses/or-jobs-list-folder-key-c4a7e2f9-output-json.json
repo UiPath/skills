@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d5b8f3a0-2c4e-4f6b-9d7a-0e1f2a3b4c5d",
+      "State": "Successful",
+      "ProcessName": "NightlyReconcileTxn",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-31T01:30:01.118Z",
+      "EndTime": "2026-05-31T01:30:03.402Z",
+      "CreationTime": "2026-05-31T01:30:00.904Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,61 @@
+task_id: skill-solution-diagnose-missing-refresh
+description: >
+  Integration test (diagnose mode): agent uses the uipath-solution skill's
+  troubleshooting knowledge to root-cause a stale/incomplete package caused
+  by skipping `resources refresh` after adding a project and before packing
+  (Critical Rule "refresh before pack/upload"). Exercises the Diagnose
+  surface, currently 0% covered. Local reasoning task — no tenant interaction.
+
+  Ground truth verified against references/develop-solution.md (Step 7:
+  refresh reconciles every project's bindings and regenerates bundled
+  artefacts; run after add/import and before any pack/upload). Note: this
+  scenario deliberately uses a NEW-project case where refresh is the correct
+  fix — refresh is import-only and never overwrites an EXISTING resource, so
+  a spec-value change would instead require `resources edit`.
+tags: [uipath-solution, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Something's wrong with my UiPath solution packaging.
+
+  I added a new automation project to my solution with
+  `uip solution project add`, then immediately ran `uip solution pack` to
+  build the package. The pack reported success, but the resulting package
+  is missing the new project's resources / bindings — they didn't get
+  bundled in.
+
+  What is the root cause, and exactly what should I do to fix it?
+
+success_criteria:
+  - type: skill_triggered
+    skill_name: "uipath-solution"
+    expected_skill: "uipath-solution"
+    description: "Agent invoked the uipath-solution Skill to diagnose"
+    weight: 1.5
+
+  - type: llm_judge
+    description: "Agent identifies the missing refresh-before-pack as the root cause and prescribes the fix"
+    include_agent_output: true
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: after adding or
+      importing a project into a solution, you MUST run
+      `uip solution resources refresh` BEFORE `uip solution pack` (or
+      upload). Refresh reconciles every project's bindings and (re)generates
+      the bundled solution-folder artefacts; skipping it means pack bundles
+      stale or missing artefacts even though it reports `Success`.
+
+      Score 1.0 if the reply identifies the forgotten / missing
+      `resources refresh` step (run after the project was added, before
+      packing) as the root cause AND prescribes running
+      `uip solution resources refresh` and then re-packing. English or
+      Romanian phrasing both acceptable. Naming the exact command is a
+      plus; a clear "refresh the solution resources before packing"
+      instruction is sufficient.
+
+      Score 0.0 if the reply blames the wrong cause (e.g. a CLI bug, a
+      caching issue, the wrong project path) or fails to prescribe a
+      resources refresh before re-packing.
+    weight: 3.0
+    pass_threshold: 0.7

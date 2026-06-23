@@ -22,8 +22,6 @@ run_limits:
   max_turns: 50
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   Generate a **QA Engineer** test report from my UiPath Test Manager "CLAIM"
   project — use the test set CLAIM:23. Save the report file in the current
   working directory using the default filename convention from the skill.

@@ -438,7 +438,7 @@ Guessed names (e.g. `method`/`path`/`body` for an HTTP operation that actually e
 
 ### `Configuration` Attribute Is Opaque
 
-The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa activities get-default-xaml --activity-type-id <GUID> --connection-id <GUID>`.
+The `Configuration` attribute on `ConnectorActivity` is a base64 + gzip JSON blob encoding connector + operation identity (`ConnectorKey`, `ObjectName`, `HttpMethod`, `Operation`, `ActivityType`). **Never hand-edit.** Always take the value verbatim from `uip rpa activities get-default-xaml --activity-type-id <GUID> --connection-id <GUID>`. When an operation's full schema is gated behind prerequisite criteria fields (Jira `project`/`issuetype`, generic record `Type`), re-run that command with `--field-values <criteria>=<value>` to obtain the expanded blob — never splice extra fields into an old blob (see [is-connector-xaml-guide.md § Hidden Secondary Fields](../is-connector-xaml-guide.md)).
 
 ### `FieldObject.Value` Attribute Does Nothing
 
@@ -536,6 +536,8 @@ Use `uip rpa activities get-default-xaml` to get correct xmlns declarations — 
 
 ## DataTable Activity Gotchas
 
+Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/group/join/diff, RegEx, DateTime, collections, JSON) see [data-manipulation-guide.md](../data-manipulation-guide.md).
+
 - **LookupDataTable column resolution**: When multiple column identifiers are set (shouldn't happen due to OverloadGroups), only the first non-null is used: `LookupColumnIndex ?? LookupColumnName ?? LookupDataColumn`
 - **FilterDataTable**: Column must exist AND be type-compatible with the filter operator. Filtering a DateTime column with "Contains" fails at CacheMetadata validation.
 - **BuildDataTable**: Uses a security-related allowed types list. DataTables with certain .NET types may fail to serialize/deserialize.
@@ -551,15 +553,22 @@ Use `uip rpa activities get-default-xaml` to get correct xmlns declarations — 
        xmlns:s="clr-namespace:System;assembly=mscorlib" -->
   <Variable x:TypeArguments="sd:DataTable" Name="dt" Default="[New System.Data.DataTable()]" />
   ...
-  <InvokeMethod TargetObject="[dt.Columns]" MethodName="Add">
+  <InvokeMethod MethodName="Add">
+    <InvokeMethod.TargetObject>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+    </InvokeMethod.TargetObject>
     <InArgument x:TypeArguments="x:String">Name</InArgument>
     <InArgument x:TypeArguments="s:Type">[GetType(System.String)]</InArgument>
   </InvokeMethod>
-  <InvokeMethod TargetObject="[dt.Columns]" MethodName="Add">
+  <InvokeMethod MethodName="Add">
+    <InvokeMethod.TargetObject>
+      <InArgument x:TypeArguments="sd:DataColumnCollection">[dt.Columns]</InArgument>
+    </InvokeMethod.TargetObject>
     <InArgument x:TypeArguments="x:String">Amount</InArgument>
     <InArgument x:TypeArguments="s:Type">[GetType(System.Decimal)]</InArgument>
   </InvokeMethod>
   ```
+  `TargetObject` MUST be the typed property-element form (`InArgument x:TypeArguments="sd:DataColumnCollection"`) — the attribute shorthand `TargetObject="[dt.Columns]"` fails validation with `Set property 'InvokeMethod.TargetObject' threw an exception` because overload resolution can't see `Add` on the untyped target.
   **C# XAML** (`expressionLanguage: CSharp`): replace bracket-shorthand expressions with `<CSharpValue x:TypeArguments="T">...</CSharpValue>` / `<CSharpReference x:TypeArguments="T">...</CSharpReference>` wrappers inside the `<InArgument>`/`<Default>` elements. See [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md) for the full binding form per property.
 
   Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
@@ -914,7 +923,7 @@ All nodes in a Flowchart/ProcessDiagram must be registered as children of the co
 </Flowchart>
 ```
 
-The same registration rules apply to `<upa:ProcessDiagram>` and its node types (`EventNode`, `TaskNode`, `DecisionNode`, `EndNode`, `BoundaryNode`).
+The same registration rules apply to `<upa:ProcessDiagram>` and its node types (`EventNode`, `TaskNode`, `DecisionNode`, `SwitchNode<T>`, `SplitNode`, `MergeNode`, `SubProcessNode`, `EndNode`, `BoundaryNode`).
 
 ### Other Gotchas
 

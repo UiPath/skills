@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "3f8a1c6d-2b4e-4a9c-9d7b-5e1f2a3b4c6d",
+      "State": "Faulted",
+      "ProcessName": "StoredProcWriteBack",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-21T09:14:31.220Z",
+      "EndTime": "2026-05-21T09:14:32.870Z",
+      "CreationTime": "2026-05-21T09:14:30.991Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

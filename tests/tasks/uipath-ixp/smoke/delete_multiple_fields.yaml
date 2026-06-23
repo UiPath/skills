@@ -1,0 +1,47 @@
+task_id: skill-ixp-delete-multiple-fields-smoke
+description: >
+  Smoke: agent deletes two fields, handling the list explicitly.
+  `fields delete` removes one field per call, so the agent must issue both.
+  Trap: deleting only one and reporting done.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, delete the fields "field1" and
+  "field2" from the "Invoice Header" group.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent deleted field1 via `fields delete`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+fields\s+delete\b(?=.*field1).*'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted field2 via `fields delete` (both, not just one)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+fields\s+delete\b(?=.*field2).*'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

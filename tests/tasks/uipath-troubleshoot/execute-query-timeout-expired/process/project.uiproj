@@ -1,0 +1,6 @@
+{
+  "Name": "OrderNotesSearch",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Execute Query failure caused by a runaway un-indexed query that exceeds the activity's TimeoutMS; the provider aborts with Timeout expired.",
+  "MainFile": "Main.xaml"
+}

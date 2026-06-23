@@ -24,10 +24,11 @@ uip agent init "<AGENT_NAME>" --output json
 The `<path>` argument is relative or absolute; the command can run from any directory. Creates agent.json, entry-points.json, project.uiproj, and default eval directories inside the target path. Run `uip agent refresh` after editing to regenerate `entry-points.json` and `bindings_v2.json`.
 
 **Options:**
-- `--model <model>` — LLM model to use (default: `gpt-4o-2024-11-20`). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
+- `--conversational` - Pass to initialize a conversational agent. When not passed, an autonomous agent is initialized.
+- `--model <model>` — LLM model to use (default: `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
 - `--system-prompt <prompt>` — Initial system prompt for the agent
 - `--force` — Overwrite existing directory if non-empty
-- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below)
+- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below). Only applicable for autonomous agents, since adding inline conversational-agents within a flow project is currently not an enabled feature.
 
 #### Inline mode: `--inline-in-flow`
 
@@ -140,6 +141,18 @@ uip agent memory item remove SupportRecall customer-tier --path "<AGENT_PROJECT_
 
 For discovery, retrieval settings, memory item types, and troubleshooting, see [capabilities/memory/memory.md](capabilities/memory/memory.md).
 
+### `uip agent debug`
+
+Run the autonomous agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 8: consent before upload/publish/deploy).
+
+```bash
+uip agent debug <AGENT_PROJECT_DIR> --inputs '{"input":"..."}' --output json
+```
+
+Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, and `Data.TraceId`. A `Faulted` run returns `Result: "Failure"` (exit 1); inspect it with `uip traces spans get <TraceId> --output json`. Full options and reporting in [debug.md](debug.md).
+
+> The debug command is currently not supported for conversational agents, so only attempt to debug autonomous agents.
+
 ## Solution Commands
 
 ### Create Solution
@@ -225,16 +238,16 @@ uip solution bundle . -d ./dist --output json
 
 ## Resource Discovery
 
-`uip solution resource list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.
+`uip solution resources list` queries the Resource Catalog Service for all resources visible to the tenant and returns a compact JSON list. Use it as the first step of any tool-authoring flow — it replaces `uip or folders list` and `uip or processes list`, and covers Action Center apps and Context Grounding indexes too.
 
 Two supported invocations:
 
 ```bash
 # Local (in-solution): --kind and --search not allowed.
-uip solution resource list [solutionPath] --source local --output json
+uip solution resources list --solution-folder <SOLUTION_DIR> --source local --output json
 
 # Remote (Orchestrator / RCS): --kind and --search supported.
-uip solution resource list [solutionPath] --source remote [--kind <kind>] [--search <term>] --output json
+uip solution resources list --solution-folder <SOLUTION_DIR> --source remote [--kind <kind>] [--search <term>] --output json
 ```
 
 **Flags:**
@@ -272,7 +285,7 @@ uip solution resource list [solutionPath] --source remote [--kind <kind>] [--sea
 | `Connection` | `uipath-<connector-key>` | Integration Service connection — the `Type` IS the connector key |
 | `Bucket` | `orchestratorBucket` | Orchestrator storage bucket |
 
-**What `resource list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For `Process` and `Index` resources, follow up with `uip solution resource get <KEY> --output json` and read `Data.spec` for the full configuration. For other kinds (`App`, `Connection`, `Bucket`), see the kind-specific capability files. `resource list` is the identification step — it tells you *that* a resource exists and *where*.
+**What `resources list` does not return:** argument schemas, action schemas, data source types, authentication details, package versions, or feed ids. For `Process` and `Index` resources, follow up with `uip solution resources get <KEY> --output json` and read `Data.spec` for the full configuration. For other kinds (`App`, `Connection`, `Bucket`), see the kind-specific capability files. `resources list` is the identification step — it tells you *that* a resource exists and *where*.
 
 ## End-to-End Example — New Standalone Agent
 
@@ -314,16 +327,16 @@ When the fallback is needed, `uip solution project add` automatically finds the 
 
 ### Step 3 — Configure agent.json
 
-Read [agent-definition.md](agent-definition.md) for the full schema.
+Read [agent-definition.md](agent-definition.md) for the full schema, which differs between autonomous and conversational agents.
 
-1. Set `settings.model` — discover with `uip agent model list`, select per [model-selection-guide.md](model-selection-guide.md) (override the scaffold default `gpt-4o-2024-11-20`)
+1. Set `settings.model` — discover with `uip agent model list`, select per [model-selection-guide.md](model-selection-guide.md) (override the scaffold default `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational)
 2. Set `settings.temperature` (0 for deterministic)
-3. Write system prompt in `messages[0].content` + rebuild `contentTokens` — structure it per [agent-prompting-guide.md](agent-prompting-guide.md) (skeleton, tool-call criteria, output contract), not a placeholder
-4. Write user message template in `messages[1].content` using `{{input.fieldName}}` + rebuild `contentTokens`
+3. Write system prompt in `messages[0].content` + rebuild `contentTokens` — structure it per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) (skeleton, tool-call criteria, output contract), not a placeholder
+4. For autonomous agents, write user message template in `messages[1].content` using `{{input.fieldName}}` + rebuild `contentTokens`. Conversational agents should always have the user message template left blank since each user message is received during the actual conversation.
 
 ### Step 4 — Define input/output schemas
 
-1. Add fields to `agent.json` → `inputSchema` and `outputSchema`
+1. Add fields to `agent.json` → `inputSchema` and `outputSchema`. Note that modifying `outputSchema` only applies for autonomous agents.
 2. Mirror in `entry-points.json`
 3. Refresh (writes migrated files + regenerates `entry-points.json` and `bindings_v2.json`): `uip agent refresh "<SOLUTION_NAME>/<AGENT_NAME>" --output json`
 4. Validate: `uip agent validate "<SOLUTION_NAME>/<AGENT_NAME>" --output json`
@@ -399,14 +412,15 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Register project (fallback) | `uip solution project add "<PATH>" --output json` — when `agent init` returned `NotInSolution` / `Skipped` / `Failed` | Solution directory | — |
 | Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |
 | Validate (strict read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
+| Debug / run end-to-end on Studio Web | `uip agent debug <AgentDir> --inputs '{...}' --output json` | Agent dir | `Successful`, `Faulted`, `Stopped` |
 | Add memory space feature | `uip agent memory add <FeatureName> --memory-space <Name> --folder-path <Folder> --path <AgentDir> --output json` | Any directory | Writes `features/<FeatureName>/feature.json`; run refresh/validate after |
 | Seed memory item | `uip agent memory item add <FeatureName> <key> <value> --memory-type episodic --feedback-id <FEEDBACK_ID> --path <AgentDir> --output json` | Any directory | Updates existing item with same key |
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
-| Discover resources | `uip solution resource list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
-| Refresh resources | `uip solution resource refresh --output json` | Solution directory | — |
-| Add one resource (local stub or remote import) | `uip solution resource add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
-| Remove one resource by key | `uip solution resource remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
-| Edit one resource's spec | `uip solution resource edit <KEY> --patch '{...}' --output json` | Solution directory | Only command that mutates an existing resource; `refresh` never overwrites. Unknown/reference/read-only props silently ignored. JSON is the only input — types preserved verbatim |
+| Discover resources | `uip solution resources list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
+| Refresh resources | `uip solution resources refresh --output json` | Solution directory | — |
+| Add one resource (local stub or remote import) | `uip solution resources add --source local\|remote --kind <Kind> --name <NAME> [--folder-path <FOLDER>] --output json` | Solution directory | Idempotent on `(kind, name, folder)` for local, on key for remote |
+| Remove one resource by key | `uip solution resources remove <KEY> --output json` | Solution directory | Offline; doesn't touch `bindings_v2.json` |
+| Edit one resource's spec | `uip solution resources edit <KEY> --patch '{...}' --output json` | Solution directory | Only command that mutates an existing resource; `refresh` never overwrites. Unknown/reference/read-only props silently ignored. JSON is the only input — types preserved verbatim |
 | Upload to Studio Web | `uip solution upload . --output json` | Solution directory | — |
 | Pack | `uip solution pack . ./dist -v "1.0.0" --output json` | Solution directory | — |
 | Publish | `uip solution publish ./dist/<PKG>.zip --output json` | Any directory | — |

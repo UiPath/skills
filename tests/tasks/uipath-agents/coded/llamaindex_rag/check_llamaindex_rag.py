@@ -46,6 +46,26 @@ def find_call(tree: ast.Module, func_name: str) -> ast.Call | None:
     return None
 
 
+def module_str_constants(tree: ast.Module) -> dict[str, str]:
+    """Map module-level `NAME = "literal"` assignments to their string value."""
+    consts: dict[str, str] = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    consts[target.id] = node.value.value
+    return consts
+
+
+def resolve_str(node: ast.AST | None, consts: dict[str, str]) -> str | None:
+    """Resolve a string literal or a module-level string constant reference."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.Name) and node.id in consts:
+        return consts[node.id]
+    return None
+
+
 def imports_from(tree: ast.Module, module: str, name: str) -> bool:
     """True if `tree` contains `from <module> import <name>` — single- or multi-line."""
     for node in ast.walk(tree):
@@ -101,8 +121,9 @@ def main() -> None:
         fail("no `ContextGroundingQueryEngine(...)` call site found")
     kwargs = {kw.arg: kw.value for kw in call.keywords if kw.arg is not None}
     name_node = kwargs.get("index_name")
-    if name_node is None or not (isinstance(name_node, ast.Constant) and name_node.value == "hr-policy"):
-        got = getattr(name_node, "value", name_node)
+    consts = module_str_constants(tree)
+    if resolve_str(name_node, consts) != "hr-policy":
+        got = resolve_str(name_node, consts) or getattr(name_node, "value", name_node)
         fail(
             f"`ContextGroundingQueryEngine(index_name=...)` resolves to {got!r}, "
             "expected 'hr-policy' (the index the user named in the prompt)"

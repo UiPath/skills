@@ -294,7 +294,12 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   uip is connections ping <alternate-uuid> --output json
   # If Code: "ConnectionPing" — use this UUID in the workflow
   ```
-- **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. If neither the filtered nor unfiltered listing yields a working UUID, abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
+  If the unfiltered listing is also empty, the connection may live in another folder — both listings are folder-scoped. Search every folder before giving up:
+  ```bash
+  uip is connections list --all-folders --output json
+  # Each row carries Folder / FolderKey. Take an Enabled Id, then ping it.
+  ```
+- **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. Do NOT conclude "no connection exists" from an empty filtered or unfiltered listing — run `--all-folders` first. Only if the filtered, unfiltered, AND `--all-folders` listings all fail to yield a working UUID should you abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
 - **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-kind-only) for the full discovery+fallback flow.
 
 ### IntSvc kind activity output read at the root returns `undefined`
@@ -436,7 +441,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   uip api-workflow bindings sync --workflow <path-to-Workflow.json> --output json
 
   # 2. Sync catalogue + debug overwrites via @uipath/resource-builder-sdk (requires uip login):
-  uip solution resource refresh --solution-folder <path-to-solution-root> --output json
+  uip solution resources refresh --solution-folder <path-to-solution-root> --output json
   ```
   Step 1 walks the workflow, extracts IntSvc connector activities, dedupes by connection UUID, and writes the canonical `bindings_v2.json` next to the workflow — what StudioWeb normally produces in-memory on workflow open. Step 2 reads that file, uses the SDK's `addOrUpdateResourceToSolutionAsync` to write the catalogue file, and `editOverwritesAsync` to write the per-user debug overwrites. Both commands are idempotent and safe to re-run.
 
@@ -476,17 +481,9 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Required request field dropped by `registry stub`
 
 - **Symptom:** A vendor curated activity (Outlook `getNewestEmail`, Gmail `searchMessages`, …) runs locally — sometimes returning unexpected results (wrong folder, no filter applied) — and fails in cloud with a 4xx, OR the StudioWeb properties panel marks a field with a red border and an "invalid" badge but no clear error text. `registry stub`'s output shows `queryParameters: {}`, `pathParameters: {}`, or `bodyParameters: {}` for an endpoint that obviously needs inputs.
-- **Cause:** **`uip api-workflow registry stub` silently drops `required: true` request fields that weren't passed via `--inputs`.** The IS Elements metadata is correct (`fieldsContainer.inputFields[]` inside the stub's `metadata.configuration` blob lists every field with the right `required` flag), but the stub doesn't populate the matching `<location>Parameters` slot from it. Verified for `getNewestEmail`: requires `parentFolderId` (`fieldLocation: "query"`), stub returns `queryParameters: {}`.
-- **Detection:** Two ways to surface the missing fields.
-  - **From the stub output directly.** Parse the JSON-encoded string at `Data.Activity.<SlotKey>.metadata.configuration` → `optionalConfiguration.fieldsContainer.inputFields[]`. Filter for `required === true`. Any entry whose `name` is absent from the corresponding `with.<fieldLocation>Parameters` block is missing.
-  - **Cleaner: re-describe the operation.** Call `uip is resources describe`:
-    ```bash
-    uip is resources describe <connector-key> <object-name> \
-      --operation <operation> \
-      --connection-id <pinged-uuid> \
-      --output json
-    ```
-    `<operation>` is the IS-Elements operation name (`List`, `Create`, `Get`, …) — listed by the same command without `--operation`. The returned `Data.queryParameters[]` / `Data.pathParameters[]` / `Data.bodyParameters[]` arrays mark each entry with `required`.
+- **Cause:** **`uip api-workflow registry stub` only populates `<location>Parameters` from `--inputs`** — a `required: true` field not passed there stays out of the activity. The stub does flag it: `Data.Parameters` / `Data.RequestFields` carry the IS schema's `required` flags, and a missing required field raises a `Data.Warnings` entry (`"Required field(s) not provided via --inputs: parentFolderId"`). The failure mode arises when that warning is ignored.
+- **Prevention:** Follow the documented order — `uip is resources describe <connector-key> <object-name> --operation <Op> --connection-id <pinged-uuid>` BEFORE stubbing, then pass the required values via `--inputs` so the stub is complete on the first run.
+- **Detection:** Read `Data.Warnings` and `Data.Parameters` / `Data.RequestFields` in the stub output — a `"Required field(s) not provided"` entry means the describe step was skipped or a value was missed.
 - **Fix:** Either re-run the stub with the missing fields included via `--inputs`:
   ```bash
   uip api-workflow registry stub <activity-type-id> \

@@ -20,8 +20,6 @@ run_limits:
   expected_turns: 11
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   Someone on the team has been messing with folders on our tenant and I
   want to figure out what changed in the last week. Pull the audit log so
   I can review it.

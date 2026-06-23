@@ -2,14 +2,16 @@
 
 Walkthrough for adding an escalation resource that hands off agent control to a human via a deployed UiPath Action Center app (a web app of kind `workflow Action`). The agent pauses, creates a task on the app, and resumes when the human picks an outcome.
 
-The only channel type currently supported end-to-end by `uip solution resource refresh` is `actionCenter`. Other channel types (`email`, `slack`, `teams`) are recognised by the runtime but have no automatic solution-level resource generation and are out of scope for this skill.
+The only channel type currently supported end-to-end by `uip solution resources refresh` is `actionCenter`. Other channel types (`email`, `slack`, `teams`) are recognised by the runtime but have no automatic solution-level resource generation and are out of scope for this skill.
 
 ## When to Use
 
 - Agent needs human approval, review, or input mid-execution
-- A UiPath Action Center app of kind `Workflow Action` is already deployed in Orchestrator
+- A UiPath Action Center app of kind `Workflow Action` is already deployed in Orchestrator (external) or provisioned inside the same solution (solution-internal)
 
-**Key pattern:** the skill writes only the agent-level `resources/{EscalationName}/resource.json`. `uip solution resource refresh` emits an App binding into `bindings_v2.json` and then hand-writes the four solution-level files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus two `debug_overwrites.json` entries (`kind: "app"`, `kind: "process"`) automatically. No manual solution-level authoring is required for `actionCenter` channels.
+**Key pattern:** the skill writes only the agent-level `resources/{EscalationName}/resource.json`. `uip solution resources refresh` emits an App binding into `bindings_v2.json` and then hand-writes the four solution-level files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus two `debug_overwrites.json` entries (`kind: "app"`, `kind: "process"`) automatically. No manual solution-level authoring is required for `actionCenter` channels.
+
+**Inline agents (escalation inside a flow):** still run the full discovery below (including `uip solution resources list --kind App`) and author the `resource.json` the same way — then **also** wire a `uipath.agent.resource.escalation` flow node (see Step 6b). Without the node the escalation is never reached at runtime.
 
 ## Discovery
 
@@ -17,19 +19,33 @@ The only channel type currently supported end-to-end by `uip solution resource r
 
 Scaffold per [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent).
 
-### Step 2 — Find the deployed Action Center app
+### Step 2 — Find the Action Center app
+
+Discover the app via `uip solution resources list`. Pick the invocation based on where the app lives:
+
+**External (already deployed in Orchestrator):**
 
 ```bash
-uip solution resource list --kind App --source remote --search "<APP_NAME>" --output json
+uip solution resources list --kind App --source remote --search "<APP_NAME>" --output json
 ```
+
+**Solution-internal (provisioned inside the same solution):**
+
+```bash
+# --kind and --search only work with --source remote; list everything, filter .Data[] client-side by Kind == "App".
+uip solution resources list --source local --output json
+```
+
+The row's `Source` field (`"Local"` or `"Remote"`) determines whether the app is solution-internal or external.
 
 Filter the result for entries whose `Type` is `"Workflow Action"` (Coded / CodedAction types cannot back an escalation today). Each entry carries:
 
 | `resource list` field | Use as |
 |-----------------------|--------|
+| `Source` | `"Local"` → solution-internal app. `"Remote"` → external app. |
 | `Key` | `channel.properties.resourceKey` (also becomes the app resource's `key`) |
 | `Name` | `channel.properties.appName` (also propagates as binding `name`) |
-| `Folder` | `channel.properties.folderName` — literal Orchestrator folder (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
+| `Folder` | `channel.properties.folderName` — literal value from `uip solution resources list`. External apps return the Orchestrator folder (e.g., `"Shared/Approvals"`); solution-internal apps return `"solution_folder"`. `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
 | `FolderKey` | folder GUID — used in `debug_overwrites.json` |
 
 `Key` gives you everything you need to identify the backing app, but `resource list` does not return `systemName` or `deployVersion` — both are required to fetch the action schema in Step 3. Query the Apps API once, filtered client-side by `id == <KEY>`, to extract them:
@@ -111,7 +127,7 @@ Use other `type` values (1=UserId, 2=GroupId, 4=AssetUserEmail, 5=StaticGroupNam
 
 > **Do not set `displayName` for `type: 3`.** The reference solution omits it; leaving it out results in cleaner rendering in Studio Web.
 
-**`channel.properties.folderName` must be the literal `Folder` from `uip solution resource list --kind App`** (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do NOT set it to `"solution_folder"` — escalation apps are always external.
+**`channel.properties.folderName` must be the literal `Folder` from `uip solution resources list`** — the same rule for both external and solution-internal apps. External apps return the Orchestrator folder (e.g., `"Shared/Approvals"`); solution-internal apps return `"solution_folder"`. `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Rule 11.
 
 Default `taskTitle` / `taskTitleV2` to a short human-readable label — e.g., `"Approval request"`. `taskTitle` is a string; `taskTitleV2` is a `contentTokens`-style object (see [../../agent-definition.md](../../agent-definition.md) § Messages).
 
@@ -133,7 +149,7 @@ Escalations hand off agent control to a human via a channel. Generate fresh UUID
   "storageBucketName": null,                        // only used when escalationType = 1
   "properties": {},
   "governanceProperties": { "isEscalatedAtRuntime": false },
-  "isEnabled": true,
+  "isEnabled": true,                                // REQUIRED — must be true, or the escalation is inactive (not defaulted; always set it explicitly)
   "channels": [
     {
       "id": "<uuid-v4>",                            // channel id — generate a new one per channel
@@ -164,7 +180,7 @@ Escalations hand off agent control to a human via a channel. Generate fresh UUID
       "properties": {
         "resourceKey": "<appId-guid>",              // from `action-apps?state=deployed` → `id`
         "appName": "<deploymentTitle>",             // from the same response → `deploymentTitle`
-        "folderName": "Shared/Approvals",           // literal Folder from `uip solution resource list --kind App`. uip agent refresh translates this to folderPath in the App binding inside bindings_v2.json.
+        "folderName": "Shared/Approvals",           // literal Folder from `uip solution resources list`. External: Orchestrator folder (e.g., "Shared/Approvals"). Solution-internal: "solution_folder". uip agent refresh translates this to folderPath in the App binding inside bindings_v2.json.
         "appVersion": 1,                            // from the same response → `deployVersion` (integer)
         "isActionableMessageEnabled": false,
         "actionableMessageMetaData": null
@@ -204,7 +220,7 @@ Escalations hand off agent control to a human via a channel. Generate fresh UUID
 
 ## Solution-Level Files
 
-**Solution-level files for Action Center escalations are auto-generated.** Unlike external process tools, you do NOT hand-write any solution-level files for an escalation. `uip solution resource refresh` scans agent projects for escalation resources, resolves each `properties.resourceKey` against the Apps API + `publish/versions` + Orchestrator `/odata/Releases` + `GetPackageEntryPointsV2`, and writes all four required files itself:
+**Solution-level files for Action Center escalations are auto-generated.** Unlike external process tools, you do NOT hand-write any solution-level files for an escalation. `uip solution resources refresh` scans agent projects for escalation resources, resolves each `properties.resourceKey` against the Apps API + `publish/versions` + Orchestrator `/odata/Releases` + `GetPackageEntryPointsV2`, and writes all four required files itself:
 
 - `resources/solution_folder/app/workflow Action/<deploymentTitle>.json`
 - `resources/solution_folder/appVersion/<title>.json`
@@ -221,6 +237,10 @@ The fourth file (`process/webApp/...`) backs the app resource's `dependencies[1]
 
 Use the full shape from § Agent-Level Resource Shape above. Generate fresh UUIDs for the top-level `id` AND the channel `id` — do not reuse.
 
+### Step 6b — Inline agents only: wire the escalation flow node
+
+**Skip if the agent is standalone.** If the escalation is on an **inline** agent (embedded in a flow), the `resource.json` alone is never reached at runtime — you MUST also add a `uipath.agent.resource.escalation` flow node connected to the autonomous node's `escalation` handle. Fetch its manifest with `uip maestro flow registry get <…uipath.agent.resource.escalation…> --output json`, then hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16 — this skill does not author `.flow` graphs directly). Run Step 7's refresh/validate with `--inline-in-flow` plus `--bindings-target <FlowProjectDir>/bindings_v2.json`. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
+
 ### Step 7 — Refresh, validate, and refresh solution resources
 
 ```bash
@@ -231,7 +251,7 @@ uip agent refresh "<AGENT_NAME>" --output json
 uip agent validate "<AGENT_NAME>" --output json
 
 # Refresh solution resources — imports the App binding from bindings_v2.json into the solution.
-uip solution resource refresh --output json
+uip solution resources refresh --output json
 ```
 
 After refresh, confirm the four solution-level app files exist under `resources/solution_folder/`:
@@ -252,9 +272,10 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md) Critical Rules. Escalation-specific gotchas:
+See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules. Escalation-specific gotchas:
 
-- `properties.folderName` MUST be the literal `Folder` from `uip solution resource list --kind App` (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do NOT use `"solution_folder"` — escalation apps are always external. See [../../critical-rules.md](../../critical-rules.md) Rule 11 and Anti-pattern 18.
+- `properties.folderName` MUST be the literal `Folder` from `uip solution resources list` — same rule for both external and solution-internal apps. External apps carry the Orchestrator folder (e.g., `"Shared/Approvals"`); solution-internal apps carry `"solution_folder"`. `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Rule 11.
+- `isEnabled` MUST be `true` — it is not defaulted. An escalation written without it (or with `null`) is inactive and fails validation.
 - `recipients` array MUST have at least one entry. Empty uploads but routes nowhere.
 - For `type: 3` (email) recipients, do NOT set `displayName`.
 - Generate fresh UUIDs for the top-level `id` AND each channel `id`.

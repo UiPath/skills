@@ -10,8 +10,8 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 
 | Commands | What | Auth |
 |----------|------|------|
-| `solution init`, `solution project add`, `solution resource refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
-| `solution resource add --source local\|remote`, `solution resource remove <key>`, `solution resource edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
+| `solution init`, `solution project add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
+| `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.json` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
@@ -70,12 +70,12 @@ Adds the project to `.uipx.Projects[]`. Run after `project.uiproj` exists.
 
 ---
 
-## uip solution resource refresh
+## uip solution resources refresh
 
 Re-scan all projects in the solution and sync resource declarations from `bindings_v2.json`. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists.
 
 ```bash
-uip solution resource refresh --solution-folder <SolutionDir> --output json
+uip solution resources refresh --solution-folder <SolutionDir> --output json
 ```
 
 > `--solution-folder` is required when invoking from outside the solution directory. Omit the flag (and run from inside the solution dir) only for ad-hoc local use; the skill always passes it explicitly so the cwd doesn't matter.
@@ -91,7 +91,7 @@ uip solution resource refresh --solution-folder <SolutionDir> --output json
 Upload a solution directly to Studio Web. **Requires `uip login`.**
 
 ```bash
-uip solution resource refresh --solution-folder <SolutionDir> --output json
+uip solution resources refresh --solution-folder <SolutionDir> --output json
 uip solution upload <SolutionDir> --output json
 ```
 
@@ -144,11 +144,11 @@ Output: `{ File, Status: "Valid" }` on success. Errors and warnings are reported
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. Executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.**
 
 ```bash
-uip solution resource refresh --solution-folder <SolutionDir> --output json
+uip solution resources refresh --solution-folder <SolutionDir> --output json
 uip maestro case debug <project-path> --log-level debug --output json
 ```
 
-> **Always run `uip solution resource refresh`** on the solution directory before debug.
+> **Always run `uip solution resources refresh`** on the solution directory before debug.
 
 | Flag | Description |
 |------|-------------|

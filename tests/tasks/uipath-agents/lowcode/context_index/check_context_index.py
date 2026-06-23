@@ -2,11 +2,12 @@
 """Context (semantic index) resource check.
 
 Validates:
-  1. resources/UiPathAgentsProductKnowledge/resource.json declares a context
-     resource of type "index":
+  1. A context resource under resources/<folder> (located by type; the folder
+     name is the agent's choice) declares:
        - $resourceType == "context"
        - contextType == "index"
-       - name == indexName == "UiPathAgentsProductKnowledge"
+       - name == its folder name (convention: the folder matches `name`)
+       - indexName == "UiPathAgentsProductKnowledge" (the deployed index)
        - folderPath == "Shared/uipath-agents" (the deployed Orchestrator folder)
   2. settings.retrievalMode is one of the documented values:
      "semantic" | "structured" | "deepRAG" | "batchTransform".
@@ -28,7 +29,7 @@ from pathlib import Path
 ROOT = Path(os.getcwd()) / "KnowledgeSol" / "ProductSupportAgent"
 AGENT = ROOT / "agent.json"
 ENTRY = ROOT / "entry-points.json"
-RESOURCE = ROOT / "resources" / "UiPathAgentsProductKnowledge" / "resource.json"
+RESOURCES = ROOT / "resources"
 BINDINGS = ROOT / "bindings_v2.json"
 
 EXPECTED_INDEX_NAME = "UiPathAgentsProductKnowledge"
@@ -46,7 +47,27 @@ def load(path: Path) -> dict:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
 
 
-def assert_context_resource(resource: dict) -> None:
+def find_context_resource() -> tuple[str, dict]:
+    """Locate the context resource by type. The resource folder name is the
+    agent's choice (convention: it matches the resource's `name` field) — it is
+    NOT pinned to the index name; the index identity lives in `indexName`."""
+    if not RESOURCES.is_dir():
+        sys.exit(f"FAIL: {RESOURCES} does not exist — no context resource authored")
+    for path in sorted(RESOURCES.rglob("resource.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if data.get("$resourceType") == "context" and data.get("contextType") == "index":
+            print(f"OK: found context resource at {path.relative_to(ROOT.parent)}")
+            return path.parent.name, data
+    sys.exit(
+        f'FAIL: no context resource ($resourceType=="context", contextType=="index") '
+        f"found under {RESOURCES}"
+    )
+
+
+def assert_context_resource(folder_name: str, resource: dict) -> None:
     rtype = resource.get("$resourceType")
     if rtype != "context":
         sys.exit(f'FAIL: resource.json $resourceType should be "context", got {rtype!r}')
@@ -54,10 +75,10 @@ def assert_context_resource(resource: dict) -> None:
     if ctype != "index":
         sys.exit(f'FAIL: resource.json contextType should be "index", got {ctype!r}')
     name = resource.get("name")
-    if name != EXPECTED_INDEX_NAME:
+    if name != folder_name:
         sys.exit(
-            f'FAIL: resource.json name should be {EXPECTED_INDEX_NAME!r} '
-            f"(matching the deployed index), got {name!r}"
+            f"FAIL: resource.json name {name!r} must match its folder name {folder_name!r} "
+            "(convention: the resource folder matches the resource's `name`)"
         )
     index_name = resource.get("indexName")
     if index_name != EXPECTED_INDEX_NAME:
@@ -73,7 +94,7 @@ def assert_context_resource(resource: dict) -> None:
         )
     print(
         f'OK: resource.json is $resourceType="context", contextType="index", '
-        f"name=indexName={EXPECTED_INDEX_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
+        f"name=folder={resource.get('name')!r}, indexName={EXPECTED_INDEX_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
     )
 
 
@@ -191,10 +212,10 @@ def assert_bindings_index(bindings: dict) -> None:
 def main() -> None:
     agent = load(AGENT)
     entry = load(ENTRY)
-    resource = load(RESOURCE)
+    folder_name, resource = find_context_resource()
     bindings = load(BINDINGS)
 
-    assert_context_resource(resource)
+    assert_context_resource(folder_name, resource)
     assert_retrieval_mode(resource)
     in_schema, out_schema = assert_schema_sync(agent, entry)
     assert_input_shape(in_schema)

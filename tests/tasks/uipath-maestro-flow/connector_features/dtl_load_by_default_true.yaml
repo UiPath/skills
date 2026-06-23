@@ -2,7 +2,7 @@ task_id: skill-flow-ipe-dtl-load-by-default-true
 description: >
   Tests the DTL loadByDefault=true IS feature — configures a connector node
   where a dropdown is pre-populated on the Azure connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-microsoft-azure, ipe]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-microsoft-azure, ipe, mode:build]
 
 run_limits:
   expected_turns: 40
@@ -14,10 +14,7 @@ initial_prompt: |
   Create a new Flow project called "DTLLoadByDefaultTrueTest" with a manual trigger.
   You need a flow that provisions a new Azure resource group in a chosen region.
   Discover the create-resource-group operation and pick the region from the
-  location dropdown (a DTL-backed field whose values load by default).
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "DTLLoadByDefaultTrue test failed".
-  Route success to a final action that logs "DTLLoadByDefaultTrue test passed".
+  location dropdown.
   Validate the final flow file.
 
 success_criteria:
@@ -35,14 +32,6 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Flow has Decision and Terminate nodes"
-    command: "python3 -c \"import json,glob; flows=glob.glob('**/DTLLoadByDefaultTrueTest*.flow',recursive=True); assert flows; f=json.load(open(flows[0])); types=[n.get('type','') for n in f['nodes']]; assert any('decision' in t.lower() for t in types), 'No Decision node'; assert any('terminate' in t.lower() for t in types), 'No Terminate node'; print('OK: Decision and Terminate nodes present')\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed

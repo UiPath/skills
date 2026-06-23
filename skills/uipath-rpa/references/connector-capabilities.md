@@ -54,6 +54,8 @@ uip rpa activities get-default-xaml \
 
 **`--activity-type-id` is mandatory for IS dynamic activities** — without it, the default XAML comes back empty (`Configuration={x:Null}`, no fields) and isn't runnable.
 
+`get-default-xaml` also accepts repeatable `--field-values name=value` pairs: the values are pre-bound as literals in the returned `FieldObjects`, and when they cover the operation's prerequisite criteria fields (e.g. Jira's `project` + `issuetype`), the returned `Configuration` blob is re-resolved with the full expanded field schema — the same expansion Studio's designer performs when those fields are committed in the canvas. Full usage pattern: [is-connector-xaml-guide.md § Step 4](is-connector-xaml-guide.md).
+
 ## Connection Management
 
 **Check if a connection exists:**

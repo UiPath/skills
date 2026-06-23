@@ -12,7 +12,7 @@ initial_prompt: |
   Create a new UiPath Flow project called "WeatherAlert" and make sure it
   validates successfully.
 
-  Use the `uipath-maestro-flow` skill workflow. A Flow project MUST be created
+  A Flow project MUST be created
   inside a solution:
   1. Create the solution first.
   2. Create the Flow project inside that solution.

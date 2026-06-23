@@ -259,13 +259,17 @@ if (completed) {
 
 ## Attachments Service (Scopes: `OR.Folders` or `OR.Folders.Read`)
 
-Standalone service for retrieving Orchestrator attachment metadata and a signed URL for downloading the blob. `Jobs.getOutput()` uses this internally to resolve file-type output arguments — most app code will not need to call it directly, but if you call `Jobs.getOutput()` you must add `OR.Folders` (or `OR.Folders.Read`) to the app's scopes in addition to `OR.Jobs`.
+Standalone service for retrieving an Orchestrator attachment's metadata and a signed URL for downloading the blob. Coded Action Apps use this to resolve a `type: "file"` input — the file reference handed in by the automation (Maestro / Agent / RPA) — into downloadable bytes. `Jobs.getOutput()` also uses it internally to resolve file-type output arguments — if you call `Jobs.getOutput()` you must add `OR.Folders` (or `OR.Folders.Read`) to the app's scopes in addition to `OR.Jobs`.
+
+This service exposes **only** `getById` — there is no `getAll`, no create, and no delete.
 
 ### getById(id: string, options?: AttachmentGetByIdOptions)
 
-Returns `Promise<AttachmentResponse>`. Options support OData `expand` / `select`.
+Returns `Promise<AttachmentResponse>`. `id` is the attachment **UUID** (string) — not a number. Throws `ValidationError` if `id` is empty. `AttachmentGetByIdOptions` supports OData `expand` / `select`.
 
 `AttachmentResponse` fields: `id`, `name`, `jobKey?`, `attachmentCategory?`, `lastModifiedTime?`, `lastModifierUserId?`, `createdTime?`, `creatorUserId?`, `blobFileAccess: BucketGetUriResponse` (the signed URL + headers — `{ uri, httpMethod, requiresAuth, headers }`).
+
+Resolve a `file`-typed input to its bytes. Respect `requiresAuth` — when `true`, pass `headers` on the download request:
 
 ```typescript
 import { Attachments } from '@uipath/uipath-typescript/attachments';

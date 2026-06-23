@@ -13,6 +13,49 @@ For the coded vs XAML decision, see [coded-vs-xaml-guide.md](coded-vs-xaml-guide
 - **Test project** — one test case per scenario. Coded test projects optionally use `partial class CodedWorkflow : IBeforeAfterRun` in `CodedWorkflowHooks.cs` for shared setup. XAML test projects use Test Activities for shared setup
 - **Complex domain logic** — isolate business rules so they can be unit-tested and reused (Coded Source File for typed logic, or a separate workflow for activity-driven logic)
 
+## Designing for Reuse
+
+Structure decisions that keep components extractable later.
+
+### Single responsibility
+
+One workflow file = one meaningful action, named for it (`ProcessInvoice.xaml`, `LoginToApplication.xaml`). Split a workflow when it exceeds ~20-30 activities.
+
+### Standard folder shape
+
+For multi-step processes, organize by layer:
+
+```
+Project/
+├── Main.xaml              # High-level orchestration only
+├── Framework/             # Init, cleanup, error handling, app open/close
+├── BusinessLogic/         # Process-specific rules and transactions
+├── Utilities/             # Process-agnostic helpers (formatters, screenshots)
+└── Data/                  # Config files, templates
+```
+
+### Separate business logic from UI components
+
+UI workflows interact with applications and carry zero business rules; business-logic workflows decide and never touch the UI. Make read and write distinct invocable components — `GetCustomerInfo.xaml` and `ChangeCustomerInfo.xaml`, not one `HandleCustomer.xaml`. When the target application's UI changes, only the UI workflows need fixing; when a business rule changes, the UI workflows are untouched. Process-agnostic UI components are also the ones worth promoting to a shared library later.
+
+### Composition and argument naming
+
+Compose via `Invoke Workflow File` (coded: `workflows.StepName()`). Process workflow arguments use directional prefixes — `in_InvoiceId`, `out_Result`, `io_Browser` — so data flow is visible at every invocation site. Exception: library public workflows drop the prefixes ([library-authoring-guide.md § The Public-Workflow Contract](library-authoring-guide.md)).
+
+### Layout and scale-out
+
+- Sequence vs Flowchart vs State Machine per workflow: Workflow Types table in SKILL.md § XAML Workflows Quick Reference
+- High-volume transactional work: dispatcher/performer split via queues — [reframework-guide.md § Execution Mode: Queue-Driven](reframework-guide.md)
+
+### Promotion ladder
+
+Promote logic only as reuse materializes:
+
+1. **Inline** — used once in one workflow
+2. **Separate workflow file** — reused within the project
+3. **Shared library** — reused across projects ([library-authoring-guide.md](library-authoring-guide.md))
+4. **UI Library** — selectors shared across projects ([ui-automation-guide.md § Object Repository as a Published UI Library](ui-automation-guide.md))
+
 ## Example — Invoice Processing Project (XAML)
 
 ```

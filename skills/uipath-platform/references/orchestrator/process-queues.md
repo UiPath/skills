@@ -11,7 +11,7 @@ Create work queues, add items for distributed processing, track progress, and ma
 
 ## Prerequisites
 
-- Authenticated (`uip login`)
+- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
 - Target folder exists (`uip or folders list`)
 
 ## Flow
@@ -152,6 +152,9 @@ The `bulk-add` command also takes a **queue name**. Use `--commit-type` to contr
 uip or queue-items list --folder-path "Finance" \
   --queue-name "InvoiceQueue" --status Failed --output json
 
+# List items across all accessible folders
+uip or queue-items list --all-folders --status Failed --output json
+
 # Get a single item by its unique key
 uip or queue-items get <item-unique-key> --folder-path "Finance" --output json
 ```
@@ -184,7 +187,7 @@ uip or queue-items get-last-retry <item-key> --folder-path "Finance" --output js
 uip or queue-items has-video <item-unique-key> --folder-path "Finance" --output json
 ```
 
-Note: `get-last-retry` uses the item `key` field (shared across retries), not `uniqueKey`.
+Note: `get-last-retry` uses the item `Key` field (shared across retries), not `UniqueKey`. Curated list/get output includes both.
 
 ---
 
@@ -286,14 +289,16 @@ None --> InReview (reviewer assigned) --> Verified | Retried
 
 | Field | Scope | Use with |
 |-------|-------|----------|
-| `uniqueKey` | Unique per attempt | `get`, `update`, `delete`, `get-history`, `has-video` |
-| `key` | Shared across retries | `get-last-retry` |
+| `UniqueKey` | Unique per attempt | `get`, `update`, `delete`, `get-history`, `has-video` |
+| `Key` | Shared across retries | `get-last-retry` |
 | Queue definition key | Queue identifier | `list --queue-definition-key`, `queues get` |
+
+Curated queue-item rows expose both `Key` and `UniqueKey` (PascalCase). With `--all-fields` you get the raw DTO instead, where the same fields are `key` / `uniqueKey`.
 
 ### Common Pitfalls
 
 - `--specific-content` must be **flat key-value JSON** -- no nested objects or arrays.
-- All `queue-items` commands require `--folder-path` or `--folder-key` (items are folder-scoped).
+- All `queue-items` commands require `--folder-path` or `--folder-key` (items are folder-scoped). Exception: `list` can take `--all-folders` instead to query across all accessible folders.
 - `set-review-status` takes the **status first**, then the item key(s) -- not the other way around.
 - `set-reviewer` requires `--user-key` (GUID, not a numeric ID). Use `get-reviewers` to find reviewer keys.
 - Queue `get`, `update`, and `delete` are **cross-folder** (no `--folder-path` needed). Queue item commands are **not**.
