@@ -20,6 +20,7 @@
 | Field | Value |
 |---|---|
 | **Execution autonomy** | <autonomous \| interactive> |
+| **Delivery model** | <cloud \| automation-suite <VERSION_IF_KNOWN> \| standalone \| unspecified> |
 | **SDD scope** | <single-product \| solution> |
 | **Project list section** | §3 Nodes Inventory + §7 Integrated Components |
 | **Tasks file** | `<FLOW_NAME_KEBAB>-tasks.md` |
@@ -42,6 +43,19 @@ Non-RPA scope: rows collapse to scope + product-specific Level-1.5-equivalent.
 |---|---|---|---|
 | 1 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON> |
 | 2 | **Flow trigger type** | <MANUAL_OR_SCHEDULED_OR_EVENT_OR_HTTP> | <REASON_FROM_PDD> |
+
+---
+
+<!--
+EMIT THIS BLOCK ALWAYS (both execution modes).
+Durable copy of the Phase 1 Recommended Scope summary — the SDD record of the
+Constraint Gate outcome. See product-selection-guide.md → Summary block for the full format.
+-->
+## Recommended Scope
+
+**Recommendation:** <SINGLE_PRODUCT | SOLUTION(<PRODUCT_1>, ...)>
+**Delivery model:** <cloud | automation-suite <version-if-known> | standalone | unspecified — assumed cloud [SME REVIEW]>
+**Blocked by platform:** <PRODUCT → ALTERNATIVE_APPLIED (matrix | user exclusion), ... | none>
 
 ---
 

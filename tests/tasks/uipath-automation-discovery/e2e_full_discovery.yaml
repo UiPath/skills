@@ -18,8 +18,7 @@ sandbox:
   python: {}
 
 initial_prompt: |
-  I want to discover automation opportunities at Acme Corp using the
-  uipath-automation-discovery skill. Since no live systems are accessible
+  I want to discover automation opportunities at Acme Corp. Since no live systems are accessible
   in this sandbox, I will provide the raw data directly. Your job is to
   analyze it and produce the full report.
 

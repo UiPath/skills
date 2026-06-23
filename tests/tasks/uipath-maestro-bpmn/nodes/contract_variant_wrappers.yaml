@@ -11,8 +11,6 @@ run_limits:
   max_turns: 90
   turn_timeout: 1200
 initial_prompt: |
-  Load and follow the uipath-maestro-bpmn skill.
-
   Create a local BPMN project named "ContractVariantsBpmn".
   Use synthetic placeholder resource names only. Do not include tenant URLs,
   folder keys, connection IDs, queue IDs, release keys, real process names, or

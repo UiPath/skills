@@ -17,8 +17,6 @@ post_run:
     timeout: 60
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I'm trying to verify that asset sharing and unsharing across folders
   works end-to-end. The path to folder A is in `seed.json` (the `folder_a_path` field) along with a
   unique prefix.

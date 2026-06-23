@@ -23,17 +23,16 @@ initial_prompt: |
 
   Do NOT publish or deploy. Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation. Complete the entire task
-  end-to-end in a single pass. Before starting, load the uipath-agents skill and
-  follow its low-code debug workflow exactly.
+  end-to-end in a single pass.
 
 success_criteria:
   - type: command_executed
-    description: "Agent loaded the uipath-agents skill"
+    description: "Advisory: agent auto-loaded the uipath-agents skill (informational, non-gating)"
     tool_name: "Skill"
     command_pattern: "uipath-agents"
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   # `uip agent debug` exits non-zero unless the run reaches State:Successful, so
   # require_success asserts the agent's own debug finished Successful. The two

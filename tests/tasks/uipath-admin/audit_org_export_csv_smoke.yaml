@@ -18,8 +18,9 @@ run_limits:
 initial_prompt: |
   An admin needs a single CSV of all ORGANIZATION-level audit events
   (memberships, license changes, tenant lifecycle) from yesterday to
-  open in Excel for compliance review. Write the CSV to
-  ./audit-org-yesterday.csv in the current working directory.
+  open in Excel for compliance review. Write it into the
+  ./audit-org-yesterday base directory in the current working directory
+  (the CLI creates a uniquely-named .csv inside it).
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -32,19 +33,19 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip admin audit org export` (org scope) with --from-date, --to-date, --output-file, AND --file-format csv"
+    description: "Agent invoked `uip admin audit org export` (org scope) with --from-date, --to-date, --output-path, AND --file-format csv"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-file\s+\S+)(?=.*--file-format\s+csv\b)'
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-path\s+\S+)(?=.*--file-format\s+csv\b)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent's CSV export wrote to a file named audit-org-yesterday.csv (any directory)"
+    description: "Agent passed the requested ./audit-org-yesterday base directory"
     tool_name: "Bash"
-    # Match the filename regardless of the directory the agent chose (cwd `./`, an
-    # absolute sandbox artifacts path, etc.) — the meaningful assertion is the .csv filename.
-    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b.*--output-file\s+\S*audit-org-yesterday\.csv'
+    # --output-path is a base directory; the CLI generates the .csv name inside it,
+    # so assert the agent used the requested base dir (any leading path is fine).
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+export\b.*--output-path\s+\S*audit-org-yesterday(?![\w.])'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

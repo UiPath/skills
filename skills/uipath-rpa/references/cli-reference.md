@@ -160,6 +160,34 @@ Rules:
 
 ---
 
+## object-repository
+
+Read the project's UI **Object Repository** — the saved hierarchy of applications, screens, and elements (selectors/targets) that UI Automation activities bind to. Two read commands cover the project's own entries and those exposed by referenced libraries; both require an open project.
+
+- **Project Object Repository** — `uip rpa object-repository get` returns the project's *own* Object Repository as a JSON tree of applications → screens → elements. Entries inherited from referenced libraries are **excluded** (use the library command below for those). Takes no arguments beyond the standard `--project-dir`.
+
+  ```bash
+  uip rpa object-repository get --project-dir "<PROJECT_DIR>" --output json
+  ```
+
+- **Library Object Repository** — `uip rpa object-repository get-library` reads the Object Repository out of one or more library `.nupkg` files and returns the applications, screens, and elements grouped by library. Pass the absolute path(s) to the library packages; packages without an Object Repository are omitted from the result.
+
+  | Parameter | Required | Description |
+  |-----------|----------|-------------|
+  | `--library-paths` | yes | Absolute path(s) to the library `.nupkg` file(s) to read. Pass a single flag with the paths **comma-separated** (e.g. `"a.nupkg,b.nupkg"`) — it is not a repeatable flag. Avoid paths containing commas. |
+
+  ```bash
+  # multiple libraries: one --library-paths flag, comma-separated
+  uip rpa object-repository get-library \
+    --project-dir "<PROJECT_DIR>" \
+    --library-paths "C:\libs\Acme.UiLib.1.2.0.nupkg,C:\libs\Other.UiLib.2.0.0.nupkg" \
+    --output json
+  ```
+
+Read the project repository before authoring UI Automation activities to discover existing screens/elements to reuse instead of re-indicating them; read the library repository to discover targets a referenced UI library already exposes. Confirm the live verb names and flags with `uip rpa object-repository --help`.
+
+---
+
 ## Commands -- Data Fabric Entities
 
 UiPath Data Fabric entities live in the Orchestrator tenant's Data Service. To use them in an RPA project — as typed arguments (`UiPath.DataService.Activities`, test-data bindings) or any generated entity type — they must first be **installed** into the project, which writes a manifest under `.entities/` and compiles a strongly-typed assembly.
@@ -210,7 +238,7 @@ Diagnose by error category, apply the recovery, retry **once** — do not loop t
 |--------|-----|
 | **Explore project files** | `Glob` `**/*.xaml` |
 | **Search XAML content** | `Grep` regex across `.xaml` |
-| **Explore Object Repository** | `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata |
+| **Explore Object Repository** | `uip rpa object-repository get` for the project's apps/screens/elements as JSON, `uip rpa object-repository get-library` for a referenced library's (see [object-repository](#object-repository)); or `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata for raw files |
 | **Get JIT type definitions** | `Read` `{PROJECT_DIR}/.project/JitCustomTypesSchema.json` |
 | **Activity docs** | See [Installed package activity documentation](#installed-package-activity-documentation) above |
 | **Inspect a NuGet package's API** | `uip rpa packages inspect` — see [coded/inspect-package-guide.md](coded/inspect-package-guide.md) |

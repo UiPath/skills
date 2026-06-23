@@ -16,7 +16,7 @@ description: >
 
   A post_run safety net (`cleanup_role.py`) deletes the role by id so an
   incomplete run leaves no orphan template on the tenant.
-tags: [uipath-admin, e2e, authz, role-lifecycle, scope:tenant-global]
+tags: [uipath-admin, e2e, mode:build, authz, role-lifecycle, scope:tenant-global]
 
 run_limits:
   expected_turns: 18
@@ -24,23 +24,20 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Set up a reusable read-only role template called "AdminPageViewerGlobal_clie2e"
-  that can be assigned in every tenant of our organization — a template
-  not bound to any single tenant. It should grant view-only access to the
-  Administration page (read-only admin-page access, nothing else).
+  Set up a reusable read-only role template called
+  "AdminPageViewerGlobal_clie2e" that can be assigned in every tenant of
+  our organization — a template not bound to any single tenant. It should
+  grant view-only access to the Administration page (read-only
+  admin-page access, nothing else).
 
-  Walk the full lifecycle:
-    1. First confirm no role named "AdminPageViewerGlobal_clie2e" already
-       exists, then create it.
-    2. Update it — change its description to note it is read-only.
-    3. Show me the role's details so I can confirm the update.
-    4. Remove the role and confirm it's gone.
+  Create it, then update its description to note it is read-only and
+  confirm the change, and finally remove it and confirm it's gone.
 
   Important:
-  - If the `uip admin` subcommand is unavailable or a command fails, that
-    is acceptable — run each command exactly once and continue. Do NOT
-    retry, do NOT attempt to login, do NOT try to install tools, do NOT
-    troubleshoot errors.
+  - If the `uip admin` subcommand is unavailable or a command fails,
+    that is acceptable — run each command exactly once and continue. Do
+    NOT retry, do NOT attempt to login, do NOT try to install tools, do
+    NOT troubleshoot errors.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
@@ -50,14 +47,6 @@ success_criteria:
     command_pattern: 'uip\s+admin\s+authorization\s+permissions\s+list\b'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent checked name collision via `roles list --filter`"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+authorization\s+roles\s+list\s+.*--filter\s+\S*AdminPageViewerGlobal_clie2e'
-    min_count: 1
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed

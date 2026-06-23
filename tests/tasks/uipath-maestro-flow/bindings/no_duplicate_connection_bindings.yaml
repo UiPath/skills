@@ -19,8 +19,6 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Load the uipath-maestro-flow skill and follow its workflow exactly.
-
   Build a flow named "BindingsRegression" — Manual Trigger → IS connector
   node → End — saved as `BindingsRegression/flow_files/BindingsRegression.flow`
   with `BindingsRegression/project.uiproj`.

@@ -294,7 +294,12 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   uip is connections ping <alternate-uuid> --output json
   # If Code: "ConnectionPing" — use this UUID in the workflow
   ```
-- **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. If neither the filtered nor unfiltered listing yields a working UUID, abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
+  If the unfiltered listing is also empty, the connection may live in another folder — both listings are folder-scoped. Search every folder before giving up:
+  ```bash
+  uip is connections list --all-folders --output json
+  # Each row carries Folder / FolderKey. Take an Enabled Id, then ping it.
+  ```
+- **What NOT to do:** do NOT proceed with the failing UUID and "flag for follow-up." A workflow authored against a non-pinging connection will 401 in cloud regardless of how correct the JSON is. Do NOT conclude "no connection exists" from an empty filtered or unfiltered listing — run `--all-folders` first. Only if the filtered, unfiltered, AND `--all-folders` listings all fail to yield a working UUID should you abort and tell the user to re-authenticate (`uip is connections edit <uuid>` opens an OAuth browser flow) or create a fresh connection in the StudioWeb UI.
 - **See also:** [connector-activity-discovery.md — Step 2](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-kind-only) for the full discovery+fallback flow.
 
 ### IntSvc kind activity output read at the root returns `undefined`

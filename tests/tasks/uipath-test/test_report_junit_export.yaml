@@ -14,8 +14,6 @@ run_limits:
   max_turns: 35
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   Export the results of the latest execution of my test set 'UAT Smoke Suite' in UiPath Test
   Manager project CLAIM as a JUnit report XML.
 

@@ -13,12 +13,14 @@ run_limits:
   expected_turns: 3
 
 initial_prompt: |
-  Build me a UiPath coded agent using OpenAI Agents. It takes an address and
-  breaks it down into its parts — street, city, postal code, and country.
+  I want to build a UiPath coded agent that takes an address and breaks it
+  down into its parts: street, city, postal code, and country.
 
   It'll be called by another automation that passes the address in a single
-  named input field called `address` — it's not a chatbot, there's no
-  conversation and no chat history.
+  named input field called `address`.
+
+  I'd like to use OpenAI Agents since that's the framework I know best. Is it
+  complicated?
 
 success_criteria:
   - type: skill_triggered
