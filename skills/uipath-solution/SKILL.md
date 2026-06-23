@@ -10,6 +10,8 @@ Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via
 
 > **Use the CLI. Don't roll your own REST for solution ops.** Hand-rolling HTTP calls misses the `X-UIPATH-OrganizationUnitId` folder header, OData filter shape, pagination envelope, `pipelinesInstall` deploy semantics, retry behavior, and the `Result/Code/Data` output contract. The CLI is the source of truth.
 
+> **Platform support.** Solutions runs on Automation Cloud and on self-hosted Automation Suite **from `2.2510.0` onward**; not on Standalone Orchestrator. Available project types vary by AS version (Maestro self-hosted only from `2.2510.2`). Compat matrix + project-type-by-version table → [Solution Overview — Platform availability](references/solution-overview.md#platform-availability).
+
 ## When to Use This Skill
 
 - User has a `.uipx` solution and wants to pack / publish / deploy / activate / upload
