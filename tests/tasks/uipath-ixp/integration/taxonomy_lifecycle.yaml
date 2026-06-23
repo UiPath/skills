@@ -18,7 +18,7 @@ sandbox:
   python: {}
   template_sources:
     - type: template_dir
-      path: ../e2e/fixtures
+      path: ../_shared/fixtures
 
 initial_prompt: |
   I want to reshape an invoice project's taxonomy. Use the tenant I'm already

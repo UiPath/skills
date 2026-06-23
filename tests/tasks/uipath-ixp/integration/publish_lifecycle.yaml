@@ -16,7 +16,7 @@ sandbox:
   python: {}
   template_sources:
     - type: template_dir
-      path: ../e2e/fixtures
+      path: ../_shared/fixtures
 
 initial_prompt: |
   I need to manage releases on an invoice project. Use the tenant I'm already

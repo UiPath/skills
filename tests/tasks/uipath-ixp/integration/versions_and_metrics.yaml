@@ -16,7 +16,7 @@ sandbox:
   python: {}
   template_sources:
     - type: template_dir
-      path: ../e2e/fixtures
+      path: ../_shared/fixtures
 
 initial_prompt: |
   I want to compare model configurations on an invoice project. Use the tenant
