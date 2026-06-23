@@ -60,8 +60,14 @@ scriptless way to handle dynamic hosts — do NOT reach for a hook.
   `auth set --token-url 'https://{workspace.url}/oidc/v1/token'`. The CLI **auto-seeds** a required
   `TEXTFIELD_1000` config keyed by each placeholder (e.g. `environment`, `workspace.url`), screen
   type `pre`, so the user fills it on the connection form.
-- `validate` HARD-ERRORS if a `{placeholder}` in any URL has no backing config key — so an unbacked
-  host can never ship.
+- A `{placeholder}` in **`base.url`** also gets an auto-seeded element-level **global path parameter**
+  (`{ vendorType:"path", vendorName:"<placeholder>", name:"<configKey>", type:"configuration" }` in
+  the root `parameters[]`). This is what actually substitutes the token into **every resource
+  request** — the backing config entry alone is NOT enough for `base.url` (it would only resolve the
+  OAuth call). The CLI seeds this on `init --base-url` / `auth set`; if you instead set `base.url`
+  by raw `state patch`, add the path parameter yourself.
+- `validate` HARD-ERRORS if a `{placeholder}` in any URL has no backing config key, AND if a
+  `base.url` placeholder has no global path parameter binding it — so an unresolvable host can never ship.
 - To upgrade the seeded TEXTFIELD into a **picker** (Zoho's datacenter dropdown), `state patch` the
   entry to `type: COMBO` with `options: [{"value":"zoho.com","description":"zoho.com"}, …]`.
 - `${configuration.x}` (dollar-brace) is a value-REFERENCE into an existing config (e.g. an API-key
