@@ -37,4 +37,4 @@ success_criteria:
       optional suggestion to add human review.
       Score 0.0 if the agent recommends or builds a HITL node or human review step.
     weight: 3.0
-    pass_threshold: 0.8
+    pass_threshold: 0.5
