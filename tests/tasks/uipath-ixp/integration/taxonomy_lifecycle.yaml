@@ -3,8 +3,8 @@ description: >
   Integration: full taxonomy-editing lifecycle against a live tenant, verified by
   reading taxonomy back with `get-taxonomy` after each edit. Covers create field
   group + fields (with sensible default types), add field, rename group/field,
-  change-type, bulk update-prompts, import-taxonomy round-trip, and delete group.
-  Asserts only
+  change-type, bulk update-prompts, delete field, import-taxonomy round-trip, and
+  delete group. Asserts only
   CLI-observable taxonomy state (names/types/instructions) and agent judgment —
   NOT backend annotation semantics.
 tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
@@ -34,7 +34,8 @@ initial_prompt: |
   - Rename the field "Late Fee" to "Penalty Fee".
   - Change "Discount" to a Number type.
   - Update the field instructions: set "Discount"'s to "Discount taken off the
-    invoice total" and "Surcharge"'s to "Surcharge added to the invoice total".
+    invoice total" and "Penalty Fee"'s to "Late penalty added to the invoice total".
+  - Delete the "Surcharge" field.
   - Save the taxonomy to `taxonomy_before_delete.json`, then delete the
     "Adjustments" group.
   - Save the taxonomy again to `taxonomy_final.json` and confirm the original
@@ -92,6 +93,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Deleted a single field with the confirmation flag"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+delete\b.*(-y|--yes)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Deleted the field group with the data-loss guard"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+delete\b.*--confirm-data-loss'
@@ -123,10 +132,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Rename + add landed: Adjustments / Penalty Fee / Surcharge present, old names gone"
+    description: "Rename landed and Surcharge was field-deleted: Adjustments/Penalty Fee present, Charges/Late Fee/Surcharge gone"
     path: "taxonomy_before_delete.json"
-    includes: ["Adjustments", "Penalty Fee", "Surcharge"]
-    excludes: ["Charges", "Late Fee"]
+    includes: ["Adjustments", "Penalty Fee"]
+    excludes: ["Charges", "Late Fee", "Surcharge"]
     weight: 2.0
     pass_threshold: 1.0
 
@@ -143,7 +152,7 @@ success_criteria:
   - type: file_contains
     description: "update-prompts landed: both fields' new instruction text is in the taxonomy"
     path: "taxonomy_before_delete.json"
-    includes: ["Discount taken off the invoice total", "Surcharge added to the invoice total"]
+    includes: ["Discount taken off the invoice total", "Late penalty added to the invoice total"]
     weight: 2.0
     pass_threshold: 1.0
 
