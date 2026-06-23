@@ -1,0 +1,64 @@
+task_id: skill-test-project-lifecycle-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to drive a Test Manager project
+  through its lifecycle — create, confirm by listing, rename, then delete.
+  Self-seeding and deterministic: it creates its own project with a fixed key
+  (EVALTMP) and removes it again, depending on no pre-existing data. Asserts
+  auth-first ordering (`uip login status`), then the create → list → update →
+  delete chain on `uip tm project`, validating the complete command (the exact
+  project key and name and `--output json`) at each step. Covers the project
+  create/update/delete verbs not exercised by the existing suite (which only
+  reads via `project list`).
+tags: [uipath-test, smoke, mode:operate, lifecycle:manage]
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40
+
+initial_prompt: |
+  In Test Manager, create a new project named "Eval Lifecycle Project" with
+  the key EVALTMP. List the projects filtered by that key so I can confirm it
+  exists, then rename the project to "Eval Lifecycle Project (v2)". Once that's
+  done, delete the EVALTMP project again — it's just a scratch project, don't
+  leave it behind.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status --output json`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create command: `uip tm project create --name \"Eval Lifecycle Project\" --project-key EVALTMP --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--name\s+["\x27]?Eval Lifecycle Project)(?=.*--project-key\s+EVALTMP)(?=.*--output\s+json)uip\s+tm\s+project\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete list command narrowed server-side: `uip tm project list --filter EVALTMP --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--filter\s+["\x27]?EVALTMP)(?=.*--output\s+json)uip\s+tm\s+project\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete rename command: `uip tm project update --project-key EVALTMP --name \"Eval Lifecycle Project (v2)\" --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+EVALTMP)(?=.*--name\s+["\x27]?Eval Lifecycle Project \(v2\))(?=.*--output\s+json)uip\s+tm\s+project\s+update\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete delete command: `uip tm project delete --project-key EVALTMP --output json`"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+EVALTMP)(?=.*--output\s+json)uip\s+tm\s+project\s+delete\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
