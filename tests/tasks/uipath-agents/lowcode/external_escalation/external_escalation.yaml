@@ -42,6 +42,26 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Informational discovery criteria (pass_threshold:0 — never block): the agent
+  # discovers the external app with `resources list` then fetches its action
+  # schema with `resources get`. The enforced signal is the authored
+  # resource.json shape (run_command below); discovery is acceptable-but-optional.
+  - type: command_executed
+    description: "Agent discovered the FraudEscalation app via uip solution resources list --source remote (informational)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+list\b.*--source\s+remote'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent fetched the app action schema with uip solution resources get (informational)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
   # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
   # `uip solution project add` both populate Projects[] in the .uipx).
   - type: json_check
