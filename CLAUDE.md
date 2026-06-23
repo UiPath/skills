@@ -4,7 +4,7 @@ This repository contains self-contained AI agent skills for UiPath automation de
 
 ## Architecture
 
-- **Skills are fully independent.** Each skill under `skills/` is self-contained. Skills cannot reference, import, or depend on other skills.
+- **Skills are self-contained.** Each skill under `skills/` must function on its own: it MUST NOT import, inline, or read another skill's files, and MUST still deliver its core value if sibling skills are absent. A skill MAY delegate a task to a sibling skill in this same plugin at runtime (e.g., spawn a subagent that hands an artifact edit to the artifact's owning domain skill) when that work is the sibling's domain — provided the delegation degrades gracefully (the skill still presents an actionable result when the sibling is unavailable).
 - **SKILL.md is the contract.** Every skill folder must have a `SKILL.md` with valid YAML frontmatter. This is the only file the plugin system reads to discover and activate skills.
 - **No build system.** This repo contains only markdown documentation and shell scripts. There is no compilation or packaging step.
 
@@ -16,7 +16,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 2. **SKILL.md frontmatter is required:** must include `name` (matching folder name) and `description` (with TRIGGER/DO NOT TRIGGER conditions)
 3. **References use kebab-case filenames** with `-guide.md` and `-template.md` suffixes
 4. **Update CODEOWNERS** when adding or modifying skill ownership
-5. **No cross-skill references** — each skill must work in isolation
+5. **No structural cross-skill dependencies** — a skill must work in isolation (never import or read another skill's files); runtime delegation to a same-plugin sibling skill is allowed when it degrades gracefully
 6. **No secrets or personal paths** in committed files
 7. **CLI commands must use `--output json`** when output is parsed programmatically
 
