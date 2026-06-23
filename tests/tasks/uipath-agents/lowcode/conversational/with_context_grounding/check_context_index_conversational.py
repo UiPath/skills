@@ -1,25 +1,28 @@
 #!/usr/bin/env python3
-"""Conversational + context-grounding (semantic index) check.
+"""Conversational context (semantic index) resource check.
 
-Mirrors `lowcode/context_index/check_context_index.py` but for the
-conversational flavor. Differences:
-  - `inputSchema.properties` and `outputSchema.properties` MUST be empty
-    on a conversational agent (Critical Rule 24); the autonomous version
-    asserts question/answer typed fields.
-  - No `.agent-builder/` assertion — that's a publish-prep build artifact
-    not required for source editing.
-  - All context-resource and bindings checks are identical to autonomous
-    (the context resource shape does not differ between flavors).
+NEAR-MIRROR of `lowcode/context_index/check_context_index.py`. The context
+resource discovery, resource assertions, and bindings validation are IDENTICAL
+to the autonomous flavor. The ONLY difference is the schema assertion:
 
-The local context-resource folder and its `name` field are the author's free
-choice — the binding resolves the index by `indexName` (see
-`references/lowcode/capabilities/context/index.md`: refresh resolves the ECS
-index by `indexName`, and the emitted binding is keyed by the index name).
-So the resource is located by SCANNING `resources/<*>/resource.json` for the
-one bound to EXPECTED_INDEX_NAME — never by a hard-coded folder name (same
-approach as `inline_context_index`). Only the load-bearing fields are asserted:
-`indexName`, `folderPath`, retrieval mode, and the emitted binding's
-`value.name` / `value.folderPath`.
+  - Autonomous: typed `question`/`answer` schemas + schema sync (Rule 4).
+  - Conversational: input/output schemas MUST be empty (Critical Rule 24).
+
+Validates:
+  1. A context resource under resources/<folder> (located by type; the folder
+     name is the agent's choice) declares:
+       - $resourceType == "context"
+       - contextType == "index"
+       - name == its folder name (convention: the folder matches `name`)
+       - indexName == "UiPathAgentsProductKnowledge" (the deployed index)
+       - folderPath == "Shared/uipath-agents" (the deployed Orchestrator folder)
+  2. settings.retrievalMode is one of the documented values:
+     "semantic" | "structured" | "deepRAG" | "batchTransform".
+  3. agent.json + entry-points.json input/output schemas are BOTH empty
+     (conversational; Critical Rule 24).
+  4. bindings_v2.json contains an "index" resource binding whose
+     key + value.name.defaultValue + value.folderPath.defaultValue
+     match the deployed UiPathAgentsProductKnowledge index.
 """
 
 import json
@@ -30,7 +33,7 @@ from pathlib import Path
 ROOT = Path(os.getcwd()) / "SupportSol" / "SupportBot"
 AGENT = ROOT / "agent.json"
 ENTRY = ROOT / "entry-points.json"
-RESOURCES_DIR = ROOT / "resources"
+RESOURCES = ROOT / "resources"
 BINDINGS = ROOT / "bindings_v2.json"
 
 EXPECTED_INDEX_NAME = "UiPathAgentsProductKnowledge"
@@ -48,60 +51,39 @@ def load(path: Path) -> dict:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
 
 
-def find_context_resource() -> dict:
-    """Locate the context resource by indexName, not by folder name.
-
-    The resource folder and `name` are arbitrary local labels; the binding
-    resolves the index by `indexName`. Scan every `resources/<*>/resource.json`
-    and return the one bound to EXPECTED_INDEX_NAME. Exactly one is expected.
-    """
-    if not RESOURCES_DIR.is_dir():
-        sys.exit(f"FAIL: Missing resources directory {RESOURCES_DIR}")
-    matches = []
-    for sub in sorted(RESOURCES_DIR.iterdir()):
-        rj = sub / "resource.json"
-        if not rj.is_file():
-            continue
+def find_context_resource() -> tuple[str, dict]:
+    """Locate the context resource by type. The resource folder name is the
+    agent's choice (convention: it matches the resource's `name` field) — it is
+    NOT pinned to the index name; the index identity lives in `indexName`."""
+    if not RESOURCES.is_dir():
+        sys.exit(f"FAIL: {RESOURCES} does not exist — no context resource authored")
+    for path in sorted(RESOURCES.rglob("resource.json")):
         try:
-            d = json.loads(rj.read_text())
-        except json.JSONDecodeError:
+            data = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
             continue
-        if (
-            d.get("$resourceType") == "context"
-            and d.get("contextType") == "index"
-            and d.get("indexName") == EXPECTED_INDEX_NAME
-        ):
-            matches.append((rj, d))
-    if not matches:
-        sys.exit(
-            f"FAIL: no context/index resource bound to indexName="
-            f"{EXPECTED_INDEX_NAME!r} found under {RESOURCES_DIR} — the resource "
-            f"folder name is free, but exactly one context resource with that "
-            f"indexName must exist"
-        )
-    if len(matches) > 1:
-        names = [p.parent.name for p, _ in matches]
-        sys.exit(
-            f"FAIL: {len(matches)} context resources bound to {EXPECTED_INDEX_NAME!r} "
-            f"({names}); expected exactly one"
-        )
-    rj, resource = matches[0]
-    print(
-        f"OK: found context resource bound to indexName={EXPECTED_INDEX_NAME!r} "
-        f"at resources/{rj.parent.name}/resource.json (folder name is the author's choice)"
+        if data.get("$resourceType") == "context" and data.get("contextType") == "index":
+            print(f"OK: found context resource at {path.relative_to(ROOT.parent)}")
+            return path.parent.name, data
+    sys.exit(
+        f'FAIL: no context resource ($resourceType=="context", contextType=="index") '
+        f"found under {RESOURCES}"
     )
-    return resource
 
 
-def assert_context_resource(resource: dict) -> None:
+def assert_context_resource(folder_name: str, resource: dict) -> None:
     rtype = resource.get("$resourceType")
     if rtype != "context":
         sys.exit(f'FAIL: resource.json $resourceType should be "context", got {rtype!r}')
     ctype = resource.get("contextType")
     if ctype != "index":
         sys.exit(f'FAIL: resource.json contextType should be "index", got {ctype!r}')
-    # The resource `name` field is a free local label and is intentionally NOT
-    # asserted — the index binds by `indexName` (below), not by the label.
+    name = resource.get("name")
+    if name != folder_name:
+        sys.exit(
+            f"FAIL: resource.json name {name!r} must match its folder name {folder_name!r} "
+            "(convention: the resource folder matches the resource's `name`)"
+        )
     index_name = resource.get("indexName")
     if index_name != EXPECTED_INDEX_NAME:
         sys.exit(
@@ -112,13 +94,11 @@ def assert_context_resource(resource: dict) -> None:
     if folder_path != EXPECTED_FOLDER_PATH:
         sys.exit(
             f"FAIL: resource.json folderPath should be {EXPECTED_FOLDER_PATH!r} "
-            f"(the full deployed Orchestrator folder of the index, from "
-            f"`uip solution resources list` — do not truncate to the parent), "
-            f"got {folder_path!r}"
+            f"(the deployed Orchestrator folder of the index), got {folder_path!r}"
         )
     print(
         f'OK: resource.json is $resourceType="context", contextType="index", '
-        f"indexName={EXPECTED_INDEX_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
+        f"name=folder={resource.get('name')!r}, indexName={EXPECTED_INDEX_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
     )
 
 
@@ -136,6 +116,9 @@ def assert_retrieval_mode(resource: dict) -> None:
 
 
 def assert_conversational_schemas_empty(agent: dict, entry: dict) -> None:
+    """The ONLY divergence from the autonomous check: a conversational agent
+    leaves input/output schemas empty (Critical Rule 24), instead of asserting
+    a typed question/answer contract + schema sync."""
     in_props = (agent.get("inputSchema") or {}).get("properties") or {}
     if in_props:
         sys.exit(
@@ -179,7 +162,7 @@ def assert_bindings_index(bindings: dict) -> None:
     if not index_bindings:
         sys.exit(
             'FAIL: bindings_v2.json has no resource entry with resource="index". '
-            "uip agent refresh should emit one for the context-grounding index."
+            "uip agent validate should emit one for the context-grounding index."
         )
     if len(index_bindings) > 1:
         sys.exit(
@@ -188,9 +171,12 @@ def assert_bindings_index(bindings: dict) -> None:
         )
     binding = index_bindings[0]
 
-    # The binding `key` mirrors the resource's local name (the author's free
-    # choice), so it is intentionally NOT asserted. The load-bearing identity is
-    # value.name (the ECS index name) + value.folderPath (the deployment folder).
+    key = binding.get("key")
+    if key != EXPECTED_INDEX_NAME:
+        sys.exit(
+            f"FAIL: bindings_v2.json index binding key should be {EXPECTED_INDEX_NAME!r}, got {key!r}"
+        )
+
     value = binding.get("value")
     if not isinstance(value, dict):
         sys.exit(f"FAIL: bindings_v2.json index binding value must be an object, got {value!r}")
@@ -212,23 +198,21 @@ def assert_bindings_index(bindings: dict) -> None:
         )
 
     print(
-        f"OK: bindings_v2.json index binding value.name={EXPECTED_INDEX_NAME!r}, "
-        f"folderPath={EXPECTED_FOLDER_PATH!r}"
+        f"OK: bindings_v2.json index binding key={EXPECTED_INDEX_NAME!r}, "
+        f"name={EXPECTED_INDEX_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
     )
 
 
 def main() -> None:
     agent = load(AGENT)
     entry = load(ENTRY)
-    resource = find_context_resource()
+    folder_name, resource = find_context_resource()
     bindings = load(BINDINGS)
 
-    assert_context_resource(resource)
+    assert_context_resource(folder_name, resource)
     assert_retrieval_mode(resource)
     assert_conversational_schemas_empty(agent, entry)
     assert_bindings_index(bindings)
-
-    print("\nAll conversational context-grounding checks passed.")
 
 
 if __name__ == "__main__":
