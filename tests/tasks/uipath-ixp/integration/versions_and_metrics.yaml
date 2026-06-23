@@ -24,15 +24,13 @@ initial_prompt: |
   project from the files in `./fixtures/` — import the taxonomy, upload the three
   invoices — and let it train.
 
-  Once it's trained, note how the current model (version 1) scored. Then try to
-  improve it — change the model's configuration and retrain to get a second
-  version. With both trained, tell me which version scored better and by how much,
-  calling out the fields that moved, and rank the versions best-to-worst by score.
+  Once it's trained, note how the current model (version 1) scored and save those
+  metrics to `metrics_v1.json`. Then try to improve it — change the model's
+  configuration and retrain to get a second version, and save its metrics to
+  `metrics_v2.json`. With both saved, tell me which version scored better and by
+  how much, calling out the fields that moved, and rank them best-to-worst by score.
 
   Delete the project when you're done.
-
-  Save these so I can check them: version 1's metrics (`metrics_v1.json`) and
-  version 2's metrics (`metrics_v2.json`).
 
 success_criteria:
   - type: command_executed

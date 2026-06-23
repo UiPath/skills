@@ -26,8 +26,9 @@ initial_prompt: |
   second one too.
 
   Then:
-  - Put version 1 on staging and version 2 on live.
-  - Move live over to version 1.
+  - Put version 1 on staging and version 2 on live, then save the model list to
+    `models_tagged.json`.
+  - Move live over to version 1, then save the model list to `models_after_move.json`.
   - Take the tag off version 1, but keep that version published.
   - Unpublish version 2 — don't delete it, it stays a trained version.
 
@@ -35,10 +36,6 @@ initial_prompt: |
   state actually moved.
 
   Delete the project when you're done.
-
-  Save these so I can check them: the model list after you've set the staging and
-  live tags (`models_tagged.json`), and the model list after moving the live tag
-  (`models_after_move.json`).
 
 success_criteria:
   - type: command_executed

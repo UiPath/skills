@@ -28,15 +28,13 @@ initial_prompt: |
   I'll only refer to things by their human names — work the ids out yourself:
   - Delete the file `york_solutions_invoice.png` (I'm giving you the filename, not
     an id, so find it first).
-  - Then delete the first document still left in the list.
+  - Then delete the first document still left in the list, and save the remaining
+    document list to `documents_after.json`.
   - Rename the project (I'll refer to it by its title, so find its actual name
-    first) to "IxP Int Resolve Renamed".
+    first) to "IxP Int Resolve Renamed", then save the project's details to
+    `project_after.json`.
 
   Clean up by deleting the project at the end.
-
-  Save these so I can check them: the document list after the deletions
-  (`documents_after.json`) and the project's details after the rename
-  (`project_after.json`).
 
 success_criteria:
   - type: command_executed

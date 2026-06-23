@@ -28,15 +28,13 @@ initial_prompt: |
 
   Then, on the invoice with all the line items (`csi_tower_invoice.png`):
   - Confirm only the first line item — the other rows look wrong, leave them.
-  - The "Amount" was mis-read on the first two line items; fix it on both.
+  - The "Amount" was mis-read on the first two line items; fix it on both, and save
+    that command's response to `confirm_result.json`.
   - Actually, scrap that — roll back everything you just confirmed on this document.
-  - The "Receipt Number" isn't on this document at all — mark it missing.
+  - The "Receipt Number" isn't on this document at all — mark it missing, and save
+    that response to `mark_missing_result.json`.
 
   Clean up by deleting the project when you're done.
-
-  Save these so I can check them: the response from the Amount-correction step
-  (`confirm_result.json`) and the response from marking Receipt Number missing
-  (`mark_missing_result.json`).
 
 success_criteria:
   - type: command_executed

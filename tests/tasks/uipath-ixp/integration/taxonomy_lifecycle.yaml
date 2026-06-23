@@ -36,15 +36,12 @@ initial_prompt: |
   - Change "Discount" to a Number type.
   - Update the field instructions: set "Discount"'s to "Discount taken off the
     invoice total" and "Surcharge"'s to "Surcharge added to the invoice total".
-  - Delete the "Adjustments" group.
-  - Afterwards, confirm the original invoice groups (Invoice, Bill To, Line Items,
-    Ship To) are still there.
+  - Save the taxonomy to `taxonomy_before_delete.json`, then delete the
+    "Adjustments" group.
+  - Save the taxonomy again to `taxonomy_final.json` and confirm the original
+    invoice groups (Invoice, Bill To, Line Items, Ship To) are still there.
 
   When you're done, delete the project.
-
-  Save these so I can check them: the taxonomy just before you delete the group
-  (`taxonomy_before_delete.json`) and the taxonomy after the delete
-  (`taxonomy_final.json`).
 
 success_criteria:
   - type: command_executed
