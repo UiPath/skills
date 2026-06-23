@@ -1,0 +1,137 @@
+task_id: skill-troubleshoot-export-pdf-wrongthread-session0
+description: >
+  UiPath troubleshooting agent must diagnose a Save Document as PDF COM
+  wrong-thread fault: the export faults casting the document to
+  Microsoft.Office.Interop.Word._Document (IID {0002096B-...}) with
+  0x8001010E RPC_E_WRONG_THREAD on an unattended Session-0 / background
+  runtime. Word interop requires an interactive STA; in Session 0 the worker
+  thread cannot own the document proxy. No external Word is involved and the
+  workflow is structurally correct. Success = agent matches the
+  word-export-pdf-com-wrong-thread playbook AND ties the RPC_E_WRONG_THREAD
+  cast to the off-STA / Session-0 run surface (unattended, non-interactive,
+  no external-Word warning), recommending an interactive/attended session or
+  migrating to the System Word (background) activities — without blaming the
+  document or output path.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, faulted-jobs, orchestrator, word-activities, export-pdf, com-wrong-thread, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  Our NightlyReportPdf process runs as a scheduled unattended job in
+  Orchestrator (folder "Reports", machine MOCK-HOST) and converts a Word
+  report to PDF. It faults with a COM casting error mentioning a "different
+  thread". The exact same workflow works fine when I run it from Studio on my
+  own machine.
+
+  Pinned faulted job: d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304. Why does it fail
+  unattended but work in Studio, and how do I fix it? Give me the exact steps.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched word-export-pdf-com-wrong-thread AND tied RPC_E_WRONG_THREAD to the off-STA / unattended Session-0 run surface, recommending an interactive session or System Word (background) activities"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md is authoritative).
+
+      The user's request:
+        "NightlyReportPdf runs as a scheduled unattended job (folder
+         'Reports', machine MOCK-HOST) converting a Word report to PDF; it
+         faults with a COM casting error about a 'different thread'. The same
+         workflow works fine from Studio on my own machine. Job d4e5f6a7-...."
+
+      DIMENSION A -- Correct playbook
+        Matches references/activity-packages/word-activities/playbooks/word-export-pdf-com-wrong-thread.md
+        because the signature is an InvalidCastException to
+        Microsoft.Office.Interop.Word._Document (IID {0002096B-...}) with
+        0x8001010E RPC_E_WRONG_THREAD at Save Document as PDF.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        Root cause: Word COM interop requires an interactive STA. The job ran
+        UNATTENDED in SESSION 0 (non-interactive), so the worker thread
+        executing the export is not an interactive STA that can own the
+        _Document COM object → cross-apartment QueryInterface fails with
+        RPC_E_WRONG_THREAD. There is NO external Word involved (no attach /
+        mid-run-close warning) and the workflow is structurally correct (the
+        export is the sole child of the scope). The "works in Studio, fails
+        unattended" contrast is the tell: Studio is an interactive STA.
+        Fix: run the automation attended / in an interactive (auto-logged-in)
+        session, OR migrate the export to the System Word (background)
+        activities which don't need an interactive STA.
+
+      DIMENSION C -- Discipline
+        The agent must NOT blame the document or the output path, and must
+        NOT claim it changed the robot configuration itself; it hands over
+        the steps.
+
+      SCORING RUBRIC:
+        1.0  Matched the wrong-thread playbook AND identified the off-STA /
+             unattended-Session-0 run surface as the cause (citing the
+             unattended/non-interactive run and the works-in-Studio contrast,
+             and noting no external Word is involved) AND recommended an
+             interactive/attended session or the System Word (background)
+             activities.
+        0.8  Correct playbook and the off-STA/Session-0 cause, but the fix is
+             vague or omits both concrete options.
+        0.5  Recognized a COM apartment/thread problem but mis-assigned the
+             cause (e.g. blamed an external attached Word with no evidence, or
+             a Parallel/Invoke thread that isn't in the workflow), or matched
+             a sibling export-pdf playbook.
+        0.2  Surfaced the HRESULT without diagnosis.
+        0.0  Wrong cause (orphaned-WINWORD RPC_E_CALL_REJECTED, bad output
+             path, corrupt document, Word not installed) or fabricated a
+             config change.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the user who reported the NightlyReportPdf failure. It runs as a
+    scheduled unattended job and faults with a COM casting error about a
+    "different thread", but the same workflow works when you run it from
+    Studio on your own machine. You want a diagnosis plus exact steps.
+  goal: |
+    Let the agent complete its flow; approve scope expansions / clarifications.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and hand you the steps."
+    - "If asked whether the failing run was unattended, say yes - it is the scheduled unattended job; you only run it in Studio yourself when testing."
+    - "If asked whether any Word window was open on the robot host, say no - it is an unattended server with no one logged in interactively."
+    - "Never invent or provide new factual data beyond your initial report and these answers."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

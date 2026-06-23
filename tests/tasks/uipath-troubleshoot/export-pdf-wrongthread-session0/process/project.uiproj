@@ -1,0 +1,6 @@
+{
+  "Name": "NightlyReportPdf",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Save Document as PDF COM wrong-thread fault on an unattended Session-0 / background runtime where Word interop has no interactive STA to own the document.",
+  "MainFile": "Main.xaml"
+}
