@@ -32,7 +32,7 @@ initial_prompt: |
   - Get test steps
   - Get test step logs
 
-  The task is not complete until the workflow validates.
+  The task is not complete until validation passed for the workflow.
 
   Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation.
