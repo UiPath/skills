@@ -1,0 +1,184 @@
+task_id: skill-troubleshoot-word-addpicture-word-crash
+description: >
+  UiPath troubleshoot agent must diagnose a Word "Add Picture"
+  (WordAddImage) failure where Microsoft Word (WINWORD.EXE) CRASHES on
+  the robot host while inserting the image. The workflow is correct: Add
+  Picture is properly nested inside the Use Word File scope, ImagePath is
+  a valid absolute path, and InsertRelativeTo=Document. The logs show the
+  document opened, Add Picture started inserting, then WINWORD.EXE exited
+  unexpectedly; the job then faults with System.InvalidCastException
+  casting to Microsoft.Office.Interop.Word._Document (Exception from
+  HRESULT: 0x8001010E (RPC_E_WRONG_THREAD)) thrown from
+  WordInteropActivity.EndExecute on the async-completion path. Agent must
+  match the activity-packages/word-activities/playbooks/word-com-interop-failures.md
+  playbook (Word process-crash branch / E4), recognize that the
+  RPC_E_WRONG_THREAD cast is a DOWNSTREAM SYMPTOM of the Word process
+  crash (NOT a workflow edit and NOT a threading bug in the workflow),
+  conclude the fault is environmental on the host, and recommend
+  diagnosing the crash (capture the WINWORD faulting module, online
+  repair of Office, bitness check, kill orphaned WINWORD.EXE) and/or —
+  since Add Picture cannot resize — pre-resizing a very large image
+  before insert (or Paste Chart/Picture Into Document, or migrate to
+  file-based Word Document activities).
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, com-interop, word-crash]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ResumePhotoStamp job from folder Shared just faulted. It opens a
+  resume draft and drops a candidate's photo into it. When it runs, Word
+  flashes open and then closes by itself, and the job dies with:
+  `System.InvalidCastException: Unable to cast COM object of type 'System.__ComObject' to interface type 'Microsoft.Office.Interop.Word._Document'. ... The application called an interface that was marshalled for a different thread. (Exception from HRESULT: 0x8001010E (RPC_E_WRONG_THREAD))`
+  I'm confused — my workflow isn't doing anything with threads, and the
+  exact same process runs fine on my own machine in Studio. It only fails
+  on the robot. What's wrong, and how do I fix it?
+
+  The failing project source is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the word-com-interop-failures playbook AND identified the Word process-crash branch (E4): Word (WINWORD.EXE) crashed mid-insert; the RPC_E_WRONG_THREAD (0x8001010E) cast is a downstream symptom, NOT a workflow defect or a threading bug; fix is to diagnose the crash (faulting module / Office repair / bitness / orphaned WINWORD.EXE) and/or pre-resize a large image (or Paste Chart/Picture Into Document, or migrate to file-based Word Document activities)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The attached Reference (RESOLUTION.md) is the
+      authoritative ground truth.
+
+      The user's request was:
+        "My ResumePhotoStamp job from folder Shared just faulted ... Word
+         flashes open and then closes by itself, and the job dies with
+         System.InvalidCastException: Unable to cast COM object ... to
+         interface type 'Microsoft.Office.Interop.Word._Document'. ... The
+         application called an interface that was marshalled for a different
+         thread. (Exception from HRESULT: 0x8001010E (RPC_E_WRONG_THREAD)).
+         My workflow isn't doing anything with threads, and the exact same
+         process runs fine on my own machine in Studio. It only fails on the
+         robot. What's wrong, and how do I fix it?"
+
+      Grade what the agent PRESENTED to the user (its final response is the
+      contract). Score BOTH dimensions in a single number.
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/word-activities/playbooks/word-com-interop-failures.md
+        (the package-level Word COM / Office Interop failures & Word process
+        crashes playbook). The relevant branch is E4 — Word process crash
+        mid-operation. Evidence (any one suffices): the agent names/reads
+        this playbook, state.json references it, or the agent's narrative
+        clearly identifies the Word COM/interop + process-crash family and
+        the process-crash branch. Matching the neighbouring
+        add-picture-failures.md playbook and arriving via its C2 (which
+        delegates to this playbook) is ACCEPTABLE. NOT penalized: reading
+        other branches (missing scope, bookmark, image variable, type-library
+        startup) while ruling them out.
+
+      DIMENSION B -- Same root cause + fix as RESOLUTION.md
+        Correct root cause (REQUIRED for a high score): Microsoft Word
+        (WINWORD.EXE) CRASHED on the robot host while inserting the image
+        (the logs show the document opened, Add Picture began inserting, then
+        WINWORD.EXE exited unexpectedly). The `0x8001010E` / RPC_E_WRONG_THREAD
+        InvalidCast on the `WordInteropActivity.EndExecute` async-completion
+        path is a DOWNSTREAM SYMPTOM of that crash — the dead COM server's
+        Word._Document proxy is no longer valid on its apartment. It is NOT a
+        threading bug in the workflow and NOT a source defect: the XAML is
+        correct (Add Picture nested in Use Word File, valid absolute ImagePath,
+        InsertRelativeTo=Document) and the process runs fine on the developer's
+        machine. Both signals should be present for full credit: (1) the agent
+        recognizes Word crashed / the COM error is a downstream symptom of the
+        process death (not a literal multi-threading defect), and (2) it
+        concludes the fault is ENVIRONMENTAL on the host, not a workflow edit.
+
+        Correct fix (at least one, crash-diagnosis-oriented): capture the
+        WINWORD.EXE faulting module from the host (Windows Application event
+        log / Windows Error Reporting / ProcDump) to confirm the trigger;
+        run an ONLINE REPAIR of Office; verify Studio/Robot↔Office bitness;
+        kill orphaned WINWORD.EXE. AND/OR, because Add Picture cannot resize,
+        pre-resize a very large image before insert (or use a smaller image,
+        or Paste Chart/Picture Into Document); or migrate to file-based
+        Word Document activities.
+
+        CRITICAL DISTINCTION: trying to "fix" the XAML/ImagePath/scope, editing
+        the workflow, concluding a source-code bug, OR claiming the workflow
+        introduced a thread/parallel construct that must be removed is the
+        WRONG conclusion — the workflow is correct and the fault is a Word
+        process crash on the host. Cap such answers at 0.5.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+        1.0  Matched the playbook (word-com-interop-failures.md, or
+             add-picture-failures.md C2 delegating to it) AND identified the
+             Word process-crash root cause (WINWORD.EXE crashed; 0x8001010E /
+             RPC_E_WRONG_THREAD is a downstream symptom, workflow is correct)
+             AND recommended a crash-diagnosis fix (faulting module / Office
+             repair / bitness / orphaned WINWORD.EXE) and/or the large-image
+             mitigation (pre-resize / Paste Chart-Picture Into Document /
+             file-based Word Document activities).
+        0.8  Word-crash environmental root cause + correct fix, but playbook
+             match is weak/implicit; OR playbook + cause correct but fix is vague.
+        0.5  Tried to edit/"fix" the XAML, ImagePath, or scope, concluded a
+             source-code bug, or claimed the workflow's own threading must be
+             changed, when the workflow is correct and Word crashed on the host;
+             OR only one dimension correct.
+        0.2  Recognized a COM/HRESULT failure but neither matched the playbook
+             nor reached the Word-process-crash cause.
+        0.0  Wrong conclusion (missing scope, bookmark, image variable, missing
+             file, type-library-not-registered startup) or got blocked.
+
+      Be substance-focused, not schema-focused. The decisive signals are
+      recognizing Word CRASHED (the 0x8001010E cast is the downstream symptom,
+      not a workflow threading bug) AND that this is an environmental host
+      problem (not a workflow edit) — penalize agents that try to fix the
+      source or that misread RPC_E_WRONG_THREAD as a multi-threading defect in
+      the workflow.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and root cause>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing ResumePhotoStamp process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information in your initial
+    report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, rpa, ui-automation), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

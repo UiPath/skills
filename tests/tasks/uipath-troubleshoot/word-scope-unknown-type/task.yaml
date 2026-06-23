@@ -1,0 +1,142 @@
+task_id: skill-troubleshoot-word-unknown-type
+description: >
+  UiPath troubleshooting agent must diagnose a Word Application Scope load
+  failure on an unattended robot whose UiPath.Word.Activities package does not
+  match the published dependency: the process faults at load with
+  "Cannot create unknown type WordApplicationScope" before any activity runs.
+  Success = agent matches the word-scope-cannot-create-unknown-type playbook
+  AND recommends restoring/pinning the UiPath.Word.Activities version on the
+  robot feed and republishing, not editing workflow logic.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, word-application-scope, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My InvoiceLetters process runs fine in Studio on my machine, but it
+  faults immediately every time I run it via Orchestrator on the new
+  unattended robot (folder "Doc Automation", machine MOCK-ROBOT-02). It
+  fails in under a second, before it does any real work.
+
+  Diagnose what's going on from Orchestrator and from the project source.
+  The project source for the failing process is in the current working
+  directory. If the fix needs something done on the robot or the package
+  feed that I have to do myself, give me the exact steps and stop.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the word-scope-cannot-create-unknown-type playbook AND recommended restoring/pinning the package on the robot"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My InvoiceLetters process runs fine in Studio but faults
+         immediately when run via Orchestrator on the new unattended robot
+         (folder 'Doc Automation', machine MOCK-ROBOT-02). Fails in under a
+         second, before doing real work."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/word-scope-cannot-create-unknown-type.md
+        because the runtime error
+          "Cannot create unknown type
+           '{clr-namespace:UiPath.Word.Activities;assembly=UiPath.Word.Activities}WordApplicationScope'"
+        is a load/compile-time failure: the activity type cannot be created
+        because the UiPath.Word.Activities assembly is not restored on the
+        execution host.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The XAML references WordApplicationScope from
+            UiPath.Word.Activities (project.json pins [1.17.2]).
+          - The unattended robot (MOCK-ROBOT-02) lacks that package version
+            (missing from its feed / not bundled in the published package),
+            so the type cannot be created and the process faults at load,
+            before any activity runs (~0.8s, no COM/document error).
+          - "Works in Studio, fails only on the remote robot" is the
+            signature of a package restore / version-availability gap, NOT
+            a workflow-logic defect.
+        The reference fix:
+          - Ensure the exact UiPath.Word.Activities version (project.json
+            dependency) is available on the feed the robot restores from,
+            pin it, and republish the process so the dependency is bundled;
+            confirm the robot can reach that feed.
+
+      DIMENSION C -- No fabricated actions / no wrong fix
+        The agent must hand over the package/feed steps for the user to
+        perform; it must NOT claim to have republished or edited the robot
+        feed itself, and must NOT "fix" the workflow logic or the XAML
+        activity (the workflow is correct).
+
+      SCORING RUBRIC:
+        1.0  Agent matched word-scope-cannot-create-unknown-type AND
+             identified a missing/mismatched UiPath.Word.Activities package
+             on the robot as the cause AND recommended making the version
+             available on the feed / pinning it / republishing (any of these
+             package-restore remedies), without fabricating actions or
+             editing workflow logic.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "fix
+             the package" without naming feed availability / pin / republish).
+        0.5  Recognized a dependency / package problem but did not tie it to
+             UiPath.Word.Activities on the robot, or proposed only "update
+             the package in Studio" without addressing robot-side
+             availability.
+        0.2  Surfaced the error text without diagnosis.
+        0.0  Wrong cause (e.g., concluded Word is not installed, the
+             document is corrupt, or the workflow logic / XAML is at fault),
+             or fabricated an action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. It works in
+    Studio on your machine but faults instantly on the new unattended
+    robot. You trust the agent and want a diagnosis plus the exact steps to
+    fix the package on the robot / feed.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the steps at the end."
+    - "If asked whether the UiPath.Word.Activities package is available on the robot's feed, say you are not sure and cannot check right now - that is exactly what you need the agent to tell you to verify."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

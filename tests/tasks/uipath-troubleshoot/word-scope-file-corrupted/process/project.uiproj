@@ -1,0 +1,6 @@
+{
+  "Name": "MonthlyReportFiller",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Word Application Scope failure where the document opens corrupted because the workflow edits a template in place and an orphaned WINWORD.EXE holds the file lock.",
+  "MainFile": "Main.xaml"
+}

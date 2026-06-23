@@ -1,0 +1,6 @@
+{
+  "Name": "OrderMailFiler",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Move Outlook Mail Message failure: the destination MailFolder is a bare nested-folder leaf name (Processed) instead of a path (Inbox\\Processed), so the folder does not resolve and the job faults with 'The specified folder does not exist' on every run.",
+  "MainFile": "Main.xaml"
+}

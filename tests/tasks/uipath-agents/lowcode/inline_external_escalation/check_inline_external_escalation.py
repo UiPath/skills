@@ -45,7 +45,7 @@ from _shared.inline_wiring import (  # noqa: E402
 )
 
 FLOW_PATH = Path(os.getcwd()) / "FraudFlowSol" / "FraudFlow" / "FraudFlow.flow"
-ESCALATION_NODE_TYPE = "uipath.agent.resource.escalation"
+ESCALATION_NODE_TYPE_PREFIX = "uipath.agent.resource.escalation."
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 EXPECTED_APP_NAME = "FraudEscalation"
@@ -55,7 +55,7 @@ EXPECTED_FOLDER_NAME = "Shared/uipath-agents/FraudEscalation"
 def main() -> None:
     flow = load_json(FLOW_PATH)
     agent_node = find_autonomous_agent_node(flow)
-    escalation_node = find_resource_node(flow, node_type=ESCALATION_NODE_TYPE)
+    escalation_node = find_resource_node(flow, node_type_prefix=ESCALATION_NODE_TYPE_PREFIX)
     print(f"OK: flow has {agent_node['type']} and {escalation_node['type']} nodes")
 
     agent_source = (agent_node.get("inputs") or {}).get("source")

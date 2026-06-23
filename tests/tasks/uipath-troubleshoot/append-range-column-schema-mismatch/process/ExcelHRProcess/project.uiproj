@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelHRProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: HR-feed DataTable columns [EmployeeId, HireDate, FullName, Department] vs. target sheet header [FullName, EmployeeId, Department, HireDate]. Append Range writes by position, so EmployeeId (numeric) lands in column A (target's FullName text column), causing Excel COM to reject the cell with 0x800A03EC. Exercises the column-schema-mismatch branch of the append-range-failures playbook.",
+  "MainFile": "Main.xaml"
+}
