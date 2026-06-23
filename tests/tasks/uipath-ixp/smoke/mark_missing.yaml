@@ -1,0 +1,38 @@
+task_id: skill-ixp-mark-missing-smoke
+description: >
+  Smoke: agent records a field as missing with `labellings mark-missing`.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, document doc-abc-123, the field
+  "Discount Code" (field id a7c3e9105f2b4d86) is genuinely absent from the
+  document and the model predicted no value for it. Record it as missing.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent marked the field missing via `labellings mark-missing` on the right project + document + field id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+mark-missing\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123)(?=.*a7c3e9105f2b4d86).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

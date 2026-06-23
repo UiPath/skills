@@ -10,12 +10,20 @@ description: >
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit, troubleshoot, login-history]
 
 run_limits:
-  expected_turns: 20
+  expected_turns: 12
 
 initial_prompt: |
   We suspect bob@contoso.com's account may be compromised — there
-  have been multiple failed login attempts. Investigate login failures
-  for this user over the past 7 days.
+  have been multiple failed login attempts. Use `uip admin` commands
+  directly (do NOT delegate to sub-agents or other skills) to run
+  these diagnostic steps:
+  1. Discover audit sources: `uip admin audit org sources --output json`
+  2. Query login events at org scope (login is org-scoped, NOT tenant):
+     `uip admin audit org events --from-date <7-days-ago> --to-date <today> --output json`
+
+  CRITICAL: Do NOT run `uip admin audit tenant events` — login events
+  are org-scoped only. Do NOT use the uipath-troubleshoot skill.
+  If a command fails, move on — do not stop or retry.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be

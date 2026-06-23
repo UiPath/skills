@@ -1,0 +1,49 @@
+task_id: skill-ixp-move-tag-smoke
+description: >
+  Smoke: agent moves the `live` tag from one version to another by
+  re-publishing the target with `--tag live`.
+  Trap: a tag is a single pointer — moving it does NOT require untag first;
+  the agent must not untag.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  In the IXP project `my_invoices-f1afa9ef-ixp`, the `live` tag is currently
+  on model version 15. Make version 16 live instead.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent moved live to v16 via `projects publish <Name> --model-version 16 --tag live`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+publish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+16\b)(?=.*--tag\s+["'']?live\b).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The publish above already moves the tag; untagging the old version first
+  # is unnecessary and wrong.
+  - type: command_not_executed
+    description: "Agent did NOT untag (moving a tag does not require untag first)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+untag\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
