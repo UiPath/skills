@@ -1,0 +1,40 @@
+task_id: skill-gov-no-trigger-platform-ops-smoke
+description: >
+  Smoke test: agent receives a pure platform-ops request (Orchestrator
+  folder management) that should NOT trigger uipath-governance. Per
+  anti-pattern #4, governance must not activate for platform ops —
+  those route to uipath-platform. Validates marketplace trigger
+  precision via skill_triggered with expected_skill absent.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Create a new Orchestrator folder named "Finance-Production" and
+  move the "InvoiceProcessor" process into it.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant
+    in this environment. Commands will fail with auth errors — that
+    is expected.
+    Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent must NOT trigger the uipath-governance skill for platform ops"
+    skill_name: "uipath-governance"
+    expected_skill: "uipath-governance"
+    expected: "no"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT run any uip gov command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+'
+    weight: 2.0
