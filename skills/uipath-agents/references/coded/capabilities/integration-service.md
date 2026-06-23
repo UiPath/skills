@@ -34,7 +34,7 @@ Then, as needed:
 Coded-specific layers:
 
 1. **Reuse before discover** — grep cwd for existing `ActivityMetadata` constants before re-running describe.
-2. **Present concrete options, then echo every pick.** At each stop point call `AskUserQuestion` with the actual candidates as selectable options (one per candidate: short label + one-line description, per the option-label format in the `uipath-platform` skill's `connectors.md`). Recommend the safest default; let the user choose. Never ask open-ended — derive options from the discovery output. After the pick, echo the chosen option back before the next call. Ambiguous answer or "other" → follow up to narrow; do not infer.
+2. **Present concrete options, then echo every pick.** At each stop point ask the user with the actual candidates as selectable options (one per candidate: short label + one-line description, per the option-label format in the `uipath-platform` skill's `connectors.md`). Recommend the safest default; let the user choose. Never ask open-ended — derive options from the discovery output. After the pick, echo the chosen option back before the next call. Ambiguous answer or "other" → follow up to narrow; do not infer.
    - **Stop points:** connector (multi-hit on `connectors list --filter`), curated-vs-raw object, ambiguous operation verb (`Update` vs `Replace`), parent-field `-f` values, custom-field-by-name with >1 candidate.
    - Silent inference produces wrong-connector / wrong-form / wrong-customfield writes.
 
