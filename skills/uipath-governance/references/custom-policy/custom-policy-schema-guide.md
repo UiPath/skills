@@ -113,14 +113,39 @@ All fields available in `input` when Rego is evaluated. Fields not populated at 
 | `input.tool_args` | any | `tool_call` |
 | `input.tool_result` | any | `after_tool` |
 
-**Pre-computed features** — available in `input.features` when the policy declares them in `custom.required_features`:
+**Pre-computed features** — available in `input.features` when the policy declares them in `custom.required_features`. Only features listed are computed; omit what you don't need.
+
+**Text statistics**
 
 | Feature | Type | Description |
 |---------|------|-------------|
-| `word_count` | int | Word count of the primary content field |
+| `word_count` | int | Whitespace-separated token count of the primary content field |
 | `char_count` | int | Character count of the primary content field |
-| `shannon_entropy` | float | Shannon entropy of the primary content field |
-| `vader_compound` | float | VADER sentiment compound score (-1 to 1) |
+| `shannon_entropy` | float | Shannon entropy (bits/symbol) — English prose ~3.5–4.5; binary noise ~8 |
+| `vader_compound` | float | VADER sentiment compound score (-1.0 to 1.0); negative = negative sentiment |
+
+**Encoding integrity**
+
+| Feature | Type | Description |
+|---------|------|-------------|
+| `encoding_concern_events` | int | Raw count of encoding corruption events (U+FFFD, `�`, `\xHH`, mojibake bigrams) |
+| `encoding_concern_ratio` | float | Weighted corruption density (0.0–1.0); threshold > 0.05 is a strong signal |
+
+**Incident detection**
+
+| Feature | Type | Description |
+|---------|------|-------------|
+| `incident_categories` | `dict[str, bool]` | Keyed by category: `safety_refusal`, `tool_failure`, `auth_failure`, `quota_exceeded`, `hallucination` |
+
+Usage: `input.features.incident_categories.safety_refusal == true`
+
+**Commitment language**
+
+| Feature | Type | Description |
+|---------|------|-------------|
+| `commitment_verb` | bool | True if commitment verb or SOW marker found (will deliver, guarantee, fixed price, …) |
+| `commitment_amount` | bool | True if currency-anchored amount found ($500, 200 EUR, …) |
+| `commitment_deadline` | bool | True if deadline phrase found (within 3 days, by tomorrow, …) |
 
 Declare features in the package annotation to have them pre-computed before evaluation:
 
@@ -133,6 +158,8 @@ Declare features in the package annotation to have them pre-computed before eval
 #   required_features:
 #   - word_count
 #   - vader_compound
+#   - commitment_verb
+#   - incident_categories
 package policy.my_policy
 ```
 
@@ -288,6 +315,97 @@ deny_rules contains "FINANCE_GUARD-model-approval" if {
 
 Omit `input.ring` or `input.agent_name` conditions to apply the rule to all agents on the tenant.
 
+### 6. Pre-computed feature — commitment language detection
+
+Flag model output that makes financial or delivery commitments:
+
+```rego
+# METADATA
+# title: Commitment Language Guard
+# custom:
+#   version: "1.0"
+#   hooks:
+#   - after_model
+#   required_features:
+#   - commitment_verb
+#   - commitment_amount
+package policy.commitment_language_guard
+
+deny_rules  contains "__sentinel__" if false
+allow_rules contains "__sentinel__" if false
+
+# METADATA
+# title: COMMIT_GUARD-financial-commitment
+# description: Model output contains a financial commitment (verb + amount).
+# custom:
+#   priority: 85
+deny_rules contains "COMMIT_GUARD-financial-commitment" if {
+    input.hook == "after_model"
+    input.features.commitment_verb == true
+    input.features.commitment_amount == true
+}
+```
+
+### 7. Pre-computed feature — incident detection
+
+Audit when the model refuses a request (safety refusal):
+
+```rego
+# METADATA
+# title: Safety Refusal Audit
+# custom:
+#   version: "1.0"
+#   hooks:
+#   - after_model
+#   required_features:
+#   - incident_categories
+package policy.safety_refusal_audit
+
+deny_rules  contains "__sentinel__" if false
+allow_rules contains "__sentinel__" if false
+
+# METADATA
+# title: SAFETY_AUDIT-refusal-detected
+# description: Model issued a safety refusal response.
+# custom:
+#   priority: 30
+deny_rules contains "SAFETY_AUDIT-refusal-detected" if {
+    input.hook == "after_model"
+    input.features.incident_categories.safety_refusal == true
+}
+```
+
+### 8. Pre-computed feature — encoding integrity
+
+Flag suspicious output with encoding corruption (e.g. garbled binary data):
+
+```rego
+# METADATA
+# title: Encoding Integrity Guard
+# custom:
+#   version: "1.0"
+#   hooks:
+#   - after_model
+#   - after_tool
+#   required_features:
+#   - encoding_concern_ratio
+#   - encoding_concern_events
+package policy.encoding_integrity_guard
+
+deny_rules  contains "__sentinel__" if false
+allow_rules contains "__sentinel__" if false
+
+# METADATA
+# title: ENCODING_GUARD-corruption-detected
+# description: Output contains significant encoding corruption (mojibake or replacement characters).
+# custom:
+#   priority: 70
+deny_rules contains "ENCODING_GUARD-corruption-detected" if {
+    input.hook in {"after_model", "after_tool"}
+    input.features.encoding_concern_events >= 3
+}
+```
+
 ---
 
 ## Regal Lint Rules
@@ -309,7 +427,7 @@ The following rule types are outside the current `input.*` surface. Refuse these
 | Arbitrary HTTP calls or external lookups | WASM runs without network access | — |
 | Persistent cross-session counters | `session_state` resets per run | — |
 | File or environment access | Not available in WASM evaluation context | — |
-| Semantic / intent checks (e.g. "detect hostile tone") | No NLP check type in current runtime | — |
+| Semantic / intent checks (e.g. "detect hostile tone") | No general NLP available; use `vader_compound` for sentiment, `incident_categories` for known incident types | Declare the feature in `required_features` |
 | Per-tool argument inspection | `tool_args` is available but no structured schema per tool | Use `tool_call` + regex on serialized args if pattern is known |
 
 When refusing: name the missing field or capability and suggest the correct governance layer if one exists.

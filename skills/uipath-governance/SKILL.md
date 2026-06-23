@@ -48,6 +48,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
 6. **Always show a receipt after any apply.** Present the post-apply report (controls configured, manual steps needed, Applied by / date) so the user has a record. No local file write is needed — the CLI and UiPath platform are the source of truth.
 7. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
 8. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
+9. **Custom and default policies** are running locally and need CUSTOM_POLICY_BASE_URL=http://localhost:3005/appsdev/agenticgovernance_/api/v1 appended to the environment for CLI calls in this skill. This is handled by the skill's manifest and should not be changed.
 
 ## Workflow
 
