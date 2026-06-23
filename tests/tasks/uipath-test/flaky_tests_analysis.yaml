@@ -16,8 +16,6 @@ run_limits:
   max_turns: 35
 
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   Analyse the top 3 executions with a finished executionStatus of a test
   set 'UAT Smoke Suite' in my UiPath Test Manager project CLAIM. List testcases that pass and
   fail intermittently, ranked by flakiness. Also, list the assertions for such testcases.

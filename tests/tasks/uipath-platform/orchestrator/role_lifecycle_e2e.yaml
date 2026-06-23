@@ -21,8 +21,6 @@ run_limits:
   expected_turns: 24
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I need a new tenant-level role set up. Name it `e2e-role-` followed by
   the unique prefix from `seed.json`.
 

@@ -1,0 +1,173 @@
+task_id: skill-troubleshoot-write-range-formula-prefix
+description: >
+  UiPath troubleshoot agent must diagnose a Write Range failure
+  (COMException 0x800A03EC 'Application-defined or object-defined
+  error' from Excel Range.set_Value) where a scraped HR record's
+  FullName value '=Smith, John' is interpreted by Excel COM as a
+  malformed formula. The leading equals sign is a data-entry error
+  in the HR source; the workflow has no sanitization between scrape
+  and write. Agent must match the activity-packages/excel-activities/playbooks/write-range-failures.md
+  playbook, identify the formula-prefix sub-cause of branch 5 (NOT
+  the volume sub-cause — 312 rows is well under the volume threshold)
+  from the cell-rejection Trace in the job logs, and recommend a
+  sanitization fix (apostrophe escape, prefix-stripping, or OpenXML
+  provider switch) — NOT the Try-Catch-and-continue anti-pattern.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, write-range, formula-prefix]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `System.Runtime.InteropServices.COMException (0x800A03EC): Application-defined or object-defined error.`
+  Pinned job key: ee333333-cccc-dddd-eeee-ffffaaaabbbb. It's a Write
+  Range writing 312 scraped HR records to a directory workbook.
+  Yesterday's run with the same workflow and same workbook
+  succeeded. What changed?
+
+  The project source for the failing process is at ./ExcelDirectoryProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the write-range-failures playbook AND identified branch 5's formula-prefix sub-cause (NOT the volume sub-cause) from the cell-level rejection naming '=Smith, John' AND recommended a sanitization fix — NOT the Try-Catch anti-pattern"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `System.Runtime.InteropServices.COMException (0x800A03EC):
+         Application-defined or object-defined error.` Pinned job key:
+         ee333333-cccc-dddd-eeee-ffffaaaabbbb. It's a Write Range
+         writing 312 scraped HR records to a directory workbook.
+         Yesterday's run with the same workflow and same workbook
+         succeeded. What changed?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/write-range-failures.md
+        because the runtime error is the Excel COM 0x800A03EC
+        signature for cell-level rejection during a Write Range
+        marshal — branch 5 specifically.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Row 43 of dtEmployees contains "=Smith, John" in the
+            FullName column.
+          - Excel COM's Range.set_Value interpreted the leading "="
+            as a formula prefix, attempted to parse the value as a
+            formula, failed (unknown name "Smith", comma in wrong
+            context), and rejected the cell with 0x800A03EC.
+          - The workflow has no sanitization step between the HR
+            scrape sub-workflow and the Write Range.
+          - This is the formula-prefix sub-cause of branch 5 — NOT
+            the volume sub-cause (312 rows is well under any volume
+            threshold; the failure is a single cell rejection).
+
+        The reference fix:
+          - Primary: insert a sanitization step (For Each Row +
+            apostrophe escape, OR TrimStart on "=", "+", "-", "@")
+            between scrape and write.
+          - Alternative: switch to OpenXML provider (which stores
+            leading "=" as inline string, not formula).
+          - Alternative: fix the bad record at the HR source.
+          - NOT acceptable: bare Try-Catch + continue (the
+            playbook's anti-pattern #2 — would silently truncate
+            the directory at row 42 of 312).
+
+        Evidence sources (in priority order):
+          1. Job logs -- the decisive cell-level rejection Trace:
+             "Write Range: employee directory — COM Range.set_Value
+             rejected cell B44: source row 43 (0-indexed 42) column
+             'FullName' has value '=Smith, John' (leading '='
+             interpreted as malformed formula by Excel)"
+             This trace names the exact offending cell value AND
+             explains the formula-parsing mechanism — it's the
+             smoking gun.
+          2. The `or jobs get` stack frame
+             `Microsoft.Office.Interop.Excel.Range.set_Value(...)`
+             confirms the failure is in Excel COM's value setter,
+             consistent with branch 5.
+          3. The "yesterday it worked" framing from the user
+             reinforces that the workflow itself didn't change —
+             what changed is the data (one new bad row in the HR
+             scrape). Workflow source review confirms no
+             sanitization.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the write-range-failures playbook AND
+             identified branch 5's formula-prefix sub-cause
+             specifically (not just "branch 5") AND named the
+             offending value or pattern ("=Smith, John" / leading
+             equals / formula-prefix character) AND recommended a
+             sanitization fix (apostrophe escape, TrimStart, OR
+             OpenXML provider switch). The agent must distinguish
+             formula-prefix from the volume sub-cause and avoid
+             the Try-Catch anti-pattern.
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified branch 5 but conflated the two
+             sub-causes; OR identified the formula-prefix root but
+             recommended only a generic "validate input" fix
+             without naming a specific sanitization approach.
+        0.5  Only one dimension correct: matched the playbook but
+             classified the cause-branch incorrectly (uninitialized,
+             file-lock, empty-source, hidden-rows) without
+             supporting evidence; OR identified the formula-prefix
+             chain without matching the specific playbook.
+        0.2  Agent recognized the COMException as a Write Range
+             issue but never identified the formula-prefix
+             interpretation or the offending value.
+        0.0  Recommended bare Try-Catch suppression as the primary
+             fix (the playbook's anti-pattern #2); OR concluded the
+             volume sub-cause and recommended chunking despite the
+             cell-rejection evidence; OR reached the wrong
+             conclusion entirely; OR got blocked / timed out.
+
+      Be substance-focused. The decisive chain is "row 43 column
+      FullName = '=Smith, John' → Excel COM Range.set_Value
+      interprets '=' as formula prefix → parser rejects malformed
+      formula → 0x800A03EC at cell B44." An agent that names this
+      chain AND recommends a sanitization fix scores 1.0. Penalize
+      agents that recommend Try-Catch-and-continue or that fail to
+      distinguish formula-prefix from the volume sub-cause.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

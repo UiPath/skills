@@ -215,7 +215,7 @@ Each key in `layout.nodes` is a node `id`. `flow format` creates an entry for ev
 
 **What format does:**
 - Arranges nodes horizontally (left-to-right) with `nodeSpacing: 96`, anchored to the leftmost node's original position
-- Sets `size` to `{ "width": 96, "height": 96 }` on every non-`stickyNote` node — non-96 sizes render as rectangles in Studio Web
+- Sets each node's `size` to match its canvas shape: inline agents (`uipath.agent.autonomous` / `uipath.agent.conversational`, `shape: rectangle`) → `{ "width": 288, "height": 96 }`; containers (loops/groups) → `{ "width": 560, "height": 320 }`; everything else — including referenced `uipath.core.agent.<guid>` nodes — → `{ "width": 96, "height": 96 }`. A size that disagrees with the node's shape renders misshapen in Studio Web.
 - Skips `stickyNote` nodes from layout (they keep their custom position and size)
 - Recurses into every subflow and rewrites its `subflows[<id>].layout` map
 

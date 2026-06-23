@@ -96,6 +96,7 @@ The agent privately fills out the SDD shape against [`sdd-template.md`](../asset
   > `Defaulting to single "Process Owner" persona (source: inferred-default:no roles mentioned).`
 - Required fields still missing → marked as gaps to Ask.
 - Optional fields still missing → marked `—` in the draft. No question.
+- **§1.5 declare-vs-xref (apply while sketching variables, every path).** Mint a §1.5 row ONLY for `In` / `Out` args, trigger-payload Variables, and case-level state read by a condition or in ≥ 2 places. An input that is just one upstream task's output is referenced directly (`<- "Stage"."Task".out` / `vars.$xref('Stage','Task','out')`), NEVER relayed through a new §1.5 variable. This holds on the **doc-derived path** (Listen reads a PDD/spec → Sketch) too, where the interactive Resolve back-solve does not run — so the steer must be applied here. See [sdd-generation-rules.md § 1.5 Case Variables](sdd-generation-rules.md) and § Variable lineage closure.
 
 **Required fields (block until answered):**
 
@@ -280,8 +281,8 @@ Before per-task prompts, run all task searches in parallel, then bucket results:
 
 | Bucket | Definition |
 |---|---|
-| **A — single high-confidence** | Exactly 1 match, AND the match's name shares ≥ 1 token (case-insensitive, ≥ 3 chars) with the task's `Task Name` |
-| **B — ambiguous** | Multiple matches, OR single match with no token overlap |
+| **A — single high-confidence** | Exactly 1 match **across all folders**, AND the match's name shares ≥ 1 token (case-insensitive, ≥ 3 chars) with the task's `Task Name` |
+| **B — ambiguous** | Multiple matches (**including the same resource name present in ≥2 folders** — a cross-folder name never auto-confirms), OR single match with no token overlap |
 | **C — empty** | 0 matches across cache files |
 
 Present a single upfront AskUserQuestion **only when bucket A is non-empty**:
@@ -295,12 +296,12 @@ For each bucket A auto-confirm, record `tenant-registry:<resource-name>` provena
 
 #### Per-task prompts (bucket B + bucket C remainder)
 
-Per-task AskUserQuestion (4 options max):
+Per-task AskUserQuestion (4 options max). **When candidate matches differ by folder, each option label MUST carry the match's folder `fullyQualifiedName`** — the user is choosing a folder, not just a name. Tasks resolve independently, so the resulting case may bind different tasks to resources in different folders/solutions (mixing is valid — there is no single-solution constraint):
 
 | Option | Effect |
 |---|---|
-| `<top match — name + version + type>` | Record selection. |
-| `<second match>` (if available) | Record selection. |
+| `<top match — name · folder · version · type>` | Record selection (incl. chosen folder). |
+| `<second match — name · folder · version · type>` (if available) | Record selection (incl. chosen folder). |
 | `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. |
 | `Something else` | Free-text re-search keyword, retry. |
 
@@ -323,7 +324,7 @@ For each task with required inputs the sketch has not mapped, one AskUserQuestio
 
 > `Send Slack message needs a channel and a message body — what feeds each?`
 
-Map each answer to a variable, a literal, or an upstream task's output (§Ask → Buildability musts). For an event trigger, surface required event params the same way (e.g., which mailbox folder) and fill each payload-extraction Variable's `sourceFields` path from the discovered output shape. A filter clause the connector can't support → narrate and Ask for a substitute. A required input the user skips → `<UNRESOLVED>` + a `high` review item (optional input skipped → `medium`).
+Map each answer to a variable, a literal, or an upstream task's output (§Ask → Buildability musts). **When the answer is an upstream task's output, reference it directly** — whole-value `<- "Stage"."Task".out` or, inside a larger `=js:` expression, `vars.$xref('Stage','Task','out')` — and do NOT mint a §1.5 Case Variable for it (the emitting task is its own producer; see [sdd-generation-rules.md § Resolved-resource I/O completeness](sdd-generation-rules.md#resolved-resource-io-completeness)). For an event trigger, surface required event params the same way (e.g., which mailbox folder) and fill each payload-extraction Variable's `sourceFields` path from the discovered output shape. A filter clause the connector can't support → narrate and Ask for a substitute. A required input the user skips → `<UNRESOLVED>` + a `high` review item (optional input skipped → `medium`). Coverage closes against the resource's **own required-input list**, not the user's recollection — every required input ends Resolve either bound or `<UNRESOLVED>`+review-item; the Approve gate re-checks this (§Finalization step 19).
 
 **Connection selection (connector tasks).** For each `execute-connector-activity`, `wait-for-connector`, and connector event trigger, resolve the IS **connection**, not just the activity `typeId`. When the cache holds **0 or > 1** connections for the connector, AskUserQuestion which connection — in business terms (the account / environment name, never the `connectionId`). Never auto-pick among multiple, never leave `connectionId` silently `<UNRESOLVED>`; a missing connection is a `high` review item per §Resource reality.
 
@@ -331,7 +332,7 @@ Map each answer to a variable, a literal, or an upstream task's output (§Ask �
 
 **Cost.** One CLI call per resolved task, run in parallel and resolved-only. The trade is a longer Resolve for far fewer Phase 3 / 4 binding failures — wrong `Field` names and unmapped required inputs that otherwise surface only after Rule 2 locks the file.
 
-After all picks and schema discovery, write `tasks/registry-resolved.json` (Rule 9 shape — including each resolved task's fetched I/O contract). Update `sdd.draft.md` with concrete resource names and the real Inputs / Outputs `Field` names. Any unresolved task carries a paired `review_items[]` entry in the same JSON.
+After all picks and schema discovery, write `tasks/registry-resolved.json` (Rule 9 shape — including each resolved task's fetched I/O contract). The persisted contract MUST record, per resolved task, each declared **input name + `required` flag** and the full **declared output-field list** — Phase 3 io-binding Check 5 re-verifies required-input coverage and output-field fidelity against this without re-fetching ([io-binding/impl-json.md § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)). Update `sdd.draft.md` with concrete resource names and the real Inputs / Outputs `Field` names. Any unresolved task carries a paired `review_items[]` entry in the same JSON.
 
 > **Phase 1 handoff.** Phase 1 reads `tasks/registry-resolved.json` and skips re-search for resolved entries. It still extends the file with any resolutions Phase 0 deferred. No artifact replay; sdd.md is the contract.
 

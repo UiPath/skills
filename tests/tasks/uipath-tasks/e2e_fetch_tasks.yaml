@@ -13,8 +13,6 @@ run_limits:
   max_turns: 30
 
 initial_prompt: |
-  Before starting, load the uipath-tasks skill and follow its workflow.
-
   Perform a complete Action Center task fetch lifecycle against the live
   tenant. This run is READ-ONLY — do not mutate any task.
 

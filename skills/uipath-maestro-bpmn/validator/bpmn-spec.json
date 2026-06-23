@@ -1,0 +1,2473 @@
+{
+  "version": "1.0.0",
+  "source": "PO.Frontend registry generator (2026-04-14) + CLI notes",
+  "extractedFrom": {
+    "designSchemaUtils": "src/services/serialization/design-schema/design-schema-utils.ts",
+    "bpmnModdle": "src/services/serialization/bpmn-moddle.ts",
+    "fpsFormPropertiesUtils": "src/components/canvases/shared/panels/properties/fps/FPSFormPropertiesUtils.ts",
+    "constants": "src/constants.ts",
+    "designSchemaJsonDir": "src/services/serialization/design-schema/*.design-schema.json"
+  },
+  "extensionTypes": {
+    "Actions.HITL": {
+      "extensionType": "Actions.HITL",
+      "label": "Create action app task",
+      "bpmnElement": "bpmn:UserTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:UserTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "appId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": true,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "appVersion",
+          "type": "number",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "actions",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "taskTitle",
+          "type": "string",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "HitlTaskArguments",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": "Actions.HITL",
+      "outputName": "Process response",
+      "useRelativeSource": true,
+      "bindingPattern": "none",
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:UserTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Actions.HITL\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"appId\" value=\"{appId}\" />\n        <uipath:input name=\"appVersion\" value=\"{appVersion}\" />\n        <uipath:input name=\"actions\" value=\"{actions}\" />\n        <uipath:input name=\"key\" value=\"{key}\" />\n        <uipath:input name=\"taskTitle\" value=\"{taskTitle}\" />\n      </uipath:context>\n      <uipath:input name=\"HitlTaskArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Actions.HITL\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:UserTask>",
+      "discoveryNotes": "Uses getSupportedHumanTasks(search, systemName) to list available action app tasks",
+      "contextFieldNotes": "Note: 'folderKey' field in design schema has name='key' (the actual XML context input name)"
+    },
+    "Orchestrator.StartJob": {
+      "extensionType": "Orchestrator.StartJob",
+      "label": "Start and wait for RPA workflow",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "releaseKey",
+          "displayName": "Process",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "JobArguments",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": "Orchestrator.RunJob",
+      "outputName": "Process response",
+      "useRelativeSource": true,
+      "bindingPattern": "process",
+      "bindingInfo": {
+        "resource": "process",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "releaseKey"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartJob\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "discoveryNotes": "Uses getSupportedOrchestratorTasks('process', search) to list available processes"
+    },
+    "Orchestrator.StartAgentJob": {
+      "extensionType": "Orchestrator.StartAgentJob",
+      "label": "Start and wait for agent",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "releaseKey",
+          "displayName": "Process",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "JobArguments",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": "Orchestrator.RunJob",
+      "outputName": "Process response",
+      "useRelativeSource": true,
+      "bindingPattern": "process",
+      "bindingInfo": {
+        "resource": "process",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "releaseKey"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartAgentJob\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "discoveryNotes": "Uses getSupportedOrchestratorTasks('agent', search) to list available agents"
+    },
+    "Orchestrator.BusinessRules": {
+      "extensionType": "Orchestrator.BusinessRules",
+      "label": "Execute business rule [Preview]",
+      "bpmnElement": "bpmn:BusinessRuleTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:BusinessRuleTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "releaseKey",
+          "displayName": "Process",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "JobArguments",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": "Orchestrator.BusinessRules",
+      "outputName": "Execute business rule [Preview]",
+      "useRelativeSource": true,
+      "bindingPattern": "businessRule",
+      "bindingInfo": {
+        "resource": "process",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "releaseKey"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:BusinessRuleTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.BusinessRules\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Execute business rule [Preview]\" type=\"Orchestrator.BusinessRules\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:BusinessRuleTask>",
+      "discoveryNotes": "Uses getOrchestratorBusinessRules() to list available business rules"
+    },
+    "Intsvc.ActivityExecution": {
+      "extensionType": "Intsvc.ActivityExecution",
+      "label": "Execute connector activity",
+      "bpmnElement": "bpmn:SendTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:SendTask"
+        },
+        "intermediateEvent": {
+          "type": "bpmn:IntermediateThrowEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "endEvent": {
+          "type": "bpmn:EndEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "activity",
+          "displayName": "Activity",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": true,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connectorKey",
+          "displayName": "Connector key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connection",
+          "displayName": "Connection",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": null
+        },
+        {
+          "name": "folderKey",
+          "displayName": "Folder key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "method",
+          "displayName": "Method",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "path",
+          "displayName": "Path",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "separateInputs",
+      "inputName": "body",
+      "inputTarget": "body",
+      "outputSource": ".",
+      "outputType": "custom",
+      "outputName": "result",
+      "useRelativeSource": false,
+      "bindingPattern": "connection",
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.ActivityExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"activity\" value=\"{activity}\" />\n        <uipath:input name=\"connectorKey\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"folderKey\" value=\"{folderKey}\" />\n        <uipath:input name=\"method\" value=\"{method}\" />\n        <uipath:input name=\"path\" value=\"{path}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
+      "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections. Activity/connector metadata comes from Integration Service catalog.",
+      "inputNotes": "isSplitInputs=false in design schema; inputs are sent as separate <uipath:input> elements, not merged into a single JSON body",
+      "extensionTagNotes": "In isExecution array, NOT in isEvents array, so uses uipath:activity"
+    },
+    "Intsvc.HttpExecution": {
+      "extensionType": "Intsvc.HttpExecution",
+      "label": "Execute HTTP request (Legacy)",
+      "bpmnElement": "bpmn:SendTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:SendTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "mode",
+          "displayName": "Mode",
+          "type": "string",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": "manual"
+        },
+        {
+          "name": "method",
+          "displayName": "HTTP Method",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": "GET"
+        },
+        {
+          "name": "url",
+          "displayName": "URL",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": ""
+        },
+        {
+          "name": "headers",
+          "displayName": "Headers",
+          "type": "json",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": "{}"
+        },
+        {
+          "name": "parameters",
+          "displayName": "Query Parameters",
+          "type": "json",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": "{}"
+        },
+        {
+          "name": "body",
+          "displayName": "Request Body",
+          "type": "json",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": "null"
+        }
+      ],
+      "inputPattern": "none",
+      "outputSource": "=response",
+      "outputType": "jsonSchema",
+      "outputName": "response",
+      "useRelativeSource": false,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.HttpExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"mode\" value=\"manual\" />\n        <uipath:input name=\"method\" value=\"GET\" />\n        <uipath:input name=\"url\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"headers\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"parameters\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"body\" value=\"=bindings.{bindingId}\" />\n      </uipath:context>\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
+      "inputNotes": "No jsonBody in design schema input section; all configuration is in context fields"
+    },
+    "Intsvc.UnifiedHttpRequest": {
+      "extensionType": "Intsvc.UnifiedHttpRequest",
+      "label": "Execute HTTP request",
+      "bpmnElement": "bpmn:SendTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:SendTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "mode",
+          "displayName": "Mode",
+          "type": "string",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": "manual"
+        },
+        {
+          "name": "method",
+          "displayName": "HTTP Method",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": "GET"
+        },
+        {
+          "name": "url",
+          "displayName": "URL",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": ""
+        },
+        {
+          "name": "headers",
+          "displayName": "Headers",
+          "type": "json",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": "{}"
+        },
+        {
+          "name": "parameters",
+          "displayName": "Query Parameters",
+          "type": "json",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": "{}"
+        },
+        {
+          "name": "body",
+          "displayName": "Request Body",
+          "type": "json",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": "null"
+        }
+      ],
+      "inputPattern": "separateInputs",
+      "outputSource": "=response",
+      "outputType": "jsonSchema",
+      "outputName": "response",
+      "useRelativeSource": false,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "designSchemaSharedWith": "Intsvc.HttpExecution",
+      "xmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.UnifiedHttpRequest\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"mode\" value=\"manual\" />\n        <uipath:input name=\"method\" value=\"GET\" />\n        <uipath:input name=\"url\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"headers\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"parameters\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"body\" value=\"=bindings.{bindingId}\" />\n      </uipath:context>\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
+      "inputNotes": "In the isExecution array. Despite the design schema having no jsonBody, inputs are managed by the IS connector framework and serialized as separate <uipath:input> elements. The design schema context fields (mode, method, url, headers, parameters, body) are used for the HttpRequestV2Properties panel.",
+      "contextFieldNotes": "Context fields above come from the legacy design schema (shared with Intsvc.HttpExecution). In the FPS ImplementationSection, this type is routed through IntsvcActivityProperties (IS connector framework), NOT HttpRequestProperties. The IS connector auto-initializes with HTTP_ACTIVITY_CONFIG and manages context dynamically. When used via the uipath.http-request shortcut node, it uses HttpRequestV2Properties which manages these context fields directly.",
+      "extensionTagNotes": "In isExecution array, uses uipath:activity. Shares design schema with Intsvc.HttpExecution but uses IS connector framework at runtime."
+    },
+    "Intsvc.WaitForEvent": {
+      "extensionType": "Intsvc.WaitForEvent",
+      "label": "Wait for connector event",
+      "bpmnElement": "bpmn:ReceiveTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ReceiveTask"
+        },
+        "intermediateEvent": {
+          "type": "bpmn:IntermediateCatchEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "boundaryEvent": {
+          "type": "bpmn:BoundaryEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "extensionTag": "uipath:event",
+      "contextFields": [],
+      "inputPattern": "separateInputs",
+      "outputSource": ".",
+      "outputType": "custom",
+      "outputName": "result",
+      "useRelativeSource": false,
+      "bindingPattern": "connection",
+      "requiresDiscovery": true,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:ReceiveTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Intsvc.WaitForEvent\" version=\"v1\" />\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ReceiveTask>",
+      "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
+      "inputNotes": "isSplitInputs=false; inputs are defined in input.fields (not jsonBody). Sent as separate <uipath:input> elements.",
+      "contextFieldNotes": "Context fields are empty in design schema; all field definitions are in inputFields below",
+      "extensionTagNotes": "In isEvents array, uses uipath:event",
+      "inputFields": [
+        {
+          "name": "connectionId",
+          "displayName": "Connection ID",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": null,
+          "description": "Connection ID for the IS connector (bindable)"
+        },
+        {
+          "name": "connectorKey",
+          "displayName": "Connector key",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Integration Service connector identifier"
+        },
+        {
+          "name": "folderId",
+          "displayName": "Folder ID",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Folder ID for the connector connection"
+        },
+        {
+          "name": "folderPath",
+          "displayName": "Folder path",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Folder path for the connector connection"
+        },
+        {
+          "name": "folderKey",
+          "displayName": "Folder key",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Folder key for the connector connection"
+        },
+        {
+          "name": "operation",
+          "displayName": "Operation",
+          "type": "string",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": true,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Connector event operation to wait for"
+        },
+        {
+          "name": "objectName",
+          "displayName": "Object name",
+          "type": "string",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Object name associated with the event trigger"
+        },
+        {
+          "name": "filter",
+          "displayName": "Filter",
+          "type": "object",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": {},
+          "description": "Filter criteria for the event"
+        },
+        {
+          "name": "parameters",
+          "displayName": "Parameters",
+          "type": "object",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": {},
+          "description": "Additional parameters for the event"
+        }
+      ]
+    },
+    "Intsvc.EventTrigger": {
+      "extensionType": "Intsvc.EventTrigger",
+      "label": "Wait for connector event (trigger)",
+      "bpmnElement": "bpmn:StartEvent",
+      "placements": {
+        "startEvent": {
+          "type": "bpmn:StartEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "extensionTag": "uipath:event",
+      "contextFields": [],
+      "inputPattern": "separateInputs",
+      "outputSource": ".",
+      "outputType": "custom",
+      "outputName": "result",
+      "useRelativeSource": false,
+      "bindingPattern": "connection",
+      "requiresDiscovery": true,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:StartEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Intsvc.EventTrigger\" version=\"v1\" />\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:messageEventDefinition />\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:StartEvent>",
+      "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
+      "inputNotes": "isSplitInputs=false; inputs defined in input.fields. Sent as separate <uipath:input> elements.",
+      "contextFieldNotes": "Context fields are empty in design schema; all field definitions are in inputFields below",
+      "extensionTagNotes": "In isEvents array, uses uipath:event",
+      "inputFields": [
+        {
+          "name": "connectionId",
+          "displayName": "Connection ID",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": null,
+          "description": "Connection ID for the IS connector (bindable)"
+        },
+        {
+          "name": "connectorKey",
+          "displayName": "Connector key",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Integration Service connector identifier"
+        },
+        {
+          "name": "folderId",
+          "displayName": "Folder ID",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Folder ID for the connector connection"
+        },
+        {
+          "name": "folderPath",
+          "displayName": "Folder path",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Folder path for the connector connection"
+        },
+        {
+          "name": "folderKey",
+          "displayName": "Folder key",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Folder key for the connector connection"
+        },
+        {
+          "name": "operation",
+          "displayName": "Operation",
+          "type": "string",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": true,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Connector event operation to trigger on"
+        },
+        {
+          "name": "objectName",
+          "displayName": "Object name",
+          "type": "string",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "description": "Object name associated with the event trigger"
+        },
+        {
+          "name": "filter",
+          "displayName": "Filter",
+          "type": "object",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": {},
+          "description": "Filter criteria for the event trigger"
+        },
+        {
+          "name": "parameters",
+          "displayName": "Parameters",
+          "type": "object",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": {},
+          "description": "Additional parameters for the event trigger"
+        }
+      ]
+    },
+    "Intsvc.AsyncExecution": {
+      "extensionType": "Intsvc.AsyncExecution",
+      "label": "Start and wait for external agent",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "activity",
+          "displayName": "Activity",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": true,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connectorKey",
+          "displayName": "Connector key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connection",
+          "displayName": "Connection",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": null
+        },
+        {
+          "name": "folderKey",
+          "displayName": "Folder key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "method",
+          "displayName": "Method",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "path",
+          "displayName": "Path",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "separateInputs",
+      "inputName": "body",
+      "inputTarget": "body",
+      "outputSource": ".",
+      "outputType": "custom",
+      "outputName": "response",
+      "useRelativeSource": false,
+      "bindingPattern": "connection",
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.AsyncExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"activity\" value=\"{activity}\" />\n        <uipath:input name=\"connectorKey\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"folderKey\" value=\"{folderKey}\" />\n        <uipath:input name=\"method\" value=\"{method}\" />\n        <uipath:input name=\"path\" value=\"{path}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
+      "inputNotes": "isSplitInputs=false in design schema; inputs are sent as separate <uipath:input> elements",
+      "extensionTagNotes": "In isExecution array, uses uipath:activity"
+    },
+    "Intsvc.SyncAgentExecution": {
+      "extensionType": "Intsvc.SyncAgentExecution",
+      "label": "Start and wait for external agent",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "activity",
+          "displayName": "Activity",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": true,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connectorKey",
+          "displayName": "Connector key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connection",
+          "displayName": "Connection",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": null
+        },
+        {
+          "name": "folderKey",
+          "displayName": "Folder key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "method",
+          "displayName": "Method",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "path",
+          "displayName": "Path",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "separateInputs",
+      "inputName": "body",
+      "inputTarget": "body",
+      "outputSource": ".",
+      "outputType": "custom",
+      "outputName": "response",
+      "useRelativeSource": false,
+      "bindingPattern": "connection",
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "designSchemaSharedWith": "Intsvc.AsyncExecution",
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.SyncAgentExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"activity\" value=\"{activity}\" />\n        <uipath:input name=\"connectorKey\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"folderKey\" value=\"{folderKey}\" />\n        <uipath:input name=\"method\" value=\"{method}\" />\n        <uipath:input name=\"path\" value=\"{path}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
+      "extensionTagNotes": "In isExecution array, uses uipath:activity"
+    },
+    "Intsvc.AsyncAgentExecution": {
+      "extensionType": "Intsvc.AsyncAgentExecution",
+      "label": "Start and wait for external agent",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "activity",
+          "displayName": "Activity",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": true,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connectorKey",
+          "displayName": "Connector key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connection",
+          "displayName": "Connection",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": null
+        },
+        {
+          "name": "folderKey",
+          "displayName": "Folder key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "method",
+          "displayName": "Method",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "path",
+          "displayName": "Path",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "separateInputs",
+      "inputName": "body",
+      "inputTarget": "body",
+      "outputSource": ".",
+      "outputType": "custom",
+      "outputName": "response",
+      "useRelativeSource": false,
+      "bindingPattern": "connection",
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "designSchemaSharedWith": "Intsvc.AsyncExecution",
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.AsyncAgentExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"activity\" value=\"{activity}\" />\n        <uipath:input name=\"connectorKey\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"folderKey\" value=\"{folderKey}\" />\n        <uipath:input name=\"method\" value=\"{method}\" />\n        <uipath:input name=\"path\" value=\"{path}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
+      "extensionTagNotes": "In isExecution array, uses uipath:activity"
+    },
+    "Intsvc.SyncWorkflowExecution": {
+      "extensionType": "Intsvc.SyncWorkflowExecution",
+      "label": "Start and wait for external workflow",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "activity",
+          "displayName": "Activity",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": true,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connectorKey",
+          "displayName": "Connector key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connection",
+          "displayName": "Connection",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": null
+        },
+        {
+          "name": "folderKey",
+          "displayName": "Folder key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "method",
+          "displayName": "Method",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "path",
+          "displayName": "Path",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "separateInputs",
+      "inputName": "body",
+      "inputTarget": "body",
+      "outputSource": ".",
+      "outputType": "custom",
+      "outputName": "response",
+      "useRelativeSource": false,
+      "bindingPattern": "connection",
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "designSchemaSharedWith": "Intsvc.AsyncExecution",
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.SyncWorkflowExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"activity\" value=\"{activity}\" />\n        <uipath:input name=\"connectorKey\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"folderKey\" value=\"{folderKey}\" />\n        <uipath:input name=\"method\" value=\"{method}\" />\n        <uipath:input name=\"path\" value=\"{path}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
+      "extensionTagNotes": "In isExecution array, uses uipath:activity"
+    },
+    "Intsvc.AsyncWorkflowExecution": {
+      "extensionType": "Intsvc.AsyncWorkflowExecution",
+      "label": "Start and wait for external workflow",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "activity",
+          "displayName": "Activity",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": true,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connectorKey",
+          "displayName": "Connector key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "connection",
+          "displayName": "Connection",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": true,
+          "defaultValue": null
+        },
+        {
+          "name": "folderKey",
+          "displayName": "Folder key",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "method",
+          "displayName": "Method",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "path",
+          "displayName": "Path",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "separateInputs",
+      "inputName": "body",
+      "inputTarget": "body",
+      "outputSource": ".",
+      "outputType": "custom",
+      "outputName": "response",
+      "useRelativeSource": false,
+      "bindingPattern": "connection",
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "designSchemaSharedWith": "Intsvc.AsyncExecution",
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.AsyncWorkflowExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"activity\" value=\"{activity}\" />\n        <uipath:input name=\"connectorKey\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" value=\"=bindings.{bindingId}\" />\n        <uipath:input name=\"folderKey\" value=\"{folderKey}\" />\n        <uipath:input name=\"method\" value=\"{method}\" />\n        <uipath:input name=\"path\" value=\"{path}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "discoveryNotes": "Uses getConnectorConnections(connectorKey) to list available connections",
+      "extensionTagNotes": "In isExecution array, uses uipath:activity"
+    },
+    "Orchestrator.ExecuteApiWorkflowAsync": {
+      "extensionType": "Orchestrator.ExecuteApiWorkflowAsync",
+      "label": "Start and wait for API workflow [Preview]",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "releaseKey",
+          "displayName": "Process",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "JobArguments",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": "Orchestrator.RunJob",
+      "outputName": "Process response",
+      "useRelativeSource": true,
+      "bindingPattern": "process",
+      "bindingInfo": {
+        "resource": "process",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "releaseKey"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.ExecuteApiWorkflowAsync\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "discoveryNotes": "Uses getResourceCatalogProcesses('API', search) to list available API workflows"
+    },
+    "Orchestrator.CreateQueueItem": {
+      "extensionType": "Orchestrator.CreateQueueItem",
+      "label": "Create queue item",
+      "bpmnElement": "bpmn:SendTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:SendTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "queueName",
+          "displayName": "Queue name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "queue",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "ItemData",
+      "inputTarget": "body",
+      "outputSource": null,
+      "outputType": "Orchestrator.CreateQueueItem",
+      "outputName": "response",
+      "useRelativeSource": true,
+      "bindingPattern": "queue",
+      "bindingInfo": {
+        "resource": "queue",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "queueName"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:SendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.CreateQueueItem\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"queueName\" value=\"{queueName}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n      </uipath:context>\n      <uipath:input name=\"ItemData\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"Orchestrator.CreateQueueItem\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:SendTask>",
+      "discoveryNotes": "Uses getQueueDefinitions(serviceType, search) to list available queues"
+    },
+    "Orchestrator.CreateAndWaitForQueueItem": {
+      "extensionType": "Orchestrator.CreateAndWaitForQueueItem",
+      "label": "Create and wait for queue item",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "queueName",
+          "displayName": "Queue name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "queue",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "ItemData",
+      "inputTarget": "body",
+      "outputSource": null,
+      "outputType": "Orchestrator.CreateQueueItem",
+      "outputName": "response",
+      "useRelativeSource": true,
+      "bindingPattern": "queue",
+      "bindingInfo": {
+        "resource": "queue",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "queueName"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "designSchemaSharedWith": "Orchestrator.CreateQueueItem",
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.CreateAndWaitForQueueItem\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"queueName\" value=\"{queueName}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n      </uipath:context>\n      <uipath:input name=\"ItemData\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"Orchestrator.CreateQueueItem\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "discoveryNotes": "Uses getQueueDefinitions(serviceType, search) to list available queues"
+    },
+    "Orchestrator.StartAgenticProcess": {
+      "extensionType": "Orchestrator.StartAgenticProcess",
+      "label": "Start and wait for agentic process",
+      "bpmnElement": "bpmn:CallActivity",
+      "placements": {
+        "activity": {
+          "type": "bpmn:CallActivity"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "releaseKey",
+          "displayName": "Process",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "JobArguments",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": "Orchestrator.RunJob",
+      "outputName": "Process response",
+      "useRelativeSource": true,
+      "bindingPattern": "process",
+      "bindingInfo": {
+        "resource": "process",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "releaseKey"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:CallActivity id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartAgenticProcess\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:CallActivity>",
+      "discoveryNotes": "Uses getSupportedOrchestratorTasks('ProcessOrchestration', search, 0, 100, true) to list available agentic processes"
+    },
+    "Orchestrator.StartAgenticProcessAsync": {
+      "extensionType": "Orchestrator.StartAgenticProcessAsync",
+      "label": "Start agentic process",
+      "bpmnElement": "bpmn:CallActivity",
+      "placements": {
+        "activity": {
+          "type": "bpmn:CallActivity"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "releaseKey",
+          "displayName": "Process",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "JobArguments",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": "Orchestrator.RunJob",
+      "outputName": "Process response",
+      "useRelativeSource": true,
+      "bindingPattern": "process",
+      "bindingInfo": {
+        "resource": "process",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "releaseKey"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:CallActivity id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartAgenticProcessAsync\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:CallActivity>",
+      "discoveryNotes": "Uses getSupportedOrchestratorTasks('ProcessOrchestration', search, 0, 100, true) to list available agentic processes"
+    },
+    "Orchestrator.StartCaseMgmtProcess": {
+      "extensionType": "Orchestrator.StartCaseMgmtProcess",
+      "label": "Start and wait for case management",
+      "bpmnElement": "bpmn:CallActivity",
+      "placements": {
+        "activity": {
+          "type": "bpmn:CallActivity"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "releaseKey",
+          "displayName": "Process",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "JobArguments",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": "Orchestrator.RunJob",
+      "outputName": "Process response",
+      "useRelativeSource": true,
+      "bindingPattern": "process",
+      "bindingInfo": {
+        "resource": "process",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "releaseKey"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:CallActivity id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartCaseMgmtProcess\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:CallActivity>",
+      "discoveryNotes": "Uses getSupportedOrchestratorTasks('caseManagement', search, 0, 100, true) to list available case management processes"
+    },
+    "Orchestrator.StartCaseMgmtProcessAsync": {
+      "extensionType": "Orchestrator.StartCaseMgmtProcessAsync",
+      "label": "Start case management",
+      "bpmnElement": "bpmn:CallActivity",
+      "placements": {
+        "activity": {
+          "type": "bpmn:CallActivity"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "releaseKey",
+          "displayName": "Process",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "process",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "Key"
+          }
+        },
+        {
+          "name": "folderId",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "folderPath",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "JobArguments",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": "Orchestrator.RunJob",
+      "outputName": "Process response",
+      "useRelativeSource": true,
+      "bindingPattern": "process",
+      "bindingInfo": {
+        "resource": "process",
+        "resourceKeyPattern": "${metadata.key}",
+        "propertyAttribute": "Key",
+        "contextField": "releaseKey"
+      },
+      "requiresDiscovery": true,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:CallActivity id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.StartCaseMgmtProcessAsync\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Process response\" type=\"Orchestrator.RunJob\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:CallActivity>",
+      "discoveryNotes": "Uses getSupportedOrchestratorTasks('caseManagement', search, 0, 100, true) to list available case management processes"
+    },
+    "A2A.AgentExecution": {
+      "extensionType": "A2A.AgentExecution",
+      "label": "Start and wait for A2A agent",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {
+        "activity": {
+          "type": "bpmn:ServiceTask"
+        }
+      },
+      "extensionTag": "uipath:activity",
+      "contextFields": [],
+      "inputPattern": "mergedBody",
+      "inputName": "body",
+      "inputTarget": "body",
+      "outputSource": null,
+      "outputType": "A2A.AgentExecution",
+      "outputName": "a2aResponse",
+      "useRelativeSource": true,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": true,
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"A2A.AgentExecution\" version=\"v1\" />\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"a2aResponse\" type=\"A2A.AgentExecution\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "inputFieldNotes": "Auto-initialized by A2AFPSFormControl on load. Version is set to v2. Outputs include a2aResponse (jsonSchema with A2A response schema, source=result) and Error (any, source=Error).",
+      "outputNotes": "Output schema includes: isSuccess (boolean), response (string), sessionId (string), status (string), taskId (string), artifacts (array of {index, parts, metadata}). Also includes Error output (type=any, source=Error).",
+      "inputFields": [
+        {
+          "name": "agentUrl",
+          "displayName": "Agent URL",
+          "type": "string",
+          "required": true,
+          "description": "URL of the A2A agent endpoint"
+        },
+        {
+          "name": "skillId",
+          "displayName": "Skill ID",
+          "type": "string",
+          "required": true,
+          "description": "Identifier for the specific skill to invoke on the agent"
+        },
+        {
+          "name": "input",
+          "displayName": "Input",
+          "type": "string",
+          "required": true,
+          "description": "Input text/message to send to the A2A agent"
+        },
+        {
+          "name": "authToken",
+          "displayName": "Auth Token",
+          "type": "string",
+          "required": true,
+          "description": "Authentication token for the A2A agent"
+        },
+        {
+          "name": "agentName",
+          "displayName": "Agent Name",
+          "type": "string",
+          "required": true,
+          "description": "Display name of the A2A agent"
+        }
+      ]
+    },
+    "BPMN.Variables": {
+      "extensionType": "BPMN.Variables",
+      "label": "BPMN Variables",
+      "bpmnElement": "bpmn:Task",
+      "placements": {},
+      "extensionTag": "uipath:mapping",
+      "contextFields": [],
+      "inputPattern": "none",
+      "outputSource": null,
+      "outputType": null,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:Task id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.Variables\" version=\"v1\" />\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:Task>",
+      "inputNotes": "Variable mappings use uipath:mapping with direct input/output elements, not a jsonBody pattern",
+      "bpmnElementNotes": "Also used on bpmn:StartEvent and bpmn:EndEvent for variable mappings. On bpmn:Task with no serviceType, defaults to BPMN.Variables.",
+      "extensionTagNotes": "Uses uipath:mapping (not uipath:activity). createExtensionTask checks for serviceType=BPMN.Variables on StartEvent/EndEvent/Task and routes to createModdleExtensionVariableMapping."
+    },
+    "BPMN.ScriptTask": {
+      "extensionType": "BPMN.ScriptTask",
+      "label": "Execute script",
+      "bpmnElement": "bpmn:ScriptTask",
+      "placements": {},
+      "extensionTag": "uipath:mapping",
+      "contextFields": [],
+      "inputPattern": "scriptArgs",
+      "inputName": "args",
+      "inputTarget": "bodyField",
+      "outputSource": null,
+      "outputType": null,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:ScriptTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:mapping version=\"v1\">\n      <uipath:type value=\"BPMN.ScriptTask\" version=\"v1\" />\n      <uipath:input name=\"args\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n    </uipath:mapping>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ScriptTask>",
+      "inputNotes": "Inputs are merged into a single json input named 'args' with target 'bodyField'. An inputSchema is created from the input variables.",
+      "extensionTagNotes": "bpmn:ScriptTask is routed through createModdleExtensionVariableMapping (same as BPMN.Variables). Inputs are merged into a single 'args' JSON body with inputSchema."
+    },
+    "Intsvc.TimerTrigger": {
+      "extensionType": "Intsvc.TimerTrigger",
+      "label": "Timer trigger",
+      "bpmnElement": "bpmn:StartEvent",
+      "placements": {},
+      "extensionTag": "uipath:activity",
+      "contextFields": [],
+      "inputPattern": "none",
+      "outputSource": ".",
+      "outputType": "custom",
+      "outputName": "result",
+      "useRelativeSource": false,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:StartEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.TimerTrigger\" version=\"v1\" />\n      <uipath:output name=\"result\" type=\"custom\" source=\".\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:timerEventDefinition><bpmn:timeDuration xsi:type=\"bpmn:tFormalExpression\">PT1H</bpmn:timeDuration></bpmn:timerEventDefinition>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:StartEvent>",
+      "inputNotes": "No jsonBody, no input fields, no isSplitInputs in design schema",
+      "bpmnElementNotes": "Used via timer event definition on start events; not directly in FPS_TO_NODE_MAPPING",
+      "extensionTagNotes": "NOT in isEvents array, uses uipath:activity. However, isIntsvcTriggerDesignSchemaType returns true.",
+      "inputFields": []
+    },
+    "Maestro.ReceiveMessageEvent": {
+      "extensionType": "Maestro.ReceiveMessageEvent",
+      "label": "Receive internal message",
+      "bpmnElement": "bpmn:IntermediateCatchEvent",
+      "placements": {
+        "startEvent": {
+          "type": "bpmn:StartEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "intermediateEvent": {
+          "type": "bpmn:IntermediateCatchEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "boundaryEvent": {
+          "type": "bpmn:BoundaryEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "extensionTag": "uipath:event",
+      "contextFields": [
+        {
+          "name": "name",
+          "displayName": "Message name",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "_label",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "separateInputs",
+      "inputName": "ItemData",
+      "inputTarget": "body",
+      "outputSource": null,
+      "outputType": "Maestro.ReceiveMessageEvent",
+      "outputName": "response",
+      "useRelativeSource": true,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:IntermediateCatchEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Maestro.ReceiveMessageEvent\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"name\" value=\"{name}\" />\n        <uipath:input name=\"_label\" value=\"{_label}\" />\n      </uipath:context>\n      <uipath:input name=\"ItemData\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"Maestro.ReceiveMessageEvent\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:messageEventDefinition />\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:IntermediateCatchEvent>",
+      "inputNotes": "isSplitInputs=true in design schema but NOT in isSplitInputsEvents code array, so inputs are NOT merged into ItemData for this type. They remain separate.",
+      "extensionTagNotes": "In isEvents array, uses uipath:event",
+      "inputFields": [
+        {
+          "name": "Reference",
+          "displayName": "Reference",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "target": "bodyField",
+          "description": "Correlation reference to match this receive event to its sender"
+        }
+      ]
+    },
+    "Maestro.SendMessageEvent": {
+      "extensionType": "Maestro.SendMessageEvent",
+      "label": "Send internal message",
+      "bpmnElement": "bpmn:IntermediateThrowEvent",
+      "placements": {
+        "intermediateEvent": {
+          "type": "bpmn:IntermediateThrowEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        },
+        "endEvent": {
+          "type": "bpmn:EndEvent",
+          "eventDefinition": {
+            "type": "bpmn:MessageEventDefinition"
+          }
+        }
+      },
+      "extensionTag": "uipath:event",
+      "contextFields": [
+        {
+          "name": "name",
+          "displayName": "Message name",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "_label",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "inputSchema",
+          "displayName": "Input schema",
+          "type": "jsonSchema",
+          "required": true,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "splitInputsItemData",
+      "inputName": "ItemData",
+      "inputTarget": "body",
+      "outputSource": null,
+      "outputType": "Maestro.SendMessageEvent",
+      "outputName": "response",
+      "useRelativeSource": true,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:IntermediateThrowEvent id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:event version=\"v1\">\n      <uipath:type value=\"Maestro.SendMessageEvent\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"name\" value=\"{name}\" />\n        <uipath:input name=\"_label\" value=\"{_label}\" />\n        <uipath:input name=\"inputSchema\" value=\"{inputSchema}\" />\n      </uipath:context>\n      <uipath:input name=\"ItemData\" type=\"json\" target=\"body\"><![CDATA[{\"Reference\":\"\",\"SpecificContent\":{},\"Error\":\"\",\"TimeToLive\":\"\"}]]></uipath:input>\n      <uipath:output name=\"response\" type=\"Maestro.SendMessageEvent\" var=\"{varId}\" />\n    </uipath:event>\n  </bpmn:extensionElements>\n  <bpmn:messageEventDefinition />\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:IntermediateThrowEvent>",
+      "inputNotes": "In isSplitInputsEvents array. Inputs are merged into a single ItemData JSON body at serialization time. Uses SEND_MESSAGE_EVENT_INPUT_SCHEMA as the inputSchema.",
+      "extensionTagNotes": "In isEvents array, uses uipath:event",
+      "inputFields": [
+        {
+          "name": "Reference",
+          "displayName": "Reference",
+          "type": "string",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "target": "body",
+          "description": "Correlation reference to match this send event to its receiver"
+        },
+        {
+          "name": "SpecificContent",
+          "displayName": "Item information",
+          "type": "json",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "target": "body",
+          "description": "JSON payload with the message content"
+        },
+        {
+          "name": "TimeToLive",
+          "displayName": "Time to live",
+          "type": "duration",
+          "required": false,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null,
+          "target": "body",
+          "description": "Duration after which the message expires if not consumed"
+        }
+      ]
+    },
+    "Maestro.CaseRulesEvaluator": {
+      "extensionType": "Maestro.CaseRulesEvaluator",
+      "label": "Case rules evaluator",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {},
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "caseDeterministicRules",
+          "displayName": "Case deterministic rules",
+          "type": "json",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "caseCurrentExecutionState",
+          "displayName": "Case current execution state",
+          "type": "json",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "_label",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "caseManagerInput",
+      "inputTarget": "body",
+      "outputSource": null,
+      "outputType": "Maestro.CaseRulesEvaluator",
+      "outputName": "schedulerOutput",
+      "useRelativeSource": true,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Maestro.CaseRulesEvaluator\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"caseDeterministicRules\" value=\"{caseDeterministicRules}\" />\n        <uipath:input name=\"caseCurrentExecutionState\" value=\"{caseCurrentExecutionState}\" />\n        <uipath:input name=\"_label\" value=\"{_label}\" />\n      </uipath:context>\n      <uipath:input name=\"caseManagerInput\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"schedulerOutput\" type=\"Maestro.CaseRulesEvaluator\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "bpmnElementNotes": "Not in FPS_TO_NODE_MAPPING activity section; used internally for case management processes. Likely bpmn:ServiceTask or bpmn:Task."
+    },
+    "Maestro.CaseManagerGuardrails": {
+      "extensionType": "Maestro.CaseManagerGuardrails",
+      "label": "Case manager guardrails",
+      "bpmnElement": "bpmn:ServiceTask",
+      "placements": {},
+      "extensionTag": "uipath:activity",
+      "contextFields": [
+        {
+          "name": "decisions",
+          "displayName": "Decisions",
+          "type": "json",
+          "required": true,
+          "hidden": false,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        },
+        {
+          "name": "_label",
+          "type": "string",
+          "required": false,
+          "hidden": true,
+          "isPrimaryKey": false,
+          "binding": false,
+          "defaultValue": null
+        }
+      ],
+      "inputPattern": "mergedBody",
+      "inputName": "body",
+      "inputTarget": "body",
+      "outputSource": null,
+      "outputType": "Maestro.CaseManagerGuardrails",
+      "outputName": "guardrailsOutput",
+      "useRelativeSource": true,
+      "bindingPattern": "none",
+      "requiresDiscovery": false,
+      "isDynamic": false,
+      "xmlTemplate": "<bpmn:ServiceTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Maestro.CaseManagerGuardrails\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"decisions\" value=\"{decisions}\" />\n        <uipath:input name=\"_label\" value=\"{_label}\" />\n      </uipath:context>\n      <uipath:input name=\"body\" type=\"json\" target=\"body\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"guardrailsOutput\" type=\"Maestro.CaseManagerGuardrails\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:ServiceTask>",
+      "bpmnElementNotes": "Not in FPS_TO_NODE_MAPPING activity section; used internally for case management processes. Likely bpmn:ServiceTask or bpmn:Task."
+    }
+  },
+  "bpmnElements": {
+    "gateways": {
+      "bpmn:ExclusiveGateway": {
+        "bpmnElement": "bpmn:ExclusiveGateway",
+        "category": "gateway"
+      },
+      "bpmn:ParallelGateway": {
+        "bpmnElement": "bpmn:ParallelGateway",
+        "category": "gateway"
+      },
+      "bpmn:InclusiveGateway": {
+        "bpmnElement": "bpmn:InclusiveGateway",
+        "category": "gateway"
+      },
+      "bpmn:ComplexGateway": {
+        "bpmnElement": "bpmn:ComplexGateway",
+        "category": "gateway"
+      },
+      "bpmn:EventBasedGateway": {
+        "bpmnElement": "bpmn:EventBasedGateway",
+        "category": "gateway"
+      },
+      "uipath.control-flow.decision": {
+        "bpmnElement": "uipath.control-flow.decision",
+        "category": "gateway"
+      },
+      "uipath.control-flow.switch": {
+        "bpmnElement": "uipath.control-flow.switch",
+        "category": "gateway"
+      }
+    },
+    "tasks": {
+      "bpmn:Task": {
+        "bpmnElement": "bpmn:Task",
+        "category": "task"
+      },
+      "bpmn:UserTask": {
+        "bpmnElement": "bpmn:UserTask",
+        "category": "task"
+      },
+      "bpmn:ServiceTask": {
+        "bpmnElement": "bpmn:ServiceTask",
+        "category": "task"
+      },
+      "bpmn:SendTask": {
+        "bpmnElement": "bpmn:SendTask",
+        "category": "task"
+      },
+      "bpmn:ReceiveTask": {
+        "bpmnElement": "bpmn:ReceiveTask",
+        "category": "task"
+      },
+      "bpmn:ManualTask": {
+        "bpmnElement": "bpmn:ManualTask",
+        "category": "task"
+      },
+      "bpmn:BusinessRuleTask": {
+        "bpmnElement": "bpmn:BusinessRuleTask",
+        "category": "task"
+      },
+      "bpmn:ScriptTask": {
+        "bpmnElement": "bpmn:ScriptTask",
+        "category": "task"
+      },
+      "bpmn:CallActivity": {
+        "bpmnElement": "bpmn:CallActivity",
+        "category": "task"
+      },
+      "bpmn:SubProcess": {
+        "bpmnElement": "bpmn:SubProcess",
+        "category": "task",
+        "variants": [
+          "collapsed",
+          "expanded",
+          "eventSubprocess"
+        ]
+      },
+      "bpmn:Transaction": {
+        "bpmnElement": "bpmn:Transaction",
+        "category": "task"
+      }
+    },
+    "events": {
+      "bpmn:StartEvent": {
+        "bpmnElement": "bpmn:StartEvent",
+        "category": "event",
+        "eventDefinitions": [
+          {
+            "type": "none"
+          },
+          {
+            "type": "bpmn:MessageEventDefinition"
+          },
+          {
+            "type": "bpmn:TimerEventDefinition"
+          },
+          {
+            "type": "bpmn:ConditionalEventDefinition"
+          },
+          {
+            "type": "bpmn:SignalEventDefinition"
+          }
+        ]
+      },
+      "bpmn:IntermediateThrowEvent": {
+        "bpmnElement": "bpmn:IntermediateThrowEvent",
+        "category": "event",
+        "eventDefinitions": [
+          {
+            "type": "none"
+          },
+          {
+            "type": "bpmn:MessageEventDefinition"
+          },
+          {
+            "type": "bpmn:EscalationEventDefinition"
+          },
+          {
+            "type": "bpmn:SignalEventDefinition"
+          },
+          {
+            "type": "bpmn:LinkEventDefinition"
+          },
+          {
+            "type": "bpmn:CompensateEventDefinition"
+          }
+        ]
+      },
+      "bpmn:IntermediateCatchEvent": {
+        "bpmnElement": "bpmn:IntermediateCatchEvent",
+        "category": "event",
+        "eventDefinitions": [
+          {
+            "type": "bpmn:MessageEventDefinition"
+          },
+          {
+            "type": "bpmn:TimerEventDefinition"
+          },
+          {
+            "type": "bpmn:EscalationEventDefinition"
+          },
+          {
+            "type": "bpmn:SignalEventDefinition"
+          },
+          {
+            "type": "bpmn:ConditionalEventDefinition"
+          },
+          {
+            "type": "bpmn:LinkEventDefinition"
+          },
+          {
+            "type": "bpmn:CompensateEventDefinition"
+          }
+        ]
+      },
+      "bpmn:EndEvent": {
+        "bpmnElement": "bpmn:EndEvent",
+        "category": "event",
+        "eventDefinitions": [
+          {
+            "type": "none"
+          },
+          {
+            "type": "bpmn:MessageEventDefinition"
+          },
+          {
+            "type": "bpmn:EscalationEventDefinition"
+          },
+          {
+            "type": "bpmn:ErrorEventDefinition"
+          },
+          {
+            "type": "bpmn:CompensateEventDefinition"
+          },
+          {
+            "type": "bpmn:SignalEventDefinition"
+          },
+          {
+            "type": "bpmn:TerminateEventDefinition"
+          }
+        ]
+      },
+      "bpmn:BoundaryEvent": {
+        "bpmnElement": "bpmn:BoundaryEvent",
+        "category": "event",
+        "eventDefinitions": [
+          {
+            "type": "bpmn:MessageEventDefinition"
+          },
+          {
+            "type": "bpmn:TimerEventDefinition"
+          },
+          {
+            "type": "bpmn:EscalationEventDefinition"
+          },
+          {
+            "type": "bpmn:ConditionalEventDefinition"
+          },
+          {
+            "type": "bpmn:ErrorEventDefinition"
+          },
+          {
+            "type": "bpmn:SignalEventDefinition"
+          },
+          {
+            "type": "bpmn:CompensateEventDefinition"
+          },
+          {
+            "type": "bpmn:MessageEventDefinition",
+            "interrupting": false
+          },
+          {
+            "type": "bpmn:TimerEventDefinition",
+            "interrupting": false
+          },
+          {
+            "type": "bpmn:EscalationEventDefinition",
+            "interrupting": false
+          },
+          {
+            "type": "bpmn:ConditionalEventDefinition",
+            "interrupting": false
+          },
+          {
+            "type": "bpmn:SignalEventDefinition",
+            "interrupting": false
+          }
+        ]
+      }
+    },
+    "data": {
+      "bpmn:DataStoreReference": {
+        "bpmnElement": "bpmn:DataStoreReference",
+        "category": "data"
+      },
+      "bpmn:DataObjectReference": {
+        "bpmnElement": "bpmn:DataObjectReference",
+        "category": "data"
+      }
+    },
+    "participants": {
+      "bpmn:Participant": {
+        "bpmnElement": "bpmn:Participant",
+        "category": "participant"
+      }
+    },
+    "uipathShortcuts": {
+      "uipath.agent": {
+        "bpmnElement": "uipath.agent",
+        "category": "uipathShortcut"
+      },
+      "uipath.human-in-the-loop": {
+        "bpmnElement": "uipath.human-in-the-loop",
+        "category": "uipathShortcut"
+      },
+      "uipath.api-workflow": {
+        "bpmnElement": "uipath.api-workflow",
+        "category": "uipathShortcut"
+      },
+      "uipath.process-orchestration": {
+        "bpmnElement": "uipath.process-orchestration",
+        "category": "uipathShortcut"
+      },
+      "uipath.rpa-workflow": {
+        "bpmnElement": "uipath.rpa-workflow",
+        "category": "uipathShortcut"
+      },
+      "uipath.connector-activity": {
+        "bpmnElement": "uipath.connector-activity",
+        "category": "uipathShortcut"
+      },
+      "uipath.connector-trigger": {
+        "bpmnElement": "uipath.connector-trigger",
+        "category": "uipathShortcut"
+      },
+      "uipath.http-request": {
+        "bpmnElement": "uipath.http-request",
+        "category": "uipathShortcut"
+      },
+      "uipath.timer-activity": {
+        "bpmnElement": "uipath.timer-activity",
+        "category": "uipathShortcut",
+        "eventDefinition": "bpmn:TimerEventDefinition"
+      },
+      "uipath.timer-trigger": {
+        "bpmnElement": "uipath.timer-trigger",
+        "category": "uipathShortcut",
+        "eventDefinition": "bpmn:TimerEventDefinition"
+      }
+    }
+  },
+  "serializationRules": {
+    "extensionTagResolution": {
+      "description": "How the frontend determines which XML extension tag to use",
+      "rules": [
+        "If serviceType is in isEvents array [Intsvc.WaitForEvent, Intsvc.EventTrigger, Maestro.ReceiveMessageEvent, Maestro.SendMessageEvent] => uipath:event",
+        "If serviceType is BPMN.Variables on bpmn:StartEvent, bpmn:EndEvent, or bpmn:Task => uipath:mapping",
+        "If nodeType is bpmn:ScriptTask or bpmn:SubProcess => uipath:mapping",
+        "Otherwise => uipath:activity"
+      ]
+    },
+    "isEventsArray": [
+      "Intsvc.WaitForEvent",
+      "Intsvc.EventTrigger",
+      "Maestro.ReceiveMessageEvent",
+      "Maestro.SendMessageEvent"
+    ],
+    "isExecutionArray": [
+      "Intsvc.ActivityExecution",
+      "Intsvc.AsyncExecution",
+      "Intsvc.SyncAgentExecution",
+      "Intsvc.AsyncAgentExecution",
+      "Intsvc.SyncWorkflowExecution",
+      "Intsvc.AsyncWorkflowExecution",
+      "Intsvc.UnifiedHttpRequest"
+    ],
+    "isSplitInputsEventsArray": [
+      "Maestro.SendMessageEvent"
+    ]
+  }
+}

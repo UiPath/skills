@@ -36,7 +36,7 @@ initial_prompt: |
   flow validate` passes. Grading then runs the flow under debug, so build it to
   actually run, not merely validate. Do not run debug yourself.
 
-  Use the `uipath-maestro-flow` skill workflow, and build the complete flow
+  Build the complete flow
   without stopping to ask me.
 
 success_criteria:

@@ -1,0 +1,78 @@
+task_id: skill-platform-is-record-crud-e2e
+description: >
+  E2E test: agent uses the uipath-platform skill to walk the full record CRUD
+  lifecycle on the Salesforce Contact resource via Integration Service —
+  create, get, partial update, full replace, then delete. Anchors the four
+  currently-uncovered `uip is resources run` verbs (get, update, replace,
+  delete) plus the already-covered create in one lifecycle walk.
+tags: [uipath-platform, e2e, mode:build, lifecycle:setup, integration-service, connector]
+
+run_limits:
+  expected_turns: 18
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Walk the full record-CRUD lifecycle on the Salesforce Contact resource via
+  UiPath Integration Service. Create a Contact, read it back, partial-update,
+  full-replace, then delete it.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - If an earlier step does not return a real record id, substitute a
+    placeholder id and continue the walk so each CRUD verb is exercised.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a Contact with --body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create[\s\S]*--body'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the Contact back with run get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent partial-updated the Contact with --body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update[\s\S]*--body'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent full-replaced the Contact with --body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+replace[\s\S]*--body'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the Contact"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json consistently across the CRUD walk"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+.*--output\s+json'
+    min_count: 4
+    weight: 1.0
+    pass_threshold: 1.0

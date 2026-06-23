@@ -1,0 +1,195 @@
+task_id: skill-troubleshoot-start-transaction-connection-not-propagated
+description: >
+  UiPath diagnostic agent must diagnose an OrderSettlementTxn process that
+  faults in Orchestrator on every run. A Start Transaction
+  (DatabaseTransaction) scope opens its connection successfully and
+  assigns it to the variable dbTxn, but a child Execute Query inside the
+  scope is left with an empty ExistingDbConnection (never bound to dbTxn),
+  so the child runs with a null connection and throws
+  System.NullReferenceException: Object reference not set to an instance
+  of an object. The transaction's connection was never propagated to the
+  child. The agent must identify the unbound/empty child
+  ExistingDbConnection as the root cause and recommend binding the scope's
+  output DatabaseConnection (dbTxn) into the child's ExistingDbConnection
+  — NOT blame a bad connection string, a provider mismatch, a swallowed
+  rollback, a package-version bug, SQL syntax, or a timeout, and NOT
+  settle for a Try Catch / null check as the primary fix.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My OrderSettlementTxn process is faulting in Orchestrator on every run.
+  Can you investigate why?
+
+  The project source is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the start-transaction-failures playbook (Branch 4) AND identified the unpropagated child connection as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My OrderSettlementTxn process is faulting in Orchestrator on
+         every run. Can you investigate why?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/start-transaction-failures.md
+        specifically BRANCH 4 (output connection not propagated to a
+        child activity). The Start Transaction scope opens its connection
+        fine, but a child Execute Query inside the scope has an empty
+        ExistingDbConnection (not bound to the scope's output dbTxn), so
+        the child runs with a null connection and throws
+          "Execute Query: Object reference not set to an instance of an
+           object." / System.NullReferenceException
+        with frames into UiPath.Database.Activities.ExecuteQuery /
+        UiPath.Database.DatabaseConnection. That is the verbatim Branch 4
+        null-connection signature.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should name the
+             start-transaction-failures playbook / Branch 4.
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+        Grade only what the agent presented (final response + tool
+        calls); do NOT inspect internal investigation state.
+
+        Acceptable / non-penalized: the agent may also Read the
+        execute-query-failures branch 1 (null / out-of-scope connection)
+        while ruling it out -- but the conclusion must tie the failure to
+        the Start Transaction scope's connection not being propagated to
+        the child. Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Start Transaction (DatabaseTransaction) scope opened its
+            connection successfully and assigned it to the variable
+            `dbTxn` (ProviderName Microsoft.Data.SqlClient; connection
+            string valid).
+          - The child Execute Query inside the scope was left with an
+            empty `ExistingDbConnection` -- it is NOT bound to `dbTxn` and
+            has no inline connection of its own -- so at runtime that
+            input is null and the child throws NullReferenceException.
+          - The transaction's connection was never propagated to the
+            child. The scope's own connection is fine.
+        The reference fix:
+          - Bind the scope's output DatabaseConnection (`dbTxn`) into the
+            child Execute Query's `ExistingDbConnection` (Existing
+            Connection) so the child runs inside the transaction.
+          - Do NOT leave it empty, and do NOT give the child its own
+            inline ConnectionString + ProviderName (that opens a separate
+            connection outside the transaction).
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should identify the
+             unbound/empty `ExistingDbConnection` on the child versus the
+             scope's good connection, and describe the connection not
+             being propagated (NOT a bad connection string, NOT a
+             provider mismatch, NOT a swallowed rollback, NOT a
+             package-version bug, NOT SQL syntax, NOT a timeout).
+          2. The agent's tool-call summary and any evidence it cites
+             (the Main.xaml binding, the job logs showing the scope
+             connection opened then the null at the child).
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
+      concludes any of these as the root cause):
+        - "The connection string is wrong / the database is unreachable."
+          (The connection opened fine.)
+        - "Provider mismatch / post-migration provider crash." (branch 3)
+        - "Swallowed rollback / the job silently succeeded." (branch 1)
+        - "Package-version bug / the transaction body was skipped."
+          (branch 2)
+        - "SQL syntax error."
+        - "Query / command timeout."
+      ALSO cap at 0.2 if the agent's PRIMARY fix is "wrap the child in a
+      Try Catch" or "add a null check" -- the correct fix is to PROPAGATE
+      the connection (bind dbTxn into the child's ExistingDbConnection).
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched start-transaction-failures Branch 4 AND
+             identified the unpropagated child connection. Conclusion
+             must (a) identify that the child Execute Query's
+             ExistingDbConnection is empty / not bound to the Start
+             Transaction output, (b) explain that is why it threw
+             NullReferenceException while the scope's own connection was
+             fine, and (c) recommend binding `dbTxn` into the child's
+             ExistingDbConnection.
+        0.8  Both partial: e.g., correct playbook and names the null
+             child connection but does not contrast it with the scope's
+             healthy connection or does not name the specific
+             ExistingDbConnection binding as the fix; or identifies the
+             unbound connection but frames the fix loosely.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Start Transaction / Execute Query /
+             null reference) but neither matched the branch nor
+             identified the unpropagated connection -- OR concluded one
+             of the WRONG ANSWERS above -- OR made a Try Catch / null
+             check the primary fix.
+        0.0  Got blocked, or produced no usable conclusion.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

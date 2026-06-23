@@ -33,7 +33,7 @@ pre_run:
   # 1) Install every per-tool plugin the troubleshoot manifests reference.
   # The bare `@uipath/cli` install in CI does NOT auto-list subcommands of
   # uninstalled tools in `--help` output, so the validator below would see
-  # `or` / `is` / `maestro` / `resource` / `docsai` / `traces` / `rpa` as
+  # `or` / `is` / `maestro` / `docsai` / `traces` / `rpa` as
   # unknown until something invokes them. Install eagerly here so the
   # validator's `--help` walk sees the full tree.
   #
@@ -45,7 +45,6 @@ pre_run:
       uip tools install @uipath/orchestrator-tool;
       uip tools install @uipath/integrationservice-tool;
       uip tools install @uipath/maestro-tool;
-      uip tools install @uipath/resource-tool;
       uip tools install @uipath/docsai-tool;
       uip tools install @uipath/traces-tool;
       uip tools install @uipath/rpa-tool

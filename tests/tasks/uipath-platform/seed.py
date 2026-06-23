@@ -53,10 +53,18 @@ seed = {
 }
 
 key = os.environ.get("E2E_PROCESS_KEY", "")
+if not key:
+    print(
+        "seed.py: E2E_PROCESS_KEY is not set — seed.json will omit "
+        "process_key/folder_a_path, and every e2e task that needs them will "
+        "fail its check with 'seed.json missing ...'. Export E2E_PROCESS_KEY "
+        "to the Key (GUID) of an existing process on the test tenant.",
+        file=sys.stderr,
+    )
 if key:
     seed["process_key"] = key
     # `or processes get` doesn't populate FolderPath — use list and match by Key.
-    items = (uip_json("or", "processes", "list").get("Data") or [])
+    items = (uip_json("or", "processes", "list", "--all-folders").get("Data") or [])
     if isinstance(items, dict):
         items = items.get("Value") or items.get("Items") or items.get("Results") or []
     match = next((p for p in items if (p.get("Key") or "").lower() == key.lower()), None)

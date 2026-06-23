@@ -1,0 +1,72 @@
+task_id: skill-bpmn-author-validate
+description: >
+  Skill-guided evaluation: agent uses the uipath-maestro-bpmn skill to author a
+  small registry-driven Maestro BPMN process (start -> exclusive gateway with
+  two conditioned branches -> end), with a BPMN diagram, then validates it with
+  a local well-formed-XML / structural check. Authoring only — no cloud effects.
+tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 45
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `InvoiceApproval.bpmn` for this process:
+    - a blank start event,
+    - an exclusive gateway "Amount check" with two outgoing branches:
+        - a conditioned branch (e.g. amount over a threshold),
+        - a default branch,
+    - each branch leads to its own end event.
+
+  Requirements:
+  - Discover extension types via the registry first if you add any UiPath
+    extension node; declare any variables with the registry's BPMN.Variables
+    template. Do not hand-author uipath:* XML from prose.
+  - Author the structural BPMN (definitions/process scaffold, sequence flows,
+    gateway conditions + default) per the skill's structural reference.
+  - The file MUST include a bpmndi:BPMNDiagram with a BPMNShape for every node
+    and a BPMNEdge for every sequence flow.
+  - Validate the file with an explicit Bash command before finishing: run a
+    well-formed-XML parse, e.g.:
+    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('InvoiceApproval.bpmn')"`.
+  - Do not upload, publish, deploy, debug, run, or pack anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit validation command on the authored BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*InvoiceApproval\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "InvoiceApproval.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file contains a diagram for Studio Web import"
+    path: "InvoiceApproval.bpmn"
+    includes:
+      - "bpmndi:BPMNDiagram"
+      - "bpmndi:BPMNPlane"
+      - "exclusiveGateway"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Authored BPMN is well-formed, structurally sound, and fully shaped"
+    command: "python3 $TASK_DIR/check_author_validate.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
