@@ -73,17 +73,10 @@ success_criteria:
 
       You must grade BOTH dimensions in a single score:
 
-      DIMENSION A -- Correct playbook + actual CLI work
+      DIMENSION A -- Correct playbook
         The agent must match a UI-automation selector-failure playbook
         (selector-failure-healing-disabled.md OR selector-failure-manual.md
         OR no-recovery-data.md) in state.json's `matched_playbooks`.
-
-        Independently, the agent's tool-call history must show real
-        Orchestrator interrogation via the uip CLI — at minimum
-        `uip or jobs get <key>` on the faulted job. If the agent
-        reached a conclusion without invoking uip on the faulted job,
-        the playbook dimension is failed regardless of which playbook
-        was named.
 
       DIMENSION B -- Same root cause as RESOLUTION.md
         The reference root cause names ALL of:

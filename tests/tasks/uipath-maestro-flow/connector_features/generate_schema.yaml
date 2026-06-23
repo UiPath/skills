@@ -4,7 +4,7 @@ description: >
   "Create Issue" connector node so that customFieldsRequestDetails captures
   the parent values (project key + issue type id) that drive the schema
   fetch, and bodyParameters carries the required fields.summary value.
-tags: [uipath-platform, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe]
+tags: [uipath-platform, integration, lifecycle:generate, shape:multi-node, connector, uipath-atlassian-jira, ipe, mode:build]
 
 run_limits:
   expected_turns: 39
@@ -17,17 +17,10 @@ initial_prompt: |
   that runs the Atlassian Jira "Create Issue" connector activity
   Pick any Jira project + issue type combination and set a static summary
   string.
-  Configure the node so:
-    - bodyParameters carries fields.project.key, fields.issuetype.id, and
-      fields.summary (all three are required by GenerateSchema).
-    - customFieldsRequestDetails records BOTH parent-field tuples
-      (encoded as fields_sub_project_sub_key and fields_sub_issuetype_sub_id)
-      under the GenerateSchema objectActionName so the schema fetch can be
-      replayed at design time.
-  End the flow with a core.control.end node.
   Validate the final flow file.
-  If the Atlassian Jira connector is not present in the registry, stop —
-  this test exercises GenerateSchema, which has no managed-HTTP fallback.
+  Use the connection present in Shared/uipath-maestro-flow.
+  If the Atlassian Jira connector isn't available in your registry, 
+  stop rather than falling back to a generic HTTP request.
 
 success_criteria:
   - type: run_command

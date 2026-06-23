@@ -1,0 +1,53 @@
+task_id: skill-admin-oms-tenant-create-smoke
+description: >
+  Smoke test: agent creates a new tenant following the OMS workflow —
+  list regions first, then create with --region flag or a file body.
+  Region is optional (falls back to org default) but best practice is
+  to discover and specify it explicitly. Tests region discovery and
+  correct create invocation.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command invocation with correct flags.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, oms, tenant-lifecycle]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Create a new tenant named "QA-Environment" in our organization.
+  Pick an appropriate region.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed available regions before creating (Rule 21)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+organizations\s+regions\s+list\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked tenants create with --file or --region"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+create\b.*(?:--file|--region)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

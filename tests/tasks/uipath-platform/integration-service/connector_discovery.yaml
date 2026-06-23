@@ -4,14 +4,12 @@ description: >
   Service connectors by vendor name. Tests that the skill teaches the correct
   connector search workflow (list with --filter, --output json) and the HTTP
   fallback strategy when no native connector exists.
-tags: [uipath-platform, smoke, integration-service, connectors]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service]
 
 run_limits:
   expected_turns: 7
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   I need to find UiPath Integration Service connectors for "Google" and also
   check if there is a connector for "Apify".
 

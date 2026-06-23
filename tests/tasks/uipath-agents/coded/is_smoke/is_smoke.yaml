@@ -24,7 +24,7 @@ initial_prompt: |
   agent at `./slack-notifier/` that posts a Slack message via
   Integration Service. Operation: Slack's curated `send_message_to_channel_v2`.
 
-  Use the `uipath-agents` skill and its coded Integration Service
+  Use the coded Integration Service
   capability doc to determine what artifacts to write and what shape
   they need to take. Follow the doc's mandatory discovery step (read the
   platform `agent-workflow.md` reference) even though discovery's live

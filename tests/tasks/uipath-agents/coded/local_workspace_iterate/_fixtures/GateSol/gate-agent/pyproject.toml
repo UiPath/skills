@@ -1,0 +1,10 @@
+[project]
+name = "gate-agent"
+version = "0.0.1"
+description = "Threshold classifier (Studio Web Local Workspace baseline)"
+authors = [{ name = "Test" }]
+requires-python = ">=3.11"
+dependencies = ["uipath", "uipath-langchain"]
+
+[dependency-groups]
+dev = ["uipath-dev"]

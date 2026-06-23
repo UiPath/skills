@@ -17,7 +17,6 @@ run_limits:
 
 initial_prompt: |
   HR needs a digital employee directory in UiPath Data Fabric.
-  Load the uipath-data-fabric skill before starting.
 
   Create entity `EmployeeDirectory_<EPOCH>` (Unix epoch seconds suffix —
   e.g. `EmployeeDirectory_1716163200`) with fields:

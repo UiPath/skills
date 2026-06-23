@@ -19,14 +19,15 @@ After `uip agent init <name>`:
 
 ## agent.json
 
-Primary configuration file. Edit directly.
+### Autonomous agent.json
+Primary configuration file for autonomous agent. Edit directly.
 
 ```json
 {
   "version": "1.1.0",
   "settings": {
     "model": "<MODEL_IDENTIFIER>",
-    "maxTokens": 16384,
+    "maxTokens": 128000,
     "temperature": 0,
     "engine": "basic-v2",
     "maxIterations": 25,
@@ -79,20 +80,72 @@ Primary configuration file. Edit directly.
 }
 ```
 
+### Conversational agent.json
+Primary configuration file for conversational agent. Edit directly.
+
+```json
+{
+  "version": "1.1.0",
+  "settings": {
+    "model": "<MODEL_IDENTIFIER>",
+    "maxTokens": 64000,
+    "temperature": 0,
+    "engine": "conversational-v1",
+    "mode": "standard"
+  },
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "<FIELD_NAME>": {
+        "type": "string",
+        "description": "<FIELD_DESCRIPTION>"
+      }
+    },
+    "required": ["<FIELD_NAME>"]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": true,
+    "showProjectCreationExperience": false,
+    "targetRuntime": "pythonAgent"
+  },
+  "type": "lowCode",
+  "messages": [
+    {
+      "role": "system",
+      "content": "<SYSTEM_PROMPT>",
+      "contentTokens": [
+        { "type": "simpleText", "rawString": "<SYSTEM_PROMPT>" }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "",
+      "contentTokens": []
+    }
+  ],
+  "projectId": "<AUTO_GENERATED_UUID>"
+}
+```
+
 > **`guardrails`** — array of guardrail objects that inspect agent inputs/outputs for policy violations. See [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) for the full schema, validator reference, and examples.
 
 ### Settings
 
 | Field | Description |
 |-------|-------------|
-| `model` | LLM identifier. Discover valid values with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md) — **override the scaffold default `gpt-4o-2024-11-20`** (illustrative GA: `"anthropic.claude-sonnet-4-6"`, `"gpt-5.4"` — verify against the tenant). |
+| `model` | LLM identifier. Discover valid values with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md) — **override the scaffold default** (illustrative GA: `"anthropic.claude-sonnet-4-6"`, `"gpt-5.4"` — verify against the tenant). |
 | `maxTokens` | Max output tokens. Must not exceed the chosen model's `MaxTokens` cap (from `uip agent model list`). |
 | `temperature` | 0 = deterministic, higher = creative |
-| `engine` | Use `"basic-v2"` |
-| `maxIterations` | Max agent loop iterations. Default 25. |
+| `engine` | Keep `"basic-v2"` for autonomous, `"conversational-v1"` for conversational |
+| `maxIterations` | Max autonomous agent loop iterations. Default 25. Keep as omitted for conversational. |
 | `mode` | Use `"standard"` |
 
-> Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [agent-prompting-guide.md](agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
+> Prompt **quality** (system/user prompt structure, tool-call criteria, output contract) lives in [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md). This file owns the **mechanics** (schema, `contentTokens` sync).
 
 ### Schema Types
 
@@ -164,17 +217,35 @@ Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web
 | Field | Value |
 |-------|-------|
 | `storageVersion` | Managed by `uip agent refresh` — do not edit |
-| `isConversational` | `false` (autonomous agents) |
+| `isConversational` | `false` for autonomous agents, `true` for conversational agents. Do not edit. |
 | `showProjectCreationExperience` | `false` |
-| `targetRuntime` | `"pythonAgent"` |
+| `targetRuntime` | `"pythonAgent"` for autonomous. **`null` for conversational** — conversational agents are not yet in PROD, so the field is intentionally left null until the runtime value is finalized. |
+
+### Input Schema
+
+For **autonomous agents**, the `inputSchema` defines the input properties of the agent which can be templated into the system-prompt and user-prompt.
+
+For **conversational agents**, each agent run handles one conversational exchange - a single run corresponds to a single turn of messages/tool-calls taken in response to a user-initiated message. The runtime supplies the following inputs per run:
+- **`messages`** (reserved, implicit) — current conversation history, including user's latest message. Always present; never declare it (or other fields representing conversation-history or user's input message) in `inputSchema`, per [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 4.
+- **Custom `inputSchema` fields** — additional per-exchange context variables which can be templated into the system-prompt. Leave `inputSchema` blank unless the use case genuinely needs per-exchange context variables from the chat-surface beyond the conversation history and user's input messages, which are already captured in `messages`.
+
+
+### Output Schema
+
+For **autonomous agents**, the `outputSchema` defines the output properties of the agent.
+
+For **conversational agents**, the `outputSchema` should not be modified, and thus always left empty. See [critical-rules/conversational-critical-rules.md](critical-rules/conversational-critical-rules.md) anti-pattern 1.
+
 
 ## Messages
 
-This section covers message **structure** and `contentTokens` mechanics. For prompt **quality** — system-prompt skeleton, tool-call criteria, output contract, worked examples — see [agent-prompting-guide.md](agent-prompting-guide.md).
+This section covers message **structure** and `contentTokens` mechanics. For prompt **quality** — system-prompt skeleton, tool-call criteria, output contract, worked examples — see [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md).
 
 ### System Message
 
-Sets the agent's role and behavior. Typically plain text with no variables:
+Sets the agent's role and behavior. 
+
+For autonomous, typically plain text with no variables:
 
 ```json
 {
@@ -186,9 +257,21 @@ Sets the agent's role and behavior. Typically plain text with no variables:
 }
 ```
 
+For conversational, typically general behavior and steps to respond to users. Should also generally have no variables unless the conversational inputs feature is used, see § Input Schema.
+
+```json
+{
+  "role": "system",
+  "content": "You are a helpful assistant that runs tools and responds to users based on their queries.",
+  "contentTokens": [
+    { "type": "simpleText", "rawString": "You are a helpful assistant that runs tools and responds to users based on their queries." }
+  ]
+}
+```
+
 ### User Message
 
-Templates input fields into the prompt using `{{input.fieldName}}`. For `job-attachment` fields the token renders metadata only (see § File Attachments).
+For autonomous agents, templates input fields into the prompt using `{{input.fieldName}}`. For `job-attachment` fields the token renders metadata only (see § File Attachments).
 
 ```json
 {
@@ -202,6 +285,8 @@ Templates input fields into the prompt using `{{input.fieldName}}`. For `job-att
   ]
 }
 ```
+
+For conversational agents, the user-message should be ignored after initialization and left blank. The user message from the `agent.json` is ignored since each user message is received during the actual conversation.
 
 ## contentTokens Construction
 
@@ -318,7 +403,7 @@ The `validate` command reads these files and resolves `referenceKey` for solutio
 | `"solution"` | Typically `"solution_folder"` (the in-solution declared folder) | `Folder` field from `uip solution resources list` |
 | `"external"` | Literal Orchestrator folder, slash-separated (e.g., `"Shared/Sales"`) | `Folder` field from `uip solution resources list` |
 
-The author writes the value verbatim into `resource.json` (or into the guardrail action under `agent.json`); `uip agent refresh` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules.md](critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
+The author writes the value verbatim into `resource.json` (or into the guardrail action under `agent.json`); `uip agent refresh` propagates it into `bindings_v2.json` as `folderPath` (App resources translate `folderName` → binding `folderPath`). Connection (Integration Service) resources are exempt — bound by `connection.id`, no `folderPath`. See [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 11 and [solution-resources.md](solution-resources.md) § Bindings.
 
 For each resource type's full schema, see the relevant capability file:
 

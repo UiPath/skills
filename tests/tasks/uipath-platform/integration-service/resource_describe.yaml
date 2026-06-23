@@ -4,14 +4,12 @@ description: >
   resources for a connector. Tests that the skill teaches the correct resource
   discovery workflow — listing with --operation, describing with --operation
   for field-level detail, and always passing --connection-id.
-tags: [uipath-platform, smoke, integration-service, resources, describe]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector]
 
 run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   I want to create a Contact record in Salesforce through UiPath Integration
   Service. Before executing anything, I need to understand the resource schema.
 

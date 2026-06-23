@@ -1,0 +1,47 @@
+task_id: skill-ixp-confirm-all-predictions-smoke
+description: >
+  Smoke: agent confirms all predictions on a document as ground truth — the
+  no-`--fields` form bulk-confirms every predicted field in that document.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, confirm all predictions on
+  document doc-abc-123 as ground truth.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent confirmed predictions on doc-abc-123 via `labellings confirm`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*doc-abc-123).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # "Confirm all" = the no-field form. Scoping with --fields would confirm
+  # only specific fields, not every prediction — so it must NOT appear.
+  - type: command_not_executed
+    description: "Agent did NOT scope the confirm with --fields (bulk-confirms all predicted fields)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\b.*--fields'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
