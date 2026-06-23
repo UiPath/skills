@@ -3,8 +3,8 @@ description: >
   Skill-guided evaluation: agent uses the uipath-admin skill to run a
   minimal `export` with `--file-format csv` against a small window.
   Validates the three required flags (`--from-date`, `--to-date`,
-  `--output-file`) plus the new `--file-format csv` selector, and that
-  the agent picks a `.csv` output path inside the working directory.
+  `--output-path`) plus the new `--file-format csv` selector, and that
+  the agent passes a base directory (the CLI generates the .csv name inside it).
 
   Platform note: runs without an authenticated tenant — commands will
   fail with auth errors. That is acceptable; what matters is correct
@@ -16,8 +16,9 @@ run_limits:
 
 initial_prompt: |
   An admin needs a single CSV of all tenant audit events from yesterday
-  to open in Excel for a quick review. Write the CSV to
-  ./audit-yesterday.csv in the current working directory.
+  to open in Excel for a quick review. Write it into the ./audit-yesterday
+  base directory in the current working directory (the CLI creates a
+  uniquely-named .csv inside it).
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
@@ -30,17 +31,19 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, --output-file, AND --file-format csv"
+    description: "Agent invoked `uip admin audit tenant export` with --from-date, --to-date, --output-path, AND --file-format csv"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-file\s+\S+)(?=.*--file-format\s+csv\b)'
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-path\s+\S+)(?=.*--file-format\s+csv\b)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent's CSV export targeted the requested ./audit-yesterday.csv path"
+    description: "Agent passed the requested ./audit-yesterday base directory"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-file\s+\.?/?audit-yesterday\.csv'
+    # --output-path is a base directory; the CLI generates the .csv name inside it,
+    # so assert the agent used the requested base dir (any leading path is fine).
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b.*--output-path\s+\S*audit-yesterday(?![\w.])'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

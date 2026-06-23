@@ -12,10 +12,34 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 - Design input/output schemas and sync with `entry-points.json`
 - Validate agent project structure
 - Publish agent to Studio Web, pack and deploy to Orchestrator
+- Debug / run a low-code agent end-to-end on Studio Web and inspect its output
+
+## Autonomous and Conversational Variant
+
+UiPath low-code agents come in **two variants**, both sharing this skill.
+
+1. Autonomous agents are intended for any general use-cases involving execution from input → output. They may be standalone or inline in a flow.
+   
+2. Conversational agents are intended for use-cases involving multi-turn conversations / fast latency with real-time user-interaction / streamed responses.
+
+> Currently, conversational agents are only standalone and not yet supported to be inline in a flow, so inline-in-flow use-cases should always use an autonomous agent.
+> After deployment, conversational agents are interacted with through the UiPath Conversation Service, which manages conversation history and exposes a CLI/SDK for client UIs. Each user-initiated exchange invokes the agent for a single turn, streaming events back to the client.
+
+In summary:
+| Signal | Variant |
+|---|---|
+| User wants general input → output execution | **Autonomous** |
+| User wants inline-in-flow | **Autonomous** |
+| `agent.json` has `metadata.isConversational: false` or unset | **Autonomous** |
+| User wants multi-turn chat / fast latency with real-time user-interaction / streamed responses | **Conversational** |
+| Existing `agent.json` has `metadata.isConversational: true` | **Conversational** |
+| Ambiguous | Ask the user |
+
+Although most of the lifecycle and capabilities are shared between both autonomous and conversational agents, some files will have distinguishing differences between the two (for example, mark that certain features do not apply for conversational agents). You can assume that when not labeled otherwise, content from files would apply to both variants.
 
 ## Critical Rules
 
-[critical-rules.md](critical-rules.md) is the canonical source for low-code agent rules and anti-patterns. Read it every session. The rules below are the operational must-knows; the rest live in the canonical file.
+[critical-rules/critical-rules.md](critical-rules/critical-rules.md) is the canonical source for low-code agent rules and anti-patterns. Read it every session. The rules below are the operational must-knows; the rest live in the canonical file.
 
 1. **Edit JSON files directly, except CLI-managed memory features.** The CLI provides `init` (scaffold), `refresh` (apply migrations + regenerate derived files), `validate` (strict read-only check), and `memory` (writes memory feature files). Resources live in `resources/{Name}/resource.json`; memory features live in `features/{Name}/feature.json`.
 2. **Use `--output json`** on every `uip` command.
@@ -30,12 +54,14 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 Standard workflow for any low-code agent task:
 
 1. **Scaffold** — `uip solution init` (if no solution exists), then `uip agent init "<AgentName>" --output json`. Full walkthrough in [project-lifecycle.md](project-lifecycle.md) § End-to-End Example.
-2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md). **Override the scaffold model** (`gpt-4o-2024-11-20`) per [model-selection-guide.md](model-selection-guide.md) and write robust prompts per [agent-prompting-guide.md](agent-prompting-guide.md) — the scaffold ships a stale model and toy prompts.
+2. **Edit** — open `agent.json` and `entry-points.json`. Schema reference in [agent-definition.md](agent-definition.md). **Override the scaffold model** (`gpt-4o-2024-11-20`) per [model-selection-guide.md](model-selection-guide.md) and write robust prompts per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) — the scaffold ships a stale model and toy prompts.
 3. **Add capabilities** — pick from the Capability Registry below. Most add `resources/{Name}/resource.json`; memory uses `uip agent memory` and writes `features/{Name}/feature.json`.
 4. **Refresh** — `uip agent refresh --output json`. Applies pending migrations and regenerates `entry-points.json` and `bindings_v2.json`. Confirm `MigrationApplied`, `StorageVersion`.
 5. **Validate** — `uip agent validate --output json`. Strict read-only. Confirm `Status: "Valid"`, `Validated` counts.
 6. **Refresh solution resources** — `uip solution resources refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, memory spaces, escalations).
 7. **Upload** — `uip solution upload . --output json` (bundles and uploads in one pass; with user consent per Rule 6).
+
+To **run the agent end-to-end** (test it live, not just upload), use `uip agent debug <AGENT_PROJECT_DIR> --inputs '<json>' --output json` — it uploads the enclosing solution and runs it on Studio Web in one step, so it's an alternative to the Upload step, not an addition. Executes the agent for real — confirm with the user first (Rule 6). See [debug.md](debug.md).
 
 Capabilities are **orthogonal**: there is no ordering requirement among them. Adding a tool and an escalation in parallel is safe — they do not interact at the file level. Validate and refresh once after all capability edits are complete, not after each one.
 
@@ -46,9 +72,10 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Read when... | File |
 |---|---|
 | Scaffolding, validating, or running solution lifecycle commands | [project-lifecycle.md](project-lifecycle.md) |
+| Debugging / running a low-code agent end-to-end to test it | [debug.md](debug.md) |
 | Editing `agent.json` (prompts, schemas, model, contentTokens) or `entry-points.json` | [agent-definition.md](agent-definition.md) |
 | Choosing the LLM (`settings.model`) — discover tenant models, override the scaffold default | [model-selection-guide.md](model-selection-guide.md) |
-| Writing a robust system/user prompt — skeleton, tool-call criteria, output contract, production checklist | [agent-prompting-guide.md](agent-prompting-guide.md) |
+| Writing a robust system/user prompt — skeleton, tool-call criteria, output contract, production checklist | [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) |
 | External tools / IS tools / index contexts / memory spaces / escalations behave unexpectedly after `uip solution resources refresh` | [solution-resources.md](solution-resources.md) |
 | Running evaluations, adding test cases, managing evaluators | [evaluations/evaluate.md](evaluations/evaluate.md) |
 
@@ -57,11 +84,12 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | I need to... | Read first | Then |
 |--------------|------------|------|
 | Understand agent.json schema | [agent-definition.md](agent-definition.md) | |
-| Edit system prompt or user message | [agent-prompting-guide.md](agent-prompting-guide.md) (quality) | [agent-definition.md](agent-definition.md) § Messages, § contentTokens (mechanics) |
+| Edit system prompt or user message | [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) (quality) | [agent-definition.md](agent-definition.md) § Messages, § contentTokens (mechanics) |
 | Choose or change the model | [model-selection-guide.md](model-selection-guide.md) | [agent-definition.md](agent-definition.md) § Change Model Settings |
 | Add/remove input or output fields | [agent-definition.md](agent-definition.md) § entry-points.json | |
 | Scaffold a new agent project | [project-lifecycle.md](project-lifecycle.md) § End-to-End Example | [agent-definition.md](agent-definition.md) |
 | Validate, upload, pack, publish, or deploy | [project-lifecycle.md](project-lifecycle.md) | |
+| Debug / run a low-code agent end-to-end | [debug.md](debug.md) | |
 | Discover solution resources (processes/apps/indexes/buckets/connections) | [project-lifecycle.md](project-lifecycle.md) § Resource Discovery | |
 | Add a tool — pick the right kind | [capabilities/process/process.md](capabilities/process/process.md) | applicable sibling |
 | Add a process tool (RPA / agent / API / agentic) — local or external | [capabilities/process/process.md](capabilities/process/process.md) | [capabilities/process/solution-files.md](capabilities/process/solution-files.md) |
@@ -77,13 +105,13 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add a memory space or seed memory items | [capabilities/memory/memory.md](capabilities/memory/memory.md) | |
 | Add an Action Center escalation (HITL) | [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md) | |
 | Add guardrails (PII, harmful content, custom rules) | [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) | |
-| Embed an agent inline in a flow | [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) | |
+| Embed an autonomous agent inline in a flow | [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) | |
 | Set up Orchestrator resources | Tell the user to use the `uipath-platform` skill | |
 | Wire agent into a flow | Tell the user to use the `uipath-maestro-flow` skill | |
 
 ## Anti-patterns
 
-See [critical-rules.md](critical-rules.md) § What NOT to Do for the canonical list. Most expensive to get wrong:
+See [critical-rules/critical-rules.md](critical-rules/critical-rules.md) § What NOT to Do for the canonical list. Most expensive to get wrong:
 
 - Editing `content` without updating `contentTokens` (causes silent rendering failures)
 - Skipping `uip solution resources refresh` after adding external tools (`bindings_v2.json` never reaches the solution)

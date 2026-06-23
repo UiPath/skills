@@ -68,7 +68,7 @@ To create a project, see [environment-setup.md](environment-setup.md); `--target
 
 `uip rpa` connects to one of two Studio flavors behind the same IPC contract:
 
-- **Headless Studio (Helm) — default.** Ships as a NuGet package and auto-launches on first use. **No Studio Desktop install needed.** First call on a cold NuGet cache may sit near-silent for 30–90 s while `dotnet restore` runs — raise `--timeout` to ≥ 180 for that call.
+- **Headless Studio (Helm) — default.** Ships as a NuGet package and auto-launches on first use. **No Studio Desktop install needed.** First call on a cold NuGet cache may sit near-silent for 30–90 s while `dotnet restore` runs — the default shell timeout covers this; raise `timeoutSeconds` only behind a slow feed.
 - **Studio Desktop.** The interactive UI. Used automatically only by verbs with **UI side effects** — those that open a window or highlight something in the designer (discover them via `--help`; they don't work headless). For such a verb, ensure Desktop is up first (`uip rpa studio start --project-dir "<PROJECT_DIR>"`), then run it. Force Desktop for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1` (not recommended for the standard authoring loop).
 
 `--studio-dir` is consulted **only when Studio Desktop is in use**; headless ignores it. When Desktop auto-detection fails, resolution falls back to `UIPATH_STUDIO_DIR`, then the default install path, then a dev build output. Errors like `"does not have interop support"` / `"Requires Studio 26.2+"` mean the detected Desktop is too old — tell the user to update it; this affects only the Desktop-only verbs.
@@ -146,7 +146,7 @@ Rules:
 
 `uip rpa analyzer-rules list` reports the Workflow Analyzer rules **enabled** for the project — the best-practice rules `validate` and `build` enforce. Reports rules, not violations. Each rule returns `severity` (`error`/`warning`/`info`), rule ID, scope, title, and (when available) `recommendation` and `docs` URL. Prefix convention: `ST-*` = built-in Studio rule, `MA-*` = package-shipped rule.
 
-> **Performance:** the unscoped call enumerates every rule across every package and can take a minute or more. If the default 60 s shell timeout fires, narrow with `--scope` (`Activity`, `Workflow`, `Project`, or `Coded Workflow`) — scoped calls return in seconds. See `--help` for accepted scope values.
+> **Performance:** the unscoped call enumerates every rule across every package and can take a minute or more. Narrow with `--scope` (`Activity`, `Workflow`, `Project`, or `Coded Workflow`) — scoped calls return in seconds. See `--help` for accepted scope values.
 
 ---
 
@@ -157,6 +157,34 @@ Rules:
 - **Omit the version** to resolve the latest compatible automatically (preferred). Pin only for a known compatibility constraint.
 - **Discover available versions** with `uip rpa packages versions --package-id <Id> --include-prerelease`. **Default to `--include-prerelease`** — activity packages frequently ship `-preview` between stable releases, carrying the freshest activity surface and `.local/docs`. When a newer stable or preview exists over the installed version, inform the user and offer the upgrade — never force.
 - **Package not found** → verify the exact ID (use `activities find` or the package's `.local/docs`). **Feed/network error** → check NuGet feed config in Studio settings.
+
+---
+
+## object-repository
+
+Read the project's UI **Object Repository** — the saved hierarchy of applications, screens, and elements (selectors/targets) that UI Automation activities bind to. Two read commands cover the project's own entries and those exposed by referenced libraries; both require an open project.
+
+- **Project Object Repository** — `uip rpa object-repository get` returns the project's *own* Object Repository as a JSON tree of applications → screens → elements. Entries inherited from referenced libraries are **excluded** (use the library command below for those). Takes no arguments beyond the standard `--project-dir`.
+
+  ```bash
+  uip rpa object-repository get --project-dir "<PROJECT_DIR>" --output json
+  ```
+
+- **Library Object Repository** — `uip rpa object-repository get-library` reads the Object Repository out of one or more library `.nupkg` files and returns the applications, screens, and elements grouped by library. Pass the absolute path(s) to the library packages; packages without an Object Repository are omitted from the result.
+
+  | Parameter | Required | Description |
+  |-----------|----------|-------------|
+  | `--library-paths` | yes | Absolute path(s) to the library `.nupkg` file(s) to read. Pass a single flag with the paths **comma-separated** (e.g. `"a.nupkg,b.nupkg"`) — it is not a repeatable flag. Avoid paths containing commas. |
+
+  ```bash
+  # multiple libraries: one --library-paths flag, comma-separated
+  uip rpa object-repository get-library \
+    --project-dir "<PROJECT_DIR>" \
+    --library-paths "C:\libs\Acme.UiLib.1.2.0.nupkg,C:\libs\Other.UiLib.2.0.0.nupkg" \
+    --output json
+  ```
+
+Read the project repository before authoring UI Automation activities to discover existing screens/elements to reuse instead of re-indicating them; read the library repository to discover targets a referenced UI library already exposes. Confirm the live verb names and flags with `uip rpa object-repository --help`.
 
 ---
 
@@ -194,7 +222,7 @@ Diagnose by error category, apply the recovery, retry **once** — do not loop t
 | Error pattern | Cause | Recovery |
 |---------------|-------|----------|
 | `connection refused`, `EPIPE`, `pipe not found` | Studio IPC unavailable. Headless: NuGet restore failed or process exited. Desktop: not running. | Re-run — headless relaunches automatically. If persistent, raise `--timeout` and check Helm restore output for NuGet errors. Run `uip rpa studio start` only for Desktop-only verbs or when `UIPATH_RPA_TOOL_USE_STUDIO=1`. |
-| `timeout`, `ETIMEDOUT` | Cold Helm NuGet restore (30–90 s) or long operation. | Raise timeout: `uip rpa --timeout 600 <command>`. For `validate`, also try `--skip-validation`. |
+| `timeout`, `ETIMEDOUT` | Cold Helm NuGet restore (30–90 s) or long operation. | Raise both limits together: shell `timeoutSeconds` toward its documented max, and `uip rpa --timeout <timeoutSeconds − 30> <command>` — the shell timeout must exceed `--timeout` by ≥ 30 s or the shell kills the CLI before it can cancel cleanly. For `validate`, also try `--skip-validation`. |
 | `not authenticated`, `401`, `403` | Auth required for cloud features. | `uip login`, then retry. |
 | `package not found`, `version not available` | Wrong package ID or version. | Verify via `uip rpa activities find`; omit `version` to auto-resolve latest. |
 | `project not found`, `no project open` | Wrong `--project-dir` or project not open. | Verify the path points at the `project.json` folder. |
@@ -210,7 +238,7 @@ Diagnose by error category, apply the recovery, retry **once** — do not loop t
 |--------|-----|
 | **Explore project files** | `Glob` `**/*.xaml` |
 | **Search XAML content** | `Grep` regex across `.xaml` |
-| **Explore Object Repository** | `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata |
+| **Explore Object Repository** | `uip rpa object-repository get` for the project's apps/screens/elements as JSON, `uip rpa object-repository get-library` for a referenced library's (see [object-repository](#object-repository)); or `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata for raw files |
 | **Get JIT type definitions** | `Read` `{PROJECT_DIR}/.project/JitCustomTypesSchema.json` |
 | **Activity docs** | See [Installed package activity documentation](#installed-package-activity-documentation) above |
 | **Inspect a NuGet package's API** | `uip rpa packages inspect` — see [coded/inspect-package-guide.md](coded/inspect-package-guide.md) |

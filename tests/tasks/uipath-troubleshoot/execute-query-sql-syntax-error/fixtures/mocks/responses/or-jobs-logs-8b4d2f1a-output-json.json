@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-05-21T09:14:02.940Z",
+      "Message": "CustomerLookup execution started"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-05-21T09:14:03.502Z",
+      "Message": "Execute Query: executing SQL against connection 'Server=sqlprod01;Database=Sales': SELECT * FROM Customers WHERE LastName = 'O'Brien'"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:03.601Z",
+      "Message": "Execute Query: A database error occurred.\r\nMicrosoft.Data.SqlClient.SqlException: Incorrect syntax near 'Brien'.\r\nUnclosed quotation mark after the character string ''."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-05-21T09:14:03.618Z",
+      "Message": "Execute Query: A database error occurred.\r\nin Main.xaml\r\n    at ExecuteQuery \"Execute Query\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

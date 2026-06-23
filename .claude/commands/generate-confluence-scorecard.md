@@ -51,10 +51,26 @@ d = json.load(open('<run-dir>/run.json'))
 tr = d.get('task_results') or []
 if not tr: raise SystemExit('run.json has no task_results — run incomplete or wrong file')
 
-# --- multi-variant guard: score exactly one variant ---
-variants = sorted({t.get('variant_id') for t in tr})
+# --- keep the FULL result set for cross-cutting TAG aggregation (used below + Phase 2/3) ---
+tr_all = tr                                # every task_result, ALL variants
+# --- multi-variant guard: score exactly one variant for the per-skill/dir tables ---
+variants = sorted({t.get('variant_id') for t in tr}, key=lambda v: (v is None, str(v)))  # None-safe sort
 TARGET = '<variant>' if '<variant>' in variants else ('default' if 'default' in variants else variants[0])
-if len(variants) > 1: print(f'NOTE multiple variants {variants}; scoring {TARGET!r}')
+if len(variants) > 1:
+    # A/B variants put one result per task PER variant, so task_ids OVERLAP across variants and
+    # scoring all of them double-counts. But if the variant task_id sets are DISJOINT (zero overlap)
+    # they are NOT A/B arms — excluding one then silently drops real, distinct runs. Detect & surface.
+    vof = defaultdict(set)
+    for t in tr_all: vof[t['task_id']].add(t.get('variant_id'))
+    overlap = sum(1 for vs in vof.values() if len(vs) > 1)
+    print(f'NOTE multiple variants {variants}; scoring {TARGET!r}. task_ids shared across variants: {overlap}.')
+    if overlap:
+        print('  → A/B arms (overlap) — single-variant scoring correctly avoids double-count.')
+    else:
+        print('  → DISJOINT variant sets (no overlap) — NOT A/B arms; excluded variant(s) are distinct tasks.')
+        for v in variants:
+            if v != TARGET:
+                print(f'     dropped variant {v!r}: {sum(1 for t in tr_all if t.get("variant_id")==v)} distinct tasks (surface in notes, do not silently drop)')
 tr = [t for t in tr if t.get('variant_id') == TARGET]
 
 DIAG = {'diagnose','troubleshoot'}        # both merge into the Troubleshoot column
@@ -122,6 +138,25 @@ print('=== PER SKILL ===')
 for s in sorted(agg): line(s, agg[s])
 print('\n=== uipath-platform SUB-DIRS (split eval/passfail across the 5 platform rows) ===')
 for s in sorted(psub): line(s, psub[s])
+
+# --- CROSS-CUTTING capability TAGS (e.g. context-grounding → ECS) — THE source for those rows ---
+# coverage.json entries with "cross_cutting": true carry a `tag`; their tasks are TAG-selected,
+# spread across host skills, and ALREADY counted under those host skills (so non-additive to totals).
+# Source each cross-cutting product row's pass/fail from THIS block — NEVER from a same-named
+# directory bucket (e.g. the psub bucket `uipath-platform/context-grounding` is a strict SUBSET and
+# is what wrongly produced ECS 3/3 instead of the full tag set). Count ALL variants: cross-cutting
+# tasks may live in disjoint variant sets, so feature-wide health spans the whole run — report the split.
+CROSS_CUTTING = [('context-grounding','ECS')]   # (tag, product row) — populate from coverage.json cross_cutting entries
+print('\n=== CROSS-CUTTING TAGS (tag-selected, ALL variants; non-additive — do NOT add to totals) ===')
+for tag_v, row in CROSS_CUTTING:
+    b = new(); vsplit = Counter()
+    for t in tr_all:
+        if any(str(x).lower() == tag_v for x in (t.get('tags') or [])):
+            add(b, t, t.get('weighted_score')); vsplit[t.get('variant_id')] += 1
+    line(f'[tag] {tag_v} → {row}', b)
+    print(f'    variant split {dict(vsplit)} — this row counts ALL variants (footnote ⁷); '
+          f'do not use the psub `{row}` directory bucket above')
+
 run_n = len(tr); succ = sum(1 for t in tr if t.get('status')=='SUCCESS')
 sc = [t['weighted_score'] for t in tr if t.get('weighted_score') is not None]
 print('\nTOTAL', run_n, 'run,', succ, 'passed,', (round(100*succ/run_n,1) if run_n else 0), '% success,',
@@ -132,7 +167,7 @@ if nonstd:   print('NON-SCORECARD mode values seen (surface, never drop/fold):',
 if unmapped: print('UNMAPPED task_ids (no tests/tasks/<skill>/ in path):', unmapped)
 ```
 
-Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode % for `build`/`operate`/`diagnose` (each with its `(n=…)` tagged-task count), the **per-tier split** (`SMOKE=` and combined `INT+E2E=` pass/total, plus any `untiered` remainder — feeds the org card's 2nd table, see Phase 4 §3b), plus any `NON-SCORECARD-MODES`. The script also prints the **`uipath-platform` sub-dir breakdown** (Phase 3 platform split — note `tiers()` works on `psub` buckets too, so each platform sub-product has its own Smoke/Int+E2E split), the **status-code counts** (ERROR vs FAILURE vs MAX_TURNS_EXHAUSTED — use for the failures note in Phase 4), the **overall mean weighted score**, and any `NON-SCORECARD` mode values / `UNMAPPED` task_ids. Headline numbers come from this script (`run_n`, `succ`, overall mean) — **recompute for the scored variant**, do not copy `d['tasks_run']`/`experiment.md` blindly (those count all variants).
+Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode % for `build`/`operate`/`diagnose` (each with its `(n=…)` tagged-task count), the **per-tier split** (`SMOKE=` and combined `INT+E2E=` pass/total, plus any `untiered` remainder — feeds the org card's 2nd table, see Phase 4 §3b), plus any `NON-SCORECARD-MODES`. The script also prints the **`uipath-platform` sub-dir breakdown** (Phase 3 platform split — note `tiers()` works on `psub` buckets too, so each platform sub-product has its own Smoke/Int+E2E split), the **CROSS-CUTTING TAGS** block (tag-selected, all-variant pass/fail + tiers for `cross_cutting` capability rows like ECS — this, NOT any directory bucket, is the source for those rows; see Phase 2/3), the **status-code counts** (ERROR vs FAILURE vs MAX_TURNS_EXHAUSTED — use for the failures note in Phase 4), the **overall mean weighted score**, and any `NON-SCORECARD` mode values / `UNMAPPED` task_ids. Headline numbers come from this script (`run_n`, `succ`, overall mean) — **recompute for the scored variant**, do not copy `d['tasks_run']`/`experiment.md` blindly (those count all variants).
 
 > **Untiered tasks.** `tier_of()` returns `none` for run tasks carrying no `smoke`/`integration`/`e2e` tag. They count in the product total but in neither tier column, so Smoke + Int+E2E will not always sum to the total — surface the `(+p/t untiered)` remainder rather than silently dropping it (it also flags tag-hygiene gaps in the source repo).
 
@@ -141,7 +176,7 @@ Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode
 2. **Status → pass.** `SUCCESS` = pass; `FAILURE`/`ERROR`/`MAX_TURNS_EXHAUSTED`/`TIMEOUT` = fail.
 3. **Skipped tasks.** `run.json.skipped_tasks` lists tasks the runner excluded (`skip: true` in the YAML). Pass/Fail denominators are *run* tasks, so authored-count may exceed run-count. Note skips in the per-skill table (e.g. HITL: "23 authored, 1 skipped → 19/22 run").
 4. **`mode:diagnose` ≡ `mode:troubleshoot`** (merged into the Troubleshoot column). **Every other mode value** — anything not in `{build, operate, diagnose, troubleshoot}` — has **no scorecard column**: `mode:inspect` (BPMN), `mode:edit-validate` (RPA legacy), and any future value. The script's `NON-SCORECARD-MODES` / `NON-SCORECARD mode values seen` output catches them all. Surface every such value in a note (per-skill in Source Data, plus a one-line global note) with its score and `(n=…)`; **never silently drop one or fold it into Troubleshoot.** Do not invent a column for it either — these tasks still count in the skill's overall mean and pass/fail, just not in a Build/Operate/Troubleshoot cell.
-5. **Multiple variants.** A/B experiments put one `task_result` per variant per task; scoring all of them double-counts. The script scores one variant (`--variant`, else `default`, else the only/first one) and prints which. If the user wants per-variant scorecards, run once per variant.
+5. **Multiple variants — and beware DISJOINT variant sets.** A/B experiments put one `task_result` per variant per task (task_ids OVERLAP), so scoring all of them double-counts; the script scores one variant (`--variant`, else `default`, else the only/first) and prints which. **But variants are not always A/B arms.** A run can carry two *disjoint* sets (zero shared task_ids) — e.g. an `activation`/second-phase set keyed `None` alongside the scored `default` set. There excluding the other variant silently drops real, distinct tasks (and can understate the headline). The script now computes task_id overlap and, when disjoint, prints the dropped per-variant counts — surface them in notes, do not pretend the run was only the scored variant. Cross-cutting tag rows (nuance below / Phase 2) deliberately count ALL variants for exactly this reason.
 6. **Skill in run not in product mapping.** Connector/aux skills (e.g. `uipath-troubleshoot`, `uipath-review`, `uipath-planner`, `uipath-tasks`, `uipath-feedback`, `uipath-salesforce-*`, `uipath-dev`) have run data but no product row. Include them in the **Source Data — Per Skill** table; do NOT force them into a product row. List any `UNMAPPED task_ids` to the user (malformed paths / tasks outside `tests/tasks/`).
 7. **Directory ≠ `skill:` tag.** The script keys on the `task_path` directory, not the `skill:` tag in the YAML (a connector task under `uipath-maestro-flow/` aggregates to flow even if its `skill:` tag differs). This matches how the product mapping is defined; don't switch to tag-based keying.
 
@@ -149,7 +184,9 @@ Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode
 
 **Prefer the structured sidecar.** If `tests/reports/coverage.json` exists (written by `/test-coverage all`), read it instead of scraping markdown — `skills.<name>.overall_pct` is the Test Coverage value, `planned` flags planned skills, and you also get `top_untested`, per-dimension counts, and contributions for free. This is the stable contract; fall back to parsing `SUMMARY.md` only when the JSON is absent (older runs). If both exist but disagree, trust `coverage.json` and note the staleness (regenerate with `/test-coverage all`).
 
-**Cross-cutting capability entries → a product row.** A coverage.json entry with `"cross_cutting": true` (e.g. `uipath-context-grounding`) is the Test-Coverage / Skill-Coverage source for the **standalone product row it maps to** — currently `uipath-context-grounding` → **ECS / Context Grounding** (see Phase 3 mapping). For that row use the entry's `overall_pct` as **Skill Coverage / Test Coverage** (instead of `—`), and its `mode_coverage` / `mode_floor` for the per-mode read. Its tasks are tag-selected and **also counted under the host skills** (`host_skills`), so the row's Tests Pass/Fail are **cross-cutting, non-additive** (footnote ⁷) — never add them into the run totals or the host-skill rows. If no cross-cutting entry exists yet (older coverage.json), the ECS row stays `—` and you re-select the `tag` from the run for its pass/fail (Phase 1).
+**Cross-cutting capability entries → a product row.** A coverage.json entry with `"cross_cutting": true` (e.g. `uipath-context-grounding`) is the Test-Coverage / Skill-Coverage source for the **standalone product row it maps to** — currently `uipath-context-grounding` → **ECS / Context Grounding** (see Phase 3 mapping). For that row use the entry's `overall_pct` as **Skill Coverage / Test Coverage** (instead of `—`), and its `mode_coverage` / `mode_floor` for the per-mode read. Its tasks are tag-selected and **also counted under the host skills** (`host_skills`), so the row's Tests Pass/Fail are **cross-cutting, non-additive** (footnote ⁷) — never add them into the run totals or the host-skill rows.
+
+> **Source the Tests Pass/Fail + Smoke/Int+E2E from the Phase 1 CROSS-CUTTING TAGS block — by `tag`, ALL variants.** Add each cross-cutting entry's `(tag, product-row)` to the script's `CROSS_CUTTING` list (the `tag` field of the coverage.json entry; default `context-grounding` → `ECS`). The block selects every task carrying that tag across host skills and across **both** variants, and prints pass/total + the Smoke / Int+E2E tiers. Use those numbers. **NEVER take a cross-cutting row's pass/fail from a same-named directory bucket** — e.g. the `psub` bucket `uipath-platform/context-grounding` is a strict SUBSET of the tag set (one host dir, default variant only) and taking it is exactly the bug that published **ECS 3/3** instead of the true **13/14**. The directory bucket is a trap: it resolves, looks plausible, and is wrong. Cross-cutting counts all variants because tag-matched tasks can live in disjoint variant sets (nuance 5); state the all-variant basis and the variant split in footnote ⁷ (it is the one row that may count a variant the rest of the card excludes). If no `cross_cutting` entry exists yet (older coverage.json), still run the tag selection from the Phase 1 block — do not fall back to a directory bucket.
 
 Read the coverage source (default `tests/reports/SUMMARY.md`). For each skill take the **Overall** % from the Overview table — this is the **Test Coverage vs Skills** value (coverage of taught capabilities by tests; **not** a pass-rate). Planned-but-missing skills are `0% (planned)`.
 
@@ -315,7 +352,9 @@ Exclude the generic `uip … --output json` sentinel pattern (unattributable). N
 | Skipped tasks (`skip: true`) | Denominator = run tasks; authored = run + skipped (this snapshot), not current dir count; note authored vs run | 1 |
 | Run task counts differ from current repo | Expected (run is a snapshot); note divergence, don't reconcile to dir counts | 1 |
 | `tests/reports/coverage.json` present | Prefer it over scraping `SUMMARY.md` (stable contract; gives top_untested + contributions too) | 2 |
-| `cross_cutting` coverage.json entry (e.g. `uipath-context-grounding`) | Maps to its standalone product row (ECS); Skill Coverage = its `overall_pct`; pass/fail non-additive (⁷, already in host skills). Older coverage.json without it → ECS stays `—`, re-select by `tag` | 2,3 |
+| `cross_cutting` coverage.json entry (e.g. `uipath-context-grounding`) | Maps to its standalone product row (ECS); Skill Coverage = its `overall_pct`; pass/fail from the Phase 1 CROSS-CUTTING TAGS block (by `tag`, ALL variants), non-additive (⁷, already in host skills). NEVER from a same-named directory/`psub` bucket — that subset wrongly yields 3/3 vs the true 13/14 | 1,2,3 |
+| Cross-cutting tag has a like-named directory (e.g. `uipath-platform/context-grounding`) | Trap: the directory bucket is a strict subset of the tag set. Use the tag block, not the bucket | 1,3 |
+| Variants present but task_id sets are DISJOINT (not A/B) | Excluded variant = distinct tasks, not duplicates. Script prints task_id overlap + dropped counts; surface them, don't silently drop | 1 |
 | `SUMMARY.md` has multiple `\| uipath- \|` tables | Only when no `coverage.json`: parse the `## Overview` table only (header has `Overall`); naive parse double-counts | 2 |
 | Coverage cell has `~` / `(planned)` decoration | Strip bold only; keep `~` and `(planned)` verbatim | 2 |
 | `tests/reports/` missing | Run `/test-coverage all` first (it creates the folder) | 2 |
@@ -347,7 +386,8 @@ Exclude the generic `uip … --output json` sentinel pattern (unattributable). N
 - **Don't split `uipath-platform` coverage** unless `tests/reports/uipath-platform.md` provides per-sub-dir values — but DO split its eval/pass-fail from the run's `psub` breakdown (that data is always present in `task_path`).
 - **Don't double-count coverage from `SUMMARY.md`'s second table.** Parse the `## Overview` table only.
 - **Don't mix snapshots silently.** If the coverage source and run dates diverge, surface it in the warning panel and to the user.
-- **Don't double-count variants.** Score exactly one variant; an A/B run has N task_results per task.
+- **Don't double-count variants** — but don't blindly drop one either. Score one variant only when variants are true A/B arms (overlapping task_ids). If the variant sets are disjoint (no shared task_ids), the other variant is distinct tasks; surface the dropped count, don't pretend the run was just the scored variant.
+- **Don't source a cross-cutting row's pass/fail from a same-named directory bucket.** ECS / Context Grounding (and any `cross_cutting` tag) is TAG-selected across host skills and all variants — use the Phase 1 CROSS-CUTTING TAGS block. The `uipath-platform/context-grounding` directory/`psub` bucket is a strict subset and produced a wrong 3/3 instead of 13/14. Same trap for any future cross-cutting capability that also happens to have a like-named folder.
 - **Don't create duplicate pages.** Same-title page exists → update it (default) or suffix the new one; never leave two identical-title pages.
 - **Don't force unmapped skills into a product row.** Aux/connector skills with no product row belong only in the Source Data table.
 - **Don't reproduce only the first product table.** The org card has two (Product Level Scorecard + Product Capability Enumeration); the second is where Skill Coverage / Skills Smoke / Skills Int+E2E live — omitting it drops the columns the platform team reads for the skills side.

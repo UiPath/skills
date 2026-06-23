@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "e4b7d5fa-6a81-4d9e-8fb0-4b5c6d7e8f90",
+      "State": "Faulted",
+      "ProcessName": "InvoicePostingTxn",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-30T06:20:00.418Z",
+      "EndTime": "2026-05-30T06:20:01.503Z",
+      "CreationTime": "2026-05-30T06:20:00.221Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

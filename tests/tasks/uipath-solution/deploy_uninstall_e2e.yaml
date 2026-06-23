@@ -1,0 +1,71 @@
+task_id: skill-solution-deploy-uninstall
+description: >
+  E2E (operate): agent publishes + deploys the committed e2e-stub solution,
+  confirms it is live, then UNINSTALLS it. Final state: the deployment's
+  provisioned Orchestrator folder and the resources inside it are removed.
+  (Uninstall de-provisions; the deployment RECORD persists in `deploy list`
+  — it is not deleted. Verified against the live CLI + activate-and-manage.md.)
+  Covers the `deploy uninstall` operate surface (cleanup lifecycle).
+
+  Requires a tenant — runs in CI (run-coder-eval.yml) or against a local
+  `uip login`, not the tempdir gate. cleanup.py is a backstop if the agent's
+  uninstall fails (names carry uuid8).
+tags: [uipath-solution, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+    timeout: 30
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+    timeout: 120
+
+run_limits:
+  expected_turns: 12
+  turn_timeout: 600
+
+initial_prompt: |
+  I deployed our `e2e-stub` solution by mistake and need it completely
+  removed from the tenant.
+
+  `seed.json` has a unique `uuid8` (use it in all names so they don't
+  collide) and `parent_folder_path`. The source .zip is at
+  `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`.
+
+  1. Publish it and deploy it under the name `e2e-deploy-<uuid8>`,
+     provisioning a folder named `e2e-deploy-folder-<uuid8>` under
+     `parent_folder_path` (activate it so it goes live).
+  2. Confirm it is deployed.
+  3. Then UNINSTALL the deployment `e2e-deploy-<uuid8>` — this tears down
+     its provisioned folder and the resources inside it.
+  4. Confirm the provisioned folder has been removed.
+
+  Do NOT ask for approval. Do NOT pause.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent deployed the solution (set-up step)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+run\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uninstalled the deployment via uip solution deploy uninstall"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+deploy\s+uninstall\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Tenant: the deployment's provisioned folder is removed (polls; uninstall is eventually-consistent and keeps the deploy-list record)"
+    command: "python3 $TASK_DIR/check_deploy_uninstall.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

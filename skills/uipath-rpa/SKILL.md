@@ -92,8 +92,6 @@ If target configuration is unavailable, fall back to the documented UIA indicati
 
 The full prohibited-tool list, the UIA-only exploration requirement, and the `InvokeJS`/`InjectJsScript` exception scope are in [ui-automation-guide.md](references/ui-automation-guide.md) § Mandatory: Generate Targets Before Writing Any UI Code — read it in full per Rule 7 before any UIA work.
 
-**Running a UIA workflow.** Use `uip rpa debug start` throughout development, not `run` — a debug session pauses on error and leaves the UI state inspectable. During capture, advance app state with the UIA interact CLI, never `run` (a finishing `run` can close the target app). Switch to `run --skip-build` only as the final, non-interactive smoke test once the workflow is stable and `build` has passed. The full procedure — window baseline → `debug start` → cancel → window diff → selector-failure recovery — is in [ui-automation-guide.md](references/ui-automation-guide.md) § Running UI Automation Workflows.
-
 ### Placeholder-Selector Stub Pattern (when live app access is unavailable)
 
 When generating a UI automation workflow **without** live app access (target capture cannot be run because the app is not installed, the agent has no UI, or the user explicitly deferred capture to a developer), emit **real UIA activities with placeholder selectors and `TODO Indicate` markers** — never `Log` stubs.
@@ -234,7 +232,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 17. **[XAML] MUST understand project structure** — read `project.json`, check expression language, scan existing patterns. NEVER generate XAML blind.
 18. **[XAML] Start minimal, iterate to correct** — build one activity at a time, validate after each addition.
 19. **[XAML] Fix errors by category** — Package → Structure → Type → Activity Properties → Logic.
-20. **[XAML] ViewState handling depends on the operation.** When editing existing files, do NOT modify ViewState on nodes you are not changing. When generating new Flowchart/StateMachine/ProcessDiagram workflows, generate ViewState for each node (see [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md)). For Sequences, ViewState is optional.
+20. **[XAML] Flowchart node structure + ViewState both decide whether a Flowchart renders.** **Structure first:** every `FlowStep`/`FlowDecision`/`FlowSwitch` MUST be a direct child of `<Flowchart>` (only direct children are added to the `Flowchart.Nodes` collection), wired through `Flowchart.StartNode`/`FlowStep.Next`/branches with `<x:Reference>`+`x:Name`. NEVER build the flow as a nested chain — one `FlowStep` physically nested inside the previous one's `<FlowStep.Next>` — because nested-only steps are absent from `Flowchart.Nodes` and the designer renders almost nothing, regardless of ViewState. **Then ViewState:** when generating new Flowchart/StateMachine/ProcessDiagram workflows, per-node ViewState is MANDATORY — `ShapeLocation`+`ShapeSize` on every node (`ConnectorLocation` optional, Studio auto-routes). Without it Studio stacks every node at (0,0) so they overlap into what looks like a single node, and Studio does NOT auto-arrange on open (see [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md)). When editing existing files, do NOT modify ViewState on nodes you are not changing. For Sequences, ViewState is optional.
 21. **[XAML] Reading `<Activity>.md` from `{PROJECT_DIR}/.local/docs/packages/...` is a precondition for `activities get-default-xaml` — for every activity not on the common-activity card.**
     - **Card-listed activities:** check [references/common-activity-card.md](references/common-activity-card.md) first; if the activity is on the card, author from the card entry alone — skip `activities find`, skip `activities get-default-xaml`, skip the per-activity MD read.
     - **All other activities:** (1) `activities find` → class name, (2) **read `<Activity>.md` first** and extract a property checklist (required + use-case-relevant), (3) `activities get-default-xaml` → starter element, (4) **diff your checklist against the starter and add what's missing** — an empty checklist means you skipped step 2, go back.
@@ -265,11 +263,15 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **Use execution templates** | XAML | [testing-guide.md § Execution Templates](references/testing-guide.md) |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Use a common activity** (`Sequence` / `If` / `Switch<T>` / `TryCatch` / `While` / `DoWhile` / `ForEach<T>` / `Assign` / `LogMessage` / `WriteLine` / `Delay` / `Throw` / `Rethrow`) | XAML | [common-activity-card.md](references/common-activity-card.md) |
-| **Create Flowchart/StateMachine** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
+| **Create/edit Flowchart** | XAML | [xaml/flowchart-guide.md](references/xaml/flowchart-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
+| **Create StateMachine** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Create/edit Long Running Workflow (ProcessDiagram)** | XAML | [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
 | **Write UI automation** | Both | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md](references/uia-configure-target-workflows.md) |
 | **Build multi-screen UIA XAML workflow** | XAML | [ui-automation-guide.md](references/ui-automation-guide.md) → [uia-configure-target-workflows.md § Multi-Step UI Flows](references/uia-configure-target-workflows.md) |
+| **Share Object Repository selectors across projects (UI Library)** | Both | [ui-automation-guide.md § Object Repository as a Published UI Library](references/ui-automation-guide.md) |
+| **Drive a captured control** (date inputs, native vs custom dropdowns, buttons disabled during async) | Both | [ui-automation-guide.md § Control-Specific Interaction Patterns](references/ui-automation-guide.md) → [uia-elements-interaction-guide.md](references/uia-elements-interaction-guide.md) |
 | **Use Excel/Word/Mail/etc.** | Both | Service table below → `.local/docs/packages/{PackageId}/` → fallback: `references/activity-docs/{PackageId}/{closest}/` |
+| **Manipulate data (DataTable/LINQ, strings, RegEx, DateTime, collections, JSON)** | Both | [data-manipulation-guide.md](references/data-manipulation-guide.md) |
 | **Use Data Fabric entities** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [activity-docs overview](references/activity-docs/UiPath.DataService.Activities/overview.md) |
 | **Query Data Fabric with filters** | XAML | [data-service-filter-builder-guide.md](references/activity-docs/UiPath.DataService.Activities/guides/data-service-filter-builder-guide.md) → [QueryEntityRecords](references/activity-docs/UiPath.DataService.Activities/activities/QueryEntityRecords.md) |
 | **Call an IS connector (coded)** | Coded | [coded/integration-service-guide.md](references/coded/integration-service-guide.md) |
@@ -283,6 +285,8 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **List project best-practice / analyzer rules** | Both | [cli-reference.md § analyzer-rules list](references/cli-reference.md) |
 | **Add a NuGet package** | Coded | [coded/operations-guide.md § Add Dependency](references/coded/operations-guide.md) → [coded/third-party-packages-guide.md](references/coded/third-party-packages-guide.md) |
 | **Find / reuse existing tenant libraries** | Both | [tenant-library-search-guide.md](references/tenant-library-search-guide.md) |
+| **Extract reusable logic into a library** | Both | [library-authoring-guide.md](references/library-authoring-guide.md) — public-workflow contract, argument naming, private helpers |
+| **Publish a library** | Both | [library-authoring-guide.md § Pack & Publish](references/library-authoring-guide.md) — tenant libraries feed, versioning |
 | **Invoke a PowerShell script from a workflow** | Both | [powershell-interop-guide.md](references/powershell-interop-guide.md) |
 | **List / install Data Fabric entities** | Both | [cli-reference.md § Data Fabric Entities](references/cli-reference.md) |
 | **Discover activity APIs** | Coded | [coded/inspect-package-guide.md](references/coded/inspect-package-guide.md) |
@@ -384,12 +388,15 @@ The XAML file anatomy template (namespace declarations, root Activity element, b
 
 - [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) — XAML anatomy, safety rules, editing operations (read before any XAML work)
 - [xaml/common-pitfalls.md](references/xaml/common-pitfalls.md) — Activity gotchas, scope requirements, property conflicts
+- [data-manipulation-guide.md](references/data-manipulation-guide.md) — DataTable LINQ (filter/sort/group/join/diff), strings, RegEx, DateTime, type conversion, collections, JSON; VB + C# forms
 - [reframework-guide.md](references/reframework-guide.md) — REFramework execution modes, SetTransactionStatus queue-guard fix, Config.xlsx leftover trap
 - [xaml/csharp-activity-binding-guide.md](references/xaml/csharp-activity-binding-guide.md) — Canonical C# binding forms per common activity property (LogMessage, GetText, StartProcess, …) — flat lookup table + recipes
 - [xaml/csharp-expression-pitfalls.md](references/xaml/csharp-expression-pitfalls.md) — C#-specific expression failures (attribute-form VB JIT, ThrowIfNotInTree, OutArgument parse errors)
+- [xaml/flowchart-guide.md](references/xaml/flowchart-guide.md) — Flowchart node vocabulary, structure & wiring, node registration, forbidden nested-chain pattern, condition expressions
 - [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) — Flowchart, State Machine, and Long Running Workflow canvas layout with ViewState
 - [xaml/long-running-workflow-guide.md](references/xaml/long-running-workflow-guide.md) — LRW package dependency, node vocabulary, gateway patterns, suspend/resume persistence
 - [xaml/jit-custom-types-schema.md](references/xaml/jit-custom-types-schema.md) — JIT custom type discovery
+- [library-authoring-guide.md](references/library-authoring-guide.md) — Produce reusable libraries: public-workflow contract, activity layout sidecar (display name, icon, widgets), error contract, SemVer, pack & publish to the libraries feed
 
 ### Multi-Screen UI Automation Workflows
 

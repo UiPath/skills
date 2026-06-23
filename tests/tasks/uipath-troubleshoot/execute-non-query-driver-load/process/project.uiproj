@@ -1,0 +1,6 @@
+{
+  "Name": "OracleLedgerSync",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Execute Non Query failure caused by a missing / wrong-bitness Oracle client native library on the Robot host (ErrorCode 126).",
+  "MainFile": "Main.xaml"
+}

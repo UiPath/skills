@@ -1,0 +1,139 @@
+{
+  "$resourceType": "tool",
+  "id": "95557466-99ca-4d30-b068-0f5152729710",
+  "type": "integration",
+  "location": "external",
+  "name": "Create Issue",
+  "description": "Create a Jira Task issue. Pass a nested 'fields' object containing: project.key (the Jira project key string), issuetype.id (always the string '3'), and summary (the issue title string).",
+  "isEnabled": true,
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "fields": {
+        "type": "object",
+        "title": "Fields",
+        "description": "Jira issue fields. Must contain: project.key, issuetype.id (always '3'), and summary.",
+        "properties": {
+          "project": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "The Jira project key"
+              }
+            },
+            "required": [
+              "key"
+            ]
+          },
+          "issuetype": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Issue type ID. Always use '3' for Task.",
+                "enum": [
+                  "3"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "description": "The title/summary of the Jira issue"
+          }
+        },
+        "required": [
+          "project",
+          "issuetype",
+          "summary"
+        ]
+      }
+    },
+    "required": [
+      "fields"
+    ]
+  },
+  "outputSchema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "id": {
+        "title": "Issue ID",
+        "type": "string",
+        "description": "The ID of the issue"
+      },
+      "key": {
+        "title": "Issue key",
+        "type": "string",
+        "description": "The key of the issue"
+      },
+      "fields.issuetype.name": {
+        "title": "Issue type",
+        "type": "string",
+        "description": "The type of the created issue"
+      }
+    }
+  },
+  "iconUrl": "https://alpha.uipath.com/elements_/scaleunit_/3854d037-4ab5-4881-909b-968c433f6d88/v3/element/elements/uipath-atlassian-jira/image",
+  "settings": {},
+  "isPreview": false,
+  "properties": {
+    "toolPath": "/curated_create_issue",
+    "objectName": "curated_create_issue",
+    "toolDisplayName": "Create Issue",
+    "toolDescription": "Create a Jira Task issue. Pass a nested 'fields' object containing: project.key (the Jira project key string), issuetype.id (always the string '3'), and summary (the issue title string).",
+    "method": "POST",
+    "bodyStructure": {
+      "contentType": "json"
+    },
+    "connection": {
+      "id": "3d8b2ad9-ec99-429c-a993-6c6f3f238d1c",
+      "name": "andrei.petraru@uipath.com-uipath",
+      "elementInstanceId": 0,
+      "apiBaseUri": "",
+      "state": "enabled",
+      "isDefault": false,
+      "connector": {
+        "key": "uipath-atlassian-jira",
+        "name": "Jira",
+        "image": "https://alpha.uipath.com/elements_/scaleunit_/3854d037-4ab5-4881-909b-968c433f6d88/v3/element/elements/uipath-atlassian-jira/image",
+        "enabled": true
+      },
+      "folder": {
+        "key": "11451fd1-a693-44b9-b38d-5bc1a891dff0",
+        "path": "11451fd1-a693-44b9-b38d-5bc1a891dff0"
+      },
+      "solutionProperties": {
+        "resourceKey": "3d8b2ad9-ec99-429c-a993-6c6f3f238d1c"
+      }
+    },
+    "parameters": [
+      {
+        "name": "fields",
+        "displayName": "Fields",
+        "type": "object",
+        "fieldLocation": "body",
+        "value": "{{prompt}}",
+        "description": "Jira issue fields (project.key, issuetype.id, summary)",
+        "position": "primary",
+        "sortOrder": 1,
+        "required": true,
+        "fieldVariant": "dynamic",
+        "isCascading": false,
+        "dynamic": true,
+        "enumValues": null,
+        "loadReferenceOptionsByDefault": null,
+        "dynamicBehavior": [],
+        "reference": null
+      }
+    ]
+  },
+  "guardrail": {
+    "policies": []
+  },
+  "argumentProperties": {}
+}

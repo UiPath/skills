@@ -12,8 +12,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   What license bundles does user `dan.dinu@uipath.com` currently hold? Tell me
   each bundle and whether it was assigned directly or inherited from a group.
   When you reply, refer to each bundle using its friendly name AND its code.
