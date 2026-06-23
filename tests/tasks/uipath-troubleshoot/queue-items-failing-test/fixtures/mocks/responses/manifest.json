@@ -12,40 +12,40 @@
       "file": "or-folders-list-output-json.json"
     },
     {
-      "match": "resource queues list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --name ItemsQueue --output json",
-      "file": "resource-queues-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b.json"
+      "match": "or queues list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --name ItemsQueue --output json",
+      "file": "or-queues-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b.json"
     },
     {
-      "match": "resource queues list --folder-key dea5d8d6-ca39-4dbf-b4a5-3516bad38866 --name ItemsQueue --output json",
-      "file": "resource-queues-list-folder-key-dea5d8d6-ca39-4dbf-b4a5-3516.json"
+      "match": "or queues list --folder-key dea5d8d6-ca39-4dbf-b4a5-3516bad38866 --name ItemsQueue --output json",
+      "file": "or-queues-list-folder-key-dea5d8d6-ca39-4dbf-b4a5-3516.json"
     },
     {
-      "match": "resource queues list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --output json",
-      "file": "resource-queues-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b-2.json"
+      "match": "or queues list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --output json",
+      "file": "or-queues-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b-2.json"
     },
     {
-      "match": "resource queues list --folder-key dea5d8d6-ca39-4dbf-b4a5-3516bad38866 --output json",
-      "file": "resource-queues-list-folder-key-dea5d8d6-ca39-4dbf-b4a5-3516-2.json"
+      "match": "or queues list --folder-key dea5d8d6-ca39-4dbf-b4a5-3516bad38866 --output json",
+      "file": "or-queues-list-folder-key-dea5d8d6-ca39-4dbf-b4a5-3516-2.json"
     },
     {
-      "match": "resource queue-items list --queue-definition-key 36e2cd45-f47f-4850-9a94-ac5f723faf3c --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --status Failed --output json",
-      "file": "resource-queue-items-list-queue-key-36e2cd45-f47f-4850-9a94-.json"
+      "match": "or queue-items list --queue-definition-key 36e2cd45-f47f-4850-9a94-ac5f723faf3c --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --status Failed --output json",
+      "file": "or-queue-items-list-queue-key-36e2cd45-f47f-4850-9a94-.json"
     },
     {
-      "match": "resource queue-items list --queue-name ItemsQueue --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --status Failed --output json",
-      "file": "resource-queue-items-list-queue-name-itemsqueue-folder-key-1.json"
+      "match": "or queue-items list --queue-name ItemsQueue --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --status Failed --output json",
+      "file": "or-queue-items-list-queue-name-itemsqueue-folder-key-1.json"
     },
     {
-      "match": "resource queue-items list --queue-name ItemsQueue --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --status Successful --limit 3 --output json",
-      "file": "resource-queue-items-list-queue-name-itemsqueue-folder-key-1-2.json"
+      "match": "or queue-items list --queue-name ItemsQueue --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --status Successful --limit 3 --output json",
+      "file": "or-queue-items-list-queue-name-itemsqueue-folder-key-1-2.json"
     },
     {
-      "match": "resource queue-items list --queue-name ItemsQueue --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --status Successful --output json",
-      "file": "resource-queue-items-list-queue-name-itemsqueue-folder-key-1-3.json"
+      "match": "or queue-items list --queue-name ItemsQueue --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --status Successful --output json",
+      "file": "or-queue-items-list-queue-name-itemsqueue-folder-key-1-3.json"
     },
     {
-      "match": "resource queue-items get 3b021051-08e0-4140-9448-ea073a4e7e66 --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --output json",
-      "file": "resource-queue-items-get-3b021051-08e0-4140-9448-ea073a4e7e6.json"
+      "match": "or queue-items get 3b021051-08e0-4140-9448-ea073a4e7e66 --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --output json",
+      "file": "or-queue-items-get-3b021051-08e0-4140-9448-ea073a4e7e6.json"
     },
     {
       "match": "or jobs get af31127b-1083-4304-930d-ad638022a248 --output json",

@@ -1,0 +1,14 @@
+{
+  "fileName": "evaluator-default-trajectory.json",
+  "id": "f39f2f4a-c7f2-4ff7-9373-19a302cfc577",
+  "name": "Default Trajectory Evaluator",
+  "description": "An evaluator that judges the agent based on it's run history and expected behavior",
+  "type": 7,
+  "category": 3,
+  "prompt": "As an expert evaluator, determine how well the agent did on a scale of 0-100. Focus on if the simulation was successful and if the agent behaved according to the expected output accounting for alternative valid expressions, and reasonable variations in language while maintaining high standards for accuracy and completeness. Provide your score with a justification, explaining briefly and concisely why you gave that score.\n----\nUserOrSyntheticInputGivenToAgent:\n{{UserOrSyntheticInput}}\n----\nSimulationInstructions:\n{{SimulationInstructions}}\n----\nExpectedAgentBehavior:\n{{ExpectedAgentBehavior}}\n----\nAgentRunHistory:\n{{AgentRunHistory}}\n",
+  "model": "same-as-agent",
+  "targetOutputKey": "*",
+  "targetSubOutputKey": "",
+  "createdAt": "2026-06-09T15:03:10.497Z",
+  "updatedAt": "2026-06-09T15:03:10.497Z"
+}

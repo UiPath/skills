@@ -42,7 +42,7 @@ import type {
 
 ```typescript
 import {
-  TaskType,          // Form = 'FormTask', External = 'ExternalTask', App = 'AppTask'
+  TaskType,          // Form, External, App, DocumentValidation, DocumentClassification, DataLabeling
   TaskPriority,      // Low, Medium, High, Critical
   TaskStatus,        // Unassigned, Pending, Completed
   TaskSlaStatus,     // OverdueLater, OverdueSoon, Overdue, CompletedInTime
@@ -51,6 +51,17 @@ import {
   TaskSourceName,    // Agent, Workflow, Maestro, Default
 } from '@uipath/uipath-typescript/tasks';
 ```
+
+`TaskType` string values:
+
+| Member | API string | Notes |
+|--------|------------|-------|
+| `TaskType.Form` | `'FormTask'` | Renders a UiPath form layout |
+| `TaskType.External` | `'ExternalTask'` | Externally managed task |
+| `TaskType.App` | `'AppTask'` | Powered by a UiPath App |
+| `TaskType.DocumentValidation` | `'DocumentValidationTask'` | DU validation — owned by the Validation Station widget. See [../widgets/validation-station.md](../widgets/validation-station.md) |
+| `TaskType.DocumentClassification` | `'DocumentClassificationTask'` | DU classification task |
+| `TaskType.DataLabeling` | `'DataLabelingTask'` | Training-data annotation task |
 
 ## Tasks Service
 
@@ -66,9 +77,18 @@ Returns `NonPaginatedResponse<TaskGetResponse>` or `PaginatedResponse<TaskGetRes
 
 ### getById(id: number, options?: TaskGetByIdOptions, folderId?: number)
 
-Returns `Promise<TaskGetResponse>` with attached methods. For form tasks, `folderId` is required.
+Returns `Promise<TaskGetResponse>` with attached methods.
 
-`TaskGetResponse` key fields: `id`, `title`, `status`, `type`, `priority`, `folderId`, `key`, `data`, `isDeleted`, `isCompleted`, `createdTime`, `assignedToUser`, `formLayout` (for form tasks), `taskAssignments`, `activities`, `tags`, `taskSource`, `parentOperationId`, `externalTag`.
+`TaskGetByIdOptions.taskType` is an optimization. Without it, the SDK issues a generic GET, inspects `type`, then issues a second type-specific GET. With it, the SDK skips the discovery call and goes straight to the type-specific endpoint — **`folderId` then becomes required** (throws `ValidationError` otherwise). Use for any non-`External` task when you already know the type:
+
+```typescript
+// Faster — single round-trip. Required pattern for Validation Station hydration.
+const dvTask = await tasks.getById(taskId, { taskType: TaskType.DocumentValidation }, folderId);
+```
+
+For `TaskType.Form`, the SDK auto-adds `expandOnFormLayout: true` so `formLayout` is populated.
+
+`TaskGetResponse` key fields: `id`, `title`, `status`, `type`, `priority`, `folderId`, `key`, `data`, `isDeleted`, `isCompleted`, `createdTime`, `assignedToUser`, `formLayout` (form tasks), `taskAssignments`, `activities`, `tags`, `taskSource`, `parentOperationId`, `externalTag`.
 
 **OData filtering:** `TaskGetAllOptions` supports `filter` (OData `$filter` string) and `orderby` for server-side filtering and sorting. Examples:
 - Pending tasks only: `filter: "Status ne 'Completed'"`
@@ -95,9 +115,10 @@ Returns `Promise<OperationResponse<{ taskId: number }[] | TaskAssignmentResponse
 
 Returns `Promise<OperationResponse<TaskCompletionOptions>>`. The `folderId` is required.
 
-`TaskCompletionOptions` is a discriminated union:
-- For `TaskType.External`: `{ type: TaskType.External, taskId: number, data?: any, action?: string }`
-- For other types: `{ type: TaskType.Form | TaskType.App, taskId: number, data: any, action: string }`
+`TaskCompletionOptions` is a discriminated union on `type`:
+- `External`, `DocumentValidation`, `DocumentClassification`, `DataLabeling`: `{ type, taskId, data?, action? }` — both `data` and `action` optional. Routes to the generic complete endpoint.
+- `Form`: `{ type: TaskType.Form, taskId, data, action }` — both required. Routes to the form-task endpoint.
+- `App`: `{ type: TaskType.App, taskId, data, action }` — both required. Routes to the app-task endpoint.
 
 ## Task-Attached Methods (TaskMethods)
 
@@ -173,10 +194,15 @@ The `type` field determines which other fields are required:
 | Task Type | `data` | `action` | Example |
 |-----------|--------|----------|---------|
 | `TaskType.External` | Optional | Optional | `{ type: TaskType.External, action: 'Approve' }` |
+| `TaskType.DocumentValidation` | Optional | Optional | `{ type: TaskType.DocumentValidation, action: 'Completed' }` |
+| `TaskType.DocumentClassification` | Optional | Optional | `{ type: TaskType.DocumentClassification, action: 'Completed' }` |
+| `TaskType.DataLabeling` | Optional | Optional | `{ type: TaskType.DataLabeling, action: 'Completed' }` |
 | `TaskType.Form` | **Required** | **Required** | `{ type: TaskType.Form, action: 'Submit', data: formData }` |
 | `TaskType.App` | **Required** | **Required** | `{ type: TaskType.App, action: 'Approve', data: {} }` |
 
 For Maestro HITL tasks (approve/reject flows), tasks are typically `TaskType.App` or `TaskType.External`. Pass `data: {}` (empty object) for App tasks when there's no form data to submit.
+
+For `TaskType.DocumentValidation`, the Validation Station widget owns the data contract — call `task.complete({ type: TaskType.DocumentValidation, action: 'Completed' })` from `onSaveComplete`. Do NOT pass `data` yourself; the widget already uploaded the validated payload to the bucket before firing the callback. See [../widgets/validation-station.md](../widgets/validation-station.md).
 
 ### Action strings
 

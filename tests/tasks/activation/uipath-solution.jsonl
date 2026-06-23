@@ -9,3 +9,16 @@
 {"id": "uipath-solution-009", "prompt": "Upgrade my solution to the latest published version in the Shared folder", "expected_skill": "uipath-solution"}
 {"id": "uipath-solution-010", "prompt": "List solution packages in the tenant feed and filter by name", "expected_skill": "uipath-solution"}
 {"id": "uipath-solution-011", "prompt": "Deploy my solution to production Orchestrator with a deployment pipeline and approval gates", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-012", "prompt": "Initialize a new solution project with uip solution init", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-013", "prompt": "Add my existing Flow project to the solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-014", "prompt": "Import a cloud queue into my solution as a resource", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-015", "prompt": "Add a credential asset resource to my solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-016", "prompt": "Refresh the connection resources in my solution after editing a workflow", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-017", "prompt": "Remove a project from my solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-018", "prompt": "Edit the value of an asset resource in my solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-019", "prompt": "Add a storage bucket resource to the solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-020", "prompt": "Import an existing Orchestrator asset into my solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-021", "prompt": "Inspect the contents of my .uipx package", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-022", "prompt": "Bump the version and repack my solution", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-023", "prompt": "Pack my solution with a dry run to validate the structure first", "expected_skill": "uipath-solution"}
+{"id": "uipath-solution-024", "prompt": "Bundle my RPA process and agent projects into one solution and deploy it", "expected_skill": "uipath-solution"}

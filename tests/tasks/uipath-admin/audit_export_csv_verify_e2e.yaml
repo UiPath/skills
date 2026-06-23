@@ -1,0 +1,96 @@
+task_id: skill-admin-audit-export-csv-verify-e2e
+description: >
+  End-to-end test (artifact verification tier): agent drives
+  `uip admin audit tenant export --file-format csv` to produce a real
+  single CSV, then verifies (a) the CSV exists, (b) it is a well-formed
+  CSV with a header row carrying the documented PascalCase columns, and
+  (c) every data row has the same column count as the header.
+
+  This is the CSV counterpart to `audit_export_verify_e2e.yaml` (which
+  validates the default json folder). The underlying long-term-store data
+  is the same; this task asserts the CSV-specific serialization is correct
+  (single merged file, shared header, aligned rows). The per-day file
+  structure is already covered by the json folder verify task and is not
+  duplicated here.
+
+  Whole-day granularity note: `uip admin audit ... export` issues one
+  HTTP call per UTC day inside [--from-date, --to-date]. For CSV those
+  per-day events are merged into one file, so the row count is the sum
+  across the window's days.
+
+  LTS lag note: the export reads from the long-term store, which lags
+  the live `events` endpoint. We pin the window to dates at least 48h in
+  the past so LTS has caught up.
+
+  Blocker: this task requires the base-directory + generated-name export
+  behavior in the published `@uipath/cli` (UiPath/cli#2585 must ship +
+  publish, on top of #2438 (--file-format) + #1372 (adds `uip admin
+  audit`)). Until then `--output-path` is the exact file path (no
+  generated `.csv` inside it) and the `audit_*.csv` glob finds nothing.
+tags: [uipath-admin, e2e, mode:operate, audit, export, real-artifact]
+
+initial_prompt: |
+  Export tenant audit events for the 3-day window from 5 days ago
+  through 2 days ago (UTC, whole days) into the ./audit-window base
+  directory in the current working directory, as a single merged CSV
+  (not the default per-day JSON folder). Resolve the dates with
+  `date -u -d '5 days ago' +%Y-%m-%d` and
+  `date -u -d '2 days ago' +%Y-%m-%d` so the window slides with the
+  run date.
+
+  Important:
+  - The `uip` CLI is available and connected via env-var auth to a real
+    tenant. The export should produce a real CSV file at the requested
+    path.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked tenant export with bounded window, --output-path, and --file-format csv"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+tenant\s+export\b(?=.*--from-date\s+\S+)(?=.*--to-date\s+\S+)(?=.*--output-path\s+\S+)(?=.*--file-format\s+csv\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Export created exactly one uniquely-named .csv (audit_<from>_<to>_<generatedAt>.csv) under the ./audit-window base directory"
+    command: |
+      python3 -c "
+      import glob, os
+      hits = [p for p in glob.glob('./audit-window/audit_*.csv') if os.path.isfile(p)]
+      assert len(hits) == 1, f'expected one generated .csv under ./audit-window, found {hits}'
+      print(f'OK: generated CSV {hits[0]} ({os.path.getsize(hits[0])} bytes)')
+      "
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Export is a well-formed CSV: header carries the documented PascalCase columns and every data row matches the header width (a header-only file is acceptable for a quiet tenant)"
+    command: |
+      python3 -c "
+      import csv, glob, os, sys
+      REQUIRED = ['Id','CreatedOn','OrganizationId','ActorId','EventType','EventSource','EventTarget']
+      hits = [p for p in glob.glob('./audit-window/audit_*.csv') if os.path.isfile(p)]
+      assert hits, 'no generated .csv under ./audit-window'
+      with open(hits[0], newline='', encoding='utf-8-sig') as f:
+          rows = list(csv.reader(f))
+      assert rows, 'CSV is empty — no header row'
+      header = rows[0]
+      missing = [c for c in REQUIRED if c not in header]
+      assert not missing, f'header missing required columns: {missing}; header={header}'
+      for i, r in enumerate(rows[1:], 1):
+          assert len(r) == len(header), f'row {i} has {len(r)} cols, header has {len(header)}'
+      print(f'OK: header has {len(header)} columns, {len(rows) - 1} data rows')
+      "
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 10
+  max_turns: 40
+  turn_timeout: 600

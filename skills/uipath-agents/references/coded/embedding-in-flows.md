@@ -98,38 +98,6 @@ Without `--local`, `registry list`/`get` query the tenant registry (Orchestrator
 
 ## Wiring the Agent's Inputs
 
-The agent node carries one entry under `inputs.<fieldName>` for every property declared in the agent's `entry-points.json` input schema (the Pydantic `Input` model). `uip maestro flow node add` seeds each entry with an empty string; you replace that placeholder with one of two forms.
+For inputs that reference flow variables, use `{ "type": "literal", "expression": "{{ $vars.X }}", "fieldType": "string" }` — NOT `=js:...` expressions. `=js:` ships as a literal string to the agent activity and fails at runtime with `Cannot find name '<identifier>'`.
 
-> **Do NOT use `=js:` for these fields.** Agent input slots are bound by the agent activity, not evaluated by Jint. Wrapping the value in `=js:` ships the literal string `=js:...` to the agent and the runtime fails with `Cannot find name '<identifier>'`. The same rule applies to inputs on most action nodes — `=js:` is reserved for the few fields explicitly documented to take expressions (decision `expression`, variable updates, end-node output `source`, IS connector `bodyParameters` — see [variables-and-expressions.md](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md)).
-
-### Allowed forms
-
-| Form | Example | Use when |
-|---|---|---|
-| Literal value | `"file_path": "shared/inputs/report.txt"` | The value is known at design time and never varies. |
-| `$vars.<flowVarId>` reference | `"file_path": "$vars.file_path"` | The value comes from a flow-level `globals[]` input (`direction: "in"` or `"inout"`). |
-| `$vars.<nodeId>.output.<field>` reference | `"file_path": "$vars.uploadDoc.output.path"` | The value comes from an upstream node's output. |
-
-The `$vars.…` strings are pattern-matched by the agent activity at runtime and resolved against the flow's variable scope. They are NOT JavaScript expressions — only the bare reference form works (no arithmetic, no method calls, no template literals).
-
-### Wiring the agent's output back out
-
-This direction *does* use `=js:` — output mappings and variable updates go through Jint. On an End node, map each `direction: "out"` global from the agent's output:
-
-```json
-"outputs": {
-  "summary": { "source": "=js:$vars.<agentNodeId>.output.summary" }
-}
-```
-
-Or, with a `variableUpdate` against an `inout` global:
-
-```json
-"variableUpdates": {
-  "<agentNodeId>": [
-    { "variableId": "summary", "expression": "=js:$vars.<agentNodeId>.output.summary" }
-  ]
-}
-```
-
-See [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates) for the full rules around `=js:` contexts.
+Input-only rule. Mapping the agent's output back to a flow-level global on an End node DOES use `=js:` — see [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates).

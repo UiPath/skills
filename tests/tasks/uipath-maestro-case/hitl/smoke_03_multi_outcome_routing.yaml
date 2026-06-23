@@ -197,8 +197,8 @@ success_criteria:
     description: "Both branch expressions present on Review's exits"
     path: "LeaveRequestCase/LeaveRequestCase/caseplan.json"
     includes:
-      - "approved == true"
-      - "approved == false"
+      - "vars.approved === true"
+      - "vars.approved === false"
     weight: 2.0
     pass_threshold: 1.0
 

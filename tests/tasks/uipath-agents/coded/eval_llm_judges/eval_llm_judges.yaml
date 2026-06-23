@@ -1,13 +1,11 @@
 task_id: skill-agent-coded-eval-llm-judges
 description: >
-  Coded-agent eval lifecycle, LLM-judge path. Verifies the agent
-  authors two LLM-judge evaluator configs in one eval set —
-  `LLMJudgeOutputEvaluator`
-  (`uipath-llm-judge-output-semantic-similarity`) and
-  `LLMJudgeTrajectoryEvaluator`
-  (`uipath-llm-judge-trajectory-similarity`) — and runs them against
-  a LangGraph classifier with `--no-report` and `--mocker-cache` so
-  the judges are reproducible.
+  Adds an LLM-judge evaluation harness to an already-built LangGraph
+  coded agent. The `intent-classifier` project is seeded on disk, so
+  this exercises only the eval-authoring path: the agent must create
+  two LLM-judge evaluators in a single eval set (one that scores the
+  output, one that scores the trajectory) and run them locally with
+  reproducible LLM responses.
 tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
 
 run_limits:
@@ -16,19 +14,20 @@ run_limits:
   turn_timeout: 1200
   max_turns: 40
 
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_llm_judges/_fixtures/intent-classifier ."
+    timeout: 10
+
 initial_prompt: |
-  Build a LangGraph UiPath coded agent named `intent-classifier` that
-  classifies a free-text user request into one of: `weather`, `news`,
-  `joke`. Input: `text` (str). Output: `category` (str), `text` (str).
-  Use `gpt-4o-mini-2024-07-18` with `temperature=0`.
+  I want to test that this UiPath coded agent works as it should.
+  Write a couple evaluations backed by LLMs if possible: 
+  one that checks the answer the agent gives back and one that checks
+  the path it took to get there.
+  Save the eval results to `eval-results.json`.
+  
 
-  Add an evaluation harness with two LLM judges in one eval set: one
-  that scores the agent's output and one that scores its decision
-  trajectory. Use three test cases. Run locally with reproducible LLM
-  responses and save the results to `eval-results.json`.
-
-  Do NOT publish, upload, or deploy. Do NOT pause between planning
-  and implementation. Complete end-to-end in a single pass.
+  Don't publish, upload, or deploy. Just work through it to the end in
+  one go — only stop if you hit a real blocker.
 
 success_criteria:
   - type: command_executed

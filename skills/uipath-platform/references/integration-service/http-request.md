@@ -8,7 +8,7 @@ Consumers: Maestro Flow, Maestro BPMN, API Workflows, Case Management, etc. Each
 
 ## What is Managed HTTP Request?
 
-A built-in way to make an HTTP call from a UiPath automation when there's no curated activity for it. Runs in two modes - **connector mode** and **manual mode**:
+A built-in way to make an HTTP call from a UiPath automation. Runs in two modes - **connector mode** and **manual mode**:
 
 | Mode | When | `url` | Auth |
 |---|---|---|---|
@@ -17,9 +17,11 @@ A built-in way to make an HTTP call from a UiPath automation when there's no cur
 
 ## Connector-Mode Rules
 
+- **Connector mode only works if the connector supports HTTP request activity** — verify by running `uip is connectors get "<connector-key>"` and checking the `HasHttpRequest` flag.
 - `url` must be **relative**. Wrong: `"url": "https://example.atlassian.net/rest/api/2/issue"`. Right: `"url": "/issue"`.
 - The connection's base URL is prepended automatically.
 - The auth header is applied automatically - do not set `Authorization`.
+- **`application/json` only - request and response.** No other content type is supported. File upload/download operations are the most common violation (`multipart/form-data`, `application/octet-stream`, binary/stream responses) - check the operation's request and response content types before authoring. If non-JSON, connector mode cannot call it - use a curated connector activity; if none exists, surface to the user.
 - Get the exact vendor base URL for a connection via (so you can compose the relative `url` correctly):
 
 ```bash
@@ -58,7 +60,7 @@ uip is resources run create "<connector-key>" http-request \
 | `method` | Yes | Uppercase HTTP verb |
 | `url` | Yes | **Relative** to the connection's vendor base URL (same convention as Managed HTTP Request connector mode) |
 | `headers` | No | Extra headers. Do NOT set `Authorization`. |
-| `body` | For POST/PUT/PATCH | **Stringified** JSON. Only `application/json` is supported today - non-JSON content types (form-urlencoded, XML, multipart, plain text) are not. |
+| `body` | For POST/PUT/PATCH | **Stringified** JSON. Only `application/json` is supported today — no other content type. |
 
 `http-request` command uses the same connection that Managed HTTP Request will use at runtime, so auth + base URL are applied automatically - same convention as Managed HTTP Request itself.
 
@@ -114,3 +116,4 @@ All steps 1-2 are GETs because we are in the authoring phase. The POST to `/issu
 2. **Do NOT use an absolute URL in connector-mode `url`.** Wrong: `"url": "https://example.atlassian.net/rest/api/2/project"`. Right: `"url": "/project"`.
 3. **Do NOT issue writes via CLI during authoring.** See "Read-Only During Authoring" above.
 4. **Do NOT guess the base URL.** Use `uip is connections base-url <connection-id>`.
+5. **In connector mode, request and response bodies are `application/json` only.** No other content type is supported; do NOT set `Content-Type` to anything else. Same rule applies to the `http-request` helper command body (it runs through a connection). Manual mode has no such limit — you supply your own `Content-Type` and body.

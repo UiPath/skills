@@ -148,7 +148,9 @@ Some reference fields point to **search endpoints** that require user input as a
 
 ### How to detect
 
-If `reference.filterPattern` exists, the reference is a **search endpoint** — a plain `list` call without the filter will return no results or an error.
+If `reference.filterPattern` exists, the reference supports server-side filtering. Omitting the filter does NOT reliably error — some connectors (Microsoft Graph-backed: Teams, Outlook) return the **entire unfiltered collection** instead (thousands of rows, 50/page). Arbitrary query params (`searchTerm=`, `where=`, `filter=`) are silently ignored — only the exact `filterPattern` key filters. Always apply it; never brute-force paginate a large directory when a `filterPattern` exists.
+
+`filterPattern` is surfaced only by `uip is resources describe` (IS-level metadata). Representations that strip it (e.g. Maestro flow `registry get` reference object, which keeps only `objectName`/`lookupValue`/`lookupNames`/`path`/`childPath`) are not authoritative — re-describe at IS level before concluding a reference cannot be filtered.
 
 ### Resolution workflow (search)
 
@@ -177,6 +179,22 @@ User says: "Create a ticket for product Widget Pro"
    ```
    → `{ "productCode": "WP-100", "id": "1892000000056007" }`
 3. **Use** the `lookupValue` (`id`) → `"1892000000056007"` in `--body`
+
+### Example: Resolving a Microsoft Teams user (OData `$filter`)
+
+`filterPattern` may be a full OData `$filter` expression, not just `key={filter}`. Same mechanic: substitute `{filter}`, pass the whole string as `--query`.
+
+1. **Describe** the activity's object (e.g. `bot_direct_messages`) → `userId` reference has `filterPattern: "$filter=startswith(userPrincipalName,'{filter}')"`
+2. **Substitute and pass as `--query`.** Single-quote the value so the shell does not expand the literal `$`:
+   ```bash
+   uip is resources run list "uipath-microsoft-teams" "users" \
+     --connection-id "<id>" \
+     --query '$filter=startswith(userPrincipalName,'"'"'jane.doe'"'"')' --output json
+   ```
+   → one row: `{ "id": "7a621d6b-…", "userPrincipalName": "jane.doe@example.com" }`
+3. **Use** `lookupValue` (`id`) as the resolved value.
+
+Without the `$filter` this `/users` listing returns the full tenant directory (50/page, thousands of rows). A dedicated by-key endpoint (e.g. Teams `user-by-email/{email}`) is a fallback only when no `filterPattern` exists.
 
 > **If the user doesn't provide a search term**, ask them. Search references cannot be resolved without user input — do NOT call the search endpoint with an empty filter.
 

@@ -4,7 +4,7 @@ description: >
   Decision node condition using the exact runtime path
   $vars.<nodeId>.output.<fieldName>. Tests field-level variable access
   and that both Decision branches are wired to distinct downstream nodes.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
   expected_turns: 33
@@ -24,8 +24,8 @@ initial_prompt: |
 
   Wire: Trigger → Script → HITL →|completed| Decision → (two branches) → End
 
-  The Decision node condition MUST use the exact field-level runtime variable
-  path — not just $vars.<nodeId>.output but specifically the approved field.
+  The Decision node condition MUST use $vars.<nodeId>.output.approved —
+  the exact field-level runtime path where <nodeId> is the HITL node's id.
 
   Validate the flow after building.
 

@@ -22,6 +22,15 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 - Entity type names or their allowed values
 - Import paths
 
+When available, the `langchain/guardrails/` page documents three actions — **`LogAction`**, **`BlockAction`**, and
+**`EscalateAction`** (human-in-the-loop). Treat the fetched page as the source of truth for `EscalateAction`'s
+parameters, supported scopes, and stages; the operational wiring it doesn't cover (the suspend->resume UX, the
+Action-App prerequisite, `bindings.json`, recipient routing) is in [Escalation action (HITL)](#escalation-action-human-in-the-loop) below.
+
+If the fetched SDK docs do **not** expose `EscalateAction` or its constructor parameters, stop and report that the
+installed/published SDK documentation does not currently support HITL guardrail escalation. Do not generate
+`EscalateAction` code from memory or from this operational section alone.
+
 ---
 
 ## Check Tenant Availability (mandatory for built-in AI validators)
@@ -87,13 +96,16 @@ Before writing the import line, identify the framework by reading the agent code
 ```python
 from uipath_langchain.guardrails import (
     guardrail,
-    BlockAction, LogAction,
+    BlockAction, LogAction, EscalateAction,
     PIIValidator, PIIDetectionEntity, PIIDetectionEntityType,
     HarmfulContentValidator, HarmfulContentEntity, HarmfulContentEntityType,
     UserPromptAttacksValidator,
     GuardrailExecutionStage,
     # ...only the names you actually use
 )
+from uipath.core.guardrails import GuardrailScope
+# Only when routing an EscalateAction task to a specific reviewer:
+from uipath.platform.action_center.tasks import TaskRecipient, TaskRecipientType
 ```
 
 ❌ `from uipath.platform.guardrails import guardrail, PIIValidator, ...` in a LangChain agent — type-checks but the LangChain adapter never registers; guardrails silently no-op.
@@ -203,6 +215,84 @@ If `create_agent()` is called directly at module level (not in a function), wrap
 
 ---
 
+## Escalation action (human-in-the-loop)
+
+`EscalateAction` is a third action (beside `LogAction` / `BlockAction`) that turns a violation into a **human
+review step**: it suspends the run via `interrupt(CreateEscalation(...))`, creates a review task in a UiPath
+**Action App**, and resumes when a human **Approves** (optionally editing the flagged content — the reviewer's
+`ReviewedInputs` at PRE / `ReviewedOutputs` at POST is substituted back) or **Rejects** (raises → terminates,
+like `BlockAction`). Get the exact parameters / supported scopes / stages from the fetched
+`langchain/guardrails/` page; this section is the operational wiring that page doesn't cover.
+
+**The same `EscalateAction` works in both styles** — pass it as the `action`:
+
+```python
+# Middleware
+*UiPathPIIDetectionMiddleware(
+    name="PII escalation",
+    scopes=[GuardrailScope.AGENT],
+    stage=GuardrailExecutionStage.PRE,
+    action=EscalateAction(
+        app_name="Guardrail.Escalation.Action.App",
+        app_folder_path="Shared",
+        # optional — route the task; default assignment otherwise
+        recipient=TaskRecipient(type=TaskRecipientType.EMAIL, value="reviewer@example.com"),
+    ),
+    entities=[PIIDetectionEntity(PIIDetectionEntityType.EMAIL, 0.5)],
+),
+
+# Decorator — identical action, on a @tool / LLM factory / agent factory
+@guardrail(
+    validator=PIIValidator(entities=[PIIDetectionEntity(PIIDetectionEntityType.EMAIL, 0.5)]),
+    action=EscalateAction(app_name="Guardrail.Escalation.Action.App", app_folder_path="Shared"),
+    name="PII escalation",
+    stage=GuardrailExecutionStage.PRE,
+)
+def create_my_agent(): ...
+```
+
+`EscalateAction` is **action-only** — it works with any validator, including deterministic
+`CustomValidator(...)` rules (no AI-validator / tenant dependency for the validator itself).
+
+### Prerequisite — the Action App must exist and be declared in `bindings.json`
+
+Unlike Block/Log, escalation needs a **deployed Action App** in the tenant, referenced by `app_name` +
+`app_folder_path`. This is the **correct design** (not env vars):
+
+1. Discover the deployed app: `uip solution resources list --kind App --search "<app-name>" --output json`
+   (filter `"Type": "Workflow Action"`); note its `Name` and `Folder`. If it isn't deployed, tell the user — the
+   escalation fails at runtime otherwise. If multiple deployed Workflow Action apps share the same `Name` in
+   different folders, ask which folder to use.
+2. Pass those literal values to `EscalateAction(app_name=..., app_folder_path=...)`.
+3. Verify the app exposes the guardrail escalation action-schema contract before claiming it is runtime-ready:
+   inputs `GuardrailName`, `GuardrailDescription`, `TenantName`, `AgentTrace`, `Tool`, `ExecutionStage`,
+   `ToolInputs`, `ToolOutputs`; outputs `ReviewedInputs`, `ReviewedOutputs`, `Reason`; outcomes `Approve`,
+   `Reject`. If tenant/API access is unavailable in a local smoke task, author the structural code only when the
+   user supplied the exact app name/folder, and report that the deployed app schema was not verified.
+4. Sync the project's **`bindings.json`** with the code using
+   [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md). Coded-agent bindings are derived
+   from resource-bearing code and must not be hand-authored ad hoc. The result must include a `resource: "app"`
+   entry so Studio/deploy can resolve and override the Action App (locally the literals are used). Canonical
+   examples: `samples/joke-agent/` (middleware) and `samples/joke-agent-decorator/` (decorator) in the
+   uipath-langchain repo — each ships a `bindings.json` with the escalation app and the literal
+   `app_name`/`app_folder_path` in code.
+
+### Escalation Action UX
+
+`EscalateAction` does **not** raise on violation (unlike `BlockAction`) — it **suspends** the run. Under local
+`uip codedagent run` a violation prints a `CreateEscalation` interrupt and the run pauses (no traceback); resume after
+acting on the task in Action Center:
+
+```bash
+uip codedagent run <ENTRYPOINT> --resume
+```
+
+On resume: **Approve** continues (with the reviewer's optional edit applied); **Reject** raises
+`AgentRuntimeError` and terminates the run. This is expected — distinct from `BlockAction` (immediate raise) and
+`LogAction` (logs, no control-flow change).
+
+---
+
 ## Verify Guardrails Are Actually Wired (mandatory after writing)
 
 **Syntactically valid ≠ active.** Because importing from the wrong module bypasses the framework adapter and makes guardrails silently no-op (see [Imports Pattern](#imports-pattern)), `ast.parse` passing tells you nothing about whether a single guardrail will ever fire. After writing, prove the wiring at runtime.
@@ -224,6 +314,8 @@ If either check fails, the most likely cause is importing guardrail symbols from
 For non-LangChain frameworks, there is no published adapter yet, so the decorator/middleware mechanism does not produce a `_Guarded*` wrap. Verify by invoking the validator directly on a known-violating input and confirming it raises / logs.
 
 > A smoke run that deliberately triggers a violation (e.g. feed a PII-bearing input and confirm it blocks) is the strongest verification when the environment is authenticated against the tenant.
+>
+> **For an `EscalateAction` guardrail the outcome differs:** a violating input **suspends** the run with a `CreateEscalation` interrupt — it does not block. Verify by confirming the run suspends and a review task is created, then that `uip codedagent run <ENTRYPOINT> --resume` continues after Approve / terminates after Reject. Don't expect a block/traceback.
 
 ---
 
@@ -248,3 +340,7 @@ For non-LangChain frameworks, there is no published adapter yet, so the decorato
 11. **Deterministic guardrails run locally** — no backend API call, no tenant availability check needed.
 12. **Do not duplicate existing guardrails** — read the agent code first and skip if the same guardrail is already configured.
 13. **Do not delegate the import-source decision (or guardrail authoring) to a subagent.** A dispatched subagent does not carry this skill's context and will report the module where the symbols physically live (`uipath.platform.guardrails`) — the no-op path for LangChain agents (Rule 8). It looks authoritative and silently overrides the correct `uipath_langchain.guardrails` choice. Fetch the docs and write the imports inline, where this skill's import rule still applies.
+14. **`EscalateAction` must come from the fetched SDK docs** — if the docs do not expose the class or constructor parameters, stop and report that HITL guardrail escalation is not available in the current SDK docs/runtime. Never invent the class, import path, or arguments.
+15. **`EscalateAction` requires a deployed Action App** referenced by `app_name` + `app_folder_path` and declared as an `app` resource in **`bindings.json`** — discover it with `uip solution resources list --kind App`, resolve duplicate names by folder, pass the literal name/folder in code (not env vars), and sync bindings with [../../lifecycle/bindings-reference.md](../../lifecycle/bindings-reference.md). Route the task with `TaskRecipient` when the user names a reviewer. See [Escalation action (HITL)](#escalation-action-human-in-the-loop).
+16. **Verify the escalation app schema when tenant access is available** — the app must expose the guardrail review inputs/outputs/outcomes listed in the prerequisite section. If the schema cannot be verified in a local smoke task, say that runtime readiness is unverified.
+17. **A HITL guardrail suspends, it doesn't block.** On violation `EscalateAction` suspends via `interrupt(CreateEscalation(...))`; it terminates **only on Reject** (Approve resumes). Verify by confirming the run suspends + a task is created — never expect a "block" for an escalation guardrail (Rule for the [verification step](#verify-guardrails-are-actually-wired-mandatory-after-writing)).

@@ -12,7 +12,7 @@ deployed "FibonacciRPA" process in the "Shared/uipath-agents" folder:
        - properties.processName == "FibonacciRPA"
        - properties.folderPath == "Shared/uipath-agents"
        - referenceKey is a UUID-shaped non-empty string (the agent
-         must populate it from `uip solution resource list`'s `Key`).
+         must populate it from `uip solution resources list`'s `Key`).
   2. id is a UUID-shaped non-empty string.
   3. isEnabled is truthy.
   4. inputSchema and outputSchema are objects (shape only —
@@ -88,7 +88,7 @@ def assert_identity_and_schemas(resource: dict) -> None:
     if not isinstance(rkey, str) or "-" not in rkey:
         sys.exit(
             f"FAIL: resource.referenceKey must be a UUID-shaped string copied "
-            f"from `uip solution resource list`'s `Key`, got {rkey!r}"
+            f"from `uip solution resources list`'s `Key`, got {rkey!r}"
         )
     if not resource.get("isEnabled"):
         sys.exit(f"FAIL: resource.isEnabled must be truthy, got {resource.get('isEnabled')!r}")

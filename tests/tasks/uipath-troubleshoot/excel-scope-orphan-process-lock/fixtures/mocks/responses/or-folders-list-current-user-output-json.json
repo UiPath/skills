@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f00fffff-3333-4444-5555-666677778888",
+      "DisplayName": "OrderImports",
+      "FullyQualifiedName": "OrderImports",
+      "Description": "Folder for the inbound order-import automations.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6110055,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

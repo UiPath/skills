@@ -35,9 +35,9 @@ Available: always — no `uip login` or registry pull required.
 
 | Input port | Output port |
 | --- | --- |
-| `input` | `completed` |
+| `input` | `outcome-completed` |
 
-**The output port must be wired.** A node with no edge on `completed` blocks the flow indefinitely.
+**The output port must be wired.** A node with no edge on `outcome-completed` blocks the flow indefinitely.
 
 ### Output Variables
 
@@ -72,14 +72,14 @@ Full JSON format and conversion examples: see [`uipath-human-in-the-loop` skill]
 ### Wiring Pattern
 
 ```
-[Upstream] -> [HITL] ->|completed| [Continue]
+[Upstream] -> [HITL] ->|outcome-completed| [Continue]
 ```
 
 ### Common Topology Patterns
 
 **Approval gate:**
 ```
-Trigger -> Fetch Data -> HITL (review) ->|completed| Decision (approved?) ->
+Trigger -> Fetch Data -> HITL (review) ->|outcome-completed| Decision (approved?) ->
   true: Script (process) -> End
   false: Script (log rejection) -> End
 ```
@@ -88,7 +88,7 @@ Trigger -> Fetch Data -> HITL (review) ->|completed| Decision (approved?) ->
 ```
 Trigger -> Process -> Decision (confidence ok?) ->
   true: Continue -> End
-  false: HITL (exception review) ->|completed| Script (retry with human input) -> End
+  false: HITL (exception review) ->|outcome-completed| Script (retry with human input) -> End
 ```
 
 ### Planning Annotation

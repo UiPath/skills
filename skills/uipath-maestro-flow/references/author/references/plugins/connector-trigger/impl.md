@@ -65,6 +65,20 @@ Each entry is one input field the user supplies when configuring the trigger (e.
 
 > **Source of truth:** `parameters[]` is populated for every connector. `flow registry get`'s `eventParameters.fields` derives from `triggers describe`'s `events.<operation>.required`/`.optional`, which several connectors do not emit. Full field semantics: [/uipath:uipath-platform — triggers.md — `parameters[]`](../../../../../../uipath-platform/references/integration-service/triggers.md#parameters--canonical-event-parameter-input-fields).
 
+**1b-2. Resolve the object name and fetch field metadata** — **mandatory** for every trigger node.
+
+> **MUST READ before this step:** [/uipath:uipath-platform — triggers.md](../../../../../../uipath-platform/references/integration-service/triggers.md). Single source of truth for fetching trigger parameters and fields — object name resolution, describe call, source-of-truth contract.
+
+1. Resolve `<objectName>` from the Step 1b `triggers objects` response per [/uipath:uipath-platform — triggers.md — Object Name Resolution](../../../../../../uipath-platform/references/integration-service/triggers.md#object-name-resolution). If the object name is not recognizable from the user's prompt, **ask the user** — present candidates by `displayName`. Do NOT guess.
+2. Fetch field metadata:
+
+```bash
+uip is triggers describe "<connector-key>" "<OPERATION>" "<objectName>" \
+  --connection-id "<id>" --output json
+```
+
+> **Source of truth for node configuration:** event-parameter inputs come from `triggers objects` → `parameters[]` (Step 1b); field metadata comes from `triggers describe` (this step). Follow these two responses exclusively — do not invent parameters or fields.
+
 ### Step 1c — Select the final connection
 
 **If `byoaConnection: true`** — the Step 1a connection is not usable. Follow the BYOA selection workflow in [/uipath:uipath-platform — connections.md — For BYOA Connections](../../../../../../uipath-platform/references/integration-service/connections.md#for-byoa-connections-webhook-triggers) (filter with `--byoa`, `--refresh` retry, stop-and-ask if none exist).
@@ -162,7 +176,7 @@ Check every entry in `parameters[]` (Step 1b) where `required: true`. All requir
 
 1. Collect all required entries from `parameters[]`
 2. For each, check if the user's prompt provides a value
-3. If any required field is missing, **ask the user** — list the missing fields with their `displayName` (and `description` if useful). Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them via `AskUserQuestion` per the dropdown rule in [SKILL.md](../../../../../SKILL.md).
+3. If any required field is missing, **ask the user** — list the missing fields with their `displayName` (and `description` if useful). Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them as options per the dropdown question rule in [SKILL.md](../../../../../SKILL.md).
 4. Only proceed after all required event parameters are resolved
 
 > Step 6 buckets each resolved value into `eventParameters`, `queryParameters`, or `pathParameters` based on the entry's `type` — see Step 6's `--detail` table.
@@ -178,6 +192,8 @@ Each trigger type has a different output schema — field names like `.text`, `.
 Follow the [CLI: Replace manual trigger with connector trigger](../../editing-operations-cli.md#replace-manual-trigger-with-connector-trigger) procedure. The CLI handles edge cleanup, orphaned definition removal, and `variables.nodes` regeneration automatically. Note the generated node ID from the `node add` response — you need it for Step 6.
 
 ### Step 6 — Configure the trigger node
+
+> **MUST READ before `node configure`:** [/uipath:uipath-platform — triggers.md](../../../../../../uipath-platform/references/integration-service/triggers.md). The parameters fetched there (`triggers objects` → `parameters[]`, Step 1b) and fields (`triggers describe`, Step 1b-2) are the source of truth for everything in `--detail`. If you have not run both calls, go back to Step 1b.
 
 **Read the `--detail` field table below before calling `node configure`.** The fields and types are strict — unknown keys or wrong types cause validation errors. Do not guess field names from other node types (e.g., activity nodes use `method`/`endpoint`/`bodyParameters`; triggers use `eventMode`/`eventParameters`/`filter`).
 
@@ -400,9 +416,9 @@ uip maestro flow node remove <PROJECT>.flow start --output json       # remove m
 uip maestro flow node add <PROJECT>.flow <trigger-node-type> --label "<LABEL>" --position 200,144 --output json
 uip maestro flow node configure <PROJECT>.flow <nodeId> --detail '<TRIGGER_DETAIL_JSON>' --output json
 
-# Trigger object metadata (MANDATORY — Step 1b)
-uip is triggers objects "<connector-key>" "<operation>" --connection-id "<id>" --output json
-uip is triggers describe "<connector-key>" "<operation>" "<objectName>" --connection-id "<id>" --output json
+# Trigger object metadata (MANDATORY — Steps 1b and 1b-2)
+uip is triggers objects "<connector-key>" "<operation>" --connection-id "<id>" --output json   # Step 1b: objects + parameters[]
+uip is triggers describe "<connector-key>" "<operation>" "<objectName>" --connection-id "<id>" --output json  # Step 1b-2: fields
 
 # Connections — see /uipath:uipath-platform — connections.md for selection rules (Native, BYOA, --refresh)
 uip is connections list "<connector-key>" --all-folders --output json         # discover connections (--all-folders is mandatory)

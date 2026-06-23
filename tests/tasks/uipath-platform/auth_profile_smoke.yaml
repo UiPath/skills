@@ -1,0 +1,53 @@
+task_id: skill-platform-auth-profile
+description: >
+  Smoke test: agent uses the uipath-platform skill to inspect a named UiPath
+  auth profile with the global `--profile` option. Verifies profile-scoped
+  status and auth-file discovery without falling back to `--file`.
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  I have a UiPath login profile named "dev". Check whether that profile is
+  logged in and show me which auth file it uses. Do not switch tenants or
+  create a new login.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-platform skill"
+    skill_name: "uipath-platform"
+    expected_skill: "uipath-platform"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status for the dev profile"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+login\s+status\b.*--profile(?:\s+|=)dev'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent located the auth file for the dev profile"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+login\s+which\b.*--profile(?:\s+|=)dev'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used JSON output on profile auth commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+login\s+(status|which)\b.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not mix --profile with auth-command --file"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(?=.*--profile(?:\s+|=)dev\b)(?=.*--file\b).*'
+    weight: 1.5
+    pass_threshold: 1.0

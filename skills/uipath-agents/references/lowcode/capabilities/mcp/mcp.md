@@ -11,7 +11,7 @@ The agent exposes a **selected subset** of the server's tools — carefully cons
 
 ## Server Types
 
-MCP servers come in subtypes — `Command` (stdio, e.g. `npx`/`uvx`), `Remote` (SSE / streamable HTTP URL), `UiPath`, `Coded`, `Platform`. The subtype lives on the cloud server; the agent resource does not carry it. `uip solution resource refresh` reads it from the catalog and files the solution-level resource under the matching subtype folder.
+MCP servers come in subtypes — `Command` (stdio, e.g. `npx`/`uvx`), `Remote` (SSE / streamable HTTP URL), `UiPath`, `Coded`, `Platform`. The subtype lives on the cloud server; the agent resource does not carry it. `uip solution resources refresh` reads it from the catalog and files the solution-level resource under the matching subtype folder.
 
 ## Discovery
 
@@ -22,7 +22,7 @@ Scaffold per [../../project-lifecycle.md § End-to-End Example](../../project-li
 ### Step 2 — Find the MCP server
 
 ```bash
-uip solution resource list --kind mcpServer --source remote --output json
+uip solution resources list --kind mcpServer --source remote --output json
 ```
 
 Each row carries what the agent resource needs:
@@ -39,7 +39,7 @@ If the server doesn't exist yet, register it: `uip agenthub mcp create command|r
 ### Step 3 — Fetch the server's full tool list
 
 ```bash
-uip solution resource get <Key> --solution-folder <SolutionDir> --output json
+uip solution resources get <Key> --solution-folder <SolutionDir> --output json
 ```
 
 The response is `Data.Spec` with PascalCase fields. `Data.Spec.Tools[]` is the **complete** tool list the server exposes; each entry is `{ Name, Title, Description, InputSchema, OutputSchema }` where **`InputSchema` is an escaped JSON-Schema string** (parse it into an object before writing `availableTools`).
@@ -99,10 +99,10 @@ uip agent validate "<AGENT_NAME>" --output json
 
 # Refresh solution resources — resolves the mcpServer binding against AgentHub and writes
 # the solution-level reference file + debug_overwrites entry.
-uip solution resource refresh --output json
+uip solution resources refresh --output json
 ```
 
-After `uip solution resource refresh`, confirm the solution-level reference was created:
+After `uip solution resources refresh`, confirm the solution-level reference was created:
 
 ```text
 resources/solution_folder/<McpServerKind>/<Type>/<slug>.json   # e.g. .../McpServer/Command/github-mcp.json

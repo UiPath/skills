@@ -1,0 +1,34 @@
+task_id: skill-admin-pat-revoke-smoke
+description: >
+  Operate smoke: agent revokes a compromised personal access token.
+  Tests the list → identify → revoke workflow with correct CLI
+  namespace and --output json convention.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, identity, pat, revoke]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  I need to revoke my personal access token with id
+  "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" because it may have been
+  compromised.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent revoked the PAT"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+pat\s+revoke\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
