@@ -35,7 +35,6 @@ initial_prompt: |
   Commands will fail with auth errors — expected and acceptable.
   Run each command exactly once. Do NOT retry. Do NOT login.
   Do NOT ask for confirmation or approval.
-  Before starting, load the uipath-coded-apps skill and follow its deploy workflow.
 
 success_criteria:
   # Pack → publish → deploy sequence (commands fail with auth in CI — we check

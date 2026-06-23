@@ -35,10 +35,8 @@ initial_prompt: |
   usage with health scores.
 
   This is a non-interactive automated test — there is NO user to approve the plan.
-  Treat the plan as pre-approved: in THIS SAME TURN, author intent.json and the metric
-  modules and run the build through to completion. Do NOT end your turn at the plan, do
+  Treat the plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the plan, do
   NOT wait for confirmation, and do NOT ask any question.
-  Before starting, load the uipath-coded-apps skill and follow its workflow.
 
 success_criteria:
   - type: skill_triggered

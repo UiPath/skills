@@ -37,7 +37,6 @@ initial_prompt: |
   Treat each plan as pre-approved: author the files and run each step (the build,
   then the incremental edit) through to completion in this same session. Do NOT
   stop at a plan, do NOT wait for confirmation, and do NOT ask any question.
-  Before starting, load the uipath-coded-apps skill and follow its workflow.
 
 success_criteria:
   - type: skill_triggered

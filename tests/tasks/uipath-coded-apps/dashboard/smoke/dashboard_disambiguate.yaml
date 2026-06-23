@@ -12,8 +12,6 @@ sandbox:
 initial_prompt: |
   I need to create something to track my automation performance.
 
-  Before starting, load the uipath-coded-apps skill and follow its workflow.
-
 success_criteria:
   # Positive anchor: the skill must engage (so agent inaction / a crash can't
   # satisfy the negative gate checks below).

@@ -13,7 +13,6 @@ initial_prompt: |
   I want a dashboard showing agent error rates and active queue depth.
 
   Do NOT confirm or approve the plan — wait for the user to respond.
-  Before starting, load the uipath-coded-apps skill and follow its workflow.
 
 success_criteria:
   # Positive anchor: the skill must actually engage (so the gate test can't be

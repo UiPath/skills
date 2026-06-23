@@ -21,7 +21,6 @@ initial_prompt: |
   this week.
 
   Do NOT select an option or approve anything — wait for the user to respond.
-  Before starting, load the uipath-coded-apps skill and follow its workflow.
 
 success_criteria:
   - type: skill_triggered
