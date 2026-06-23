@@ -77,7 +77,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 1. Selector rule too broad — matches resources beyond the intended scope
 2. Actor rule excludes the calling user/group
 3. Executable rule blocks the actor process type
-4. Tags on the resource trigger a deny-intent policy
+4. Tags on the resource or executable trigger a deny-intent policy
 5. Robot/ExternalApplication actor — `actorRule` only matches `User`/`Group`, so robot actors return `NoOp` on all policies with `actorRule`
 
 **Investigation:**
