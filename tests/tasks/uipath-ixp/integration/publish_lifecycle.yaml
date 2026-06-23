@@ -22,20 +22,23 @@ initial_prompt: |
   I need to manage releases on an invoice project. Use the tenant I'm already
   signed into (check I'm logged in; don't re-authenticate): start a project from
   the files in `./fixtures/` — import the taxonomy, upload the three invoices —
-  let it train to version 1, then make a small taxonomy change and retrain to
-  produce version 2.
+  and train it. I'll want a couple of trained versions to work with, so produce a
+  second one too.
 
   Then:
-  - Publish version 1 with the `staging` tag.
-  - Publish version 2 with the `live` tag. Now save the model list to `models_tagged.json`.
-  - Move the `live` tag to version 1, then save the model list to `models_after_move.json`.
-  - Remove the tag from version 1, but keep that version published.
+  - Put version 1 on staging and version 2 on live.
+  - Move live over to version 1.
+  - Take the tag off version 1, but keep that version published.
   - Unpublish version 2 — don't delete it, it stays a trained version.
 
   After each step, show me the model list so I can see the tag and published
   state actually moved.
 
   Delete the project when you're done.
+
+  Save these so I can check them: the model list after you've set the staging and
+  live tags (`models_tagged.json`), and the model list after moving the live tag
+  (`models_after_move.json`).
 
 success_criteria:
   - type: command_executed

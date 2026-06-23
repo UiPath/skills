@@ -22,21 +22,21 @@ sandbox:
 initial_prompt: |
   Use the tenant I'm already signed into (check I'm logged in; don't
   re-authenticate). Set up an invoice project from the files in `./fixtures/` —
-  import the taxonomy and upload the three invoices — and give it a friendly
-  title like "IxP Int Resolve <something>" so its title reads differently from
-  its internal name. You don't need to train or label — this is about resolving
-  the human names to the right ids.
+  import the taxonomy and upload the three invoices — and give it a friendly title
+  like "IxP Int Resolve <something>". You don't need to train or label.
 
-  Now, I'll only refer to things by their human names — work the ids out yourself:
-  - Delete the file `york_solutions_invoice.png`. I'm giving you the filename, not
-    an id, so find it first.
-  - Then delete the first document still left in the list. Afterwards, save the
-    remaining document list to `documents_after.json`.
-  - Rename the project (I'll point to it by its title, so find its actual name
-    first) to the title "IxP Int Resolve Renamed", then save the project's details
-    to `project_after.json`.
+  I'll only refer to things by their human names — work the ids out yourself:
+  - Delete the file `york_solutions_invoice.png` (I'm giving you the filename, not
+    an id, so find it first).
+  - Then delete the first document still left in the list.
+  - Rename the project (I'll refer to it by its title, so find its actual name
+    first) to "IxP Int Resolve Renamed".
 
   Clean up by deleting the project at the end.
+
+  Save these so I can check them: the document list after the deletions
+  (`documents_after.json`) and the project's details after the rename
+  (`project_after.json`).
 
 success_criteria:
   - type: command_executed

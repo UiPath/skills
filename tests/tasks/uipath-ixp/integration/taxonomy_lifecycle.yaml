@@ -34,16 +34,19 @@ initial_prompt: |
   - Rename the group "Charges" to "Adjustments".
   - Rename the field "Late Fee" to "Penalty Fee".
   - Change the "Discount" field's type to "Number".
-  - Update the instructions on "Discount" and "Surcharge" in one call, and include
-    a field named "Nonexistent Field" that isn't in the taxonomy — I want that name
-    to come back as unmatched, not a silent failure. Save that command's JSON
-    response to `update_prompts_result.json`.
-  - Now save the full taxonomy to `taxonomy_before_delete.json`, tell me exactly how
-    many fields are in "Adjustments", and delete that group.
-  - Finally, save the taxonomy again to `taxonomy_final.json` and confirm it still
-    has the original invoice groups (Invoice, Bill To, Line Items, Ship To).
+  - Update the instructions on "Discount" and "Surcharge", and also pass a name
+    that isn't in the taxonomy, "Nonexistent Field" — if a name doesn't exist I
+    want to be told, not have it silently skipped.
+  - Tell me how many fields are in "Adjustments", then delete that group.
+  - Afterwards, confirm the original invoice groups (Invoice, Bill To, Line Items,
+    Ship To) are still there.
 
   When you're done, delete the project.
+
+  Save these so I can check them: the instruction-update response
+  (`update_prompts_result.json`), the taxonomy just before you delete the group
+  (`taxonomy_before_delete.json`), and the taxonomy after the delete
+  (`taxonomy_final.json`).
 
 success_criteria:
   - type: command_executed
