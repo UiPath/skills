@@ -23,18 +23,16 @@ sandbox:
       path: fixtures
 
 initial_prompt: |
-  A Solution Design Document already exists at `vendor-payment-sync-sdd.md` in
-  the current directory. It carries a populated `## Planner Handoff` header.
+  I've finished the Solution Design Document for our Vendor Payment Sync
+  process — it's saved as `vendor-payment-sync-sdd.md` in the current directory,
+  with the Planner Handoff section at the top.
 
-  Load the uipath-planner skill and follow its PDD-driven (Lane A) workflow to
-  derive the implementation task list from this SDD: read the handoff header and
-  the project structure, then produce the task breakdown that routes each piece
-  of work to the right specialist skill, using the skill's documented tasks-file
-  format.
+  Plan the build from it: produce the implementation task list, breaking the
+  work into tasks routed to the right specialist skills, and save it alongside
+  the SDD as `vendor-payment-sync-tasks.md`.
 
-  Work autonomously — do NOT ask any questions, do NOT re-design or rewrite the
-  SDD, and do NOT build or scaffold any project. Your only deliverable is the
-  task list file `vendor-payment-sync-tasks.md`, written alongside the SDD.
+  Work autonomously — don't ask me questions, don't redesign or rewrite the SDD,
+  and don't build or scaffold anything yet. Just the task list.
 
 success_criteria:
   - type: file_exists
