@@ -1,0 +1,43 @@
+task_id: skill-admin-external-app-oauth-failing-smoke
+description: >
+  Troubleshoot smoke: agent diagnoses an external app OAuth2 failure
+  where client_credentials grant returns "not allowed to access User
+  scopes". Must inspect the app's scope configuration. Validates
+  Playbook 2.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, troubleshoot, identity, external-app]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  Our CI/CD pipeline uses external app with client id "abc-123-def"
+  and client_credentials grant, but it's failing with "not allowed to
+  access User scopes". How do I diagnose this?
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent inspected the external app via get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+get\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

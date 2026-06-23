@@ -29,7 +29,7 @@ Parse the JSON. Findings live under `Data.Issues[]`; each issue is:
 }
 ```
 
-The response also carries `Data.Verdict` (PASS/FAIL), `Data.Score`, `Data.Grade`, and `Data.Stats` — report the verdict/score if useful, but the `Issues[]` are the findings. Carry each issue into the report **verbatim**; do not re-derive, rename, or re-rank. These `RuleId`s are authoritative as the CLI emits them and are **not** duplicated in the skill catalog.
+The response also carries `Data.Verdict` (PASS/FAIL), `Data.Score`, `Data.Grade`, and `Data.Stats` — report the verdict/score if useful, but the `Issues[]` are the findings. `Data.Grade` is also consumed as **G_det**, the deterministic half of the Step 4.5 agent letter grade (read it from here, never recompute) — see [agents/agent-grading-rubric.md](agents/agent-grading-rubric.md). Carry each issue into the report **verbatim**; do not re-derive, rename, or re-rank. These `RuleId`s are authoritative as the CLI emits them and are **not** duplicated in the skill catalog.
 
 If the review command is unavailable (CLI not installed, or a version without `agent review` / `codedagent review`), record one line in the report's "Rules Skipped" subsection with `reason: "uip agent review / codedagent review CLI not available"`, then continue with 2.5b.
 

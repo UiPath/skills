@@ -1,0 +1,163 @@
+task_id: skill-troubleshoot-excel-scope-com-registration
+description: >
+  UiPath troubleshoot agent must diagnose a Classic Excel Application
+  Scope failure (BusinessException 'Error opening workbook. Make sure
+  Excel is installed.', inner COMException 0x8002801D
+  TYPE_E_LIBNOTREGISTERED) on a Robot host where Excel IS installed but
+  its COM / type-library registration was corrupted by a recent in-place
+  Microsoft 365 upgrade. Agent must match the
+  activity-packages/excel-activities/playbooks/excel-application-scope-failures.md
+  playbook, identify branch 1 (COM registration corruption) and crucially
+  recognize this is NOT the 'Excel not installed' case (Excel is present
+  and launches), then recommend repairing the COM / type-library
+  registration (Office Online Repair / UiPath Repair Tool / TypeLib
+  cleanup) rather than installing Excel.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, excel-application-scope, com-registration]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `UiPath.Excel.BusinessException: Error opening workbook. Make sure Excel is installed.`
+  Pinned job key: aa444444-cccc-dddd-eeee-ffffaaaabbbb. But Excel is
+  definitely installed on that host — I can open it myself. This started
+  right after IT pushed the Microsoft 365 upgrade last weekend; it ran
+  fine before that. What's going on?
+
+  The project source for the failing process is at ./ExcelLedgerReport/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the excel-application-scope-failures playbook AND identified branch 1 (COM registration corruption) AND recognized this is NOT 'Excel not installed' (Excel is present) AND recommended repairing the COM/type-library registration rather than installing Excel"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `UiPath.Excel.BusinessException: Error opening workbook. Make
+         sure Excel is installed.` Pinned job key:
+         aa444444-cccc-dddd-eeee-ffffaaaabbbb. But Excel is definitely
+         installed on that host — I can open it myself. This started
+         right after IT pushed the Microsoft 365 upgrade last weekend;
+         it ran fine before that. What's going on?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/excel-application-scope-failures.md
+        branch 1 (COM registration / type-library corruption). NOTE: the
+        excel-application-card-failures.md playbook's branch 1 is the
+        DIFFERENT "Excel genuinely not installed" case; matching that one
+        and concluding "install Excel" is WRONG for this scenario.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workflow uses Classic Excel Application Scope (COM-only).
+          - Excel IS installed on the host (Microsoft 365 Apps build
+            16.0.17928.20114, launches interactively) — so this is NOT
+            the not-installed case.
+          - An in-place Office 2019 -> Microsoft 365 upgrade on
+            2026-05-28 left a stale TypeLib registration for the Excel
+            Object Library {00020813-...}.
+          - The COM class factory creates Excel.Application, but interop
+            type-library resolution fails with 0x8002801D
+            TYPE_E_LIBNOTREGISTERED, which the scope rewraps as the
+            generic "Make sure Excel is installed."
+
+        The reference fix is to REPAIR the COM / type-library
+        registration:
+          - Office Online Repair (canonical), OR
+          - UiPath "Repair Tool for Microsoft Office", OR
+          - targeted TypeLib cleanup (last resort, back up first).
+          - Acceptable alternative: migrate off COM (Workbook / Modern
+            OpenXML) IF the workflow doesn't need Excel features.
+          - NOT acceptable: recommending "install Excel" (it is already
+            installed); recommending a Delay; recommending a full Office
+            reinstall as the first step.
+
+        Evidence sources (priority order):
+          1. Job logs -- the decisive Trace line stating Excel install
+             state INSTALLED (concrete build path, launches), the recent
+             in-place Office upgrade, and the stale TypeLib registration.
+          2. jobs get -- inner HRESULT 0x8002801D TYPE_E_LIBNOTREGISTERED
+             (NOT 0x80040154 REGDB_E_CLASSNOTREG).
+          3. Workflow source -- single Classic <uix:ExcelApplicationScope>
+             (no multi-scope race).
+          4. The "ran fine before the M365 upgrade" framing -- the
+             deployment didn't change; the host's COM registration did.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the excel-application-scope-failures playbook
+             branch 1 AND explicitly recognized Excel IS installed (so
+             this is NOT not-installed) AND attributed the fault to the
+             corrupted COM / type-library registration after the Office
+             upgrade AND recommended a registration repair (Online
+             Repair / UiPath Repair Tool / TypeLib cleanup).
+        0.9  Correct diagnosis + correct repair recommended, but the
+             agent didn't explicitly cite the TYPE_E_LIBNOTREGISTERED
+             HRESULT or the stale-TypeLib mechanism (named the upgrade
+             and "broken COM registration" generally).
+        0.8  Identified broken-registration-after-upgrade and recommended
+             a repair, but also hedged toward "maybe reinstall Office"
+             without preferring repair.
+        0.7  Matched the registration-corruption idea but recommended a
+             full Office reinstall as the primary fix (heavier than
+             needed) rather than a repair.
+        0.5  Recognized Excel is installed and the error is misleading,
+             but couldn't localize to COM/TypeLib registration (left it
+             as "some COM problem") and gave no actionable repair.
+        0.2  Treated it as the not-installed case and recommended
+             installing Excel, ignoring the user's statement and the
+             logs that Excel is present.
+        0.0  Reached an unrelated conclusion (blamed the workbook path,
+             file corruption, a lock, or a macro), got blocked, or failed.
+
+      Be substance-focused. The decisive chain is "Classic scope +
+      Excel IS installed + inner TYPE_E_LIBNOTREGISTERED + recent
+      in-place Office upgrade + stale TypeLib -> COM registration
+      corruption -> repair the registration (Online Repair), do NOT
+      install Excel." Penalize HARD (cap at 0.2) any answer that tells
+      the user to install Excel, since both the user and the logs state
+      it is already installed.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

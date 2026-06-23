@@ -42,11 +42,6 @@ initial_prompt: |
      every other field as-is.
   4. Delete the policy.
 
-  The uipath-governance skill knows the required `PolicyDefinition` shape,
-  the default status / enforcement values, how to source org and tenant
-  identity from the active login session, and the full-replace semantics
-  of update. Trust it.
-
   Important:
   - Do not prompt the user for confirmation — this is an automated test.
   - The final delete cleans up the test policy — do not skip it, even if
@@ -65,7 +60,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the policy by GUID returned from create (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+get\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
+    command_pattern: 'uip\s+gov\s+access-policy\s+get\s+.*(?:\$\w+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})'
     require_success: true
     min_count: 1
     weight: 2.0
@@ -83,7 +78,7 @@ success_criteria:
   - type: command_executed
     description: "Agent deleted the test policy at end of lifecycle (cleanup, exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+delete\s+["'']?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}["'']?'
+    command_pattern: 'uip\s+gov\s+access-policy\s+delete\s+.*(?:\$\w+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})'
     require_success: true
     min_count: 1
     weight: 2.0

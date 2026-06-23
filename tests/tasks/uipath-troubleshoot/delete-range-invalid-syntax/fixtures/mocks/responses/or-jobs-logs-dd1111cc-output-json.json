@@ -1,0 +1,76 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-dd1111cc-001",
+      "JobKey": "dd111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-21T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelCleanupProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd1111cc-002",
+      "JobKey": "dd111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-21T08:00:01.418Z",
+      "Message": "[ExcelCleanupProcess] Starting cleanup — wiping stale data from C:\\Robot\\Data\\sales-cleanup.xlsx",
+      "ProcessName": "ExcelCleanupProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd1111cc-003",
+      "JobKey": "dd111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-21T08:00:01.510Z",
+      "Message": "Use Excel File: sales-cleanup.xlsx — workbook opened (OpenXML provider)",
+      "ProcessName": "ExcelCleanupProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd1111cc-004",
+      "JobKey": "dd111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-21T08:00:01.910Z",
+      "Message": "Read Range: scan used data (Sales!A1:Z1000) — returned 0 rows (header-only workbook)",
+      "ProcessName": "ExcelCleanupProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd1111cc-005",
+      "JobKey": "dd111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-21T08:00:02.110Z",
+      "Message": "Assign: lastRow = dtCleanup.Rows.Count → 0",
+      "ProcessName": "ExcelCleanupProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd1111cc-006",
+      "JobKey": "dd111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-21T08:00:02.510Z",
+      "Message": "Delete Range: clear stale block — resolved Range expression \"A1:B\" + lastRow.ToString() to \"A1:B0\"",
+      "ProcessName": "ExcelCleanupProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-dd1111cc-007",
+      "JobKey": "dd111111-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-21T08:00:02.802Z",
+      "Message": "Delete Range: clear stale block — System.ArgumentException: The range is invalid",
+      "ProcessName": "ExcelCleanupProcess",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

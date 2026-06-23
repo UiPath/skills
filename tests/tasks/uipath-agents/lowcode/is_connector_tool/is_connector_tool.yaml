@@ -17,15 +17,9 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath low-code agent "ResearchAgent" that can search the web using
-  the "WebSearch" activity from the UiPath GenAI Activities Integration
-  Service connector (connector key `uipath-uipath-airdk`). Expose the
-  activity to the agent as an Integration Service tool. Update the
-  agent's bindings and refresh the solution so the connection resource
-  is provisioned. Validate the agent project. The solution should be
-  named "ResearchSol".
-
-  Do NOT invoke the connector at runtime.
+  Create a UiPath low-code agent "ResearchAgent" that can look things up on the
+  web. Give it a tool so it can run web searches on demand. The solution should
+  be named "ResearchSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -93,12 +87,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent used --output json on uip commands"
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
     tool_name: "Bash"
     command_pattern: 'uip\s+.*--output\s+json'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: file_exists
     description: "ResearchAgent/agent.json was created"

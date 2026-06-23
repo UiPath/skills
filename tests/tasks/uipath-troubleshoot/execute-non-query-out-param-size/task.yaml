@@ -1,0 +1,172 @@
+task_id: skill-troubleshoot-execute-non-query-out-param-size
+description: >
+  UiPath diagnostic agent must diagnose an Execute Non Query failure
+  where a stored procedure (CommandType=StoredProcedure) is invoked over
+  an ODBC provider (ProviderName="System.Data.Odbc") and has an Output
+  parameter whose Size is left at 0. The ODBC driver cannot size the
+  returned value and throws "The Size property has an invalid size of
+  0". The agent must reach Branch 1 of the Execute Non Query failures
+  playbook: root cause is the output parameter Size=0; fix is setting
+  that parameter's Size to the column maximum (or upgrading
+  UiPath.Database.Activities), NOT a SQL-syntax, empty-Sql,
+  driver-load, null-connection, or wrong-activity issue.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, execute-non-query, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My StoredProcWriteBack process is faulting in Orchestrator on every
+  run. Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the execute-non-query-failures playbook Branch 1 AND identified the stored-proc Output parameter Size=0 over ODBC as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My StoredProcWriteBack process is faulting in Orchestrator on
+         every run."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook and branch
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/execute-non-query-failures.md
+        and specifically its BRANCH 1 (stored-procedure Output /
+        InputOutput parameter with Size=0 over an ODBC provider),
+        because the runtime error
+          "The Size property has an invalid size of 0"
+        is the verbatim Branch 1 signature.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should name the
+             execute-non-query-failures playbook / Branch 1.
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+        Grade only what the agent presented (final response + tool
+        calls); do NOT inspect internal investigation state.
+
+        Acceptable / non-penalized: the agent may also Read the
+        sibling database-activities playbooks (execute-query-failures,
+        connect-to-database-failures) or other Branch entries while
+        ruling them out. Exploration is normal.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Execute Non Query activity in Main.xaml invokes the
+            stored procedure `usp_FinalizeOrder` with
+            CommandType=StoredProcedure over ProviderName
+            "System.Data.Odbc".
+          - Its Parameters collection has an Output parameter
+            (@ResultStatus, Direction=Output) whose Size is left at 0.
+          - Over ODBC the driver cannot size the returned value when
+            Size=0, so it throws "The Size property has an invalid
+            size of 0".
+        The reference fix:
+          - Set the @ResultStatus parameter's Size in the Parameters
+            collection to the column's maximum (e.g. 50 for a
+            VARCHAR(50) return).
+          - Alternatively / additionally upgrade
+            UiPath.Database.Activities to a version where the ODBC
+            sizing bug is patched.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should name the
+             Size-invalid error, CommandType=StoredProcedure, the
+             Output parameter Size=0, and ProviderName=System.Data.Odbc,
+             and rule out the wrong causes (NOT SQL syntax, NOT empty
+             Sql, NOT a driver-load failure, NOT a null/closed
+             connection, NOT a wrong-activity choice, NOT a database
+             outage).
+          2. The agent's tool-call summary and any evidence it cites
+             from the job logs / Main.xaml.
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched execute-non-query-failures Branch 1 AND
+             concluded the failure is the stored-proc Output parameter
+             with Size=0 over ODBC. Conclusion must (a) name the
+             Size=0 output parameter as the cause, (b) tie it to the
+             StoredProcedure CommandType over the ODBC provider, and
+             (c) recommend setting the parameter Size (or upgrading
+             UiPath.Database.Activities).
+        0.8  Both partial: e.g., correct playbook but conclusion says
+             "output parameter sizing problem" without naming Size=0
+             or ODBC; or names the Size=0 root cause but matched the
+             database-activities overview rather than the specific
+             execute-non-query-failures playbook.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Execute Non Query / database
+             failure) but landed on a WRONG cause -- SQL syntax error,
+             empty Sql, driver-not-loaded / DllNotFound, null or
+             closed connection, wrong activity (Execute Query vs
+             Execute Non Query), or a database outage. Cap any such
+             answer at 0.2.
+        0.0  Misdiagnosed entirely (unrelated cause) or got blocked.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing
+    StoredProcWriteBack process. You are waiting for the diagnostic
+    agent to finish its investigation and trust its expertise. You only
+    have the information you wrote in your initial report — no extra
+    data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

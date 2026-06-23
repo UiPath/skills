@@ -11,8 +11,6 @@ run_limits:
   expected_turns: 10
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Configuration `e5723bb8-fbc2-4317-c7d7-08de803bc010` is currently registered
   for product=agenthub feature=agenthub-llm-call with model
   gpt-4o-2024-08-06, connector-type OpenAi, api-flavor OpenAiResponses, and

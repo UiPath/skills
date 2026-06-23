@@ -1,0 +1,106 @@
+task_id: skill-ixp-per-occurrence-confirm-smoke
+description: >
+  Smoke: a repeatable field group returns 4 line-item extractions in
+  order; one is a row the model invented that isn't on the document. The
+  agent must number the occurrences itself (0-based, extraction order),
+  confirm only the matching ones with `--group + --occurrence` (or
+  `--updates`) — NOT plain `--fields` (confirms every occurrence) and NOT
+  `--corrections` (the bad row isn't OCR-mangled, it's simply absent, so
+  it must be left unconfirmed). Locks in Critical Rules 8 and 13.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, lifecycle:execute]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Review the IXP model's `Line Items` predictions for document
+  `doc-freight-7` on project `freight_docs-df33115f-ixp` and confirm only
+  the extractions that are correct.
+
+  `get-predictions` returns four `Line Items` extractions for this
+  document, in extraction order:
+
+  - "Steel bolts", Qty 200, Total $400 — matches a line on the invoice.
+  - "Copper wire", Qty 50, Total $150 — matches a line on the invoice.
+  - "Premium freight surcharge", Qty 1, Total $9,999 — there is NO such
+    line anywhere on the invoice; the model invented this row. Its values
+    are not a garbled reading of a real line, so this is NOT an OCR fix —
+    the row simply does not exist on the document.
+  - "Pallet wrap", Qty 12, Total $36 — matches a line on the invoice.
+
+  Confirm the extractions that match the document and leave the invented
+  one unconfirmed.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP
+    tenant in this environment. Commands will fail with auth errors —
+    that is expected. Run each command once and move on. Do NOT retry
+    or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # The three matching rows are extraction-order occurrences 0, 1, and 3
+  # (the invented "Premium freight surcharge" is occurrence 2). Each check
+  # accepts either shape: a `--occurrence N` call or an `--updates` entry
+  # `"occurrence":N`. The agent must derive these indices itself — the
+  # prompt never states them.
+  - type: command_executed
+    description: "Confirms occurrence 0 (Steel bolts) via --group + occurrence 0"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?.*--group\s+["'']?Line Items["'']?.*(--occurrence\s+0\b|"occurrence"\s*:\s*0\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Confirms occurrence 1 (Copper wire) via --group + occurrence 1"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?.*--group\s+["'']?Line Items["'']?.*(--occurrence\s+1\b|"occurrence"\s*:\s*1\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Confirms occurrence 3 (Pallet wrap) via --group + occurrence 3"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?.*--group\s+["'']?Line Items["'']?.*(--occurrence\s+3\b|"occurrence"\s*:\s*3\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The invented row (occurrence 2) must never be confirmed.
+  - type: command_not_executed
+    description: "Agent did NOT confirm occurrence 2 (the invented row)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?.*(--occurrence\s+2\b|"occurrence"\s*:\s*2\b)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Anti-pattern: plain --fields without --group confirms the field id in
+  # every occurrence — including the invented one. Forbidden here.
+  - type: command_not_executed
+    description: "Agent did NOT use plain `--fields` without --group"
+    tool_name: "Bash"
+    command_pattern: '^(?!.*--group).*uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?\s+.*--fields'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Anti-pattern: the invented row is not OCR-mangled, so --corrections is
+  # the wrong tool (Critical Rule 8) — it must be left unconfirmed.
+  - type: command_not_executed
+    description: "Agent did NOT use --corrections to 'fix' the invented row"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+labellings\s+confirm\s+["'']?freight_docs-df33115f-ixp["'']?\s+["'']?doc-freight-7["'']?.*--corrections'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

@@ -40,7 +40,7 @@ initial_prompt: |
   pipeline — Studio is not running interactively in CI, so its OR
   registration steps can't complete and will time out.
 
-  Follow the uipath-rpa skill's normal flow for everything else
+  Follow the normal flow for everything else
   (project scaffolding, validation). The `uip` CLI is authenticated
   against the sandbox tenant, so Helm-backed commands
   (`init`, `activities get-default-xaml`, `validate`)

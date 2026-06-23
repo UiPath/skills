@@ -1,0 +1,208 @@
+task_id: skill-troubleshoot-start-transaction-provider-migration
+description: >
+  UiPath diagnostic agent must diagnose a Start Transaction failure that
+  faults on every Orchestrator run, starting right after the project was
+  migrated from Windows - Legacy (.NET Framework) to Windows (.NET 6+).
+  The Start Transaction activity still uses
+  ProviderName="System.Data.SqlClient", so opening the transaction
+  connection crashes with a Microsoft.Data.SqlClient type-initializer
+  exception (System.TypeInitializationException: The type initializer for
+  'Microsoft.Data.SqlClient.SqlConnection' threw an exception), wrapped by
+  UiPath as "Start Transaction: A database error occurred". The fault is
+  at the Start Transaction connect step, before any child activity runs.
+  The agent must identify the post-migration provider/type-initializer
+  breakage on the Start Transaction activity as the root cause and
+  recommend switching the provider to Microsoft.Data.SqlClient and
+  confirming the driver on the Robot host — NOT a null/not-propagated
+  connection (branch 4), NOT a swallowed rollback / silent success
+  (branch 1), NOT a package-version body-skip bug (branch 2), NOT SQL
+  syntax, NOT a timeout, NOT a database outage, and NOT a merely malformed
+  connection string.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, database-activities, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My InvoicePostingTxn process started faulting in Orchestrator on every
+  run right after we migrated it to the new Windows compatibility. Can
+  you investigate why?
+
+  The project source is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the start-transaction-failures playbook (Branch 3) AND identified the post-migration provider / type-initializer breakage on the Start Transaction activity as the root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath diagnostic agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt
+      is the RESOLUTION.md for this scenario. Treat it as the
+      authoritative ground truth.
+
+      The user's request was:
+        "My InvoicePostingTxn process started faulting in Orchestrator on
+         every run right after we migrated it to the new Windows
+         compatibility."
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/database-activities/playbooks/start-transaction-failures.md
+        specifically BRANCH 3 (post-migration provider / type breakage
+        after a Windows-Legacy -> Windows migration). The runtime
+        signature
+          "Start Transaction: A database error occurred" wrapping
+          "System.TypeInitializationException: The type initializer for
+           'Microsoft.Data.SqlClient.SqlConnection' threw an exception",
+          thrown at the Start Transaction connect step right after the
+          migration
+        is the verbatim Branch 3 signature.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should name the
+             start-transaction-failures playbook / Branch 3.
+          2. The agent's tool-call summary -- a Read on a file under
+             references/activity-packages/database-activities/playbooks/.
+        Grade only what the agent presented (final response + tool
+        calls); do NOT inspect internal investigation state.
+
+        Acceptable / non-penalized exploration: the agent may also Read
+        the connect-to-database-failures or execute-query-failures
+        playbooks (they share the provider surface) while ruling them
+        out, BUT its conclusion must tie the fault to the **Start
+        Transaction** activity's provider, reached through the
+        transaction scope.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The project was migrated from Windows - Legacy (.NET
+            Framework) to Windows (.NET 6+); `project.json` now sets
+            `targetFramework: "Windows"`.
+          - The Start Transaction (`DatabaseTransaction`) activity in
+            Main.xaml still sets `ProviderName="System.Data.SqlClient"`.
+          - Under the modern runtime, opening the transaction connection
+            throws
+            `System.TypeInitializationException: The type initializer for
+             'Microsoft.Data.SqlClient.SqlConnection' threw an exception`,
+            which UiPath wraps as "Start Transaction: A database error
+            occurred". The fault is at the Start Transaction connect
+            step, before any child activity (the in-scope Execute Non
+            Query) runs.
+        The reference fix:
+          - Switch the Start Transaction provider to
+            `Microsoft.Data.SqlClient`.
+          - Confirm the Microsoft.Data.SqlClient driver is present on
+            every Robot host that runs the process, not just the dev
+            machine.
+
+        Evidence sources (in priority order):
+          1. The agent's final response -- it should reference the
+             Microsoft.Data.SqlClient type-initializer crash, the
+             Windows (migrated) project still using
+             System.Data.SqlClient, and the Start Transaction activity
+             (NOT a null/not-propagated connection, NOT a swallowed
+             rollback, NOT a package-version body-skip bug, NOT a SQL
+             syntax error, NOT a timeout, NOT a database/connectivity
+             outage).
+          2. The agent's tool-call summary and any evidence it cites:
+             `project.json` `targetFramework: "Windows"`, `Main.xaml`
+             Start Transaction `ProviderName="System.Data.SqlClient"`,
+             and the job logs.
+        Grade only what the agent presented; do NOT inspect internal
+        investigation state.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent
+      concludes any of these as the root cause):
+        - "The connection was null / out of scope / not propagated to the
+           child activity." (branch 4)
+        - "The transaction swallowed a child error / silent success / did
+           not roll back." (branch 1)
+        - "A package-version bug skips the transaction body." (branch 2)
+        - "SQL syntax error / unsafe string concatenation."
+        - "Query / command timeout."
+        - "The database is down / unreachable / a network outage."
+        - "The connection string is malformed" taken as the root cause.
+          (The connection string is fine -- the fault is the PROVIDER /
+           type-initializer on the migrated Windows runtime.)
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+
+        1.0  Agent matched start-transaction-failures Branch 3 AND
+             identified the post-migration provider / type-initializer
+             breakage. Conclusion must (a) name the
+             Microsoft.Data.SqlClient type-initializer crash, (b)
+             attribute it to the Start Transaction activity still using
+             System.Data.SqlClient after the project was migrated to
+             Windows, and (c) recommend switching the provider to
+             Microsoft.Data.SqlClient and confirming the driver on the
+             Robot host.
+        0.8  Both partial: e.g., correct playbook and names the
+             type-initializer / provider crash but does not connect it to
+             the migration or to the Start Transaction activity
+             specifically; or identifies the provider issue but
+             recommends only some of the fix.
+        0.5  Only one dimension correct.
+        0.2  Recognized the surface (Start Transaction / database error)
+             but neither matched the branch nor identified the provider /
+             type-initializer breakage -- OR concluded one of the WRONG
+             ANSWERS above.
+        0.0  Got blocked, or produced no usable conclusion.
+
+      Be substance-focused, not schema-focused.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You migrated the InvoicePostingTxn project to the new Windows
+    compatibility just before the failures began. You are waiting for the
+    diagnostic agent to finish its investigation and trust its expertise.
+    You only have the information you wrote in your initial report — no
+    extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, database-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -121,6 +121,8 @@ When deriving tasks from an SDD, the planner picks a pattern based on the SDD's 
 | API Workflow (single product) | `uipath-api-workflow` + `uipath-solution` for deploy + testing |
 | Agent with RPA tools in §3 Tools | Pattern 5 |
 
+> **Deploy routing is constraint-gated.** When the plan's delivery model blocks Solutions (`.uipx`) per [platform-availability-guide.md](platform-availability-guide.md) — standalone, Automation Suite older than 2.2510, or a user exclusion — every `uipath-solution` deploy/publish step in the table above becomes per-package Orchestrator publish routed to `uipath-platform`.
+
 Cross-project integration order (general rule): **dependencies before dependents**. Build callable resources (RPA processes, API Workflows, agents-as-tools) before the products that consume them (Flows, Cases, parent agents).
 
 ## Pattern composition for Solutions

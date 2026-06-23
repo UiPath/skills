@@ -330,7 +330,7 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 ## Gotchas
 
-See [../../critical-rules.md](../../critical-rules.md):
+See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md):
 - Critical Rules 11, 12 (folderPath / location)
 - Anti-pattern 13 (do NOT pass `--for-low-code-agents` — flag removed)
 
