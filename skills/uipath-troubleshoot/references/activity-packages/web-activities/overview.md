@@ -33,4 +33,4 @@ Unlike connection-based packages (O365's `Office365Exception`, Integration Servi
 
 ## Package
 
-NuGet: `UiPath.Web.Activities`
+NuGet package id: `UiPath.WebAPI.Activities` (ships the `UiPath.Web.Activities` assemblies/namespace). Studio displays it as the **Web Activities** package; the Diagnose-Agent telemetry labels it `UiPath.Web.Activities` after the namespace.
