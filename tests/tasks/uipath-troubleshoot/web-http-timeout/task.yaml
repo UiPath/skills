@@ -1,0 +1,79 @@
+task_id: skill-troubleshoot-web-http-timeout
+description: >
+  UiPath troubleshoot agent must diagnose a FetchReport job fault
+  (System.Net.WebException: The operation has timed out.) and match the
+  activity-packages/web-activities/playbooks/http-request-timeout.md playbook.
+  Replayed from a real staging faulted job.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, web-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My last job in folder Shared just faulted. Job key 3bdb5a85-b6ae-4e1f-b5a5-2488ca74de12. Why
+  did it fail and how do I fix it?
+
+  The project source for the failing process is at ./WebRepro/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the http-request-timeout.md playbook and reached the RESOLUTION.md root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against the attached
+      RESOLUTION.md (authoritative ground truth). The user asked why job
+      3bdb5a85-b6ae-4e1f-b5a5-2488ca74de12 in folder Shared failed (source at ./WebRepro/).
+
+      Grade in a single score:
+      (a) FAULT - the agent identifies the failure as `System.Net.WebException: The operation has timed out.`
+          raised by HTTP Request (HttpClient).
+      (b) CAUSE - the agent concludes: The HttpClient request exceeded its TimeoutMS (2000 ms) against a slow endpoint and faulted with 'The operation has timed out.'. On .NET 6+ this surfaces as System.Net.WebException (not System.TimeoutException); match on the message. It matches
+          skills/uipath-troubleshoot/references/activity-packages/web-activities/playbooks/http-request-timeout.md.
+      (c) RESOLUTION - the agent recommends: Raise TimeoutMS to cover the endpoint's real response time, or treat a hung/slow endpoint as a target-service availability issue (retry/escalate). The message 'The operation has timed out.' is the timeout discriminator.
+
+      Anti-fabrication (hard gate): score 0.0 if the agent attributes the
+      fault to a DNS/host-not-found or connection-refused failure (the message is 'The operation has timed out.', not 'No such host is known.'); a deserialization/JSON error; a null input; an invented different cause.
+
+      RUBRIC:
+        1.0  Correct fault + cause (playbook matched, no fabrication) + valid fix.
+        0.8  Correct fault + cause but thin/partial fix.
+        0.5  Recognizes the right error family but does not match the playbook
+             OR misses the specific cause (without fabricating a wrong one).
+        0.2  Recognizes an error but no actionable cause/fix.
+        0.0  Fabricates a wrong root cause (see anti-fabrication), concludes a
+             different fault, gets blocked, or fails.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
