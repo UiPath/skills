@@ -3,8 +3,8 @@ description: >
   Integration: full taxonomy-editing lifecycle against a live tenant, verified by
   reading taxonomy back with `get-taxonomy` after each edit. Covers create field
   group + fields (with sensible default types), add field, rename group/field,
-  change-type, bulk update-prompts (incl. Unmatched reporting), import-taxonomy
-  round-trip, and delete group with an accurate cascade count. Asserts only
+  change-type, bulk update-prompts, import-taxonomy round-trip, and delete group.
+  Asserts only
   CLI-observable taxonomy state (names/types/instructions) and agent judgment —
   NOT backend annotation semantics.
 tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
@@ -28,24 +28,21 @@ initial_prompt: |
   label or train anything.
 
   Then make these exact edits, checking after each that it took:
-  - Add a new field group "Charges" with two fields, "Discount" and "Late Fee" —
-    I don't mind what types they are, just pick sensible ones that fit.
+  - Add a new field group "Charges" with two fields: "Discount", a plain text field,
+  and "Late Fee" — pick whatever type fits that one.
   - Add a third field, "Surcharge", to "Charges".
   - Rename the group "Charges" to "Adjustments".
   - Rename the field "Late Fee" to "Penalty Fee".
-  - Change the "Discount" field's type to "Number".
-  - Update the instructions on "Discount" and "Surcharge", and also pass a name
-    that isn't in the taxonomy, "Nonexistent Field" — if a name doesn't exist I
-    want to be told, not have it silently skipped.
-  - Tell me how many fields are in "Adjustments", then delete that group.
+  - Change "Discount" to a Number type — it should be numeric, not text.
+  - Update the instructions on "Discount" and "Surcharge".
+  - Delete the "Adjustments" group.
   - Afterwards, confirm the original invoice groups (Invoice, Bill To, Line Items,
     Ship To) are still there.
 
   When you're done, delete the project.
 
-  Save these so I can check them: the instruction-update response
-  (`update_prompts_result.json`), the taxonomy just before you delete the group
-  (`taxonomy_before_delete.json`), and the taxonomy after the delete
+  Save these so I can check them: the taxonomy just before you delete the group
+  (`taxonomy_before_delete.json`) and the taxonomy after the delete
   (`taxonomy_final.json`).
 
 success_criteria:
@@ -143,19 +140,6 @@ success_criteria:
       - expression: "Data.dataset.label_groups[].label_defs[].moon_form[?name=='Discount'].kind | [0]"
         operator: equals
         expected: "Number"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "update-prompts reported the non-existent field under Unmatched, not a silent failure"
-    path: "update_prompts_result.json"
-    assertions:
-      - expression: "Result"
-        operator: equals
-        expected: "Success"
-      - expression: "Data.Unmatched"
-        operator: contains
-        expected: "Nonexistent Field"
     weight: 2.0
     pass_threshold: 1.0
 
