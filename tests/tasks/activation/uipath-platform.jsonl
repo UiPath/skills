@@ -84,8 +84,8 @@
 {"id": "uipath-platform-byo-044", "prompt": "We need to point UiPath to a self-hosted gpt-4o behind our own gateway — how do I configure that?", "expected_skill": "uipath-platform"}
 {"id": "uipath-platform-byo-045", "prompt": "Register a new BYO LLM mapping for jarvis-natural-language-query using my OpenAI connection", "expected_skill": "uipath-platform"}
 
-{"id": "uipath-data-fabric-001", "prompt": "List all Data Fabric entities in my tenant", "expected_skill": "uipath-platform"}
-{"id": "uipath-data-fabric-002", "prompt": "Create a Data Fabric entity called Invoice with fields InvoiceNumber, VendorName, TotalAmount, DueDate, and Status", "expected_skill": "uipath-platform"}
+{"id": "uipath-data-fabric-001", "prompt": "List all entities in my tenant", "expected_skill": "uipath-platform"}
+{"id": "uipath-data-fabric-002", "prompt": "Create a entity called Invoice with fields InvoiceNumber, VendorName, TotalAmount, DueDate, and Status", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-003", "prompt": "Insert a record into the Customers entity", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-004", "prompt": "Show me the schema for my Loan entity", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-005", "prompt": "Query records from the Expense entity where Status = 'Pending' and Amount >= 500", "expected_skill": "uipath-platform"}
@@ -100,7 +100,7 @@
 {"id": "uipath-data-fabric-014", "prompt": "Get the first 100 records from the Vendor entity", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-015", "prompt": "Page through all records in the Transaction entity using the cursor", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-016", "prompt": "Find all Loan records where VendorId is not null and Status in ('Pending','Review'), sorted by CreateTime descending", "expected_skill": "uipath-platform"}
-{"id": "uipath-data-fabric-017", "prompt": "I have a CSV with sales data, set up a Data Fabric entity for it and load all the rows", "expected_skill": "uipath-platform"}
+{"id": "uipath-data-fabric-017", "prompt": "I have a CSV with sales data, set up a entity for it and load all the rows", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-018", "prompt": "Mark the displayName of the Status field as 'Application Status' and make it required", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-019", "prompt": "Batch update 25 invoice records to set Status='Paid' and PaidDate to today", "expected_skill": "uipath-platform"}
 {"id": "uipath-data-fabric-020", "prompt": "Delete the file attached to the Avatar field of user record uuu-111", "expected_skill": "uipath-platform"}
