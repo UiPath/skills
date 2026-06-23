@@ -114,12 +114,13 @@ def require_sequence_integrity(root: ET.Element) -> None:
 def require_no_private_connector_values(root: ET.Element) -> None:
     # A faithful, registry-driven file legitimately contains field *names* like
     # `folderId`/`connectionId` (registry context fields), the standard
-    # `exporter="UiPath (https://bpmn.uipath.com)"` attribute on the root, and
+    # `exporter="UiPath (https://bpmn.uipath.com)"` attribute on the root,
     # GUID-shaped values (releaseKey, entryPointId, binding ids — present in 24
-    # of the known-good fixtures). The real boundary concern is a *populated
-    # value* that bakes in a real tenant/cloud endpoint. Inspect populated
-    # values only — not field names, the root exporter, or bare GUIDs.
-    tenant_host = re.compile(r"https?://|\b[\w-]+\.uipath\.com\b", re.IGNORECASE)
+    # of the known-good fixtures), and placeholder/third-party URLs that are
+    # legitimate workflow data (an A2A agent URL, a connectionless HTTP endpoint,
+    # an `*.example` placeholder). The real leak to police is a baked, real
+    # UiPath tenant/cloud host. Inspect populated values only.
+    tenant_host = re.compile(r"\b[\w-]+\.uipath\.(com|us|gov)\b", re.IGNORECASE)
 
     def values(element: ET.Element) -> list[str]:
         found: list[str] = []

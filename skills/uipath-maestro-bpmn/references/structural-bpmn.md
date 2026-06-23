@@ -387,11 +387,19 @@ unsupported for generation until current tooling confirms them.
   intermediate-catch, or intermediate-throw events.
 - Preserve-only `uipath:*` extension payloads: keep these when imported, and when
   a file legitimately needs one, reproduce the shape (with synthetic, public-safe
-  contents) rather than inventing a new one. `uipath:caseManagement` is a
-  versioned body-string element — `<uipath:caseManagement version="v1">…synthetic
-  payload…</uipath:caseManagement>`. A generic `uipath:Activity` payload and a
-  legacy `<uipath:scriptVersion value="v2" />` round-trip the same way (author
-  `v3` for new scripts; preserve `v2` where it already exists).
+  contents) rather than inventing a new one.
+  - **Typed activity/event shells always use the lowercase `<uipath:activity>` /
+    `<uipath:event>` wrapper with a `<uipath:type value="<Type>" version="v1" />`
+    child** — including types not served by the live registry (e.g.
+    `Maestro.CasePlanScheduler`, `Maestro.CaseManagerGuardrails`,
+    `Maestro.CaseRulesEvaluator`). Do **not** substitute the capital-`A`
+    `<uipath:Activity>` element for a typed shell.
+  - The capital-`A` `<uipath:Activity>` element is a **separate** generic
+    preserve-only payload (its own element, not a wrapper for typed shells).
+  - `uipath:caseManagement` is a versioned body-string element —
+    `<uipath:caseManagement version="v1">…synthetic payload…</uipath:caseManagement>`.
+  - `<uipath:scriptVersion value="v2" />` is legacy: author `v3` for new scripts,
+    preserve `v2` where it already exists.
 
 ## Diagram interchange — `bpmndi` (REGISTRY GAP — always generated)
 
