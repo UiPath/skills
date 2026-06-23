@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d6f7a8b9-0123-4e2f-9a3b-5c6d7e8f9012",
+      "State": "Faulted",
+      "ProcessName": "OnboardingMailer",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-02T08:45:00.120Z",
+      "EndTime": "2026-06-02T08:45:02.190Z",
+      "CreationTime": "2026-06-02T08:44:59.880Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
