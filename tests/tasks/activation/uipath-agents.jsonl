@@ -65,3 +65,4 @@
 {"id": "uipath-agents-066", "prompt": "Add a Memory Space to an inline low-code agent in my Flow project and propagate bindings to the parent flow", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-067", "prompt": "Configure hybrid search, threshold, result count, and field weights for an agent memory feature", "expected_skill": "uipath-agents"}
 {"id": "uipath-agents-068", "prompt": "Add an escalation memory seed item to my UiPath Agent Builder project", "expected_skill": "uipath-agents"}
+{"id": "uipath-agents-069", "prompt": "I added a guardrail to my coded UiPath agent in graph.py but I'm not sure it's attached in the right place — can you check whether it's configured correctly and fix it?", "expected_skill": "uipath-agents"}
