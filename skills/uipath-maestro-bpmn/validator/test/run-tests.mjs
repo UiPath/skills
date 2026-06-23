@@ -9,6 +9,11 @@ import BpmnModdle from "bpmn-moddle";
 import descriptor from "../uipath-moddle.v1.json" with { type: "json" };
 import { buildModel, collectKnownVariableIds, allNodes, allEdges } from "../model.mjs";
 import { validateDiagram, validateVariableExistence, validateVariableNotSet } from "../rules.mjs";
+import { execFileSync } from "child_process";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import { writeFileSync, mkdtempSync } from "fs";
+import { tmpdir } from "os";
 
 const moddle = new BpmnModdle({ uipath: descriptor });
 
@@ -469,6 +474,38 @@ console.log(
 );
 for (const f of integ.failures) console.log("  FAIL " + f);
 failures += integ.failed;
+
+// ---- Run: 4) CLI well-formedness gate ------------------------------------
+// bpmn-moddle's SAX parser is lenient and accepts "--" inside comments, which
+// strict parsers and the canvas import reject. The CLI applies a pre-parse
+// well-formedness gate; assert it fires (exit 2) and does not false-positive.
+console.log("\n== CLI well-formedness gate ==");
+{
+  const cli = join(dirname(fileURLToPath(import.meta.url)), "..", "validate-bpmn.mjs");
+  const tmp = mkdtempSync(join(tmpdir(), "wf-"));
+  const runExit = (xml) => {
+    const p = join(tmp, "case.bpmn");
+    writeFileSync(p, xml);
+    try {
+      execFileSync("node", [cli, p], { stdio: "pipe" });
+      return 0;
+    } catch (e) {
+      return e.status ?? 1;
+    }
+  };
+  const head = '<?xml version="1.0"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"';
+  const badComment = `${head}><!-- run uip foo --connection-id x --output json --><bpmn:process id="P"/></bpmn:definitions>`;
+  const okComment = `${head}><!-- run uip foo with connection id and json output --><bpmn:process id="P"/></bpmn:definitions>`;
+  const badExit = runExit(badComment);
+  const okExit = runExit(okComment);
+  // bad: must be rejected (non-zero); ok comment: must not be rejected for well-formedness (exit != 2)
+  const badOk = badExit !== 0;
+  const okOk = okExit !== 2;
+  console.log(`${badOk ? "PASS" : "FAIL"}  "--" inside comment rejected (exit ${badExit})`);
+  console.log(`${okOk ? "PASS" : "FAIL"}  clean comment not flagged for well-formedness (exit ${okExit})`);
+  if (!badOk) failures++;
+  if (!okOk) failures++;
+}
 
 // ---- Coverage assertion: every rule code is exercised somewhere -----------
 const portedOnly = [...COVERED_BY_PORTED].filter((c) => !fired.has(c));

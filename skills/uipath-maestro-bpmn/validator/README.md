@@ -18,6 +18,9 @@ node validate-bpmn.mjs <bpmn-file> [resources]
 - Prints `VALID` and exits `0` when there are no ERROR-severity findings.
 - Otherwise lists every finding (rule code + message) and exits `1`.
 - WARNING-severity findings are printed but do not gate.
+- A strict XML well-formedness gate runs **before** the parse and exits `2` on
+  malformed input (e.g. `--` inside a comment), which `bpmn-moddle`'s lenient SAX
+  parser would otherwise accept but the canvas import rejects.
 - `resources` (optional): a numeric folder id (or comma-separated release names)
   for the connection-liveness ping via the `uip` CLI. Best-effort; a missing or
   unauthenticated CLI is reported as a NOTE, never a hard failure.
@@ -28,7 +31,8 @@ npm test   # runs all three suites below; green = no drift from the frontend
 
 ## Test suites (`test/`)
 
-`npm test` runs three layers and asserts all 29 rule codes are exercised:
+`npm test` runs the layers below and asserts all 29 rule codes are exercised
+(plus a CLI well-formedness-gate check):
 
 1. **Crafted-invalid XML coverage** (`run-tests.mjs`): for each rule, a minimal
    BPMN that should trip exactly that rule's code, plus a check that valid twins

@@ -66,6 +66,30 @@ if (!file) {
 }
 
 const xml = readFileSync(file, "utf8");
+
+// Strict XML well-formedness gate. bpmn-moddle's SAX parser (saxen) is lenient
+// and accepts constructs that strict parsers — and the Studio Web canvas import —
+// reject, most notably "--" (double-hyphen) inside a comment. Catch these before
+// the lenient parse so the validator never reports VALID for a file that will
+// fail to import.
+const wellFormedness = [];
+{
+  const commentRe = /<!--([\s\S]*?)-->/g;
+  let m;
+  while ((m = commentRe.exec(xml)) !== null) {
+    if (m[1].includes("--")) {
+      const line = xml.slice(0, m.index).split("\n").length;
+      wellFormedness.push(
+        `"--" (double-hyphen) inside an XML comment near line ${line}; XML comments cannot contain "--". Move CLI commands/flags out of the comment.`,
+      );
+    }
+  }
+}
+if (wellFormedness.length) {
+  for (const e of wellFormedness) console.error(`WELL-FORMEDNESS ERROR: ${e}`);
+  process.exit(2);
+}
+
 const moddle = new BpmnModdle({ uipath: descriptor });
 
 let definitions;
