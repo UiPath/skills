@@ -29,7 +29,7 @@ initial_prompt: |
 
   Then make these exact edits, checking after each that it took:
   - Add a new field group "Charges" with two fields, "Discount" and "Late Fee" —
-    don't specify their types; let the skill pick sensible ones that fit.
+    I don't mind what types they are, just pick sensible ones that fit.
   - Add a third field, "Surcharge", to "Charges".
   - Rename the group "Charges" to "Adjustments" — its three fields should carry over.
   - Rename the field "Late Fee" to "Penalty Fee".
