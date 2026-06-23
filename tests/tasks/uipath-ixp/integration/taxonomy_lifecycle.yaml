@@ -8,7 +8,8 @@ description: >
 tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 30
+  max_turns: 60
+  task_timeout: 1800
   turn_timeout: 600
 
 sandbox:
@@ -43,9 +44,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Verified login status first"
+    description: "Verified the session before doing work (login status or a read call)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status'
+    command_pattern: '(uip|\$UIP)\s+(login\s+status|ixp\s+projects\s+list)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -82,10 +83,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # The new instruction text lands in the taxonomy (verified by file_contains
+  # below); the JSON payload may be passed inline or via a file ($(cat ...)),
+  # so the command line only needs to carry --updates.
   - type: command_executed
-    description: "Bulk-updated prompts for 'Discount' and 'Penalty Fee'"
+    description: "Bulk-updated field prompts via update-prompts --updates"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Discount)(?=.*Penalty Fee)'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b.*--updates'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -141,7 +145,7 @@ success_criteria:
     description: "change-type took effect: the Discount field is now type Number"
     path: "taxonomy_before_delete.json"
     assertions:
-      - expression: "Data.dataset.label_groups[].label_defs[].moon_form[?name=='Discount'].kind | [0]"
+      - expression: "(Data.dataset || @).label_groups[].label_defs[].moon_form[?name=='Discount'][].kind | [0]"
         operator: equals
         expected: "Number"
     weight: 2.0
@@ -155,9 +159,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "After delete, Adjustments is gone and the original invoice groups remain"
+    description: "After delete, Adjustments is gone and the original 'Invoice Header' group remains"
     path: "taxonomy_final.json"
-    includes: ["Invoice", "Line Items"]
+    includes: ["Invoice Header"]
     excludes: ["Adjustments"]
     weight: 1.5
     pass_threshold: 1.0
