@@ -36,7 +36,7 @@ success_criteria:
   - type: skill_triggered
     description: "Agent loaded the uipath-admin skill"
     skill_name: "uipath-admin"
-    expected: "yes"
+    expected_skill: "uipath-admin"
     weight: 1.0
     pass_threshold: 1.0
 
