@@ -43,6 +43,11 @@ RUN set -euo pipefail && \
     # to public npm (stable only) — stable lacks the alpha-only guardrail-format
     # review rules, which silently scores guardrail review tasks 0.
     uip tools install @uipath/agent-tool && \
+    # IXP command group (`uip ixp …`) ships as a separate plugin on the @alpha
+    # feed. Required so the live ixp e2e (full_lifecycle) can actually execute
+    # `uip ixp` — without it the command is unknown and the e2e thrashes to
+    # MAX_TURNS. (Smoke ixp tasks pass regardless, since they grade command shape.)
+    uip tools install @uipath/ixp-tool && \
     # AgentHub command group ships as a separate plugin (CLI fetches it lazily).
     # Pre-install from the same @alpha feed so live `uip agenthub …` MCP e2e
     # tasks don't hit a missing-plugin 401.
