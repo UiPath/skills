@@ -123,6 +123,8 @@ uip codedapp publish -n my-webapp --version 1.0.0
 | `Web` | Standard web app accessible via browser URL (default) |
 | `Action` | Action app triggered by UiPath automation workflows |
 
+> **Action apps — always pass `--type Action`.** `publish` defaults to `--type Web`. An action app published without `--type Action` registers as a Web app and will **not** bind to Action Center tasks. Pass `--type Action` on **every** publish of an action app — first deploy and every version update. Never omit it, never rely on the default.
+
 ### What Happens Internally
 
 1. Selects the `.nupkg` file (auto-select, by name, or interactive)

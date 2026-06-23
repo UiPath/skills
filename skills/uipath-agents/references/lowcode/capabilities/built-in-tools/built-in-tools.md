@@ -15,6 +15,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 2. **`properties.toolType` is the discriminator** — fixed per built-in, kebab-lowercase. Copy from the per-tool walkthrough; do not invent.
 3. **No solution-level files.** Built-in tools need no `uip solution resources refresh`. Validate the agent and bundle.
 4. **Input/output schemas are fixed.** Do not edit them. Each tool's walkthrough lists the canonical schema.
+5. **Inline agents need the flow node too.** When the built-in tool is on an *inline* agent (embedded in a flow), authoring the `resource.json` is **not enough** — also wire a `uipath.agent.resource.tool.builtin.<toolType>` flow node to the autonomous node's `tool` handle. Fetch the node manifest with `uip maestro flow registry get` and hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16). Without the flow node the tool is never reachable at runtime. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
 
 ## Resource Shape
 
@@ -45,7 +46,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 | `inputSchema` / `outputSchema` | Fixed per tool — copy from walkthrough |
 | `referenceKey` | Always `null` (no Orchestrator binding) |
 | `guardrail.policies` | Always `[]` — required for backward compatibility |
-| `id` | Fresh UUID per resource — see [../../critical-rules.md](../../critical-rules.md) Anti-pattern 9 |
+| `id` | Fresh UUID per resource — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 9 |
 
 ## Lifecycle
 
@@ -64,7 +65,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 
 ## Gotchas
 
-- See [../../critical-rules.md](../../critical-rules.md) Critical Rules 18–21 and Anti-patterns 21–22 for the canonical rule list.
+- See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 17–20 and Anti-patterns 20–21 for the canonical rule list.
 - Pairing with file inputs: a `job-attachment` field renders metadata only in `{{input.<field>}}`. The agent reads contents only by calling a file-handling built-in tool. See [../../agent-definition.md](../../agent-definition.md) § File Attachments.
 - Runtime test path: built-in tools cannot be exercised end-to-end through the `uip` CLI. Test from Studio Web or via Orchestrator job invocation.
 
@@ -72,4 +73,4 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 
 - [analyze-attachments.md](analyze-attachments.md) — Analyze Files walkthrough
 - [../../agent-definition.md](../../agent-definition.md) § File Attachments — `job-attachment` schema
-- [../../critical-rules.md](../../critical-rules.md) — canonical rules
+- [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) — canonical rules

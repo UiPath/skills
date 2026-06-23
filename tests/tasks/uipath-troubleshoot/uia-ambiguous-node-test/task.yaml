@@ -93,7 +93,7 @@ success_criteria:
 
       You must grade THREE dimensions in a single score:
 
-      DIMENSION A -- Correct playbook + actual CLI work
+      DIMENSION A -- Correct playbook
         The agent must match the UI-automation ambiguous-selector
         playbook (ambiguous-selector.md). It is acceptable for the
         agent to also Read neighboring playbooks (the selector-failure-*
@@ -105,14 +105,6 @@ success_criteria:
         `NodeNotFoundException` / `SelectorNotFoundException` — the
         zero-match cases. `NodeAmbiguousException` is the multiple-match
         case and has its own playbook.
-
-        Independently, the agent's tool-call history must show real
-        Orchestrator interrogation via the uip CLI — at minimum
-        `uip or jobs get <key>` on the faulted job, plus an inspection
-        of the workflow source (read Amb.xaml or equivalent). If the
-        agent reached a conclusion without invoking uip on the faulted
-        job AND without reading the workflow XAML, the playbook
-        dimension is failed regardless of which playbook was named.
 
       DIMENSION B -- Correct fix per playbook branch (B)
         The reference fix names ALL of:

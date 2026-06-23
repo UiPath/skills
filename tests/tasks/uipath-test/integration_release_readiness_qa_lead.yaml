@@ -17,8 +17,6 @@ description: >
   tenant — see references at the bottom of this file.
 tags: [uipath-test, integration, mode:diagnose, lifecycle:generate, feature:test-case, feature:compliance]
 initial_prompt: |
-  Before starting, load the uipath-test skill and follow its workflow.
-
   I'm a QA Lead. We're deploying new loan-approval workflows tonight, but a
   UAT tester reported inconsistent approval behavior for the same customer
   profile. Before the signoff meeting starts, I need a release-readiness

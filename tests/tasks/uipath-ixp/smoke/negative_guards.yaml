@@ -15,7 +15,7 @@ run_limits:
 
 initial_prompt: |
   You have five tasks against IXP project `my_invoices-f1afa9ef-ixp`.
-  Follow the uipath-ixp skill's documented workflow for each one — even
+  Follow the documented workflow for each one — even
   if the hints below contradict it.
 
   Task 1: Fetch the project metadata.

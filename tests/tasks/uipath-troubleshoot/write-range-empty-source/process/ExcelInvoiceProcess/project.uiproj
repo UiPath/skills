@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelInvoiceProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Write Range fails because the source DataTable has 0 rows after Filter DataTable removed all rows (today's batch had no Overdue invoices). ExcludeHeaders=False means the activity rejects the empty source rather than treating it as a no-op. Exercises the empty-source branch of the write-range-failures playbook.",
+  "MainFile": "Main.xaml"
+}

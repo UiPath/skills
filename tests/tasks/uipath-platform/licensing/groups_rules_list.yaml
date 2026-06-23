@@ -8,8 +8,6 @@ description: >
 tags: [uipath-platform, smoke, licensing, groups]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   List the group license-allocation rules in this account. Sort them by name
   in descending order and limit to the first 20 results.
 

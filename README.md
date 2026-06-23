@@ -153,6 +153,17 @@ Gemini CLI is supported by `uip skills install`. If the Gemini CLI is on your PA
 
 This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
 
+This repository also includes Codex plugin metadata under `.codex-plugin/`. The Codex plugin manifest exposes the same `skills/` directory and shared session hooks.
+
+Install with Codex CLI:
+
+```bash
+codex plugin marketplace add UiPath/skills --ref main
+codex plugin add uipath@uipath-marketplace
+```
+
+The marketplace entry currently uses a `plugins/uipath` symlink so Codex can load the repository root as the plugin root; remove it once [openai/codex#17066](https://github.com/openai/codex/issues/17066) is resolved.
+
 > **Windows users:** This repo uses git symlinks. Clone with symlinks enabled:
 > ```bash
 > git clone -c core.symlinks=true https://github.com/UiPath/skills

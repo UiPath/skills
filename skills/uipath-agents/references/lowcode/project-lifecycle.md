@@ -24,10 +24,11 @@ uip agent init "<AGENT_NAME>" --output json
 The `<path>` argument is relative or absolute; the command can run from any directory. Creates agent.json, entry-points.json, project.uiproj, and default eval directories inside the target path. Run `uip agent refresh` after editing to regenerate `entry-points.json` and `bindings_v2.json`.
 
 **Options:**
-- `--model <model>` — LLM model to use (default: `gpt-4o-2024-11-20`). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
+- `--conversational` - Pass to initialize a conversational agent. When not passed, an autonomous agent is initialized.
+- `--model <model>` — LLM model to use (default: `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational). This default is stale; override it post-init — discover current tenant models with `uip agent model list` and select per [model-selection-guide.md](model-selection-guide.md). Pass `--model` at init or edit `settings.model` after.
 - `--system-prompt <prompt>` — Initial system prompt for the agent
 - `--force` — Overwrite existing directory if non-empty
-- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below)
+- `--inline-in-flow` — Scaffold an inline agent inside a flow project (see below). Only applicable for autonomous agents, since adding inline conversational-agents within a flow project is currently not an enabled feature.
 
 #### Inline mode: `--inline-in-flow`
 
@@ -142,13 +143,15 @@ For discovery, retrieval settings, memory item types, and troubleshooting, see [
 
 ### `uip agent debug`
 
-Run the agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules.md](critical-rules.md) Rule 8: consent before upload/publish/deploy).
+Run the autonomous agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 8: consent before upload/publish/deploy).
 
 ```bash
 uip agent debug <AGENT_PROJECT_DIR> --inputs '{"input":"..."}' --output json
 ```
 
 Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, and `Data.TraceId`. A `Faulted` run returns `Result: "Failure"` (exit 1); inspect it with `uip traces spans get <TraceId> --output json`. Full options and reporting in [debug.md](debug.md).
+
+> The debug command is currently not supported for conversational agents, so only attempt to debug autonomous agents.
 
 ## Solution Commands
 
@@ -324,16 +327,16 @@ When the fallback is needed, `uip solution project add` automatically finds the 
 
 ### Step 3 — Configure agent.json
 
-Read [agent-definition.md](agent-definition.md) for the full schema.
+Read [agent-definition.md](agent-definition.md) for the full schema, which differs between autonomous and conversational agents.
 
-1. Set `settings.model` — discover with `uip agent model list`, select per [model-selection-guide.md](model-selection-guide.md) (override the scaffold default `gpt-4o-2024-11-20`)
+1. Set `settings.model` — discover with `uip agent model list`, select per [model-selection-guide.md](model-selection-guide.md) (override the scaffold default `gpt-5.4` for autonomous, `anthropic.claude-sonnet-4-5-20250929-v1:0` for conversational)
 2. Set `settings.temperature` (0 for deterministic)
-3. Write system prompt in `messages[0].content` + rebuild `contentTokens` — structure it per [agent-prompting-guide.md](agent-prompting-guide.md) (skeleton, tool-call criteria, output contract), not a placeholder
-4. Write user message template in `messages[1].content` using `{{input.fieldName}}` + rebuild `contentTokens`
+3. Write system prompt in `messages[0].content` + rebuild `contentTokens` — structure it per [prompting/agent-prompting-guide.md](prompting/agent-prompting-guide.md) (skeleton, tool-call criteria, output contract), not a placeholder
+4. For autonomous agents, write user message template in `messages[1].content` using `{{input.fieldName}}` + rebuild `contentTokens`. Conversational agents should always have the user message template left blank since each user message is received during the actual conversation.
 
 ### Step 4 — Define input/output schemas
 
-1. Add fields to `agent.json` → `inputSchema` and `outputSchema`
+1. Add fields to `agent.json` → `inputSchema` and `outputSchema`. Note that modifying `outputSchema` only applies for autonomous agents.
 2. Mirror in `entry-points.json`
 3. Refresh (writes migrated files + regenerates `entry-points.json` and `bindings_v2.json`): `uip agent refresh "<SOLUTION_NAME>/<AGENT_NAME>" --output json`
 4. Validate: `uip agent validate "<SOLUTION_NAME>/<AGENT_NAME>" --output json`

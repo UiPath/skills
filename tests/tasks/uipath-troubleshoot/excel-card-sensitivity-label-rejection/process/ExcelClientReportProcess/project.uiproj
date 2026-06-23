@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelClientReportProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Modern Use Excel File card writing to a Microsoft Purview / AIP-protected workbook with a sensitivity label, without configuring the SensitivityLabel and SensitivityOperation properties. Package v2.24.7 supports the properties but the workflow doesn't use them. Exercises the sensitivity-label-rejection branch of the excel-application-card-failures playbook.",
+  "MainFile": "Main.xaml"
+}

@@ -13,8 +13,6 @@ agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   How many Attended Named User seats does this account have available right
   now? When you reply, refer to the bundle by its friendly name AND its code,
   per the skill's docs-page resolution rule.

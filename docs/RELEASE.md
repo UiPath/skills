@@ -21,7 +21,7 @@ npm run version:check     # CI guard — non-zero exit if drifted
 
 ### Why lockstep with the CLI
 
-The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.196.x` → skills `1.196.x`). `version-manifest.json.targetCli` records the matching line as `^MAJOR.MINOR.0`. The CLI pins this line, so it never pulls a skills package from a different minor.
+The version line mirrors the CLI's `MAJOR.MINOR` (e.g. CLI `1.197.x` → skills `1.197.x`). `version-manifest.json.targetCli` records the matching line as `^MAJOR.MINOR.0`. The CLI pins this line, so it never pulls a skills package from a different minor.
 
 > **Today the CLI clones `main` directly** (`packages/cli/src/commands/skills/contentStore.ts` → `REPO_URL` / `ZIP_URL`). That is the mismatch source: any CLI version gets whatever is on `main` at install time. Switching that consumption path to install the pinned `@uipath/skills` version is the **CLI-side change** that closes the loop — tracked as a decision below, not yet done.
 
@@ -53,6 +53,6 @@ Both tracks are **manually triggered** — there is no auto-publish on push to `
 
 - [x] **npmjs Trusted Publishing** — configure a GitHub Actions trusted publisher on the `@uipath/skills` package (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the `publish-release` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
-- [x] Seed version confirmed: **`1.196.0`** (current CLI minor line). Automating the ongoing CLI↔skills lockstep is tracked in PILOT-5518.
+- [x] Seed version confirmed: **`1.197.0`** (current CLI minor line). Automating the ongoing CLI↔skills lockstep is tracked in PILOT-5518.
 
 > The alpha track also needs no secret — `publish-alpha` uses the built-in `GITHUB_TOKEN` with `packages: write`.

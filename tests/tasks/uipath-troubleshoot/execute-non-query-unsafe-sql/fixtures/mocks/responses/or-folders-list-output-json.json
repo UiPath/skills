@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "c7a8b9d0-1e2f-4a3b-8c4d-6e7f80910203",
+      "Name": "Sales Operations",
+      "Path": "Sales Operations",
+      "Description": "Folder hosting the customer upsert and CRM sync processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b8e2c145-7d3a-49b6-a2c8-1f4b5e8a9c01",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}
