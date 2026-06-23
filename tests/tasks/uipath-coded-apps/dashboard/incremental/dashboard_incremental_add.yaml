@@ -29,13 +29,10 @@ initial_prompt: |
   First, build a UiPath dashboard with a single widget: active agents. Let it
   finish building completely.
 
-  Then, as a follow-up edit to that now-existing dashboard, add a second widget —
-  faulted jobs — to it. Treat this as an incremental edit of the already-built
-  dashboard, not a rebuild from scratch.
+  Then add a second widget — faulted jobs — to it.
 
   This is a non-interactive automated test — there is NO user to approve plans.
-  Treat each plan as pre-approved: author the files and run each step (the build,
-  then the incremental edit) through to completion in this same session. Do NOT
+  Treat each plan as pre-approved: author the files and run each step through to completion in this same session. Do NOT
   stop at a plan, do NOT wait for confirmation, and do NOT ask any question.
 
 success_criteria:
