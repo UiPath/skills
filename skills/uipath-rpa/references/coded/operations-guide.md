@@ -35,7 +35,7 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 - For each `.cs` **test case** file, add an entry to `designOptions.fileInfoCollection` in `project.json` with `editingStatus: "InProgress"`, `testCaseType: "TestCase"`, `publishAsTestCase: true`. Test cases do NOT go in `entryPoints` regardless of project type.
 - If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see before-after-hooks-template.md)
 
-**6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly
+**6. Validate each file** (Critical Rule #4 — validate-as-you-go) — run the validation loop on every `.cs` file until it compiles cleanly
 
 > **Why `init` instead of manual files?** It generates correct schema versions, metadata directories, and default dependencies — manual creation risks subtle errors. See [json-template.md](../../assets/json-template.md) for reference-only templates.
 
@@ -63,7 +63,7 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 4. Update `project.json` (**Process projects only** — skip `entryPoints` for Tests and Library projects):
    - Add new entry to `entryPoints` array with `filePath`, unique `uniqueId`, `input`, and `output` definitions
    - If the workflow has parameters, define them in `input`/`output` with `name`, `type`, and `required`
-5. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
+5. **Validate the file** — Run the validation loop (Critical Rule #4 — validate-as-you-go) until the file compiles cleanly before proceeding
 
 ## Add a Test Case File
 
@@ -82,7 +82,7 @@ Coded test cases automate and validate application behavior using a structured *
 4. For data-driven tests, add default parameter values: `public void Execute(string browser = "chrome.exe")`
    - Optionally create `.variations/` data file for parameterized test data
    - For CLI-based data sources (variations files, Test Data Queues, Data Service), see [../testing-guide.md § Data-Driven Testing](../testing-guide.md)
-5. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
+5. **Validate the file** — Run the validation loop (Critical Rule #4 — validate-as-you-go) until the file compiles cleanly before proceeding
 6. **Update `editingStatus`** — When the user asks to mark a test case as ready/publishable, update its `editingStatus` in `fileInfoCollection` from `"InProgress"` to `"Publishable"`. Do NOT change this automatically — only when explicitly requested
 
 **Test case structure — Given/When/Then:**
@@ -272,7 +272,7 @@ public void Execute()
    - Method name (`Execute`)
 3. If parameters changed (added/removed/renamed/retyped) and this is a **Process** project:
    - Update `project.json` `entryPoints` input/output definitions for this file (Tests and Library projects do not use `entryPoints`)
-4. **Validate the file** — Run the validation loop (Critical Rule #14) until the file compiles cleanly before proceeding
+4. **Validate the file** — Run the validation loop (Critical Rule #4 — validate-as-you-go) until the file compiles cleanly before proceeding
 
 ## Remove a Workflow File
 
@@ -400,18 +400,10 @@ Canonical CLI: `uip rpa packages install`. Do NOT hand-edit `project.json` `depe
    ```bash
    uip rpa packages install --project-dir "<PROJECT_DIR>" --packages 'id=<PACKAGE_ID>,version=<VERSION>' --output json
    ```
-   Omit `,version=<VERSION>` to resolve the latest compatible. Pin a version only when there is a known compatibility constraint (see pinned versions below). The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
+   Omit `,version=<VERSION>` to resolve the latest compatible (preferred — gets newest docs and features). Pin a version only when there is a known compatibility constraint. The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
 3. Only install packages the project actually needs.
 
-**Pinned versions for UiPath activity packages (current v25.x):**
-- `UiPath.System.Activities` → `25.12.2` — system activities (assets, queues, credentials)
-- `UiPath.Testing.Activities` → `25.10.2` — testing and assertions. Pin this exact patch — `25.10.0` and `25.10.1` synthesize a bootloader under `.local/install/` that references `UiPath.Robot.Activities.Api` and breaks the build with CS0234.
-- `UiPath.UIAutomation.Activities` → `25.10.21` — UI automation
-- `UiPath.Excel.Activities` → `3.3.1` — Excel automation
-- `UiPath.Word.Activities` → `2.3.1` — Word automation
-- `UiPath.Presentations.Activities` → `2.3.1` — PowerPoint automation
-- `UiPath.Mail.Activities` → `2.5.10` — Mail automation
-- `UiPath.MicrosoftOffice365.Activities` → `3.6.10` — Microsoft 365 (Graph API: mail, calendar, Excel cloud, OneDrive, SharePoint)
-- `UiPath.GSuite.Activities` → `3.6.10` — Google Workspace (Gmail, Calendar, Drive, Sheets, Docs)
+**Known compatibility constraints:**
+- `UiPath.Testing.Activities` → pin `25.10.2` — `25.10.0` and `25.10.1` synthesize a bootloader under `.local/install/` that references `UiPath.Robot.Activities.Api` and breaks the build with CS0234.
 
 **Third-party NuGet packages:** same CLI — pass the public NuGet package ID as `id`. See [third-party-packages-guide.md](third-party-packages-guide.md).

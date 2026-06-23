@@ -1,6 +1,8 @@
-# Orchestrator Integration Guide
+# Orchestrator Integration Guide (Legacy)
 
 Orchestrator concepts and integration patterns for legacy UiPath workflows: queues, assets, logging, triggers, and environment management.
+
+> **Scope:** Legacy target-framework projects only. For modern projects, Orchestrator resource operations live in the `uipath-platform` skill's references; modern `uip rpa` integration patterns are in [../cli-reference.md](../cli-reference.md) and the coded/XAML guides.
 
 For Dispatcher/Performer REFramework pattern, see [activity-docs/_REFRAMEWORK.md](./activity-docs/_REFRAMEWORK.md) section 9.
 For Asset access VB.NET code, see [activity-docs/_PATTERNS.md](./activity-docs/_PATTERNS.md) Orchestrator Integration Patterns.

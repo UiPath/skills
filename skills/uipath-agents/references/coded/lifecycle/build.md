@@ -8,8 +8,8 @@ Read **only** the reference matching the selected framework. Do NOT load other f
 
 | Framework | Reference |
 |-----------|-----------|
-| Coded Function | `../frameworks/coded-function-agents.md` + `../frameworks/agent-patterns.md` |
-| LangGraph | `../frameworks/langgraph-integration.md` |
+| Coded Function | `../frameworks/coded-functions.md` + `../frameworks/agent-patterns.md` |
+| LangGraph | `../frameworks/langgraph-integration.md` + `../frameworks/agent-patterns.md` §Chat Agent for custom tools (`create_react_agent()`, tool binding) |
 | LlamaIndex | `../frameworks/llamaindex-integration.md` |
 | OpenAI Agents | `../frameworks/openai-agents-integration.md` |
 

@@ -150,7 +150,7 @@ if (system.PathExists(@"C:\Reports\report.pdf", PathType.File, out ILocalResourc
 - **Match input parameter names exactly** — Execute method signature must match `--input` arguments (case-sensitive)
 - **Escape backslashes in paths** — Use `C:\\path\\file.txt` not `C:\path\file.txt` in input arguments
 
-### Validation Loop (Critical Rule #14)
+### Validation Loop (Critical Rule #4 — validate-as-you-go)
 uip rpa validate --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json
 @../validation-guide.md
 
@@ -182,11 +182,11 @@ C) <user-driven approach>
 
 ### Project & Code Structure
 
-- Never manually write `project.json` or `project.uiproj` when creating a new project — use `uip rpa init` (Critical Rule #1)
+- Never manually write `project.json` or `project.uiproj` when creating a new project — use `uip rpa init` (Critical Rule #2)
 - Never generate C# code without first searching for existing .cs files (API Discovery)
 - Never edit files without reading them first
-- Never skip the `[Workflow]` or `[TestCase]` attribute on the Execute method (Critical Rule #4)
-- Never forget to inherit from `CodedWorkflow` (except Coded Source Files) (Critical Rule #3)
+- Never skip the `[Workflow]` or `[TestCase]` attribute on the Execute method (Critical Rule #14)
+- Never forget to inherit from `CodedWorkflow` (except Coded Source Files) (Critical Rule #13)
 - Never add `using` statements for packages not in `project.json` — causes CS errors
 - Never guess service method names — verify with existing code or `uip rpa packages inspect`
 
@@ -196,7 +196,7 @@ C) <user-driven approach>
 - Never write UI code referencing descriptors without first reading `ObjectRepository.cs`
 - Never manually craft UI selectors by calling the internal `uip rpa uia` CLIs outside of the `uia-configure-target` skill flow — this skips selector improvement and OR registration
 - Never skip the target configuration step when a descriptor is missing — use the `uia-configure-target` skill flow (fallback: indication commands per the UIA docs)
-- Never use UITask (ScreenPlay) as the primary approach — resolve descriptors via Finding Descriptors hierarchy first (Critical Rule #15)
+- Never use UITask (ScreenPlay) as the primary approach — resolve descriptors via the Finding Descriptors hierarchy first (see [ui-automation-guide.md § Step 4 — UITask / ScreenPlay](../ui-automation-guide.md))
 - Never skip configuring targets because it "seems tedious" — configure ALL missing elements
 - Never construct `TargetAppModel` with raw URL/BrowserType to bypass Object Repository
 - Never skip checking UILibrary/descriptor NuGet packages in `project.json`
@@ -213,7 +213,7 @@ C) <user-driven approach>
 
 ### Validation & Execution
 
-- Never assume create/edit succeeded without running the validation loop (Critical Rule #14)
+- Never assume create/edit succeeded without running the validation loop (Critical Rule #4 — validate-as-you-go)
 - Never continue retrying indefinitely — stop after 5 validation fix attempts or 2 runtime execution retries
 - Never make unrelated changes during retry — identify the root cause, fix only that, re-run and verify. Never bundle a speculative "improvement" with the actual fix (e.g., fixing a broken selector AND switching from TypeInto to KeyboardShortcut in the same edit). One change, one re-run.
 - Never execute a workflow with parameters without providing `--input` arguments

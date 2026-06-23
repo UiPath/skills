@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports. For Orchestrator→uipath-platform. For test automation→uipath-rpa."
+description: "UiPath Test Manager via `uip tm` — manage test projects, test cases, test sets, executions, requirements, custom fields; query results and generate persona-tailored shareable reports (QA/Dev/Release Manager). Manages Test Manager resources only — for authoring/running test cases in RPA projects (.xaml/.cs)→uipath-rpa. For Orchestrator ops→uipath-platform. For investigating a failure's root cause→uipath-troubleshoot."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
