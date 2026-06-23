@@ -1,0 +1,6 @@
+{
+  "Name": "ResumePhotoStamp",
+  "ProjectType": "Process",
+  "Description": "Repro: Word Add Picture process whose XAML is correct (WordAddImage properly nested in UseWordFile, valid absolute ImagePath) but faults because Microsoft Word (WINWORD.EXE) crashes/closes while inserting the image; the COM cast to Word._Document then fails on the async-completion path with HRESULT 0x8001010E (RPC_E_WRONG_THREAD), a downstream symptom of the crash, not a source defect. Exercises the Word process-crash branch (E4) of the word-com-interop-failures playbook.",
+  "MainFile": "Main.xaml"
+}
