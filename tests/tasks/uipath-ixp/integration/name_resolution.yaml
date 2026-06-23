@@ -24,7 +24,8 @@ initial_prompt: |
   re-authenticate). Set up an invoice project from the files in `./fixtures/` —
   import the taxonomy and upload the three invoices — and give it a friendly
   title like "IxP Int Resolve <something>" so its title reads differently from
-  its internal name.
+  its internal name. You don't need to train or label — this is about resolving
+  the human names to the right ids.
 
   Now, I'll only refer to things by their human names — work the ids out yourself:
   - Delete the file `york_solutions_invoice.png`. I'm giving you the filename, not

@@ -22,9 +22,10 @@ sandbox:
 
 initial_prompt: |
   I want to reshape an invoice project's taxonomy. Use the tenant I'm already
-  signed into (check I'm logged in; don't re-authenticate). Start a fresh project
-  from the files in `./fixtures/` — import the taxonomy in `taxonomy.json` rather
-  than letting it auto-suggest one.
+  signed into (check I'm logged in; don't re-authenticate). Spin up a fresh
+  project from `./fixtures/` and import its `taxonomy.json` rather than letting it
+  auto-suggest one. This is taxonomy editing only — you don't need to train or
+  label anything (the sample invoices are just there so the project can be created).
 
   Then walk through these edits, and after each one check it actually took:
   - Add a new field group "Charges" with a couple of fields — don't fuss over the
