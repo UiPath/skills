@@ -30,17 +30,12 @@ run_limits:
   expected_turns: 10
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
+  Using the UiPath Test Manager Integration Service connector, retrieve the assertions for
+  test execution `<FIXTURE_EXECUTION_ID>`. Record result.json with `execution_id` and an
+  `assertions` array containing what the connector returned.
 
-  Using the UiPath Test Manager Integration Service connector
-  (`uipath-uipath-testmanager`), retrieve the assertions for test execution
-  `<FIXTURE_EXECUTION_ID>` (`uip is resources run list uipath-uipath-testmanager
-  GetAssertions ...`). Then write `result.json` with `execution_id` and an
-  `assertions` array containing the assertions returned by the connector.
-
-  Use `--output json` and `--connection-id` on every resource command.
-
-  Do NOT ask for approval. Do NOT pause between planning and implementation.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed

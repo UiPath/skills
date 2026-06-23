@@ -19,26 +19,19 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Before starting, load the uipath-rpa skill and follow its workflow.
+  Build a UiPath coded automation (a .cs coded workflow) that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
 
-  Build a UiPath coded automation (a `.cs` coded workflow, not XAML) that uses the
-  UiPath Test Manager Integration Service connector (uipath-uipath-testmanager) via
-  UiPath.IntegrationService.Activities (ConnectorConnection.ExecuteAsync). Cover
-  these operations:
+  - Get a test execution
+  - Delete a test execution
+  - Get the test case logs of a test execution
+  - Get a test case log
+  - Get robot logs
+  - Get assertions
+  - Download an assertion
+  - Get test steps
+  - Get test step logs
 
-  - Get Test Execution
-  - Delete Test Execution
-  - Get Test Case Logs of Test Execution
-  - Get Test Case Log
-  - Get Robot Logs
-  - Get Assertions
-  - Download Assertion
-  - Get Test Steps
-  - Get Test Step Logs
-
-  Discover the connector and its operations via the `uip is` surface; bind the
-  Test Manager connection (do not mock it). The task is not complete until
-  `uip rpa get-errors` (or `uip rpa build`) reports no errors.
+  The task is not complete until the project builds with no errors.
 
   Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation.

@@ -20,25 +20,19 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Before starting, load the uipath-maestro-flow skill and follow its workflow.
+  Build a Maestro Flow (inside a solution of the same name) that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
 
-  Build a Maestro Flow "TMCoverage" (inside a solution of the same name) that uses
-  the UiPath Test Manager Integration Service connector. Add one connector node
-  for each of these operations (discover them via the registry — run
-  `uip maestro flow registry pull` first, the manifest is stale otherwise):
+  - Get a test execution
+  - Delete a test execution
+  - Get the test case logs of a test execution
+  - Get a test case log
+  - Get robot logs
+  - Get assertions
+  - Download an assertion
+  - Get test steps
+  - Get test step logs
 
-  - Get Test Execution
-  - Delete Test Execution
-  - Get Test Case Logs of Test Execution
-  - Get Test Case Log
-  - Get Robot Logs
-  - Get Assertions
-  - Download Assertion
-  - Get Test Steps
-  - Get Test Step Logs
-
-  Wire the Test Manager connection on the nodes — do not mock it. The task is not
-  complete until `uip maestro flow validate` passes for the flow.
+  The task is not complete until the flow validates.
 
   Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation.

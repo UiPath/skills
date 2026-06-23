@@ -25,21 +25,17 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  Before starting, load the uipath-maestro-flow skill and follow its workflow.
+  Build a Maestro Flow (inside a solution of the same name) that uses the UiPath Test Manager Integration Service connector.
 
-  Read seed.json — it has a unique `name` and a `project_key`. Build a Maestro Flow
-  "TMCrudGrounded" (in a solution of the same name) using the UiPath Test Manager
-  connector nodes (run `uip maestro flow registry pull` first — the manifest is
-  stale otherwise):
-  1. Create-Test-Case node: create a Test Case named exactly that `name`.
-  2. Get-Test-Case node: read it back by the created id.
-  3. Output the retrieved test case name.
+  Read seed.json for a unique `name` and a `project_key`, then:
+  1. Create a test case with that exact name under that project.
+  2. Read it back so the create and read actually execute, and capture the name that comes back.
+  3. Record result.json with `created_name` (the name you sent), `retrieved_name` (the name returned), and `id`.
 
-  Wire the Test Manager connection on the nodes. Validate, then execute with
-  `uip maestro flow debug`. From the debug output, write `result.json` with
-  `created_name` (seeded), `retrieved_name` (from the flow output), and `id`.
+  The task is not complete until the flow validates.
 
-  Do NOT ask for approval. Do NOT pause between planning and implementation.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed

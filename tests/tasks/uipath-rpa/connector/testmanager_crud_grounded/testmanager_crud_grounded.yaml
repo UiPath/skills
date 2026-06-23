@@ -24,21 +24,17 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  Before starting, load the uipath-rpa skill and follow its workflow.
+  Build a UiPath coded automation (a .cs coded workflow) that uses the UiPath Test Manager Integration Service connector.
 
-  Read seed.json — it has a unique `name` and a `project_key`. Build a UiPath coded
-  automation (a `.cs` coded workflow) that uses the UiPath Test Manager Integration
-  Service connector (UiPath.IntegrationService.Activities) to:
-  1. Create a Test Case named exactly that `name` under that project.
-  2. Read it back by the created id.
-  3. Write `result.json` with `created_name` (the seeded name), `retrieved_name`
-     (the name read back), and `id` (the created id).
+  Read seed.json for a unique `name` and a `project_key`, then:
+  1. Create a test case with that exact name under that project.
+  2. Read it back so the create and read actually execute, and capture the name that comes back.
+  3. Record result.json with `created_name` (the name you sent), `retrieved_name` (the name returned), and `id`.
 
-  Discover the connector/connection on the `uip is` surface. Build the project
-  (`uip rpa build` / `get-errors`), then run it (`uip rpa run`) so the create and
-  read actually execute.
+  The task is not complete until the project builds with no errors.
 
-  Do NOT ask for approval. Do NOT pause between planning and implementation.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed

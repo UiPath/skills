@@ -24,22 +24,12 @@ run_limits:
   task_timeout: 1800
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
+  Using the UiPath Test Manager Integration Service connector, run the test set HEALTH:21,
+  then keep checking the resulting execution until it reaches a final status (no longer
+  pending or running). Record result.json with `execution_id` and the final `status`.
 
-  You are connected to a live tenant. Using the UiPath Test Manager Integration
-  Service connector (`uipath-uipath-testmanager`):
-
-  1. Execute the test set `HEALTH:21` (`uip is resources run create
-     uipath-uipath-testmanager ExecuteTestSet ...`). Capture the returned
-     ExecutionId.
-  2. Poll the execution (`uip is resources run get uipath-uipath-testmanager
-     TestExecution ...`) until its status is terminal — i.e. no longer Pending or
-     Running (e.g. Passed / Failed / Completed). Retry with a short delay.
-  3. Write result.json with `execution_id` and the final `status`.
-
-  Use `--output json` and `--connection-id` on every resource command.
-
-  Do NOT ask for approval. Do NOT pause between planning and implementation.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed

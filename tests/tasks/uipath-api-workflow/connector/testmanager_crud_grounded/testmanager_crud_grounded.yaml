@@ -28,20 +28,17 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  Before starting, load the uipath-api-workflow skill and follow its workflow.
+  Build a UiPath API Workflow that uses the UiPath Test Manager Integration Service connector.
 
-  Read seed.json — it has a unique `name` and a `project_key`. Build a UiPath API
-  Workflow at Workflow.json that uses the UiPath Test Manager connector to:
-  1. Create a Test Case named exactly that `name` under that project.
-  2. Get that test case back by the created id.
-  3. Respond with the retrieved test case name.
+  Read seed.json for a unique `name` and a `project_key`, then:
+  1. Create a test case with that exact name under that project.
+  2. Read it back so the create and read actually execute, and capture the name that comes back.
+  3. Record result.json with `created_name` (the name you sent), `retrieved_name` (the name returned), and `id`.
 
-  Discover the activities via the registry (resolve + stub), wire the connection,
-  and validate. Then RUN it: `uip api-workflow run ./Workflow.json --output json`.
-  From the run output, write `result.json` with `created_name` (the seeded name),
-  `retrieved_name` (the name the workflow returned), and `id` (the created id).
+  The task is not complete until the workflow validates.
 
-  Do NOT ask for approval. Do NOT pause between planning and implementation.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed

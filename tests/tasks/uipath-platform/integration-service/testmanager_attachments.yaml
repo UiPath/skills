@@ -15,22 +15,15 @@ sandbox:
   node: {}
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
+  Using the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
 
-  Exercise the UiPath Test Manager attachment operations through UiPath
-  Integration Service, using connector `uipath-uipath-testmanager`. Run the
-  matching `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
+  - Upload an attachment
+  - Get attachments
+  - Download an attachment
+  - Delete an attachment
 
-  - Upload an attachment    (object `UploadAttachment`)
-  - Get attachments         (object `GetAttachments`)
-  - Download an attachment  (object `DownloadAttachment`)
-  - Delete an attachment    (object `DeleteAttachment`)
-
-  Important:
-  - The `uip` CLI is available but NOT connected to a live tenant. Commands will
-    fail with auth errors — expected. Run each once; do NOT retry or login.
-  - Use `--output json` and `--connection-id` (placeholder if needed); placeholder
-    ids where a real id would be needed.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed

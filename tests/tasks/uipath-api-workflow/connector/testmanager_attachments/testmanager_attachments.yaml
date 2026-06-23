@@ -19,20 +19,14 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Before starting, load the uipath-api-workflow skill and follow its workflow.
+  Build a UiPath API Workflow that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
 
-  Build a UiPath API Workflow at Workflow.json that uses the UiPath Test Manager
-  Integration Service connector (connection in the Shared folder). Add one
-  connector activity for each of these attachment operations:
+  - Upload an attachment
+  - Get attachments
+  - Download an attachment
+  - Delete an attachment
 
-  - Upload Attachment
-  - Get Attachments
-  - Download Attachment
-  - Delete Attachment
-
-  Discover each activity through the registry (resolve + stub), verify the
-  connection pings, cross-check required fields. Not complete until
-  `uip api-workflow validate ./Workflow.json` passes.
+  The task is not complete until the workflow validates.
 
   Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation.

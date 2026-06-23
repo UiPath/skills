@@ -24,26 +24,20 @@ pre_run:
     timeout: 30
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
+  Using the UiPath Test Manager Integration Service connector, work with a test set end to end and confirm the data round-trips.
 
-  You are connected to a live tenant. Read seed.json — it has a unique `name` and
-  a `project_key`. Using the UiPath Test Manager Integration Service connector
-  (`uipath-uipath-testmanager`), exercise the full TestSet operation set via
-  `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
+  Read seed.json for a unique `name` and a `project_key`, then:
+  1. Create a test set with that exact name under that project.
+  2. Read it back and confirm the name that comes back matches the name you created.
+  3. Record result.json with `created_name`, `retrieved_name`, and `id`.
+  4. Update the test set.
+  5. Assign test cases to the test set.
+  6. List the test cases assigned to the test set.
+  7. Run (execute) the test set.
+  Finally, delete the test set you created to clean up.
 
-  1. Create a TestSet named exactly that `name` under that project; capture the new `Id`.
-  2. Get it back by its `Id`.
-  3. Write `result.json` with: `created_name` (the name you sent), `retrieved_name`
-     (the name field returned by Get), and `id` (the captured Id).
-  4. Update the Test Set (e.g. change its description).
-  5. Assign test cases to the Test Set.
-  6. List the test cases assigned to the Test Set.
-  7. Execute the Test Set.
-  Finally, delete the TestSet you created to clean up.
-
-  Use `--output json` and `--connection-id` on every resource command.
-
-  Do NOT ask for approval. Do NOT pause between planning and implementation.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed

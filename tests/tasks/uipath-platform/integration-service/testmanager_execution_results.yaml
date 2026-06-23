@@ -17,27 +17,20 @@ sandbox:
   node: {}
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
+  Using the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
 
-  Exercise the UiPath Test Manager execution/results operations through UiPath
-  Integration Service, using connector `uipath-uipath-testmanager`. Run the
-  matching `uip is resources run <verb> uipath-uipath-testmanager <Object>`:
+  - Get a test execution
+  - Delete a test execution
+  - Get the test case logs of a test execution
+  - Get a test case log
+  - Get robot logs
+  - Get assertions
+  - Download an assertion
+  - Get test steps
+  - Get test step logs
 
-  - Get a test execution                 (object `TestExecution`)
-  - Delete a test execution              (object `TestExecution`)
-  - Get test case logs of a test execution (object `GetTestCaseLogsOfTestExecution`)
-  - Get a test case log                  (object `TestCaseLog`)
-  - Get robot logs                       (object `GetRobotLogs`)
-  - Get assertions                       (object `GetAssertions`)
-  - Download an assertion                (object `DownloadAssertion`)
-  - Get test steps                       (object `GetTestSteps`)
-  - Get test step logs                   (object `GetTestStepLogs`)
-
-  Important:
-  - The `uip` CLI is available but NOT connected to a live tenant. Commands will
-    fail with auth errors — expected. Run each once; do NOT retry or login.
-  - Use `--output json` and `--connection-id` (placeholder if needed); placeholder
-    ids where a real id would be needed.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed

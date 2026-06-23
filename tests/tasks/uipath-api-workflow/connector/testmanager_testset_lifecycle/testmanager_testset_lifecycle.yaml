@@ -20,23 +20,17 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Before starting, load the uipath-api-workflow skill and follow its workflow.
+  Build a UiPath API Workflow that uses the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
 
-  Build a UiPath API Workflow at Workflow.json that uses the UiPath Test Manager
-  Integration Service connector (connection in the Shared folder). Add one
-  connector activity for each of these TestSet operations:
+  - Create a test set
+  - Get the test set
+  - Update the test set
+  - Delete the test set
+  - Assign test cases to the test set
+  - List the test cases assigned to the test set
+  - Run (execute) the test set
 
-  - Create Test Set
-  - Get Test Set
-  - Update Test Set
-  - Delete Test Set
-  - Assign Test Cases to Test Set
-  - Get Assigned Test Cases for Test Set
-  - Execute Test Set
-
-  Discover each activity through the registry (resolve + stub), verify the
-  connection pings, cross-check required fields. Not complete until
-  `uip api-workflow validate ./Workflow.json` passes.
+  The task is not complete until the workflow validates.
 
   Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation.
