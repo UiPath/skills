@@ -34,7 +34,8 @@ initial_prompt: |
   - Rename the group "Charges" to "Adjustments".
   - Rename the field "Late Fee" to "Penalty Fee".
   - Change "Discount" to a Number type.
-  - Update the instructions on "Discount" and "Surcharge".
+  - Update the field instructions: set "Discount"'s to "Discount taken off the
+    invoice total" and "Surcharge"'s to "Surcharge added to the invoice total".
   - Delete the "Adjustments" group.
   - Afterwards, confirm the original invoice groups (Invoice, Bill To, Line Items,
     Ship To) are still there.
@@ -140,6 +141,13 @@ success_criteria:
       - expression: "Data.dataset.label_groups[].label_defs[].moon_form[?name=='Discount'].kind | [0]"
         operator: equals
         expected: "Number"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "update-prompts landed: both fields' new instruction text is in the taxonomy"
+    path: "taxonomy_before_delete.json"
+    includes: ["Discount taken off the invoice total", "Surcharge added to the invoice total"]
     weight: 2.0
     pass_threshold: 1.0
 
