@@ -48,7 +48,6 @@ initial_prompt: |
 
   Important:
   - Do not prompt the user for confirmation — this is an automated test.
-  - Use `--output json` on every `uip gov aops-policy` command.
 
 success_criteria:
   - type: command_executed
