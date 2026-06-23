@@ -10,6 +10,16 @@ conversational flavor. Differences:
     not required for source editing.
   - All context-resource and bindings checks are identical to autonomous
     (the context resource shape does not differ between flavors).
+
+The local context-resource folder and its `name` field are the author's free
+choice — the binding resolves the index by `indexName` (see
+`references/lowcode/capabilities/context/index.md`: refresh resolves the ECS
+index by `indexName`, and the emitted binding is keyed by the index name).
+So the resource is located by SCANNING `resources/<*>/resource.json` for the
+one bound to EXPECTED_INDEX_NAME — never by a hard-coded folder name (same
+approach as `inline_context_index`). Only the load-bearing fields are asserted:
+`indexName`, `folderPath`, retrieval mode, and the emitted binding's
+`value.name` / `value.folderPath`.
 """
 
 import json
@@ -20,7 +30,7 @@ from pathlib import Path
 ROOT = Path(os.getcwd()) / "SupportSol" / "SupportBot"
 AGENT = ROOT / "agent.json"
 ENTRY = ROOT / "entry-points.json"
-RESOURCE = ROOT / "resources" / "UiPathAgentsProductKnowledge" / "resource.json"
+RESOURCES_DIR = ROOT / "resources"
 BINDINGS = ROOT / "bindings_v2.json"
 
 EXPECTED_INDEX_NAME = "UiPathAgentsProductKnowledge"
@@ -38,6 +48,51 @@ def load(path: Path) -> dict:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
 
 
+def find_context_resource() -> dict:
+    """Locate the context resource by indexName, not by folder name.
+
+    The resource folder and `name` are arbitrary local labels; the binding
+    resolves the index by `indexName`. Scan every `resources/<*>/resource.json`
+    and return the one bound to EXPECTED_INDEX_NAME. Exactly one is expected.
+    """
+    if not RESOURCES_DIR.is_dir():
+        sys.exit(f"FAIL: Missing resources directory {RESOURCES_DIR}")
+    matches = []
+    for sub in sorted(RESOURCES_DIR.iterdir()):
+        rj = sub / "resource.json"
+        if not rj.is_file():
+            continue
+        try:
+            d = json.loads(rj.read_text())
+        except json.JSONDecodeError:
+            continue
+        if (
+            d.get("$resourceType") == "context"
+            and d.get("contextType") == "index"
+            and d.get("indexName") == EXPECTED_INDEX_NAME
+        ):
+            matches.append((rj, d))
+    if not matches:
+        sys.exit(
+            f"FAIL: no context/index resource bound to indexName="
+            f"{EXPECTED_INDEX_NAME!r} found under {RESOURCES_DIR} — the resource "
+            f"folder name is free, but exactly one context resource with that "
+            f"indexName must exist"
+        )
+    if len(matches) > 1:
+        names = [p.parent.name for p, _ in matches]
+        sys.exit(
+            f"FAIL: {len(matches)} context resources bound to {EXPECTED_INDEX_NAME!r} "
+            f"({names}); expected exactly one"
+        )
+    rj, resource = matches[0]
+    print(
+        f"OK: found context resource bound to indexName={EXPECTED_INDEX_NAME!r} "
+        f"at resources/{rj.parent.name}/resource.json (folder name is the author's choice)"
+    )
+    return resource
+
+
 def assert_context_resource(resource: dict) -> None:
     rtype = resource.get("$resourceType")
     if rtype != "context":
@@ -45,12 +100,8 @@ def assert_context_resource(resource: dict) -> None:
     ctype = resource.get("contextType")
     if ctype != "index":
         sys.exit(f'FAIL: resource.json contextType should be "index", got {ctype!r}')
-    name = resource.get("name")
-    if name != EXPECTED_INDEX_NAME:
-        sys.exit(
-            f"FAIL: resource.json name should be {EXPECTED_INDEX_NAME!r} "
-            f"(matching the deployed index), got {name!r}"
-        )
+    # The resource `name` field is a free local label and is intentionally NOT
+    # asserted — the index binds by `indexName` (below), not by the label.
     index_name = resource.get("indexName")
     if index_name != EXPECTED_INDEX_NAME:
         sys.exit(
@@ -61,11 +112,13 @@ def assert_context_resource(resource: dict) -> None:
     if folder_path != EXPECTED_FOLDER_PATH:
         sys.exit(
             f"FAIL: resource.json folderPath should be {EXPECTED_FOLDER_PATH!r} "
-            f"(the deployed Orchestrator folder of the index), got {folder_path!r}"
+            f"(the full deployed Orchestrator folder of the index, from "
+            f"`uip solution resources list` — do not truncate to the parent), "
+            f"got {folder_path!r}"
         )
     print(
         f'OK: resource.json is $resourceType="context", contextType="index", '
-        f"name=indexName={EXPECTED_INDEX_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
+        f"indexName={EXPECTED_INDEX_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
     )
 
 
@@ -126,7 +179,7 @@ def assert_bindings_index(bindings: dict) -> None:
     if not index_bindings:
         sys.exit(
             'FAIL: bindings_v2.json has no resource entry with resource="index". '
-            "uip agent migrate should emit one for the context-grounding index."
+            "uip agent refresh should emit one for the context-grounding index."
         )
     if len(index_bindings) > 1:
         sys.exit(
@@ -135,12 +188,9 @@ def assert_bindings_index(bindings: dict) -> None:
         )
     binding = index_bindings[0]
 
-    key = binding.get("key")
-    if key != EXPECTED_INDEX_NAME:
-        sys.exit(
-            f"FAIL: bindings_v2.json index binding key should be {EXPECTED_INDEX_NAME!r}, got {key!r}"
-        )
-
+    # The binding `key` mirrors the resource's local name (the author's free
+    # choice), so it is intentionally NOT asserted. The load-bearing identity is
+    # value.name (the ECS index name) + value.folderPath (the deployment folder).
     value = binding.get("value")
     if not isinstance(value, dict):
         sys.exit(f"FAIL: bindings_v2.json index binding value must be an object, got {value!r}")
@@ -162,15 +212,15 @@ def assert_bindings_index(bindings: dict) -> None:
         )
 
     print(
-        f"OK: bindings_v2.json index binding key={EXPECTED_INDEX_NAME!r}, "
-        f"name={EXPECTED_INDEX_NAME!r}, folderPath={EXPECTED_FOLDER_PATH!r}"
+        f"OK: bindings_v2.json index binding value.name={EXPECTED_INDEX_NAME!r}, "
+        f"folderPath={EXPECTED_FOLDER_PATH!r}"
     )
 
 
 def main() -> None:
     agent = load(AGENT)
     entry = load(ENTRY)
-    resource = load(RESOURCE)
+    resource = find_context_resource()
     bindings = load(BINDINGS)
 
     assert_context_resource(resource)

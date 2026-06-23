@@ -86,9 +86,11 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "UiPathAgentsProductKnowledge context resource.json was created"
-    path: "SupportSol/SupportBot/resources/UiPathAgentsProductKnowledge/resource.json"
+  - type: run_command
+    description: "A context resource bound to index UiPathAgentsProductKnowledge was created (folder name is the author's choice)"
+    command: "grep -lE '\"indexName\"[[:space:]]*:[[:space:]]*\"UiPathAgentsProductKnowledge\"' SupportSol/SupportBot/resources/*/resource.json"
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
