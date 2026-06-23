@@ -385,6 +385,13 @@ unsupported for generation until current tooling confirms them.
   multi-instance parallel/sequential metadata for new loops).
 - Terminate is supported **only** on end events — not on start, boundary,
   intermediate-catch, or intermediate-throw events.
+- Preserve-only `uipath:*` extension payloads: keep these when imported, and when
+  a file legitimately needs one, reproduce the shape (with synthetic, public-safe
+  contents) rather than inventing a new one. `uipath:caseManagement` is a
+  versioned body-string element — `<uipath:caseManagement version="v1">…synthetic
+  payload…</uipath:caseManagement>`. A generic `uipath:Activity` payload and a
+  legacy `<uipath:scriptVersion value="v2" />` round-trip the same way (author
+  `v3` for new scripts; preserve `v2` where it already exists).
 
 ## Diagram interchange — `bpmndi` (REGISTRY GAP — always generated)
 

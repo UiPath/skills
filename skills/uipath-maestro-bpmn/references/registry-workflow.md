@@ -126,9 +126,12 @@ properties, connection binding, and schemas.
 
 - **Connector activity** (`Intsvc.ActivityExecution` / a connector-authenticated
   operation): use when the call goes through a tenant connection, a dynamic
-  connector schema, or a connector object operation. Connection binding,
-  operation metadata, and schemas are CLI-owned (§3) — keep the node **draft**
-  until enriched.
+  connector schema, or a connector object operation. Keep the node **draft**
+  until enriched. The CLI-owned enrichment blockers — the ones that must be
+  resolved before upload or run, and that boundary notes should name explicitly
+  — are **connection binding**, **dynamic schemas**, generated **package
+  metadata** (`bindings_v2.json`, `entry-points.json`, `operate.json`,
+  `package-descriptor.json`). Do not hand-author any of these (§3).
 - **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or
   `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):
   use when the workflow itself owns the URL, method, payload, and response
