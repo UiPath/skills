@@ -4,9 +4,7 @@ description: >
   reading taxonomy back with `get-taxonomy` after each edit. Covers create field
   group + fields (with sensible default types), add field, rename group/field,
   change-type, bulk update-prompts, delete field, import-taxonomy round-trip, and
-  delete group. Asserts only
-  CLI-observable taxonomy state (names/types/instructions) and agent judgment —
-  NOT backend annotation semantics.
+  delete group.
 tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
 
 run_limits:
@@ -61,49 +59,49 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Created a field group and added fields"
+    description: "Created the 'Charges' group with the 'Discount' and 'Late Fee' fields"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+add'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+add\b(?=.*Charges)(?=.*Discount)(?=.*Late Fee)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Renamed a field group"
+    description: "Renamed group 'Charges' -> 'Adjustments'"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+rename'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+rename\b(?=.*Charges)(?=.*Adjustments)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Changed a field's type with the data-loss guard"
+    description: "Changed 'Discount' to type Number with the confirmation flag"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+change-type\b.*--confirm-data-loss'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+change-type\b(?=.*Discount)(?=.*Number)(?=.*(--confirm-data-loss|--yes|-y))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Bulk-updated field prompts"
+    description: "Bulk-updated prompts for 'Discount' and 'Penalty Fee'"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b.*--updates'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b(?=.*--updates)(?=.*Discount)(?=.*Penalty Fee)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Deleted a single field with the confirmation flag"
+    description: "Deleted the 'Surcharge' field with the confirmation flag"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+delete\b.*(-y|--yes)'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+delete\b(?=.*Surcharge)(?=.*(-y|--yes))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Deleted the field group with the data-loss guard"
+    description: "Deleted the 'Adjustments' group with the confirmation flag"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+delete\b.*--confirm-data-loss'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+groups\s+delete\b(?=.*Adjustments)(?=.*(--confirm-data-loss|--yes|-y))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -119,7 +117,7 @@ success_criteria:
   - type: command_executed
     description: "Deleted the project as cleanup"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\b(?=.*(--confirm-data-loss|--yes|-y))'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

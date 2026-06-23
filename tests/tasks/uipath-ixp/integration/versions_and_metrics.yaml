@@ -24,11 +24,13 @@ initial_prompt: |
   project from the files in `./fixtures/` — import the taxonomy, upload the three
   invoices — and let it train.
 
-  Once it's trained, note how the current model (version 1) scored and save those
-  metrics to `metrics_v1.json`. Then try to improve it — change the model's
-  configuration and retrain to get a second version, and save its metrics to
-  `metrics_v2.json`. With both saved, tell me which version scored better and by
-  how much, calling out the fields that moved, and rank them best-to-worst by score.
+  Once it's trained, review and confirm the predictions on the documents so the
+  project has ground truth to score against — without that there are no metrics.
+  Then note how the current model (version 1) scored and save those metrics to
+  `metrics_v1.json`. Then try to improve it — change the model's configuration and
+  retrain to get a second version, and save its metrics to `metrics_v2.json`. With
+  both saved, tell me which version scored better and by how much, calling out the
+  fields that moved, and rank them best-to-worst by score.
 
   Delete the project when you're done.
 
@@ -39,6 +41,14 @@ success_criteria:
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Confirmed predictions to establish ground truth (so metrics exist)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+labellings\s+confirm'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -68,7 +78,7 @@ success_criteria:
   - type: command_executed
     description: "Deleted the project as cleanup"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\b(?=.*(--confirm-data-loss|--yes|-y))'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

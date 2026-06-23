@@ -81,7 +81,7 @@ success_criteria:
   - type: command_executed
     description: "Deleted the project as cleanup"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\s+.*--confirm-data-loss'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\b(?=.*(--confirm-data-loss|--yes|-y))'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
