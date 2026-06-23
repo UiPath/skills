@@ -29,7 +29,7 @@ Author UiPath Integration Service connectors on disk with `uip is connectors bui
 7. **Output is the `{Result, Code, Data}` envelope.** Add `--output json` to parse it. Failures exit non-zero. Never suppress stderr.
 8. **`import` / `download` / `publish` need `uip login`.** Authenticate before any tenant pull/push.
 9. **Never echo, log, or hard-code a secret.** Secret config keys (client secret, API key, password, token) are written by `auth set` ENCRYPTED (`encrypt: true`) — most as `PASSWORD` fields, though some (OAuth tokens, a service-account JSON) are encrypted `TEXTFIELD`/`TEXTAREA`. End users supply real credentials at connection time; the connector holds only the auth TYPE + endpoint URLs + scopes. Use placeholders in every example command.
-10. **One hook file per activity+method+phase.** Duplicate logic rather than sharing a file. Hook JS is ES5/ES6 (the Denali engine) — no optional chaining `?.`. Prefer a `type:"value"` parameter with `${configuration.<key>}` interpolation over a hook for static header/auth injection.
+10. **Prefer a built-in over a hook.** Before writing JS, consult the decision table ([references/hooks.md](references/hooks.md) §"Decide first: hook or built-in?") — a hook is only for transforms, orchestration, or derivation no declarative feature expresses. One hook file per activity+method+phase; hooks run in Denali (modern JS + `require('axios')` for secondary calls) and must end every path with `done()`.
 
 ## Connection design (host, region, discovered values)
 
@@ -37,7 +37,7 @@ Decide how each per-connection value reaches the request BEFORE scaffolding — 
 
 - **One config drives the host — not three URLs.** When the base, token, and authorize hosts share a per-connection part (an instance name, region, datacenter, or workspace), surface ONE config and template it into every URL: `init --base-url 'https://{instance}.../api'` + `auth set --token-url 'https://{instance}.../token' --authorization-url 'https://{instance}.../authorize'`. The CLI auto-seeds a single fillable `{instance}` field that resolves all three ([references/configuration.md](references/configuration.md) §Templated hosts). Do NOT expose `base.url`/`oauth.token.url`/`oauth.authorization.url` as separate connection fields.
 - **Open value → TEXTFIELD; fixed set → COMBO.** A free-form instance/workspace/account name is the auto-seeded templated TEXTFIELD — that is a legitimate, common shape, not a smell. Only a genuinely fixed datacenter/environment list becomes a COMBO (`state patch` the seeded entry to `type:COMBO` with `options`, whose `value` can be the host fragment itself).
-- **Derive or discover before you ask.** If a per-connection value (the API host, an org/account id) is returned in the token response or is discoverable via an authenticated call, capture it instead of adding a manual field — but ONLY when it is genuinely needed AND obtainable; a single templated config is the simpler default, so don't over-engineer discovery where a plain field suffices. Token-response host → a validated `postRequest` hook on the token exchange (https + non-empty host, never log the token) — [references/auth.md](references/auth.md) §"Base URL derived from a token response". Discoverable id → an `onProvision` system resource that calls the lookup at connection time ([references/system-resources.md](references/system-resources.md)).
+- **Derive or discover before you ask.** If a per-connection value (the API host, an org/account id) is returned in the token response or is discoverable via an authenticated call, capture it instead of adding a manual field — but ONLY when it is genuinely needed AND obtainable; a single templated config is the simpler default, so don't over-engineer discovery where a plain field suffices. Token-response host → a `postRequest` hook that validates (https + allowlisted host, never log the token) and persists via `done({configuration})` — recipe: [references/hooks.md](references/hooks.md) §"Pattern: base URL …". Discoverable id → an `onProvision` system resource that calls the lookup at connection time ([references/system-resources.md](references/system-resources.md)).
 - **Multi-datacenter OAuth:** the accounts/token host itself varies by region — template the region config into `--token-url`/`--authorization-url` too, not just the base URL.
 
 ## Workflows
@@ -84,7 +84,7 @@ uip is connectors builder activity create --name contacts --vendor-path /v1/cont
 uip is connectors builder activity field create --resource contacts --name status \
   --type string --method GET --response --searchable
 uip is connectors builder activity hook create --resource-name contacts --method GET \
-  --hook-type postRequest --transform-body          # optional response shaping
+  --hook-type postRequest --custom-code-file ./contacts-postRequest.js   # optional response shaping (you write the JS)
 uip is connectors builder validate
 ```
 
@@ -126,7 +126,7 @@ uip is connectors builder state patch element.json/configuration/oauth.token.url
   --value '<full entry from the query above, with defaultValue corrected>'
 uip is connectors builder validate
 ```
-For a derived base URL (e.g. Salesforce `instance_url` from the token response): compose a `postRequest` hook (`activity hook create`) + `state patch`, and VALIDATE the derived URL (https scheme, non-empty host) before use — there is no vendor-specific base-url flag, only the static `init --base-url`. Investigation checklists: [references/debugging.md](references/debugging.md).
+For a derived base URL (e.g. Salesforce `instance_url` from the token response): a `postRequest` hook VALIDATES the URL (https + allowlisted host) and persists it with `done({configuration})` — NOT `state patch`, which baking-time-edits one org's URL into every connection. Full recipe: [references/hooks.md](references/hooks.md) §"Pattern: base URL …"; investigation checklists: [references/debugging.md](references/debugging.md).
 
 ## Command Map
 
@@ -166,7 +166,7 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 | configuration[] entries: widget types, screen types, per-auth key sets, pagination + event keys | [references/configuration.md](references/configuration.md) |
 | Authentication setup: all 14 auth types and the OAuth/JWT scope surface | [references/auth.md](references/auth.md) |
 | Auth-system resources: auth-validation, onProvision/onDelete, OAuth token overrides | [references/system-resources.md](references/system-resources.md) |
-| Writing JS hooks: execution order, context vars, done(), naming, common patterns | [references/hooks.md](references/hooks.md) |
+| When to write a hook vs use a built-in (decision table + good/avoidable patterns), execution order, context vars, done(), naming | [references/hooks.md](references/hooks.md) |
 | Polling and webhook triggers: config keys, event.poller.configuration schema | [references/events.md](references/events.md) |
 | Debugging auth / activity / hook / trigger / pagination issues (workflow + checklists) | [references/debugging.md](references/debugging.md) |
 
@@ -180,5 +180,5 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 6. Putting a real secret in an example or expecting the connector to store one (Rule 9) — secrets are encrypted fields (usually PASSWORD) supplied at connection time.
 7. Re-publishing without bumping the version — the server rejects an equal version; bump `latestVersion` or pass `--version`.
 8. Invented `--categories` values — they must come from the approved enum; `validate` reports the list.
-9. Non-ES5/ES6 hook syntax (optional chaining `?.`, etc.), or one hook file shared across activity+method+phase (Rule 10) — duplicate the file instead.
+9. Writing a hook for a job a built-in does (Rule 10; hooks.md §"Recognizing an avoidable hook"), or omitting the trailing `done()` so the hook never returns.
 10. Reaching for a removed command — there is no `connector scaffold/inspect/validate` wrapper (use `init`/`inspect`/`validate` directly), no `global`/`metadata`/`config`/`resource*`/`event polling add`/`auth scope`/`remote*`/`describe`/`reference`.

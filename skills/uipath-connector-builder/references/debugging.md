@@ -51,7 +51,7 @@ exits non-zero on failure). All run under `uip is connectors builder`.
 - **Hook not applied**: not registered in element.json (run without `--no-auto-register`),
   `ref`/filename mismatch (case-sensitive), wrong `type` or resource/method.
 - **Global hook over-applies**: re-create it scoped to the resource instead of `--global`.
-- **Syntax error**: non-ES5/ES6 construct (`?.`, `??`) — Denali rejects it. See [hooks.md](hooks.md).
+- **Hook throws / 500 from a hook**: a real JS error, or a `require()` of a module Denali doesn't provide (it supports `axios`/`crypto`/`url`/`querystring`/`lodash`/`moment`). Modern JS (`?.`, `??`, `async`/`await`) is fine. See [hooks.md](hooks.md).
 
 ## Event / pagination issues
 - **Events not working**: `hasEvents` unset, missing event config keys, malformed

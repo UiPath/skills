@@ -154,8 +154,10 @@ The full type list, override-path rules, and flags: [system-resources.md](system
 
 There is NO vendor-specific base-url flag (`init --base-url` is STATIC only). When the vendor
 returns the API host in its token response, it is skill-guided: a `postRequest` hook reads +
-validates the host (https scheme, non-empty), then `state patch` persists it. Full pattern:
-[hooks.md](hooks.md) §"Base URL from a token-exchange response".
+validates the host (https scheme, allowlisted), then persists it into THIS connection's config
+at runtime via `done({configuration})` — NOT `state patch` (that baking-time edit would set one
+org's URL as everyone's default). Full pattern: [hooks.md](hooks.md) §"Pattern: base URL …
+derived from a token response".
 
 ## Re-running auth set
 

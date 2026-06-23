@@ -139,7 +139,9 @@ naming, and the token-derived base-URL pattern: [hooks.md](hooks.md).
 
 ## Expressions
 `requestBodyRoot` wraps the body (`"contact"` → `{"contact": ...}`); `responseBodyRoot`
-unwraps the response (`"data.items"`).
+unwraps the response (`"data.items"`). Both are real element.json fields but have NO builder
+flag — author them by `state patch` of the whole resource entry (`"expressions": {...}`), then
+`validate`. For a plain list unwrap prefer `rootKey` (`--root-key`), which the CLI does expose.
 
 ## See also
 - [configuration.md](configuration.md), [standard-resources.md](standard-resources.md),
