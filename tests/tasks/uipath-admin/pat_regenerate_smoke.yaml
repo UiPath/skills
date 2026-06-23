@@ -17,6 +17,10 @@ initial_prompt: |
   to find it, then regenerate the first token in the list with a new
   expiration 90 days from now.
 
+  If listing fails, use a placeholder token ID (e.g.
+  "00000000-0000-0000-0000-000000000000") and still run the regenerate
+  command so we can verify the command shape.
+
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
     installed and/or the CLI is not connected to a live tenant.
