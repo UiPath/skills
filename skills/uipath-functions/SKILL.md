@@ -1,6 +1,6 @@
 ---
 name: uipath-functions
-description: "Always invoke for UiPath Coded Functions. Coded functions are python projects that are not using LLMs or agentic frameworks like Langchain or Llamaindex."
+description: "Always invoke for UiPath Coded Functions. Coded functions are python projects that are not using LLMs or agentic frameworks like Langchain, Llamaindex or OpenAI."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
