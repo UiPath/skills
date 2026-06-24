@@ -69,8 +69,8 @@ Standard resources tell Udon WHAT the data looks like (fields, types, method con
 ## Scope
 
 In scope: RESTful JSON APIs, a single base URL, polling/webhook triggers, JS hooks. Out of
-scope: GraphQL, SOAP/XML, SDKs, multiple base URLs. The builder authors connectors by hand or
-from the SR cache; it has no OpenAPI/Postman import command.
+scope: GraphQL, SOAP/XML, SDKs, multiple base URLs. The builder authors connectors by hand
+from the vendor's API docs; it has no OpenAPI/Postman import command.
 
 ## See also
 - [element-json.md](element-json.md) — element.json internals

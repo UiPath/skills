@@ -42,7 +42,7 @@ defined here appear in the CRUD dropdown. Set/replace one with `activity method 
 | `isHidden` | Hide this method from the dropdown (`--hidden`). |
 | `responseDisplayName` / `responseDescription` | Response var name/desc in Studio. |
 | `parameters` | Same schema as element.json resource params. element.json is the source of truth for contract fields; SR-only UI fields are preserved. Runtime-only types (`value`, `body`) are excluded from the SR side. |
-| `curated` | If present, this method becomes a standalone curated Studio activity. **Auto-added by default** by `activity create` and `activity sync-from-cache` (pass `--no-curate` to skip). |
+| `curated` | If present, this method becomes a standalone curated Studio activity. **Auto-added by default** by `activity create` (pass `--no-curate` to skip). |
 
 Curated block: `{ "name", "displayName", "description", "isHidden" }`. A curated
 activity's fields also need field-level `requestCurated`/`responseCurated` visibility —
@@ -60,18 +60,6 @@ not a search/list-by-filter endpoint.
 ## metadata.events
 `{ "eventMode": ["polling"] }` — `trigger create` sets this. Full `eventMode` value set:
 [events.md](events.md) §"SR-level event metadata".
-
-## Cache-sync normalization
-`activity sync-from-cache` pulls cached StandardResource artifacts for this connector and
-writes ONLY `standard-resources/*.json` (NOT element.json), normalizing each first:
-- `metadata.method.<VERB>.{path,reference}` and top-level `path` are rewritten to the IS
-  slug `/<object>` so periodic links the method to its element.json resource. Cache SRs
-  carry the VENDOR path; left as-is the object shows in Studio with its name but NO methods.
-- Each method is auto-curated into a standalone Studio activity (curated block + the
-  field-level visibility below). Pass `--no-curate` to opt out.
-
-After sync, `activity create` each NEW object to write its element.json entries; then
-`validate`. SKILL.md holds the full sync workflow.
 
 ## fields — definitions (top-level object)
 Each key = field name and MUST equal `field.name`. Add/update with `activity field

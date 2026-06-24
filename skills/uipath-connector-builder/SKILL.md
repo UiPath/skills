@@ -21,15 +21,16 @@ Author UiPath Integration Service connectors on disk with `uip is connectors bui
 ## Critical Rules
 
 1. **Inspect before editing.** On any existing connector, run `builder inspect` first to map auth, config, activities, hooks, and triggers. Never edit blind. Never invent config keys, activity paths, or IDs — read state first (`inspect`, `activity list`, `state query`).
-2. **Validate before you finish.** Run `builder validate` at the end of every workflow and after each fix — it runs the full periodic check set and exits non-zero on failure. On failure, read the reported field, fix that one entry, re-validate. After 3 failed attempts on the same error, stop and surface the `validate` output — don't keep guessing.
+2. **Validate before you finish.** Run `builder validate` at the end of every workflow and after each fix — it runs the full periodic check set and exits non-zero on failure. On failure, read the reported field, fix that one entry, re-validate. After 3 failed attempts on the same error, stop and surface the `validate` output — don't keep guessing. **Don't stop at "0 errors": read the WARNINGS too** — they flag real gaps that still ship a half-built connector (a fieldless activity, a broken SR link). Treat them as must-fix unless you can articulate why a given one is acceptable.
 3. **`auth set` owns all authentication.** It writes the config entries, `authentication.type` / `typeOauth` / `authenticationTypes`, and the token-refresh resource in one call. Define scopes here too (`--scope`, `--scope-options`, `--required-scopes`, `--preselected-scopes`) — there is no separate scope command. `init --auth oauth2|customApiKey` is inline sugar for the create-time common case; everything else goes through `auth set`. Never hand-roll auth via `state patch`.
 4. **`activity create` writes both sides in one call** — the standard-resource file AND one `element.json` entry per method. Re-running on an existing activity appends/merges. Pass `--skip-sr` (or use `auth system create`) only for system resources that need no SR file. Model `GETBYID`/`PATCH`/`PUT`/`DELETE` only for TRUE by-id endpoints — never for search. The `/{primaryKey}` path param is added automatically: ALWAYS for `GETBYID`, and for `PATCH`/`PUT`/`DELETE` only when the activity is CRUD (it also has a `GET`/`GETBYID`); a write-only/action activity keeps its base path.
 5. **`state patch` REPLACES the whole node at a pointer (no merge).** To change one field: `state query` the entry, edit it, then `state patch` the COMPLETE object back. `element-metadata.json` has no addressable sub-paths — round-trip the whole file. Activity paths in pointers are URL-encoded: `/contacts` → `%2Fcontacts`. Use the dedicated authoring verbs for creation, not `state patch`.
-6. **Connector targeting.** Builder verbs walk up from the cwd, then scan immediate subdirectories — run from inside the connector dir, or pass `--connector-dir <PATH>` to target one explicitly (required when multiple connectors are nearby). `import` reads `--connector-dir` the same way (the connector root holding `app/element/element.json`); on `download` it instead names the OUTPUT directory to write the pulled connector into.
+6. **Connector targeting.** Builder verbs walk up from the cwd, then scan immediate subdirectories — run from inside the connector dir, or pass `--connector-dir <PATH>` to target one explicitly (required when multiple connectors are nearby). `import` reads `--connector-dir` the same way (the connector root holding `app/element/element.json`); on `download` it instead names the OUTPUT directory to write the pulled connector into. **Exception — `init` does NOT scan subdirectories** (it would otherwise resolve a SIBLING connector and silently EDIT/rename it): to CREATE, run `init` from a fresh/empty directory (a dir that merely *contains* connector subdirs — e.g. `/tmp` — creates a new connector, it will not dive into a child to edit it); to EDIT, run from inside the connector or pass `--connector-dir`.
 7. **Output is the `{Result, Code, Data}` envelope.** Add `--output json` to parse it. Failures exit non-zero. Never suppress stderr.
-8. **`import` / `download` / `publish` need `uip login`.** Authenticate before any tenant pull/push.
+8. **`import` / `download` / `publish` — and `init` when CREATING — need `uip login`.** Authenticate before any tenant pull/push. A NEW connector's key `design-{org}-{slug}` takes its org from your logged-in session, so `init` create ERRORS when you're not logged in. Let it derive the org; do NOT pass a guessed `--organization` (a wrong org bakes into the key and only surfaces, mismatched, at import/publish) — `--organization <slug>` is only for offline/CI builds with a known org.
 9. **Never echo, log, or hard-code a secret.** Secret config keys (client secret, API key, password, token) are written by `auth set` ENCRYPTED (`encrypt: true`) — most as `PASSWORD` fields, though some (OAuth tokens, a service-account JSON) are encrypted `TEXTFIELD`/`TEXTAREA`. End users supply real credentials at connection time; the connector holds only the auth TYPE + endpoint URLs + scopes. Use placeholders in every example command.
 10. **Prefer a built-in over a hook.** Before writing JS, consult the decision table ([references/hooks.md](references/hooks.md) §"Decide first: hook or built-in?") — a hook is only for transforms, orchestration, or derivation no declarative feature expresses. One hook file per activity+method+phase; hooks run in Denali (modern JS + `require('axios')` for secondary calls) and must end every path with `done()`.
+11. **Author the field schema for EVERY activity — `activity create` does NOT infer fields.** An activity with no fields renders in Studio Web as a single raw JSON body in and raw JSON out, with zero typed inputs/outputs — a half-built connector that still validates and publishes, so the omission is easy to miss (it's a recurring failure: "got it valid and published" while skipping the schema). After `activity create`, ALWAYS define the request/response fields from the vendor's documented schema — either pass `--fields-file <json>` on `activity create` for the whole schema at once, or add them one at a time with `activity field create`. `validate` emits a WARNING for any fieldless activity — treat it as must-fix. Never report a connector "done" with fieldless activities; if a raw-body passthrough is genuinely intended, say so explicitly.
 
 ## Connection design (host, region, discovered values)
 
@@ -46,8 +47,18 @@ Each workflow is an ordered sequence of copy-paste-ready commands. Use placehold
 
 ### New connector (full lifecycle)
 ```bash
-# 1. Scaffold the shell. --name is required when creating; key + folder are derived.
-uip is connectors builder init --name 'Acme Widgets' --organization <ORG> \
+# 0. Log in FIRST. The key `design-{org}-{slug}` takes its org from your logged-in
+#    session, so `init` (create) ERRORS if you're not logged in. Let it derive the
+#    org — do NOT guess --organization (a wrong org bakes into the key and only
+#    surfaces, mismatched, at import). --organization <slug> is for offline/CI only.
+uip login status            # check Data.Status == "Logged in" — NOT the envelope
+                            # Result/exit, which is "Success" even when the session
+                            # is dead (refresh-failed / expired). (`init` create
+                            # itself re-checks the live login status and blocks.)
+
+# 1. Scaffold the shell. --name is required when creating; key + folder are derived
+#    (the org comes from your login — see step 0).
+uip is connectors builder init --name 'Acme Widgets' \
   --description 'Acme Widgets connector' --categories 'CRM,Sales and marketing' \
   --base-url https://api.acme.com --auth oauth2 \
   --authorization-url https://acme.com/oauth/authorize \
@@ -61,17 +72,23 @@ uip is connectors builder init --name 'Acme Widgets' --organization <ORG> \
 uip is connectors builder activity create --name accounts --vendor-path /v1/accounts \
   --methods GET,GETBYID,POST,PATCH,DELETE --primary-key id --has-ceql
 
-# 3. Add UI fields (visibility flags apply to every --method listed; re-runs merge).
+# 3. Author the field schema — REQUIRED, not optional (Rule 11). `activity create`
+#    does NOT infer fields; without this the activity ships as a raw JSON body and
+#    `validate` warns. Pass `--fields-file <json>` on `activity create` for the whole
+#    schema at once, or add fields one at a time with `field create`
+#    (visibility flags apply to every --method listed; re-runs merge):
 uip is connectors builder activity field create --resource accounts --name email \
   --type string --method GET --method POST --response
 
-# 4. Validate — must be 0 errors before import.
+# 4. Validate — must be 0 errors AND no unresolved warnings (fieldless activity,
+#    broken SR link) before import.
 uip is connectors builder validate
 
 # 5. Import (create-or-update on the tenant) then publish.
 uip login
 uip is connectors import
-uip is connectors publish --wait        # polls to SUCCESS/FAILURE; visible in Studio Web ~5-10 min
+uip is connectors publish --wait        # blocks until SUCCESS; live in Studio Web then
+                                        # (fire-and-forget without --wait: allow ~5-10 min)
 ```
 Publishing a NEW connector needs no `--version` (init seeded `1.0.0`). **Re-publishing** an existing connector requires a HIGHER version — bump `element-metadata.json:latestVersion` (or pass `--version 1.0.1`); the server rejects an equal version.
 
@@ -85,15 +102,6 @@ uip is connectors builder activity field create --resource contacts --name statu
   --type string --method GET --response --searchable
 uip is connectors builder activity hook create --resource-name contacts --method GET \
   --hook-type postRequest --custom-code-file ./contacts-postRequest.js   # optional response shaping (you write the JS)
-uip is connectors builder validate
-```
-
-### Pull activities from the SR cache
-The cache holds StandardResource artifacts authored by `uip is resources standardize`. `activity sync-from-cache` writes ONLY `app/element/standard-resources/*.json` (not element.json). For each NEW object it surfaces, run `activity create` (idempotent upsert — never run it for objects you mean to keep separate). Depth: [references/standard-resources.md](references/standard-resources.md).
-```bash
-uip is connectors builder inspect --output json
-uip is connectors builder activity sync-from-cache --output json
-uip is connectors builder activity create --name <OBJECT> --vendor-path <VENDOR_PATH> --methods <VERBS>
 uip is connectors builder validate
 ```
 
@@ -145,7 +153,6 @@ uip is connectors                      # tenant/catalog + design-connector lifec
              method (get|set|curate)
              param  (create|list|get|delete)
              hook   (create|list|get|delete)
-             sync-from-cache
     trigger  create                    # --event-kind polling|webhook|all (folds the event preset + polling)
     inspect                            # read-only whole-connector rollup
     validate                           # full check set; exits non-zero on failure
@@ -175,10 +182,11 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 1. Editing without `builder inspect` first (Rule 1) — you'll invent keys/paths that don't exist.
 2. Hand-rolling auth via `state patch` instead of `auth set` (Rule 3) — leaves the auth block inconsistent.
 3. Editing a config entry with a partial value (Rule 5) — `state patch` REPLACES the node, dropping omitted fields. Query the whole entry and patch the complete object back.
-4. Running `activity create` for an object you meant to keep separate during cache-sync triage — it's an idempotent upsert that MERGES into any existing same-named activity (appends methods, preserves existing field definitions unless `--overwrite-fields`); it does not error, so a wrong name silently merges instead of warning.
+4. Re-running `activity create` with a name that already exists when you meant a SEPARATE activity — it's an idempotent upsert that MERGES into the same-named activity (appends methods, preserves existing field definitions unless `--overwrite-fields`); it does not error, so a wrong name silently merges instead of warning.
 5. Modeling `GETBYID` for a search/list endpoint (Rule 4) — by-id verbs auto-add the `/{primaryKey}` param; reserve them for true single-record reads.
 6. Putting a real secret in an example or expecting the connector to store one (Rule 9) — secrets are encrypted fields (usually PASSWORD) supplied at connection time.
 7. Re-publishing without bumping the version — the server rejects an equal version; bump `latestVersion` or pass `--version`.
 8. Invented `--categories` values — they must come from the approved enum; `validate` reports the list.
 9. Writing a hook for a job a built-in does (Rule 10; hooks.md §"Recognizing an avoidable hook"), or omitting the trailing `done()` so the hook never returns.
 10. Reaching for a removed command — there is no `connector scaffold/inspect/validate` wrapper (use `init`/`inspect`/`validate` directly), no `global`/`metadata`/`config`/`resource*`/`event polling add`/`auth scope`/`remote*`/`describe`/`reference`.
+11. Reporting a connector "done" with fieldless activities (Rule 11) — `activity create` writes endpoints/methods/auth but NOT the field schema; an activity with no `field create` / `--fields-file` shows only a raw JSON body in Studio and trips a `validate` WARNING. Author fields before finishing, and never treat a 0-error/has-warnings validate as a pass.

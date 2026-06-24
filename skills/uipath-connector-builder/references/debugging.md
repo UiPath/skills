@@ -39,8 +39,8 @@ exits non-zero on failure). All run under `uip is connectors builder`.
   `activity field create` call, or the field is `--hidden`.
 - **Object shows in Studio but has NO methods under it**: the SR method's path points at the
   VENDOR path, not the IS slug `/<object>`, so periodic can't link it; `validate` flags "SR
-  linkage broken". Fix: re-run `activity sync-from-cache` (normalizes the path) or set the SR
-  method's path to `/<object>`. See [standard-resources.md](standard-resources.md).
+  linkage broken". Fix: set the SR method's `reference` (or `path`) to the IS slug `/<object>`
+  so it matches the element.json resource path. See [standard-resources.md](standard-resources.md).
 - **Methods aren't curated activities**: a method created with `--no-curate` has no `curated`
   block — re-run `activity create` (curates by default) or `activity method curate`.
 - **by-id confusion**: GETBYID/PATCH/DELETE auto-add the `/{primaryKey}` path param; only
