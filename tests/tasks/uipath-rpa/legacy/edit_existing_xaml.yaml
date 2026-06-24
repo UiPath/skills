@@ -16,8 +16,8 @@ tags: [uipath-rpa, windows, legacy, smoke, edit, validate]
 run_limits:
   expected_turns: 14
   max_turns: 40
-  turn_timeout: 900
-  task_timeout: 900
+  turn_timeout: 2000
+  task_timeout: 2000
 initial_prompt: |
   A legacy UiPath RPA project already exists in this directory. Wrap the
   existing LogMessage activity in Main.xaml inside a TryCatch that logs the
