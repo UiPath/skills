@@ -27,8 +27,8 @@ initial_prompt: |
   in; don't re-authenticate): start a project from the files in `./fixtures/` —
   import the taxonomy, upload one of the invoices — and let it train.
 
-  Once it's trained, confirm the predictions on one of the documents so there's
-  some ground truth to score against. Pull that version's metrics and save them to
+  Once it's trained, confirm the predictions on the document so there's some
+  ground truth to score against. Pull that version's metrics and save them to
   `metrics_v1.json` exactly as the command returns them — the full JSON output,
   not a summary or reshaped subset.
 
