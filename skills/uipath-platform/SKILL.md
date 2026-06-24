@@ -85,6 +85,7 @@ These tokens can be reused for direct Orchestrator REST API calls when CLI comma
 ### Step 1 — Authenticate
 
 Before interacting with Orchestrator, solutions, or Integration Service, the user must be logged in.
+Login must establish an active tenant. Tenant-scoped commands use that active tenant by default.
 
 **Always check first** — most sessions are already authenticated:
 ```bash
@@ -120,7 +121,7 @@ uip login --client-id "<ID>" --client-secret "<SECRET>" --tenant "<TENANT>" --ou
 
 ### Step 2 — Select a Tenant
 
-List available tenants and set the active one:
+List available tenants and set the active one. Use this command to switch tenants after login; do not add `--tenant` to individual tenant-scoped commands.
 
 ```bash
 uip login tenant list --output json

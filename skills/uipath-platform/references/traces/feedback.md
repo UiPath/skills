@@ -37,7 +37,8 @@ uip traces feedback create \
 | `--category` | No | Repeatable. Built-in values: `"Output"`, `"Agent Error"`, `"Agent Plan Execution"` |
 | `--agent-id` | No | Agent reference GUID |
 | `--agent-version` | No | Max 100 chars |
-| `--tenant` | No | Defaults to authenticated tenant |
+
+Feedback commands use the active tenant. Switch with `uip login tenant set <tenant>` before annotating traces in another tenant.
 
 ## get
 

@@ -42,7 +42,7 @@ The Resource Catalog tag set is tenant-specific, but these names recur across Ui
 - **Team / org:** `Finance`, `Marketing`, `HR`, `Platform`
 - **Product / domain:** user-specific product names
 
-> Tags the user mentions must actually exist in the Resource Catalog of the **policy's own tenant** (the tenant in `~/.uipath/.auth`). A policy that references `DoesNotExist` silently matches nothing. **Confirm tag names during Phase 1** before approving the Spec by running `uip admin rcs tag list --output json` (no `--tenant` — the default targets the policy's tenant; see [resource-lookup-guide.md § 4](../../resource-lookup-guide.md#4-resource-catalog-tags)). If the tag is missing, surface it as an Open question and ask the user to either pick a returned tag or add the missing one to the Resource Catalog before the JSON is composed.
+> Tags the user mentions must actually exist in the Resource Catalog of the **policy's own tenant** (the tenant in `~/.uipath/.auth`). A policy that references `DoesNotExist` silently matches nothing. **Confirm tag names during Phase 1** before approving the Spec by running `uip admin rcs tag list --output json` using the active policy tenant; see [resource-lookup-guide.md § 4](../../resource-lookup-guide.md#4-resource-catalog-tags). If the tag is missing, surface it as an Open question and ask the user to either pick a returned tag or add the missing one to the Resource Catalog before the JSON is composed.
 
 ## Deny-to-Allow flip
 
@@ -107,7 +107,7 @@ There is no per-entry `tags` inside `executableRule.values[]`. If different entr
 ## Anti-patterns
 
 - Do NOT emit `enforcement: "Deny"` ever. The API does not support it (Critical Rule #2). Reframe the user's intent as Allow + scope filter, or use `operator: "None"` on `tags` / `values` to express "everything except X".
-- Do NOT invent tag names. If the user hasn't confirmed a tag exists in the Resource Catalog, run `uip admin rcs tag list --output json` against the policy's tenant (the default — no `--tenant`) and ask the user to pick from the returned list.
+- Do NOT invent tag names. If the user hasn't confirmed a tag exists in the Resource Catalog, run `uip admin rcs tag list --output json` against the active policy tenant and ask the user to pick from the returned list.
 - Do NOT pass an empty `values: []` array. Either include at least one tag, or omit the entire `tags` key.
 - Do NOT use `operator: "And"` with a single tag — it's equivalent to `Or` with one tag; use `Or` for clarity.
 - Do NOT confuse Resource Catalog Tags with executable `type` or with free-text descriptions. Only named labels assigned in the Resource Catalog qualify.

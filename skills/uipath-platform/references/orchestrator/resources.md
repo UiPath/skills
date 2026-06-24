@@ -12,13 +12,14 @@ Manage Orchestrator resources -- assets, queues, queue items, buckets, files, tr
 
 | Flag | Scope | Purpose |
 |------|-------|---------|
-| `--tenant <name>` | All commands | Override the default tenant. |
 | `--output json` | All commands | Emit structured JSON. Always use this when parsing output programmatically. |
 | `--folder-path <path>` | Folder-scoped commands | Target folder by path (e.g., `"Finance"` or `"Finance/Invoicing"`). |
 | `--folder-key <key>` | Folder-scoped commands | Target folder by GUID key. |
 | `--limit <n>` | List commands | Number of items to return (default 50). |
 | `--offset <n>` | List commands | Number of items to skip for pagination. |
 | `--sort-by <field>` | List commands | OData-style sort (e.g., `'Name asc'`, `'Id desc'`). |
+
+Resource commands use the active tenant selected by `uip login` or `uip login tenant set <tenant>`. Do not pass per-command `--tenant`; legacy hidden overrides only exist for backwards compatibility and emit a deprecation warning.
 
 ---
 

@@ -41,7 +41,8 @@ uip traces spans get --job-key <job-key> --output json
 | `--job-key <guid>` | Orchestrator job key — alternative to trace-id |
 | `--folder-path <path>` | Folder path for context |
 | `--folder-key <guid>` | Folder key for context |
-| `-t, --tenant <name>` | Tenant override |
+
+Trace commands use the active tenant. Switch with `uip login tenant set <tenant>` before querying another tenant.
 
 ## Related
 

@@ -28,6 +28,8 @@ uip or libraries list --limit 500 --output json
 | `--all-fields` | Return the full library DTO instead of the curated subset. |
 | `--output-filter "<JMESPath>"` | Client-side filter, evaluated after the API returns. Use for multi-keyword OR, `Authors` matching, or null-`Title` guarding. |
 
+Library search uses the active tenant. Switch with `uip login tenant set <tenant>` before searching another tenant feed.
+
 `--search` is the simplest path for a single name keyword. Use `--output-filter` (below) when you need multi-keyword OR, `Authors`-field matching, or a null-`Title` guard.
 
 ## JMESPath filter recipe

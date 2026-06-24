@@ -136,7 +136,7 @@ grep -E "UIPATH_ORGANIZATION_NAME|UIPATH_TENANT_NAME|UIPATH_ORGANIZATION_ID|UIPA
 - `UIPATH_ORGANIZATION_ID` → `<ORG_UUID>` (matches `organizationId` in the JSON payload)
 - `UIPATH_TENANT_ID` → `<TENANT_UUID>` (matches `tenantId` in the JSON payload)
 
-If the org / tenant names are missing from `~/.uipath/.auth`, show only the UUIDs on the second line and note "(name unavailable)". Do **not** skip the Scope line — the user must always see which environment is about to be mutated. If the user expected a different org / tenant, they should `cancel` and re-login (`uip login --authority …` or `uip login --tenant …`).
+If the org / tenant names are missing from `~/.uipath/.auth`, show only the UUIDs on the second line and note "(name unavailable)". Do **not** skip the Scope line — the user must always see which environment is about to be mutated. If the user expected a different org / tenant, they should `cancel` and re-login for a different organization/environment (`uip login --authority … --tenant …`) or switch tenants in the same organization with `uip login tenant set <tenant>`.
 
 Then output the full JSON as a ```json code block in the chat (do NOT rely on the file link alone — the user may not be able to open it).
 

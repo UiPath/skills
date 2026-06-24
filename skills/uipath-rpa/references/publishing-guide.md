@@ -48,6 +48,8 @@ uip or packages upload "<NUPKG_PATH>" --output json
 | `--feed-id <UUID>` | No | Target a non-default feed. Defaults to the tenant feed. |
 | `--folder-path <PATH>` / `--folder-key <UUID>` | No | Target a specific folder feed. |
 
+Package upload uses the active tenant. Switch with `uip login tenant set <tenant>` before upload if the package belongs in another tenant feed.
+
 Output JSON includes the package `Id` (the package name Orchestrator stores) and `Version`. Hold on to the `Id` — `uip tm testcases link-automation` takes it as `--package-name`; `uip or processes create` takes it as `--package-key` (with `--package-version` separately).
 
 > **There is no `uip or packages publish` or `uip rpa publish`.** Agents that try those names get "unknown command". Pack writes a file; upload pushes that file. Two commands, two domains (`rpa`, `or`).

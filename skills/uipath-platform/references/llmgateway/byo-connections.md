@@ -71,7 +71,8 @@ uip llm-configuration byo-connections create --product uipath-ecs --feature uipa
 - `--default-model` — primary model for an operation group with alternatives. Defaults to `--llm-name`.
 - `--name` — override the auto-generated wrapper name (default: `feature-unix-millis`).
 - `--enabled` / `--no-enabled` — default true.
-- `--tenant <name>` — target a tenant other than the logged-in one.
+
+BYO connection commands use the active tenant from `uip login`. To target another tenant in the same organization, run `uip login tenant set <tenant>` before the command.
 
 The CLI auto-derives `name` (from feature + epoch ms when omitted), `defaultModel` (equals `--llm-name` when omitted), `configurationType` (always `SelfServe`), and `organizationId` / `tenantId` (from login context).
 
