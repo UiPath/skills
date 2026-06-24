@@ -1,0 +1,60 @@
+task_id: skill-gov-aops-policy-deploy-tenant-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-governance skill to
+  deploy an AOps governance policy to the current tenant via
+  `uip gov aops-policy deployment tenant configure`. Tests that the
+  agent writes a JSON assignment file with the correct shape
+  (productIdentifier + licenseTypeIdentifier + policyIdentifier),
+  passes it via `--input`, and uses `--output json`.
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip gov aops-policy` commands that hit the service will fail with an
+  auth error. That is acceptable — what matters is that the agent invokes
+  the correct commands with the correct flags.
+tags: [uipath-governance, smoke, mode:operate, aops-policy, deployment, lifecycle:setup]
+
+run_limits:
+  expected_turns: 9
+
+initial_prompt: |
+  Deploy an AOps governance policy to the current tenant. Save every
+  command's stdout+stderr to ./output.txt (use `> output.txt 2>&1` for
+  the first command and `>> output.txt 2>&1` for subsequent ones).
+
+  Details:
+  - Tenant ID: `00000000-0000-0000-0000-000000000099`
+  - Tenant name: `E2E Test Tenant`
+  - Product: `E2E` (product name, not label)
+  - License type: `E2E` (license-type name, not label)
+  - Policy GUID: `aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee`
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live governance
+    tenant in this environment. Commands WILL fail with auth errors —
+    that is expected. Run each command exactly once, capture stdout+stderr
+    to ./output.txt, and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip gov aops-policy command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `deployment tenant configure` with --input and --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+configure\b(?=.*--input\s)(?=.*--output\s+json)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on at least one uip gov aops-policy command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

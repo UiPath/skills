@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "b8c9d0e1-f2a3-4204-ae4f-0314a5b6c7d8",
+      "State": "Faulted",
+      "ProcessName": "LegacyDocReader",
+      "ReleaseKey": "",
+      "Source": "Queue",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-11",
+      "MachineKey": "",
+      "StartTime": "2026-06-16T09:14:02.110Z",
+      "EndTime": "2026-06-16T09:14:04.260Z",
+      "CreationTime": "2026-06-16T09:14:01.880Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

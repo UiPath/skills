@@ -1,0 +1,54 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "b6c7d8e9-0f1a-4b2c-9d3e-4f5a6b7c8d9e",
+      "State": "Successful",
+      "ProcessName": "ComplianceMailExport",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-03T05:30:00.140Z",
+      "EndTime": "2026-06-03T05:30:06.420Z",
+      "CreationTime": "2026-06-03T05:29:59.870Z"
+    },
+    {
+      "Key": "a4b5c6d7-8e9f-4a0b-1c2d-3e4f5a6b7c8d",
+      "State": "Successful",
+      "ProcessName": "ComplianceMailExport",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-02T05:30:00.100Z",
+      "EndTime": "2026-06-02T05:30:06.980Z",
+      "CreationTime": "2026-06-02T05:29:59.820Z"
+    },
+    {
+      "Key": "93a4b5c6-7d8e-4f90-a1b2-c3d4e5f6a7b8",
+      "State": "Successful",
+      "ProcessName": "ComplianceMailExport",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-01T05:30:00.210Z",
+      "EndTime": "2026-06-01T05:30:07.330Z",
+      "CreationTime": "2026-06-01T05:29:59.910Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 3,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

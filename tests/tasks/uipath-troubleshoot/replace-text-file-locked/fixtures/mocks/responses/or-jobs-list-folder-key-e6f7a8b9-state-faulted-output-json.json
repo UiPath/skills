@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "f7a8b9c0-d1e2-4204-3f40-516273849506",
+      "State": "Faulted",
+      "ProcessName": "ContractMerge",
+      "ReleaseKey": "",
+      "Source": "Queue",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-06",
+      "MachineKey": "",
+      "StartTime": "2026-06-14T13:30:02.700Z",
+      "EndTime": "2026-06-14T13:30:09.450Z",
+      "CreationTime": "2026-06-14T13:30:02.460Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "Name": "NDAFiller",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Word Application Scope hang where Word blocks on a background password prompt for a protected document, so the job never completes and is eventually stopped.",
+  "MainFile": "Main.xaml"
+}

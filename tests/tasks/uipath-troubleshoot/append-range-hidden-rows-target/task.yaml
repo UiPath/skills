@@ -1,0 +1,187 @@
+task_id: skill-troubleshoot-append-range-hidden-rows-target
+description: >
+  UiPath troubleshoot agent must diagnose an Append Range failure
+  (BusinessException 'Cannot append to a range that contains hidden
+  rows or columns') where the target sheet has an active AutoFilter
+  hiding rows in the computed append region. Package v2.8.5+ guards
+  against the silent data loss that pre-2.8.5 versions caused. Agent
+  must match the activity-packages/excel-activities/playbooks/append-range-failures.md
+  playbook, identify the hidden-rows-in-target branch from the
+  AutoFilter detection + v2.8.5+ guard Trace + hidden row range
+  identification in the job logs, and recommend a filter-normalization
+  fix (Remove Data Filter / route to different sheet / unhide
+  explicitly) — NOT the package-downgrade anti-pattern.
+
+tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, append-range, hidden-rows-target]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job just faulted with
+  `UiPath.Excel.BusinessException: Cannot append to a range that contains hidden rows or columns. The target sheet 'Transactions' has hidden rows in the computed append region (rows 4012-4089).`
+  Pinned job key: ff333333-cccc-dddd-eeee-ffffaaaabbbb. This same
+  workflow ran fine last quarter — I haven't touched the code.
+  What changed?
+
+  The project source for the failing process is at ./ExcelLedgerProcess/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the append-range-failures playbook AND identified the hidden-rows-in-target branch (active AutoFilter + v2.8.5+ guard) AND recommended a filter-normalization fix — NOT the package-downgrade anti-pattern"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My Orchestrator job just faulted with
+         `UiPath.Excel.BusinessException: Cannot append to a range
+         that contains hidden rows or columns. The target sheet
+         'Transactions' has hidden rows in the computed append region
+         (rows 4012-4089).` Pinned job key:
+         ff333333-cccc-dddd-eeee-ffffaaaabbbb. This same workflow
+         ran fine last quarter — I haven't touched the code. What
+         changed?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/append-range-failures.md
+        because the runtime error is the canonical BusinessException
+        for branch 6 (hidden rows in target append region under
+        package v2.8.5+).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The target sheet 'Transactions' has an active AutoFilter
+            on column 'Status' hiding rows 4012-4089
+            (Status='Reconciled').
+          - The workflow has no filter-normalization step before
+            the Append Range.
+          - Package version 2.24.7 is >= 2.8.5, so the explicit
+            target-region guard is active.
+          - Pre-2.8.5 versions silently appended over hidden rows
+            (causing data loss); v2.8.5+ throws the explicit
+            BusinessException to prevent that.
+          - "Worked last quarter" framing: either the package was
+            upgraded past 2.8.5, OR the AutoFilter wasn't active in
+            previous runs. Either change activates the failure.
+
+        The reference fix:
+          - Primary: insert a Remove Data Filter (Modern) or
+            Filter Range Action=Remove (Classic) activity inside
+            the Use Excel File scope, before the Append Range.
+          - Alternative: route to a different sheet that's
+            robot-controlled.
+          - Alternative: unhide the affected rows explicitly
+            before the append (more invasive than removing the
+            filter).
+          - NOT acceptable: downgrade UiPath.Excel.Activities to
+            pre-2.8.5 (the playbook's anti-pattern — reintroduces
+            the silent data-loss bug the explicit error was added
+            to catch).
+
+        Evidence sources (in priority order):
+          1. Job logs -- the three-line chain that pins the
+             failure:
+             (a) "Use Excel File: ledger.xlsx — workbook opened
+                 (OpenXML provider); UiPath.Excel.Activities
+                 version 2.24.7 (>= 2.8.5)"
+             (b) "Append Range: today's transactions — target
+                 sheet 'Transactions' inspection: AutoFilter
+                 active on column 'Status' (hiding rows where
+                 Status='Reconciled')"
+             (c) "Append Range: today's transactions — target
+                 region validation (v2.8.5+): hidden rows
+                 detected in append target — sheet rows 4012-4089
+                 are hidden by the AutoFilter ... Pre-2.8.5
+                 versions would have silently appended over the
+                 hidden region; v2.8.5+ throws to prevent data
+                 loss."
+             These three together name the package version, the
+             filter mechanism, and the hidden row range
+             explicitly.
+          2. project.json -- confirms UiPath.Excel.Activities
+             version (2.24.7) is well above the 2.8.5 threshold.
+          3. The "worked last quarter" framing reinforces that
+             the workflow itself didn't change — what changed is
+             either the package version or the human-controlled
+             filter state.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the append-range-failures playbook AND
+             identified the hidden-rows-in-target branch
+             (specifically naming the AutoFilter on column 'Status'
+             AND the v2.8.5+ guard mechanism) AND recommended a
+             filter-normalization fix (Remove Data Filter or
+             equivalent) AND explicitly rejected the package
+             downgrade as an anti-pattern OR didn't mention
+             downgrade at all.
+        0.9  Primary diagnosis + fix correct, but the agent didn't
+             explicitly flag the package-downgrade anti-pattern
+             (agent might have mentioned downgrade as one
+             alternative among many without rejecting it).
+        0.8  Both dimensions partially correct: matched the playbook
+             and identified the hidden-rows issue but recommended a
+             vague "check the filter" fix without naming a concrete
+             remediation activity; OR named the AutoFilter without
+             matching the specific playbook.
+        0.5  Only one dimension correct: matched the playbook but
+             classified the cause-branch incorrectly (variant
+             mismatch, file-lock, column-schema) without supporting
+             evidence; OR identified the AutoFilter without matching
+             the specific playbook.
+        0.2  Agent recognized the BusinessException as an Append
+             Range issue but never connected it to the AutoFilter +
+             v2.8.5+ guard combination.
+        0.0  Recommended downgrading UiPath.Excel.Activities as the
+             primary fix (the playbook's explicit anti-pattern);
+             OR concluded a wrong root cause (workbook corruption,
+             file lock); OR got blocked / timed out.
+
+      Be substance-focused. The decisive chain is "active
+      AutoFilter on column Status (hiding rows 4012-4089) +
+      package v2.8.5+ guard activated → BusinessException
+      naming hidden rows in append region." An agent that names
+      this chain AND recommends a filter-removal fix scores 1.0.
+      Penalize package-downgrade recommendations specifically —
+      that's the playbook's anti-pattern.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

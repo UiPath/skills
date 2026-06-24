@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "e6f7a8b9-c0d1-4204-b6c7-d8e9f0a12514",
+      "State": "Faulted",
+      "ProcessName": "MonthlyReportFiller",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-10T06:00:05.310Z",
+      "EndTime": "2026-06-10T06:00:11.870Z",
+      "CreationTime": "2026-06-10T06:00:05.020Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
