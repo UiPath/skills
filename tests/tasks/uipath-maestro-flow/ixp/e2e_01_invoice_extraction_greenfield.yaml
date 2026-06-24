@@ -93,6 +93,10 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  max_turns: 80
+  # Heavy multi-connector e2e: the one completed run used 882s / 71 turns. On the slow
+  # eu.anthropic Bedrock path it tips over a 900s cap, so the run is wall-clock-killed
+  # before finishing. 1500 is the modal connector/e2e budget (~600s headroom over the
+  # 882s fast baseline); max_turns 120 keeps margin over the observed 71. RE-12529.
+  max_turns: 120
   turn_timeout: 1200
-  task_timeout: 900
+  task_timeout: 1500

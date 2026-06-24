@@ -1,0 +1,51 @@
+{
+  "name": "BrandedLetterFill",
+  "projectId": "b2c3d4e5-f6a7-4193-8809-3c4d5e6f7081",
+  "description": "Reproduces a Replace Text silent miss where the [CompanyName] placeholder in the header/footer is left unchanged because an older UiPath.Word.Activities version scans only the document body.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.Word.Activities": "[1.6.0]",
+    "UiPath.System.Activities": "[22.4.4]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "22.4.6.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "isAttended": false,
+    "executionType": "Workflow",
+    "requiresUserInteraction": true,
+    "supportsPersistence": false,
+    "excludedLoggedData": [
+      "Private:*",
+      "*password*"
+    ]
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {
+      "privateWorkflows": []
+    },
+    "processOptions": {
+      "ignoredFiles": []
+    },
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "CSharp",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "a2b3c4d5-e6f7-7890-1234-56789abcdef6",
+      "input": [],
+      "output": []
+    }
+  ],
+  "isTemplate": false,
+  "templateProjectData": {},
+  "publishData": {},
+  "targetFramework": "Windows"
+}

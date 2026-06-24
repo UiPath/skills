@@ -18,6 +18,13 @@ Read the SKILL.md, then execute each step of the internal procedure yourself. On
 
 The `uia-configure-target` skill lives at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/` — read `SKILL.md` for the internal procedure and `USAGE.md` for invocation modes (TargetAnchorable, TargetApp, and the batch `|` pattern for multiple elements on the same screen). These are **reference docs to read and follow** — they are NOT invocable as slash commands via the Skill tool.
 
+**Locating the skill file.** The package ID is constant, so the path above is fixed — the reliable way to open it is a direct `Read` of `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/skills/uia-configure-target/SKILL.md`. If you use `Glob` to find it instead, the pattern **must start with** `**/` — `Glob` matches the pattern against each hit's path relative to the working directory, not relative to the `path` argument, so a pattern that begins with a literal folder name matches nothing:
+
+- ✅ `Glob(path=".../UiPath.UIAutomation.Activities", pattern="**/uia-configure-target/SKILL.md")`
+- ❌ `Glob(path=".../UiPath.UIAutomation.Activities", pattern="skills/uia-configure-target/SKILL.md")` — returns "No files found" even though the file exists.
+
+A `Glob` miss is not evidence the skill is absent; never infer availability from it — the installed package version in `project.json` is the source of truth (see [uia-prerequisites.md](uia-prerequisites.md)).
+
 Before invoking, check the unsupported-activities list in `USAGE.md`. If the activity you need to target is on that list, skip `uia-configure-target` for it and use the [Indication Fallback](#indication-fallback) instead.
 
 ## Rules
@@ -78,6 +85,20 @@ The indicated element does not belong to the target application/browser.
 
 The validator compares each child target's `ScopeSelectorArgument` against the parent card's `TargetApp` selector — different `app=` values trigger this error every time, even when the runtime selectors are correct.
 
+> **First, confirm it is actually a separate process.** This whole section applies **only** when the helper runs in a *different process* — a different `app=`. Before nesting anything, compare the secondary window's captured `ScopeSelectorArgument` with the outer card's `TargetApp`: **different `app=` → nest a card (Pattern below); same `app=` → reuse the existing card (next).** A separate top-level window is *not*, by itself, a reason to add a card.
+
+### Same-Process Secondary Windows — Reuse the Card (Do NOT Nest)
+
+Most dialogs, property sheets, Win32 common dialogs (`#32770`: Open / Save / Print / Properties), pop-ups, and child windows belong to the **same process** as the app that spawned them — same `app=`, only a different `cls=` / `title=`. These do **not** get their own card.
+
+With the default `AttachMode="ByInstance"`, one `NApplicationCard` attaches to the **whole application instance**, not a single window. Each child activity finds its target window *within* that instance from its own `ScopeSelectorArgument` — so an activity whose scope selector names the dialog resolves there even though the card's `TargetApp` names the main window. A second card buys nothing and adds another scope to keep aligned.
+
+The `app=`-keyed validation check above does not trip here either: the same `app=` on child and card means no "does not belong to the target application/browser" error. That error is about a different *process*, never a different *window* of the same process.
+
+**Example — MS Paint File ▸ Open ▸ Cancel.** Clicking *File* then *Open* spawns the Win32 **Open** dialog (`#32770`), a separate top-level window the Object Repository captures as its own screen. The *Cancel* button's `ScopeSelectorArgument` is `<wnd app='mspaint.exe' cls='#32770' title='Open' />`, while the Paint card's `TargetApp` is `<wnd app='mspaint.exe' cls='MSPaintApp' title='*Paint*' />`. Same `app=` → the Open dialog is already reachable from the **existing** Paint card under `ByInstance`, so all three clicks (File, Open, Cancel) go in **one** card. The File-menu pop-up needs no card of its own, and neither does the Open dialog. Adding a second card is wrong: do not nest it, and do not claim a single card "would fail validation" — same-process windows pass the `app=` check, and `ByInstance` spans the instance's windows. See [ui-automation-guide.md § One application instance = one card](ui-automation-guide.md#one-application-instance--one-card-even-with-multiple-object-repository-screens).
+
+Use the nested-card pattern below **only** when the secondary window is a genuinely separate process.
+
 ### Pattern: Nest a Second `NApplicationCard` for the Helper Process
 
 Wrap the activities that target the helper process in their own `NApplicationCard` scoped to that process. Use a wildcard title (`title='*'`) when the helper presents multiple sub-dialogs (e.g., "Sign in" → "Enter password" → "Stay signed in?") so a single nested card covers them all.
@@ -126,7 +147,7 @@ Wrap the activities that target the helper process in their own `NApplicationCar
 
 **Rules:**
 
-1. **One `NApplicationCard` per process** — every direct or transitive child activity must target the same `app=` as its enclosing card's `TargetApp`. If activities target two processes, you need two cards.
+1. **One `NApplicationCard` per process — not per window.** Every direct or transitive child activity must target the same `app=` as its enclosing card's `TargetApp`. Two *processes* (different `app=`) need two cards; two *windows* of the same process — dialogs, pop-ups, `#32770` common dialogs — share **one** card under `ByInstance` (see § Same-Process Secondary Windows). Do not add a card just because a secondary top-level window appeared.
 2. **Each card has its own `ScopeGuid`.** Child activities reference their card via `ScopeIdentifier="<that-card's-ScopeGuid>"`. When moving an activity from one card to another, update `ScopeIdentifier` — `validate` will not catch a mismatched value, but the activity will run against the wrong scope at runtime.
 3. **Card-level `HealingAgentBehavior`** uses `NHealingAgentBehavior` (`Job`/`Disabled`/`RecommendationOnly`) — not `SameAsCard`. Details: [ui-automation-guide.md § Common UIA Pitfalls](ui-automation-guide.md).
 4. **Use `title='*'`** on the helper-process card only when multiple sub-dialogs share the same `app=` and you want a single scope to span them. If sub-dialogs have stable, distinct titles AND only the outer `app=` is shared with the host app (rare), prefer a separate card per dialog so failures localize cleanly.

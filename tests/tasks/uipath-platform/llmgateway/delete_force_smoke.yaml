@@ -10,8 +10,6 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Permanently remove BYO LLM configuration
   `7afd7d89-a35d-4057-669b-3f3de2233812` from the tenant.
 

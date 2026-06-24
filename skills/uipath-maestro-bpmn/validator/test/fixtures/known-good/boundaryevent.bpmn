@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="sample-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="UiPath (https://bpmn.uipath.com)" exporterVersion="local">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:startEvent id="Event_start"/>
+    <bpmn:task id="Activity_ZGCURy"/>
+    <bpmn:boundaryEvent id="Event_7vhkul" attachedToRef="Activity_ZGCURy"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="260" y="200" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="260" y="241" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Activity_ZGCURy" bpmnElement="Activity_ZGCURy">
+        <dc:Bounds x="583" y="141" width="100" height="80"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="583" y="226" width="100" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_7vhkul" bpmnElement="Event_7vhkul">
+        <dc:Bounds x="615" y="203" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="615" y="244" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

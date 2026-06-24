@@ -69,7 +69,7 @@ uip maestro flow format <path/to/file.flow> --output json
 
 Format:
 - Arranges nodes horizontally (left-to-right) and anchors to the leftmost node's original position so the user's general layout intent is preserved
-- Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }` — preserving sticky-note custom sizes
+- Sets each node's `size` to match its canvas shape — inline agents (`shape: rectangle`) → `{ "width": 288, "height": 96 }`, containers (loops/groups) → `{ "width": 560, "height": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ "width": 96, "height": 96 }`; sticky-note custom sizes are preserved
 - Recurses into subflows and rewrites `subflows[<id>].layout` for each
 - Backfills missing `position`/`size` entries
 - Does not modify node logic, edges, definitions, or variables — only layout coordinates
@@ -90,36 +90,36 @@ Requires `content/package-descriptor.json` and `content/operate.json` in the pro
 
 > **Note:** `pack` + `uip solution publish` deploys directly to Orchestrator — the user cannot visualize or edit the flow in Studio Web via this path. Only use this when the user explicitly asks to deploy to Orchestrator. The default publish path is `uip solution upload` (see below). See [uipath-solution](/uipath:uipath-solution) for `solution publish` commands.
 
-## uip solution resource refresh
+## uip solution resources refresh
 
 Re-scan all projects in the solution and sync resource declarations (connections, processes, queues, etc.) from their `bindings_v2.json` files. Creates new resources for bindings not yet in the solution, imports from Orchestrator when a matching resource exists. **Always run this before `uip solution upload` or `uip maestro flow debug`.**
 
 ```bash
-uip solution resource refresh --solution-folder <SolutionDir> --output json
+uip solution resources refresh --solution-folder <SolutionDir> --output json
 ```
 
 `<SolutionDir>` is the solution directory (containing the `.uipx` file). The command has no positional solution argument; omit `--solution-folder` only when the current directory is already the solution root.
 
-## uip solution resource add / remove / edit
+## uip solution resources add / remove / edit
 
 Atomic single-resource mutations. Use these when you need to add, delete, or change one resource and don't want to scan every project's bindings the way `refresh` does — for example, when a flow needs a new local queue but no `bindings_v2.json` change is involved yet.
 
 ```bash
 # Local virtual stub (offline, no auth)
-uip solution resource add --source local --kind Queue --name InvoiceQueue --output json
+uip solution resources add --source local --kind Queue --name InvoiceQueue --output json
 
 # Import an existing Orchestrator resource
-uip solution resource add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
+uip solution resources add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
 
 # Delete one resource by key
-uip solution resource remove <KEY> --output json
+uip solution resources remove <KEY> --output json
 
 # Patch an existing resource's spec by key (JSON object is the only input)
-uip solution resource edit <KEY> --patch '{"maxNumberOfRetries":5}' --output json
-uip solution resource edit <KEY> --patch '{"acceptAutomaticallyRetry":false,"retentionPeriod":14}' --output json
+uip solution resources edit <KEY> --patch '{"maxNumberOfRetries":5}' --output json
+uip solution resources edit <KEY> --patch '{"acceptAutomaticallyRetry":false,"retentionPeriod":14}' --output json
 
 # Read the patch from stdin
-echo '{"slaInHours":"4"}' | uip solution resource edit <KEY> --patch - --output json
+echo '{"slaInHours":"4"}' | uip solution resources edit <KEY> --patch - --output json
 ```
 
 `add` is idempotent on `(kind, name, folder)` for local and on resource key for remote; a retry returns `Status: "Unchanged"`. `edit` is the only command that mutates an existing resource's spec — `refresh` never overwrites; it skips resources already in the solution. None of these touch `bindings_v2.json` — if a flow node still binds the resource, the next `refresh` will re-import it. See [uipath-solution Step 9–11](/uipath:uipath-solution) for the full contract.

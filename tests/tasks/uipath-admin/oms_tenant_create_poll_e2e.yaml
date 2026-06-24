@@ -1,0 +1,66 @@
+task_id: skill-admin-oms-tenant-create-poll-e2e
+description: >
+  End-to-end test: agent creates a tenant and then polls the async
+  operation via `organizations operation get <OP_ID>` per Rule 18.
+  Validates the agent auto-polls after a tenant mutation instead of
+  leaving the user with an unresolved operation.
+
+  Command-construction only — no live tenant. What matters is correct
+  command sequencing: regions list -> tenants create -> operation get poll.
+tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, oms, tenant-lifecycle, async-poll]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Create a new tenant named "Staging-Env-Poll-Test" in an appropriate region.
+  After creation, poll the returned operation to check whether the tenant
+  was created successfully. Report the final status.
+
+  If the create command fails and returns no operation ID, use a
+  placeholder ID (e.g. "00000000-0000-0000-0000-000000000000") and
+  still run the poll command so we can verify the command shape.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed regions before creating (Rule 21)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+organizations\s+regions\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the tenant with name and region"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+tenants\s+create\b.*(?:--file|--region)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent polled async operation via organizations operation get (Rule 18)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+organizations\s+operation\s+get\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

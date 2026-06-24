@@ -10,7 +10,7 @@ Lookup table for known recurring failure modes in Maestro Flow projects. Each en
 |---|---|---|
 | [MST-9107](#mst-9107--js-prefix-missing) | Activity input bound to literal string `"vars.X.output.Y"` | Missing `=js:` prefix on a `$vars` reference. `flow validate` catches this — pre-`expression-prefix-validator` cli still ships the literal at runtime. |
 | [MST-9972](#mst-9972--variablesnodes-missing-vars-resolves-to-undefined) | `Cannot read property 'output' of undefined` on a downstream node | Direct-authored `.flow` skipped `variables.nodes[]`; `flow validate` accepts it but the BPMN has no process-level variable declaration for the upstream node. |
-| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render as oblong rectangles, not squares | `flow format` not run before publish |
+| [MST-9061](#mst-9061--misshapen-rectangle-nodes-in-studio-web) | Nodes render at the wrong size for their shape | `flow format` not run before publish |
 | [HITL `completed` port unwired](#hitl-completed-port-unwired) | Flow hangs indefinitely after a HITL node | No outgoing edge from the node's `completed` source port |
 | [Reused reference ID](#reused-reference-id--cross-connection-id-leakage) | Connector node faults silently at runtime | Reference ID copied from a prior flow's connection |
 | [Single-nested layout](#single-nested-layout) | Studio Web upload fails; `flow init` auto-registration is skipped | `uip maestro flow init` was run outside a solution directory |
@@ -99,11 +99,11 @@ One entry per declared output (trigger nodes: `output` only; action nodes: `outp
 
 ### Symptom
 
-After publish or debug upload, Studio Web renders nodes as oblong rectangles (e.g., 200×80) instead of square tiles. Layout looks visually broken even though the flow runs correctly.
+After publish or debug upload, Studio Web renders nodes at the wrong dimensions for their shape — a square/circle node stretched into an oblong (e.g., 200×80), or an inline agent squashed to a 96×96 square instead of its 288×96 rectangle. Layout looks visually broken even though the flow runs correctly.
 
 ### Cause
 
-`uip maestro flow format` was not run before publishing or debugging. Hand-written or stale `layout` data with non-96 dimensions remains in the `.flow` file and Studio Web renders it as-is.
+`uip maestro flow format` was not run before publishing or debugging. Hand-written or stale `layout` data with dimensions that don't match each node's shape remains in the `.flow` file and Studio Web renders it as-is.
 
 ### Fix
 
@@ -115,7 +115,7 @@ uip maestro flow format <ProjectName>.flow --output json
 
 Format:
 
-- Sets every non-`stickyNote` node's `size` to `{ "width": 96, "height": 96 }`
+- Sets each node's `size` by its canvas shape (inline agents → 288×96, containers → 560×320, everything else → 96×96)
 - Arranges nodes horizontally with ELK at `nodeSpacing: 96`
 - Recurses into subflows and rewrites `subflows[<id>].layout`
 - Preserves sticky note custom sizes

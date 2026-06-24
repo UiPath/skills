@@ -87,14 +87,21 @@ jobs:
     # min; bump the ceiling so we don't cancel mid-task.
     timeout-minutes: 90
     name: Run RPA skill smoke tests (Windows)
+    # Disable uip CLI version-sync: tasks run in tempdir (no container) and
+    # share one host ~/.uipath / global uip, so a `uip login status` re-pin
+    # downgrades the CLI for later tasks. Mirrors daily.sh.
+    env:
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-        with:
-          repository: UiPath/coder_eval
-          token: ${{ secrets.GH_PAT }}
-          path: .coder_eval
+      # Pin coder_eval to tests/.coder-eval-version so RPA smoke runs the same
+      # engine as the skills smoke, ad-hoc, and nightly paths. shell: bash
+      # because windows-latest defaults to PowerShell (no `tr`).
+      - name: Resolve coder_eval pin
+        id: ceref
+        shell: bash
+        run: echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
         with:
@@ -110,11 +117,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
+      # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
       - name: Install coder-eval
-        working-directory: .coder_eval
+        shell: bash
         env:
-          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system .
+          UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
+        run: uv pip install --system "coder-eval==${{ steps.ceref.outputs.version }}"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash

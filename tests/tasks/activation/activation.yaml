@@ -9,18 +9,21 @@ tags: [activation, classification]
 
 dataset:
   paths:
+    - uipath-admin.jsonl
     - uipath-agents.jsonl
+    - uipath-api-workflow.jsonl
+    - uipath-automation-discovery.jsonl
     - uipath-coded-apps.jsonl
-    - uipath-data-fabric.jsonl
     - uipath-functions.jsonl
-    - uipath-design.jsonl
     - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
     - uipath-human-in-the-loop.jsonl
+    - uipath-ixp.jsonl
     - uipath-maestro-bpmn.jsonl
     - uipath-maestro-case.jsonl
     - uipath-maestro-flow.jsonl
+    - uipath-mcp-servers.jsonl
     - uipath-planner.jsonl
     - uipath-platform.jsonl
     - uipath-review.jsonl
@@ -32,23 +35,33 @@ dataset:
 
 initial_prompt: "${row.prompt}"
 
-# 20 skill_triggered criteria — one per skill. Each derives expected internally
-# from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~900 no
+# 22 skill_triggered criteria — one per skill. Each derives expected internally
+# from `expected_skill == skill_name`. Heavy class imbalance (~50 yes / ~1100 no
 # per skill) means recall.yes is the meaningful gate; recall.no is trivially high.
 success_criteria:
+  - type: skill_triggered
+    description: "uipath-admin activation"
+    skill_name: uipath-admin
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
     description: "uipath-agents activation"
     skill_name: uipath-agents
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
-    description: "uipath-coded-apps activation"
-    skill_name: uipath-coded-apps
+    description: "uipath-api-workflow activation"
+    skill_name: uipath-api-workflow
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
-    description: "uipath-data-fabric activation"
-    skill_name: uipath-data-fabric
+    description: "uipath-automation-discovery activation"
+    skill_name: uipath-automation-discovery
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-coded-apps activation"
+    skill_name: uipath-coded-apps
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
@@ -77,6 +90,11 @@ success_criteria:
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
+    description: "uipath-ixp activation"
+    skill_name: uipath-ixp
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
     description: "uipath-maestro-bpmn activation"
     skill_name: uipath-maestro-bpmn
     expected_skill: "${row.expected_skill}"
@@ -89,6 +107,11 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-maestro-flow activation"
     skill_name: uipath-maestro-flow
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+  - type: skill_triggered
+    description: "uipath-mcp-servers activation"
+    skill_name: uipath-mcp-servers
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered
@@ -109,11 +132,6 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-rpa activation"
     skill_name: uipath-rpa
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-  - type: skill_triggered
-    description: "uipath-design activation"
-    skill_name: uipath-design
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered

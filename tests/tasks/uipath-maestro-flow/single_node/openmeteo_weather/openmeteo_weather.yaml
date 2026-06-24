@@ -11,7 +11,7 @@ description: >
   (`current_weather.temperature`), and live execution. Distinct from the
   managed-HTTP `bellevue_weather` task — this one must use the native connector,
   not `core.action.http`.
-tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, custom-codereval-openmeteoapis]
+tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, custom-codereval-openmeteoapis, ipe, custom-connector]
 
 agent:
   type: claude-code
@@ -34,8 +34,7 @@ initial_prompt: |
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Build and validate the complete flow end-to-end
-  in a single pass. Before starting, load the uipath-maestro-flow skill and follow its
-  connector node configuration workflow. Do NOT substitute a mock or a manual
+  in a single pass. Do NOT substitute a mock or a manual
   HTTP request for the connector.
 
 success_criteria:

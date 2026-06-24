@@ -48,8 +48,6 @@ initial_prompt: |
   me. The connector IDs in the draft are placeholders on purpose — leave them as
   they are. I just need the finalized design for now, nothing built yet.
 
-  Use the uipath-maestro-case skill.
-
 success_criteria:
   - type: file_exists
     description: "Finalization produced the approved sdd.md"

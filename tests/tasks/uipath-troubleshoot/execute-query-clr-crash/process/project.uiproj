@@ -1,0 +1,6 @@
+{
+  "Name": "TransactionExport",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Execute Query CLR-level crash (exit code 0xE0434352): an unbounded SELECT * over a multi-million-row table materializes into a DataTable and exhausts the Robot process memory.",
+  "MainFile": "Main.xaml"
+}

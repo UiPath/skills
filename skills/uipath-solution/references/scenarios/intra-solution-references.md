@@ -20,7 +20,7 @@ MySolution/
     └── process/agent/Worker.json         (auto on add)
 ```
 
-The right `referenceKey` for the Worker tool is the **solution-resource key** of `Worker.json` (read from `uip solution resource list --kind Process --source local --output json`), **not** the `projectId` from `.uipx`.
+The right `referenceKey` for the Worker tool is the **solution-resource key** of `Worker.json` (read from `uip solution resources list --kind Process --source local --output json`), **not** the `projectId` from `.uipx`.
 
 ```jsonc
 // Coordinator/resources/WorkerTool/resource.json
@@ -53,7 +53,7 @@ The right `referenceKey` for the Worker tool is the **solution-resource key** of
 ## Verify
 
 ```bash
-uip solution resource list --kind Process --source local --output json
+uip solution resources list --kind Process --source local --output json
 ```
 
 The keys you see here are what `referenceKey` should be in any `location: "solution"` tool resource file.

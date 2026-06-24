@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "d3a6c4e9-5f70-4c8d-9eaf-3a4b5c6d7e8f",
+      "Name": "Finance Operations",
+      "Path": "Finance Operations",
+      "Description": "Folder hosting the invoice posting and reconciliation processes.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b1e2f3a4-5c6d-4e7f-8a9b-0c1d2e3f4a5b",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

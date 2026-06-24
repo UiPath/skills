@@ -13,10 +13,6 @@ run_limits:
   max_turns: 50
 
 initial_prompt: |
-  Before starting, load the `uipath-maestro-flow` skill and read its
-  `evaluate` capability — especially
-  `references/evaluate/references/upload-safety.md`.
-
   Setup the agent must perform first:
   1. Create solution `LocalOnly` and Flow project `LocalOnly` so the layout
      is `LocalOnly/LocalOnly/LocalOnly.flow`. Link the project with

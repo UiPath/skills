@@ -2,7 +2,7 @@
 
 Use this walkthrough when the target service has an IS connector and you want managed auth (OAuth / API key) handled by an existing IS connection.
 
-**Prerequisite:** a healthy IS connection for the target connector. Step 2 verifies this. If none exists, propose manual mode as the fallback and confirm the switch with the user via `AskUserQuestion` before finalizing — do not switch modes without that confirmation.
+**Prerequisite:** a healthy IS connection for the target connector. Step 2 verifies this. If none exists, propose manual mode as the fallback and confirm the switch with the user before finalizing — do not switch modes without that confirmation.
 
 Before starting, read [impl.md](impl.md) for the node type, registry validation, and the "always use `node configure`" rule. Follow Steps 1–5 in order.
 
@@ -17,7 +17,7 @@ The CLI copies the manifest into `definitions[]`, adds the node instance, regist
 
 ## Step 2 — Identify target connection
 
-**Connector mode only works if the connector supports the HTTP request activity** — verify by running `uip is connectors get "<target-connector-key>"` and checking the `HasHttpRequest` flag. If the flag is false, **STOP** — a connection cannot help. Use the recovery `AskUserQuestion` below (switch to manual mode / skip / something else; the create-a-connection option does not apply) and do not switch modes without confirmation.
+**Connector mode only works if the connector supports the HTTP request activity** — verify by running `uip is connectors get "<target-connector-key>"` and checking the `HasHttpRequest` flag. If the flag is false, **STOP** — a connection cannot help. Use the recovery question below (switch to manual mode / skip / something else; the create-a-connection option does not apply) and do not switch modes without confirmation.
 
 ```bash
 uip is connections list "<target-connector-key>" --all-folders --output json
@@ -29,18 +29,21 @@ uip is connections list "<target-connector-key>" --all-folders --output json
 
 Record the chosen connection's `Id` and `FolderKey` — Step 3 needs both.
 
-> **HTTP-specific recovery — no usable connection.** If platform-skill recovery yields nothing (empty after `--all-folders` + `--refresh`, user declines to create one), the HTTP node has unique fallback options. Use `AskUserQuestion` to confirm the path — **manual mode is the recommended auto-fallback**, pre-selected, since it unblocks the node without a connection:
+> **HTTP-specific recovery — no usable connection.** If platform-skill recovery yields nothing (empty after `--all-folders` + `--refresh`, user declines to create one), the HTTP node has unique fallback options. Ask the user to confirm the path — **manual mode is the recommended auto-fallback**, pre-selected, since it unblocks the node without a connection:
 >
 > - **Switch this node to manual mode** *(recommended)* — abandon this walkthrough and follow [impl-manual.md](impl-manual.md). Manual changes the auth model (you supply auth yourself), so this needs explicit confirmation.
 > - **Create a new connection now** — `uip is connections create "<target-connector-key>"` starts the OAuth flow. User completes browser auth themselves, then re-run `uip is connections list` to pick up the new connection.
 > - **Skip this node**.
 > - **Something else**.
 >
-> Auto-try the fallback, but do not finalize a mode switch without the user's confirmation; do not invent a placeholder ID; do not skip the node without explicit selection. See the `AskUserQuestion` dropdown rule in [SKILL.md](../../../../../SKILL.md).
+> Auto-try the fallback, but do not finalize a mode switch without the user's confirmation; do not invent a placeholder ID; do not skip the node without explicit selection. See the dropdown question rule in [SKILL.md](../../../../../SKILL.md).
 
 ## Step 3 — Configure the node
 
-> **Find missing values first.** Before composing `url` / `query` / `body`, resolve any values the agent doesn't have (IDs from names, required body fields, response shape, …). See [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md).
+> **STOP — open the platform skill before configuring.** Before composing `url` / `query` / `body`, read [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md) and resolve every value you don't already have (IDs from names, required body fields, endpoint path, response shape).
+>
+> - **If the target connector is listed in that skill's `vendor-docs-registry.json`:** you MUST follow its **Step 0 (Ground Against the Vendor's API Docs)** — read the `docsUrl` + `notes` and confirm the exact endpoint with the `http-request` probe before running `node configure`. Pass the endpoint path verbatim: vendor method names can contain literal dots (Slack ``chat.postMessage`) — the dot is part of the path segment.
+> - **If the connector is NOT listed:** the registry-grounding step does not apply — resolve missing values via the `http-request` probe / vendor docs as usual.
 
 ```bash
 uip maestro flow node configure <ProjectName>.flow <nodeId> \

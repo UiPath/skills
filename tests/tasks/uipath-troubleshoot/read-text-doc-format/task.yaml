@@ -1,0 +1,139 @@
+task_id: skill-troubleshoot-read-text-doc-format
+description: >
+  UiPath troubleshooting agent must diagnose a Read Text failure where the
+  standalone System > File > Word Document Read Text activity (OpenXML,
+  .docx-only) faults on a legacy binary .doc file with a FileFormatException.
+  Success = agent matches the read-text-doc-format playbook AND recommends
+  reading the .doc through a Use Word File (Interop reads both formats) or
+  converting it to .docx first, not blaming a missing/corrupt file or the
+  file path.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, read-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My LegacyDocReader process faults in Orchestrator (folder "Legacy Docs",
+  machine MOCK-ROBOT-11). It reads text out of Word documents. It works on
+  our newer files but throws a format error on the older ones. The file it
+  choked on is an older Word document.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the read-text-doc-format playbook AND recommended Use Word File / convert to .docx"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My LegacyDocReader process faults in Orchestrator (folder 'Legacy
+         Docs', machine MOCK-ROBOT-11) reading text from Word documents. It
+         works on newer files but throws a format error on older ones; the
+         file it choked on is an older Word document."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/read-text-doc-format.md
+        because a FileFormatException / "not a valid Office Open XML
+        document … only .docx supported" on the standalone System Read Text,
+        failing on older files, is the signature of the .docx-only limitation
+        hitting a legacy binary .doc.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Main.xaml uses the standalone System > File > Word Document Read
+            Text (its own FileName, no Word scope; project depends only on
+            UiPath.System.Activities, not UiPath.Word.Activities).
+          - That activity is OpenXML .docx-only. The input
+            'Contract.doc' is a legacy binary .doc, so it throws
+            FileFormatException. Newer .docx files work; older .doc files
+            don't.
+        The reference fix (either path):
+          - Read the .doc through a Use Word File (or Word Application Scope)
+            and the Word-pack Read Text — the Word Interop the container uses
+            opens both .doc and .docx. (Requires desktop Word.) OR
+          - Convert the .doc to .docx up front, then read the .docx with the
+            standalone activity.
+
+      DIMENSION C -- Right target
+        The agent must tie the fault to the .doc-vs-.docx format limitation
+        of the standalone activity, NOT conclude the file is missing,
+        corrupt, the path is wrong, or Word is not installed, and NOT
+        fabricate a host action.
+
+      SCORING RUBRIC:
+        1.0  Agent matched read-text-doc-format AND identified the standalone
+             System Read Text being .docx-only failing on a legacy .doc as
+             the cause AND recommended a valid fix (read via Use Word File /
+             Interop, or convert to .docx first) — without blaming a
+             missing/corrupt file, the path, or the install, or fabricating
+             actions.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "use a
+             different activity" without naming Use Word File / convert).
+        0.5  Recognized a format problem but attributed it to the wrong cause
+             (genuinely corrupt file, missing file, wrong path), or matched a
+             sibling playbook.
+        0.2  Restated the error without a cause.
+        0.0  Wrong cause (file missing/corrupt, path wrong, Word not
+             installed, container/scope), or fabricated a host action.
+
+      Reward either valid fix path equally.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing reader. It reads newer
+    Word files fine but throws a format error on older ones. You are away
+    from the robot host and only have Orchestrator access. You trust the
+    agent and want a diagnosis plus the fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the fix at the end."
+    - "If asked about the file's format, confirm the failing file is an older .doc (the newer .docx files read fine)."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

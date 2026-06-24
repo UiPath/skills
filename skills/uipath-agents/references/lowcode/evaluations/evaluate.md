@@ -2,6 +2,8 @@
 
 Design and run evaluations against low-code agents using the `uip agent eval` CLI.
 
+Evaluations from the CLI are currently supported only for autonomous agents. For conversational agents, evaluations should currently be handled through the Studio Web experience after the Agent solution is uploaded.
+
 ## Quick Reference
 
 ```bash

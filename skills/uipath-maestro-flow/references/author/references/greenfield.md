@@ -75,7 +75,7 @@ When you do need it, emit `uip login status --output json` as a parallel `Bash` 
 
 > **A Flow project cannot exist outside a solution** (universal rule in [SKILL.md](../../../SKILL.md)). Scaffold or select a solution (Step 2a) BEFORE running `uip maestro flow init` (Step 2b). Skipping the solution step produces a single-nested `<Project>/<Project>.flow` layout that fails Studio Web upload and packaging. The correct layout is **always** `<Solution>/<Project>/<Project>.flow` (double-nested — see the tree after Step 2c).
 
-Check the current directory for existing `.uipx` files. If existing solutions are found, use `AskUserQuestion` to present a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md).
+Check the current directory for existing `.uipx` files. If existing solutions are found, ask the user, presenting a dropdown with one option per discovered `.uipx`, a **"Create a new solution"** option, and **"Something else"** as the last option (for a custom path). If no existing solutions are found, create a new one automatically. See the dropdown question rule in [SKILL.md](../../../SKILL.md).
 
 - If the user specifies an existing `.uipx` file path or solution name, use that (skip to Step 2b)
 - Otherwise, create a new solution (Step 2a)
@@ -216,7 +216,7 @@ Then pick the first match down this ladder:
 1. **Curated connector activity** (`uipath.connector.<key>.<op>` in the results) → use it.
 2. **Connector exists but no activity for what you need** → `core.action.http.v2` (connector mode).
 3. **No connector at all** → `core.action.http.v2` (manual mode).
-4. **No API** (desktop app) → [rpa](references/plugins/rpa/planning.md).
+4. **No API** (desktop app) → [rpa](plugins/rpa/planning.md).
 
 Manual HTTP is the **bottom of the ladder** — only the search returning no connector authorizes it. Picking it without searching is the brand-name shortcut forbidden by [SKILL.md rule #3](../../../SKILL.md#critical-rules-universal).
 
@@ -241,7 +241,7 @@ Run from inside the flow project directory. Returns the same manifest format as 
    - Edit `nodes[]` — add the End node (and any other user-owned nodes).
    - Edit `definitions[]` — paste the End definition verbatim from T1's `registry get core.control.end` output.
    - Edit `edges[]` — wire `trigger → <httpNode> → end`. End-node `outputs` mapping goes here too if you declared an `out` variable in `variables.globals`.
-   - Edit `layout.nodes` — placeholder `{ position: { x: 0, y: 0 }, size: { width: 96, height: 96 }, collapsed: false }` per new node; `format` rewrites positions in T3.
+   - Edit `layout.nodes` — placeholder `{ position: { x: 0, y: 0 }, size: { width: 96, height: 96 }, collapsed: false }` per new node; `format` rewrites both position and size (by node shape) in T3.
 
    `Write` of the whole file is allowed but token-costly on flows >~10 nodes — only fall back to `Write` when ≥70% of nodes change AND the file is small (see [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder)).
 
@@ -280,7 +280,7 @@ Edit `<ProjectName>.flow` directly in the project root. The `bindings_v2.json` f
 
 Read [editing-operations.md](editing-operations.md) for strategy selection and per-operation recipes.
 
-> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
+> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user (per the dropdown question rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 For each node type, follow the relevant plugin's `impl.md` for node-specific inputs, JSON structure, and configuration. The operations guides cover the mechanics (how to add/remove/wire); the plugins cover the semantics (what inputs and model fields each node type needs).
 
@@ -312,7 +312,7 @@ uip maestro flow node configure "<ProjectName>.flow" "<httpNodeId>" --detail '<D
 This is the last segment of the [canonical T3 chain](#canonical-t3-chain--issue-this-as-one-bash-call) above. After validation passes, format must run before publishing or debugging (see "Always run `flow format` after edits" in [the Author capability index](../CAPABILITY.md)). Format:
 
 - Arranges nodes horizontally (left-to-right) using ELK with `nodeSpacing: 96`, anchored to the leftmost node's original position
-- Sets every non-stickyNote node's `size` to `{ "width": 96, "height": 96 }` so Studio Web renders square nodes (skipping this leaves any non-96 dimensions intact and produces misshapen rectangles — the MST-9061 failure mode)
+- Sets each non-stickyNote node's `size` by its canvas shape so Studio Web renders it correctly: inline agents (`shape: rectangle`) → `{ "width": 288, "height": 96 }`, containers (loops/groups) → `{ "width": 560, "height": 320 }`, everything else (incl. referenced `uipath.core.agent.<guid>`) → `{ "width": 96, "height": 96 }` (skipping this leaves stale dimensions intact and produces misshapen nodes — the MST-9061 failure mode)
 - Recurses into subflows and rewrites `subflows[<id>].layout`
 - Backfills missing `position`/`size` entries
 
@@ -332,7 +332,7 @@ When you finish building the flow, report to the user:
 4. **Format status** — confirm `flow format` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced, and which skill to use
 6. **Missing connections** — any connector nodes that need connections the user must create
-7. **What's next** — use `AskUserQuestion` to present the dropdown below (see the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md))
+7. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../../SKILL.md))
 
 ### What's next dropdown
 

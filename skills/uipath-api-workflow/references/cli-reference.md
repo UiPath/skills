@@ -76,10 +76,10 @@ uip api-workflow registry resolve <keyword> [--limit <n>] --output json
 
 | Argument / Flag | Required | Description |
 |--|--|--|
-| `<keyword>` | yes | Substring matched against `displayName`, `connectorKey`, `objectName`, `fullName`. Case-insensitive. |
-| `-l, --limit <n>` | no | Max results (default: 20). |
+| `<keyword>` | yes | Whitespace-tokenized; every token must substring-match somewhere in `displayName`, `connectorKey`, `objectName`, `fullName`. Case-insensitive. Combined queries narrow: `"github list records"` matches GitHub's "List Records". |
+| `-l, --limit <n>` | no | Max results (default: 50). |
 
-Success output:
+Success output (keys are PascalCased by the output formatter):
 ```json
 {
   "Result": "Success",
@@ -89,18 +89,21 @@ Success output:
     "ResultCount": 1,
     "Matches": [
       {
-        "uiPathActivityTypeId": "b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a",
-        "displayName": "Get Newest Email",
-        "description": "...",
-        "connectorKey": "uipath-microsoft-outlook365",
-        "objectName": "getNewestEmail",
-        "httpMethod": "GET",
-        "activityType": "Curated"
+        "UiPathActivityTypeId": "b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a",
+        "DisplayName": "Get Newest Email",
+        "Description": "...",
+        "ConnectorKey": "uipath-microsoft-outlook365",
+        "ObjectName": "getNewestEmail",
+        "HttpMethod": "GET",
+        "ActivityType": "Curated",
+        "Operation": null
       }
     ]
   }
 }
 ```
+
+`Operation` is set for Generic activities (`"List"`, `"Retrieve"`, `"Create"`, …; capitalized in TypeCache) and `null` for Curated. Generic matches carry no `ObjectName`/`HttpMethod` — those resolve at stub time from `--object-name` + IS metadata.
 
 Failure modes:
 - `"Not logged in. Run 'uip login' first."`
@@ -114,6 +117,7 @@ Emit a ready-to-paste activity object for a known `uiPathActivityTypeId`. Combin
 ```bash
 uip api-workflow registry stub <activity-type-id> \
   [--connection-id <uuid>] \
+  [--object-name <name>] \
   [--instance <n>] \
   [--slot-key <PascalCase>] \
   [--inputs <json>] \
@@ -124,8 +128,9 @@ uip api-workflow registry stub <activity-type-id> \
 |--|--|--|
 | `<activity-type-id>` | yes | The `uiPathActivityTypeId` GUID from `resolve`. |
 | `--connection-id <uuid>` | IntSvc kind only | Pinged vendor connection UUID. IntSvc kind leaves `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` placeholders if omitted. Ignored for Http kind (HTTP). |
+| `--object-name <name>` | Generic activities only | Target connector object for a Generic activity ("List Records" of *what*). Discover names with `uip is resources list <connector-key> --connection-id <uuid>`. Defaults to the object pinned in the activity definition, when present. Ignored (with a warning) for Curated activities — their object is fixed by the activity definition. |
 | `--instance <n>` | no | Suffix for slot/export bucket key. Default `1`. `--instance 2` produces `<Name>_2` keys. |
-| `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. Export bucket key always derives from `objectName + "_<n>"`. |
+| `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. The export bucket key always derives from `objectName + "_<n>"` (both Curated and Generic) and is not affected by this flag. |
 | `-i, --inputs <json>` | no | JSON object mapping field names to values. Field names match the IS schema (flat dotted keys — `"message.subject"`, not `{message:{subject:…}}`). Pass bare strings for literals; `${...}` for expression references. |
 
 Success output:
@@ -138,6 +143,8 @@ Success output:
     "SlotKey": "GetNewestEmail_1",
     "ExportBucketKey": "getNewestEmail_1",
     "Activity": { "GetNewestEmail_1": { "call": "UiPath.IntSvc", ... } },
+    "Parameters": [ { "name": "parentFolderId", "type": "query", "required": true } ],
+    "RequestFields": [],
     "ResponseFields": [ { "name": "subject", ... } ],
     "IsEnrichmentAvailable": true,
     "Warnings": [...]
@@ -145,15 +152,18 @@ Success output:
 }
 ```
 
-`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind).
+`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.Parameters` (query/path/multipart) and `Data.RequestFields` (body) list the operation's inputs with `required` flags; `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind).
 
 `Data.Warnings` (when present):
 - `"IS Elements metadata could not be fetched…"` → IS schema lookup failed; stub uses fallback path `/<objectName>` and ships no `requestFields`. Endpoint may be wrong (no hub prefix, no multipart declaration).
+- `"Required field(s) not provided via --inputs: …"` → the IS schema marks these `required: true` and they're absent; the run will likely 4xx. Re-stub with `--inputs` or add the values to the pasted activity.
 - `"No --connection-id provided…"` → IntSvc kind stub has placeholder UUIDs; replace before running.
 
 Failure modes:
 - `"Activity '<guid>' not found in the Api-compatible TypeCache"` — re-run `resolve` to find a valid GUID.
-- `"Activity type '<X>' is not supported in v1"` — only `Curated` activities are stubbed today; Generic / Trigger flavors require additional `InstanceParameters` fields not yet handled.
+- `"Activity type '<X>' is not supported"` — trigger flavors (`CuratedTrigger`, `GenericTrigger`, `GenericPersistence`, …) are event subscriptions, not callable tasks; they cannot be stubbed. Curated and Generic activities are both supported.
+- `"Generic activity '<name>' needs a target object"` — Generic activities require `--object-name`. Discover candidates with `uip is resources list <connector-key> --connection-id <uuid>`.
+- `"Could not resolve operation '<op>' on object '<name>' …"` — the object doesn't exist or doesn't support this operation (Generic stubs hard-require IS metadata; there is no fallback path/verb). Check the object with `uip is resources describe <connector-key> <object-name> --connection-id <uuid>`.
 - `"Invalid --inputs JSON"` — `--inputs` must be a JSON object (`'{"key":"value"}'`).
 
 ### Typical sequence
@@ -166,24 +176,28 @@ uip api-workflow registry resolve "outlook newest email" --output json
 uip is connections list uipath-microsoft-outlook365 --output json
 uip is connections ping <uuid> --output json
 
-# 3a. Stub
-uip api-workflow registry stub b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a \
-  --connection-id <uuid> \
-  --inputs '{"parentFolderId":"Inbox"}' \
-  --output json
-
-# 3b. Cross-check required request fields — stub silently drops required: true fields
+# 3a. Describe the operation FIRST — learn its inputs (required flags, value
+#     semantics, lookup hints) so the stub can be run once, complete:
 uip is resources describe uipath-microsoft-outlook365 getNewestEmail \
   --operation List \
   --connection-id <uuid> \
   --output json
+
+# 3b. Stub, passing the required inputs learned in 3a
+uip api-workflow registry stub b1d06cc8-be7f-3d0f-b54c-cb54f0e0690a \
+  --connection-id <uuid> \
+  --inputs '{"parentFolderId":"Inbox"}' \
+  --output json
+# Safety net: the stub echoes the schema (Data.Parameters / Data.RequestFields)
+# and raises a Data.Warnings entry if a required field is still missing —
+# an empty Warnings array confirms the activity is complete.
 
 # 4. Drop Data.Activity into the root sequence, fill missing required fields, replace placeholders.
 
 # 5. (CONDITIONAL: IntSvc kind + Solutions-mode — skip for Http kind / ImplicitConnection / standalone projects)
 #     Emit bindings_v2.json next to the workflow, then sync the Solution catalogue + debug overwrites:
 uip api-workflow bindings sync --workflow Solution/<ProjectName>/Workflow.json --output json
-uip solution resource refresh --solution-folder Solution --output json
+uip solution resources refresh --solution-folder Solution --output json
 
 # 6. Validate:
 uip api-workflow run ./my-workflow.json --output json
@@ -193,13 +207,13 @@ See [connector-activity-discovery.md](connector-activity-discovery.md) for the f
 
 ## `uip api-workflow bindings sync`
 
-Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Pure-local transformation — no auth, no API calls. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resource refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
+Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Pure-local transformation — no auth, no API calls. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resources refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
 
-**When to run.** After every `registry stub --connection-id <uuid>` that adds an IntSvc activity to a workflow inside a `Solution/` tree. Always paired with `uip solution resource refresh` (the next step in the typical sequence).
+**When to run.** After every `registry stub --connection-id <uuid>` that adds an IntSvc activity to a workflow inside a `Solution/` tree. Always paired with `uip solution resources refresh` (the next step in the typical sequence).
 
 **When to skip:**
 - **Http-kind-only workflows** — no IntSvc activities to bind. The command will still succeed with `ResourceCount: 0`, but the empty `bindings_v2.json` it writes serves no purpose.
-- **Standalone projects** (no `Solution/` wrapper). StudioWeb doesn't consult a Solution resource tree in this mode; the downstream `solution resource refresh` has no solution to operate on.
+- **Standalone projects** (no `Solution/` wrapper). StudioWeb doesn't consult a Solution resource tree in this mode; the downstream `solution resources refresh` has no solution to operate on.
 
 ```bash
 uip api-workflow bindings sync \
@@ -234,12 +248,12 @@ Failure modes:
 
 **Idempotency.** Always overwrites the existing `bindings_v2.json`. The output is a pure function of the workflow's IntSvc activities — re-running with the same workflow produces the same file byte-for-byte (modulo trailing newline).
 
-## `uip solution resource refresh`
+## `uip solution resources refresh`
 
 Re-scan all projects in a solution and sync resource declarations from their `bindings_v2.json` files into the Solution catalogue. Uses `@uipath/resource-builder-sdk` to write the catalogue resource files (`Solution/resources/...*.json`) AND the per-user debug overwrites (`Solution/userProfile/<guid>/debug_overwrites.json`) — the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click. For api-workflow projects, run `uip api-workflow bindings sync` first to generate the `bindings_v2.json` this command consumes.
 
 ```bash
-uip solution resource refresh \
+uip solution resources refresh \
   --solution-folder <path-to-solution-root> \
   [--login-validity <minutes>] \
   --output json
@@ -258,7 +272,7 @@ Lives in `solution-tool`, not `api-workflow-tool`. Full details in the [solution
 
 ## `uip is resources describe`
 
-Read the IS Elements schema for one operation on one connector. Used as the **required cross-check** after `uip api-workflow registry stub` (which silently drops `required: true` request fields).
+Read the IS Elements schema for one operation on one connector. **Run this before stubbing** (step 3a) — it tells you which `--inputs` the operation needs (required flags, value semantics, lookup hints, parent-field actions), so the stub runs once and complete. The stub then echoes the same schema (`Data.Parameters` / `Data.RequestFields`) and warns if a required field is still missing, as a final check.
 
 ```bash
 uip is resources describe <connector-key> <object-name> \

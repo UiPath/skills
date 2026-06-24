@@ -15,13 +15,23 @@ Analyze what a skill teaches vs what its tests verify. Produce a gap analysis wi
 ## Phase 1 — Discovery
 
 1. Resolve target skill(s):
-   - Single name → `skills/<name>/`. If `skills/<name>/` does NOT exist but `<name>` is in the **Planned Skills Registry** below, treat it as a planned skill (use the planned-skill template in Phase 5).
-   - Empty/all → union of (a) glob `skills/uipath-*/` and (b) every entry in the **Planned Skills Registry** below whose folder does not yet exist. Planned-but-missing skills MUST appear in the per-skill report set and the summary roll-up so they remain visible at 0% until they ship.
-2. For each existing skill, check for `tests/tasks/<skill-name>/`.
-3. Find `*.yaml` test files recursively under each test directory. Exclude `_shared/`.
+   - Single name → `skills/<name>/`. If `skills/<name>/` does NOT exist but `<name>` is in the **Planned Skills Registry** below, treat it as a planned skill (use the planned-skill template in Phase 5). If `<name>` is in the **Cross-Cutting Capability Registry** below, treat it as a cross-cutting capability (see that section).
+   - Empty/all → union of (a) glob `skills/uipath-*/`, (b) every entry in the **Planned Skills Registry** whose folder does not yet exist, and (c) every entry in the **Cross-Cutting Capability Registry**. Planned-but-missing skills MUST appear in the per-skill report set and roll-up at 0% until they ship; cross-cutting capabilities MUST appear as their own report + roll-up row (flagged cross-cutting, see §4f and §5).
+2. For a normal skill, check for `tests/tasks/<skill-name>/`. For a cross-cutting capability, there is **no dedicated dir** — discover its tests by **tag** (step 3).
+3. Find `*.yaml` test files. Normal skill: recursively under `tests/tasks/<skill-name>/`, exclude `_shared/`. Cross-cutting capability: `grep -rl '<tag>' tests/tasks --include='*.yaml' | grep -v _shared` across the **whole** `tests/tasks/` tree (its tasks live inside other skills' dirs).
 4. Find `check_*.py` scripts recursively. Exclude `_shared/test_*.py` (unit tests for shared helpers).
 
 For multi-skill runs, use parallel Explore agents — one per skill — to read skill + test content simultaneously. Skip Phase 2 entirely for planned-but-missing skills (no SKILL.md to read).
+
+### Cross-Cutting Capability Registry
+
+Some capabilities are taught and tested across **multiple** skills with no folder of their own, yet are first-class products on the org scorecard (e.g. ECS / Context Grounding). Analyze each as its own unit: a dedicated `references/` doc is the capability inventory source, and its tests are selected by **tag** (they physically live inside other skills' `tests/tasks/` dirs). Because those tasks are **also** counted under their host skills, a cross-cutting unit is an **additive overlay, not a partition** — flag it and **exclude it from the repo-wide Totals sums** (Phase 5) so tasks/components are not double-counted.
+
+| Capability (report key) | Tag | Inventory source(s) | Host skills | Scorecard row |
+|---|---|---|---|---|
+| `uipath-context-grounding` | `context-grounding` | `skills/uipath-agents/references/context-grounding-patterns.md` (decision logic) + `skills/uipath-agents/references/coded/capabilities/context-grounding.md` + `.../lowcode/capabilities/context/context.md` + the BatchTransform/DeepRAG `planning.md` files those link to | `uipath-agents`, `uipath-maestro-flow` | ECS (uip context-grounding) |
+
+Add a row when a capability (a) is documented in a shared `references/` doc, (b) is exercised by tasks tagged with a single stable tag that span ≥2 skill dirs, and (c) maps to a standalone scorecard product row. Remove it only if the capability gets its own `skills/uipath-<name>/` folder (then it becomes a normal skill).
 
 ### Planned Skills Registry
 
@@ -53,11 +63,12 @@ Components are the specific, testable units the skill teaches. What counts as a 
 | RPA workflows (`uipath-rpa`) | Workflow modes (Coded C#, XAML), activity types, project types. Found in section headings like "Coded Workflows Quick Reference", "XAML Workflows Quick Reference". |
 | Platform operations (`uipath-platform`) | CLI command groups (`uip orchestrator`, `uip is`), API domains. Found in "CLI Overview" command tables and Task Navigation. |
 | Solution lifecycle (`uipath-solution`) | `uip solution` lifecycle (init, pack, publish, deploy, activate). Found in the CLI Surface Probe, Critical Rules, and Workflow sections of the SKILL.md. |
-| Solution design (`uipath-design`) | PDD → SDD authoring. Phased workflow (PDD analysis, architecture review, SDD generation), product/scope selection, SDD templates. Found in the Critical Rules, Workflow, and Reference Navigation sections. |
+| Solution design + planning (`uipath-planner`) | PDD → SDD design (Phase D: PDD analysis, architecture review, SDD generation, product/scope selection, SDD templates) plus multi-skill task derivation (Lane A/B). Found in the Critical Rules, Entry Guard, Phase D, lane summaries, and Reference Navigation sections. |
 | Agent development (`uipath-agents`) | Lifecycle stages (Auth, Setup, Build, Bindings, Run, Deploy), framework types (LangGraph, LlamaIndex, etc.). Found in "Lifecycle Stages" section. |
 | Coded apps (`uipath-coded-apps`) | Pipeline stages (Push, Pull, Pack, Publish, Deploy), app configuration concepts. Found in lifecycle and "Ship It" sections. |
+| Cross-cutting capability (`uipath-context-grounding`) | The **modes × surfaces** matrix from the inventory doc: BatchTransform (coded, low-code), DeepRAG (coded, low-code), Index search (coded, low-code) — 6 components from `context-grounding-patterns.md` §The Three Modes + §Surface Selection. Found in the registered inventory source(s), NOT a SKILL.md. |
 
-Group components by category. For skills with `references/plugins/` subdirectories (like `uipath-maestro-flow`), each plugin directory is one component — use the planning.md to understand what it covers.
+Group components by category. For skills with `references/plugins/` subdirectories (like `uipath-maestro-flow`), each plugin directory is one component — use the planning.md to understand what it covers. **Cross-cutting capability:** there is no SKILL.md — read the registered inventory source doc(s) instead. Components = the capability's modes/surfaces matrix; critical rules = its invariants (e.g. `context-grounding-patterns.md` §Cross-Surface Invariants is 6 numbered rules; the file-type routing rule — CSV→BatchTransform, PDF/TXT→DeepRAG — is a 7th). Workflow steps usually N/A (Steps weight redistributes to Components/Rules).
 
 ### 2b. Identify workflow steps
 
@@ -99,6 +110,61 @@ Determine what environment each skill requires to be testable. Use the same phra
 
 Tag each skill with its dependencies. This informs which tests are feasible to write and run in CI.
 
+### 2f. Classify each capability by mode (Coding Agents Scorecard)
+
+Label every component, workflow step, and critical rule with the mode(s) it serves. Multi-label allowed — a `validate` step is both `build` and `diagnose`.
+
+- **build** — creating, designing, editing, deploying (init, scaffold, pack, edit, validate-during-build, deploy)
+- **operate** — running, triggering, managing live instances/connectors/integrations (run, trigger, invoke, manage connections)
+- **diagnose** — investigating faults, inspecting traces, debugging (get-errors, logs, trace inspect, debug)
+
+These labels define each mode's denominator in Phase 4f-mode. Most build-heavy skills come out build-dominant — expected. A skill that clearly teaches an `operate` or `diagnose` surface but has zero capabilities labeled that mode is itself a finding (surface it in the gaps).
+
+**Labeling subtlety — `validate` and `list`/`get` are mode-dependent.** A capability's mode follows the *intent the skill teaches*, not the verb:
+- `validate` / `build` run on a **fresh artifact during authoring** → `build`. The same command run on a **pre-broken artifact to surface and fix errors** (the autonomous validate→read-errors→fix loop) → also `diagnose`. Tag both; a build-only test does NOT cover the diagnose loop.
+- `list` / `get` / `status` as a **happy-path step** → the mode of the step it serves. The same read used to **triage a fault** ("list jobs `--state Faulted`", "get incidents before deciding") → `diagnose`.
+- `run` / `invoke` / `deploy` of a **deployed, live artifact** → `operate`, even when the build skill owns the command.
+
+#### 2f-i. Operate & diagnose surface checklist (apply to EVERY skill)
+
+Build coverage is almost always the strong mode; `operate` and `diagnose` are where real gaps hide and where a skill's SKILL.md mentions a surface that no test touches. The archetypes below recur across ≥2 skills. For each skill, walk both lists: if the SKILL.md / references teach the surface (even in a reference, not just the main body), it is a labeled capability for that mode — and if no test exercises it, it is a `None` that feeds the Phase 4f-mode denominator and the Phase 4i mode gap. Cite the specific archetype in the gap title (e.g. "Missing `operate` coverage in uipath-rpa — run/invoke + deploy-activate untested").
+
+**Operate archetypes — does any test exercise…**
+
+| # | Archetype | Surface pattern (skill-agnostic) |
+|---|---|---|
+| O1 | **Run / invoke a deployed artifact** | start a job/process/agent/flow/test-case by key → returns execution id (`jobs start`, `tm testcases run`, `flow debug`, `api-workflow run`, `codedagent deploy`+invoke) |
+| O2 | **Deploy + activate as separate steps** | `deploy run` then stand-alone `deploy activate` / `deploy status` poll (esp. after `--skip-activate`); `deploy config link/unlink`; `deploy uninstall` |
+| O3 | **File sync push / pull** | `codedagent`/`codedapp push` + `pull` roundtrip; `solution upload` to Studio Web / workspace |
+| O4 | **Instance lifecycle** | pause / resume / cancel / retry a *running* instance (`maestro flow|case instance …`, BPMN job lifecycle beyond start+stop, `jobs stop`+retry) |
+| O5 | **Queue operations** | add items, requeue / review failed items, set deadline / SLA on a live queue |
+| O6 | **Trigger create + fire (non-cron)** | create a **queue** or **API** trigger and verify it fires — not just time-based cron |
+| O7 | **Connection create + test** | create an IS OAuth connection (`is connections create <key>`) + `ping`/test on a live tenant |
+| O8 | **Enable / disable a live resource** | toggle tenant service, webhook, IP-restriction enforcement, or BYO-LLM config on/off and verify state change |
+| O9 | **Publish / register a live version** | publish IXP model version, BYO-LLM config, or `packages upload` so it becomes the live version |
+| O10 | **License / seat assignment** | assign user/group license bundles, set tenant allocation, read consumables |
+| O11 | **Eval run + poll + fetch results** | start a Studio Web eval against a deployed flow/agent, poll to done, fetch scored results |
+
+**Diagnose archetypes — does any test exercise…**
+
+| # | Archetype | Surface pattern (skill-agnostic) |
+|---|---|---|
+| D1 | **Validate → read errors → fix loop on a PRE-BROKEN artifact** | feed a deliberately broken file, assert the agent reads structured errors and fixes the root cause, then re-validates clean (NOT happy-path validate) |
+| D2 | **Incident / fault read on a failed runtime instance** | `instance incidents` / `instance variables` / job faults after a failed run, without rerunning |
+| D3 | **Job / execution log retrieval** | `jobs logs <id> --output json`, `tm executions get` / step-log drill-down on a faulted run |
+| D4 | **Trace / span inspection** | `traces spans get <trace-id>` as a standalone diagnostic (LLM/tool calls, token counts), not a build/operate side effect |
+| D5 | **Audit query filtered for triage** | `audit … events --status Failure` / by user / by time window to answer "who did X / what changed" |
+| D6 | **Effective-access / authorization check** | folder-scoped `authorization check-access <user>`, `deployed-policy get --user-id` — "why can't user X do Y" |
+| D7 | **Connectivity / health check** | BYO-LLM `--force-refresh` / reprobe, `is connections list --all-folders`, dead-connection audit |
+| D8 | **Failure-mode / error-code classification** | match an error code / exception (e.g. `MST-9107`, `CS0103`, exit codes) to a known catalog and recommend the fix branch |
+| D9 | **Model / metric quality inspection** | `get-metrics` + `list-models`, per-field F1 / precision / recall to explain bad extraction |
+| D10 | **Schema / contract-drift detection** | out-of-sync `bindings_v2.json`, `entry-points` drift, camelCase/naming mismatch surfaced by validate |
+| D11 | **Read-only discovery for triage** | `login status`, `list --state Faulted`, `get` before mutating — inspecting state to scope a fault |
+
+**Two recurring meta-findings to always check (emit as gaps when present):**
+- **Tag-drift on operate/diagnose:** a skill's only operate/diagnose tests are tagged `mode:build` (or carry no `mode:*` at all) — fires the Phase 4f-mode tag cross-check. Common on catalog skills (`uipath-tasks`, `uipath-platform/data-fabric`, `uipath-ixp`) where every task inherited `mode:build`.
+- **Surface-without-test:** SKILL.md/references document an operate/diagnose command (e.g. `maestro case instance`, `rpa debug start`, `solution deploy activate`) that has zero covering tests — the most common source of `operate`/`diagnose` `None`s.
+
 ## Phase 3 — Extract test coverage
 
 ### 3a. Parse each test YAML
@@ -113,7 +179,7 @@ tags            — array carrying values from the Tag Taxonomy dimensions
                   [skill, tier, mode:X, shape:X, node:..., resource, connector, windows, feature:...]
                     skill      — uipath-<name>                                (required, flat)
                     tier       — smoke | integration | e2e                    (required, flat)
-                    mode       — mode:{build|operate|troubleshoot}                (required)
+                    mode       — mode:{build|operate|diagnose}                  (required; see Phase 2f for mode definitions)
                     shape      — shape:{single-node|multi-node}              (flow-building tests)
                     node       — node:{decision|switch|subflow|terminate|loop|transform|hitl} (0..n)
                     resource   — flat boolean marker (present iff task uses a resource node) (0..1)
@@ -222,15 +288,37 @@ Weights reflect what tests actually catch:
 |---|---|---|
 | Workflow-heavy, multi-path (e.g. `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`) | — | Comp 45% / Steps 25% / Rules 15% / Path 15% |
 | Workflow-heavy, single-path (e.g. `uipath-maestro-case`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
-| Command-catalog skills (e.g. `uipath-platform`, `uipath-servo`, `uipath-test`, `uipath-feedback`, `uipath-data-fabric`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
-| Planning skills (e.g. `uipath-planner`, `uipath-design`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
+| Command-catalog skills (e.g. `uipath-platform` (incl. its `data-fabric` sub-area), `uipath-servo`, `uipath-test`, `uipath-feedback`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
+| Planning skills (e.g. `uipath-planner`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
 | Agent-orchestration skills (e.g. `uipath-troubleshoot`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
+| Cross-cutting capability (e.g. `uipath-context-grounding`) | Path, Steps (usually) | Comp 70% (modes×surfaces) / Rules 30% (invariants) |
 
 Formula: `overall = sum(applicable_weight_i * dimension_pct_i) / sum(applicable_weight_i)`
 
 **Per-dimension contribution.** Define `renorm_weight_i = applicable_weight_i / sum(applicable_weight_i)` (so the renormalized weights sum to 1) and `contribution_i = renorm_weight_i * dimension_pct_i`. By construction `sum(contribution_i) = overall`. Render this decomposition in each per-skill report's **Score Contribution** table (see the with-tests template) so the headline number is traceable to the dimensions that earned or forfeited it. Also report `lost_i = renorm_weight_i*100 − contribution_i` — the largest `lost_i` is the highest-leverage dimension to test next, and should align with that skill's top-ranked gaps.
 
 For skills with **no tests**: overall = 0% (skip the Score Contribution table — every dimension contributes 0).
+
+### 4f-mode. Per-mode coverage (scored slices, reported beside Overall)
+
+Report a coverage score for **each** Coding Agents Scorecard mode (`build`, `operate`, `diagnose`) alongside the Overall. Mode is orthogonal to the scored dimensions — do NOT add it as a weighted dimension (that double-counts against Workflow steps; see Phase 4h). Instead **re-slice the same capability inventory by the Phase 2f mode labels** and re-run the Phase 4f weighted formula per slice:
+
+1. For mode `m`, take only the components / workflow steps / critical rules labeled `m`.
+2. Compute each dimension's direct-only coverage within that slice; renormalize the applicable weights over the dimensions present in the slice (same N/A handling as Phase 4f).
+3. `mode_pct(m)` = that weighted number.
+
+Cases:
+- Mode has labeled capabilities, zero covering tests → **0%**.
+- Mode has no labeled capabilities in this skill → **N/A** (e.g. a pure-build catalog skill with no diagnose surface). N/A modes do not fire the Phase 4i mode gap.
+- Overall (Phase 4f) is unchanged — it is **NOT** the mean of the three modes (slices differ in size). Report both; they will not match, by design.
+
+**Tag cross-check.** A capability counts toward `mode_pct(m)` from its Phase 2f label, regardless of which test covers it. But if a mode-`m` capability is covered *only* by tests not tagged `mode:m`, the test's mode tag is wrong — emit a consistency flag (name the test). This keeps the coverage slices aligned with the `mode:*` tags that `/generate-confluence-scorecard` slices eval by, so per-mode coverage and per-mode eval pair correctly.
+
+**Mode-balanced & mode-floor headlines (report beside the capability Overall).** The capability Overall is build-dominated by construction — the inventory is mostly build capabilities, so a skill can read "healthy" (e.g. 79%) while `operate`/`diagnose` sit near 0%, because those modes are a small slice of each dimension's denominator. To make that blindness legible without changing the Overall, compute and report two derived figures from the per-mode slices:
+- **Mode-balanced** = arithmetic mean of `mode_pct(m)` over the modes that are **not N/A** (i.e. modes the skill actually has a surface for). A skill with `diagnose` N/A averages only `build` + `operate`.
+- **Mode-floor** = `min` of `mode_pct(m)` over the not-N/A modes — the worst-covered real mode. This is the single number that exposes a 0% mode.
+
+Report both beside the Overall in the per-skill Summary, the SUMMARY Overview, and `coverage.json` (`mode_balanced`, `mode_floor`). They are **descriptive, not a new weighted score** — the Overall is still the Phase 4f capability number. Rule of thumb for readers: a high Overall with a low Mode-floor = build-solid but mode-blind; that gap is the action item, and the Phase 4i mode gap already names which archetype to test. Skills with no tests → `0`/`0`; planned skills → `—`.
 
 ### 4g. Test-density troubleshooting (sidecar, not scored)
 
@@ -245,7 +333,7 @@ Report these alongside the Summary table to flag structural fragility that a hig
 
 For each skill that has at least one test, compute which values from the Tag Taxonomy are exercised. Report the variable dimensions (the `skill` dimension is trivially covered and `tier` is already reported in the Summary table):
 
-- **Mode** — tick each of `mode:build`, `mode:operate`, `mode:diagnose` if any test carries that tag. All three are expected eventually for most skills; missing modes surface as gaps.
+- **Mode** — now a **scored slice** (Phase 4f-mode), not a sidecar tick. Report it in the Per-Mode Coverage table, not here.
 - **Shape** — tick each of `shape:single-node`, `shape:multi-node` (applies to flow-building skills only).
 - **Node** — list values present under `node:*` for skills where that axis applies.
 - **Resource / Connector / Windows** — flat boolean markers; report count of tasks carrying each (`resource`, `connector`, `windows`) for skills where they apply.
@@ -260,7 +348,8 @@ Run these checks and emit findings into the "Coverage Gaps — Priority Ranked" 
 | Signal | Condition | Priority | Gap title template |
 |---|---|---|---|
 | **Edit-scenario gap** | The skill teaches an edit workflow (it documents modifying an existing artifact — common for `uipath-maestro-flow`, `uipath-rpa`, `uipath-agents`) but no test exercises that scenario (no task under `tests/tasks/<skill>/edit/` and no `initial_prompt` describes modifying an existing artifact). | **High** | "Editing existing `<artifact>`" |
-| **Mode gap** | The skill has tests but does not exercise all three modes (`mode:build`, `mode:operate`, `mode:diagnose`) where they're plausibly applicable. Catalog skills may legitimately stop at `mode:operate`; flag for the writer to confirm. | **Medium** | "Missing `<mode>` coverage" |
+| **Mode gap** | A mode with a non-trivial labeled capability surface (Phase 2f) is below threshold coverage (Phase 4f-mode). N/A modes (no surface) do not fire — a catalog skill with no `diagnose` surface is not penalized. **Name the specific Phase 2f-i archetype(s) untested** (e.g. O4 instance lifecycle, D1 validate→fix loop). | **High** if a mode with a real surface sits at 0%; **Medium** otherwise | "Missing `<mode>` coverage — `<archetype>` untested" |
+| **Mode tag-drift** | A skill's operate/diagnose capability is covered *only* by tests tagged `mode:build` or carrying no `mode:*` (Phase 4f-mode cross-check / Phase 2f-i meta-finding). | **Medium** | "Re-tag `<test>` as `mode:<operate\|diagnose>`" |
 | **Negative-test gap** | The skill's SKILL.md lists ≥3 anti-patterns and zero tests assert on any of them. | **High** | "Negative tests for anti-patterns" |
 | **Tier gap** | The skill has tests but is missing a tier (smoke-only, integration-only, or e2e-only). | **High** (if smoke or e2e is missing — those are the minimum bar), **Medium** (integration missing) | "Missing `<tier>` tier" |
 
@@ -290,6 +379,8 @@ Create `tests/reports/` if needed.
       "paths": {"covered": 3, "total": 3, "pct": 100},
       "weights": {"components": 45, "workflow": 25, "rules": 15, "paths": 15},
       "contribution": {"components": 12.6, "workflow": 16.8, "rules": 3.2, "paths": 15.0},
+      "mode_coverage": {"build": {"pct": 31, "covered": 8, "total": 26}, "operate": {"pct": 0, "covered": 0, "total": 4}, "diagnose": null},
+      "mode_balanced": 16, "mode_floor": 0,
       "top_untested": ["triggers 0/3", "IS connectors 0/2", "run/publish 2/8"],
       "infra": "Requires Windows + Studio"
     },
@@ -298,7 +389,27 @@ Create `tests/reports/` if needed.
 }
 ```
 
-Use `null` for N/A dimensions (e.g. `"rules": null` for a catalog skill, `"paths": null` for single-path). The `contribution` values must match the per-skill Score Contribution tables and sum to `overall_pct`. Single-skill runs may write/refresh just that skill's entry; do not blank the others.
+Use `null` for N/A dimensions (e.g. `"rules": null` for a catalog skill, `"paths": null` for single-path). The `contribution` values must match the per-skill Score Contribution tables and sum to `overall_pct`. `mode_coverage` carries one object per mode (`{pct, covered, total}`) or `null` for a mode with no capability surface (Phase 4f-mode) — this is the per-mode coverage `/generate-confluence-scorecard` pairs with its per-mode eval. `mode_balanced` (mean of non-N/A mode pcts) and `mode_floor` (min of non-N/A mode pcts) are the descriptive headlines from Phase 4f-mode — integers, or omitted/`null` for planned skills. Single-skill runs may write/refresh just that skill's entry; do not blank the others.
+
+**Cross-cutting capability entries** carry the same shape plus `"cross_cutting": true`, `"tag": "<tag>"`, and `"host_skills": [...]` so consumers (e.g. `/generate-confluence-scorecard`'s ECS row) can read them and know NOT to add their tests/components into repo-wide totals:
+```json
+"uipath-context-grounding": {
+  "overall_pct": 0, "cross_cutting": true, "tag": "context-grounding",
+  "host_skills": ["uipath-agents", "uipath-maestro-flow"],
+  "tests": {"smoke": 0, "integration": 0, "e2e": 0},
+  "components": {"direct": 0, "direct_indirect": 0, "total": 6, "direct_pct": 0},
+  "rules": {"covered": 0, "total": 7, "pct": 0}, "workflow": null, "paths": null,
+  "weights": {"components": 70, "rules": 30}, "contribution": {"components": 0, "rules": 0},
+  "top_untested": [...], "infra": "Local-only (validate); cloud auth for index/run"
+}
+```
+(Fill the real numbers — components from the modes×surfaces matrix, tests by tag, etc. Coverage shape is **Components + Rules** with Path and usually Workflow N/A, so renormalize to ~Comp 70% / Rules 30% per Phase 4f. A cross-cutting entry also carries `mode_coverage`/`mode_balanced`/`mode_floor` like any skill — context-grounding is build-dominant, so its operate/diagnose slices are typically N/A and Mode-floor ≈ the build slice.)
+
+**Roll-up reconciliation (run AFTER all reports + SUMMARY + coverage.json are written, before reporting done).** The three artifacts are produced separately — in `all` mode often by parallel sub-agents — so they can drift. `coverage.json` is the contract `/generate-confluence-scorecard` consumes, so a mismatch silently corrupts the scorecard. Verify and fix before finishing:
+1. **coverage.json ↔ per-skill report.** For each skill, `overall_pct`, the tier counts, and the dimension %s in `coverage.json` equal the headline figures in `tests/reports/<skill>.md`. 
+2. **coverage.json ↔ SUMMARY Overview.** Every skill row in `SUMMARY.md`'s Overview table matches its `coverage.json` entry (Overall %, tests, top-untested buckets).
+3. **Roster completeness.** The set of keys in `coverage.json` == existing `skills/uipath-*/` folders ∪ planned-registry entries ∪ cross-cutting-registry entries; no skill missing, none stale. Planned-but-missing skills are `{"overall_pct":0,"planned":true}`; cross-cutting entries carry `"cross_cutting":true`. The repo-wide **Totals** in SUMMARY must **exclude** `cross_cutting` entries (their tests/components are already counted in the host skills) — verify the Totals math sums only normal skills.
+4. **Cross-agent sanity (parallel `all` runs).** Spot-check that independent sub-agents applied the weights consistently for same-shape skills (e.g. all catalog skills use Comp 65/Steps 35 or Comp 100); reconcile any outlier interpretation. A quick `python3 -c "import json; ..."` over `coverage.json` is the cheapest way to run checks 1–3.
 
 **Output rules:**
 
@@ -306,7 +417,8 @@ Use `null` for N/A dimensions (e.g. `"rules": null` for a catalog skill, `"paths
 |---|---|
 | Single skill (e.g. `uipath-maestro-flow`) | `tests/reports/<skill-name>.md` only. |
 | Single planned skill (folder missing, name in registry) | `tests/reports/<skill-name>.md` using the **planned-skill template** below. |
-| `all` (or empty) | One per-skill report **and** the roll-up: `tests/reports/<skill-name>.md` for every existing skill, `tests/reports/<skill-name>.md` for every planned-but-missing skill (planned template), `tests/reports/SUMMARY.md`, **and** `tests/reports/coverage.json` (the machine-readable sidecar). |
+| `all` (or empty) | One per-skill report **and** the roll-up: `tests/reports/<skill-name>.md` for every existing skill, `tests/reports/<skill-name>.md` for every planned-but-missing skill (planned template), `tests/reports/<capability>.md` for every cross-cutting registry entry (with-tests template, sourced from its inventory doc + tag-selected tasks), `tests/reports/SUMMARY.md`, **and** `tests/reports/coverage.json`. |
+| Single cross-cutting capability (e.g. `uipath-context-grounding`) | `tests/reports/<capability>.md` (with-tests template); refresh just its `coverage.json` entry. |
 | User-specified custom path | Use that path instead. |
 
 Overwrite any existing report at the same path. The summary file name is `SUMMARY.md` (uppercase), matching the directory structure documented in `tests/README.md`.
@@ -318,6 +430,7 @@ Choose the per-skill template by state:
 | Folder exists, has ≥1 test | **Per-Skill (with tests)** |
 | Folder exists, zero tests | **Per-Skill (no tests)** |
 | Folder does NOT exist, name in Planned Skills Registry | **Per-Skill (planned, not yet created)** |
+| Cross-cutting registry entry | **Per-Skill (with tests)** if tag matches ≥1 task, else (no tests). Header it "Cross-cutting capability" and add a note: tests are tag-selected and counted under host skills (non-additive); coverage source is the inventory doc, not a SKILL.md. |
 
 ---
 
@@ -345,6 +458,8 @@ Use this template when the skill has at least one test task.
 | Workflow steps covered | X / Y (Z%) |
 | Critical rules covered (direct) | X / Y (Z%) *or* N/A (no Critical Rules section) |
 | Path coverage | X / Y (Z%) *or* N/A (single-path skill) |
+| Per-mode coverage (B/O/D) | 31% / 0% / N/A *(scored slices — see Per-Mode Coverage; reported beside Overall, not folded in)* |
+| Mode-balanced / floor | 16% / 0% *(mean & min of non-N/A mode slices — exposes mode blindness the Overall dilutes; descriptive, not scored)* |
 | **Estimated overall coverage** | **Z%** (weights: Comp W1% / Steps W2% / Rules W3% / Path W4% — renormalized over applicable dimensions) |
 
 Anti-patterns are inventoried in the Anti-Patterns section below but are **not** part of the overall score (see Phase 4e).
@@ -415,6 +530,18 @@ Applicable only when the skill documents ≥2 implementation paths. Otherwise wr
 | Coded (C#) | Yes | skill-rpa-coded-test-case |
 | XAML | No | — |
 
+### Per-Mode Coverage (scored slices)
+
+Re-slices the capability inventory by the Phase 2f mode labels and re-runs the weighted formula per slice (Phase 4f-mode). Reported beside — never folded into — the Overall. `N/A` = the skill has no capability surface for that mode.
+
+| Mode | Capabilities (covered/total) | Coverage % | Covering tests |
+|------|------------------------------|-----------|----------------|
+| `build` | 8/26 | 31% | skill-flow-calculator, skill-flow-init-validate, … |
+| `operate` | 0/4 | 0% | — |
+| `diagnose` | — | N/A | — |
+
+⚠ *tag mismatch:* emit a bullet when a capability's only covering test carries the wrong `mode:*` tag (Phase 4f-mode cross-check) — name the test and the expected mode.
+
 ### Anti-Patterns (X/Y covered — troubleshooting only, NOT in overall score)
 
 | # | Anti-Pattern | Covered | Test(s) | Notes |
@@ -425,13 +552,7 @@ Applicable only when the skill documents ≥2 implementation paths. Otherwise wr
 
 Sidecar troubleshooting — see Phase 4h. Not part of the weighted overall score.
 
-**Mode**
-
-| Value | Tests | Status |
-|---|---|---|
-| `mode:build` | skill-flow-calculator, skill-flow-init-validate, skill-flow-add-node, … | ✓ |
-| `mode:operate` | — | ✗ |
-| `mode:diagnose` | — | ✗ |
+**Mode** — scored separately in the **Per-Mode Coverage** section above; not repeated as a sidecar tick.
 
 **Shape** (flow-building tests only)
 
@@ -590,16 +711,17 @@ Produce this whenever more than one skill is analyzed (including `all` mode).
 
 ## Overview
 
-| Skill | Tests | Components (direct) | Workflow | Rules | Paths | Overall | Tests/Comp (med) | Top untested buckets | Infra |
-|-------|-------|---------------------|----------|-------|-------|---------|------------------|----------------------|-------|
-| uipath-maestro-flow | 49 | 6/24 (25%) | 6/9 (67%) | 1/16 (6%) | 1/2 (50%) | 33% | 2 | control-flow 5/7, queue 0/2, resource 0/3 | Requires cloud auth |
-| uipath-rpa | 2 | 0/39 (0%) | 0/8 (0%) | 0/21 (0%) | 1/2 (50%) | 8% | 0 | triggers 0/3, IS connectors 0/2, run/publish 2/8 | Requires Windows + Studio |
-| uipath-platform | 5 | 2/12 (17%) | N/A | N/A | N/A | 17% | 0 | orchestrator-admin 7/15, jobs-adv 0/4 | Requires cloud auth |
-| uipath-document-understanding | 0 | — / — (0%) | — | — | — | **0%** (planned) | — | — (planned) | Skill folder not yet created |
+| Skill | Tests | Components (direct) | Workflow | Rules | Paths | Overall | Mode B/O/D | Bal/Floor | Tests/Comp (med) | Top untested buckets | Infra |
+|-------|-------|---------------------|----------|-------|-------|---------|------------|-----------|------------------|----------------------|-------|
+| uipath-maestro-flow | 49 | 6/24 (25%) | 6/9 (67%) | 1/16 (6%) | 1/2 (50%) | 33% | 33/0/— | 17/0 | 2 | control-flow 5/7, queue 0/2, resource 0/3 | Requires cloud auth |
+| uipath-rpa | 2 | 0/39 (0%) | 0/8 (0%) | 0/21 (0%) | 1/2 (50%) | 8% | 8/0/— | 4/0 | 0 | triggers 0/3, IS connectors 0/2, run/publish 2/8 | Requires Windows + Studio |
+| uipath-platform | 5 | 2/12 (17%) | N/A | N/A | N/A | 17% | 17/17/— | 17/17 | 0 | orchestrator-admin 7/15, jobs-adv 0/4 | Requires cloud auth |
+| uipath-document-understanding | 0 | — / — (0%) | — | — | — | **0%** (planned) | — | — | — | — (planned) | Skill folder not yet created |
+| uipath-context-grounding ⁺ | 10 | 4/6 (67%) | N/A | 3/7 (43%) | N/A | 60% | 67/—/— | 67/67 | — | index-search 0/2, low-code DeepRAG 1/2 | Cross-cutting (agents+flow); local validate / cloud run |
 
-Overall is weighted and renormalized across applicable dimensions (see Phase 4e). N/A cells mean the skill is missing that dimension (e.g. no Critical Rules section, single-path skill, catalog skill with no workflow steps) — weights redistribute proportionally. Planned-but-missing skills (no `skills/<name>/` folder yet) are scored at 0% and tagged "(planned)" in the Overall column; they appear in the same table — do not split them out, so the gap is impossible to overlook. **Top untested buckets** (Phase 4a) names the 2–3 largest `None` groups dragging each skill's score, so a reader can see *why* the coverage number is low without opening the per-skill report; full detail lives in each report's Untested Features section.
+Overall is weighted and renormalized across applicable dimensions (see Phase 4e). N/A cells mean the skill is missing that dimension (e.g. no Critical Rules section, single-path skill, catalog skill with no workflow steps) — weights redistribute proportionally. Planned-but-missing skills (no `skills/<name>/` folder yet) are scored at 0% and tagged "(planned)" in the Overall column; they appear in the same table — do not split them out, so the gap is impossible to overlook. **Cross-cutting capabilities** (⁺, e.g. `uipath-context-grounding`) appear as their own row but are **additive overlays** — their tests/components are already counted in the host skills, so they are EXCLUDED from the Totals line below. **Mode B/O/D** is the compact per-mode coverage (`build`/`operate`/`diagnose`, Phase 4f-mode) — `—` marks an N/A mode (no capability surface); these are scored beside Overall, never folded into it. **Bal/Floor** is Mode-balanced (mean of non-N/A mode slices) / Mode-floor (min of them, Phase 4f-mode): a high Overall with a low Floor flags a build-solid but mode-blind skill. **Top untested buckets** (Phase 4a) names the 2–3 largest `None` groups dragging each skill's score; full detail lives in each report's Untested Features section.
 
-**Totals:** N tests across M skills (P planned, not yet authored). X components inventoried, Y directly tested (Z%). A workflow steps, B covered. C critical rules, D directly tested. E multi-path skills, F with full path coverage. Anti-patterns are inventoried per skill but intentionally excluded from the overall score.
+**Totals (normal skills only — excludes planned stubs and cross-cutting ⁺ overlays to avoid double-counting):** N tests across M skills (P planned, not yet authored; Q cross-cutting capabilities reported separately). X components inventoried, Y directly tested (Z%). A workflow steps, B covered. C critical rules, D directly tested. E multi-path skills, F with full path coverage. Anti-patterns are inventoried per skill but intentionally excluded from the overall score.
 
 ## Planned Skills (folder not yet created)
 
@@ -645,7 +767,7 @@ The table also surfaces the **tier gap** signal from Phase 4i: a skill with test
 |-------|-------|-------------|-----|--------|
 | uipath-maestro-flow | 2 | 5 | 8 | Meets minimum |
 | uipath-rpa | 0 | 0 | 0 | Below minimum (missing smoke + e2e) |
-| uipath-data-fabric | 2 | 0 | 1 | Tier gap (no integration tier) |
+| uipath-platform/data-fabric | 2 | 0 | 1 | Tier gap (no integration tier) |
 
 ## Top 10 Recommended Tests
 

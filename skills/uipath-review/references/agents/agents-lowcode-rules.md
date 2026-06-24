@@ -2,7 +2,7 @@
 
 Judgment rules for **low-code** agents (`agent.json`). Each rule requires the agent to read source and reason — what a regex/count/schema-walk cannot decide reliably. Same row schema as elsewhere — see [`../rule-format.md`](../rule-format.md).
 
-> **This catalog is judgment-only.** Run `uip agent review --project-dir "<PROJECT_DIR>" --output json` **first** (SKILL.md Step 2.5) — it returns the deterministic low-code findings (structural gates, schema-property presence, placeholder cross-refs, eval counts/diversity, version/runtime/location checks) in the same rule format. Then apply the rules below, which the CLI cannot do.
+> **This catalog is judgment-only.** Run `uip agent review "<PROJECT_DIR>" --output json` **first** (SKILL.md Step 2.5) — it returns the deterministic low-code findings (structural gates, schema-property presence, placeholder cross-refs, eval counts/diversity, version/runtime/location checks) in the same rule format. Then apply the rules below, which the CLI cannot do.
 
 Read [`../rule-format.md`](../rule-format.md) and [`../rule-catalog-workflow.md`](../rule-catalog-workflow.md) first.
 

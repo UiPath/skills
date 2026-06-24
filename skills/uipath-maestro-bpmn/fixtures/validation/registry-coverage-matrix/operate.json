@@ -1,9 +1,0 @@
-{
-  "projectId": "Fixture.RegistryCoverageMatrix",
-  "main": "registry-coverage-matrix.bpmn",
-  "contentType": "ProcessOrchestration",
-  "targetFramework": "Portable",
-  "runtimeOptions": {
-    "requiresUserInteraction": false
-  }
-}

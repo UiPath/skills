@@ -1,0 +1,49 @@
+task_id: skill-ixp-unpublish-smoke
+description: >
+  Smoke: agent unpublishes a specific model version with
+  `uip ixp projects unpublish <Name> --model-version <N>`. Locks in the
+  command name and that unpublish removes only the published status — it
+  must NOT delete the project or the model.
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  In the IXP project `my_invoices-f1afa9ef-ixp`, unpublish model version 26.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant
+    in this environment. Commands will fail with auth errors — that is
+    expected. Run each command once and move on. Do NOT retry or attempt
+    to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent unpublished version 26 via `projects unpublish <Name> --model-version 26`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+unpublish\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*(--model-version|-m)\s+26\b).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Anti-pattern guard: unpublish only removes the published status — it must
+  # not delete the whole project.
+  - type: command_not_executed
+    description: "Agent did NOT delete the project (unpublish must not destroy the project)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+delete\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

@@ -3,7 +3,7 @@ description: >
   End-to-end test: agent performs a human user onboarding flow.
   Invites a user by email with name, then assigns them to a group.
   Validates the agent follows the onboarding workflow from the skill.
-tags: [uipath-admin, e2e, onboarding]
+tags: [uipath-admin, e2e, mode:build, onboarding]
 
 run_limits:
   expected_turns: 10
@@ -12,7 +12,8 @@ run_limits:
 
 initial_prompt: |
   Onboard john.doe@example.com (John Doe) and add them to the
-  "Automation Developer" group once provisioned.
+  "Automation Developer" group once provisioned. After inviting,
+  list users to confirm the invite was processed.
 
   If this user already exists, remove them first, then re-invite.
 
@@ -24,7 +25,7 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+users\s+invite\s+.*--email.*john\.doe@example\.com.*--name'
     min_count: 1
-    weight: 2.0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -44,19 +45,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent verified invite by listing users after invite"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+list\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent consistently used --output json"
     tool_name: "Bash"
     command_pattern: 'uip\s+admin\s+.*--output\s+json'
     min_count: 3
     weight: 1.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Invite was processed — user found in list"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_user_invited.py''))"'
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
 post_run:

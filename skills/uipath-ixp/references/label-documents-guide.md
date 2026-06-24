@@ -17,7 +17,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 
 Save the taxonomy to `/tmp/ixp/<project-name>/taxonomies/v1.json` (increment the version on each re-fetch).
 
-From the taxonomy, review the field groups and field types so you understand what each predicted field represents.
+From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label_groups`, types under `Data.dataset.entity_defs`), review the field groups and field types so you understand what each predicted field represents.
 
 ## Step 2 — Process Each Document
 
@@ -29,7 +29,7 @@ For each document from the list, process one at a time: get predictions, downloa
 uip ixp labellings get-predictions <project-name> <document-id> --output json
 ```
 
-This returns the document's predicted `Labels` (grouped by field group name), each containing `Fields` with `FieldId`, `FieldName`, and `FormattedValue`.
+This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates`.
 
 ### 2b. Download the document file
 
@@ -67,6 +67,14 @@ Total After Tax          | NOT CONFIRMED | Predicted "$1100.00" but Subtotal+Tax
 Terms of Payment         | MISSING       | IXP predicted no value AND field not visible in document
 Discount                 | MISSING       | IXP predicted no value AND no discount section on the page
 Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
+```
+
+**Repeatable field groups produce one extraction per row.** `get-predictions` returns one label per row, each with an explicit 0-based `Occurrence` — `Line Items` on a multi-line invoice has N entries indexed 0..N-1 (read `Occurrence` directly; it equals document order). When validation differs across rows, give per-occurrence verdicts:
+
+```text
+Line Items > Description (occurrence 0) | CONFIRMED     | "Widget A" matches line 1
+Line Items > Description (occurrence 1) | CONFIRMED     | "Widget B" matches line 2
+Line Items > Description (occurrence 3) | NOT CONFIRMED | Predicted "Widget D" but line 4 shows "Widget Z"
 ```
 
 For **CORRECTED** fields: state the mangled predicted value, the corrected value, and where it appears. The mistake must be at the character level — same field, same location, garbled bytes.
@@ -116,7 +124,29 @@ uip ixp labellings confirm <project-name> <document-id> \
 
 **Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 12. If IXP predicted a wrong value, omit the field entirely (don't list it).
 
-Use `labellings mark-missing` only as a fallback when `confirm --fields` is a no-op for a field you expected it to handle — typically a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain). Verify by re-running `labellings get-predictions <project-name> <document-id>` and checking whether the field appears in the Fields[] array: if yes, `confirm --fields` is the right tool; if no, `mark-missing` reaches the stale annotation that `confirm` can't.
+Use `labellings mark-missing <project-name> <document-id> --fields <ids>` to record a genuinely-missing field. It marks the listed fields directly, so it also handles the case where `confirm --fields` no-ops — a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain), which `confirm` can't reach. Either records the missing marker; only do so when `get-predictions` shows IXP predicted no value for the field — never to override a wrong prediction.
+
+**Per-occurrence confirm for repeatable groups.** When a repeatable group's verdicts differ across occurrences (some lines correct, some not), `confirm --fields a7c3e9105f2b4d86` is the wrong shape — it confirms `a7c3e9105f2b4d86` in **every** occurrence, including the wrong ones. Target each correct occurrence by index:
+
+```bash
+# All predicted fields in occurrence 0:
+uip ixp labellings confirm <project-name> <document-id> \
+  --group "Line Items" --occurrence 0 --output json
+
+# Just Quantity in occurrence 2:
+uip ixp labellings confirm <project-name> <document-id> \
+  --group "Line Items" --occurrence 2 --fields c4e1907a3b8f25d6 --output json
+```
+
+Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated). For batching many occurrences in one call, use `--updates '[…]'` — see [CLI Reference § Labellings](cli-reference.md#labellings). See Critical Rule 13.
+
+**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 14.
+
+```bash
+# Roll back only occurrence 2 of Line Items (every field in that line):
+uip ixp labellings unconfirm <project-name> <document-id> \
+  --group "Line Items" --occurrence 2 --output json
+```
 
 ### 2e. Move to the next document
 
@@ -127,17 +157,17 @@ Repeat steps 2a–2d for all documents in the list.
 If a document is unusable (wrong document type, corrupted, duplicate), delete it instead of confirming or skipping:
 
 ```bash
-uip ixp documents delete <project-name> <document-id> --output json
+uip ixp documents delete <project-name> <document-id> -y --output json
 ```
 
-`<document-id>` is the `DocumentId` from `documents list` (e.g., `3453547f3538febd.1fc885607f2aac621f8f2d3ef1847f22`). Pass it whole. Do NOT pass the AttachmentRef or the Filename.
+`-y/--yes` is required (the CLI never prompts). `<document-id>` is the `DocumentId` from `documents list` (e.g., `3453547f3538febd.1fc885607f2aac621f8f2d3ef1847f22`). Pass it whole. Do NOT pass the AttachmentRef or the Filename.
 
 **Finding the DocumentId:**
 
 | You have | How to get the DocumentId |
 |----------|---------------------------|
-| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` |
-| A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | Run `uip ixp labellings get-predictions <project-name> --output json`, find the document whose `Labels[].Fields[].FormattedValue` matches, take its `DocumentId` |
+| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope) |
+| A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | Run `uip ixp labellings get-predictions <project-name> --output json`, find the entry in `Predictions[]` whose `Labels[].Fields[].FormattedValue` matches, take its `DocumentId` |
 | Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and read with the Read tool |
 
 `documents list` returns `Filename` alongside `DocumentId` (the original upload filename, or `null` if none was sent at upload time). When filenames aren't unique within the project, the JMESPath filter returns multiple IDs — review them with `documents download` before deleting.

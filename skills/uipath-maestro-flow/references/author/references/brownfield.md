@@ -25,7 +25,7 @@ Resulting structure: a **thin flow** that is mostly trigger + waits + branches, 
 
 **[editing-operations.md](editing-operations.md)** — `Edit` is the default tool for in-place changes to user-owned nodes; `Write` only when ≥70% of nodes change. For CLI-owned nodes use the relevant plugin's `impl.md` configuration workflow (`node add` + `node configure`). Read the strategy selection matrix before any modification.
 
-> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user via `AskUserQuestion` (per the dropdown rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
+> **Self-check before each mutation:** name the tool you're about to use. If the answer isn't `Edit`, `Write`, or `uip maestro flow ...` — STOP and ask the user (per the dropdown question rule in [SKILL.md](../../../SKILL.md)). `python`, `node`, `jq`, `sed`, `awk`, and shell heredocs are a last resort and require explicit user approval after you've surfaced the trade-offs. See [editing-operations.md — Tool Selection Ladder](editing-operations.md#tool-selection-ladder).
 
 ## Common edits
 
@@ -76,7 +76,7 @@ When you finish editing the flow, report to the user:
 4. **Format status** — confirm `flow format` was run
 5. **Mock placeholders** — list any `core.logic.mock` nodes that need to be replaced
 6. **Missing connections** — any connector nodes that need connections the user must create
-7. **What's next** — use `AskUserQuestion` to present the dropdown below (see the AskUserQuestion dropdown rule in [SKILL.md](../../../SKILL.md))
+7. **What's next** — ask the user, presenting the dropdown below (see the dropdown question rule in [SKILL.md](../../../SKILL.md))
 
 ### What's next dropdown
 

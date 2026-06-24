@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "f7a8b9c0-d1e2-4204-9c2d-81920314a5b6",
+      "State": "Faulted",
+      "ProcessName": "ContractTextExtract",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-10",
+      "MachineKey": "",
+      "StartTime": "2026-06-16T08:05:01.420Z",
+      "EndTime": "2026-06-16T08:05:02.380Z",
+      "CreationTime": "2026-06-16T08:05:01.210Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

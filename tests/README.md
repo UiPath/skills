@@ -106,7 +106,7 @@ Tags drive `make` targets, coverage reports, and evalboard drilldown. The `tags:
 | **resource** | flat, present iff applicable | Marks tasks that exercise any resource-node type (`coded-agent`, `lowcode-agent`, `api-workflow`, `rpa`). The specific resource is implied by the file path / `task_id`. |
 | **connector** | flat, present iff applicable | Marks tasks that use any IS connector. The specific connector is in the YAML body / file path. |
 | **windows** | flat, present iff applicable | Marks tasks that require a Windows host (e.g. RPA `.xaml`/`.cs` projects that need Studio Helm). Used by `smoke-rpa-skills.yml` to route the task to a `windows-latest` runner; Linux/macOS smoke runs skip it. |
-| **feature** | `feature:X`, repeatable | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary: `http`, `trigger`, `registry`, `transform`, `eval`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`. Do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature` — those duplicate the file path. |
+| **feature** | `feature:X`, repeatable | Cross-cutting capability orthogonal to node/resource/connector. Closed vocabulary: `http`, `trigger`, `registry`, `transform`, `eval`, `approval-gate`, `write-back`, `escalation`, `connections`, `activities`, `records`, `entities`, `api-workflow`, `compliance`, `test-case`, `hooks`, `conversational`. Do not invent leaf names like `feature:ceql-where` or directory-name markers like `feature:connector-feature` — those duplicate the file path. |
 
 ### Rules
 
@@ -245,6 +245,14 @@ secrets (matches the existing `TRACES_SMOKE_PROCESS_KEY` pattern):
 Both processes live in folders, so `folder_path` is derived from the
 process key — no separate folder secret needed. Tests needing a second
 folder create it themselves as part of the scenario.
+
+**Keep the stub processes inside the dedicated folder
+(`Shared/uipath-platform-e2e`), not in `Shared` itself.** The seeded
+folder is derived from the process, so every resource the e2e tasks
+create (assets, queues, buckets, triggers, jobs) lands in the same
+folder — pointing the secrets at releases inside the dedicated folder
+keeps the shared parent untouched and lets `cleanup.py`'s folder sweep
+run without risk to unrelated resources.
 
 ### Cleanup
 
@@ -412,7 +420,7 @@ Validate JSON file structure and values using JMESPath assertions. Supported ope
 
 ### `run_command`
 
-Execute an arbitrary shell command and check the exit code. Use it for direct verification of state the agent created. From `uipath-data-fabric/integration_csv_import.yaml`:
+Execute an arbitrary shell command and check the exit code. Use it for direct verification of state the agent created. From `uipath-platform/data-fabric/integration_csv_import.yaml`:
 
 ```yaml
 - type: run_command
