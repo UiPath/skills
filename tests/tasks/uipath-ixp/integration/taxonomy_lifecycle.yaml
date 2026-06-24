@@ -40,8 +40,7 @@ initial_prompt: |
   - Delete the "Surcharge" field.
   - Save the taxonomy to `taxonomy_before_delete.json`, then delete the
     "Adjustments" group.
-  - Save the taxonomy again to `taxonomy_final.json` — it should now match the
-    taxonomy you started with.
+  - Save the taxonomy again to `taxonomy_final.json`.
 
   When you're done, delete the project.
 
