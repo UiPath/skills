@@ -159,6 +159,12 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: file_exists
+    description: "Captured the final taxonomy"
+    path: "taxonomy_final.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
   # Round-trip: every edit was confined to the added "Adjustments" group, so after
   # deleting it the taxonomy must structurally match the initial suggested one
   # (group/field names, kinds, instructions — ignoring ids/timestamps). This also
