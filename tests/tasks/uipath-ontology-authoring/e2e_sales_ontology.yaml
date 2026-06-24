@@ -1,0 +1,65 @@
+task_id: skill-ontology-authoring-e2e-sales
+description: >
+  End-to-end: build an OWL 2 QL ontology and its R2RML mappings from
+  folder-level Data Fabric entities, verify the OFN, and publish the owl +
+  r2rml slots. Exercises the full Explore -> Ask -> Generate -> Verify ->
+  Publish loop. Requires a live tenant with folder-level entities.
+tags: [uipath-ontology-authoring, e2e]
+
+max_iterations: 1
+agent:
+  type: claude-code
+  permission_mode: acceptEdits
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "AskUserQuestion"]
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build an ontology and R2RML mappings from my UiPath Data Fabric entities in
+  the Shared folder, then publish it. Model the customer/order domain —
+  customers, products, sales orders, order lines, suppliers — using sensible
+  business meaning for the fields and the relationships between them.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+  Before starting, load the uipath-ontology-authoring skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Listed entities scoped to a folder (folder-level only)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+df\s+entities\s+list\s+.*--folder-key'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Verified the OFN syntactically before publishing"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ontology\s+verify'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created the ontology project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ontology\s+create'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Uploaded the OWL (.ofn) slot"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ontology\s+files\s+put\s+\S+\s+owl'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Uploaded the R2RML (.ttl) slot"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ontology\s+files\s+put\s+\S+\s+r2rml'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0

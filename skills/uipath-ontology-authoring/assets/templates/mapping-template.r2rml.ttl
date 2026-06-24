@@ -1,0 +1,55 @@
+@prefix rr:   <http://www.w3.org/ns/r2rml#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix :     <http://uipath.com/datafabric/NAME#> .
+
+# One rr:TriplesMap per selected entity.
+# entity Name = logical table | primary key Id = subject template | field Name = column.
+
+:OrderMap a rr:TriplesMap ;
+  rr:logicalTable [ rr:tableName "Order" ] ;
+  rr:subjectMap [
+    rr:template "http://uipath.com/datafabric/NAME/Order/{Id}" ;
+    rr:class    :Order
+  ] ;
+
+  # scalar field
+  rr:predicateObjectMap [
+    rr:predicate :orderTotal ;
+    rr:objectMap [ rr:column "Total" ; rr:datatype xsd:decimal ]
+  ] ;
+
+  # boolean field
+  rr:predicateObjectMap [
+    rr:predicate :isPaid ;
+    rr:objectMap [ rr:column "IsPaid" ; rr:datatype xsd:boolean ]
+  ] ;
+
+  # choice set field -> integer NumberId (value meanings live in the OFN)
+  rr:predicateObjectMap [
+    rr:predicate :status ;
+    rr:objectMap [ rr:column "Status" ; rr:datatype xsd:integer ]
+  ] ;
+
+  # relationship -> referencing object map, joined on FK -> target Id
+  rr:predicateObjectMap [
+    rr:predicate :placedBy ;
+    rr:objectMap [
+      rr:parentTriplesMap :CustomerMap ;
+      rr:joinCondition [ rr:child "CustomerId" ; rr:parent "Id" ]
+    ]
+  ] .
+
+# cross-folder example: if Customer lived in a different folder than Order, the
+# live binding needs the target's folder key. Record it so the mapping is reproducible:
+# cross-folder: target Customer lives in folder <FolderB-key> (referenceFolderKey)
+
+:CustomerMap a rr:TriplesMap ;
+  rr:logicalTable [ rr:tableName "Customer" ] ;
+  rr:subjectMap [
+    rr:template "http://uipath.com/datafabric/NAME/Customer/{Id}" ;
+    rr:class    :Customer
+  ] ;
+  rr:predicateObjectMap [
+    rr:predicate :customerName ;
+    rr:objectMap [ rr:column "Name" ; rr:datatype xsd:string ]
+  ] .

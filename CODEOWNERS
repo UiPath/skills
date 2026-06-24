@@ -113,3 +113,7 @@
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 /skills/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
 /tests/tasks/uipath-ixp/ @cezara98t @paul-ciobanu @misupantea-uipath @andrei-uipath
+
+# Ontology authoring skill (OWL 2 QL + R2RML from Data Fabric entities)
+/skills/uipath-ontology-authoring/ @sankalp-uipath
+/tests/tasks/uipath-ontology-authoring/ @sankalp-uipath

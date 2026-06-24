@@ -1,0 +1,39 @@
+Prefix(:=<http://uipath.com/datafabric/NAME#>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(rdf:=<http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+
+Ontology(<http://uipath.com/datafabric/NAME>
+  Annotation(owl:versionInfo "0.1.0")
+
+  # ---- Class (one per selected entity). Meaning from the author. ----
+  Declaration(Class(:Order))
+  AnnotationAssertion(rdfs:comment :Order "A purchase placed by a customer. Maps Data Fabric entity 'Order'.")
+
+  # ---- Scalar attributes (DataProperty). Type from the schema, meaning from the author. ----
+  Declaration(DataProperty(:orderTotal))
+  DataPropertyDomain(:orderTotal :Order)
+  DataPropertyRange(:orderTotal xsd:decimal)
+  AnnotationAssertion(rdfs:comment :orderTotal "Gross amount. Maps Order.Total.")
+
+  # Boolean: compare to literal true/false, never 1/0.
+  Declaration(DataProperty(:isPaid))
+  DataPropertyDomain(:isPaid :Order)
+  DataPropertyRange(:isPaid xsd:boolean)
+  AnnotationAssertion(rdfs:comment :isPaid "Maps Order.IsPaid. Compare true/false, never 1/0.")
+
+  # Choice set: stored as an integer NumberId; value meanings recorded here.
+  Declaration(DataProperty(:status))
+  DataPropertyDomain(:status :Order)
+  DataPropertyRange(:status xsd:integer)
+  AnnotationAssertion(rdfs:comment :status "NumberId. Maps Order.Status. 1=Pending, 2=Shipped, 3=Delivered.")
+
+  # ---- Relationship (ObjectProperty). From an FK field; cardinality stated by the author. ----
+  Declaration(Class(:Customer))
+  AnnotationAssertion(rdfs:comment :Customer "A buyer. Maps Data Fabric entity 'Customer'.")
+  Declaration(ObjectProperty(:placedBy))
+  ObjectPropertyDomain(:placedBy :Order)
+  ObjectPropertyRange(:placedBy :Customer)
+  AnnotationAssertion(rdfs:comment :placedBy "Each order is placed by one customer. Maps Order FK -> Customer. 'Exactly one' is QL-inexpressible; recorded here.")
+)
