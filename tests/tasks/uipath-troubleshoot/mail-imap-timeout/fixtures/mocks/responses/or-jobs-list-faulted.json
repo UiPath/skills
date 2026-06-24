@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "80b4bf8e-9437-4ef9-884c-41d1d2cd429c",
+      "State": "Faulted",
+      "StartTime": "2026-06-24T08:24:28.533Z",
+      "EndTime": "2026-06-24T08:24:52.013Z",
+      "CreationTime": "2026-06-24T08:24:27.933Z",
+      "ReleaseName": "FetchInboxMessages",
+      "Type": "Unattended",
+      "Source": "Manual",
+      "HostMachineName": "MOCK-HOST",
+      "Info": "The operation has timed out.\r\n\r\nin Main.xaml\r\n    at GetIMAPMailMessages \"GetIMAPMailMessages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nSystem.TimeoutException: The operation has timed out.",
+      "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "Id": 67936530
+    }
+  ]
+}

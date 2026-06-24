@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay of staging job 80b4bf8e-9437-4ef9-884c-41d1d2cd429c (process FetchInboxMessages, folder Shared). Real uip CLI evidence captured from .local/investigations/raw, scrubbed (host->MOCK-HOST, account->UIPATH\\REPLACEMENT_USER, email->original_email@test.com). Error texts, job/folder keys kept verbatim.",
+  "rules": [
+    {
+      "match": "or jobs logs 80b4bf8e-9437-4ef9-884c-41d1d2cd429c --level Error",
+      "file": "or-jobs-logs-error.json"
+    },
+    {
+      "match": "or jobs logs 80b4bf8e-9437-4ef9-884c-41d1d2cd429c",
+      "file": "or-jobs-logs-error.json"
+    },
+    {
+      "match": "or jobs get 80b4bf8e-9437-4ef9-884c-41d1d2cd429c",
+      "file": "or-jobs-get.json"
+    },
+    {
+      "match": "or jobs history 80b4bf8e-9437-4ef9-884c-41d1d2cd429c",
+      "file": "or-jobs-history.json"
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --state Faulted",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any unmatched read-only uip query (incl. both trace forms 'or jobs traces' / 'traces spans get') returns []. The fault signature is fully carried by jobs get/logs, so traces are not load-bearing here."
+  }
+}

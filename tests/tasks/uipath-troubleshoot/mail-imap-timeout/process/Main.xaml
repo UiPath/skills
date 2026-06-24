@@ -1,0 +1,41 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" mva:VisualBasic.Settings="{x:Null}"
+xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+xmlns:ui="http://schemas.uipath.com/workflow/activities"
+xmlns:nm="clr-namespace:System.Net.Mail;assembly=System.Net.Mail"
+xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <TextExpression.NamespacesForImplementation>
+        <sco:Collection x:TypeArguments="x:String">
+            <x:String>System.Activities</x:String>
+            <x:String>System.Activities.Statements</x:String>
+            <x:String>System</x:String>
+            <x:String>System.Collections.Generic</x:String>
+            <x:String>System.Net.Mail</x:String>
+            <x:String>UiPath.Core</x:String>
+            <x:String>UiPath.Core.Activities</x:String>
+        </sco:Collection>
+    </TextExpression.NamespacesForImplementation>
+    <TextExpression.ReferencesForImplementation>
+        <sco:Collection x:TypeArguments="AssemblyReference">
+            <AssemblyReference>System.Activities</AssemblyReference>
+            <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+            <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+            <AssemblyReference>mscorlib</AssemblyReference>
+            <AssemblyReference>System</AssemblyReference>
+            <AssemblyReference>System.Net.Mail</AssemblyReference>
+            <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+            <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+        </sco:Collection>
+    </TextExpression.ReferencesForImplementation>
+    <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+        <Sequence.Variables>
+            <Variable x:TypeArguments="scg:List(nm:MailMessage)" Name="messages" />
+        </Sequence.Variables>
+        <ui:GetIMAPMailMessages Server="imap.gmail.com" Port="143" SecureConnection="SslOnConnect" MailFolder="Inbox" OnlyUnreadMessages="True" Top="5" TimeoutMS="15000" Messages="[messages]" sap2010:WorkflowViewState.IdRef="GetIMAPMailMessages_1" />
+    </Sequence>
+</Activity>

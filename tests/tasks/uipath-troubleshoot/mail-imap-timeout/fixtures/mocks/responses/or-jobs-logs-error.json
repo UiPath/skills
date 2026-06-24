@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-24T08:24:51.923Z",
+      "Message": "GetIMAPMailMessages: The operation has timed out.\r\nin Main.xaml\r\n    at GetIMAPMailMessages \"GetIMAPMailMessages\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.TimeoutException\r\n   at UiPath.Mail.Activities.Extensions.TaskExtensions.TimeoutAfter[TResult](Task`1 task, Int32 timeoutMs)\r\n   at UiPath.Mail.Activities.GetMailActivity.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Mail.Activities.BaseMailAsyncActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

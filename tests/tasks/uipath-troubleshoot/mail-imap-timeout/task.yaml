@@ -1,0 +1,144 @@
+task_id: skill-troubleshoot-mail-imap-timeout
+description: >
+  UiPath troubleshoot agent must diagnose a faulted FetchInboxMessages job whose
+  Get IMAP Mail Messages activity (UiPath.Mail.IMAP.Activities.GetIMAPMailMessages)
+  threw a raw System.TimeoutException ("The operation has timed out.") from the
+  activity's TimeoutMS guard. The root cause is a SecureConnection/Port mismatch:
+  SecureConnection=SslOnConnect against the plaintext IMAP port 143 forces a TLS
+  handshake the port cannot satisfy, so the connect hangs until TimeoutMS (15s)
+  elapses. The agent must match the get-imap-mail-messages-failures playbook
+  (branch 2, timeout), identify the port/SSL mismatch from the workflow source,
+  and recommend aligning the pairing (993+SslOnConnect or 143+StartTls) — NOT an
+  auth, folder, or infrastructure failure. Replayed from a real staging faulted job.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My last job in folder Shared just faulted. Why did it fail and how do I fix
+  it? The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched get-imap-mail-messages-failures (timeout branch) AND identified the SecureConnection/Port mismatch as the cause of the GetIMAPMailMessages timeout, recommending the correct port/SSL pairing — not an auth, folder, or infrastructure failure"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against the attached
+      RESOLUTION.md (authoritative ground truth). The user asked why their last
+      job in folder Shared faulted and how to fix it, with the failing project
+      source in the working directory.
+
+      Grade BOTH dimensions in a single score:
+
+      (a) FAULT — the agent identifies the failure as
+          `System.TimeoutException: The operation has timed out.` raised by the
+          **Get IMAP Mail Messages** activity
+          (`UiPath.Mail.IMAP.Activities.GetIMAPMailMessages`), thrown raw by the
+          activity's `TimeoutMS` guard (frames into `TaskExtensions.TimeoutAfter`
+          / `GetMailActivity`) — NOT wrapped in a "Cannot connect to the (IMAP)
+          Mail Service…" message.
+
+      (b) CAUSE — the agent concludes the connect timed out because of a
+          **SecureConnection / Port mismatch**: `SecureConnection=SslOnConnect`
+          on the plaintext IMAP port `143` forces a TLS handshake the port
+          cannot satisfy, so the connect hangs until `TimeoutMS` (15000 ms)
+          elapses. The agent should cite the workflow config (`Port=143`,
+          `SecureConnection=SslOnConnect`) from the project source. It matches
+          `references/activity-packages/mail-activities/playbooks/get-imap-mail-messages-failures.md`
+          (branch 2 — timeout).
+
+          A correct alternative framing is acceptable for partial-to-full credit
+          IF evidence-grounded: "the IMAP connect did not complete within
+          TimeoutMS; check Server/Port/SecureConnection pairing and host
+          reachability" — provided it points at the connection configuration and
+          does not assert a wrong cause.
+
+      (c) RESOLUTION — the agent recommends **aligning the port/SSL pairing**
+          (`Port=993` with `SslOnConnect`/`Auto`, or `Port=143` with `StartTls`),
+          optionally verifying host reachability, and notes that merely raising
+          `TimeoutMS` does not fix a mismatch.
+
+      Anti-fabrication (hard gate): score 0.2 or below if the agent attributes
+      the fault to any of these WRONG causes:
+        - an authentication / credential / app-password failure (the connect
+          never reached auth; there is no AuthenticationException)
+        - a missing or wrong mail folder (no "Mail Folder does not exist")
+        - an infrastructure / licensing / robot-dispatch failure (the job
+          reached Running and executed)
+        - an invented different activity, package, or error
+
+      Grade only on the agent's final response and tool-call summary (a Read
+      under references/activity-packages/mail-activities/playbooks/ is strong
+      evidence for the playbook match). Do NOT require any internal
+      investigation-state files.
+
+      RUBRIC:
+        1.0  Correct FAULT (IMAP GetIMAPMailMessages timeout) + CAUSE (port/SSL
+             mismatch, playbook branch 2, no fabrication) + valid pairing fix.
+        0.8  Correct fault + cause but thin/partial fix (e.g. names the mismatch
+             but only says "raise TimeoutMS" without the pairing fix), OR the
+             general-timeout framing with a config-check fix but without nailing
+             the 143/SslOnConnect mismatch.
+        0.5  Recognizes the IMAP timeout family but neither matches the playbook
+             nor identifies the connection-config cause (without fabricating a
+             wrong one).
+        0.2  Lands on a REJECT cause (auth/folder/infra) OR recognizes only a
+             generic error with no actionable cause/fix.
+        0.0  Misdiagnoses entirely, concludes a different fault, or gets blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering fault, cause, and fix>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing FetchInboxMessages process.
+    You have Orchestrator access and the project source in your working
+    directory. You trust the diagnostic agent and only know what you wrote in
+    your initial report.
+  goal: |
+    Let the agent complete its diagnostic flow from Orchestrator evidence and
+    the workflow source. Approve every scope expansion or clarification it
+    requests so the investigation reaches the final resolution, and accept a fix
+    you can apply in Studio or hand to whoever administers the Robot machine.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks you to run something on the Robot host or test IMAP connectivity, remind it you only have Orchestrator access and the project source, and ask it to diagnose from the evidence and give you an instruction to hand off."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report and the project source."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
