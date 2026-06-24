@@ -1,21 +1,19 @@
 # skip:true, tenant-gated. CONFIRMED available in API Workflow (2026-06-15).
-# Covers all 4 attachment activities. Flip skip:false once codereval has a
-# TM connection.
+# Covers all 4 attachment activities. skip:true: agent-reliability-gated (multi-activity build + run flakes
+# on turns/rate-limits). The codereval TM connection now exists.
 task_id: skill-api-workflow-testmanager-attachments
 description: >
   Coverage (API Workflow connector): agent authors an API Workflow using every
   UiPath Test Manager connector attachment activity — Upload Attachment, Get
   Attachments, Download Attachment, Delete Attachment. Drives registry resolve →
   connection ping → stub per activity → validate for `uipath-uipath-testmanager`.
-tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, uipath-uipath-testmanager, feature:registry, feature:connections]
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector]
 skip: true
 
-sandbox:
-  python: {}
 
 run_limits:
   task_timeout: 2400
-  max_turns: 120
+  max_turns: 60
   turn_timeout: 1200
 
 initial_prompt: |

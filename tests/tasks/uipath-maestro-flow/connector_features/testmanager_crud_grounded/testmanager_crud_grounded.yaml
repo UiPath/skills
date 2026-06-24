@@ -12,12 +12,12 @@ description: >
   back, outputs the retrieved name, and debugs (executes) the flow — then records
   the round-trip. Graded on pull/node-add/validate/debug AND on retrieved ==
   created (real data through the connector, executed).
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-testmanager, feature:connections]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector]
 skip: true
 
 run_limits:
   task_timeout: 2400
-  max_turns: 140
+  max_turns: 60
   turn_timeout: 1200
 
 pre_run:

@@ -2,7 +2,7 @@
 # `uip maestro flow registry pull` then search returns the
 # uipath.connector.uipath-uipath-testmanager.<op> nodes for this object group. A stale manifest
 # returns 0 — the agent MUST run `registry pull` first. Same manifest backs
-# Maestro BPMN. Flip skip:false once codereval has a TM connection.
+# Maestro BPMN. skip:true: agent-reliability-gated (multi-node build + debug flakes on turns/rate-limits). The codereval TM connection now exists.
 task_id: skill-flow-testmanager-requirement-lifecycle
 description: >
   Coverage (Maestro Flow connector): agent uses the uipath-maestro-flow skill to
@@ -11,12 +11,12 @@ description: >
   `registry pull` -> `registry search`/`get` -> `node add` -> `flow validate`.
   Graded on those commands plus the produced .flow referencing each
   uipath.connector.uipath-uipath-testmanager.* node type.
-tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, uipath-uipath-testmanager, feature:connections]
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector]
 skip: true
 
 run_limits:
   task_timeout: 3000
-  max_turns: 160
+  max_turns: 60
   turn_timeout: 1200
 
 initial_prompt: |

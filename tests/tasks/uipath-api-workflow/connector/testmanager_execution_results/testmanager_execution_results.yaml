@@ -1,6 +1,6 @@
 # skip:true, tenant-gated. CONFIRMED available in API Workflow (2026-06-15).
-# Covers all 9 execution/results activities. Flip skip:false once codereval has a
-# TM connection.
+# Covers all 9 execution/results activities. skip:true: agent-reliability-gated (multi-activity build + run flakes
+# on turns/rate-limits). The codereval TM connection now exists.
 task_id: skill-api-workflow-testmanager-execution-results
 description: >
   Coverage (API Workflow connector): agent authors an API Workflow using every
@@ -8,15 +8,13 @@ description: >
   Test Execution, Get Test Case Logs of Test Execution, Get Test Case Log, Get
   Robot Logs, Get Assertions, Download Assertion, Get Test Steps, Get Test Step
   Logs. Drives registry resolve → connection ping → stub per activity → validate.
-tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, uipath-uipath-testmanager, feature:registry, feature:connections]
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector]
 skip: true
 
-sandbox:
-  python: {}
 
 run_limits:
   task_timeout: 3000
-  max_turns: 170
+  max_turns: 60
   turn_timeout: 1200
 
 initial_prompt: |

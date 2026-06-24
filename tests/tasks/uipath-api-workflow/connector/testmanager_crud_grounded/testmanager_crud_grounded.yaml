@@ -12,7 +12,7 @@ description: >
   it back by id, and responds with the retrieved name; runs the workflow; records
   the round-trip. Graded on the discovery/build/run flow AND on retrieved == created
   (real data through the connector, executed — not just authored).
-tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, uipath-uipath-testmanager, feature:registry, feature:connections]
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector]
 skip: true
 
 sandbox:
@@ -20,7 +20,7 @@ sandbox:
 
 run_limits:
   task_timeout: 2400
-  max_turns: 120
+  max_turns: 60
   turn_timeout: 1200
 
 pre_run:

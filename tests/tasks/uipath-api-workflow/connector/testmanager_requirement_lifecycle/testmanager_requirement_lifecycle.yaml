@@ -10,15 +10,13 @@ description: >
   and Get Assigned Test Cases for Requirement. Drives the discovery flow
   (registry resolve → connection ping → stub per activity → required-field
   cross-check → validate) for connectorKey `uipath-uipath-testmanager`.
-tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector, uipath-uipath-testmanager, feature:registry, feature:connections]
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, connector]
 skip: true
 
-sandbox:
-  python: {}
 
 run_limits:
   task_timeout: 2400
-  max_turns: 140
+  max_turns: 60
   turn_timeout: 1200
 
 initial_prompt: |
