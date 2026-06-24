@@ -1,11 +1,12 @@
 task_id: skill-ixp-integration-versions-and-metrics
 description: >
-  Integration: multi-version metrics reasoning on a live project. The agent
-  produces two trained versions (via a configure-model A/B change + retrain),
-  then pulls per-version metrics, compares them, and ranks the versions by score.
-  The value is the computed comparison/ranking — agent reasoning over live
-  metric values, which a command-shape smoke cannot produce.
-tags: [uipath-ixp, integration, mode:diagnose]
+  Integration: model-versioning lifecycle on a live project. The agent trains an
+  initial version, then improves one field's extraction instruction — which
+  triggers a retrain into a second version — and captures each version's metrics.
+  Verifies a real second version was produced (ModelVersion advanced) and that
+  per-version metrics carry real per-field scores: outcomes a command-shape smoke
+  cannot reach.
+tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
   max_turns: 72
@@ -20,19 +21,20 @@ sandbox:
       path: ../_shared/fixtures
 
 initial_prompt: |
-  I want to compare model configurations on an invoice project. Use the tenant
-  I'm already signed into (check I'm logged in; don't re-authenticate): start a
-  project from the files in `./fixtures/` — import the taxonomy, upload the three
-  invoices — and let it train.
+  I want to improve an invoice extraction model and end up with two trained
+  versions to compare. Use the tenant I'm already signed into (check I'm logged
+  in; don't re-authenticate): start a project from the files in `./fixtures/` —
+  import the taxonomy, upload one of the invoices — and let it train.
 
-  Once it's trained, review and confirm the predictions on the documents so the
-  project has ground truth to score against — without that there are no metrics.
-  Pull the metrics for version 1 and save them to `metrics_v1.json` exactly as the
-  command returns them — the full JSON output, not a summary or reshaped subset.
-  Then try to improve it — change the model's configuration and retrain to get a
-  second version — and pull version 2's metrics the same way into `metrics_v2.json`.
-  With both saved, tell me which version scored better and by how much, calling out
-  the fields that moved, and rank them best-to-worst by score.
+  Once it's trained, confirm the predictions on one of the documents so there's
+  some ground truth to score against. Pull that version's metrics and save them to
+  `metrics_v1.json` exactly as the command returns them — the full JSON output,
+  not a summary or reshaped subset.
+
+  Then improve it: the "Total Amount" field sometimes picks up the subtotal or an
+  amount-paid line instead of the final total due — sharpen that field's
+  instruction so it only captures the grand total payable. Once it has retrained,
+  pull the new version's metrics the same way into `metrics_v2.json`.
 
   Delete the project when you're done.
 
@@ -46,27 +48,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Listed model versions"
+    description: "Improved a field's extraction instruction (the change that produces v2)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+list-models'
-    min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Changed model configuration (A/B)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+configure-model'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+fields\s+update-prompts\b.*--updates'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Pulled metrics scoped to a specific version (-m/--model-version)"
+    description: "Pulled metrics for each version (--output json)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics\b.*(--model-version|-m)\s'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+get-metrics\b.*--output\s+json'
     min_count: 2
-    weight: 2.5
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -89,6 +83,17 @@ success_criteria:
       - expression: "length((Data || @).Fields)"
         operator: gte
         expected: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Proves the instruction change actually produced a NEW trained version, not a
+  # re-read of the same one. `d.get('Data', d)` accepts either save shape (wrapper
+  # kept vs trimmed to Data), mirroring the json_checks' `(Data || @)`.
+  - type: run_command
+    description: "A real second version was produced: metrics_v2 ModelVersion > metrics_v1"
+    command: "python3 -c \"import json; g=lambda f:(lambda d: d.get('Data', d))(json.load(open(f))); v1=g('metrics_v1.json')['ModelVersion']; v2=g('metrics_v2.json')['ModelVersion']; print('v1',v1,'v2',v2); exit(0 if v2 > v1 else 1)\""
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
