@@ -8,6 +8,8 @@ tags: [uipath-planner, smoke, lifecycle:generate]
 
 run_limits:
   expected_turns: 6
+  task_timeout: 2700
+  turn_timeout: 1800  # 30-min per-turn cap
 
 initial_prompt: |
   Step 1 — Write the following content to `pdd.md` using the Write tool.

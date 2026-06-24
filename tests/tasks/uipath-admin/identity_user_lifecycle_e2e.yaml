@@ -1,0 +1,72 @@
+task_id: skill-admin-identity-user-lifecycle-e2e
+description: >
+  End-to-end test: full user lifecycle — invite a user, search to
+  confirm the invite, update user details, then delete. Tests the
+  identity CRUD tail (update/delete) that is currently untested, plus
+  Rule 5 (resolve before high-risk ops) and Rule 10 (confirm before
+  delete).
+
+  Command-construction only — no live tenant. What matters is correct
+  command sequencing and flag usage across the full lifecycle.
+tags: [uipath-admin, e2e, mode:build, lifecycle:edit, identity, user-lifecycle]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Onboard a test user with email "lifecycle-test@example.com", name "Test",
+  surname "LifecycleUser". After inviting, search for the user to confirm
+  they exist. Then update the user's surname to "UpdatedUser". Finally,
+  delete the user to clean up.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invited the user with email, name, and surname"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+invite\b.*--email\s+\S*lifecycle-test'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent searched/listed users to find the new user"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated the user (positional id + changed field)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+update\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the user (positional id)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+delete\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

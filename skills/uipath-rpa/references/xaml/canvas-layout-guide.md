@@ -68,6 +68,8 @@ Every activity should have `sap:VirtualizedContainerService.HintSize` as an attr
 
 ## 3. Flowchart Layout
 
+Node vocabulary, structure & wiring, and node registration: [flowchart-guide.md](flowchart-guide.md). This section covers layout coordinates and ViewState only.
+
 ### What Counts as a Node
 
 A node is one `FlowStep` / `FlowDecision` / `FlowSwitch` on the canvas. A `FlowStep` wraps **exactly one** activity — which may be a container (`Sequence`, `NApplicationCard`, `NCheckState`, `TryCatch`). Activities **inside** a container are NOT separate nodes; they stay nested in their parent and never get their own `ShapeLocation`. Promote a step to its own node only when it is a top-level step in the process flow. Example: an `NCheckState`'s `Throw` belongs inside the `IfNotExists` branch — making it a sibling node would change when it runs.
@@ -278,6 +280,27 @@ FlowDecision:  (270, 220)     60x60
 ### Node Registration
 
 All FlowStep/FlowDecision/FlowSwitch nodes must be registered as children of `<Flowchart>`. Direct children are already registered. Nodes defined inline within property elements (e.g., inside `FlowDecision.True`) need a trailing `<x:Reference>` entry at the Flowchart level.
+
+Only nodes in the `Flowchart.Nodes` collection (the direct children) render. ViewState positions a node **only after** it is registered there — coordinates on an unregistered node do nothing.
+
+**Forbidden — nested FlowStep chains.** Do NOT build the flow by physically nesting each `FlowStep` inside the previous one's `<FlowStep.Next>`, leaving only the first node under `<Flowchart.StartNode>`. Nested-only steps never enter `Flowchart.Nodes`, so the designer renders almost nothing — invisible regardless of ViewState. Wire each step's successor with `<FlowStep.Next><x:Reference>__ReferenceIDn</x:Reference></FlowStep.Next>` and keep every `FlowStep` a direct child of `<Flowchart>`:
+
+```xml
+<Flowchart>
+  <Flowchart.StartNode>
+    <x:Reference>__ReferenceID0</x:Reference>
+  </Flowchart.StartNode>
+  <FlowStep x:Name="__ReferenceID0">           <!-- direct child -->
+    <ui:LogMessage DisplayName="Step 1" />
+    <FlowStep.Next>
+      <x:Reference>__ReferenceID1</x:Reference> <!-- link by reference, NOT by nesting -->
+    </FlowStep.Next>
+  </FlowStep>
+  <FlowStep x:Name="__ReferenceID1">           <!-- direct child -->
+    <ui:LogMessage DisplayName="Step 2" />
+  </FlowStep>
+</Flowchart>
+```
 
 See [common-pitfalls.md § x:Reference](common-pitfalls.md#xreference--__referenceid-naming) for the full rules with correct/wrong examples.
 

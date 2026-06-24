@@ -1,18 +1,19 @@
 task_id: skill-agent-solution-escalation-tool
 description: >
-  Add escalation app tools to an existing agent inside an existing
-  solution (brownfield). The fixture ships a `ReviewSol` solution that
-  already contains a registered low-code `ModerationAgent` project. The
-  agent must add a `HumanReview` escalation resource to the pre-existing
-  `ModerationAgent` — reusing it, NOT re-creating it and NOT
-  re-initializing the solution. Verifies the `$resourceType: "escalation"`
-  resource.json format, the ActionCenter channel wiring, and that
-  `uip agent validate` accepts the escalation after refresh regenerates
-  derived files.
-tags: [uipath-agents, e2e, mode:build, low-code]
+  Add an escalation wired to a solution-internal Action Center app
+  (brownfield). The fixture ships a `ReviewSol` solution that already
+  contains a registered `HumanReviewEscalation` Action Center app (workflow Action).
+  The agent must add a NEW `ModerationAgent` project and wire the
+  pre-existing `HumanReviewEscalation` app in as an escalation channel — reusing it,
+  NOT re-creating it and NOT re-initializing the solution. Verifies the
+  `$resourceType: "escalation"` resource.json shape, the ActionCenter
+  channel bound to the solution-internal app (`folderName:
+  "solution_folder"`), and that `uip agent validate` accepts the
+  escalation after refresh regenerates derived files.
+tags: [uipath-agents, e2e, mode:build, low-code, feature:escalation]
 
 run_limits:
-  expected_turns: 18
+  expected_turns: 40
   turn_timeout: 1200
 
 pre_run:
@@ -20,10 +21,11 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  Add a "HumanReview" escalation to the existing "ModerationAgent" agent inside
-  the existing "ReviewSol" solution (in the current directory). When the agent
-  is uncertain, it should be able to escalate to a human reviewer via UiPath
-  Action Center.
+  Create a new UiPath low-code agent named "ModerationAgent" inside the existing
+  "ReviewSol" solution (in the current directory). ModerationAgent should moderate
+  user content and escalate uncertain cases to a human reviewer using the existing
+  "HumanReviewEscalation" Action Center app that's already in the solution, rather
+  than deciding on its own.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -39,24 +41,46 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Brownfield: ModerationAgent ships in the fixture. The agent must
-  # reuse it, not scaffold a fresh copy over it.
-  - type: command_not_executed
-    description: "Agent did NOT re-create the existing ModerationAgent project"
+  - type: command_executed
+    description: "Agent scaffolded the new ModerationAgent project with uip agent init"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
-  # Outcome-based check: the fixture .uipx already has ModerationAgent
-  # registered. No new project is added, so Projects[] stays at 1.
+  # Informational discovery criteria: the agent may use file reads instead of
+  # CLI discovery. pass_threshold:0 means these never block the run.
+  - type: command_executed
+    description: "Agent discovered the existing HumanReviewEscalation app via solution resources list (informational)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+list\b.*--source\s+local'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Informational, NOT enforced: pass_threshold:0 means score (0 when the
+  # agent skips `resources get`) always clears the bar. The `resources list`
+  # discovery above is the enforced signal; `get` is an acceptable-but-optional
+  # follow-up.
+  - type: command_executed
+    description: "Agent fetched the HumanReviewEscalation configuration with uip solution resources get (informational)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Outcome-based check: the fixture .uipx starts with the HumanReviewEscalation app
+  # registered; auto-registration via `uip agent init` must add
+  # ModerationAgent, bringing Projects[] to 2.
   - type: json_check
-    description: "ModerationAgent is registered in the parent solution .uipx"
+    description: "ModerationAgent is registered alongside HumanReviewEscalation in the parent solution .uipx"
     path: "ReviewSol/ReviewSol.uipx"
     assertions:
       - expression: "length(Projects)"
         operator: "gte"
-        expected: 1
+        expected: 2
     weight: 1.5
     pass_threshold: 1.0
 
@@ -85,13 +109,19 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: file_exists
-    description: "HumanReview escalation resource.json was created"
-    path: "ReviewSol/ModerationAgent/resources/HumanReview/resource.json"
+    description: "ModerationAgent/agent.json was created"
+    path: "ReviewSol/ModerationAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "HumanReviewEscalation escalation resource.json was created"
+    path: "ReviewSol/ModerationAgent/resources/HumanReviewEscalation/resource.json"
     weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Escalation resource shape and ActionCenter channel wiring"
+    description: "Solution escalation resource shape: ActionCenter channel wired to solution-internal HumanReviewEscalation app"
     command: "python3 $TASK_DIR/check_solution_escalation.py"
     timeout: 30
     expected_exit_code: 0

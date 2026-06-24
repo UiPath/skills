@@ -7,7 +7,7 @@ For other context variants, see [context.md](context.md).
 ## When to Use
 
 - Agent needs to retrieve from a knowledge base of indexed documents
-- The index already exists in Context Grounding and is backed by an Orchestrator storage bucket
+- The index already exists in Context Grounding and is backed by an Orchestrator storage bucket. To create or manage that index from the CLI, see [uipath-platform/references/context-grounding/index-management.md](../../../../../uipath-platform/references/context-grounding/index-management.md)
 
 `uip solution resources refresh` emits an `index` binding into `bindings_v2.json`, resolves the backing storage bucket via ECS + Orchestrator, and writes all three artifacts automatically: `resources/solution_folder/index/<IndexName>.json`, `resources/solution_folder/bucket/orchestratorBucket/<BucketName>.json`, and two `debug_overwrites.json` entries (`kind: "index"`, `kind: "bucket"`). No manual solution-level authoring is required.
 
@@ -211,6 +211,10 @@ All failures (index not found, ambiguous name match, non-StorageBucket data sour
 ```
 
 See § Agent-Level Resource Shape above for the full field reference, including the three variants (`index`/`attachments`/`datafabricentityset`) and per-`retrievalMode` settings (`citationMode` for `deeprag`, `webSearchGrounding` + `outputColumns` for `batchtransform`).
+
+### Step 4b — Inline agents only: wire the context flow node
+
+**Skip if the agent is standalone.** If the context is on an **inline** agent (embedded in a flow), the `resource.json` alone is never reached at runtime — you MUST also add a `uipath.agent.resource.context.index.<index-name>.<index-id>` flow node connected to the autonomous node's `context` handle (bottom port). Fetch its manifest with `uip maestro flow registry get "<NodeType>" --output json`, then hand the node + edge authoring to the `uipath-maestro-flow` skill (Critical Rule 16 — this skill does not author `.flow` graphs directly). Run Step 5's refresh/validate with `--inline-in-flow` plus `--bindings-target <FlowProjectDir>/bindings_v2.json`. See [../inline-in-flow/inline-in-flow.md](../inline-in-flow/inline-in-flow.md).
 
 ### Step 5 — Refresh and validate
 

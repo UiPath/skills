@@ -6,6 +6,7 @@ skip: true
 
 run_limits:
   max_turns: 5
+  turn_timeout: 1800  # 30-min per-turn cap
 
 dataset:
   paths: ["bpmn_vs_case_management.jsonl"]

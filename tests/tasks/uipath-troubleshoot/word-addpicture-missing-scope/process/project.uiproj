@@ -1,0 +1,6 @@
+{
+  "Name": "WordLogoStamp",
+  "ProjectType": "Process",
+  "Description": "Repro: Word Add Picture process where the Add Picture activity is a sibling of the Use Word File scope (placed after it in the outer Main Sequence) rather than nested inside its Body. With no open document context, the activity faults with InvalidOperationException at runtime. Exercises the missing-scope branch (C1) of the add-picture-failures playbook.",
+  "MainFile": "Main.xaml"
+}

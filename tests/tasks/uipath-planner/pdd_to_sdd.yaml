@@ -7,13 +7,22 @@ tags: [uipath-planner, integration, lifecycle:generate]
 
 run_limits:
   expected_turns: 24
-  turn_timeout: 1200
+  # Full Phase D SDD authoring runs in one unbroken autonomous turn (read PDD +
+  # guides, select scope, generate §1–§18). The experiment default caps the
+  # whole task at task_timeout: 1200s — that fires before the SDD lands no
+  # matter how high turn_timeout is (this task timed out at 1204s with only
+  # turn_timeout raised). Raise BOTH: task_timeout for the end-to-end wall
+  # clock, turn_timeout for the long authoring turn. Matches the e2e sibling.
+  task_timeout: 2700
+  turn_timeout: 1800
 
 initial_prompt: |
   Analyze the following Process Design Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.
 
   For any [SME REVIEW] items, use the defaults and proceed.
+
+  Save the SDD as `invoice-data-entry-sdd.md` in the current directory.
 
   --- BEGIN PDD ---
 

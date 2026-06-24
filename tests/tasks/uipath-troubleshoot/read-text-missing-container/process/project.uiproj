@@ -1,0 +1,6 @@
+{
+  "Name": "ContractTextExtract",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Read Text failure where the modern Word-pack Read Text activity is placed outside a Use Word File / Word Application Scope and is invalid.",
+  "MainFile": "Main.xaml"
+}

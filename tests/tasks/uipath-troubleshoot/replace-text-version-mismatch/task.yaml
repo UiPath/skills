@@ -1,0 +1,144 @@
+task_id: skill-troubleshoot-replace-text-version-mismatch
+description: >
+  UiPath troubleshooting agent must diagnose a DESIGN-TIME Studio crash:
+  dropping / opening the Replace Text activity throws
+  System.Reflection.TargetInvocationException because the project pins a
+  UiPath.Word.Activities version (2.0.0) newer than the installed Studio
+  (2021.10) can construct. The process never ran in Orchestrator (no jobs).
+  Success = agent matches the replace-text-version-mismatch playbook, reasons
+  from the project source (package vs Studio version) rather than job
+  evidence, and recommends aligning versions via Manage Packages
+  (downgrade the package or upgrade Studio) - NOT the runtime
+  "cannot create unknown type" package-restore fix.
+tags: [uipath-troubleshoot, e2e, orchestrator, word-activities, replace-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  I can't even open my ClauseInserter workflow. When I open it in UiPath
+  Studio - or drop the Replace Text activity onto the canvas - Studio
+  throws a TargetInvocationException and goes unstable. It has never run;
+  it crashes at design time in the designer. I'm on UiPath Studio 2021.10.
+
+  Diagnose what's going on from the project source. The project source is in
+  the current working directory. There are no Orchestrator runs because it
+  has never executed. Give me the fix and stop.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the replace-text-version-mismatch playbook AND recommended aligning Studio/package versions"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "I can't open my ClauseInserter workflow - opening it in UiPath
+         Studio (or dropping the Replace Text activity) throws a
+         TargetInvocationException and Studio goes unstable. It has never
+         run; it crashes at design time. I'm on UiPath Studio 2021.10."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/replace-text-version-mismatch.md
+        because a design-time TargetInvocationException when dropping/opening
+        the activity is the signature of a Studio <-> UiPath.Word.Activities
+        version mismatch (the designer cannot be constructed).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - project.json pins UiPath.Word.Activities [2.0.0] but the user is
+            on Studio 2021.10, which cannot construct that newer package's
+            activity designer, so reflection throws
+            TargetInvocationException at DESIGN time.
+          - There are no Orchestrator jobs because the workflow never ran -
+            the failure is in the Studio designer, not at runtime. The agent
+            must reason from the project source + the stated Studio version,
+            NOT from job evidence.
+        The reference fix:
+          - Align the versions via Manage Packages: downgrade
+            UiPath.Word.Activities to a version compatible with Studio
+            2021.10, OR upgrade Studio to a version that supports the newer
+            package.
+
+      DIMENSION C -- Did NOT confuse with the runtime package gap
+        This is a DESIGN-TIME crash. The agent must NOT diagnose it as the
+        runtime "Cannot create unknown type WordApplicationScope" (a robot
+        missing the package at execution) - the cause here is a
+        Studio/package version incompatibility in the designer. It must not
+        chase Orchestrator job evidence as the answer, or fabricate actions.
+
+      SCORING RUBRIC:
+        1.0  Agent matched replace-text-version-mismatch AND identified a
+             Studio <-> UiPath.Word.Activities version mismatch (newer
+             package vs older Studio 2021.10) as the design-time cause,
+             reasoning from project.json + the Studio version AND
+             recommended aligning versions via Manage Packages (downgrade
+             the package or upgrade Studio).
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "fix
+             the versions" without naming Manage Packages downgrade/upgrade).
+        0.5  Recognized a version / package-compatibility problem but did
+             not tie it to Studio-vs-package at design time (e.g., treated
+             it as a runtime restore gap / cannot-create-unknown-type), or
+             matched a sibling playbook.
+        0.2  Restated the error without a cause.
+        0.0  Wrong cause (Word not installed, file corrupt, file path, COM
+             busy), insisted on Orchestrator job evidence, or fabricated an
+             action.
+
+      Reward downgrade-package and upgrade-Studio equally.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath developer whose workflow crashes Studio at design
+    time with a TargetInvocationException when you open it or drop the
+    Replace Text activity. It has never run. You are on UiPath Studio
+    2021.10. You trust the agent and want a diagnosis plus the fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope, always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings from the project source and to hand you the fix at the end."
+    - "If the agent looks for Orchestrator jobs or runtime logs, remind it the workflow has never run - it crashes in the Studio designer."
+    - "If asked, confirm you are on UiPath Studio 2021.10 and that the crash happens at design time (opening the workflow / dropping the activity), before any execution."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

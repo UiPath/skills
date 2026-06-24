@@ -1,7 +1,0 @@
-{
-  "projectVersion": "1.0.0",
-  "ProjectType": "ProcessOrchestration",
-  "Name": "RegistryCoverageMatrix",
-  "description": "Synthetic Maestro BPMN registry wrapper coverage fixture.",
-  "main": "registry-coverage-matrix.bpmn"
-}

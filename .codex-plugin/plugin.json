@@ -1,0 +1,52 @@
+{
+  "name": "uipath",
+  "version": "0.0.36",
+  "description": "UiPath skills for building, validating, deploying, and operating automations and agents from Codex.",
+  "author": {
+    "name": "UiPath"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/UiPath/skills",
+  "repository": "https://github.com/UiPath/skills",
+  "keywords": [
+    "uipath",
+    "automation",
+    "rpa",
+    "workflows",
+    "code",
+    "xaml",
+    "studio",
+    "ui-automation",
+    "ui-testing",
+    "desktop",
+    "browser",
+    "coded-apps",
+    "coded-agents",
+    "agent",
+    "troubleshoot"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "UiPath",
+    "shortDescription": "Build and operate UiPath automations with Codex",
+    "longDescription": "Use UiPath skills to build, validate, deploy, operate, and troubleshoot UiPath automations, agents, workflows, coded apps, and platform resources from Codex.",
+    "developerName": "UiPath",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://www.uipath.com/",
+    "privacyPolicyURL": "https://www.uipath.com/legal/privacy-policy",
+    "termsOfServiceURL": "https://www.uipath.com/legal/terms-of-use",
+    "defaultPrompt": [
+      "Build, validate, or deploy a UiPath automation with the right UiPath skill and uip CLI workflow.",
+      "Inspect this repository for UiPath automation, agent, coded app, or solution work."
+    ],
+    "brandColor": "#FA4616",
+    "composerIcon": "./.codex-plugin/assets/uipath-icon.png",
+    "logo": "./.codex-plugin/assets/uipath-icon.png"
+  }
+}

@@ -1,0 +1,62 @@
+task_id: skill-admin-apms-ip-range-edit-e2e
+description: >
+  End-to-end test: IP range mutation lifecycle — create a CIDR range,
+  update its description, then delete it with --confirm (Rule 31 requires
+  --confirm on ip-ranges delete while enforcement is on). Tests the
+  ip-ranges create/update/delete mutation path that is currently untested.
+
+  Command-construction only — no live tenant. What matters is correct
+  command sequencing and flag usage for ip-range CRUD.
+tags: [uipath-admin, e2e, mode:build, lifecycle:edit, apms, ip-ranges]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Add a new IP range entry for our staging environment: CIDR "203.0.113.0/24"
+  with description "Staging office". After creating, update the description
+  to "Staging office - primary". Then delete the range entry to clean up.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the IP range"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+ip-ranges\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated the IP range"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+ip-ranges\s+update\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the IP range with --confirm"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+ip-ranges\s+delete\b.*--confirm'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

@@ -68,6 +68,8 @@ Read [references/planning.md](references/planning.md). Produces:
 - `tasks/tasks.md` — T-numbered entries (stages → tasks → conditions → SLA)
 - `tasks/registry-resolved.json` — audit trail
 
+> **`tasks/` is created at the working root, adjacent to `sdd.md` — NEVER inside the solution/project folder (`<Solution>/`).** This holds regardless of where the case file lives: `caseplan.json` sits at `<Solution>/<Project>/caseplan.json`, but the planning artifacts (`tasks.md`, `registry-resolved.json`) stay next to `sdd.md` at the root.
+
 HARD STOP: AskUserQuestion approval. Loop on `Request changes`.
 
 ### Phase 2 — Prototyping
@@ -187,6 +189,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 - **One task per lane — except parallel members of a `runs-sequentially` group.** Default: each task own `lane` index in `stageNode.data.tasks[laneIndex][]`, lane is FE layout only. Exception: tasks sharing a `runs-sequentially` task-entry condition that are meant to run in parallel share the same lane (shared lane = parallel siblings inside the sequential group, carries execution semantics). Solo runs-sequentially tasks still get their own lane.
 - **Do NOT edit `content/*.bpmn`.** Auto-generated, will be overwritten. Edit `content/*.json` only.
 - **Do NOT fabricate expression syntax for conditional SLA rules.** Describe condition in natural language; execution phase determines exact form.
+- **Do NOT place `tasks/` inside the solution or project directory.** `tasks/` (and its `tasks.md`, `registry-resolved.json`) lives next to `sdd.md` at the working root — NOT inside `<Solution>/` or `<Solution>/<Project>/`. The case file path (`<Solution>/<Project>/caseplan.json`) does NOT root the planning artifacts; they track `sdd.md`, not `caseplan.json`.
 - **Do NOT invoke other skills automatically.** If case needs process/agent/action that doesn't exist, emit placeholder task (Rule 8) and list missing resources in completion report. On-demand resource creation is future milestone.
 
 > **Trouble?** Use `/uipath-feedback` to send report.
