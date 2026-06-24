@@ -1,4 +1,4 @@
-task_id: skill-gov-access-policy-evaluate-smoke
+task_id: skill-gov-access-policy-access-evaluate-smoke
 description: >
   Skill-guided evaluation: agent uses the uipath-governance skill to
   evaluate whether current access policies would allow a Maestro flow
