@@ -1,8 +1,9 @@
 task_id: skill-ixp-integration-versions-and-metrics
 description: >
-  Integration: model-versioning lifecycle on a live project. The agent trains an
-  initial version, then improves one field's extraction instruction — which
-  triggers a retrain into a second version — and captures each version's metrics.
+  Integration: model-versioning lifecycle on a live project. The agent sets up a
+  project and lets it train into an initial version, then improves one field's
+  extraction instruction — which triggers a retrain into a second version — and
+  captures each version's metrics.
   Verifies a real second version was produced (ModelVersion advanced) and that
   per-version metrics carry real per-field scores: outcomes a command-shape smoke
   cannot reach.
