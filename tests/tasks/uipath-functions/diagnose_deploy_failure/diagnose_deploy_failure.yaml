@@ -1,4 +1,4 @@
-task_id: skill-agent-coded-diagnose-deploy-failure
+task_id: skill-functions-diagnose-deploy-failure
 description: >
   Diagnose-mode coverage for the coded path's deploy lifecycle. The
   Quickstart Troubleshooting table documents `Project authors cannot
@@ -8,10 +8,10 @@ description: >
   skill to (1) diagnose the rejection from the error wording, (2)
   add a valid `authors = [...]` entry, and (3) successfully re-ship
   to the user's personal workspace. **Cloud auth pre-configured.**
-tags: [uipath-agents, e2e, coded, mode:diagnose, feature:deploy]
+tags: [uipath-functions, e2e, mode:diagnose, feature:deploy]
 max_iterations: 1
 pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/diagnose_deploy_failure/_fixtures/daily-digest ."
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-functions/diagnose_deploy_failure/_fixtures/daily-digest ."
     timeout: 10
 
 initial_prompt: |

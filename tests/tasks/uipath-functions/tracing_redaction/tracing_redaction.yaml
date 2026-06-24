@@ -1,10 +1,10 @@
-task_id: skill-agent-coded-tracing-redaction
+task_id: skill-functions-tracing-redaction
 description: >
   Coded-agent tracing with redaction. Verifies the agent applies
   `@traced(name=..., input_processor=..., output_processor=...)` to
   a function that handles sensitive data so both the input and the
   output are redacted before they reach the trace store.
-tags: [uipath-agents, e2e, coded, lifecycle:generate, feature:trace]
+tags: [uipath-functions, e2e, mode:build, lifecycle:generate, feature:trace]
 
 run_limits:
   expected_turns: 31

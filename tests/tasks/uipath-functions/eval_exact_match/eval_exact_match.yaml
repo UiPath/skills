@@ -1,4 +1,4 @@
-task_id: skill-agent-coded-eval-exact-match
+task_id: skill-functions-eval-exact-match
 description: >
   Coded-agent eval lifecycle, deterministic path. Verifies the skill
   guides the agent to author an evaluator config under
@@ -7,7 +7,7 @@ description: >
   `id`, and run `uip codedagent eval --no-report` against a
   deterministic Simple Function agent. All test cases must score 1.0
   and report PASSED in the output file.
-tags: [uipath-agents, e2e, coded, lifecycle:validate, feature:eval]
+tags: [uipath-functions, e2e, mode:build, lifecycle:validate, feature:eval]
 
 run_limits:
   expected_turns: 23

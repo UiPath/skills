@@ -1,11 +1,11 @@
-task_id: skill-agent-coded-file-attachment-input
+task_id: skill-functions-file-attachment-input
 description: >
   Coded agent that accepts a file attachment as input. Verifies the agent
   uses `from uipath.platform.attachments import Attachment` on the `Input`
   model and runs `uip codedagent init` so `entry-points.json` emits the
   `x-uipath-resource-kind: JobAttachment` schema that Studio Web and
   Orchestrator use to render a file picker at runtime.
-tags: [uipath-agents, smoke, coded, lifecycle:generate, feature:framework-simple]
+tags: [uipath-functions, smoke, mode:build, lifecycle:generate, feature:framework-simple]
 
 run_limits:
   expected_turns: 33

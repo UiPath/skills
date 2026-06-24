@@ -1,4 +1,4 @@
-task_id: skill-agent-coded-deploy-tenant
+task_id: skill-functions-deploy-tenant
 description: >
   Coded-agent deploy to the **tenant feed** with `packOptions`. The
   other two deploy targets (`--my-workspace` and `--folder`) are
@@ -8,7 +8,7 @@ description: >
   `packOptions.directoriesExcluded` in `uipath.json` — the documented
   knob for controlling package contents. **Cloud auth + tenant-level
   publish permission required** for the host running coder-eval.
-tags: [uipath-agents, e2e, coded, mode:build, feature:deploy]
+tags: [uipath-functions, e2e, mode:build, feature:deploy]
 max_iterations: 1
 
 initial_prompt: |
