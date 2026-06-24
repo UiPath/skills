@@ -1,0 +1,49 @@
+task_id: skill-agent-coded-eval-tool-call-classification
+description: >
+  Coded-agent eval authoring coverage for evaluator types not exercised by
+  existing eval tasks: strict JSON, trajectory simulation, tool-call order,
+  tool-call args, tool-call count, tool-call output, binary classification,
+  and multiclass classification. This is a local artifact test, not a cloud
+  reporting run.
+tags: [uipath-agents, integration, mode:build, coded, lifecycle:generate, feature:eval]
+
+run_limits:
+  expected_turns: 30
+  max_turns: 70
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a coded UiPath agent project named `eval-matrix` and an evaluation
+  harness for a ticket-routing agent.
+
+  The important output is a coherent local evaluation harness: initialized
+  entry point metadata, evaluator configs for strict structured output,
+  trajectory simulation, tool-call behavior, and binary/multiclass
+  classification, plus one eval set whose criteria are keyed by evaluator id.
+
+  Do NOT publish, upload, deploy, or call `uip login`. Do NOT run a cloud
+  report. This task is complete when the evaluator files and eval-set JSON are
+  coherent on disk.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent initialized the coded agent entry point"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "entry-points.json exists"
+    path: "eval-matrix/entry-points.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Evaluator matrix JSON covers strict, trajectory-simulation, tool-call, and classification evaluator types"
+    command: "python3 $TASK_DIR/check_eval_tool_call_classification.py"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
