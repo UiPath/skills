@@ -58,8 +58,8 @@ What to look for:
 - Validate and republish:
 
   ```bash
+  uip agent refresh --output json   # upgrades agent.json to the latest schema version and regenerates derived files
   uip agent validate --output json
-  uip agent migrate --output json  # upgrades agent.json to the latest schema version; skip if validate reports no schema version change
   uip agent publish --output json
   ```
 

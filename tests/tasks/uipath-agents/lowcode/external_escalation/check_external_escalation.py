@@ -2,7 +2,7 @@
 """External escalation (ActionCenter) resource check.
 
 Validates:
-  1. resources/FraudEscalationQueue/resource.json declares an escalation:
+  1. resources/FraudEscalation/resource.json declares an escalation:
        - $resourceType == "escalation"
        - id is a UUID-shaped non-empty string
        - name is a non-empty string
@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(os.getcwd()) / "FraudSol" / "FraudTriageAgent"
-RESOURCE = ROOT / "resources" / "FraudEscalationQueue" / "resource.json"
+RESOURCE = ROOT / "resources" / "FraudEscalation" / "resource.json"
 
 
 def load(path: Path) -> dict:

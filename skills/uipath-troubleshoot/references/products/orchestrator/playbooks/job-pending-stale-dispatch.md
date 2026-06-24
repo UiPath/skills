@@ -60,4 +60,6 @@ Do NOT attempt to "fix" the stale codes by reassigning the template, adding the 
 
 Both playbooks can match in triage. Triage records both; the hypothesis tester resolves which one applies by checking the four "currently resolved" signals plus `JobHistory` shape. If all four are resolved AND `JobHistory` is unchanged, this playbook wins.
 
+> **Fields that look like discriminators but aren't.** `Job.MachineKey` is **empty for both** no-host and stale-dispatch on a stuck Pending job — Orchestrator only populates `MachineKey` after a host *accepts* the job, which by definition has not happened. Empty `MachineKey` is the normal Pending-state value and MUST NOT be used to eliminate stale-dispatch (or to confirm no-host). Use only the signals in the table above: `robotVersions` populated, credential/mode confirmed, license slot held by the idle runtime, and `JobHistory` shape.
+
 > Common misreads that wrongly eliminate this playbook: (1) reading `Used.Unattended == Allowed` as license exhaustion when the slot is held by the assigned template's own idle runtime; (2) reading "none connected to this folder" as a current folder-assignment gap. Both are addressed above — neither moves the verdict toward `job-pending-no-host` when a connected runtime is present.

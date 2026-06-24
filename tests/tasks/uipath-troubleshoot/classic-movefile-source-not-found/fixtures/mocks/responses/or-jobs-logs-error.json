@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T12:57:52.579Z",
+      "Message": "Move File: Could not find file 'C:\\UiPathDemo\\DoesNotExist\\source.txt'.\r\nin move.xaml\r\n    at MoveFile \"Move File\"\r\n    at Sequence \"move\"\r\n    at DynamicActivity \"move\"\r\n\r\n--- .NET stack trace ---\r\nSystem.IO.FileNotFoundException\r\n   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)\r\n   at System.IO.File.InternalMove(String sourceFileName, String destFileName, Boolean checkHost)\r\n   at System.IO.File.Move(String sourceFileName, String destFileName)\r\n   at UiPath.Core.Activities.MoveFile.<ExecuteAsync>d__25.MoveNext()\r\n--- End of stack trace from previous location where exception was thrown ---\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.System.Activities.IAsyncCodeActivity.FinishExecution(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

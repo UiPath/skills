@@ -4,17 +4,16 @@ description: >
   user asks to research / synthesize across PDF or TXT documents from
   a Studio Web Agent Builder / `agent.json` (lowCode) project.
   Verifies the skill fires for the low-code + PDF/TXT signal pair.
-tags: [uipath-agents, smoke, low-code, lifecycle:discover, context-grounding]
+tags: [uipath-agents, smoke, mode:build, low-code, lifecycle:discover, context-grounding]
 
 run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  I'm building a low-code agent in Studio Web Agent Builder
-  (`agent.json` with `"type": "lowCode"`). It receives multiple PDF
-  attachments and must synthesize a single answer with citations. Tell
-  me which skill applies and which built-in tool I need to enable. Do
-  NOT scaffold any files.
+  I'm building a low-code agent in Studio Web Agent Builder. It receives several
+  PDF attachments and must produce a single answer with citations drawn from
+  them. How would I do this in UiPath, and which built-in tool would handle it?
+  Don't scaffold any files — just point me in the right direction.
 
 success_criteria:
   - type: skill_triggered

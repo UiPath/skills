@@ -2,7 +2,9 @@
 
 How to pick the LLM for a low-code agent's `settings.model`. The tenant is the source of truth — discover at runtime, then select; never ship the scaffold default.
 
-> `uip agent init` scaffolds `settings.model: "gpt-4o-2024-11-20"` — a 2024-era GA model with a 16384 output cap. **Always override it** with a discovered current model before validating.
+> `uip agent init` for an autonomous agent scaffolds `settings.model: "gpt-5.4"` with a 128000 output cap. **Always override it** with a discovered current model before validating.
+
+> `uip agent init --conversational` for a conversational agent scaffolds `settings.model: "anthropic.claude-sonnet-4-5-20250929-v1:0"` with a 64000 output cap. It serves as a solid default but can be overwritten with a discovered current model before validating. 
 
 ## 1. Discover (primary path)
 
@@ -47,6 +49,7 @@ Express the choice as **selection criteria over the discovered list**, not a fix
 | Reasoning / judgment / multi-step tool use | Newest GA Anthropic Sonnet or Opus, or newest GA flagship OpenAI | Strongest instruction-following + tool-call discipline |
 | Fast / cheap / high-volume classification or extraction | Newest GA `*-mini` (e.g. an OpenAI `*-mini`) or GA Haiku | Lower latency + cost; sufficient for narrow deterministic tasks |
 | Long-context (large documents, big tool outputs) | GA model with the highest `MaxTokens` | Avoids truncated output |
+| Conversational | Newest GA Anthropic Sonnet or user preference | Strongest conversational responses and instruction-following |
 
 Concrete GA examples observed on a live tenant — **illustrative only; verify against `uip agent model list`**:
 
@@ -59,11 +62,11 @@ If `uip agent model list` fails (not logged in, offline, command unavailable), p
 
 ## 5. Apply the choice
 
-Edit `settings.model` (and `settings.maxTokens`) in `agent.json`, then validate and migrate:
+Edit `settings.model` (and `settings.maxTokens`) in `agent.json`, then refresh and validate:
 
 1. Set `settings.model` to the discovered `Name`.
 2. Set `settings.maxTokens` ≤ the model's `MaxTokens`.
-3. `uip agent validate --output json`
-4. `uip agent migrate --output json`
+3. `uip agent refresh --output json`
+4. `uip agent validate --output json`
 
 For inline-in-flow agents add `--inline-in-flow` to both commands. Full field reference: [agent-definition.md](agent-definition.md#change-model-settings).

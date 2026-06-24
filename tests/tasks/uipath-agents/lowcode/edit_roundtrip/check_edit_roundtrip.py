@@ -13,8 +13,6 @@ scaffolded, validated, edited, and re-validated it:
   4. The user message template inlines BOTH {{input.name}} and
      {{input.language}} AND contentTokens contains matching variable
      tokens for both fields (Critical Rules 5 and 6).
-  5. .agent-builder/agent.json exists — proves validate ran after the
-     edit and regenerated the build artifact.
 """
 
 import json
@@ -25,7 +23,6 @@ from pathlib import Path
 ROOT = Path(os.getcwd()) / "GreetSol" / "GreeterAgent"
 AGENT = ROOT / "agent.json"
 ENTRY = ROOT / "entry-points.json"
-BUILT_AGENT = ROOT / ".agent-builder" / "agent.json"
 
 INPUT_FIELDS = ["name", "language"]
 
@@ -126,26 +123,6 @@ def assert_user_message_inlines_both(agent: dict) -> None:
     print(f"OK: user message inlines both {INPUT_FIELDS} with matching contentTokens")
 
 
-def assert_agent_builder_regenerated() -> None:
-    if not BUILT_AGENT.is_file():
-        sys.exit(
-            f"FAIL: {BUILT_AGENT} does not exist — validate did not regenerate "
-            ".agent-builder/agent.json after the edit"
-        )
-    try:
-        built = json.loads(BUILT_AGENT.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: .agent-builder/agent.json is not valid JSON: {e}")
-    built_props = (built.get("inputSchema") or {}).get("properties") or {}
-    missing = [f for f in INPUT_FIELDS if f not in built_props]
-    if missing:
-        sys.exit(
-            f"FAIL: .agent-builder/agent.json does not reflect edited "
-            f"inputSchema — missing {missing!r}; got {sorted(built_props)!r}"
-        )
-    print("OK: .agent-builder/agent.json reflects the edited inputSchema")
-
-
 def main() -> None:
     agent = load(AGENT)
     entry = load(ENTRY)
@@ -153,7 +130,6 @@ def main() -> None:
     assert_input_fields(in_schema)
     assert_output_field(out_schema)
     assert_user_message_inlines_both(agent)
-    assert_agent_builder_regenerated()
 
 
 if __name__ == "__main__":

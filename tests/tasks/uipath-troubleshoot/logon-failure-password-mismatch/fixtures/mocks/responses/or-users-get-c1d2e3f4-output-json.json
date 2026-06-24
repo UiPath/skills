@@ -1,0 +1,34 @@
+{
+  "Result": "Success",
+  "Code": "UserGet",
+  "_doc": "RobotUser1 tenant user record. Shows LoginToConsole=true (rules out branch 1) AND surfaces the stored-credential metadata: PasswordLastSet is 2026-05-04T09:00:00Z (eight days ago) while the AD password was rotated 2026-05-11T07:14:00Z (yesterday) — the Orchestrator credential is stale by ~7 days. This is the core evidence for playbook branch 3 (password mismatch / stale credential).",
+  "Data": {
+    "Key": "c1d2e3f4-a5b6-c7d8-e9f0-1a2b3c4d5e6f",
+    "UserName": "user1",
+    "EmailAddress": "user1@example.invalid",
+    "DomainName": "UIPATH",
+    "FullName": "Service Account 1",
+    "Type": "User",
+    "UnattendedRobot": {
+      "ExecutionSettings": {
+        "LoginToConsole": true,
+        "RunOnlyOneJobAtATime": false,
+        "ResolutionWidth": 1920,
+        "ResolutionHeight": 1080,
+        "ResolutionDepth": 32,
+        "FontSmoothing": false
+      },
+      "UserName": "UIPATH\\USER1",
+      "CredentialStoreId": null,
+      "CredentialType": "Default",
+      "PasswordLastSet": "2026-05-04T09:00:00Z"
+    },
+    "TenantId": 1,
+    "Id": 7501,
+    "_meta": {
+      "ad_password_last_set_observed": "2026-05-11T07:14:00Z",
+      "ad_password_last_set_source": "user-supplied in initial report; verifiable via 'Get-ADUser user1 -Properties PasswordLastSet' on a domain controller",
+      "comment": "Orchestrator-stored PasswordLastSet (2026-05-04) is older than the AD password rotation (2026-05-11). Stale credential — branch 3."
+    }
+  }
+}

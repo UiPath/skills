@@ -12,14 +12,14 @@ description: >
   `uip gov aops-policy` commands that hit the service will fail with an
   auth error. That is acceptable — what matters is that the agent invokes
   the correct commands with the correct flags.
-tags: [uipath-governance, smoke, template, bootstrap]
+tags: [uipath-governance, smoke, mode:build, lifecycle:generate, template, bootstrap]
 
 run_limits:
   expected_turns: 8
 
 initial_prompt: |
   I am starting a new AOps governance policy authoring session. Bootstrap
-  the policy-form templates for every product into `./session/products/`
+  the templates for every product into `./session/products/`
   so I can review which products are available and inspect their form
   schemas. Save the command output to ./output.txt for review.
 
@@ -29,7 +29,6 @@ initial_prompt: |
     is expected. Run each command once, capture both stdout and stderr to
     ./output.txt (use `> output.txt 2>&1`), and move on. Do NOT retry or
     attempt to login.
-  - Use --output json on every uip gov aops-policy command where applicable.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

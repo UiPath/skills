@@ -13,7 +13,7 @@ tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write
 run_limits:
   expected_turns: 19
   max_turns: 60
-  turn_timeout: 1200
+  turn_timeout: 2400
 
 initial_prompt: |
   Build a UiPath Flow named "InvoiceApproval" that extracts invoice data

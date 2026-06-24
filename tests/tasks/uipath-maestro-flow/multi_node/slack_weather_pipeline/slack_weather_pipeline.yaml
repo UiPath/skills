@@ -11,11 +11,11 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a flow called "SlackWeatherPipeline". Read the #office-bellevue Slack channel description to find out which city the office is in, then fetch the current weather for that city from open-meteo. If it's above 60F output 'warm office today', otherwise 'cold office today'.
+  Create a flow called "SlackWeatherPipeline". Read the #office-bellevue Slack channel description — it holds the office's full US mailing address (street, optional suite/unit, city, state, ZIP) — identify the city (the 
+  locality, not the street or suite line). Then fetch the current weather for that city from open-meteo. If it's above 60F the flow must output the text 'warm office today', otherwise 'cold office today'. The verdict must be produced as the flow's output value (a value the run actually emits) — routing to a named end branch alone does not count as output.
 
   Validate the flow.
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and implementation. Build the complete flow end-to-end in a single pass.
-  Before starting, load the uipath-maestro-flow skill. Read and follow its workflow steps exactly.
 
 success_criteria:
   - type: run_command
@@ -27,7 +27,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Flow debug runs end-to-end: Slack + HTTP + decision all execute, output contains verdict"
+    description: "Flow debug runs end-to-end and emits the verdict as an output value: Slack + HTTP + decision all execute, a run-produced output value contains the verdict text"
     command: "python3 $TASK_DIR/check_slack_weather_pipeline.py"
     timeout: 300
     expected_exit_code: 0

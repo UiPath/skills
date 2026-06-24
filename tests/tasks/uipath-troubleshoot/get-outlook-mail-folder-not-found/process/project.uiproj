@@ -1,0 +1,6 @@
+{
+  "Name": "InvoiceMailReader",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Get Outlook Mail Messages failure where MailFolder=\"Inbox\\Invoices\" (backslash nested-path syntax) does not resolve under the default Outlook profile, surfacing as 'The specified folder does not exist.'",
+  "MainFile": "Main.xaml"
+}

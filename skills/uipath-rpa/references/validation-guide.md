@@ -55,7 +55,7 @@ PHASE 2 — build-clean (per-project, once per edit session):
 
 **Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, the output names the offending file — re-run `validate --file-path` on it as part of Phase 2's fix loop.
 
-**5-attempt cap per loop** — 5 attempts for each file's Phase 1 `validate` loop; a separate 5 attempts for the Phase 2 `build` loop. After a loop exhausts its budget, present the remaining errors to the user. They may require domain knowledge or environment-specific fixes.
+**5-attempt cap per loop** — 5 attempts for each file's Phase 1 `validate` loop; a separate 5 attempts for the Phase 2 `build` loop. After a loop exhausts its budget, present the remaining errors to the user. They may require domain knowledge or environment-specific fixes. Each loop's counter resets when you start a new loop (e.g., new file, new user prompt, or resuming after user input).
 
 ### Rules
 
@@ -97,8 +97,8 @@ After reaching 0 validation errors AND a clean project-level build (Phase 2), ru
 ```bash
 # Run with default arguments (post-build, skip the redundant rebuild):
 uip rpa run --file-path "<FILE>" --skip-build --output json
-# Run with input arguments:
-uip rpa run --file-path "<FILE>" --skip-build --input-arguments '{"key": "value"}' --output json
+# Run with input arguments (repeat --input-arguments per key; = string, := raw JSON):
+uip rpa run --file-path "<FILE>" --skip-build --input-arguments key=value --output json
 # Run with verbose logging for debugging:
 uip rpa run --file-path "<FILE>" --skip-build --log-level Verbose --output json
 ```
@@ -137,7 +137,7 @@ C) <user-driven approach>
 ```
 Read: file_path="{projectRoot}/project.json"     -> check current dependencies
 
-Bash: uip rpa packages install --packages '[{"id": "UiPath.Excel.Activities"}]'```
+Bash: uip rpa packages install --packages id=UiPath.Excel.Activities```
 
 Omit `version` to automatically resolve the latest compatible version (preferred — gets newest docs and features). Only pin a specific version when you have a reason to (e.g., known compatibility constraint).
 

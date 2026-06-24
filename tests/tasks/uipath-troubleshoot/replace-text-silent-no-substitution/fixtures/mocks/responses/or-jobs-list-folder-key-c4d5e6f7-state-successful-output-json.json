@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d5e6f7a8-b9c0-4204-1d2e-3f4051627384",
+      "State": "Successful",
+      "ProcessName": "OnboardingLetter",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-05",
+      "MachineKey": "",
+      "StartTime": "2026-06-14T09:02:01.510Z",
+      "EndTime": "2026-06-14T09:02:06.940Z",
+      "CreationTime": "2026-06-14T09:02:01.280Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

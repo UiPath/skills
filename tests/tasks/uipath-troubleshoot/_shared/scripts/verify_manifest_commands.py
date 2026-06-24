@@ -2,14 +2,22 @@
 """Verify that every CLI command mocked in a troubleshoot scenario's manifest is
 shaped correctly against the locally installed `uip` CLI.
 
-Three checks per manifest rule's `match` string:
+Shape-aggregated: distinct match strings that share the same (path, flag-set,
+positional-count) collapse into one shape and validate once. Twenty
+`or jobs get <uuid> --output json` rules across 12 scenarios produce a single
+[OK] line instead of 20 redundant ones; the affected manifests are listed
+under each shape.
+
+Three checks per shape:
 
   1. Path     — every subcommand token must appear in its parent's Subcommands
-                list (walks the tree level-by-level via `uip <prefix> --help`).
-  2. Flags    — every `--flag` from the match must exist in the leaf command's
-                Options list.
-  3. Arguments — positional tokens (UUIDs, quoted strings, plain words after
-                 the path) must not exceed the leaf's declared Arguments count.
+                list (walks the tree level-by-level via `uip <prefix> --help`,
+                with KNOWN_ASPECT_ROUTERS as a fallback for aspect-router
+                hosts whose JSON help hides routed subcommands).
+  2. Flags    — every `--flag` from the shape must exist in the leaf command's
+                Options list (or be a CLI-wide global flag).
+  3. Arguments — positional count must not exceed the leaf's declared
+                 Arguments count.
 
 Tree-walk avoids two CLI quirks that broke a flat `--output json --help` probe:
   - Windows `.CMD` shim returns Success/Help for unknown subcommands by
@@ -125,18 +133,30 @@ KNOWN_ASPECT_ROUTERS: dict[tuple[str, ...], set[str]] = {
 
 
 def subcommand_names(help_payload: dict) -> set[str]:
-    """Extract subcommand names from a --help payload's Subcommands list."""
+    """Extract subcommand names from a --help payload's Subcommands list.
+
+    Handles two name formats the CLI emits:
+      - plain:    `"or"` / `"or [options]"`                          -> {"or"}
+      - aliased:  `"or|orchestrator"` / `"or|orchestrator [options]"` -> {"or", "orchestrator"}
+    The pipe-joined form appears on platforms (Linux/Docker — CI's runtime)
+    where the JSON help renders the alias list as a single Subcommands entry.
+    Without splitting on `|`, the membership check `"or" in subs` returns
+    False and every `or X` rule cascades to BAD.
+    """
     if not help_payload:
         return set()
     data = help_payload.get("Data") or {}
     subs = data.get("Subcommands") or []
-    names = set()
+    names: set[str] = set()
     for s in subs:
         n = s.get("Name") or ""
         # Names sometimes include trailing `[options]` / `<args>` — first token only
         first = n.split()[0] if n else ""
-        if first and not first.startswith("<") and not first.startswith("["):
-            names.add(first)
+        if not first or first.startswith("<") or first.startswith("["):
+            continue
+        for alias in first.split("|"):
+            if alias:
+                names.add(alias)
     return names
 
 
@@ -176,12 +196,13 @@ GLOBAL_FLAGS = frozenset({
 })
 
 
-def validate_match(
+def validate_shape(
     uip_bin: str,
-    match: str,
+    path: tuple[str, ...],
+    used_flags: frozenset[str],
+    positional_count: int,
 ) -> tuple[bool, str]:
-    """Validate a single match string. Return (valid, message)."""
-    path, used_flags, positionals = tokenize_match(match)
+    """Validate a (path, flag-set, positional-count) shape against the CLI."""
     if not path:
         return False, "no parseable subcommand path"
 
@@ -205,13 +226,38 @@ def validate_match(
             return False, f"parent 'uip {' '.join(parent)}' returned {result}"
         subs = subcommand_names(help_payload)
         if token not in subs:
-            # Some plugins install correctly but aren't listed in the parent's
-            # Subcommands (e.g. `is`, `resource`, `docsai` in uip 1.2.x-alpha).
-            # Probe the token directly: if `uip <prefix> <token> --help` returns
-            # Success the subcommand is real — the parent just doesn't advertise it.
-            probe = fetch_help(uip_bin, tuple(path[: depth + 1]))
-            if probe is not None and probe.get("Result") == "Success":
+            # The token isn't enumerated in the parent's --help Subcommands.
+            # Two known-legitimate reasons before we flag it invalid:
+            #
+            # (a) Aspect-routers (e.g. `maestro` -> bpmn/case/flow): the
+            #     parent's JSON --help hides these even though they're real
+            #     subcommands at runtime.
+            if token in KNOWN_ASPECT_ROUTERS.get(parent, frozenset()):
                 continue
+            # (b) Lazily-listed tool command-groups: under the alpha `uip` CLI,
+            #     an installed tool's top-level group (`or`, `is`, `maestro`,
+            #     `resource`, `docsai`, `traces`, `rpa`, ...) is NOT listed in
+            #     its parent's Subcommands even though `uip ... <token>` is a
+            #     real command group ("Successfully installed
+            #     @uipath/<tool>-tool" but absent from `uip --help`). Probe the
+            #     token's own --help and accept it only if it renders as a
+            #     DISTINCT group — its own Subcommands are non-empty and differ
+            #     from the parent's. The distinctness check guards against the
+            #     Windows `.CMD` shim, which falls back to the parent's help for
+            #     a genuinely-unknown token (the same false positive the
+            #     level-by-level tree-walk was built to avoid): a typo would
+            #     echo the parent's Subcommands verbatim and be rejected here.
+            probe = fetch_help(uip_bin, (*parent, token))
+            if probe is None or probe.get("Result") == "ConfigError":
+                return True, (
+                    f"WARN: '{token}' not listed under "
+                    f"'uip {' '.join(parent) or '(root)'}' and its own help could not "
+                    f"be introspected — skipping deeper validation"
+                )
+            if probe.get("Result") == "Success":
+                probe_subs = subcommand_names(probe)
+                if probe_subs and probe_subs != subs:
+                    continue  # real command group, just not enumerated by the parent
             return False, f"'{token}' is not a subcommand of 'uip {' '.join(parent) or '(root)'}'"
 
     # 2. Leaf-level flag validation (per-command flags + inherited global flags)
@@ -220,19 +266,31 @@ def validate_match(
         return False, f"could not fetch help for leaf 'uip {' '.join(path)}'"
 
     allowed_flags = flag_names(leaf_help) | GLOBAL_FLAGS
-    bad_flags = [f for f in set(used_flags) if f not in allowed_flags]
+    bad_flags = sorted(f for f in used_flags if f not in allowed_flags)
     if bad_flags:
-        return False, f"unknown flag(s) on 'uip {' '.join(path)}': {', '.join(sorted(bad_flags))}"
+        return False, f"unknown flag(s) on 'uip {' '.join(path)}': {', '.join(bad_flags)}"
 
     # 3. Argument count check (informational — many commands accept varargs)
     expected_args = arg_count(leaf_help)
-    if expected_args and len(positionals) > expected_args:
+    if expected_args and positional_count > expected_args:
         return False, (
             f"'uip {' '.join(path)}' expects {expected_args} positional arg(s); "
-            f"manifest supplies {len(positionals)}"
+            f"manifest supplies {positional_count}"
         )
 
     return True, ""
+
+
+def shape_repr(path: tuple[str, ...], flags: frozenset[str], positional_count: int) -> str:
+    """Compact human-readable shape rendering."""
+    parts = list(path)
+    if positional_count == 1:
+        parts.append("<arg>")
+    elif positional_count > 1:
+        parts.append(f"<{positional_count} args>")
+    if flags:
+        parts.append("[" + " ".join(sorted(flags)) + "]")
+    return " ".join(parts)
 
 
 def walk_manifests(root: Path) -> Iterable[dict]:
@@ -269,39 +327,61 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: root {args.root} does not exist", file=sys.stderr)
         return 2
 
-    rules_by_match: dict[str, list[dict]] = defaultdict(list)
+    # Aggregate manifest rules into distinct shapes. A shape is the
+    # validation-relevant fingerprint: (path tuple, flag set, positional
+    # count). Different UUIDs / quoted values collapse into the same shape
+    # because they're positionals — so we validate each shape once instead
+    # of every match string separately, and report one [OK]/[BAD] per shape
+    # with the list of manifest rules it covers underneath.
+    shapes: dict[tuple[tuple[str, ...], frozenset[str], int], list[dict]] = defaultdict(list)
     parse_errors: list[dict] = []
-
+    total_rules = 0
     for entry in walk_manifests(args.root):
         if "parse_error" in entry:
             parse_errors.append(entry)
             continue
         if not entry["match"]:
             continue
-        rules_by_match[entry["match"]].append(entry)
+        total_rules += 1
+        path, flags, positionals = tokenize_match(entry["match"])
+        sig = (tuple(path), frozenset(flags), len(positionals))
+        shapes[sig].append(entry)
 
-    matches = sorted(rules_by_match)
+    shape_keys = sorted(shapes.keys())
     print(f"Manifests scanned under: {args.root}")
     print(f"Manifest parse errors:   {len(parse_errors)}")
-    print(f"Distinct match strings to verify: {len(matches)}")
+    print(f"Rules across manifests:  {total_rules}")
+    print(f"Distinct rule shapes:    {len(shape_keys)}")
     print()
 
-    valid: list[str] = []
-    invalid: list[tuple[str, str]] = []
-    for m in matches:
-        ok, msg = validate_match(args.uip, m)
+    bad_shapes: list[tuple[tuple, str]] = []
+    oks = warns = 0
+    for sig in shape_keys:
+        path, flags, positional_count = sig
+        ok, msg = validate_shape(args.uip, path, flags, positional_count)
         is_warn = ok and msg.startswith("WARN:")
         marker = "WARN" if is_warn else ("OK  " if ok else "BAD ")
+        repr_ = shape_repr(*sig)
         suffix = f"  -- {msg}" if msg else ""
-        print(f"  [{marker}] {m}{suffix}")
-        if ok:
-            valid.append(m)
+        rule_count = len(shapes[sig])
+        scenario_count = len({e["scenario"] for e in shapes[sig]})
+        s_rule = "rule" if rule_count == 1 else "rules"
+        s_scen = "scenario" if scenario_count == 1 else "scenarios"
+        print(f"  [{marker}] {repr_}{suffix}")
+        print(f"          ({rule_count} {s_rule} across {scenario_count} {s_scen})")
+        if is_warn:
+            warns += 1
+            oks += 1
+        elif ok:
+            oks += 1
         else:
-            invalid.append((m, msg))
+            bad_shapes.append((sig, msg))
+
+    invalid = len(bad_shapes)
 
     print()
-    print(f"Valid:   {len(valid)} / {len(matches)}")
-    print(f"Invalid: {len(invalid)} / {len(matches)}")
+    print(f"Valid shapes:   {oks} / {len(shape_keys)}  ({warns} warn)")
+    print(f"Invalid shapes: {invalid} / {len(shape_keys)}")
 
     if parse_errors:
         print()
@@ -309,12 +389,12 @@ def main(argv: list[str] | None = None) -> int:
         for e in parse_errors:
             print(f"  [{e['scenario']}] {e['manifest']}: {e['parse_error']}")
 
-    if invalid:
+    if bad_shapes:
         print()
-        print("Invalid matches — affected manifests:")
-        for m, msg in invalid:
-            print(f"  {m}  ({msg})")
-            for entry in rules_by_match[m]:
+        print("Invalid shapes — affected manifest rules:")
+        for sig, msg in bad_shapes:
+            print(f"  {shape_repr(*sig)}  ({msg})")
+            for entry in shapes[sig]:
                 print(f"    {entry['scenario']}: rule {entry['rule_index']}")
         return 1
 

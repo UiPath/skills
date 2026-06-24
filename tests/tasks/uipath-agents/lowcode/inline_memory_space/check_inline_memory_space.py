@@ -9,7 +9,7 @@ Validates:
   3. The feature declares the expected memory space, folder path, and
      dynamic few-shot settings.
   4. The parent flow project's bindings_v2.json contains the generated
-     memorySpace binding, proving migrate ran with --bindings-target.
+     memorySpace binding, proving refresh ran with --bindings-target.
 """
 
 import json
@@ -142,7 +142,7 @@ def assert_parent_memory_binding(bindings: dict) -> None:
         sys.exit(
             "FAIL: expected exactly one parent memorySpace binding for "
             f"{EXPECTED_MEMORY_SPACE!r} in {EXPECTED_FOLDER_PATH!r}; got {len(matches)}. "
-            "Run uip agent migrate --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json."
+            "Run uip agent refresh --inline-in-flow --bindings-target <FlowProjectDir>/bindings_v2.json."
         )
     print("OK: parent flow bindings_v2.json contains the propagated memorySpace binding")
 

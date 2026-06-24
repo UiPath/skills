@@ -1,0 +1,53 @@
+task_id: skill-admin-group-membership-update-smoke
+description: >
+  Operate smoke: agent adds a user to a group. Tests the resolve-user
+  → resolve-group → members-add workflow per Rule 5 and Rule 9.
+
+  Command-construction only — no live tenant available.
+tags: [uipath-admin, smoke, mode:operate, lifecycle:setup, identity, groups, membership]
+
+run_limits:
+  expected_turns: 6
+
+initial_prompt: |
+  Add user alice@example.com to the "Automation Users" group. Run
+  these steps in order:
+  1. Resolve the user: `uip admin users list --search alice --output json`
+  2. Find the group: `uip admin groups list --output json`
+  3. Add the user: `uip admin groups members add <group-id> --user-ids <user-id> --output json`
+
+  If a command fails, move on to the next — use placeholder IDs.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent resolved the user via users list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+users\s+list\s+.*--search\s+.*alice'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed groups to find the target group"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+list\b.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added user to the group via members add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+groups\s+members\s+add\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0

@@ -26,8 +26,9 @@ uip is activities list <connector-key> --output json
 # What data objects/resources does it expose?
 uip is resources list <connector-key> --output json
 
-# Describe a specific operation's schema (fields, types, required flags, enum values):
-uip is resources describe <connector-key> <operation-name> --operation Create --output json
+# Describe an object's schema for an operation (fields, types, required flags, enum values).
+# Second positional is the object/resource name (from `resources list`); the operation goes in --operation:
+uip is resources describe <connector-key> <object-name> --operation Create --output json
 ```
 
 `resources describe` is the authoritative field schema — **never guess field names**. The response includes a `metadataFile` path like `~/.uipath/cache/integrationservice/<connector>/_static/<operation>.Create.json`. Read that JSON directly for the full `parameters` / `requestFields` / `responseFields` list.
@@ -52,6 +53,8 @@ uip rpa activities get-default-xaml \
 ```
 
 **`--activity-type-id` is mandatory for IS dynamic activities** — without it, the default XAML comes back empty (`Configuration={x:Null}`, no fields) and isn't runnable.
+
+`get-default-xaml` also accepts repeatable `--field-values name=value` pairs: the values are pre-bound as literals in the returned `FieldObjects`, and when they cover the operation's prerequisite criteria fields (e.g. Jira's `project` + `issuetype`), the returned `Configuration` blob is re-resolved with the full expanded field schema — the same expansion Studio's designer performs when those fields are committed in the canvas. Full usage pattern: [is-connector-xaml-guide.md § Step 4](is-connector-xaml-guide.md).
 
 ## Connection Management
 

@@ -1,0 +1,46 @@
+EXIT=0
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "8c994220-a19a-4c62-9868-6df7b61c97e3",
+    "StartTime": "2026-05-25T17:56:44.133Z",
+    "EndTime": "2026-05-25T17:56:48.883Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "SpecificPriorityValue": 45,
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "BatchExecutionKey": "4c84401d-b8b8-4ea9-9d65-9d0f98d0971d",
+    "Info": "Cannot send input to UI element because it is outside of screen bounds.\r\n\r\nin Ofsb.xaml\r\n    at NClick \"Click 'Learn More About Editor'\"\r\n    at Sequence \"Do\"\r\n    at NApplicationCard \"Edge DataTables  Javascript table library\"\r\n    at Sequence \"Kbd\"\r\n    at Ofsb \"Ofsb\"\r\n\r\nUiPath.UIAutomationNext.Exceptions.UiAutomationException: Cannot send input to UI element because it is outside of screen bounds.\r\n ---> System.Runtime.InteropServices.COMException: Exception from HRESULT: 0x800402bd\r\n   at UiPath.UiNodeClass.Click(UiClickProperties clickProperties)\r\n   at UiPath.NodeExtensions.ClickAsync(UiNode this, UiClickProperties clickProperties)\r\n   at UiPath.UIAutomationNext.Services.UiInputService.<>c__DisplayClass13_0.<<ClickAtPointAsync>b__0>d.MoveNext()\r\n--- End of stack trace from previous location ---\r\n   at UiPath.UIAutomationNext.Services.DriverServiceCore.WrapComAsync[T](Func`1 toExecute, Nullable`1 traceEventType)\r\n   --- End of inner exception stack trace ---\r\n   at UiPath.UIAutomationNext.Extensions.ExceptionExtensions.GetFriendly(COMException comException)\r\n   at UiPath.UIAutomationNext.Extensions.ExceptionExtensions.ThrowFriendly(COMException comException)\r\n   at UiPath.UIAutomationNext.Services.DriverServiceCore.WrapComAsync[T](Func`1 toExecute, Nullable`1 traceEventType)\r\n   at UiPath.UIAutomationNext.Services.UiInputService.<>c__DisplayClass25_0.<<RetryAsync>b__0>d.MoveNext()\r\n--- End of stack trace from previous location ---\r\n   at UiPath.UIAutomationNext.Services.DriverServiceCore.WrapComAsync[T](Func`1 toExecute, Nullable`1 traceEventType)\r\n   at UiPath.UIAutomationNext.Services.UiInputService.RetryAsync(Func`1 action, IUiNodeX node, TimeoutToken token)\r\n   at UiPath.UIAutomationNext.Services.UiInputService.ClickAsync(IClickData data, TimeoutToken token)\r\n   at UiPath.UIAutomationNext.Services.ActivityActionService.<>c__DisplayClass31_1.<<ClickAsync>b__1>d.MoveNext()\r\n--- End of stack trace from previous location ---\r\n   at UiPath.UIAutomationNext.Services.ActivityActionService.WithSystemInputLock(Boolean requiresInputLock, Func`1 action)\r\n   at UiPath.UIAutomationNext.Services.ActivityActionService.WithSystemInputLock(Boolean requiresInputLock, Func`1 action)\r\n   at UiPath.UIAutomationNext.Services.ActivityActionService.<>c__DisplayClass31_0.<<ClickAsync>b__0>d.MoveNext()\r\n--- End of stack trace from previous location ---\r\n   at UiPath.UIAutomationNext.Services.ActivityActionService.ClickAsync(IClickData data, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Extensions.IActivityActionServiceExtensions.ExecuteAsync(IActivityActionService service, IActivityData data, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Activities.TargetBase.ActionAsync[T](IRuntimeDataCollectionContext runtimeContext, IActivityData data, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Activities.NClick.UiPath.UIAutomationNext.Activities.IVerifyExecutionActivity.ExecuteAsync(IRuntimeContext context, IActivityData data, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.Services.VerifyExecutionService.ExecuteWithVerifyAsync(IVerifyExecutionRuntimeContext verifyContext, IRuntimeContext runtimeContext, IActivityData data, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Activities.NClick.ExecuteAsync(IActivityContextWrapper context, CancellationToken token)\r\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteActivityAsync(IActivityContextWrapper contextWrapper, CancellationToken cancellationToken)\r\n   at UiPath.UIAutomationNext.Activities.RecoverableNativeActivity.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\r\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)\r\n--- End of stack trace from previous location ---\r\n   at UiPath.UIAutomationNext.Activities.NApplicationCard.OnFault(NativeActivityFaultContext faultContext, Exception propagatedException, ActivityInstance propagatedFrom)\r\n   at System.Activities.Runtime.FaultCallbackWrapper.FaultWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)",
+    "CreationTime": "2026-05-25T17:56:43.687Z",
+    "ReleaseName": "ERN",
+    "Type": "Unattended",
+    "EnvironmentVariables": "",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "HasMediaRecorded": false,
+    "HasVideoRecorded": false,
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": true,
+    "ReleaseVersionId": 20452595,
+    "EntryPointPath": "Ofsb.xaml",
+    "OrganizationUnitId": 1500287,
+    "FolderKey": "defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+    "Reference": "",
+    "ProcessType": "Process",
+    "ResumeOnSameContext": false,
+    "LocalSystemAccount": "UIPATH\\REPLACEMENT_USER",
+    "OrchestratorUserIdentity": "newrobot",
+    "RemoteControlAccess": "None",
+    "LastModificationTime": "2026-05-25T17:56:48.883Z",
+    "JobError": {},
+    "ErrorCode": "Robot",
+    "TraceId": "8c994220a19a4c6298686df7b61c97e3",
+    "AutopilotForRobots": {
+      "Enabled": false,
+      "HealingEnabled": false
+    },
+    "Id": 65135970
+  }
+}

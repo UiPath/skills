@@ -143,7 +143,7 @@ llm = UiPathAzureChatOpenAI(
 )
 ```
 
-**Model names:** Pass the model identifier as a string. Use `sdk.agenthub.get_available_llm_models()` to list the models available in your tenant.
+**Model names:** Pass the model identifier as a string. Run `uip codedagent list-models` to list the models available in your tenant.
 
 **Features:**
 - No API key needed — uses UiPath authentication
@@ -214,7 +214,7 @@ result: Analysis = Analysis.model_validate(raw_dict)
 | Multi-vendor flexibility (OpenAI, Anthropic, Google) | `UiPathChat` |
 | Specialized domains (e.g., code) | `UiPathChat` with a Claude model |
 
-Call `sdk.agenthub.get_available_llm_models()` to see the model strings available in your tenant and pass the exact `model_name` to the class constructor.
+Run `uip codedagent list-models` to see the model strings available in your tenant and pass the exact `model_name` to the class constructor.
 
 ---
 

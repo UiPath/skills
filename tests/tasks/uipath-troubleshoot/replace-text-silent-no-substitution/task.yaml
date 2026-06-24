@@ -1,0 +1,144 @@
+task_id: skill-troubleshoot-replace-text-silent
+description: >
+  UiPath troubleshooting agent must diagnose a SILENT Replace Text failure:
+  the job completes Successfully but the placeholder [Name] is left unchanged
+  in the output because the token is split across Word XML runs in the
+  template, so the exact-string search matches nothing (the log shows
+  "Replaced 0 occurrence(s)"). Success = agent matches the
+  replace-text-silent-no-substitution playbook AND recommends retyping the
+  placeholder cleanly in one run (or an in-code string replace), NOT treating
+  the successful job as healthy or blaming a crash/lock.
+tags: [uipath-troubleshoot, e2e, orchestrator, word-activities, replace-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My OnboardingLetter process runs green in Orchestrator (folder "Offer
+  Docs", machine MOCK-ROBOT-05) - the job shows Successful every time - but
+  the generated letters still have the literal "[Name]" placeholder in them
+  instead of the employee's name. No error is reported anywhere.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the replace-text-silent-no-substitution playbook AND recommended the clean-retype / in-code fix"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My OnboardingLetter process shows Successful every run in
+         Orchestrator (folder 'Offer Docs', machine MOCK-ROBOT-05), but the
+         generated letters still contain the literal '[Name]' placeholder
+         instead of the employee's name. No error is reported."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/replace-text-silent-no-substitution.md
+        because a Replace Text run that SUCCEEDS but leaves the placeholder
+        unchanged - the log shows "Replaced 0 occurrence(s) of '[Name]'" -
+        is the signature of a placeholder split across Word's internal XML
+        runs, so the exact-string search never matches.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The job is Successful and throws nothing; the failure is silent.
+          - The "[Name]" placeholder in the template was edited in place
+            (backspaced/retyped/reformatted), so Word stored it across
+            multiple runs in the document XML. The activity's exact-string
+            search for "[Name]" matches zero contiguous occurrences and
+            replaces nothing - hence "Replaced 0 occurrence(s)".
+          - This is a template/run-splitting issue, NOT a crash, lock,
+            missing install, or path problem.
+        The reference fix:
+          - In the template, fully highlight the "[Name]" placeholder,
+            delete it, and retype it in one continuous motion (no
+            backspaces / mid-token formatting) so it lands in a single run;
+            OR do the substitution in code (read text -> String.Replace /
+            regex -> write back), which operates on flattened text.
+
+      DIMENSION C -- Did NOT treat the green job as healthy
+        The agent must recognize that a Successful job with wrong output is
+        a silent failure to investigate (using the "Replaced 0 occurrence(s)"
+        log and the activity config), NOT dismiss it as working because the
+        job state is green, and NOT fabricate a crash/lock/host action.
+
+      SCORING RUBRIC:
+        1.0  Agent matched replace-text-silent-no-substitution AND
+             identified the run-split placeholder (exact-string search
+             matching nothing on a Successful job) as the cause AND
+             recommended retyping the placeholder cleanly in one run and/or
+             an in-code string/regex replace - without treating the green
+             job as healthy or fabricating a crash/lock.
+        0.8  Correct playbook and cause, but the fix is vague (e.g.,
+             "fix the template" without naming clean-retype / single-run /
+             in-code replace).
+        0.5  Recognized the placeholder is not being replaced but attributed
+             it to the wrong cause (e.g., wrong Search value, case mismatch,
+             variable not set) rather than run-splitting, or matched a
+             sibling Replace Text playbook.
+        0.2  Restated the symptom without a cause.
+        0.0  Concluded the job is healthy / nothing is wrong because it is
+             Successful, OR blamed a crash / lock / missing install / file
+             path, OR fabricated a host action.
+
+      Reward the clean-retype and the in-code fix equally.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the wrong output. The job shows
+    Successful but the letters still contain the literal "[Name]"
+    placeholder. You are away from the robot host and only have Orchestrator
+    access. You trust the agent and want a diagnosis plus the fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the fix at the end."
+    - "If asked whether the [Name] placeholder in the template was typed cleanly or edited/reformatted in place, say you are not sure - someone else built the template and you cannot inspect it right now."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

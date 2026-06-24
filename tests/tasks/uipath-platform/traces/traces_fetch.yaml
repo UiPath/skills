@@ -10,8 +10,6 @@ run_limits:
   expected_turns: 6
 
 initial_prompt: |
-  Use the `uipath-platform` skill.
-
   I want to inspect the LLM trace spans for a completed job. The job key is `11111111-2222-3333-4444-555566667777`. Fetch them.
 
   Use `--output json` on all uip commands.

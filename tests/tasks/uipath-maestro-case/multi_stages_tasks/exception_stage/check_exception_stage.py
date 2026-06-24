@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""ExceptionStage: two ExceptionStages (Issues + Critical), no edges, interrupting entries."""
+"""ExceptionStage: two ExceptionStages (Issues + Critical), interrupting entries, return-to-origin (edges retired)."""
 
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
-    find_edges,
     find_node_by_label,
     first_rule_of_condition,
     get_default_sla,
@@ -57,14 +56,9 @@ def main():
     issues = find_node_by_label(plan, "Issues")
     critical = find_node_by_label(plan, "Critical")
 
-    for label, node in (("Issues", issues), ("Critical", critical)):
-        inbound = find_edges(plan, target=node["id"])
-        outbound = find_edges(plan, source=node["id"])
-        if inbound or outbound:
-            sys.exit(
-                f"FAIL: exception stage {label!r} must have no edges; "
-                f"got inbound={len(inbound)} outbound={len(outbound)}"
-            )
+    # Edges retired: exception stages were never edge-wired anyway. Their
+    # reachability contract is an interrupting entry condition + a
+    # return-to-origin exit — both asserted below. Nothing edge-shaped remains.
 
     issues_entry = list(iter_stage_entry_conditions(issues))
     issues_interrupting = [c for c in issues_entry if c.get("isInterrupting") is True]
@@ -175,7 +169,7 @@ def main():
     print(
         "OK: Process is a regular Stage with an explicit exit-only exit condition "
         "(required-tasks-completed, marks complete); 2 ExceptionStages (Issues + "
-        "Critical) with 0 edges each; Issues has "
+        "Critical) reached via interrupting entries (edges retired); Issues has "
         "interrupting selected-stage-exited entry referencing Process, "
         "return-to-origin exit, 2h SLA + sla-breached UserGroup escalation, AND a "
         "wait-for-timer task using timeDate (wait until 2026-05-01) with "

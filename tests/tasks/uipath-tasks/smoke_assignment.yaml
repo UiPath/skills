@@ -12,8 +12,6 @@ run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  Before starting, load the uipath-tasks skill and follow its workflow.
-
   Use --output json on every uip tasks command. Task IDs and folder IDs
   are numeric (not GUIDs).
 

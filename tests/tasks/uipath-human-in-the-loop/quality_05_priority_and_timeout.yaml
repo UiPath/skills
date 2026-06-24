@@ -12,8 +12,7 @@ run_limits:
 
 initial_prompt: |
   Add a Human-in-the-Loop node to a new flow called "FinanceCompliance".
-  This is a financial compliance check — set it to HIGH priority and give
-  reviewers 48 hours to respond before it times out.
+  This is a financial compliance check — set it to HIGH priority.
 
   Wire the completed handle to a script node that logs the approval.
   Validate the flow after adding.

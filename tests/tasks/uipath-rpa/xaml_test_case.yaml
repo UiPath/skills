@@ -18,7 +18,7 @@ initial_prompt: |
   The working directory starts empty. Scaffold the project with
   `uip rpa init --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
   Studio Desktop is NOT available — skip any CLI commands that require
-  --use-studio.
+  a running Studio Desktop instance.
 
   Requirements:
   - Create one XAML test case at `LoginTests/TestLoginSuccess.xaml` that

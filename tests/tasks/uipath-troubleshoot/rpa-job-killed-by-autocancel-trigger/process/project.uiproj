@@ -1,0 +1,6 @@
+{
+  "Name": "LongRunningProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: simple long-running process (single 5-minute Delay) used to exercise the orchestrator/job-stopped-exit-code-0x40010004 playbook.",
+  "MainFile": "Main.xaml"
+}

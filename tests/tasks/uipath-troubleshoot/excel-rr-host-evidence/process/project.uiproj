@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: clean Excel Read Range process — Use Excel File scope, no ContinueOnError, no swallowing TryCatch. Used to exercise the activity-packages/excel-activities/playbooks/read-range-file-locked.md playbook (needs-host-evidence path — CLI cannot identify the branch).",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the formula-syntax variant (branch 2) of the excel-activities/write-cell-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (BusinessException 'wrong format, or Excel is busy') → jobs logs (single Write Cell invocation, NOT a loop) → workflow source (formula with semicolons, NOT inside a loop). The combination of semicolons in the Value + no-loop context distinguishes branch 2 from branch 3 (loop thrash) which shares the same error wording.",
+  "rules": [
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
+    {"match": "or jobs list --folder-key \"f0022222-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "or-jobs-list-folder-key-f0022222-state-faulted-output-json.json"},
+    {"match": "or jobs list --folder-key f0022222-2222-3333-4444-555566667777 --state Faulted --output json", "file": "or-jobs-list-folder-key-f0022222-state-faulted-output-json.json"},
+    {"match": "or jobs get \"22bb2222-2222-3333-4444-555566667777\" --output json", "file": "or-jobs-get-22bb2222-output-json.json"},
+    {"match": "or jobs get 22bb2222-2222-3333-4444-555566667777 --output json", "file": "or-jobs-get-22bb2222-output-json.json"},
+    {"match": "or jobs history \"22bb2222-2222-3333-4444-555566667777\" --output json", "file": "or-jobs-history-22bb2222-output-json.json"},
+    {"match": "or jobs history 22bb2222-2222-3333-4444-555566667777 --output json", "file": "or-jobs-history-22bb2222-output-json.json"},
+    {"match": "or jobs logs \"22bb2222-2222-3333-4444-555566667777\" --output json", "file": "or-jobs-logs-22bb2222-output-json.json"},
+    {"match": "or jobs logs 22bb2222-2222-3333-4444-555566667777 --output json", "file": "or-jobs-logs-22bb2222-output-json.json"}
+  ]
+}

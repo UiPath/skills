@@ -1,0 +1,10 @@
+exit=0
+error-count= 0
+--- scan all logs for license/selector/heal keywords ---
+No available license: false
+Agentic units: false
+SelectorNotFound: false
+NodeNotFound: false
+UiElementNotFound: false
+recovery: false
+Healing agent analysis: false

@@ -1,6 +1,6 @@
 # stages — Planning
 
-A stage node inside the case. Stages contain tasks and connect via edges. Two variants (`stage` and `exception`) share the same plugin.
+A stage node inside the case. Stages contain tasks and connect via entry/exit conditions (edges are retired). Two variants (`stage` and `exception`) share the same plugin.
 
 ## Terminology
 
@@ -26,21 +26,14 @@ Otherwise default to a regular stage.
 
 When ambiguous, use **AskUserQuestion** with both options + "Something else".
 
-### Wiring constraints for exception / secondary stages
+### Wiring constraints (reachability — edges retired)
 
-Exception stages **have no edges** — neither inbound nor outbound. They are fully detached from the edge graph:
+No stage of either variant has edges. Reachability is expressed entirely through stage entry/exit conditions:
 
-- ❌ No edge into an exception stage (not from Triggers, not from regular stages, not from other exception stages).
-- ❌ No edge out of an exception stage to any stage.
-- ✅ **Reached via an interrupting entry condition** on the exception stage itself (fires based on case state, not by traversing an edge). See [stage-entry-conditions plugin](../conditions/stage-entry-conditions/planning.md).
-- ✅ **Exits via a `return-to-origin` exit condition** — routes the case back to the stage it came from, through the exit condition rule, not a new edge. See [stage-exit-conditions plugin](../conditions/stage-exit-conditions/planning.md).
+- **Regular stage** — reached via a **non-interrupting** entry condition: `case-entered` for the first stage, or `selected-stage-completed` / `selected-stage-exited` naming a predecessor. Every regular stage MUST have ≥1 entry condition, or it is orphaned and unreachable. See [stage-entry-conditions plugin](../conditions/stage-entry-conditions/planning.md).
+- **Exception / secondary stage** — reached via an **interrupting** entry condition (fires on case state), and exits via a `return-to-origin` exit condition back to the stage it came from. See [stage-exit-conditions plugin](../conditions/stage-exit-conditions/planning.md).
 
-If the sdd.md describes an exception stage that is connected to other stages via edges, or that flows onward to another stage, flag this to the user. Options:
-
-- Re-model the node as a regular stage (so edges are allowed).
-- Use a `return-to-origin` exit and let the origin stage's existing edges handle the onward flow.
-
-This constraint is also documented in the [edges plugin](../edges/planning.md).
+Do NOT create edges for any stage. If the sdd.md describes a stage "connected via an arrow / edge" to another, model it as the target stage's entry condition (plus a source-stage exit condition when the source diverges). Onward flow from an exception stage uses `return-to-origin`, letting the origin stage's own entry/exit conditions carry the case forward.
 
 ## Required Fields from sdd.md
 
@@ -71,7 +64,7 @@ Stage position is auto-computed by the impl-json recipe: `x = 100 + (existingSta
 
 ## Ordering
 
-Stages are created **after** the root case (T01) and **before** any edges, tasks, or conditions reference them. Each stage write produces a `StageId` — capture it in the planning/execution capture map. Downstream T-entries (edges, tasks, conditions, SLA) use the stage **name** in `tasks.md`; the implementation phase resolves the name to the captured `StageId`.
+Stages are created **after** the root case (T01) and **before** any tasks or conditions reference them. Each stage write produces a `StageId` — capture it in the planning/execution capture map. Downstream T-entries (tasks, conditions, SLA) use the stage **name** in `tasks.md`; the implementation phase resolves the name to the captured `StageId`.
 
 ## tasks.md Entry Format
 

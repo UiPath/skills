@@ -60,8 +60,8 @@ def main() -> None:
         fail("HITL node is missing id")
 
     version = str(hitl.get("typeVersion", ""))
-    if not version.startswith("1.0"):
-        fail(f"HITL node typeVersion should be a v1.0 schema, found {version!r}")
+    if not version.startswith("1."):
+        fail(f"HITL node typeVersion should be a v1.x schema, found {version!r}")
 
     schema = hitl.get("inputs", {}).get("schema", {})
     fields = schema.get("fields")
@@ -113,7 +113,11 @@ def main() -> None:
             "or =js:$vars.<node>.output.<field>"
         )
 
-    if not any(e.get("sourceNodeId") == hitl_id and e.get("sourcePort") == "completed" for e in edges):
+    if not any(
+        e.get("sourceNodeId") == hitl_id
+        and e.get("sourcePort") in ("completed", "outcome-completed")
+        for e in edges
+    ):
         fail("HITL completed handle must be wired")
 
     scripts = [

@@ -1,0 +1,72 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the application-not-found playbook signature (ApplicationNotFoundException thrown by NApplicationCard when OpenMode=Never). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f3e8d4b1-9c2a-4f5e-b8d7-c1a0e6f9b3d2\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f3e8d4b1-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f3e8d4b1-9c2a-4f5e-b8d7-c1a0e6f9b3d2 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f3e8d4b1-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091\" --output json",
+      "file": "or-jobs-get-2c4f8a91-output-json.json"
+    },
+    {
+      "match": "or jobs get 2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091 --output json",
+      "file": "or-jobs-get-2c4f8a91-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091\" --level Error --output json",
+      "file": "or-jobs-logs-2c4f8a91-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs 2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091 --level Error --output json",
+      "file": "or-jobs-logs-2c4f8a91-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091\" --output json",
+      "file": "or-jobs-logs-2c4f8a91-output-json.json"
+    },
+    {
+      "match": "or jobs logs 2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091 --output json",
+      "file": "or-jobs-logs-2c4f8a91-output-json.json"
+    },
+    {
+      "match": "or jobs history \"2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091\" --output json",
+      "file": "or-jobs-history-2c4f8a91-output-json.json"
+    },
+    {
+      "match": "or jobs history 2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091 --output json",
+      "file": "or-jobs-history-2c4f8a91-output-json.json"
+    },
+    {
+      "match": "traces spans get --job-key 2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091 --output json",
+      "file": "or-jobs-traces-2c4f8a91-output-json.json"
+    },
+    {
+      "match": "traces spans get 2c4f8a913e7d4b6c9a1e5f8d2b7c3091 --output json",
+      "file": "or-jobs-traces-2c4f8a91-output-json.json"
+    },
+    {
+      "match": "traces spans get 2c4f8a91-3e7d-4b6c-9a1e-5f8d2b7c3091 --output json",
+      "file": "or-jobs-traces-2c4f8a91-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.org/schema/bpmn" id="Definitions_Valid" targetNamespace="http://uipath.com/synthetic/maestro-bpmn/valid">
+  <bpmn:process id="Process_Valid" name="Valid Baseline" isExecutable="true">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:input id="Var_Request" name="request" type="string" />
+        <uipath:output id="Var_Result" name="result" type="string" />
+      </uipath:variables>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Start" name="Start">
+      <bpmn:outgoing>Flow_Start_Gw</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gw" name="Route" default="Flow_Gw_B">
+      <bpmn:incoming>Flow_Start_Gw</bpmn:incoming>
+      <bpmn:outgoing>Flow_Gw_A</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Gw_B</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Task_A" name="Task A">
+      <bpmn:incoming>Flow_Gw_A</bpmn:incoming>
+      <bpmn:outgoing>Flow_A_End</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Task_B" name="Task B">
+      <bpmn:incoming>Flow_Gw_B</bpmn:incoming>
+      <bpmn:outgoing>Flow_B_End</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End" name="End">
+      <bpmn:incoming>Flow_A_End</bpmn:incoming>
+      <bpmn:incoming>Flow_B_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Start_Gw" sourceRef="Start" targetRef="Gw" />
+    <bpmn:sequenceFlow id="Flow_Gw_A" sourceRef="Gw" targetRef="Task_A">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=vars.request == "a"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Gw_B" sourceRef="Gw" targetRef="Task_B" />
+    <bpmn:sequenceFlow id="Flow_A_End" sourceRef="Task_A" targetRef="End" />
+    <bpmn:sequenceFlow id="Flow_B_End" sourceRef="Task_B" targetRef="End" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Valid">
+    <bpmndi:BPMNPlane id="Plane_Valid" bpmnElement="Process_Valid">
+      <bpmndi:BPMNShape id="S_Start" bpmnElement="Start"><dc:Bounds x="100" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Gw" bpmnElement="Gw"><dc:Bounds x="200" y="93" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_A" bpmnElement="Task_A"><dc:Bounds x="320" y="40" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_B" bpmnElement="Task_B"><dc:Bounds x="320" y="160" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_End" bpmnElement="End"><dc:Bounds x="500" y="100" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E1" bpmnElement="Flow_Start_Gw"><di:waypoint x="136" y="118" /><di:waypoint x="200" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E2" bpmnElement="Flow_Gw_A"><di:waypoint x="225" y="93" /><di:waypoint x="320" y="80" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E3" bpmnElement="Flow_Gw_B"><di:waypoint x="225" y="143" /><di:waypoint x="320" y="200" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E4" bpmnElement="Flow_A_End"><di:waypoint x="420" y="80" /><di:waypoint x="500" y="118" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E5" bpmnElement="Flow_B_End"><di:waypoint x="420" y="200" /><di:waypoint x="500" y="118" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

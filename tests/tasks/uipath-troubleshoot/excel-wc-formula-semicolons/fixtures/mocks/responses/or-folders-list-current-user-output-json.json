@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "f0022222-2222-3333-4444-555566667777",
+      "DisplayName": "ExcelWrites",
+      "FullyQualifiedName": "ExcelWrites",
+      "Description": "Folder for daily Excel writes.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6020001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}

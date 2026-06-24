@@ -8,7 +8,13 @@ Two types exist:
 - **`custom`** — deterministic rules you define (word matching, number comparison, boolean checks, universal triggers)
 - **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks)
 
-> **All guardrails are configured at the agent.json root `guardrails` array.** The `selector.scopes` and `selector.matchNames` fields on each guardrail determine which tools and scopes it applies to.
+> **Autonomous agents:** All guardrails are configured at the `agent.json` root `guardrails` array. **Conversational agents:** see § Conversational Support below — the runtime-effective location is each tool's `resources/<Tool>/resource.json` → `guardrail.policies[]`.
+
+## Conversational Support
+
+**Status: Tool-scoped only, per-tool resource files are authoritative.** Conversational agents support guardrails with `selector.scopes: ["Tool"]` only — DO NOT use `"Agent"` or `"Llm"`.
+
+This restriction is enforced as [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1.
 
 ## Guardrail Schema (Base Fields)
 
@@ -28,6 +34,8 @@ Every guardrail object in the `guardrails` array shares these base fields:
 
 The `selector` field controls where the guardrail applies.
 
+> **Conversational agents — use `["Tool"]` ONLY. `"Agent"` and `"Llm"` are NOT available; DO NOT use them.** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Rule 1).
+
 ```json
 "selector": {
   "scopes": ["Agent", "Llm", "Tool"],
@@ -37,7 +45,7 @@ The `selector` field controls where the guardrail applies.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required |
+| `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required. **Conversational agents: use `["Tool"]` ONLY — `"Agent"`/`"Llm"` are NOT available, DO NOT use them**. |
 | `matchNames` | string[] | Yes (when `Tool` in scopes) | Target tools by name. Required when `"Tool"` is in `scopes` — always list tool names explicitly. |
 
 ### Scope Definitions
@@ -93,6 +101,8 @@ Each entry in the `Data` array contains:
 - `Parameters` — array of parameter definitions with `Type`, `Id`, and `Required`
 
 Do not hardcode assumptions about scope/stage support or availability.
+
+> **Conversational override** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1)**.** `AllowedScopes` describes what the validator's schema accepts — it is **not** the set of scopes valid for the runtime you're targeting. For low-code conversational agents, **intersect `AllowedScopes` with `["Tool"]`** before writing `selector.scopes`. If the validator does not list `"Tool"` in `AllowedScopes`, it cannot be used in a conversational agent — do not substitute `"Agent"` or `"Llm"` as a workaround — those scopes are not available for conversational agents.
 
 ## Actions
 
@@ -161,10 +171,10 @@ Creates a task in an Action Center app for human review.
 "action": {
   "$actionType": "escalate",
   "app": {
-    "id": "<Key from uip solution resource list --kind App>",
+    "id": "<Key from uip solution resources list --kind App>",
     "name": "<app Name>",
     "version": "0",
-    "folderName": "<Folder from uip solution resource list --kind App>"
+    "folderName": "<Folder from uip solution resources list --kind App>"
   },
   "recipient": {
     "type": 3,
@@ -176,11 +186,11 @@ Creates a task in an Action Center app for human review.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `$actionType` | `"escalate"` | Yes | Action discriminator |
-| `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resource list --kind App` |
-| `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resource list --kind App` |
+| `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resources list --kind App` |
+| `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resources list --kind App` |
 | `app.version` | string | Yes | Always `"0"` for solution-embedded apps |
 | `app.folderId` | string | No | Omit — not used by validate |
-| `app.folderName` | string | Yes | Literal Orchestrator folder — the `Folder` field from `uip solution resource list --kind App` (e.g., `"Shared"`, `"Shared/Approvals"`). `uip agent migrate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
+| `app.folderName` | string | Yes | Literal Orchestrator folder — the `Folder` field from `uip solution resources list --kind App` (e.g., `"Shared"`, `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
 | `app.appProcessKey` | string | No | Omit — only used in advanced scenarios |
 | `recipient.type` | integer | Yes | Recipient kind — see shapes below: 1=UserId, 2=GroupId, 3=UserEmail, 4=AssetUserEmail, 5=GroupName, 6=AssetGroupName, 7=ArgumentEmail, 8=ArgumentGroupName |
 | `recipient.*` | — | — | Remaining fields depend on `type` — see recipient shapes below |
@@ -242,7 +252,7 @@ Confirm the target validator is listed. Record the exact parameter `id` values a
 **Step 1 — Discover the app** using `--kind App` from the solution root:
 
 ```bash
-uip solution resource list --kind App --source remote --search "<app-name>" --output json
+uip solution resources list --kind App --source remote --search "<app-name>" --output json
 ```
 
 Filter results for `"Type": "Workflow Action"`. Use these three fields from the result:
@@ -253,7 +263,7 @@ Filter results for `"Type": "Workflow Action"`. Use these three fields from the 
 | `Name` | `app.name` |
 | `Folder` | `app.folderName` (literal, e.g., `"Shared"`) |
 
-`app.version` is always `"0"` — that's a fixed value, not derived from the `resource list` row. `app.folderName` carries the literal `Folder` and `uip agent migrate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do not use `FolderKey` for any `app.*` field.
+`app.version` is always `"0"` — that's a fixed value, not derived from the `resource list` row. `app.folderName` carries the literal `Folder` and `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do not use `FolderKey` for any `app.*` field.
 
 If multiple entries share the same name in different folders, ask the user which deployment to use.
 
@@ -286,7 +296,10 @@ import os, sys, json, urllib.request, urllib.error
 key = sys.argv[1]
 base = f"{os.environ['UIPATH_URL']}/{os.environ['UIPATH_ORGANIZATION_ID']}/apps_/default/api/v1/default"
 hdr = {"Authorization": "Bearer " + os.environ["UIPATH_ACCESS_TOKEN"],
-       "X-Uipath-Tenantid": os.environ["UIPATH_TENANT_ID"], "Accept": "application/json"}
+       "X-Uipath-Tenantid": os.environ["UIPATH_TENANT_ID"], "Accept": "application/json",
+       # The Apps API gateway rejects the default "Python-urllib/x.y" User-Agent with 403.
+       # Send an explicit UA so this call doesn't false-fail (curl works because it sets one).
+       "User-Agent": "uipath-guardrail-verify"}
 def get(u):
     try:
         return json.load(urllib.request.urlopen(urllib.request.Request(u, headers=hdr)))
@@ -345,14 +358,14 @@ The check is **name-only** (types, `required` flags, `isList` are not checked); 
 Run from the solution root:
 
 ```bash
-uip agent validate <AgentName> --output json
-uip agent migrate  <AgentName> --output json
-uip solution resource refresh  --output json
+uip agent refresh   <AgentName> --output json
+uip agent validate  <AgentName> --output json
+uip solution resources refresh   --output json
 ```
 
-- `validate` is a read-only check; regenerates `.agent-builder/agent.json`. Reports `MigrationPending: true` if migration is needed.
-- `migrate` generates `bindings_v2.json` with a `resource: "app"` binding for the escalation app. The binding carries both `name` (from `app.name`) and `folderPath` (translated from `app.folderName`).
-- `refresh` reads `bindings_v2.json`, fetches the app from the Resource Catalog Service using the joint `(name, folderPath)` key, and generates all 4 solution-level resource files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus the `debug_overwrites.json` entries for both the app and its code-behind process.
+- `refresh` regenerates `entry-points.json` and `bindings_v2.json` with a `resource: "app"` binding for the escalation app. The binding carries both `name` (from `app.name`) and `folderPath` (translated from `app.folderName`).
+- `validate` is a read-only check. Fails with `AgentValidationOutdated` if refresh is needed.
+- `solution resources refresh` reads `bindings_v2.json`, fetches the app from the Resource Catalog Service using the joint `(name, folderPath)` key, and generates all 4 solution-level resource files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus the `debug_overwrites.json` entries for both the app and its code-behind process.
 
 **Step 5 — Upload:**
 
@@ -567,22 +580,24 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 
 ### Validators Quick Reference
 
-| Validator | Scopes | Stages | Supported Actions |
-|-----------|--------|--------|-------------------|
-| `pii_detection` | Agent, Llm, Tool | Pre + Post | Block, Log, Escalate |
-| `prompt_injection` | Llm | Pre only | Block, Log, Escalate |
-| `harmful_content` | Agent, Llm, Tool | Pre + Post | Block, Log, Escalate |
-| `intellectual_property` | Llm, Agent | Post only | Block, Log, Escalate |
-| `user_prompt_attacks` | Llm | Pre only | Block, Log, Escalate |
+> **For conversational agents (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1): use `"Tool"` only — DO NOT use the `Agent` and `Llm` entries below.** The Scopes column is the validator's schema-level support, not the conversational runtime's support: `Agent`/`Llm` are not available for conversational agents.
 
-Run `uip agent guardrails list --output json` to get the authoritative list. Only use validators where `Status` is `"Available"`. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields.
+| Validator | Scopes (autonomous) | Conversational | Stages | Supported Actions |
+|-----------|---------------------|----------------|--------|-------------------|
+| `pii_detection` | Agent, Llm, Tool | **Tool only** | Pre + Post | Block, Log, Escalate |
+| `prompt_injection` | Llm | **Not usable** (no Tool scope) | Pre only | Block, Log, Escalate |
+| `harmful_content` | Agent, Llm, Tool | **Tool only** | Pre + Post | Block, Log, Escalate |
+| `intellectual_property` | Llm, Agent | **Not usable** (no Tool scope) | Post only | Block, Log, Escalate |
+| `user_prompt_attacks` | Llm | **Not usable** (no Tool scope) | Pre only | Block, Log, Escalate |
+
+Run `uip agent guardrails list --output json` to get the authoritative list. Only use validators where `Status` is `"Available"`. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields. **For conversational agents, intersect `AllowedScopes` with `["Tool"]` — if `"Tool"` is not in the validator's `AllowedScopes`, the validator cannot be used in a conversational agent.**
 **How to map `uip agent guardrails list` output to guardrail JSON:**
 
 | CLI field | Maps to |
 |-----------|---------|
 | `Status` | Gate check — only proceed if `"Available"` |
 | `Validator` | `validatorType` value |
-| `AllowedScopes` | Valid values for `selector.scopes` |
+| `AllowedScopes` | Valid values for `selector.scopes` (autonomous). **Conversational: intersect with `["Tool"]`** — see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1. |
 | `GuardrailStages[scope]` | Valid execution stages for that scope |
 | `Parameters[].Id` | `validatorParameters[].id` |
 | `Parameters[].Type` | `validatorParameters[].$parameterType` |
@@ -813,7 +828,7 @@ PostExecution only — no content exists to check before the LLM generates outpu
 
 ### Example 8: Escalate PII Violations to Action Center — Multiple Tool Targets
 
-Escalates to an Action Center app when email or credit card PII is detected at the agent level. `app.id`, `app.name`, and `app.folderName` come from `uip solution resource list --kind App`.
+Escalates to an Action Center app when email or credit card PII is detected at the agent level. `app.id`, `app.name`, and `app.folderName` come from `uip solution resources list --kind App`.
 
 ```json
 {
@@ -969,7 +984,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 
 ## What NOT to Do
 
-> Canonical guardrail anti-patterns — discriminator omission (`$actionType` / `$parameterType` / `$ruleType` / `$selectorType`), lowercase scope values, populating `guardrail.policies` on tool resources, and UUID reuse — live in [../../critical-rules.md](../../critical-rules.md) § What NOT to Do. The validator-specific anti-patterns below extend (do not repeat) that canonical list.
+> Canonical guardrail anti-patterns — discriminator omission (`$actionType` / `$parameterType` / `$ruleType` / `$selectorType`), lowercase scope values, populating `guardrail.policies` on tool resources, and UUID reuse — live in [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) § What NOT to Do. The validator-specific anti-patterns below extend (do not repeat) that canonical list.
 
 1. **Do not use snake_case for PII entity names** — use PascalCase: `"Email"` not `"email_address"`, `"PhoneNumber"` not `"phone_number"`, `"USSocialSecurityNumber"` not `"us_ssn"`.
 2. **Do not add `prompt_injection` to Tool or Agent scope** — it only works with `"Llm"` scope, PreExecution stage.
@@ -980,9 +995,9 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 7. **Do not use `filter` action on built-in validators** — `"$actionType": "filter"` is only supported on deterministic rules. All built-in validators (`pii_detection`, `intellectual_property`, `prompt_injection`, `user_prompt_attacks`, `harmful_content`) support only `block`, `log`, and `escalate`.
 8. **Do not use odd numbers or floats for `harmfulContentEntityThresholds`** — only `0`, `2`, `4`, `6` are valid severity values. Values like `3` or `2.5` cause validation errors.
 9. **Do not add a built-in validator without first running `uip agent guardrails list --output json`** — always fetch the list, verify the validator exists, and confirm `Status` is `"Available"`. Adding an `Unauthorised` or non-existent validator causes runtime failures.
-10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resource list --kind App` results by this type.
+10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resources list --kind App` results by this type.
 11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
-12. **Do not put `"solution_folder"` into `app.folderName`** — set it to the literal `Folder` from `uip solution resource list --kind App` (e.g., `"Shared/Approvals"`). `uip agent migrate` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Omit `app.folderId`. `FolderKey` from `resource list` is NOT used in any `app.*` field — it IS correct in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
+12. **Do not put `"solution_folder"` into `app.folderName`** — set it to the literal `Folder` from `uip solution resources list --kind App` (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Omit `app.folderId`. `FolderKey` from `resource list` is NOT used in any `app.*` field — it IS correct in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
 13. **Do not hardcode the auth-file path for Apps API calls in guardrail setup.** `source <(grep = ...)` fails to export variables to the surrounding shell in some environments, and `~/.uipath/.auth` is wrong when the sandbox writes auth at the filesystem root. Use the HOME-robust prelude: `A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a`.
 14. **Do not add a Tool-scoped guardrail before the tool is added to the agent** — every name in `selector.matchNames` must match an existing tool resource under `<AGENT_NAME>/resources/<ToolName>/resource.json`. A guardrail referencing a non-existent tool will be caught by `uip agent validate` and fail with an error. Always run `uip agent tool list` first (Step 2) and confirm target tools are present.
 15. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).
@@ -1090,18 +1105,18 @@ Quick template — built-in PII validator:
 ]
 ```
 
-### Step 5 — Validate and migrate
+### Step 5 — Refresh and validate
 
 ```bash
+uip agent refresh  "<AGENT_NAME>" --output json
 uip agent validate "<AGENT_NAME>" --output json
-uip agent migrate  "<AGENT_NAME>" --output json
 ```
 
-Confirm the guardrails appear in the validated output without errors. Migrate regenerates `.agent-builder/` so Studio Web sees the updated guardrails.
+Confirm the guardrails appear in the validated output without errors. Refresh regenerates `entry-points.json` and `bindings_v2.json` so Studio Web sees the updated guardrails.
 
 ## References
 
-- [../../critical-rules.md](../../critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, populating `guardrail.policies` on tool resources, UUID reuse)
+- [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, populating `guardrail.policies` on tool resources, UUID reuse)
 - [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
 

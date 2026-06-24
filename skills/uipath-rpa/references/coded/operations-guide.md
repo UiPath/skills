@@ -392,15 +392,15 @@ namespace MyProjectName
 
 ## Add a Dependency
 
-Canonical CLI: `uip rpa packages install`. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command** — agents that try it get `Unknown command: add-dependency`. See [cli-reference.md § packages install](../cli-reference.md).
+Canonical CLI: `uip rpa packages install`. Do NOT hand-edit `project.json` `dependencies`. **There is no `uip rpa add-dependency` command** — agents that try it get `error: unknown command 'add-dependency'`. See [cli-reference.md § packages install](../cli-reference.md).
 
 **Steps:**
 1. Read `project.json` to check existing dependencies — skip packages already at the desired version.
 2. Run:
    ```bash
-   uip rpa packages install --project-dir "<PROJECT_DIR>" --packages '[{"id":"<PACKAGE_ID>","version":"<VERSION>"}]' --output json
+   uip rpa packages install --project-dir "<PROJECT_DIR>" --packages 'id=<PACKAGE_ID>,version=<VERSION>' --output json
    ```
-   Omit `version` to resolve the latest compatible. Pin a version only when there is a known compatibility constraint (see pinned versions below). The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
+   Omit `,version=<VERSION>` to resolve the latest compatible. Pin a version only when there is a known compatibility constraint (see pinned versions below). The CLI writes `project.json` and runs restore — re-read `project.json` afterward if subsequent steps need it.
 3. Only install packages the project actually needs.
 
 **Pinned versions for UiPath activity packages (current v25.x):**

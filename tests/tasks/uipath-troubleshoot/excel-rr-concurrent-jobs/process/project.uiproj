@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: minimal Excel Read Range process used to exercise the activity-packages/excel-activities/playbooks/read-range-file-locked.md playbook. Reads a single range from a fixed workbook path.",
+  "MainFile": "Main.xaml"
+}

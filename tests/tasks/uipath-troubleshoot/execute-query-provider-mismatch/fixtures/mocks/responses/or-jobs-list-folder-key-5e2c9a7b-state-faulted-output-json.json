@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "4d8a1c3f-9b2e-4c7a-8d1f-6e3a5b0c2d4f",
+      "State": "Faulted",
+      "ProcessName": "InvoiceReconciliation",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-05-28T07:32:11.402Z",
+      "EndTime": "2026-05-28T07:32:12.871Z",
+      "CreationTime": "2026-05-28T07:32:11.190Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

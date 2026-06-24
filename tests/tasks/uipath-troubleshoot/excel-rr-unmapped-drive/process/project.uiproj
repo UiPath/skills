@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Read Range process with mapped-drive WorkbookPath (Z:\\) that exists in the developer's RDP session but not in the Robot's unattended session. Exercises the unmapped-drive branch of the file-not-found playbook.",
+  "MainFile": "Main.xaml"
+}

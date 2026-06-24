@@ -6,8 +6,6 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 # UiPath Coded Apps
 
-> **Preview** — skill is under active development; surface and behavior may change.
-
 Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps using the `uip codedapp` CLI and `@uipath/uipath-typescript` SDK.
 
 ## When to Use This Skill
@@ -15,6 +13,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to **build, debug, or deploy** a UiPath Coded Web App or Coded Action App
 - User asks about `uip codedapp` commands, `.uipath/` directory, `app.config.json`, or `action-schema.json`
 - User wants to **scaffold** a new React/Vue frontend for UiPath Cloud or an Action Center form
+- User wants to embed the **Document Understanding Validation Station** widget for human review of DU extraction results
 - User wants to **push/pull source** between local and Studio Web
 - User wants to use the `@uipath/uipath-typescript` SDK from a coded app
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
@@ -46,6 +45,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 14. **Every list call returns ONE page — even with no options. There is no "give me everything" path.** Applies to `getAll`, `getAllRecords`, `queryRecordsById`, `getFileMetaData`, etc. `getAll()` with no options does NOT return all rows; the SDK sends no `pageSize` and the **server** applies its own cap, wrapped in a misleadingly-named `NonPaginatedResponse`. To list every row from a source that may exceed the cap, you MUST loop the cursor: `while (page.hasNextPage) { page = await getAll({ cursor: page.nextCursor }) }` and accumulate `items`. Reading `result.items.length` after a single call is almost always a bug. See [sdk/pagination.md](references/sdk/pagination.md).
 15. **Tables of dynamic data must paginate, not dump all rows in one scroll.** Page size 25–50 with next/prev/page-number controls and a "Showing X–Y of Z" summary. Top-N + "see all" is acceptable for explicitly summary panels (e.g., "Top 10 oldest"). Infinite-scroll-of-N-rows is unusable for operational dashboards. Applies to any table backed by any service (DF entities, Tasks, Jobs, Conversations, Process Instances, etc.). See [patterns.md](references/patterns.md) "Tabular Data".
 16. **When adding any new SDK method call, verify `VITE_UIPATH_SCOPE` already includes the required scope.** Write operations, action methods (`Jobs.stop`, `Tasks.complete`, `ProcessInstances.cancel`, etc.), or first use of a new service typically need broader scopes than read-only flows. Mismatched scopes fail silently with `401` / `403` on the first call. See [oauth-scopes.md](references/oauth-scopes.md) for the per-method scope table.
+17. **Never call `sdk.initialize()` in an action app.** That is web-app-only — it starts a PKCE OAuth redirect. Action apps run in Action Center's iframe with a host-injected session: construct `new UiPath()` (no args, no `.env`) and use it directly. See [create-action-app.md](references/create-action-app.md) `src/uipath.ts`.
 
 ## Task Navigation
 
@@ -57,6 +57,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
 | **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
 | **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
+| **Embed the DU Validation Station widget** | [references/widgets/validation-station.md](references/widgets/validation-station.md) |
 | **OAuth scopes for SDK services** | [references/oauth-scopes.md](references/oauth-scopes.md) |
 | **SDK: Import paths & subpath exports** | [references/sdk/imports.md](references/sdk/imports.md) |
 | **SDK: Assets, Queues, Buckets, Processes, Jobs, Attachments** | [references/sdk/orchestrator.md](references/sdk/orchestrator.md) |

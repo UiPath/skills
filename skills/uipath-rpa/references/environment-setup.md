@@ -4,7 +4,7 @@
 
 ## Studio Desktop vs headless Studio
 
-`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, `indicate-application`/`indicate-element`, the `uia` group, etc. all work headless.
+`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, the `uia` group (indication, capture, interaction), etc. all work headless.
 
 Studio Desktop is only required for two interactive UI tools:
 - `uip rpa files diff` — opens an interactive diff window in Studio's UI.
@@ -12,9 +12,7 @@ Studio Desktop is only required for two interactive UI tools:
 
 For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
 
-> **Coded UI automation caveat.** One non-interactive task also needs Studio Desktop: regenerating `ObjectRepository.cs` — the `Descriptors.*` class consumed by coded `uiAutomation.*` workflows. `uip rpa build` alone does NOT produce it; Studio Desktop reconciles the coded workflow against the Object Repository to generate it. A headless flow can author and validate coded UIA, but populating `Descriptors.*` requires a Studio Desktop pass. See [ui-automation-guide.md](ui-automation-guide.md) § Finding Descriptors.
-
-> **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it's still working. Bump the per-call timeout to ≥ 180s for the first invocation.
+> **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it's still working. The default shell timeout covers this; bump `timeoutSeconds` only behind a slow feed.
 
 ## Step 0.1: Establish Project Root
 
@@ -181,7 +179,7 @@ Two `uip rpa` commands need a running Studio Desktop instance — they have UI s
 
 | Command | Why it needs Studio |
 |---------|---------------------|
-| `uip rpa diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
+| `uip rpa files diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
 | `uip rpa focus-activity` | Selects/highlights an activity in Studio's active workflow designer. |
 
 When (and only when) you need to run one of these, ensure Studio Desktop is up:

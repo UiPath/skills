@@ -1,0 +1,6 @@
+{
+  "Name": "ConfigSyncProcess",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Execute Non Query failure caused by an empty Sql expression (CommandText property has not been initialized).",
+  "MainFile": "Main.xaml"
+}

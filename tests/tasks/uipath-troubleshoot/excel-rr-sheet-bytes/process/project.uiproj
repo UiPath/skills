@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Read Range process where the configured SheetName 'Quarterly Data' (regular space) does not match the workbook's actual sheet 'Quarterly\\u00A0Data' (non-breaking space). Visually identical, byte-different. Used to exercise the activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md playbook (look-alike / byte-inspection path).",
+  "MainFile": "Main.xaml"
+}

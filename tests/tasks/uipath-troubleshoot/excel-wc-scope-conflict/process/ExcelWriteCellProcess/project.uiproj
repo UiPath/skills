@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelWriteCellProcess",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Write Cell — Classic Workbook activity nested inside Modern Use Excel File scope on the same workbook. Exercises the scope-conflict variant of branch 1 of the write-cell-failures playbook.",
+  "MainFile": "Main.xaml"
+}

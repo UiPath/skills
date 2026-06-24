@@ -1,0 +1,46 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa111188-001",
+      "JobKey": "aa111111-8888-9999-aaaa-bbbbccccdddd",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.310Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111188-002",
+      "JobKey": "aa111111-8888-9999-aaaa-bbbbccccdddd",
+      "Level": "Info",
+      "Timestamp": "2026-05-20T08:00:01.418Z",
+      "Message": "[ExcelDailyImport] Starting daily sales import — reading C:\\Robot\\Data\\sales-2026-05.xlsx",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111188-003",
+      "JobKey": "aa111111-8888-9999-aaaa-bbbbccccdddd",
+      "Level": "Trace",
+      "Timestamp": "2026-05-20T08:00:01.510Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — opening workbook (WorkbookPath='C:\\Robot\\Data\\sales-2026-05.xlsx')",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa111188-004",
+      "JobKey": "aa111111-8888-9999-aaaa-bbbbccccdddd",
+      "Level": "Error",
+      "Timestamp": "2026-05-20T08:00:01.802Z",
+      "Message": "Use Excel File: sales-2026-05.xlsx — System.IO.FileNotFoundException: Could not find file 'C:\\Robot\\Data\\sales-2026-05.xlsx'.",
+      "ProcessName": "ExcelDailyImport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

@@ -3,7 +3,7 @@ description: >
   Quality test: agent inserts a HITL node into an existing flow without
   breaking the existing nodes or wiring. Tests that the agent can correctly
   remove an existing edge and re-wire it through a new HITL node.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, node:hitl]
+tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:generate, shape:multi-node, node:hitl]
 
 run_limits:
   expected_turns: 34
@@ -59,7 +59,7 @@ success_criteria:
     description: "HITL completed handle is wired"
     path: "ContractReview/ContractReview/ContractReview.flow"
     includes:
-      - '"completed"'
+      - 'completed'
     weight: 2.0
     pass_threshold: 1.0
 

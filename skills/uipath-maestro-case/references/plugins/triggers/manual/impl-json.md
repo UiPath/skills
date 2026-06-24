@@ -6,7 +6,7 @@ direct-json: supported
 
 Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../case-editing-operations.md).
 
-> **v20 layout-strip (Rule 19).** Read `Schema:` header from `tasks.md`. In **v20 mode**, omit ALL of: `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Skip the position-computation step entirely. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`. Recipe shapes below show v19 fields; in v20 mode strip the listed render fields and skip position math. `entry-points.json` shape is identical across schemas.
+> **Layout-strip (Rule 18).** Omit `position`, `style`, `measured`, `width`, `height`, `zIndex` from the trigger node. Keep `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent`, `data.label`, `data.description`, `data.uipath`.
 
 ## Purpose
 
@@ -41,34 +41,14 @@ Position is not a user input. It is computed statefully (see below).
   node -e "console.log(crypto.randomUUID())"
   ```
 
-Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference (edges that target this trigger's id).
-
-## Position (stateful)
-
-**Before writing**, count every trigger node:
-
-```text
-existingTriggers = schema.nodes.filter(n => n.type === "case-management:Trigger")
-```
-
-Then compute:
-
-```text
-if existingTriggers.length === 0:
-  position = { x: -100, y: 200 }
-else:
-  position = { x: -100, y: max(existingTriggers[].position.y) + 140 }
-```
-
-The `length === 0` branch fires for the primary trigger written into a fresh caseplan (case plugin emits `nodes: []`). Subsequent triggers fall into the `else` branch, stacking at `y + 140` each time.
-
-Do not short-circuit to a hard-coded `y` value — the algorithm must handle any schema state the upstream mutations may have produced.
+Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference (e.g., In-argument companions whose `elementId` is this trigger's id).
 
 ## Default-name fallback
 
 If the T-entry does not supply `display-name`:
 
 ```text
+existingTriggers = schema.nodes.filter(n => n.type === "case-management:Trigger")
 displayName = `Trigger ${existingTriggers.length + 1}`
 ```
 
@@ -82,9 +62,6 @@ Append (not prepend) the trigger node:
 {
   "id": "<trigger_XXXXXX>",
   "type": "case-management:Trigger",
-  "position": { "x": -100, "y": <computed> },
-  "style": { "width": 96, "height": 96 },
-  "measured": { "width": 96, "height": 96 },
   "data": {
     "parentElement": { "id": "root", "type": "case-management:root" },
     "label": "<displayName>",
@@ -131,7 +108,7 @@ After writing, confirm:
 - `nodes[].type === "case-management:Trigger"`.
 - `nodes[].data.label` matches the resolved `displayName`.
 - `nodes[].data.description` is present and non-empty (direct-JSON-write divergence — always emitted).
-- `nodes[].data.parentElement` always present. `style`, `measured` present in v19; absent in v20 (Rule 19).
+- `nodes[].data.parentElement` always present. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
 - `nodes[].data.uipath` is **absent** (manual triggers have no `uipath` key).
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 

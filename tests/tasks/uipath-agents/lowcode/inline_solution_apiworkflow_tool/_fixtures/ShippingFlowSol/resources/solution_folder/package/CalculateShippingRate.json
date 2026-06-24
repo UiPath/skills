@@ -1,0 +1,26 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CalculateShippingRate",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "df62b010-0b1d-46ad-8405-afce731b6d65",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "files": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": null,
+      "fileReference": null,
+      "name": "CalculateShippingRate",
+      "description": null
+    },
+    "locks": [],
+    "key": "20a0e69d-15f5-47e9-b49d-bd95f88044ef"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the look-alike / byte-inspection path of the excel-activities/read-range-sheet-not-found playbook. The job logs fixture surfaces the actual sheet name as 'Quarterly\\u00A0Data' (NBSP between words); the configured name and the error message use regular space 'Quarterly Data'. Visually identical in any tool output; differ at byte level. Agent must recognize the impasse and recommend the host-side PowerShell byte-compare snippet from the playbook.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-f0011111-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"cc333333-7777-8888-9999-000011112222\" --output json",
+      "file": "or-jobs-get-cc333377-output-json.json"
+    },
+    {
+      "match": "or jobs get cc333333-7777-8888-9999-000011112222 --output json",
+      "file": "or-jobs-get-cc333377-output-json.json"
+    },
+    {
+      "match": "or jobs history \"cc333333-7777-8888-9999-000011112222\" --output json",
+      "file": "or-jobs-history-cc333377-output-json.json"
+    },
+    {
+      "match": "or jobs history cc333333-7777-8888-9999-000011112222 --output json",
+      "file": "or-jobs-history-cc333377-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"cc333333-7777-8888-9999-000011112222\" --output json",
+      "file": "or-jobs-logs-cc333377-output-json.json"
+    },
+    {
+      "match": "or jobs logs cc333333-7777-8888-9999-000011112222 --output json",
+      "file": "or-jobs-logs-cc333377-output-json.json"
+    }
+  ]
+}

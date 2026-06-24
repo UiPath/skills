@@ -95,3 +95,9 @@ uip maestro flow registry get "uipath.core.agent.<resourceKey>" --local --output
 The second command's `Data.Node` object is what the flow skill pastes into the flow's `definitions[]`. For the node instance shape and top-level `bindings[]` entries, see [agent/impl.md § In-solution variant](../../../uipath-maestro-flow/references/plugins/agent/impl.md#node-instance-inside-nodes--in-solution-variant).
 
 Without `--local`, `registry list`/`get` query the tenant registry (Orchestrator-published resources only) and will not surface the sibling project.
+
+## Wiring the Agent's Inputs
+
+For inputs that reference flow variables, use `{ "type": "literal", "expression": "{{ $vars.X }}", "fieldType": "string" }` — NOT `=js:...` expressions. `=js:` ships as a literal string to the agent activity and fails at runtime with `Cannot find name '<identifier>'`.
+
+Input-only rule. Mapping the agent's output back to a flow-level global on an End node DOES use `=js:` — see [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates).

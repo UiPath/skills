@@ -21,7 +21,7 @@ initial_prompt: |
   The working directory starts empty. Scaffold the project with
   `uip rpa init --name "LoginTests" --location "." --template-id TestAutomationProjectTemplate`.
   Studio Desktop is NOT available — skip any CLI commands that require
-  --use-studio. Focus on generating the correct files and project.json updates.
+  a running Studio Desktop instance. Focus on generating the correct files and project.json updates.
 
   Use `UiPath.Testing.Activities` version `[25.4.1]` (newer 25.10.x
   releases synthesize a bootloader that breaks the build on this

@@ -4,17 +4,29 @@
 
 ## Resource Shape
 
-`resources/<resource-name>/resource.json`:
+`resources/<ResourceName>/resource.json` — the full shape `uip agent refresh`/`validate` accept. **The folder name must exactly match the `name` field** (case- and whitespace-sensitive) or the validator fails with `folder must be named after the resource name`:
 
 ```json
 {
   "$resourceType": "tool",
-  "id": "<UUID>",
+  "id": "<FRESH_UUID>",
+  "name": "DeepRag",
+  "description": "<what this deep research pass does, e.g. synthesize an answer across uploaded PDFs with citations>",
   "type": "internal",
-  "referenceKey": null,
+  "inputSchema":  { "type": "object", "properties": {} },
+  "outputSchema": { "type": "object", "properties": {} },
+  "settings": {},
   "isEnabled": true,
+  "referenceKey": null,
+  "guardrail": { "policies": [] },
+  "argumentProperties": {},
   "properties": {
-    "toolType": "deep-rag"
+    "toolType": "deep-rag",
+    "settings": {
+      "contextType": "attachments",
+      "query": { "variant": "dynamic" },
+      "folderPathPrefix": { "variant": "static" }
+    }
   }
 }
 ```
@@ -22,13 +34,33 @@
 | Field | Constraint |
 |---|---|
 | `$resourceType` | `"tool"` |
-| `id` | UUID-shaped string |
+| `id` | Fresh UUID-shaped string |
+| `name` | Required — and the resource folder MUST be named exactly this (`missing name` if absent; `folder must be named after the resource name` if the folder differs) |
+| `description` | Free text |
 | `type` | `"internal"` (built-in tools) |
+| `inputSchema` / `outputSchema` | Empty object schema `{ "type": "object", "properties": {} }` — deep-rag declares no I/O schema; attachments flow through at runtime |
+| `settings`, `argumentProperties` | `{}` (backward-compat scaffolding) |
+| `guardrail.policies` | `[]` |
 | `referenceKey` | `null` (non-null identifies an external tool) |
 | `isEnabled` | truthy |
 | `properties.toolType` | `"deep-rag"` (others: `analyze-attachments`, `load-attachments`, `batch-transform`) |
+| `properties.settings` | Tool config — see [Tool Configuration](#tool-configuration) |
 
-Resource directory name is free-form. Validator scans `<agent>/resources/**/resource.json`.
+Validator scans `<agent>/resources/**/resource.json`; each `resource.json`'s parent folder must equal its `name`.
+
+> The repo's static checker asserts only `$resourceType`, `type`, `referenceKey`, `id`, `isEnabled`, and `properties.toolType`. The full shape above is what `uip agent refresh`/`validate` require — author it directly. Do not reduce it to that minimal field set, and do not treat a `refresh` schema rejection as a reason to reverse-engineer the CLI: fix the resource against this template.
+
+## Tool Configuration
+
+deep-rag's `inputSchema`/`outputSchema` are empty — the config lives in `properties.settings`:
+
+| Setting | Meaning |
+|---|---|
+| `contextType` | `"attachments"` — documents arrive as runtime attachments |
+| `query.variant` | `"dynamic"` — the research prompt is derived at runtime |
+| `folderPathPrefix` | `{ "variant": "static" }` — folder scoping for the ephemeral index |
+
+Unlike `batch-transform`, deep-rag carries no `outputColumns` and no `webSearchGrounding`. The context-index form of DeepRAG (not this tool form) instead takes `citationMode` (`"Inline"`/`"Skip"`) — see [planning.md](planning.md) § Tool resource vs context-index resource. The `properties.settings` keys are the Studio Web authoring shape; if `uip agent refresh` rejects one, verify it against your CLI version.
 
 ## Standalone vs Inline-in-Flow
 
@@ -67,7 +99,7 @@ Studio Web forwards conversation attachments to the tool — no schema wiring. O
 
 | Check | How |
 |---|---|
-| Agent project shape (agent.json, resources, bindings) | `uip agent validate --output json` (canonical; auto-runs migrations + writes `.agent-builder/`) |
+| Agent project shape (agent.json, resources, bindings) | `uip agent validate --output json` (canonical; run `uip agent refresh` first to regenerate `entry-points.json` and `bindings_v2.json`) |
 | Smoke run | `uip solution upload . --output json`, invoke from Studio Web with a test PDF/TXT attachment |
 
 The repo's coder-eval suite uses a shared static checker at `tests/tasks/uipath-agents/builtin_tool/check_builtin_tool.py` covering all four `toolType` values (`analyze-attachments`, `load-attachments`, `deep-rag`, `batch-transform`). It is shared test tooling, not a runtime requirement for this skill.

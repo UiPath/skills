@@ -33,7 +33,7 @@ Immediate fix:
   - Source: `references/activity-packages/ui-automation/playbooks/selector-failure-healing-fix.md` → `interpretations/healing-agent-data.md` § "Applying `update-target` Fixes".
 2. After editing, validate the workflow compiles cleanly.
   - Why: HA's selector was never tested at runtime (recommendation-only mode), so the only safety net before redeploying is a clean compile plus a manual rerun.
-  - Where: `uip rpa get-errors --file-path "Google.xaml" --output json --use-studio`.
+  - Where: `uip rpa get-errors --file-path "Google.xaml" --output json`.
   - Who: RPA developer.
   - Source: `interpretations/healing-agent-data.md` § "Applying `update-target` Fixes" step 5.
 

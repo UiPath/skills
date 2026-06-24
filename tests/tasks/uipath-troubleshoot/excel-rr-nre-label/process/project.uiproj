@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelDailyImport",
+  "ProjectType": "Process",
+  "Description": "Repro: Excel Read Range process where the workbook is labeled Confidential\\Limited Access via Microsoft Purview; Robot user lacks label permission and the activity fails with a bare NullReferenceException. Exercises the sensitivity-label branch of the NRE/TIE playbook.",
+  "MainFile": "Main.xaml"
+}

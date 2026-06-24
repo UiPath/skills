@@ -43,7 +43,7 @@ Immediate fix:
    - Who: RPA developer.
    - Source: `references/activity-packages/ui-automation/playbooks/disabled-element.md` § Resolution → branch (D).
 
-After applying the fix, validate the workflow: `uip rpa get-errors --file-path "ClickCase.xaml" --output json --use-studio`.
+After applying the fix, validate the workflow: `uip rpa get-errors --file-path "ClickCase.xaml" --output json`.
 
 ### Orchestrator (Propagation)
 1. Restart the job from Orchestrator after the `ClickCase.xaml` fix is published.

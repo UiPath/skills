@@ -7,18 +7,12 @@ description: >
   (3) calls `uip platform users licenses set <user> --input <path>
   --output json`. CLI auth failure is expected; this validates command shape
   only — no live write.
-tags: [uipath-platform, smoke-blocked, licensing, users]
-skip: true
-# Blocked: `uip platform users licenses` is not in the public
-# @uipath/platform-tool (v1.0.0 ships only `tenants licenses get|set`).
-# Re-enable when the CLI ships the users surface. See PLT-103133.
+tags: [uipath-platform, smoke, licensing, users]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
 
 initial_prompt: |
-  Before starting, load the uipath-platform skill and follow its workflow.
-
   Assign two licenses to user `dan.dinu@uipath.com`:
   - Attended Named User
   - Automation Developer Named User
