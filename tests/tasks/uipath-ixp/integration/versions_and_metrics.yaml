@@ -27,11 +27,12 @@ initial_prompt: |
 
   Once it's trained, review and confirm the predictions on the documents so the
   project has ground truth to score against — without that there are no metrics.
-  Then note how the current model (version 1) scored and save those metrics to
-  `metrics_v1.json`. Then try to improve it — change the model's configuration and
-  retrain to get a second version, and save its metrics to `metrics_v2.json`. With
-  both saved, tell me which version scored better and by how much, calling out the
-  fields that moved, and rank them best-to-worst by score.
+  Pull the metrics for version 1 and save them to `metrics_v1.json` exactly as the
+  command returns them — the full JSON output, not a summary or reshaped subset.
+  Then try to improve it — change the model's configuration and retrain to get a
+  second version — and pull version 2's metrics the same way into `metrics_v2.json`.
+  With both saved, tell me which version scored better and by how much, calling out
+  the fields that moved, and rank them best-to-worst by score.
 
   Delete the project when you're done.
 
@@ -71,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Deleted the project as cleanup"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\b(?=.*(--confirm-data-loss|--yes|-y))'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\b(?=.*(--yes|-y))'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -81,7 +82,11 @@ success_criteria:
     description: "Version 1 metrics captured with real per-field scores"
     path: "metrics_v1.json"
     assertions:
-      - expression: "length(Data.Fields)"
+      # `Data || @`: accept either save shape. We don't control how the agent
+      # writes the file — it may store the full CLI response (root has `Data`)
+      # or just the unwrapped payload (root IS the data). `@` is the JMESPath
+      # current node, so this resolves `Fields` whichever way it was saved.
+      - expression: "length((Data || @).Fields)"
         operator: gte
         expected: 1
     weight: 2.0
@@ -91,7 +96,11 @@ success_criteria:
     description: "Version 2 metrics captured with real per-field scores"
     path: "metrics_v2.json"
     assertions:
-      - expression: "length(Data.Fields)"
+      # `Data || @`: accept either save shape. We don't control how the agent
+      # writes the file — it may store the full CLI response (root has `Data`)
+      # or just the unwrapped payload (root IS the data). `@` is the JMESPath
+      # current node, so this resolves `Fields` whichever way it was saved.
+      - expression: "length((Data || @).Fields)"
         operator: gte
         expected: 1
     weight: 2.0

@@ -74,7 +74,7 @@ success_criteria:
   - type: command_executed
     description: "Deleted the project as cleanup"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\b(?=.*(--confirm-data-loss|--yes|-y))'
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+delete\b(?=.*(--yes|-y))'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -84,10 +84,14 @@ success_criteria:
     description: "After tagging: staging points to v1, live points to v2"
     path: "models_tagged.json"
     assertions:
-      - expression: "Data.Tags[?Name=='staging'].Version | [0]"
+      # `Data || @`: accept either save shape. We don't control how the agent
+      # writes the file — it may store the full `list-models` response (root has
+      # `Data`) or just the unwrapped payload (root IS the data). `@` is the
+      # JMESPath current node, so this resolves `Tags` whichever way it was saved.
+      - expression: "(Data || @).Tags[?Name=='staging'].Version | [0]"
         operator: equals
         expected: 1
-      - expression: "Data.Tags[?Name=='live'].Version | [0]"
+      - expression: "(Data || @).Tags[?Name=='live'].Version | [0]"
         operator: equals
         expected: 2
     weight: 2.0
@@ -97,7 +101,9 @@ success_criteria:
     description: "After move: the live tag now points to v1"
     path: "models_after_move.json"
     assertions:
-      - expression: "Data.Tags[?Name=='live'].Version | [0]"
+      # `Data || @`: accept either save shape (see note above) — full response
+      # root has `Data`, unwrapped payload root IS the data.
+      - expression: "(Data || @).Tags[?Name=='live'].Version | [0]"
         operator: equals
         expected: 1
     weight: 2.0
