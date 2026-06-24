@@ -19,6 +19,16 @@ All agents (including you) follow the invariants and confidence-level behavior d
 5. **Test hypotheses one at a time, sequentially.** Never spawn parallel testers.
 6. **When you need user input, use `AskUserQuestion`.** Do not proceed until the user responds.
 
+### External Automation Guardrail
+
+If triage finds no UiPath project marker such as `project.json`, `agent.json`, `caseplan.json`, `project.uiproj`, `.xaml`, `.flow`, `.bpmn`, or `.uipx`, no failing `uip` command, and no UiPath runtime entity, classify the case as `external-automation` instead of forcing it into a UiPath product scope. For these cases:
+
+- Do not run the full UiPath playbook loop unless the user adds a UiPath entity, trace, job, command, or project artifact.
+- Before allowing any repeated document/file mutation loop, require a small diagnostic probe against a copy or one target plus a before/after invariant, such as the affected item count before and after.
+- If two consecutive runs report the same target count/state and no changed output, stop the loop and switch to diagnosis. Do not keep retrying the same script.
+- For PowerShell phases, reset session state at script start with `Set-PSDebug -Off` and prefer a fresh `powershell`/`pwsh -NoProfile` process for each phase when state leakage could change execution.
+- For multi-session work, keep `.local/investigations/task-log.md` with scripts run, inputs, backups, before/after metrics, known failure modes, and the last verified good state. Read it before resuming.
+
 ## 2. Investigation State
 
 All state lives in `.local/investigations/` (relative to working directory). Schemas in `schemas/`.
@@ -56,6 +66,8 @@ Update `state.json.phase` at each transition:
 Spawn triage sub-agent (`agents/triage.md`). Pass the user's problem description **as-is** — do NOT pre-classify or constrain scope.
 
 **Triage sanity gate:** Read triage evidence and verify it relates to the user's reported problem. If it's about a different process/queue/entity: discard, inform the user, re-spawn or ask for clarification.
+
+**External automation exit:** If triage classified the case as `external-automation` with no matched UiPath playbooks, stop the UiPath troubleshooting state machine. Summarize that no UiPath CLI/product surface is involved, preserve the task log, and continue with normal local-script diagnosis only if the user asked for script repair.
 
 **Scope check:** Spawn scope-checker (`agents/scope-checker.md`). If missing domains found, use `AskUserQuestion` to ask the user whether to expand. If approved, re-spawn triage with the missing domains. If unnecessary domains found, remove them from `state.json.scope.domain`.
 

@@ -19,30 +19,40 @@ Classify the problem, resolve reference paths, and gather data in two passes —
 Goal: get the error message and match playbooks as fast as possible.
 
 1. **Classify scope** using the user's problem description.
-2. **If classification is unclear**, try to narrow it down (max 3 attempts) before asking the user:
+2. **Check for external automation before product lookup.** If the user only describes local scripts, shell automation, Office/COM automation, or document/file mutation, and there is no UiPath project marker such as `project.json`, `agent.json`, `caseplan.json`, `project.uiproj`, `.xaml`, `.flow`, `.bpmn`, or `.uipx`, no failing `uip` command, and no UiPath runtime entity, classify it as external automation:
+   - Write `state.json` with `scope.domain = ["external-automation"]`, `scope.level = "process"`, and `matched_playbooks = []`.
+   - Write `evidence/triage-initial.json` explaining which checks found no UiPath surface.
+   - Write or update `.local/investigations/task-log.md` with the reported scripts, last command, before/after metrics if provided, known failure modes, and last verified good state.
+   - Return to the orchestrator. Do NOT query docsai, browse UiPath product references, or run `uip` commands for an external-only case.
+3. **If classification is unclear**, try to narrow it down (max 3 attempts) before asking the user:
+   - If the user is running local mutation scripts, record these safeguards in the evidence:
+     - Require a diagnostic probe on a copy or one target before a full mutation loop.
+     - Require before/after invariants for each pass.
+     - Stop after two consecutive no-progress runs.
+     - For PowerShell, reset script state with `Set-PSDebug -Off` and prefer fresh `powershell`/`pwsh -NoProfile` processes for separate phases.
    - Run up to 3 `uip docsai ask` queries with different keyword combinations
    - Read `references/summary.md` and follow its links to filter down to a specific product/package
    - If after 3 queries you can pin the issue: proceed
    - If after 3 queries you still cannot classify: **stop searching**. Write `needs_input.json` (see shared.md) with a targeted question. Still write `state.json` with what you know.
-3. **Resolve investigation guides** — write to `state.json.investigation_guides`:
+4. **Resolve investigation guides** — write to `state.json.investigation_guides`:
    - Always include `references/investigation_guide.md`
    - Check if each matched product/package has an `investigation_guide.md`. If yes, include its path.
    - Read all resolved investigation guides and apply their data correlation rules.
-4. **Resolve identity** — follow the matched investigation guide's Data Correlation prerequisites (e.g., Orchestrator requires folder → process → time window). If the entity is inaccessible (wrong ID, permissions, not found), STOP: write `state.json`, write `needs_input.json` (see shared.md) asking for the missing detail. Do NOT continue when you can't reach the primary entity.
-5. **Fetch primary entity details** — follow the starting domain's investigation guide for initial data gathering commands. If multiple entities exist (e.g., multiple faulted jobs or incidents), select ONE entity using this priority order, then do NOT fetch details for the others:
+5. **Resolve identity** — follow the matched investigation guide's Data Correlation prerequisites (e.g., Orchestrator requires folder → process → time window). If the entity is inaccessible (wrong ID, permissions, not found), STOP: write `state.json`, write `needs_input.json` (see shared.md) asking for the missing detail. Do NOT continue when you can't reach the primary entity.
+6. **Fetch primary entity details** — follow the starting domain's investigation guide for initial data gathering commands. If multiple entities exist (e.g., multiple faulted jobs or incidents), select ONE entity using this priority order, then do NOT fetch details for the others:
    1. **Filter by process first.** If the user named a process explicitly, OR a process can be reasonably inferred from the working directory (e.g., the project's `project.json` name, the directory name), filter the candidate list to entities for that process and pick the most recent match.
    2. **Ambiguity check.** If multiple plausible processes can be inferred (e.g., the directory has been renamed/republished under a different name) and the candidate list contains entities for processes that do NOT match the inferred name, do NOT default — write `needs_input.json` (see shared.md) asking the user which process they meant. Do not pick the most recent overall when the inferred process disagrees with the candidate's process.
    3. **Fall back to most recent overall** only when no process can be inferred from the user's message OR the working directory.
 
    Write to raw/, write evidence summary.
-6. **Match playbooks** — read the product/package summary for every domain in `state.json.scope.domain`. Record EVERY playbook whose signature the error data satisfies, across ALL confidence levels (high + medium + low) — not only the highest-ranked one. When multiple sibling playbooks share an overlapping signature but describe distinct causes or remediations, ALL of them MUST appear in `state.json.matched_playbooks`. The Confidence Gate below decides Pass 1→Pass 2 routing only; it does NOT decide which playbooks are recorded. Each entry carries confidence level and full path. Do NOT override confidence levels.
+7. **Match playbooks** — read the product/package summary for every domain in `state.json.scope.domain`. Record EVERY playbook whose signature the error data satisfies, across ALL confidence levels (high + medium + low) — not only the highest-ranked one. When multiple sibling playbooks share an overlapping signature but describe distinct causes or remediations, ALL of them MUST appear in `state.json.matched_playbooks`. The Confidence Gate below decides Pass 1→Pass 2 routing only; it does NOT decide which playbooks are recorded. Each entry carries confidence level and full path. Do NOT override confidence levels.
 
-7. **Confirm source-code availability when the matched playbook needs it.** Some playbooks cannot reach a root cause without inspecting project source — typically runtime exceptions, selector failures, expression-evaluation errors, variable-binding issues, and any case where the error stack names a compiled workflow expression (e.g., `__Expr<n>Get`, `CSharpValue.Execute`, `InArgument.TryPopulateValue`) or a specific activity inside a `.xaml` / `.cs` / `.py` source file. Decide:
+8. **Confirm source-code availability when the matched playbook needs it.** Some playbooks cannot reach a root cause without inspecting project source — typically runtime exceptions, selector failures, expression-evaluation errors, variable-binding issues, and any case where the error stack names a compiled workflow expression (e.g., `__Expr<n>Get`, `CSharpValue.Execute`, `InArgument.TryPopulateValue`) or a specific activity inside a `.xaml` / `.cs` / `.py` source file. Decide:
 
    a. **Does this investigation need source?** Read each matched playbook's `## Investigation` section. If it instructs reading XAML / `project.json` / activity arguments / variable bindings / expression text / compiled-expression mapping → source is required. If it only references CLI commands and platform-side fixtures → source is not required.
 
    b. **Is source already known? Actively check — do NOT rely on memory.** Before declaring source unknown, run BOTH of these in order:
-      1. **Check the user's message.** If the problem description named a directory or path (e.g., "the project at C:\…", "the source for X is in cwd", "this folder"), record it as `source_code_path` and continue. This already happens during step 4 ("Resolve identity"); confirm here.
+      1. **Check the user's message.** If the problem description named a directory or path (e.g., "the project at C:\…", "the source for X is in cwd", "this folder"), record it as `source_code_path` and continue. This already happens during step 5 ("Resolve identity"); confirm here.
       2. **Auto-discover the current working directory.** Run `Glob` for `project.json`, `agent.json`, and `caseplan.json` at the cwd top level (NOT recursive — top level only, to avoid false positives from nested sample projects). If any of those files exist at depth 0 of cwd, record `source_code_path = "."` in `state.json.requirements` with a `source_code_path_origin = "auto-discovered-cwd"` field noting which marker file was found, and continue. Do NOT ask the user when the project is already mounted.
 
       Source is "known" only if step (1) or (2) above produced a path. If neither did, treat it as unknown and proceed to (c).
@@ -67,10 +77,10 @@ Goal: get the error message and match playbooks as fast as possible.
 
 Goal: collect richer data for medium/low confidence matching and hypothesis generation.
 
-8. **Deep data gathering** — follow each matched domain's investigation guide "Domain-Specific Data Gathering" section for additional commands beyond the initial fetch (e.g., logs, traces, Healing Agent data, connection pings, element executions). Write each to raw/, write evidence summaries.
-9. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`. If Pass 2 surfaces a new `high`-confidence playbook, append it to `matched_playbooks` but do NOT return to Pass 1 — continue to the next step.
-10. **Re-check source-code availability for any newly-matched playbooks** — if Pass 2 surfaced a new playbook from step 7's source-requiring categories and `source_code_path` is still unset, apply step 7c (write `needs_input.json` and STOP). Otherwise continue.
-11. **Write evidence summary** — consolidate findings from both passes into `triage-initial.json`. Return to orchestrator.
+9. **Deep data gathering** — follow each matched domain's investigation guide "Domain-Specific Data Gathering" section for additional commands beyond the initial fetch (e.g., logs, traces, Healing Agent data, connection pings, element executions). Write each to raw/, write evidence summaries.
+10. **Re-match playbooks** — with the richer data, some high/medium/low playbooks may now match that didn't match on error message alone. Update `state.json.matched_playbooks`. If Pass 2 surfaces a new `high`-confidence playbook, append it to `matched_playbooks` but do NOT return to Pass 1 — continue to the next step.
+11. **Re-check source-code availability for any newly-matched playbooks** — if Pass 2 surfaced a new playbook from step 8's source-requiring categories and `source_code_path` is still unset, apply step 8c (write `needs_input.json` and STOP). Otherwise continue.
+12. **Write evidence summary** — consolidate findings from both passes into `triage-initial.json`. Return to orchestrator.
 
 ## Boundaries
 
