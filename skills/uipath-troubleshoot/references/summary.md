@@ -124,6 +124,15 @@ Namespaces: `UiPath.Database.Activities`
 - [activity-packages/database-activities/overview.md](./activity-packages/database-activities/overview.md) — Package overview, connection model, key activities, and common failure patterns
 - [activity-packages/database-activities/summary.md](./activity-packages/database-activities/summary.md) — All playbooks for Database Activities issues
 
+## Python Activities
+
+Activities for running Python code from a UiPath workflow via the `UiPath.Python.Activities` package. A `Python Scope` initializes an out-of-process Python engine (bound through Python.NET) that its child activities — `Load Python Script`, `Invoke Python Method`, `Get Python Object` — run against. Issues here involve engine-initialization failures (invalid `Path`, `Target` bitness mismatch, `Library path` missing for Python > 3.9 on Windows, unsupported Python version, missing .NET Desktop Runtime 6+), script load/import errors (`ModuleNotFoundError`, top-level syntax/exception, unresolved local imports), and hangs / oversized return data. Engine-config and module errors often surface only on the robot host — the scope uses the interpreter at `Path` and Windows environment variables, not the IDE's venv/conda env.
+
+Namespaces: `UiPath.Python.Activities`
+
+- [activity-packages/python-activities/overview.md](./activity-packages/python-activities/overview.md) — Package overview, Python Scope execution model and properties, and common failure patterns
+- [activity-packages/python-activities/summary.md](./activity-packages/python-activities/summary.md) — All playbooks for Python Activities issues
+
 
 ## Playbooks
 

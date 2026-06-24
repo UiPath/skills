@@ -1,0 +1,156 @@
+task_id: skill-troubleshoot-python-loadscript-engine-init
+description: >
+  UiPath troubleshooting agent must diagnose a Load Python Script failure
+  caused by the Python Scope being unable to initialize the Python engine on
+  the robot host: the scope targets Python 3.11 (Target x64) with an empty
+  Library path, so it faults at startup with "Error initializing Python engine
+  64 bit". Success = agent matches the load-script-failures playbook, identifies
+  an engine-initialization failure (NOT a ModuleNotFoundError / syntax error),
+  AND recommends setting the Library path to the matching pythonXX.dll for
+  Python > 3.9 and/or verifying the interpreter bitness, without fabricating
+  host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  I just deployed a new Python automation, PyDataTransform, and it faults
+  in Orchestrator on every run. The folder is "Data Pipelines". It fails
+  almost immediately - it never seems to get to my script.
+
+  I'm not on the Robot host right now and have no shell access to
+  MOCK-ROBOT, only Orchestrator. Diagnose what you can from Orchestrator.
+  If the answer needs evidence from the host itself, give me the exact
+  things to check on the host the next time I'm in front of it; I'll do
+  them and come back with the result. Do not stall waiting for host data
+  - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched load-script-failures, identified engine-init failure, and recommended the Library-path / bitness fix"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "I just deployed a new Python automation, PyDataTransform, and it
+         faults in Orchestrator on every run. Folder 'Data Pipelines'. It
+         fails almost immediately - it never gets to my script. I'm not on
+         the Robot host, only Orchestrator."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/python-activities/playbooks/load-script-failures.md
+        because the runtime error
+          "Load Python Script: One or more errors occurred. ---> System.Exception:
+           Error initializing Python engine 64 bit"
+        from a Python Scope is the signature of the scope failing to
+        initialize the Python engine before the script loads (the
+        engine-initialization family, L1).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Python Scope initializes an out-of-process Python engine; the
+            failure is at engine init, before the script body runs.
+          - The project targets Python 3.11 (Path=C:\Python311, Version=Auto,
+            Target=x64) with an EMPTY Library path.
+          - On Windows, for Python > 3.9 the Library path must point at the
+            matching pythonXX.dll (python311.dll); empty fails engine init.
+          - The package (UiPath.Python.Activities 1.10.0) supports Python 3.11,
+            so the version is not the cause; this is NOT a ModuleNotFoundError
+            or a Python syntax / top-level error (the script never loaded).
+        The reference fix is:
+          - Set the Python Scope Library path to C:\Python311\python311.dll
+            (required on Windows for Python > 3.9), AND/OR
+          - Verify a 64-bit Python 3.11 is installed on the host so the
+            interpreter bitness matches Target=x64 (a bitness mismatch yields
+            the same engine-init error).
+
+      DIMENSION C -- No fabricated host actions
+        Because the user is off-host, the agent must hand over the host checks
+        (confirm the interpreter version/bitness and python311.dll location on
+        MOCK-ROBOT) and/or recommend the config fix. It must NOT claim to have
+        run host commands, edited the project on the robot, or installed
+        Python itself.
+
+      SCORING RUBRIC:
+        1.0  Agent matched load-script-failures, identified an
+             ENGINE-INITIALIZATION failure (scope cannot start the Python
+             engine, before the script loads), AND recommended at least one
+             valid fix: set the Library path to the matching pythonXX.dll for
+             Python > 3.9, OR verify/fix the interpreter bitness vs Target.
+             No fabricated host actions.
+        0.8  Correct playbook and engine-init cause, but the recommended fix is
+             vague (e.g., "fix the Python configuration" without naming the
+             Library path / pythonXX.dll or the bitness check).
+        0.5  Recognized a Python Scope / engine configuration problem but did
+             not tie it to engine initialization, or proposed an unrelated
+             Python-activities fix.
+        0.2  Surfaced the error string to the user without diagnosis.
+        0.0  Wrong cause (e.g., concluded a ModuleNotFoundError, a Python
+             syntax/top-level error, the script logic, or the workflow wiring
+             was at fault), or fabricated a host action.
+
+      Reward either valid fix path (Library path or bitness) equally.
+      Penalize confident wrong causes -- especially concluding
+      ModuleNotFoundError or a script syntax error, which the evidence
+      explicitly rules out.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You just
+    deployed a new Python automation to a new unattended robot and it
+    faults immediately on every run. You are away from the robot host and
+    only have Orchestrator access. You trust the agent and want a diagnosis
+    or a host check list.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, python-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked whether Python is installed on the robot host or what its version/bitness is, say you are not sure and cannot check right now - that is exactly what you need the agent to tell you to verify."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
