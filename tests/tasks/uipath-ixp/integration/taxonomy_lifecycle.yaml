@@ -1,10 +1,12 @@
 task_id: skill-ixp-integration-taxonomy-lifecycle
 description: >
   Integration: full taxonomy-editing lifecycle against a live tenant, verified by
-  reading taxonomy back with `get-taxonomy` after each edit. Covers create field
-  group + fields (with sensible default types), add field, rename group/field,
-  change-type, bulk update-prompts, delete field, import-taxonomy round-trip, and
-  delete group.
+  reading taxonomy back with `get-taxonomy` after each edit. The project starts
+  from an auto-suggested taxonomy (no fixture import); the agent snapshots it, adds
+  a field group and reshapes it (add field, rename group/field, change-type, bulk
+  update-prompts, delete field), then deletes that group — so the taxonomy must
+  round-trip back to the initial suggested one. Covers create-with-auto-suggest and
+  the full edit set, validated by a structural round-trip equality.
 tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
 
 run_limits:
@@ -20,10 +22,11 @@ sandbox:
       path: ../_shared/fixtures
 
 initial_prompt: |
-  I want to set up an invoice project with a specific taxonomy and then reshape it.
+  I want to set up an invoice project, reshape its taxonomy, then undo the reshaping.
   Use the tenant I'm already signed into (check I'm logged in; don't re-authenticate).
-  Create the project using the taxonomy in `./fixtures/taxonomy.json`. I only care
-  about the taxonomy structure here, so don't label or train anything.
+  Create the project from the invoices in `./fixtures/` and let IXP auto-suggest the
+  taxonomy — I only care about the taxonomy structure here, so don't label or train.
+  Save the suggested taxonomy to `taxonomy_initial.json`.
 
   Then make these exact edits, checking after each that it took:
   - Add a new field group "Charges" with two fields: "Discount", a plain text field,
@@ -37,17 +40,16 @@ initial_prompt: |
   - Delete the "Surcharge" field.
   - Save the taxonomy to `taxonomy_before_delete.json`, then delete the
     "Adjustments" group.
-  - Save the taxonomy again to `taxonomy_final.json` and confirm the original
-    invoice groups are still there.
+  - Save the taxonomy again to `taxonomy_final.json` — it should now match the
+    taxonomy you started with.
 
   When you're done, delete the project.
 
 success_criteria:
-  - type: command_executed
-    description: "Imported the bundled taxonomy"
+  - type: command_not_executed
+    description: "Did NOT import the fixture taxonomy — used auto-suggest at create time instead"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+projects\s+import-taxonomy'
-    min_count: 1
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+import-taxonomy'
     weight: 1.5
     pass_threshold: 1.0
 
@@ -152,10 +154,20 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "After delete, Adjustments is gone and the original 'Invoice Header' group remains"
-    path: "taxonomy_final.json"
-    includes: ["Invoice Header"]
-    excludes: ["Adjustments"]
-    weight: 1.5
+  - type: file_exists
+    description: "Captured the initial auto-suggested taxonomy"
+    path: "taxonomy_initial.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Round-trip: every edit was confined to the added "Adjustments" group, so after
+  # deleting it the taxonomy must structurally match the initial suggested one
+  # (group/field names, kinds, instructions — ignoring ids/timestamps). This also
+  # subsumes "Adjustments is gone" (the initial never had it).
+  - type: run_command
+    description: "Round-trip: taxonomy_final structurally matches the initial auto-suggested taxonomy"
+    command: "python3 $TASK_DIR/check_taxonomy_roundtrip.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
