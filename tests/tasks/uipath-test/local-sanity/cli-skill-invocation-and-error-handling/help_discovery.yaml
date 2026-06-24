@@ -1,0 +1,28 @@
+task_id: skill-test-help-discovery
+description: >
+  P&E GA-validation scenario 15.1 (cli skill invocation and error handling).
+  Discovered TM commands via help (uip tm --help). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:cli-help]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  I'm new to the Test Manager CLI. Run its built-in help and show me the
+  list of commands it offers.
+
+success_criteria:
+  - type: command_executed
+    description: "Discovered TM commands via help (uip tm --help)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(?:tm\s+)?(?:--help|-h|help)\b|uip\s+tm\s*$'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

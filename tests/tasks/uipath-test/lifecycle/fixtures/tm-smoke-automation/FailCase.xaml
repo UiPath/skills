@@ -1,0 +1,35 @@
+<Activity mc:Ignorable="sap sap2010 sads" x:Class="FailCase"
+ xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+ xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+ xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
+ xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+ xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+ xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+ xmlns:uicore="clr-namespace:UiPath.Core;assembly=UiPath.System.Activities"
+ xmlns:ui="http://schemas.uipath.com/workflow/activities"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- FailCase — the EXPECTED-FAILURE test case. Logs + screenshots, then throws
+       (models a login-gated step the robot can't complete). -->
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="2">
+      <x:String>System.Activities</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <Sequence DisplayName="Fail case (expected failure)" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="uicore:Image" Name="screenshot" />
+    </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log - start" Level="Info"
+      Message="FailCase: attempting a login-gated action" sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+    <ui:TakeScreenshot DisplayName="Take screenshot" Screenshot="[screenshot]"
+      sap2010:WorkflowViewState.IdRef="TakeScreenshot_1" />
+    <ui:SaveImage DisplayName="Save screenshot" Image="[screenshot]"
+      FileName="fail-case.png" sap2010:WorkflowViewState.IdRef="SaveImage_1" />
+    <ui:LogMessage DisplayName="Log - not logged in" Level="Warn"
+      Message="FailCase: no logged-in session - cannot continue" sap2010:WorkflowViewState.IdRef="LogMessage_2" />
+    <Throw DisplayName="Fail - login required"
+      Exception="[New System.Exception(&quot;Login required - expected failure when no session is available&quot;)]"
+      sap2010:WorkflowViewState.IdRef="Throw_1" />
+  </Sequence>
+</Activity>

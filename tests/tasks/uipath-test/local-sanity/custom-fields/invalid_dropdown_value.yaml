@@ -1,0 +1,35 @@
+task_id: skill-test-invalid-dropdown-value
+description: >
+  P&E GA-validation scenario 10.7 (custom fields).
+  Rejected an invalid dropdown value (400; shows allowed values). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:customfield-value-update]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  In Test Manager, bump the Priority field to Urgent on a test case in the HEALTH project.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Rejected an invalid dropdown value (400; shows allowed values)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+customfield\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

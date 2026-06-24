@@ -1,0 +1,35 @@
+task_id: skill-test-create-testcase
+description: >
+  P&E GA-validation scenario 3.1 (test cases write).
+  Created a HEALTH test case (testcases create --name). Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:testcases-create]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  Just finished the invoice-total calculation flow. I need a test case in Test Manager, in the HEALTH project, for it, name it 'PE - Validate invoice total calculation'. Throw in a couple of steps with the expected results.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Created a HEALTH test case (testcases create --name)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--name)(?=.*--output\s+json)uip\s+tm\s+testcases?\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

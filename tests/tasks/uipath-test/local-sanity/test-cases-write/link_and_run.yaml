@@ -1,0 +1,64 @@
+task_id: skill-test-link-and-run
+description: >
+  P&E GA-validation scenario 3.7 (test cases write — end-to-end automation chain).
+  Discovers automations in Orchestrator, links an entry point to a HEALTH test case,
+  runs a test set containing that case, and checks the execution result. Tests the
+  full discover → link → run → verify chain in one shot.
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:testcases-link-automation, feature:testsets-run]
+
+skip: true
+
+run_limits:
+  expected_turns: 20
+  max_turns: 50
+
+initial_prompt: |
+  In Test Manager, I want to go end to end with our TestManagerSmoke automation
+  in the Shared/uipath-test folder. Find what entry points it exposes, link the
+  PassCase entry point to a test case in the HEALTH project, kick off an automated
+  run of a test set that includes that case on the serverless robot, and tell me
+  whether it passed or failed.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Discovered available automations in the Orchestrator folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcases\s+list-automations\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Linked a HEALTH test case to the PassCase entry point"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+testcases\s+link-automation\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Triggered an automated run of a HEALTH test set"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+(?:testsets?\s+run|executions\s+run|testcases?\s+run)\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Checked the execution result (executions list or testcaselogs)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*HEALTH)(?=.*--output\s+json)uip\s+tm\s+(?:executions\s+(?:list|testcaselogs)|testcaselog)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir

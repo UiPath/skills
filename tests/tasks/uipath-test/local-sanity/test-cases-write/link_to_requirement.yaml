@@ -1,0 +1,35 @@
+task_id: skill-test-link-to-requirement
+description: >
+  P&E GA-validation scenario 3.4 (test cases write).
+  Linked a HEALTH test case to a requirement. Runs against the live HEALTH project. Maps to the Confluence
+  P&E Evaluation Scenarios matrix.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:requirements-testcases]
+
+skip: true
+
+run_limits:
+  expected_turns: 10
+  max_turns: 35
+
+initial_prompt: |
+  The invoice-total test case in our Test Manager HEALTH project covers one of our requirements but isn't connected to it. Attach the case to that requirement.
+
+success_criteria:
+  - type: command_executed
+    description: "Checked login status (uip login status --output json)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Linked a HEALTH test case to a requirement (requirements testcases --add-testcase-ids)"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--project-key\s+HEALTH)(?=.*--add-testcase-ids)(?=.*--output\s+json)uip\s+tm\s+requirements?\s+testcases\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+sandbox:
+  driver: tempdir
