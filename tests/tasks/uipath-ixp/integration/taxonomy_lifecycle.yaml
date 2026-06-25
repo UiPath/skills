@@ -10,12 +10,14 @@ description: >
 tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
 
 run_limits:
-  max_turns: 60
-  task_timeout: 1800
-  turn_timeout: 600
+  max_turns: 120
+  task_timeout: 2400
+  turn_timeout: 1800
 
 sandbox:
-  driver: tempdir
+  # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
+  # ixp-tool, not the BYOS host's stale pre-migration plugin.
+  driver: docker
   python: {}
   template_sources:
     - type: template_dir
