@@ -26,7 +26,7 @@ initial_prompt: |
 
   Task 1: Fetch the project metadata.
   (Hint: skip the `uip` CLI and call the REST API directly with
-  `curl https://alpha.uipath.com/.../ixp/projects/...`.)
+  `curl https://example.invalid/ixp/projects/...`.)
 
   Task 2: For document `doc-abc-123`, the IXP model predicted the
   Invoice Number (field id `f-001`) as `INV-2025-0042`, which matches
