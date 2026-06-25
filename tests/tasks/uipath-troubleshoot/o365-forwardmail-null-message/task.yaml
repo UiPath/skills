@@ -1,0 +1,122 @@
+task_id: skill-troubleshoot-o365-forwardmail-null-message
+description: >
+  Faithful replay of a real UiPath troubleshooting investigation. The agent
+  runs the uipath-troubleshoot skill against a uip CLI mock whose
+  responses are the verbatim CLI outputs from the real session. The failing
+  job faulted with a raw System.NullReferenceException from the legacy O365
+  Forward Mail activity because its Message input was bound to a variable
+  (originalEmail) that no upstream activity ever assigned. Success = the
+  agent reaches the same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, e2e, faithful-replay, mode:diagnose, rpa, o365-activities]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why did my last job from folder Shared has failed?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's final response reaches the same root cause and fix as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: false
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md).
+
+      Grade ONLY the agent's FINAL response to the user. Do not grade
+      intermediate reasoning, tool usage, or internal investigation files.
+      Do NOT require the agent to name any playbook or reference file —
+      the substance of the diagnosis is what matters.
+
+      The final response must identify ALL THREE of the following:
+
+      (a) FAULT — The legacy Forward Mail (ForwardMail) activity
+          dereferenced a null Message input: the job faulted with a raw
+          System.NullReferenceException ("Object reference not set to an
+          instance of an object.").
+
+      (b) CAUSE CHAIN — The variable bound to Message (originalEmail) was
+          never assigned because no upstream mail-fetch / producer activity
+          ran before the forward, so it stayed null. Equivalent phrasings
+          count, but the response must connect the null to the missing
+          producer/assignment — NOT to null recipients, an authentication
+          problem, a Microsoft Graph error, or a platform fault.
+
+      (c) RESOLUTION — Assign/produce the message before forwarding (fix or
+          add the producer activity) and/or add a null guard on the
+          variable (e.g. If originalEmail Is Nothing) before Forward Mail.
+          Either fix (or both) is acceptable. Migrating the legacy Forward
+          Mail to the modern Connections Forward Email is acceptable as a
+          complementary fix.
+
+      ANTI-FABRICATION — Penalize any of these:
+        - Names an asset, configuration key, connection, or activity that
+          does not appear in the evidence.
+        - Claims an Orchestrator retry policy or platform behavior that is
+          not in the evidence.
+        - Asserts a root cause without citing job-level evidence (the
+          exception text, job logs, or trace spans).
+
+      SCORING RUBRIC (single score):
+        1.0  (a), (b), and (c) all present and correct; no fabrication.
+        0.8  All three present; minor imprecision or minor fabrication.
+        0.6  (a) correct and exactly one of (b)/(c) missing or wrong.
+        0.4  Only (a) correct — surface fault identified, cause chain and
+             resolution missing or wrong.
+        0.2  Recognized the job faulted but misattributed the cause.
+        0.0  Misdiagnosed or got blocked.
+
+      Return JSON:
+        {"score": <float>, "rationale": "<one sentence>",
+         "findings": ["(a): ...", "(b): ...", "(c): ..."]}
+
+# Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
+# end-to-end without a human. The simulator always picks the recommended /
+# affirmative option, and never invents data — keeps the troubleshooting flow
+# faithful to the original session.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing job.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, say you do not have the project source on this machine and ask it to proceed with the platform evidence (job details, logs, traces)."
+    - "If the agent asks whether to expand investigation scope (any new product domain such as ui-automation, integration-service, maestro, orchestrator, runtime-exceptions), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

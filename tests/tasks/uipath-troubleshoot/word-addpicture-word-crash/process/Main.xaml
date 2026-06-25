@@ -1,0 +1,41 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" VisualBasic.Settings="{x:Null}" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:uiword="http://schemas.uipath.com/workflow/activities/word" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>UiPath.Word</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.IO</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>UiPath.Word.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <ui:LogMessage DisplayName="Log: starting resume photo stamp" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[ResumePhotoStamp] Inserting the candidate photo into the resume draft.&quot;]" />
+    <uiword:UseWordFile DisplayName="Use Word File: resume-draft.docx" Path="C:\Robot\Resumes\resume-draft.docx" ReferenceName="WordFileScope" sap2010:WorkflowViewState.IdRef="UseWordFile_1">
+      <uiword:UseWordFile.Body>
+        <ActivityAction x:TypeArguments="uiword:IWordDocumentActivities">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="uiword:IWordDocumentActivities" Name="WordFileScope" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <uiword:WordAddImage DisplayName="Add Picture" ImagePath="C:\Robot\Assets\candidate-photo.jpg" InsertRelativeTo="Document" Position="End" sap2010:WorkflowViewState.IdRef="WordAddImage_1" />
+            <ui:LogMessage DisplayName="Log: photo inserted" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;[ResumePhotoStamp] Candidate photo inserted into the resume.&quot;]" />
+          </Sequence>
+        </ActivityAction>
+      </uiword:UseWordFile.Body>
+    </uiword:UseWordFile>
+  </Sequence>
+</Activity>

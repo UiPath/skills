@@ -1,0 +1,104 @@
+{
+  "version": 2,
+  "_doc": "Canned responses extracted from the original investigation's raw/ CLI outputs (scrubbed). Substring dispatch, first match wins — specific rules precede generic ones.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
+      "file": "or-jobs-get-1db8bac1-ecc2-4670-843e-ff5f9a26c532-output-json.json"
+    },
+    {
+      "match": "or jobs logs 1db8bac1-ecc2-4670-843e-ff5f9a26c532 --level Error",
+      "file": "or-jobs-logs-1db8bac1-ecc2-4670-843e-ff5f9a26c532-level-error.json"
+    },
+    {
+      "match": "or jobs logs 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
+      "file": "or-jobs-logs-1db8bac1-ecc2-4670-843e-ff5f9a26c532-output-json.json",
+      "_doc": "Full log set (execution started -> Error -> execution ended) for unfiltered log retrieval."
+    },
+    {
+      "match": "or jobs history 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
+      "file": "or-jobs-history-1db8bac1-ecc2-4670-843e-ff5f9a26c532-output-json.json"
+    },
+    {
+      "match": "or jobs traces 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
+      "file": "or-jobs-traces-1db8bac1-ecc2-4670-843e-ff5f9a26c532-output-json.json",
+      "_doc": "Three recorded spans: RobotJob (full ConnectionHttpException stack in Attributes), the NewEmailReceived activity span (connector uipath-microsoft-outlook365, UseConnectionService=True), and the 'operation failed' error span."
+    },
+    {
+      "match": "traces spans get --job-key 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
+      "file": "or-jobs-traces-1db8bac1-ecc2-4670-843e-ff5f9a26c532-output-json.json",
+      "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call falls through to the empty unmocked_default."
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d-state-faulted.json",
+      "_doc": "Faulted-only subset of the recorded folder job list (rows verbatim, filtered to State == Faulted)."
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "Fallback for flag-order variations. The tenant has one folder of interest (Shared); the recorded folder-scoped job list is the correct answer for any jobs-list variant the agent tries."
+    },
+    {
+      "match": "is connections list",
+      "file": "is-connections-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d-503.json",
+      "exit_code": 1,
+      "_doc": "Live-probe evidence core to the diagnosis: the Integration Service connection layer was down when probed — HTTP 503 'no healthy upstream'. The original session probed three times (~35 min after the job) and received this byte-identical Failure payload on every attempt, so one representative fixture answers all probe retries. Matches any flag variation so repeated probes during the run keep seeing the outage. Failure response, so the CLI exits non-zero."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the ConnectionHttpException: Service Unavailable stack (HttpConnectionServiceClient.RequestWithRetryAsync exhausted, surfaced as Office365Exception) from the NewEmailReceived trigger activity."
+    },
+    {
+      "pattern": "is connections list",
+      "min": 1,
+      "description": "Live probe of the Integration Service connection layer — the recorded HTTP 503 'no healthy upstream' response is the evidence that distinguishes a service-side 5xx outage from connection-deleted (404-class) or auth-revoked (401/403-class) causes."
+    },
+    {
+      "pattern": "or jobs logs 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "traces",
+      "min": 0,
+      "description": "OPTIONAL — spans confirm the NewEmailReceived activity (connector uipath-microsoft-outlook365, UseConnectionService=True) faulted with 'Service Unavailable'; the same stack is already fully visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
+      "min": 0,
+      "description": "OPTIONAL — state transitions (Pending -> Running -> Faulted) confirm a clean single execution."
+    }
+  ]
+}

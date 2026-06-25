@@ -116,6 +116,24 @@ Namespaces: `UiPath.Excel.Activities`
 - [activity-packages/excel-activities/overview.md](./activity-packages/excel-activities/overview.md) — Package overview, providers, scopes, execution models, and common failure patterns
 - [activity-packages/excel-activities/summary.md](./activity-packages/excel-activities/summary.md) — All playbooks for Excel Activities issues
 
+## Word Activities
+
+Activities for automating Microsoft Word documents on Windows. Operations run inside a `Use Word File` (`WordProcessScope`) or classic `Word Application Scope` container and drive a real WINWORD.EXE through Office Interop (COM), requiring desktop Word on the execution host. Issues span package-wide COM / host failures common to all Word activities (type library / class not registered `0x8002801D` / `0x80040154` / `REGDB_E_CLASSNOTREG`, bitness mismatch, Word busy/blocked `0x8001010A`, `WINWORD.EXE` crashing mid-operation with `RPC_E_WRONG_THREAD` `0x8001010E`); `Word Application Scope` failures (corrupted-file errors, indefinite hangs on background modal dialogs, "cannot create unknown type" load errors, document-path resolution); and `Add Picture` (`WordAddImage`)-specific failures (activity placed outside a Word scope, insertion target text/bookmark not found, invalid image path / unusable image input).
+
+Namespaces: `UiPath.Word.Activities`
+
+- [activity-packages/word-activities/overview.md](./activity-packages/word-activities/overview.md) — Package overview, execution models, and common failure patterns
+- [activity-packages/word-activities/summary.md](./activity-packages/word-activities/summary.md) — All playbooks for Word Activities issues
+
+## Python Activities
+
+Activities for invoking Python from a workflow. `UiPath.Python.Activities` does not run Python in-process — `Python Scope` launches a separate Python host process and marshals objects over an IPC pipe; `Load Python Script` / `Run Python Script` / `Invoke Python Method` / `Get Python Object` call into that host. Issues here involve `Pipe is broken` / `Error invoking Python method` (the out-of-process host died — a pip module missing from the scope's interpreter, an unhandled exception, a hard `sys.exit`, or stdout flooding), `The specified Python path is not valid` (`Path` points at `python.exe` instead of the install folder, or the `WindowsApps\python` Store alias), `One or more errors occurred` / engine-init failures (`Target` bitness, `Version`, or `Library path` mismatch, or a missing .NET Desktop Runtime), and scripts that run but read/write the wrong files (relative paths resolving against the robot's per-package `WorkingFolder`).
+
+Namespaces: `UiPath.Python.Activities`
+
+- [activity-packages/python-activities/overview.md](./activity-packages/python-activities/overview.md) — Package overview, out-of-process execution model, and common failure patterns
+- [activity-packages/python-activities/summary.md](./activity-packages/python-activities/summary.md) — All playbooks for Python Activities issues
+
 ## Database Activities
 
 Activities for querying and modifying relational databases over ADO.NET (SQL Server, Oracle, MySQL, ODBC, OLE DB). A `DatabaseConnection` opened by `Connect to Database` / `Start Transaction` is consumed by `Execute Query`, `Execute Non Query`, `Run Command`, and the bulk/insert activities. Issues here involve null/out-of-scope connections, provider/driver mismatches after Windows-Legacy → Windows migration, SQL syntax / unsafe concatenation, query text in the connection-string field, command timeouts, `0xE0434352` CLR crashes, and using the wrong activity for the statement type.
@@ -124,6 +142,15 @@ Namespaces: `UiPath.Database.Activities`
 
 - [activity-packages/database-activities/overview.md](./activity-packages/database-activities/overview.md) — Package overview, connection model, key activities, and common failure patterns
 - [activity-packages/database-activities/summary.md](./activity-packages/database-activities/summary.md) — All playbooks for Database Activities issues
+
+## Python Activities
+
+Activities for running Python code from a UiPath workflow via the `UiPath.Python.Activities` package. A `Python Scope` initializes an out-of-process Python engine (bound through Python.NET) that its child activities — `Load Python Script`, `Invoke Python Method`, `Get Python Object` — run against. Issues here involve engine-initialization failures (invalid `Path`, `Target` bitness mismatch, `Library path` missing for Python > 3.9 on Windows, unsupported Python version, missing .NET Desktop Runtime 6+), script load/import errors (`ModuleNotFoundError`, top-level syntax/exception, unresolved local imports), and hangs / oversized return data. Engine-config and module errors often surface only on the robot host — the scope uses the interpreter at `Path` and Windows environment variables, not the IDE's venv/conda env.
+
+Namespaces: `UiPath.Python.Activities`
+
+- [activity-packages/python-activities/overview.md](./activity-packages/python-activities/overview.md) — Package overview, Python Scope execution model and properties, and common failure patterns
+- [activity-packages/python-activities/summary.md](./activity-packages/python-activities/summary.md) — All playbooks for Python Activities issues
 
 
 ## Playbooks

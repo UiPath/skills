@@ -1,0 +1,6 @@
+{
+  "Name": "ReportPdfGen",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Export to PDF failure where the output path is built by concatenation without a .pdf extension, producing an invalid output file path.",
+  "MainFile": "Main.xaml"
+}

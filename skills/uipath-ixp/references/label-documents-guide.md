@@ -17,7 +17,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 
 Save the taxonomy to `/tmp/ixp/<project-name>/taxonomies/v1.json` (increment the version on each re-fetch).
 
-From the taxonomy, review the field groups and field types so you understand what each predicted field represents.
+From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label_groups`, types under `Data.dataset.entity_defs`), review the field groups and field types so you understand what each predicted field represents.
 
 ## Step 2 — Process Each Document
 
@@ -29,7 +29,7 @@ For each document from the list, process one at a time: get predictions, downloa
 uip ixp labellings get-predictions <project-name> <document-id> --output json
 ```
 
-This returns the document's predicted `Labels` (grouped by field group name), each containing `Fields` with `FieldId`, `FieldName`, and `FormattedValue`.
+This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates`.
 
 ### 2b. Download the document file
 
@@ -69,7 +69,7 @@ Discount                 | MISSING       | IXP predicted no value AND no discoun
 Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
 ```
 
-**Repeatable field groups produce one extraction per row.** Count them in `get-predictions` — `Line Items` on a multi-line invoice has N entries under that label, indexed 0..N-1. When validation differs across rows, give per-occurrence verdicts:
+**Repeatable field groups produce one extraction per row.** `get-predictions` returns one label per row, each with an explicit 0-based `Occurrence` — `Line Items` on a multi-line invoice has N entries indexed 0..N-1 (read `Occurrence` directly; it equals document order). When validation differs across rows, give per-occurrence verdicts:
 
 ```text
 Line Items > Description (occurrence 0) | CONFIRMED     | "Widget A" matches line 1
@@ -157,17 +157,17 @@ Repeat steps 2a–2d for all documents in the list.
 If a document is unusable (wrong document type, corrupted, duplicate), delete it instead of confirming or skipping:
 
 ```bash
-uip ixp documents delete <project-name> <document-id> --output json
+uip ixp documents delete <project-name> <document-id> -y --output json
 ```
 
-`<document-id>` is the `DocumentId` from `documents list` (e.g., `3453547f3538febd.1fc885607f2aac621f8f2d3ef1847f22`). Pass it whole. Do NOT pass the AttachmentRef or the Filename.
+`-y/--yes` is required (the CLI never prompts). `<document-id>` is the `DocumentId` from `documents list` (e.g., `3453547f3538febd.1fc885607f2aac621f8f2d3ef1847f22`). Pass it whole. Do NOT pass the AttachmentRef or the Filename.
 
 **Finding the DocumentId:**
 
 | You have | How to get the DocumentId |
 |----------|---------------------------|
-| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` |
-| A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | Run `uip ixp labellings get-predictions <project-name> --output json`, find the document whose `Labels[].Fields[].FormattedValue` matches, take its `DocumentId` |
+| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope) |
+| A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | Run `uip ixp labellings get-predictions <project-name> --output json`, find the entry in `Predictions[]` whose `Labels[].Fields[].FormattedValue` matches, take its `DocumentId` |
 | Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and read with the Read tool |
 
 `documents list` returns `Filename` alongside `DocumentId` (the original upload filename, or `null` if none was sent at upload time). When filenames aren't unique within the project, the JMESPath filter returns multiple IDs — review them with `documents download` before deleting.

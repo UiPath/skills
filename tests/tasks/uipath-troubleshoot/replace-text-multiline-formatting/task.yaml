@@ -1,0 +1,140 @@
+task_id: skill-troubleshoot-replace-text-multiline-formatting
+description: >
+  UiPath troubleshooting agent must diagnose a Replace Text multi-line
+  formatting issue: the Replace value is built with Environment.NewLine, so
+  the inserted multi-line address block collapses to a single line / loses its
+  paragraph formatting in the output document. The job SUCCEEDS (the
+  replacement happens; only the layout is wrong). Success = agent matches the
+  replace-text-multiline-formatting playbook AND recommends not passing raw
+  Environment.NewLine into Replace — use Bookmarks / Form Fields + Set Bookmark
+  Text (or insert paragraph breaks via the Word object model) for multi-line
+  content, not treating the green job as healthy.
+tags: [uipath-troubleshoot, e2e, orchestrator, word-activities, replace-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My AddressBlockFill process runs green in Orchestrator (folder "Address
+  Blocks", machine MOCK-ROBOT-09) — the job shows Successful — but the
+  multi-line address it fills in comes out as one long line instead of three
+  separate lines, and the formatting is lost. No error anywhere.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the replace-text-multiline-formatting playbook AND recommended Bookmarks/Form Fields (not raw Environment.NewLine)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My AddressBlockFill process shows Successful in Orchestrator (folder
+         'Address Blocks', machine MOCK-ROBOT-09), but the multi-line address
+         it inserts comes out as one long line instead of three separate
+         lines, and the formatting is lost. No error."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/replace-text-multiline-formatting.md
+        because "replacement collapses to one line / loses formatting" with a
+        Successful job is the signature of passing raw Environment.NewLine
+        line breaks into the Replace value.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Replace value is built with Environment.NewLine (the Main.xaml
+            Replace expression joins the address lines with
+            Environment.NewLine).
+          - Replace Text inserts the text as a flat run, so OS line breaks do
+            not become Word paragraph breaks — the address collapses to one
+            line and styling is lost. The replacement itself succeeds (1
+            occurrence), so the job is Successful; only the layout is wrong.
+        The reference fix:
+          - Don't pass raw Environment.NewLine into Replace. For multi-line /
+            styled content use Bookmarks or Form Fields with the Set Bookmark
+            Text activity (preserves formatting), or insert paragraph breaks
+            via the Word object model. Keep Replace Text for plain single-line
+            token swaps.
+
+      DIMENSION C -- Right target
+        The agent must tie the layout loss to Environment.NewLine in the
+        Replace value, NOT conclude the template is wrong, the Search value is
+        wrong, the package is missing, or the job is healthy because it is
+        Successful, and NOT fabricate a host action.
+
+      SCORING RUBRIC:
+        1.0  Agent matched replace-text-multiline-formatting AND identified
+             raw Environment.NewLine in the Replace value as the cause AND
+             recommended a valid fix (Bookmarks / Form Fields + Set Bookmark
+             Text, or inserting paragraph breaks via the object model;
+             keeping Replace Text plain) — without treating the green job as
+             healthy or blaming the template/Search/package.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "don't
+             use newlines" without naming Bookmarks / Form Fields / object
+             model).
+        0.5  Recognized the formatting/line-break problem but attributed it
+             to the wrong cause (template, package version, wrong Search), or
+             matched a sibling Replace Text playbook.
+        0.2  Restated the symptom without a cause.
+        0.0  Concluded the job is healthy because Successful, OR blamed the
+             template / package / a crash / lock, OR fabricated an action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the formatting bug. The job shows
+    Successful but the multi-line address comes out as one line with the
+    formatting lost. You are away from the robot host and only have
+    Orchestrator access. You trust the agent and want a diagnosis plus the
+    fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the fix at the end."
+    - "If asked how the address value is built, say it is assembled from several lines joined together - you want them on separate lines in the document."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
