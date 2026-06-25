@@ -156,6 +156,7 @@ Focus on **what** to extract and **where** to find it. Do NOT specify format —
 - **Real example**: include an actual value from the documents (e.g., "Example: '2106732'", "Example: 'SINV0077023'").
 - **Disambiguation**: if similar fields exist, clarify what NOT to extract (e.g., "Do NOT confuse with PO Number").
 - **No format patterns**: do NOT include "Format: MM/DD/YYYY" or similar — the entity_def type (Date, Monetary, Text) already defines the format. Adding format in instructions creates conflicting signals.
+  - **Locale exception (Monetary / Number / Date):** the one time format *does* belong in the instruction is when the type mis-handles the document's locale. `Monetary Quantity` reads the Romanian comma-decimal `32,55` as `3255` (off by 100×) and sometimes appends a wrong currency (`27.89 EUR` on a RON invoice). When you see this, add an explicit locale note with a worked example — e.g. `Romanian comma-decimal: '27,91' = 27.91, NOT 2791; currency is RON, do not append a currency code.` For a whole project in one locale, state it once via `projects update-prompt` (overall instructions) instead of per field. Expect some retrain-to-retrain variance in monetary formatting even after the fix; verify values (don't just trust F1 — Critical Rule 15).
 
 **Good instruction** (145 chars):
 > "The unique invoice identifier, found in the header area near the top-right, labeled 'Invoice #' or 'Invoice Number'. Example: '2106732'."

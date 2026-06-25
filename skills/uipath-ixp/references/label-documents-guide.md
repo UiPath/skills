@@ -52,6 +52,11 @@ Use the **Read tool** to view the document file (the Read tool handles PDF, PNG,
    - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`). The reference is correct, only the literal characters need fixing. Do NOT use CORRECTED for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
    - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 12 forbids overriding a non-empty prediction with "missing".
    - **NOT CONFIRMED** — the prediction is wrong for any reason other than OCR mangling. Covers: wrong literal value on the right field, wrong-source extraction, hallucinated value, boolean came back with the wrong answer, inferred/computed value came back wrong, predicted a value the document doesn't contain. Left unannotated. Do NOT try to "fix" these with `--corrections` — `--corrections` is OCR-only (see Critical Rule 8). Improve the prompt instead.
+
+   **Value-shape & locale check (typed fields — do this before marking Monetary / Number / Date CONFIRMED).** A value that *looks* plausible can still be wrong; a wrong value confirmed here becomes the label, and F1 will then report 1.00 against it (see Critical Rule 15). Check:
+   - **Decimal / thousands separators.** Romanian and most EU invoices use the **comma as the decimal separator**: `32,55` means **32.55**, not 3255. A `Monetary Quantity`/`Number` prediction that dropped the separator (`3255`, `2789`, `3722`) is off by 100× → **NOT CONFIRMED**. Fix it via the field prompt with worked examples (`'27,91' = 27.91, NOT 2791`); for whole projects in one locale, state it once via `projects update-prompt`. See [Improve Prompts](improve-prompts-guide.md).
+   - **Currency.** A currency code that contradicts the document (e.g. `EUR` on a LEI/RON invoice, or a code appended when the field should hold only the number) → **NOT CONFIRMED**.
+   - **Type mismatch.** A value whose shape doesn't fit the field (e.g. a money amount predicted into an Exact-Text invoice-number field) → **NOT CONFIRMED**, and usually a sign the document is off-template — see *Detecting off-template documents* below.
 3. **Report your verdict for every field.** Print a table per document:
 
 ```text
@@ -113,6 +118,8 @@ If ALL predicted fields for a document are correct with no corrections needed, y
 uip ixp labellings confirm <project-name> <document-id> --output json
 ```
 
+**Do not blind-confirm.** Only use the no-`--fields` form (or `confirm` with no document-id, which confirms every document) **after every field has an explicit 2c verdict** — including the value-shape & locale check. Confirming unreviewed predictions bakes wrong values into the labels, and because F1 compares predictions against those labels, **the metric will report 1.00 even when the confirmed values are wrong** (a `32,55` invoice silently labelled `3255` still scores a perfect F1). F1 alone is never evidence the values are correct.
+
 **If there are missing fields**, include their IDs in the same `--fields` list as the CONFIRMED and CORRECTED IDs. The `confirm` command applies one uniform rule per listed field: if IXP predicted content, the content is confirmed; if IXP predicted nothing, a missing marker is written. No separate call needed.
 
 ```bash
@@ -152,9 +159,13 @@ uip ixp labellings unconfirm <project-name> <document-id> \
 
 Repeat steps 2a–2d for all documents in the list.
 
+### Detecting off-template documents
+
+IXP gives **no explicit "off-template" signal** — when a document doesn't match the project's document type it either returns **no predictions (all fields empty)** or **force-fits a value into a type-mismatched field** (e.g. a flight e-ticket's fare total `885.00 RON` predicted as the `Invoice Number`, or a bank statement / ride receipt yielding nothing). Treat both as the cue that the document is likely out of scope. When `get-predictions` for a document shows all-empty fields, or a value fails the *Value-shape & type* check in 2c, **confirm nothing** — review it with the Read tool and, if it's genuinely a different document type, delete it (below) so it doesn't pollute training. Note in your summary which documents you flagged as off-template and why.
+
 ### Removing a document from the project
 
-If a document is unusable (wrong document type, corrupted, duplicate), delete it instead of confirming or skipping:
+If a document is unusable (wrong document type, corrupted, duplicate, off-template), delete it instead of confirming or skipping:
 
 ```bash
 uip ixp documents delete <project-name> <document-id> -y --output json
