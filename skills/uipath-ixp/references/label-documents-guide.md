@@ -46,6 +46,8 @@ Use the document ID as the filename. Pass `-o` **without an extension** — the 
 
 Use the **Read tool** to view the document file (the Read tool handles PDF, PNG, JPG, etc. natively), then review each predicted field against the document:
 
+> **Read the whole document in one call — no `pages` parameter.** A full Read returns text + image natively for digital and scanned (PDF/PNG/JPG) docs; no PDF tools to install.
+
 1. **Look at the document** to understand the layout and where field values appear.
 2. **For each predicted field**, assign one of four verdicts:
    - **CONFIRMED** — the predicted value matches what is in the document. Minor OCR-level differences (capitalization, whitespace) are acceptable.

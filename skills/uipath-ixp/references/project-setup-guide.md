@@ -55,7 +55,7 @@ uip ixp documents list <project-name> --output json
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
 ```
 
-View with the **Read tool**, then decide:
+View with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively). Then decide:
 
 | Document characteristics | Pre-processing | Model |
 |--------------------------|---------------|-------|
