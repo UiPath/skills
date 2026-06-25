@@ -41,14 +41,18 @@ uip solution pack ./MySolution ./output --output json
 
 # With explicit name and version
 uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --output json
+
+# Validate only — run the full pack pipeline without writing a package
+uip solution pack ./MySolution --dry-run --output json
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<solutionPath>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
-| `<output-path>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'output-path'`) | -- |
+| `<output-path>` | Directory where the .zip will be written (required positional unless `--dry-run` is set — omitting it otherwise errors with `missing required argument 'output-path'`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
+| `--dry-run` | Run the full pack pipeline to validate the solution without producing a package (CI gate); `<output-path>` is not required | off |
 
 The output is a `.zip` file named `<name>.<version>.zip` written under `<output-path>/` (e.g., `MySolution.2.0.0.zip`). Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
