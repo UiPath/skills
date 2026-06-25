@@ -97,13 +97,13 @@ Before reviewing implementation details, verify the right agent type was chosen:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| PII detection configured (if handling personal data) | Warning | Check guardrails array *(rule: `LC_GUARDRAIL_PII_MISSING`)* |
-| Prompt injection guardrails enabled (if user-facing) | Warning | Check guardrails config *(rule: `LC_GUARDRAIL_INJECTION_MISSING`)* |
+| Recommended guardrails present for the agent's use cases — e.g. PII detection when it handles personal data, injection protection for free-text input, content-safety for generated content, a tool audit-log for sensitive tools | Info | Compare agent context vs catalog use cases; the finding names the recommended scope and action (a blocking/escalating action for protection, a log action for audit) *(rule: `LC_GUARDRAIL_RECOMMENDED`)* |
+| No guardrail misapplied to an agent that shouldn't have it (e.g. PII on a generate-only agent) | Warning | Compare guardrail vs agent purpose / catalog `when_not_to_use` *(rule: `LC_GUARDRAIL_MISAPPLIED`)* |
 | Each guardrail has `name` and `description` | Warning | Walk guardrails *(rule: `GUARDRAIL_NO_NAME`, `GUARDRAIL_NO_DESCRIPTION`)* |
 | Tool resources have `guardrail.policies` array (Studio Web rejects without it) | Critical | Walk tool resources *(rule: `LOWCODE_TOOL_GUARDRAIL_FIELD_MISSING`)* |
 | Tool-scoped guardrails reference existing tools | Critical | Walk Tool-scope guardrails *(rule: `LOWCODE_GUARDRAIL_TOOL_REF_NONEXISTENT`, `GUARDRAIL_TOOL_SCOPE_NO_MATCHNAMES`)* |
 | Custom tool guardrails for destructive operations | Info | Check tool guardrail rules |
-| Guardrail actions appropriate (Log/Block/Escalate) | Info | Review action types |
+| Guardrail action fits its scope — a blocking/escalating action at scopes meant to prevent a violation (Agent, Llm), a log action only for an audit trail (e.g. on a tool that legitimately needs the data). A log action at a prevention scope (Agent or Llm) is ineffective: it records the violation but does not stop it. | Warning | Review action vs scope vs catalog `when_not_to_use` *(rule: `LC_GUARDRAIL_ACTION_INEFFECTIVE`)* |
 
 **Guardrail format (built-in validators).** These run in `uip agent review`, which fetches the live validator catalog (`uip agent guardrails list`) when a built-in guardrail is present and validates each one against it. They are skipped (not failed) when the catalog can't be fetched (offline / not authed) — note that in "Rules Skipped" if relevant.
 

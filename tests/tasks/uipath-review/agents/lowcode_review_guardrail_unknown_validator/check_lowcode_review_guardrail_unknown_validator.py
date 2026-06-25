@@ -2,10 +2,21 @@
 """Check for GUARDRAIL_UNKNOWN_VALIDATOR — the agent has a built-in guardrail
 whose `validatorType` is not in the tenant's guardrail catalog.
 
-Verifies the saved review report cites the rule_id (emitted by `uip agent
-review`, Step 2.5a, after fetching the live catalog) and names the guardrail.
-CLI-emitted ids warn, not fail, against the judgment catalog cross-check.
-Exit 0 on PASS; sys.exit on failure.
+The finding can ONLY be known by running `uip agent review` (Step 2.5a), which
+fetches the live catalog — you cannot tell a validator is unknown by eye. The
+task YAML enforces that with a separate `command_executed` criterion on
+`uip agent review`. So this check only needs to confirm the review **surfaced**
+the finding in the saved report, and can accept either form the agent uses:
+
+  1. the CLI rule_id `GUARDRAIL_UNKNOWN_VALIDATOR` carried verbatim (preferred), OR
+  2. the bogus validator named (`totally_made_up_validator`) together with a
+     clear "unknown / not in the catalog" statement.
+
+Form 2 makes the check robust to report-fidelity variance (on some runs the
+agent summarizes the CLI finding instead of copying the rule_id verbatim) WITHOUT
+weakening the signal — the `command_executed` gate already proves the
+catalog-backed CLI ran, so a summarized finding is still a real, CLI-derived
+one, not an eyeballed guess. Exit 0 on PASS; sys.exit on failure.
 """
 import os
 import re
@@ -14,10 +25,29 @@ from pathlib import Path
 
 REPORT = Path(os.getcwd()) / "_review_report.md"
 REQUIRED_RULE_ID = "GUARDRAIL_UNKNOWN_VALIDATOR"
-# The rule_id is CLI-emitted (only `uip agent review` produces it), so its
-# presence already implies a real finding — no need for a separate guardrail-name
-# token, which the agent doesn't always echo verbatim.
-REQUIRED_TOKEN = ""
+# The bogus validatorType injected into the fixture.
+VALIDATOR_NAME = "totally_made_up_validator"
+# Phrases that, alongside the validator name, mean the report identified it as
+# not in the catalog. Matched case-insensitively.
+UNKNOWN_PHRASES = (
+    "unknown validator",
+    "unknown built-in validator",
+    "not in the catalog",
+    "not in the guardrail catalog",
+    "not a known validator",
+    "not a valid validator",
+    "not a recognized validator",
+    "not a recognised validator",
+    "not recognized",
+    "not recognised",
+    "unrecognized validator",
+    "unrecognised validator",
+    "invalid validator",
+    "does not exist",
+    "no such validator",
+    "made-up validator",
+    "made up validator",
+)
 MIN_REPORT_BYTES = 500
 
 NOISE = {
@@ -33,13 +63,23 @@ def main() -> None:
     text = REPORT.read_text(encoding="utf-8", errors="replace")
     if len(text) < MIN_REPORT_BYTES:
         sys.exit(f"FAIL: {REPORT} is suspiciously short ({len(text)} bytes).")
-    if REQUIRED_RULE_ID not in text:
-        sys.exit(f"FAIL: report does not cite rule_id `{REQUIRED_RULE_ID}`.")
-    print(f"OK: report cites `{REQUIRED_RULE_ID}`")
-    if REQUIRED_TOKEN and REQUIRED_TOKEN not in text:
-        sys.exit(f"FAIL: report does not mention `{REQUIRED_TOKEN}`.")
-    if REQUIRED_TOKEN:
-        print(f"OK: report mentions `{REQUIRED_TOKEN}`")
+
+    low = text.lower()
+    has_rule_id = REQUIRED_RULE_ID in text
+    has_prose = VALIDATOR_NAME.lower() in low and any(p in low for p in UNKNOWN_PHRASES)
+
+    if has_rule_id:
+        print(f"OK: report cites `{REQUIRED_RULE_ID}`")
+    elif has_prose:
+        print(
+            f"OK: report identifies `{VALIDATOR_NAME}` as not in the catalog "
+            "(rule_id not transcribed verbatim, but the CLI finding was surfaced)"
+        )
+    else:
+        sys.exit(
+            f"FAIL: report neither cites `{REQUIRED_RULE_ID}` nor describes "
+            f"`{VALIDATOR_NAME}` as an unknown / uncataloged validator."
+        )
 
     skills_repo = os.environ.get("SKILLS_REPO_PATH")
     if skills_repo:

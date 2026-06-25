@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
-"""Check for LC_GUARDRAIL_RECOMMENDED (PII flavor) — the agent processes
-personal data (customer_email / full_name / ssn) but has no pii_detection
-guardrail, so the reviewer should recommend one.
+"""Check for the content-safety flavor of LC_GUARDRAIL_RECOMMENDED — a
+content-generating agent (marketing copywriter, open-ended output) has no
+content-safety guardrail, so the reviewer should recommend one.
 
-`LC_GUARDRAIL_RECOMMENDED` is the single missing-guardrail recommendation rule
-(it superseded the per-type `LC_GUARDRAIL_PII_MISSING` / `_INJECTION_MISSING`),
-with the specifics — here the PII case — carried in the message. The
-`customer_email` token confirms those details reached the report.
-
-Verifies the saved review report cites the rule_id and references a PII
-field, and that other rule-id citations resolve (catalog or CLI-emitted;
-unknown ids warn, not fail). Exit 0 on PASS; sys.exit on failure.
+Verifies the report cites `LC_GUARDRAIL_RECOMMENDED` and the message carries the
+content-safety detail (the case-insensitive token "safety"). Other rule-id
+citations warn, not fail. Exit 0 on PASS; sys.exit on failure.
 """
 import os
 import re
@@ -19,7 +14,7 @@ from pathlib import Path
 
 REPORT = Path(os.getcwd()) / "_review_report.md"
 REQUIRED_RULE_ID = "LC_GUARDRAIL_RECOMMENDED"
-REQUIRED_TOKEN = "customer_email"
+REQUIRED_TOKEN = "safety"  # matched case-insensitively (content-safety flavor)
 MIN_REPORT_BYTES = 500
 
 NOISE = {
@@ -38,8 +33,8 @@ def main() -> None:
     if REQUIRED_RULE_ID not in text:
         sys.exit(f"FAIL: report does not cite rule_id `{REQUIRED_RULE_ID}`.")
     print(f"OK: report cites `{REQUIRED_RULE_ID}`")
-    if REQUIRED_TOKEN and REQUIRED_TOKEN not in text:
-        sys.exit(f"FAIL: report does not mention `{REQUIRED_TOKEN}`.")
+    if REQUIRED_TOKEN and REQUIRED_TOKEN.lower() not in text.lower():
+        sys.exit(f"FAIL: report does not mention `{REQUIRED_TOKEN}` (content-safety detail).")
     if REQUIRED_TOKEN:
         print(f"OK: report mentions `{REQUIRED_TOKEN}`")
 
