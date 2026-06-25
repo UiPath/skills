@@ -2,11 +2,12 @@ task_id: skill-flow-coded-agent
 description: >
   Create a UiPath Flow that uses an ApproverCount coded agent to count, from a
   free-text sentence describing each reviewer's stance, how many people approved
-  a proposal and return that integer. No tally or number-word for the answer
-  appears in the text, so a deterministic coded function cannot solve it — the
-  task forces the LLM-bearing Agent path so the flow node is uipath.core.agent,
-  not uipath.core.function. Exercises agent resource node discovery and wiring
-  for coded (vs low-code) agents.
+  a proposal and return that integer. The prompt explicitly asks for a coded
+  agent on a natural-language task, so the resulting flow node must be
+  uipath.core.agent (an Agent project), not uipath.core.function — verifying the
+  skill honors an explicit agent request instead of substituting a deterministic
+  Function. Exercises agent resource node discovery and wiring for coded (vs
+  low-code) agents.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:single-node, resource]
 
 run_limits:

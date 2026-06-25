@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """ApproverCountAgent: a coded-agent node executes; output holds the count (3).
 
-The reviewers' stances are stated in free text ("signed off", "asked for
-changes", "recused herself") with no tally and no number-word for the answer,
-so a deterministic coded function (regex / word-to-number parsing) cannot reach
-the count. Solving it requires an LLM-bearing Agent framework — LangGraph /
-LlamaIndex / OpenAI Agents — which scaffolds ProjectType: "Agent" and produces a
-uipath.core.agent.<key> node. The Coded Function framework (uipath package)
-would produce uipath.core.function.<key>, failing the node-type assert below.
+The prompt explicitly asks for a coded AGENT on a free-text task. The skill must
+honor that request: scaffold an Agent project (ProjectType: "Agent" — LangGraph /
+LlamaIndex / OpenAI Agents) producing a uipath.core.agent.<key> node, NOT downgrade
+it to a coded Function (ProjectType: "Function", uipath.core.function.<key>) that
+regexes the wording or hardcodes the answer because the task looks deterministic.
+The node-type assert below fails on a Function — a correct count from the wrong
+node kind does not satisfy an explicit agent request.
 """
 
 import os
