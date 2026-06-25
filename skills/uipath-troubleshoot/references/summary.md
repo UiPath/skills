@@ -62,6 +62,15 @@ Namespaces: `UiPath.UIAutomationNext.Activities`, `UiPath.UIAutomation.Activitie
 - [activity-packages/ui-automation/overview.md](./activity-packages/ui-automation/overview.md) — Package overview, selector mechanics, exception types, and dependencies
 - [activity-packages/ui-automation/summary.md](./activity-packages/ui-automation/summary.md) — All playbooks for UI Automation issues
 
+## Computer Vision (CV) Activities
+
+Activities that target UI elements by visual analysis of a screenshot instead of selectors — for virtualized/Citrix/RDP, image-based, and remote desktops. Every CV activity runs inside a CV Screen Scope (`CVScope`) that screenshots the target window; a CV server (cloud or local) plus an OCR engine detects elements, the descriptor (target + anchors) is matched, and the action fires at the matched coordinates. Issues here involve element-not-found / descriptor-match failures, invalid descriptors, table cell-targeting errors, scroll-search failures, CV server auth/throttling/network errors, scope setup failures, post-find action failures, and silent/false results (`ContinueOnError` / `InRegion` suppression).
+
+Namespaces: `UiPath.CV.Activities` (exceptions: `UiPath.CV`)
+
+- [activity-packages/cv-activities/overview.md](./activity-packages/cv-activities/overview.md) — Package overview, CV targeting mechanics, exception types, and common failure patterns
+- [activity-packages/cv-activities/summary.md](./activity-packages/cv-activities/summary.md) — All playbooks for Computer Vision Activities issues
+
 ## System Activities
 
 Core workflow activities from `UiPath.System.Activities` that interact with Orchestrator resources at runtime — asset retrieval, credential lookup, queue operations, and storage buckets. Issues here involve asset-not-found errors, permission denied, folder scope mismatches, external vault failures, and package version bugs.

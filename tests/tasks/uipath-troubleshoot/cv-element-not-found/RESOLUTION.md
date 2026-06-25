@@ -1,0 +1,22 @@
+**Root Cause:** The **CV Click** descriptor's locked geometry no longer matches the live screen, so the Computer Vision find returned no matching region within the timeout and the job faulted with `UiPath.CV.ElementNotFoundException: Element not found` (**Branch A — descriptor mismatch — is the operative cause**).
+
+**What went wrong:** The last job in folder Shared — process **CV** (job `37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9`, started 2026-06-12 07:26:49Z, attended, machine MOCK-HOST) — faulted after ~41 seconds. Faulting activity: `CvClickWithDescriptor` ("CV Click - 'Button'") inside `CVScope` ("CV Screen Scope 'msedge.exe  Google'") in `CV_ElementNotFound.xaml`.
+
+**Why:** The `CvClickWithDescriptor` could not match its target on the live `msedge.exe / Google` screen and the find retry loop exhausted its timeout. Timeout expiry surfaces AS `UiPath.CV.ElementNotFoundException` — there is **no** separate `TimeoutException`. Faulting frame: `UiPath.CV.Activities.CvClickWithDescriptor.EndExecute(...)`, propagated through `UiPath.CV.Activities.CVScope.OnFault(...)`.
+
+The `cv-element-not-found` playbook splits the same `Element not found` signature into three branches. All three are consistent with the job-level evidence; Branch A is operative and B/C are documented alternatives that the host-side dump would confirm or exclude:
+
+- **Branch A — genuine descriptor mismatch (operative).** The descriptor's locked control-based geometry (target Button + two anchor Buttons) no longer matches the current page layout, so CV analysis returns no matching region within `TimeoutMS`. This is the operative cause: the message is the parameterless `Element not found` from a `CvClickWithDescriptor` find timeout, with no sibling-signature text.
+- **Branch B — scope-root lost / screenshot-refresh failure.** Cannot be fully excluded from job-level evidence alone. If the scope's attached window was lost or the runtime screenshot came back blank/desktop/locked, the same exception surfaces. Confirming or excluding Branch B requires the host-side `*_ComputerVision` runtime dump on MOCK-HOST (unavailable from this session).
+- **Branch C — OCR silently degraded (lower likelihood).** The scope runs `CvMethod="ElementDetection, OCR"`, so if the OCR engine threw/returned nothing during refresh, text-based targets/anchors would find no candidate and time out as not-found. No OCR error/warning appears in the available logs or traces, so this is less likely than A, but it is not fully excludable without the dump's scraped/detected-text fields. Naming Branch C as a low-likelihood alternative — and recommending verification of the scope's `OCREngine`/`CvMethod` — is a faithful, evidence-grounded reading of the playbook, not a fabrication.
+
+A correct diagnosis names Branch A as operative; naming Branch B and/or Branch C as noted alternatives pending the dump is expected and good, not penalized.
+
+**Ruled out** (no supporting evidence): `UiPath.CV.InvalidDescriptorException` / "Target must be set" (descriptor IS set), scroll-search exhaustion ("Scrolled the entire screen…"), cell-targeting errors ("Invalid column number…"), CV server / auth / throttling / network (`[Error code: 401/403/429/...]`), scope-setup failures (fault is inside the scope body, not at scope entry), and action-failed-after-find (the find itself failed — there was no successful match).
+
+**Immediate fix:** Re-indicate the CV Click target against the current page to regenerate the descriptor. Re-indication is an interactive Studio operation against the live screen — it cannot be done by a blind XAML edit. **Do NOT merely raise `TimeoutMS`** — the problem is geometry/match, not time; more time cannot find a target whose locked geometry no longer matches. Before re-indicating, confirm Branch A vs Branch B by reading the `*_ComputerVision` runtime dump from MOCK-HOST: if the dump screenshot is blank/desktop/locked, the verdict shifts to Branch B (scope/refresh) instead.
+
+**Anti-fabrication notes:**
+- Do not attribute the fault to a timeout misconfiguration or a `TimeoutException` — the timeout is a symptom; the exception type is `ElementNotFoundException`.
+- Do not claim the element is "confirmed absent" — CV matched nothing above threshold; the element may still be on screen but no longer matches the locked descriptor geometry.
+- Do not invent assets, connections, CV server/auth settings, or Orchestrator policies not present in the job-level evidence.
