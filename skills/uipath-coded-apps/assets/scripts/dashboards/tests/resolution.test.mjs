@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync
 import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { validateIntent, resolveMetric, buildWidgetFile, generateViewFile, generateKeyedDetailViewFile, buildViewSpec, compileColumns, compileDetailWidgets, emit, parseEvent, classifyEditIntent, resolveChangeMetric, widgetLayoutGroup, widgetGetsDetailView, setWidgetsDir, VALID_DISPLAY_TYPES, metricModuleSpecifier, buildVersions, readScaffoldVersion, INTENT_SCHEMA_VERSION, STATE_SCHEMA_VERSION, scaffoldDrift, runIntentMigrations, VALID_EDIT_OPS, MIN_SDK_VERSION } from '../build-dashboard.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -12,28 +12,21 @@ const REGISTRY_PATH = resolve(__dirname, '../capability-registry.json')
 
 const registry = JSON.parse(readFileSync(REGISTRY_PATH, 'utf8'))
 
-// Widget generator templates ship inside the committed starter-kit zip (the skill
-// carries no template source). For generation tests, extract that zip with whatever
-// OS tool is available — self-contained (no sibling-repo dependency) and it tests the
-// ACTUAL shipped templates. Falls back to the apps-dev-tools sibling source if present.
+// Widget generator templates ship inside the committed starter-kit .tar.gz (the skill
+// carries no template source). Extract it with the OS `tar` — the same tool the build
+// uses at prewarm time. Falls back to the apps-dev-tools sibling source if absent.
+const TAR = process.platform === 'win32'
+  ? join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
+  : 'tar'
 function locateWidgetTemplates() {
-  const zip = resolve(__dirname, '../../fixtures/governance-dashboard-starter-kit.zip')
-  if (existsSync(zip)) {
+  const archive = resolve(__dirname, '../../../fixtures/governance-dashboard-starter-kit.tar.gz')
+  if (existsSync(archive)) {
     const dest = mkdtempSync(join(tmpdir(), 'kit-test-'))
-    // execSync with a shell string is fine here: `zip`/`dest` are internal paths
-    // (resolve(__dirname,…) / mkdtempSync), never user input — no injection surface.
-    for (const cmd of [
-      `unzip -o "${zip}" -d "${dest}"`,
-      `python3 -m zipfile -e "${zip}" "${dest}"`,
-      `python -m zipfile -e "${zip}" "${dest}"`,
-      `powershell -NoProfile -Command "Expand-Archive -LiteralPath '${zip}' -DestinationPath '${dest}' -Force"`,
-    ]) {
-      try { execSync(cmd, { stdio: 'pipe' }); break } catch { /* try next extractor */ }
-    }
+    try { execFileSync(TAR, ['-xzf', archive, '-C', dest], { stdio: 'pipe' }) } catch { /* fall through to sibling */ }
     const w = join(dest, '_gen', 'widgets')
     if (existsSync(w)) return w
   }
-  const sibling = resolve(__dirname, '../../../../../../apps-dev-tools/uipath-dashboard-starter-kit/widgets')
+  const sibling = resolve(__dirname, '../../../../../../../apps-dev-tools/uipath-dashboard-starter-kit/widgets')
   return existsSync(sibling) ? sibling : null
 }
 const WIDGETS_DIR_FOR_TESTS = locateWidgetTemplates()
@@ -1058,7 +1051,7 @@ test('scope: Insights RTM + PIMS present in all scope lists', () => {
   for (const s of ['Insights', 'Insights.RealTimeData', 'OR.Folders', 'PIMS']) {
     assert.ok(granted.includes(s), `DASHBOARD_SCOPES missing ${s}`)
   }
-  const impl = readFileSync(resolve(__dirname, '../../../references/dashboards/plugins/build/impl.md'), 'utf8')
+  const impl = readFileSync(resolve(__dirname, '../../../../references/dashboards/plugins/build/impl.md'), 'utf8')
   assert.ok(/--user-scope "[^"]*Insights,Insights\.RealTimeData[^"]*PIMS/.test(impl), 'full create command missing Insights RTM + PIMS')
 })
 
@@ -1287,7 +1280,11 @@ test('governance: all violation entries generate clean widgets (rowLink wired wh
 // dir and the row-click drill-down was wired only into the fresh build.)
 
 test('regression: widgets dir is set + extraction asserted on every widget-generating path', () => {
-  const src = readFileSync(resolve(__dirname, '../build-dashboard.mjs'), 'utf8')
+  // Orchestration spans build-dashboard.mjs + the extracted use-case flows; the
+  // per-path guards (setWidgetsDir, assertScaffoldExtracted, keyed-view wiring) now
+  // live in flows/*.mjs, so grep the combined source.
+  const src = ['../build-dashboard.mjs', '../flows/build.mjs', '../flows/edit.mjs', '../flows/upgrade.mjs', '../flows/template.mjs']
+    .map(f => readFileSync(resolve(__dirname, f), 'utf8')).join('\n')
   const setCalls = (src.match(/setWidgetsDir\(join\(P, '_gen', 'widgets'\)\)/g) || []).length
   assert.ok(setCalls >= 3, `setWidgetsDir(<proj>/_gen/widgets) must run on fresh build, upgrade, AND incremental edit; found ${setCalls}`)
   const assertCalls = (src.match(/assertScaffoldExtracted\(/g) || []).length
@@ -1296,7 +1293,11 @@ test('regression: widgets dir is set + extraction asserted on every widget-gener
 })
 
 test('regression: row-click keyed views are wired on fresh + incremental + upgrade', () => {
-  const src = readFileSync(resolve(__dirname, '../build-dashboard.mjs'), 'utf8')
+  // Orchestration spans build-dashboard.mjs + the extracted use-case flows; the
+  // per-path guards (setWidgetsDir, assertScaffoldExtracted, keyed-view wiring) now
+  // live in flows/*.mjs, so grep the combined source.
+  const src = ['../build-dashboard.mjs', '../flows/build.mjs', '../flows/edit.mjs', '../flows/upgrade.mjs', '../flows/template.mjs']
+    .map(f => readFileSync(resolve(__dirname, f), 'utf8')).join('\n')
   assert.ok(src.includes('injectAppRoutes(P, generatedViewNames, keyedViewWidgets)'), 'fresh build must inject keyed routes')
   assert.ok((src.match(/collectKeyedViews\(P, state\)/g) || []).length >= 2, 'incremental + upgrade must inject keyed routes via collectKeyedViews')
   assert.ok((src.match(/writeKeyedViewIfRowLink\(/g) || []).length >= 3, 'keyed detail view must be (re)written on ADD, CHANGE, and REBUILD')
@@ -1441,7 +1442,7 @@ test('rowLink: a cataloged table whose rowLink lives in registry defaults render
 // widget templates. The placeholders live in the apps-dev-tools sibling source
 // (the orchestrator rebuilds the fixture zip from it during the self-test build);
 // run against that source when present so the assertions track the edited templates.
-const SIBLING_WIDGETS = resolve(__dirname, '../../../../../../apps-dev-tools/uipath-dashboard-starter-kit/widgets')
+const SIBLING_WIDGETS = resolve(__dirname, '../../../../../../../apps-dev-tools/uipath-dashboard-starter-kit/widgets')
 function withSiblingTemplates(fn) {
   if (!existsSync(SIBLING_WIDGETS)) return // sibling source unavailable — skip
   const prev = WIDGETS_DIR_FOR_TESTS

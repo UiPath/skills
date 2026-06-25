@@ -303,13 +303,15 @@ If a build or edit against an existing project emits `UPGRADE_AVAILABLE:{from,to
 
 The skill ships ONE artifact — `assets/fixtures/governance-dashboard-starter-kit.tar.gz` — and no scaffold source. The archive bundles the React scaffold (at its root) plus the widget generator templates under `_gen/widgets/` and a version pointer `_gen/starter-kit.json`. The build reads templates from `_gen/widgets` and never ships them into the final app.
 
-> **Extracting the kit (the agent does this).** Before building, extract the archive into the project dir with the OS `tar` — built into Windows 10+, macOS, and Linux (one command, no per-OS variants):
+> **Extracting the kit (the agent does this).** Before building, extract the archive into the project dir with the OS `tar` — built into Windows 10+, macOS, and Linux (one command, no per-OS variants). **Pass the archive on stdin (`-f -`), not as a path argument:**
 > ```
-> mkdir -p "<PROJECT_DIR>" && tar -xzf "<ARCHIVE>" -C "<PROJECT_DIR>"
+> mkdir -p "<PROJECT_DIR>" && tar -xz -C "<PROJECT_DIR>" -f - < "<ARCHIVE>"
 > ```
 > `build-dashboard.mjs` verifies the kit landed and fails loud with the exact command if not. `<ARCHIVE>` is `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz`.
+>
+> **Why stdin, not `tar -xzf "<ARCHIVE>"`:** GNU tar (the `tar` on PATH in Git Bash / MSYS on Windows) reads an archive path containing a drive colon — `C:\…` — as a remote `host:path` and dies with `tar: Cannot connect to C: resolve failed`. `--force-local` fixes GNU tar but is rejected by bsdtar (Windows `System32\tar.exe`, macOS), so it isn't portable. Feeding the archive on stdin sidesteps the colon entirely and works on GNU tar **and** bsdtar. Do not "simplify" this back to `-f "<ARCHIVE>"`.
 
-**Source of truth:** the scaffold + widget templates + packer live in the `apps-dev-tools` repo (`uipath-dashboard-starter-kit/`). Maintainers edit there and run `node publish.mjs` to re-pack and copy the refreshed `.zip` + `.version` into this skill. The skill is a pure consumer.
+**Source of truth:** the scaffold + widget templates + packer live in the `apps-dev-tools` repo (`uipath-dashboard-starter-kit/`). Maintainers edit there and run `node publish.mjs` to re-pack and copy the refreshed `.tar.gz` into this skill (the version ships inside the archive at `_gen/starter-kit.json` — no separate version file). The skill is a pure consumer.
 
 ---
 
@@ -338,7 +340,7 @@ The build subagent prompt:
 > 2. Author `<INTENT_DIR>/intent.json` (pure metadata — `schemaVersion: 2`, no `fnBody`) and one `<INTENT_DIR>/metrics/<name>.ts` per metric (`export const fetchData: MetricFn`), writing each module from the SDK references and applying the Phase 3.5 cross-check. Implement exactly this approved plan:
 >    - Project: dashboardName=`<NAME>`, routingName=`<ROUTING>`, projectDir=`<PROJECT_DIR>`, orgName=`<ORG>`, tenantName=`<TENANT>`, cloudUrl=`<CLOUD_URL>`, apiUrl=`<API_URL>`, timeRange=`<RANGE>`, clientId=`<CLIENT_ID or empty>`
 >    - Widgets (one metric each): [per widget — name, tier, title, displayAs, presentation hints, and the SDK service/method it resolves to]
-> 3. Extract the starter kit into `<PROJECT_DIR>` with the OS `tar` (`tar -xzf "<ARCHIVE>" -C "<PROJECT_DIR>"`; see § "The starter-kit archive"), then run: `node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" "<INTENT_JSON_PATH>"` (it verifies the kit and prints the exact extract command if missing)
+> 3. Extract the starter kit into `<PROJECT_DIR>` with the OS `tar`, feeding the archive on stdin (`tar -xz -C "<PROJECT_DIR>" -f - < "<ARCHIVE>"`; see § "The starter-kit archive" for why stdin), then run: `node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" "<INTENT_JSON_PATH>"` (it verifies the kit and prints the exact extract command if missing)
 > 4. On `METRICS_RETRY`, fix the named `src/metrics/*.ts` files using the SDK references + the reported errors, then re-run — at most 2 attempts, then drop the metric.
 > 5. Return ONLY the milestone block defined in § "Build subagent — returns".
 
@@ -367,7 +369,7 @@ If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface
 - Write `<INTENT_DIR>/intent.json` — pure metadata: `schemaVersion: 2`, `dashboardName`, `routingName`, `projectDir`, `orgName`, `tenantName`, `cloudUrl`, `apiUrl`, `timeRange`, `clientId`, and a `metrics` array of metadata entries (NO `fnBody`).
 - Write one `<INTENT_DIR>/metrics/<name>.ts` per metric — `export const fetchData: MetricFn = async (sdk) => { … }` written from the SDK references; import time windows from `@/lib/time` and `fetchAll` from `@/lib/paginate`; read-only methods only. Cross-check each against its documented example response (§ "Phase 3.5"). For a chart record-grain drill-down, also export `fetchDetail` and set `"detail": true`. For a **table row-click** drill-down, set `rowLink: { key: "<rowField>" }` on the metric and export `fetchDetailByKey(sdk, key, getToken)` (the clicked row's `<rowField>` arrives as `key`). For a KPI with a change badge, return `[{ value, previous }]` (two windows).
 
-**Step B — Extract the kit, then run the build script once.** First extract `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz` into `<PROJECT_DIR>` with the OS `tar` (`tar -xzf …`; § "The starter-kit archive"). Then run the build script. Most events are silent — translate the rest to milestones for the return block.
+**Step B — Extract the kit, then run the build script once.** First extract `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz` into `<PROJECT_DIR>` with the OS `tar`, feeding the archive on stdin (`tar -xz -C … -f - < "<ARCHIVE>"`; § "The starter-kit archive"). Then run the build script. Most events are silent — translate the rest to milestones for the return block.
 
 **Silent (never report):** `PREWARM_START`, `PREWARM_DONE`, `SCAFFOLD_READY`, `ENV_WRITTEN`, `PARTIAL_BUILD_DETECTED`.
 

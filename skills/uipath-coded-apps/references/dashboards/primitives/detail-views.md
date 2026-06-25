@@ -46,7 +46,7 @@ A detail view can render multiple sub-widgets via an optional `detailView: { wid
 
 > Sub-widgets are NOT limited to donuts. `bar-chart`, `area-chart`, `line-chart`, and `multi-line-chart`
 > (with `series`) are fully wired — see the `agent-compliance-report` detailView in
-> `assets/scripts/capability-registry.json` for a `multi-line-chart` (Pass vs Matched by hook) + `donut-chart`
+> `assets/scripts/dashboards/capability-registry.json` for a `multi-line-chart` (Pass vs Matched by hook) + `donut-chart`
 > + `ranked-table` + `data-table` in one view.
 
 The detail fetch (`fetchDetailByKey` for `rowLink`, `fetchDetail` for a `detail: true` chart/KPI) must return a **named-source map** `{ rows, byHook, byRule, … }` whose keys match each sub-widget's `source`. A bare array = legacy single-table behaviour (the view normalizes `array → { rows }`).

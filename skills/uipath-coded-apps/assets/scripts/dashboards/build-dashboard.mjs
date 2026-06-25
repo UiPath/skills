@@ -18,18 +18,34 @@
  *   2 — widget needs retry (update fnBody in intent.json and re-run)
  */
 
-import { readFileSync, writeFileSync, copyFileSync, mkdirSync, existsSync, renameSync, unlinkSync, cpSync, readdirSync, rmSync } from 'fs'
-import { createConnection } from 'net'
-import { join, dirname, basename, resolve } from 'path'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync, unlinkSync } from 'fs'
+import { join, dirname, resolve } from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
 import { execSync } from 'child_process'
 import { createHash } from 'crypto'
+// Project-lifecycle utilities (versioning, prewarm, sdk-check, dev-server teardown)
+// live in a sibling module. Imported for internal use here; the test-facing ones are
+// re-exported so `import … from build-dashboard.mjs` keeps working. (Benign runtime
+// import cycle — lifecycle.mjs imports primitives/consts back, used only at call time.)
+import {
+  readScaffoldVersion, buildVersions, scaffoldDrift, runIntentMigrations, runPrewarm,
+} from './lifecycle.mjs'
+export { readScaffoldVersion, buildVersions, scaffoldDrift, runIntentMigrations }
+
+// Use-case flow orchestrators (extracted to ./flows/*). Imported here for the
+// entry-point dispatcher; packTemplate is also re-exported (tests import it from
+// this module). Benign cycle: the flows import shared primitives back from here,
+// referenced only inside their function bodies (call time), never at module eval.
+import { runDashboardBuild } from './flows/build.mjs'
+import { runIncrementalEdit } from './flows/edit.mjs'
+import { packTemplate } from './flows/template.mjs'
+export { packTemplate }
 
 // ── Path constants ─────────────────────────────────────────────────────────────
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Widget generator templates ship INSIDE the starter-kit zip (under _gen/widgets),
+// Widget generator templates ship INSIDE the starter-kit archive (under _gen/widgets),
 // not in the skill — the skill carries no scaffold/template source and no zip code.
 // The orchestration points this at <project>/_gen/widgets after the agent extracts
 // the kit; tests set it via setWidgetsDir(). null until set.
@@ -42,7 +58,7 @@ function widgetsDir() {
 function t3ShellTemplatePath() { return join(widgetsDir(), 't3-shell.tsx.template') }
 
 /** Fixed dev server port — high enough to avoid common app collisions */
-const DASHBOARD_PORT = 57173
+export const DASHBOARD_PORT = 57173
 
 // ── Capability registry ────────────────────────────────────────────────────────
 
@@ -232,65 +248,10 @@ export const VALID_COLUMN_FORMATS = ['number', 'percent', 'duration', 'timeAgo',
 export const MIN_SDK_VERSION = '1.5.0'
 
 export const SKILL_VERSION = '2.1.0'        // compiler-architecture era; 2.1 adds regime/eject + template packaging
-const FIXTURE_ZIP_PATH = resolve(__dirname, '../fixtures/governance-dashboard-starter-kit.zip')
+const FIXTURE_ARCHIVE_PATH = resolve(__dirname, '../../fixtures/governance-dashboard-starter-kit.tar.gz')
 
-/**
- * Read the scaffold version from the EXTRACTED starter kit — `_gen/starter-kit.json`
- * inside the project. The version ships INSIDE the zip (single fixture artifact);
- * there is no separate `.version` file. Returns '0.0.0' if the marker is absent.
- * @param {string} projectDir
- */
-export function readScaffoldVersion(projectDir) {
-  try {
-    return JSON.parse(readFileSync(join(projectDir, '_gen', 'starter-kit.json'), 'utf8')).version || '0.0.0'
-  } catch { return '0.0.0' }
-}
 export const INTENT_SCHEMA_VERSION = 2
 export const STATE_SCHEMA_VERSION = 2
-
-/**
- * The version block stamped into state.json so a dashboard knows what it was
- * built against (drives offer-on-detect upgrade + future migrations).
- * @param {string|null} [sdkVersion]
- * @param {string} [scaffoldVersion] - the extracted scaffold's version (readScaffoldVersion(projectDir))
- */
-export function buildVersions(sdkVersion = null, scaffoldVersion = '0.0.0') {
-  return { skill: SKILL_VERSION, scaffold: scaffoldVersion, intentSchema: INTENT_SCHEMA_VERSION, sdk: sdkVersion }
-}
-
-/**
- * Compare a project's stamped scaffold version to the shipped one. Returns
- * { from, to } when they differ (including a pre-versioning project with no
- * versions block), or null when current. Forward-only — any mismatch means
- * "a newer scaffold is available".
- * @param {object} state - parsed .dashboard/state.json
- * @param {string} scaffoldVersion - current shipped scaffold version (from the extracted kit)
- */
-export function scaffoldDrift(state, scaffoldVersion) {
-  const stamped = state?.versions?.scaffold ?? null
-  return stamped === scaffoldVersion ? null : { from: stamped, to: scaffoldVersion }
-}
-
-/**
- * Apply intent-schema migrations in sequence from intent.schemaVersion up to target.
- * Registry: assets/scripts/migrations/intent-v<N>-to-v<N+1>.mjs (empty today — framework
- * so a future schema bump is a drop-in file, not a refactor). Pure migrate(intent) functions.
- * @param {object} intent
- * @param {string} migrationsDir
- * @param {number} [targetVersion=INTENT_SCHEMA_VERSION]
- */
-export async function runIntentMigrations(intent, migrationsDir, targetVersion = INTENT_SCHEMA_VERSION) {
-  let v = intent.schemaVersion ?? 1
-  while (v < targetVersion) {
-    const file = join(migrationsDir, `intent-v${v}-to-v${v + 1}.mjs`)
-    if (!existsSync(file)) break
-    const { migrate } = await import(pathToFileURL(file).href)
-    intent = migrate(intent)
-    v++
-  }
-  intent.schemaVersion = Math.max(intent.schemaVersion ?? 1, v)
-  return intent
-}
 
 /**
  * Generate (or remove) a table widget's keyed row-click detail view. Writes
@@ -300,7 +261,7 @@ export async function runIntentMigrations(intent, migrationsDir, targetVersion =
  * view now exists on disk.
  * @returns {boolean}
  */
-function writeKeyedViewIfRowLink(P, componentName, metric, entry, timeRange) {
+export function writeKeyedViewIfRowLink(P, componentName, metric, entry, timeRange) {
   const detailPath = join(P, 'src', 'dashboard', 'views', `${componentName}DetailView.tsx`)
   const displayAs = metric.displayAs ?? entry?.template ?? ''
   // rowLink and detailView fall back to the registry entry's defaults — same as
@@ -324,7 +285,7 @@ function writeKeyedViewIfRowLink(P, componentName, metric, entry, timeRange) {
 }
 
 /** Route descriptors for every widget that currently has a keyed DetailView file on disk. */
-function collectKeyedViews(P, state) {
+export function collectKeyedViews(P, state) {
   return Object.keys(state.widgets ?? {})
     .filter(name => existsSync(join(P, 'src', 'dashboard', 'views', `${name}DetailView.tsx`)))
     .map(name => ({ componentName: name, routeBase: `/${name.toLowerCase()}` }))
@@ -358,80 +319,6 @@ export function rebuildAllWidgets(P, state, timeRange) {
   }
 }
 
-/**
- * Upgrade an existing dashboard to the current scaffold: refresh the disposable
- * framework, migrate intent.json, regenerate widgets/views from durable intent +
- * on-disk metric modules, re-validate, and re-stamp versions. The durable set
- * (intent.json, src/metrics, .dashboard, and uipath.json — the SDK config) is
- * preserved. The framework refresh extracts the starter-kit archive (see lib/zip.mjs).
- * @param {string} P  resolved project dir
- * @param {object} state  parsed state.json
- * @param {string} intentPath  edit-intent path (for the migrations dir + retry signal)
- */
-async function runUpgrade(P, state, intentPath) {
-  // Best-effort dirty-tree warning — upgrade regenerates disposable files.
-  try {
-    const dirty = execSync(`git -C "${P}" status --porcelain`, { stdio: 'pipe' }).toString().trim()
-    if (dirty) log('⚠ Project has uncommitted changes — upgrade regenerates disposable files (your intent.json + src/metrics are preserved).')
-  } catch { /* not a git repo — nothing to check */ }
-
-  // 1. Refresh the disposable scaffold framework: the agent re-extracts the
-  //    latest starter-kit archive over the project before --upgrade (preserving
-  //    src/metrics, intent.json, and uipath.json — the SDK config the plugin
-  //    injects). Verify the fresh kit is present and point at its templates.
-  assertScaffoldExtracted(P)
-  setWidgetsDir(join(P, '_gen', 'widgets'))
-
-  // 2. Migrate intent.json if present (no-op today — empty registry).
-  const intentJsonPath = join(P, 'intent.json')
-  if (existsSync(intentJsonPath)) {
-    const migrated = await runIntentMigrations(
-      JSON.parse(readFileSync(intentJsonPath, 'utf8')),
-      join(dirname(intentPath), 'migrations'),
-    )
-    writeAtomic(intentJsonPath, JSON.stringify(migrated, null, 2))
-  }
-
-  // 3. Ensure deps, then regenerate from durable intent + on-disk metric modules.
-  const LOCK_SIGNAL = join(P, 'node_modules', '.package-lock.json')
-  if (!existsSync(LOCK_SIGNAL)) { log('⚙ Installing dependencies…'); await runPrewarm(P) }
-  rebuildAllWidgets(P, state, state.timeRange ?? '30d')
-  const widgetMeta = Object.entries(state.widgets ?? {}).map(([name, info]) => ({ componentName: name, template: info.template ?? 'ranked-table' }))
-  generateDashboardFiles(P, widgetMeta, state.app?.name ?? 'Dashboard', state.app?.description ?? '')
-  injectAppRoutes(
-    P,
-    Object.keys(state.widgets ?? {}).filter(n => existsSync(join(P, 'src', 'dashboard', 'views', `${n}View.tsx`))),
-    collectKeyedViews(P, state),
-  )
-
-  // 4. Validate: Stage A (metric modules in isolation) then the full app.
-  const stageA = runMetricsTypecheck(P)
-  if (!stageA.ok) { emit('METRICS_RETRY', { files: stageA.files, errors: stageA.errors, intentPath }); process.exit(2) }
-  try { execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' }) }
-  catch (e) { emit('TSC_FAIL', { errors: (e.stdout?.toString() || '').slice(0, 1000) }); fail('Upgrade produced TypeScript errors') }
-
-  // 5. Re-stamp + persist.
-  state.schemaVersion = STATE_SCHEMA_VERSION
-  state.versions = buildVersions(checkSdkVersion(P).version, readScaffoldVersion(P))
-  writeAtomic(join(P, '.dashboard', 'state.json'), JSON.stringify(state, null, 2))
-  emit('UPGRADE_DONE', { to: readScaffoldVersion(P), widgets: Object.keys(state.widgets ?? {}) })
-}
-
-/**
- * Check the installed @uipath/uipath-typescript version in a project.
- * @param {string} projectPath
- * @returns {{ ok: boolean, version: string|null }}
- */
-export function checkSdkVersion(projectPath) {
-  const pkgPath = join(projectPath, 'node_modules', '@uipath', 'uipath-typescript', 'package.json')
-  if (!existsSync(pkgPath)) return { ok: false, version: null }
-  let version
-  try { version = JSON.parse(readFileSync(pkgPath, 'utf8')).version } catch { return { ok: false, version: null } }
-  const [maj = 0, min = 0, pat = 0] = String(version).split('.').map(Number)
-  const [rMaj, rMin, rPat] = MIN_SDK_VERSION.split('.').map(Number)
-  const ok = maj > rMaj || (maj === rMaj && (min > rMin || (min === rMin && pat >= rPat)))
-  return { ok, version }
-}
 
 /** Map a time range to a human subtitle fragment. */
 function timeRangeLabel(timeRange) {
@@ -443,36 +330,35 @@ function timeRangeLabel(timeRange) {
  * These MUST match what is registered on the external OAuth app.
  * Use parent scopes only — .Read sub-scopes are not reliably registered.
  */
-const DASHBOARD_SCOPES = 'OR.Assets OR.Jobs OR.Folders OR.Buckets OR.Execution OR.Tasks OR.Queues OR.Users Insights Insights.RealTimeData Traces.Api PIMS'
+export const DASHBOARD_SCOPES = 'OR.Assets OR.Jobs OR.Folders OR.Buckets OR.Execution OR.Tasks OR.Queues OR.Users Insights Insights.RealTimeData Traces.Api PIMS'
 
 // ── Low-level utilities ────────────────────────────────────────────────────────
 
-function fail(msg) {
+export function fail(msg) {
   process.stderr.write(`ERROR: ${msg}\n`)
   process.exit(1)
 }
 
-function log(msg) {
+export function log(msg) {
   process.stdout.write(msg + '\n')
 }
 
 /**
- * The agent extracts the starter-kit zip into the project dir before building —
- * the skill ships no zip/unzip code. This verifies the kit landed (scaffold app +
- * the _gen/widgets generator templates) and fails loud with the OS-native extract
- * command if not. Pick the command for your platform.
+ * The agent extracts the starter-kit .tar.gz into the project dir before building,
+ * using the OS `tar` (built into Windows 10+, macOS, Linux). This verifies the kit
+ * landed (scaffold app + the _gen/widgets generator templates) and fails loud with
+ * the extract command if not.
  * @param {string} projectPath
  */
-function assertScaffoldExtracted(projectPath) {
+export function assertScaffoldExtracted(projectPath) {
   const hasScaffold = existsSync(join(projectPath, 'package.json'))
   const hasTemplates = existsSync(join(projectPath, '_gen', 'widgets'))
   if (hasScaffold && hasTemplates) return
   fail([
     `Starter kit not extracted into: ${projectPath}`,
-    `Extract the archive there first (choose your OS):`,
-    `  Windows : powershell -NoProfile -Command "Expand-Archive -LiteralPath '${FIXTURE_ZIP_PATH}' -DestinationPath '${projectPath}' -Force"`,
-    `  macOS   : unzip -o "${FIXTURE_ZIP_PATH}" -d "${projectPath}"   (or: ditto -x -k "${FIXTURE_ZIP_PATH}" "${projectPath}")`,
-    `  Linux   : unzip -o "${FIXTURE_ZIP_PATH}" -d "${projectPath}"   (or: python3 -m zipfile -e "${FIXTURE_ZIP_PATH}" "${projectPath}")`,
+    `Extract it first with tar (built into Windows 10+, macOS, Linux).`,
+    `Feed the archive on stdin (-f -) so GNU tar doesn't misread the C:\\ drive colon as a remote host:`,
+    `  mkdir -p "${projectPath}" && tar -xz -C "${projectPath}" -f - < "${FIXTURE_ARCHIVE_PATH}"`,
     `Then re-run the build.`,
   ].join('\n'))
 }
@@ -486,7 +372,7 @@ function assertScaffoldExtracted(projectPath) {
  * write still lands. A scoped CHANGE op touches one file and rarely races; a
  * full REBUILD rewrites every widget — prefer stopping the dev server first.
  */
-function writeAtomic(filePath, content) {
+export function writeAtomic(filePath, content) {
   mkdirSync(dirname(filePath), { recursive: true })
   const tmp = filePath + '.tmp'
   writeFileSync(tmp, content, 'utf8')
@@ -514,75 +400,15 @@ function writeAtomic(filePath, content) {
   }
 }
 
-function hashContent(content) {
+export function hashContent(content) {
   return createHash('sha256').update(content).digest('hex').slice(0, 16)
 }
 
-function toPascalCase(str) {
+export function toPascalCase(str) {
   return str.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('')
 }
 
 // ── Pre-warm ───────────────────────────────────────────────────────────────────
-
-/**
- * Run npm ci in the given project directory with a pre-warm lock sentinel.
- * Emits PREWARM_START, PREWARM_DONE, or PREWARM_FAILED events.
- * @param {string} projectPath - Absolute path to project directory
- * @returns {Promise<void>}
- */
-export async function runPrewarm(projectPath) {
-  emit('PREWARM_START')
-  const prewarmLock = join(projectPath, '.prewarm.lock')
-  writeAtomic(prewarmLock, String(Date.now()))
-  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-  try {
-    execSync(`${npmCmd} ci --prefer-offline`, { cwd: projectPath, stdio: 'pipe' })
-  } catch {
-    try {
-      execSync(`${npmCmd} ci`, { cwd: projectPath, stdio: 'pipe' })
-    } catch (e) {
-      const stderr = (e.stderr?.toString() ?? String(e)).slice(0, 500)
-      emit('PREWARM_FAILED', { exitCode: e.status ?? 1, stderr })
-      try { unlinkSync(prewarmLock) } catch { /* ignore */ }
-      throw new Error(`npm ci failed: ${stderr}`)
-    }
-  }
-  try { unlinkSync(prewarmLock) } catch { /* ignore */ }
-  emit('PREWARM_DONE')
-}
-
-/**
- * Block until node_modules/.package-lock.json appears (written by npm ci).
- * Used when pre-warm was started in the background during plan review.
- * Emits PREWARM_DONE or PREWARM_FAILED.
- * @param {string} projectPath
- * @param {number} [timeoutMs=300000]
- */
-export function waitForPrewarm(projectPath, timeoutMs = 300_000) {
-  const signal = join(projectPath, 'node_modules', '.package-lock.json')
-  const deadline = Date.now() + timeoutMs
-  const startedAt = Date.now()
-  let lastLogAt = 0
-
-  while (!existsSync(signal)) {
-    const elapsed = Date.now() - startedAt
-
-    if (Date.now() > deadline) {
-      emit('PREWARM_FAILED', { exitCode: -1, stderr: `Timed out after ${Math.round(timeoutMs / 1000)}s` })
-      throw new Error(`Pre-warm timed out after ${Math.round(timeoutMs / 1000)}s`)
-    }
-
-    // Log progress every 20 seconds so the build output shows life
-    if (elapsed - lastLogAt >= 20_000) {
-      log(`⏳ Installing dependencies… (${Math.round(elapsed / 1000)}s)`)
-      lastLogAt = elapsed
-    }
-
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500)
-  }
-
-  emit('PREWARM_DONE')
-}
 
 /**
  * Stage A — isolated type-check of the agent-written metric modules, before any
@@ -1131,7 +957,7 @@ export function resolveMetric(metric) {
  * @param {string} timeRange
  * @returns {string}
  */
-function autoSubtitle(metric, defaults, timeRange) {
+export function autoSubtitle(metric, defaults, timeRange) {
   const explicit = metric.subtitle ?? defaults.subtitle ?? metric.description ?? defaults.description
   if (explicit) return explicit
   const label = timeRangeLabel(timeRange)
@@ -1451,352 +1277,6 @@ function widgetNameFromTscErrors(tscOutput, defaultName) {
   return match?.[1] ?? defaultName
 }
 
-/**
- * Kill a previously-started dev server using the PID stored in a file.
- * Cross-platform: taskkill /T on Windows (kills process tree), SIGTERM on Unix.
- * Waits up to 1500ms for the port to become free after killing.
- * @param {string} pidFile - Absolute path to the .pid file
- * @returns {Promise<void>}
- */
-async function killPreviousDevServer(pidFile) {
-  if (!existsSync(pidFile)) return
-
-  let pid
-  try {
-    pid = parseInt(readFileSync(pidFile, 'utf8').trim(), 10)
-  } catch { return }
-
-  if (!pid || isNaN(pid)) return
-
-  try {
-    if (process.platform === 'win32') {
-      // /T kills the entire process tree (npm → node → Vite); /F forces termination
-      execSync(`taskkill /PID ${pid} /T /F`, { stdio: 'pipe' })
-    } else {
-      process.kill(pid, 'SIGTERM')
-    }
-  } catch { /* process already dead — ignore */ }
-
-  // Wait for port to become free (up to 1500ms)
-  const deadline = Date.now() + 1500
-  while (Date.now() < deadline) {
-    const stillOpen = await new Promise(resolve => {
-      const socket = createConnection({ port: DASHBOARD_PORT, host: 'localhost' })
-      socket.once('connect', () => { socket.destroy(); resolve(true) })
-      socket.once('error', () => resolve(false))
-      socket.setTimeout(300, () => { socket.destroy(); resolve(false) })
-    })
-    if (!stillOpen) break
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200)
-  }
-
-  try { unlinkSync(pidFile) } catch { /* ignore */ }
-}
-
-/**
- * Main intent.json build pipeline.
- * @param {DashboardIntent} intent
- * @param {string} intentPath - Absolute path to intent.json on disk (for re-reads)
- * @returns {Promise<void>}
- */
-async function runDashboardBuild(intent, intentPath) {
-  const {
-    dashboardName, timeRange, metrics,
-    projectDir, orgName, tenantName, cloudUrl, apiUrl, clientId = '', dashboardDescription = '',
-    routingName, template = false,
-  } = intent
-
-  if (!projectDir) fail('intent.projectDir is required')
-  if (!routingName) fail('intent.routingName is required')
-
-  const P = resolve(projectDir)
-  const BUILD_SENTINEL = join(P, '.build-in-progress')
-
-  if (existsSync(BUILD_SENTINEL)) {
-    emit('PARTIAL_BUILD_DETECTED', { projectDir: P })
-  }
-  writeAtomic(BUILD_SENTINEL, String(Date.now()))
-
-  try {
-    // Step 1 — Scaffold (the agent extracts the starter-kit zip into the project
-    // before building; the skill ships no zip code). Verify it's present, then
-    // point widget generation at the kit's _gen/widgets templates.
-    assertScaffoldExtracted(P)
-    setWidgetsDir(join(P, '_gen', 'widgets'))
-    emit('SCAFFOLD_READY')
-
-    // Step 2 — Config (uipath.json)
-    // All SPA config lives in uipath.json. The `uipathCodedApps()` Vite plugin reads
-    // it and injects <meta name="uipath:*"> tags into index.html (dev serve AND
-    // production build); the SDK (new UiPath()) reads its config from those tags. No
-    // VITE_* / .env files. A TEMPLATE build writes a TENANT-NEUTRAL uipath.json
-    // (scope + redirectUri only — no org/tenant/baseUrl/clientId), so the shared
-    // bundle bakes no tenant identity and the Apps host injects it at runtime. A
-    // normal dashboard writes the full tenant config (baked into its own deploy).
-    const uipathJsonPath = join(P, 'uipath.json')
-    const baseConfig = existsSync(uipathJsonPath)
-      ? JSON.parse(readFileSync(uipathJsonPath, 'utf8'))
-      : {}
-    const uipathConfig = template
-      ? { name: dashboardName, scope: DASHBOARD_SCOPES, redirectUri: `http://localhost:${DASHBOARD_PORT}` }
-      : {
-          name: dashboardName,
-          scope: DASHBOARD_SCOPES,
-          clientId,
-          orgName,
-          tenantName,
-          baseUrl: apiUrl,
-          redirectUri: `http://localhost:${DASHBOARD_PORT}`,
-        }
-    writeAtomic(uipathJsonPath, JSON.stringify({ ...baseConfig, ...uipathConfig }, null, 2) + '\n')
-    emit('ENV_WRITTEN')
-
-    // Warn if clientId is missing — local-dev / standalone OAuth will fail without it
-    // (a hosted/embedded deploy gets its client-id from the host instead).
-    if (!template && !clientId) {
-      emit('AUTH_MISSING', { var: 'clientId', message: 'No external OAuth app client ID in uipath.json. Local preview / standalone OAuth will fail. Run Phase 4.5 to provision one.' })
-      log('⚠ Warning: clientId is empty — local dashboard auth will not work. See Phase 4.5 in build plugin docs.')
-    }
-
-    // Write partial state.json early so deploy can find app metadata even if build fails
-    const stateDir = join(P, '.dashboard')
-    mkdirSync(stateDir, { recursive: true })
-    const statePath = join(stateDir, 'state.json')
-    const existingState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {}
-    const buildDrift = existsSync(statePath) ? scaffoldDrift(existingState, readScaffoldVersion(P)) : null
-    if (buildDrift) emit('UPGRADE_AVAILABLE', buildDrift)
-    // Regime: a template builds straight to the ejected regime (full-source,
-    // agent-edited, no compiler regen); a fresh dashboard is compiler-managed.
-    // Once ejected, always ejected (one-way — never silently re-adopt the script).
-    const regime = template ? 'ejected' : (existingState.regime ?? 'compiler-managed')
-    if (template) {
-      emit('TEMPLATE_BUILD', {
-        regime,
-        note: 'Template build → ejected regime + tenant-neutral bundle (no org/tenant/baseUrl/clientId baked). The scaffold useAuth resolves host-injected <meta name="uipath:*"> config at runtime (new UiPath()), so the artifact is portable across tenants. Pack source with: node build-dashboard.mjs --pack-template <projectDir>',
-      })
-    }
-    const partialState = {
-      schemaVersion: STATE_SCHEMA_VERSION,
-      versions: buildVersions(null, readScaffoldVersion(P)),
-      regime,
-      app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0', description: dashboardDescription },
-      env: cloudUrl.includes('alpha') ? 'alpha' : cloudUrl.includes('staging') ? 'staging' : 'prod',
-      org: orgName, tenant: tenantName, cloudUrl,
-      timeRange,
-      widgets: existingState.widgets ?? {},
-      deployment: existingState.deployment ?? { systemName: null, folderKey: null, appUrl: null, lastDeployedAt: null },
-      buildStatus: 'in-progress',
-    }
-    writeAtomic(statePath, JSON.stringify(partialState, null, 2))
-
-    // Step 3 — Pre-warm guarantee
-    const LOCK_SIGNAL = join(P, 'node_modules', '.package-lock.json')
-    const PREWARM_LOCK_PATH = join(P, '.prewarm.lock')
-    if (!existsSync(LOCK_SIGNAL)) {
-      if (existsSync(PREWARM_LOCK_PATH)) {
-        log('⏳ Waiting for pre-warm…')
-        waitForPrewarm(P)
-      } else {
-        log('⚙ Installing dependencies…')
-        await runPrewarm(P)
-      }
-    } else {
-      emit('PREWARM_DONE')
-    }
-
-    // Step 3.5 — SDK version floor (agent-memory/governance subpaths need ≥ MIN_SDK_VERSION)
-    const sdkCheck = checkSdkVersion(P)
-    if (!sdkCheck.ok) {
-      fail(
-        `Installed @uipath/uipath-typescript ${sdkCheck.version ?? '(not found)'} is below the required ${MIN_SDK_VERSION} ` +
-        `(agent/governance metrics need the agent-memory and governance subpaths). ` +
-        `Fix: delete ${join(P, 'package-lock.json')} and ${join(P, 'node_modules')}, then re-run the pre-warm.`
-      )
-    }
-
-    // Step 3.6 — Copy agent-authored metric modules into the project and
-    // type-check them in isolation (Stage A) before generating any widget.
-    // A failure here maps directly to a metrics/<name>.ts file — fast, no React.
-    const intentDir = dirname(intentPath)
-    const metricsDestDir = join(P, 'src', 'metrics')
-    mkdirSync(metricsDestDir, { recursive: true })
-    for (const metric of metrics) {
-      const rel = metric.module ?? `metrics/${metric.name}.ts`
-      const fromPath = join(intentDir, rel)
-      if (!existsSync(fromPath)) {
-        fail(`Metric module not found: ${fromPath} — write the data function as metrics/${metric.name}.ts exporting "fetchData"`)
-      }
-      copyFileSync(fromPath, join(metricsDestDir, basename(rel)))
-    }
-    const stageA = runMetricsTypecheck(P)
-    if (!stageA.ok) {
-      emit('METRICS_RETRY', { files: stageA.files, errors: stageA.errors, intentPath })
-      log(`⚠ Metric modules have TypeScript errors. Fix the named files in ${metricsDestDir} and re-run.`)
-      process.exit(2)
-    }
-    emit('METRICS_PASS')
-
-    // Step 3.6 — Enforce record-grain detail. Every widget that exposes a
-    // drill-down (a chart not opted out via registry `noDetail`, or a kpi-card
-    // with `detail: true`) MUST export `fetchDetail` — the record-grain query
-    // behind the aggregate. Without it the detail view would re-table the chart's
-    // own buckets and add no information. This is the chart analogue of the
-    // existing T3-table-without-columns hard-fail.
-    const missingDetail = []
-    for (const metric of metrics) {
-      const isT3 = metric.tier === 'T3'
-      const { entry } = isT3 ? { entry: null } : resolveMetric(metric)
-      const displayAs = metric.displayAs ?? entry?.template ?? 'data-table'
-      if (!widgetGetsDetailView(displayAs, metric, entry)) continue
-      const rel = metric.module ?? `metrics/${metric.name}.ts`
-      const moduleSrc = readFileSync(join(metricsDestDir, basename(rel)), 'utf8')
-      if (!/export\s+const\s+fetchDetail\b/.test(moduleSrc)) {
-        missingDetail.push({ metric: metric.name, module: rel, recipe: entry?.detailRecipe })
-      }
-    }
-    if (missingDetail.length > 0) {
-      emit('CHART_DETAIL_MISSING', { metrics: missingDetail, intentPath })
-      log(
-        `⚠ These widgets expose a drill-down but their modules don't export "fetchDetail" ` +
-        `(the record-grain query behind the chart). Add it to each module (see the metric's ` +
-        `detailRecipe), or — for a chart that genuinely has no record data — set "noDetail": true ` +
-        `(on the registry entry for a catalog metric, or on the metric in intent.json for a T3 custom chart):\n` +
-        missingDetail.map(m => `  • ${m.metric} (${m.module})${m.recipe ? `\n      ${m.recipe}` : ''}`).join('\n'),
-      )
-      process.exit(2)
-    }
-
-    // Step 4 — Resolve + generate widgets
-    const widgetHashes = {}
-    const widgetMeta = []    // { componentName, template }
-    const widgetSpecs = {}   // componentName → view spec (see buildViewSpec); chart widgets only
-    const keyedSpecs = {}    // componentName → keyed detail spec; table widgets with rowLink
-    let widgetIndex = 0
-    const total = metrics.length
-
-    // All widgets generated together — T1, T2, T3 in one pass (no per-widget tsc)
-    // Metric-level errors were already caught by Stage A above; Step 6 is the integration backstop.
-    for (const metric of metrics) {
-      const isT3 = metric.tier === 'T3'
-      const { entry } = isT3 ? { entry: null } : resolveMetric(metric)
-
-      let widgetContent
-      try {
-        widgetContent = buildWidgetFile(metric, entry, timeRange)
-      } catch (e) {
-        if (isT3) emit('T3_FAILED', { widget: metric.name, reason: e.message })
-        fail(`Widget "${metric.name}" could not be generated: ${e.message}`)
-      }
-
-      const displayAs = metric.displayAs ?? entry?.template ?? 'data-table'
-      const componentName = metric.componentName ?? toPascalCase(metric.name)
-      const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
-      writeAtomic(widgetPath, widgetContent)
-
-      // intentMetric is persisted so incremental CHANGE/REBUILD can regenerate
-      // the widget without the original intent.json (fnBody, title, hints).
-      widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: metric.tier, metric: metric.name, template: displayAs, module: metric.module ?? `metrics/${metric.name}.ts`, intentMetric: metric }
-      widgetMeta.push({ componentName, template: displayAs })
-
-      // Detail views: charts (unless registry `noDetail`) and kpi-cards with
-      // `detail: true` get a generated record-grain view + route — any tier. The
-      // view runs `fetchDetail`; columns come from detailColumns (intent or
-      // registry defaults), else auto-detected at runtime.
-      if (widgetGetsDetailView(displayAs, metric, entry)) {
-        widgetSpecs[componentName] = buildViewSpec(componentName, metric, entry, timeRange)
-      }
-
-      // Row-click drill-down: a table widget with `rowLink` gets a keyed detail
-      // view at /<widget>/:key that calls the module's fetchDetailByKey.
-      // rowLink + detailView fall back to the registry entry's defaults (same as
-      // title/columns), so a cataloged metric ships its drill-down + rich charts
-      // without the intent restating them.
-      const keyedRowLink = metric.rowLink ?? entry?.defaults?.rowLink
-      if (keyedRowLink?.key && widgetLayoutGroup(displayAs) === 'table') {
-        keyedSpecs[componentName] = {
-          componentName,
-          title: metric.title ?? entry?.defaults?.title ?? componentName,
-          subtitle: autoSubtitle(metric, entry?.defaults ?? {}, timeRange),
-          moduleSpecifier: metricModuleSpecifier(metric),
-          detailColumns: metric.detailColumns ? compileColumns(metric.detailColumns) : null,
-          detailView: metric.detailView ?? entry?.defaults?.detailView ?? null,
-          routeBase: `/${componentName.toLowerCase()}`,
-        }
-      }
-
-      widgetIndex++
-      emit('WIDGET_READY', { name: componentName, index: widgetIndex, total })
-    }
-
-    // Step 5 — Generate Dashboard.tsx + index.ts
-    generateDashboardFiles(P, widgetMeta, dashboardName, dashboardDescription)
-
-    // Step 5a — Generate view files (widgetSpecs is chart-only; every chart links to its view)
-    const generatedViewNames = []
-    for (const [componentName, spec] of Object.entries(widgetSpecs)) {
-      const viewContent = generateViewFile(spec)
-      writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
-      generatedViewNames.push(componentName)
-    }
-
-    // Step 5a.2 — Generate keyed detail views for tables with rowLink
-    const keyedViewWidgets = []
-    for (const [componentName, spec] of Object.entries(keyedSpecs)) {
-      const viewContent = generateKeyedDetailViewFile(spec)
-      writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}DetailView.tsx`), viewContent)
-      keyedViewWidgets.push({ componentName, routeBase: spec.routeBase })
-    }
-
-    // Step 5b — Only inject routes for widgets that actually have view files
-    injectAppRoutes(P, generatedViewNames, keyedViewWidgets)
-
-    // Step 6 — Full-app tsc backstop. Metric-level errors were already caught by
-    // Stage A; a failure here is an integration/template error, not a metric bug.
-    try {
-      execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
-      emit('TSC_PASS')
-    } catch (e) {
-      const tscOut = e.stdout?.toString() ?? ''
-      const err = tscOut || e.stderr?.toString() || String(e)
-      emit('TSC_FAIL', { errors: err.slice(0, 1000) })
-      fail(`TypeScript errors:\n${err}`)
-    }
-
-    // Step 7 — Write final state.json (upgrade partial → complete)
-    const newState = {
-      schemaVersion: STATE_SCHEMA_VERSION,
-      versions: buildVersions(sdkCheck.version, readScaffoldVersion(P)),
-      regime,
-      app: { name: dashboardName, routingName, semver: existingState.app?.semver ?? '1.0.0', description: dashboardDescription },
-      env: cloudUrl.includes('alpha') ? 'alpha' : cloudUrl.includes('staging') ? 'staging' : 'prod',
-      org: orgName, tenant: tenantName, cloudUrl,
-      timeRange,
-      widgets: widgetHashes,
-      deployment: existingState.deployment ?? { systemName: null, folderKey: null, appUrl: null, lastDeployedAt: null },
-      buildStatus: 'complete',
-    }
-    writeAtomic(statePath, JSON.stringify(newState, null, 2))
-
-    // Step 8 — Clean up any server a PREVIOUS script version spawned (legacy
-    // pid file). The script itself no longer starts the dev server: a detached
-    // child here outlives the session and leaks. The calling agent starts
-    // `npm run dev` as a tracked background job instead (see build impl.md).
-    const serverPidFile = join(P, '.dashboard', 'server.pid')
-    await killPreviousDevServer(serverPidFile)
-    try { unlinkSync(serverPidFile) } catch { /* ignore */ }
-
-    emit('BUILD_RESULT', {
-      success: true, projectDir: P, port: DASHBOARD_PORT,
-      previewUrl: `http://localhost:${DASHBOARD_PORT}`,
-      widgets: Object.keys(widgetHashes),
-      dashboardName,
-      serverStart: `npm run dev -- --port ${DASHBOARD_PORT}`,
-    })
-
-  } finally {
-    try { unlinkSync(BUILD_SENTINEL) } catch { /* ignore */ }
-  }
-}
 
 /**
  * Validate an edit-intent.json and normalize it to a batch.
@@ -1834,318 +1314,15 @@ export function resolveChangeMetric(stored, target, delta) {
   return { ...base, ...(delta ?? {}) }
 }
 
-/**
- * Copy a metric's module file from the edit's sibling `metrics/` dir into the
- * project's `src/metrics/`. Returns true if a file was copied, false if the edit
- * supplied none (CHANGE may legitimately supply none — the existing module stays).
- * @param {string} intentDir - directory containing the edit-intent.json
- * @param {string} projectPath
- * @param {{ name: string, module?: string }} metric
- * @returns {boolean}
- */
-function copyMetricModule(intentDir, projectPath, metric) {
-  const rel = metric.module ?? `metrics/${metric.name}.ts`
-  const fromPath = join(intentDir, rel)
-  if (!existsSync(fromPath)) return false
-  const destDir = join(projectPath, 'src', 'metrics')
-  mkdirSync(destDir, { recursive: true })
-  copyFileSync(fromPath, join(destDir, basename(rel)))
-  return true
-}
 
-/**
- * Apply one or more incremental edits (ADD / REMOVE / CHANGE / REBUILD) to an
- * existing project in a single pass: every op is validated up front (nothing is
- * written if any op would fail), then all ops apply, then Dashboard.tsx/index.ts
- * regenerate ONCE and tsc runs ONCE.
- * @param {{ projectDir: string, op?: string, ops?: Array<object> }} editIntent
- * @param {string} intentPath
- * @returns {Promise<void>}
- */
-async function runIncrementalEdit(editIntent, intentPath) {
-  const { projectDir } = editIntent
-  if (!projectDir) fail('edit-intent.projectDir is required')
-  const P = resolve(projectDir)
-  const intentDir = dirname(intentPath)
-  const statePath = join(P, '.dashboard', 'state.json')
-  if (!existsSync(statePath)) fail('No .dashboard/state.json found. Run a fresh build first.')
-  const state = JSON.parse(readFileSync(statePath, 'utf8'))
-  const { ops } = classifyEditIntent(editIntent)
 
-  // Eject — flip to the ejected regime (one-way). No scaffold needed: this only
-  // rewrites state.json. From here the dashboard is a full-source project edited
-  // free-form by the agent + `npm run build`; the edit-script no longer runs on it.
-  // Idempotent — re-ejecting an ejected project is a no-op write.
-  if (ops.length === 1 && ops[0].op === 'EJECT') {
-    state.regime = 'ejected'
-    state.schemaVersion = STATE_SCHEMA_VERSION
-    writeAtomic(statePath, JSON.stringify(state, null, 2))
-    emit('EJECTED', {
-      projectDir: P,
-      note: 'Dashboard ejected → full-source, agent-edited regime. Compiler regen / UPGRADE no longer apply. Edit files under src/ directly, then run `npm run build`.',
-    })
-    return
-  }
-
-  // Regime gate — the structured edit-script is for compiler-managed dashboards
-  // only. An ejected project (or a template) is edited free-form on its source;
-  // running the script would regenerate Dashboard.tsx/widgets and clobber hand
-  // work. Refuse loud (before touching the scaffold) and route to source editing.
-  if (state.regime === 'ejected') {
-    emit('EJECTED_PROJECT', { projectDir: P })
-    fail(
-      'This dashboard is ejected (full-source, agent-edited). The structured edit-script ' +
-      'is disabled for ejected projects — edit the source under src/ directly per the ' +
-      'request, then run `npm run build`. See references/dashboards/primitives/customization.md (Ejected regime).'
-    )
-  }
-
-  // The starter kit must still be extracted in the project (the widget generator
-  // templates live in <proj>/_gen/widgets). Verify + point the generator at them —
-  // without this, ADD/CHANGE/REBUILD crash at widgetsDir().
-  assertScaffoldExtracted(P)
-  setWidgetsDir(join(P, '_gen', 'widgets'))
-  const editDrift = scaffoldDrift(state, readScaffoldVersion(P))
-  if (editDrift) emit('UPGRADE_AVAILABLE', editDrift)
-  if (state.buildStatus === 'in-progress') {
-    log('⚠ Warning: Previous build did not complete — widgets may be missing. Consider running a full build first.')
-  }
-  const timeRange = state.timeRange ?? '30d'
-
-  // Project-wide upgrade — runs instead of the per-widget batch loop.
-  if (ops.length === 1 && ops[0].op === 'UPGRADE') {
-    await runUpgrade(P, state, intentPath)
-    return
-  }
-
-  // ── Pre-validate the whole batch — fail BEFORE any write ────────────────────
-  const violations = []
-  for (const [i, o] of ops.entries()) {
-    if (o.op === 'REMOVE' || o.op === 'CHANGE') {
-      if (!o.target) { violations.push(`ops[${i}] ${o.op}: missing target`); continue }
-      const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${o.target}.tsx`)
-      const currentContent = existsSync(widgetPath) ? readFileSync(widgetPath, 'utf8') : null
-      const stored = state.widgets?.[o.target]
-      if (currentContent && stored && hashContent(currentContent) !== stored.hash) {
-        emit('HAND_EDIT_DETECTED', { widget: o.target })
-        violations.push(`ops[${i}] ${o.op} "${o.target}": hand-edited — overwriting would lose changes`)
-      }
-      if (o.op === 'CHANGE') {
-        const metricRef = resolveChangeMetric(stored, o.target, o.delta)
-        const rel = metricRef.module ?? `metrics/${metricRef.name}.ts`
-        const provided = existsSync(join(intentDir, rel))
-        const existing = existsSync(join(P, 'src', 'metrics', basename(rel)))
-        if (!provided && !existing) {
-          violations.push(`ops[${i}] CHANGE "${o.target}": no metric module found — provide metrics/${metricRef.name}.ts in the edit, or re-run a fresh build`)
-        }
-      }
-    }
-    if (o.op === 'ADD') {
-      if (!o.metric?.name) { violations.push(`ops[${i}] ADD: missing metric`); continue }
-      let addEntry = null
-      try { addEntry = resolveMetric(o.metric).entry } catch (e) { violations.push(`ops[${i}] ADD "${o.metric.name}": ${e.message}`) }
-      const rel = o.metric.module ?? `metrics/${o.metric.name}.ts`
-      const addFrom = join(intentDir, rel)
-      if (!existsSync(addFrom)) {
-        violations.push(`ops[${i}] ADD "${o.metric.name}": metric module not found — write ${rel} exporting "fetchData"`)
-      } else if (
-        widgetGetsDetailView(o.metric.displayAs ?? addEntry?.template ?? 'data-table', o.metric, addEntry) &&
-        !/export\s+const\s+fetchDetail\b/.test(readFileSync(addFrom, 'utf8'))
-      ) {
-        violations.push(
-          `ops[${i}] ADD "${o.metric.name}": drill-down widget needs a record-grain "fetchDetail" export in ${rel}` +
-          `${addEntry?.detailRecipe ? ` — ${addEntry.detailRecipe}` : ''} (or set "noDetail": true on the metric/registry entry for a chart with no record data)`,
-        )
-      }
-    }
-  }
-  if (violations.length > 0) {
-    fail(`Batch rejected — nothing was changed:\n${violations.map(v => '  • ' + v).join('\n')}`)
-  }
-
-  // ── Apply every op ───────────────────────────────────────────────────────────
-  const applied = []
-  for (const { op, target, metric, delta } of ops) {
-
-  if (op === 'ADD') {
-    const { tier, entry } = resolveMetric(metric)
-    const componentName = metric.componentName ?? toPascalCase(metric.name)
-    copyMetricModule(intentDir, P, metric)
-    const widgetContent = buildWidgetFile(metric, entry, timeRange)
-    const addTemplate = metric.displayAs ?? entry?.template ?? 'data-table'
-    const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${componentName}.tsx`)
-    writeAtomic(widgetPath, widgetContent)
-    state.widgets = state.widgets ?? {}
-    state.widgets[componentName] = { hash: hashContent(widgetContent), tier, metric: metric.name, template: addTemplate, module: metric.module ?? `metrics/${metric.name}.ts`, intentMetric: metric }
-    // Charts (unless noDetail) and kpi-cards with detail:true get a record-grain
-    // detail view so the drill-down route resolves.
-    if (widgetGetsDetailView(addTemplate, metric, entry)) {
-      const viewContent = generateViewFile(buildViewSpec(componentName, metric, entry, timeRange))
-      writeAtomic(join(P, 'src', 'dashboard', 'views', `${componentName}View.tsx`), viewContent)
-    }
-    // Table with rowLink → generate its keyed row-click detail view
-    writeKeyedViewIfRowLink(P, componentName, metric, entry, timeRange)
-
-  } else if (op === 'REMOVE') {
-    const stored = state.widgets?.[target]
-    const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${target}.tsx`)
-    if (existsSync(widgetPath)) unlinkSync(widgetPath)
-    const viewPath = join(P, 'src', 'dashboard', 'views', `${target}View.tsx`)
-    if (existsSync(viewPath)) unlinkSync(viewPath)
-    const moduleRel = stored?.module ?? `metrics/${stored?.metric ?? target.toLowerCase()}.ts`
-    const modulePath = join(P, 'src', 'metrics', basename(moduleRel))
-    if (existsSync(modulePath)) unlinkSync(modulePath)
-    if (state.widgets) delete state.widgets[target]
-
-  } else if (op === 'CHANGE') {
-    const widgetPath = join(P, 'src', 'dashboard', 'widgets', `${target}.tsx`)
-    const stored = state.widgets?.[target]
-    const metricRef = resolveChangeMetric(stored, target, delta)
-    copyMetricModule(intentDir, P, metricRef)
-    const tier = metricRef.tier ?? stored?.tier ?? 'T1'
-    const { entry } = resolveMetric(metricRef)
-    const widgetContent = buildWidgetFile(metricRef, entry, delta?.timeRange ?? timeRange)
-    writeAtomic(widgetPath, widgetContent)
-    const changeTemplate = metricRef.displayAs ?? entry?.template ?? stored?.template ?? 'data-table'
-    if (state.widgets) state.widgets[target] = { hash: hashContent(widgetContent), tier, metric: metricRef.name, template: changeTemplate, module: metricRef.module ?? `metrics/${metricRef.name}.ts`, intentMetric: metricRef }
-    // Keep the detail view in sync: regenerate when the widget drills down
-    // (chart unless noDetail, or kpi-card with detail:true), drop it otherwise.
-    const changeViewPath = join(P, 'src', 'dashboard', 'views', `${target}View.tsx`)
-    if (widgetGetsDetailView(changeTemplate, metricRef, entry)) {
-      const viewContent = generateViewFile(buildViewSpec(target, metricRef, entry, delta?.timeRange ?? timeRange))
-      writeAtomic(changeViewPath, viewContent)
-    } else if (existsSync(changeViewPath)) {
-      unlinkSync(changeViewPath)
-    }
-    // Sync the keyed row-click detail view (adds it if rowLink was set, removes a stale one)
-    writeKeyedViewIfRowLink(P, target, metricRef, entry, delta?.timeRange ?? timeRange)
-
-  } else if (op === 'REBUILD') {
-    // Regenerate every widget (and chart detail view) from the persisted intentMetric.
-    // Useful after scaffold/template updates. Legacy entries without intentMetric are skipped.
-    rebuildAllWidgets(P, state, timeRange)
-  }
-
-  applied.push({ op, widget: target ?? (metric ? (metric.componentName ?? toPascalCase(metric.name)) : undefined) })
-  } // end apply loop
-
-  // Regenerate Dashboard.tsx + index.ts — ONCE for the whole batch
-  const widgetMeta = Object.entries(state.widgets ?? {}).map(([name, info]) => ({
-    componentName: name,
-    template: info.template ?? 'ranked-table',
-  }))
-  generateDashboardFiles(P, widgetMeta, state.app?.name ?? 'Dashboard', state.app?.description ?? '')
-
-  // Re-inject App.tsx routes — chart views + keyed row-click detail views on disk
-  const viewNames = Object.keys(state.widgets ?? {}).filter(name =>
-    existsSync(join(P, 'src', 'dashboard', 'views', `${name}View.tsx`))
-  )
-  injectAppRoutes(P, viewNames, collectKeyedViews(P, state))
-
-  // Stage A — re-type-check metric modules in isolation after the batch.
-  const stageA = runMetricsTypecheck(P)
-  if (!stageA.ok) {
-    emit('METRICS_RETRY', { files: stageA.files, errors: stageA.errors, intentPath })
-    log(`⚠ Metric modules have TypeScript errors. Fix the named files in ${join(P, 'src', 'metrics')} and re-run.`)
-    process.exit(2)
-  }
-
-  // tsc validate
-  try {
-    execSync('npx tsc --noEmit', { cwd: P, stdio: 'pipe' })
-    emit('TSC_PASS')
-  } catch (e) {
-    const err = e.stdout?.toString() || ''
-    emit('TSC_FAIL', { errors: err.slice(0, 500) })
-    fail(`TypeScript errors after edit:\n${err}`)
-  }
-
-  state.schemaVersion = STATE_SCHEMA_VERSION
-  state.versions = buildVersions(checkSdkVersion(P).version, readScaffoldVersion(P))
-  writeAtomic(statePath, JSON.stringify(state, null, 2))
-  emit('INCREMENTAL_READY', { count: applied.length, ops: applied })
-}
-
-/**
- * Stage the full modify-face source + a template.json manifest into dist/_source/
- * so ONE `uip codedapp pack dist` artifact carries both the deploy face (dist/)
- * and the agent-modifiable source (the ejected "recipe"). Tenant-neutral: never
- * stages .env*, .dashboard/ (tenant + deployment identity), node_modules, or dist,
- * and blanks uipath.json clientId. Run AFTER `npm run build` (needs dist/), before pack.
- * @param {string} projectDir
- */
-export function packTemplate(projectDir) {
-  const P = resolve(projectDir)
-  const distDir = join(P, 'dist')
-  if (!existsSync(distDir)) fail('dist/ not found — run `npm run build` before --pack-template.')
-  const statePath = join(P, '.dashboard', 'state.json')
-  const state = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {}
-
-  const srcOut = join(distDir, '_source')
-  try { rmSync(srcOut, { recursive: true, force: true }) } catch { /* fresh */ }
-  mkdirSync(srcOut, { recursive: true })
-
-  // The modify-face project. Tenant identity (.env*, .dashboard/) and rebuildable
-  // artifacts (node_modules, dist, _gen) are deliberately excluded.
-  const INCLUDE = [
-    'intent.json', 'package.json', 'package-lock.json', 'index.html',
-    'vite.config.ts', 'tsconfig.json', 'tsconfig.node.json', 'tsconfig.metrics.json',
-    'tailwind.config.ts', 'postcss.config.js', 'src',
-  ]
-  const stripDirs = new Set(['node_modules', 'dist'])
-  for (const rel of INCLUDE) {
-    const from = join(P, rel)
-    if (!existsSync(from)) continue
-    cpSync(from, join(srcOut, rel), {
-      recursive: true,
-      filter: (s) => {
-        const b = basename(s)
-        return !stripDirs.has(b) && !b.startsWith('.env')
-      },
-    })
-  }
-
-  // uipath.json — staged tenant-neutral. dist/_source/* is web-served, so blank
-  // ALL tenant identity (clientId, orgName, tenantName, baseUrl); keep only scope
-  // (+ name/redirectUri). A proper template build already wrote a scope-only
-  // uipath.json; this also covers packing a non-template build as a template.
-  const TENANT_KEYS = ['clientId', 'orgName', 'tenantName', 'baseUrl']
-  const uj = join(P, 'uipath.json')
-  if (existsSync(uj)) {
-    try {
-      const obj = JSON.parse(readFileSync(uj, 'utf8'))
-      for (const k of TENANT_KEYS) if (k in obj) obj[k] = ''
-      writeFileSync(join(srcOut, 'uipath.json'), JSON.stringify(obj, null, 2))
-    } catch { copyFileSync(uj, join(srcOut, 'uipath.json')) }
-  }
-
-  const manifest = {
-    templateVersion: '1.0.0',
-    scaffoldVersion: readScaffoldVersion(P),
-    sdkFloor: MIN_SDK_VERSION,
-    requiredScopes: DASHBOARD_SCOPES,
-    routingName: state.app?.routingName ?? null,
-    dashboardName: state.app?.name ?? null,
-    regime: 'ejected',
-    ejected: true,
-    generatedBy: 'build-dashboard.mjs --pack-template',
-  }
-  writeFileSync(join(srcOut, 'template.json'), JSON.stringify(manifest, null, 2))
-
-  emit('TEMPLATE_PACKED', {
-    sourceDir: srcOut,
-    files: readdirSync(srcOut),
-    packCommand: `uip codedapp pack dist -n "${state.app?.name ?? '<APP_NAME>'}" --version "${state.app?.semver ?? '1.0.0'}" --output json`,
-    caveat: "dist/_source/* is web-served by the platform — ship embedded source ONLY for shareable, tenant-neutral templates, never a customer's private dashboard.",
-  })
-}
 
 // ── Entry point ────────────────────────────────────────────────────────────────
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 
   // --prewarm <routingName|projectDir> mode: run npm ci in an already-extracted
-  // project, then exit. The agent extracts the starter-kit zip into
+  // project, then exit. The agent extracts the starter-kit archive into
   // <cwd>/<routingName> first. resolve() (not join()) so an ABSOLUTE path is
   // honored as-is — join(cwd, '/abs/path') concatenates into a broken path on
   // Windows (C:\cwd\C:\abs\path) and npm ci runs in the wrong place.

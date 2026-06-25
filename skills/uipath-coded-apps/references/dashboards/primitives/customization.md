@@ -28,7 +28,7 @@ Write an edit-intent and run the build script:
 ```
 
 ```bash
-node <skill>/assets/scripts/build-dashboard.mjs eject-intent.json
+node <skill>/assets/scripts/dashboards/build-dashboard.mjs eject-intent.json
 ```
 
 It flips `regime` to `"ejected"` in `state.json` and emits `EJECTED` — no files are regenerated. From then on the dashboard behaves exactly like a template's modify face: edit `src/` per NLP → `npm run build` → deploy. Deploy is unaffected (it only reads `state.json`).

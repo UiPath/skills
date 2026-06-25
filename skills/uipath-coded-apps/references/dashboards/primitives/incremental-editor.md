@@ -40,7 +40,7 @@ A single-op shorthand (`{ "op": "ADD", "projectDir": "...", "metric": ... }`) is
 ## Run command
 
 ```bash
-node "${SKILL_BASE_DIR}/assets/scripts/build-dashboard.mjs" "${EDIT_INTENT_PATH}"
+node "${SKILL_BASE_DIR}/assets/scripts/dashboards/build-dashboard.mjs" "${EDIT_INTENT_PATH}"
 ```
 
 ## CHANGE semantics
