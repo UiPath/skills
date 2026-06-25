@@ -12,7 +12,7 @@ description: >
   in the workflow source, and recommend wrapping both cards in an
   Excel Process Scope — NOT the Delay-as-fix anti-pattern.
 
-tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, excel-application-card, rpc-race]
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, excel-application-card, rpc-race]
 
 agent:
   type: claude-code

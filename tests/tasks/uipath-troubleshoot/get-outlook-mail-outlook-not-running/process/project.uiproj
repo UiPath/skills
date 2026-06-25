@@ -1,0 +1,6 @@
+{
+  "Name": "QueueMailIntake",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Get Outlook Mail Messages failure on an unattended Robot where the desktop Outlook COM session is not available (no running Outlook instance for the Robot user / privilege mismatch), surfacing as 'The Outlook application is not running.'",
+  "MainFile": "Main.xaml"
+}

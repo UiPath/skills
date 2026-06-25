@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-11T10:05:02.160Z",
+      "Message": "Execution started"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-11T10:05:03.940Z",
+      "Message": "[Word Application Scope] Starting Microsoft Word"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-11T10:05:04.520Z",
+      "Message": "[Word Application Scope] Opening document 'data\\NDA-Protected.docx'"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-11T10:35:09.700Z",
+      "Message": "Execution was canceled. The job ran for 00:30:07 and never advanced past [Word Application Scope]."
+    }
+  ]
+}

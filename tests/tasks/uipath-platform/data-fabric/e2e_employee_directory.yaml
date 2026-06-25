@@ -1,0 +1,142 @@
+task_id: skill-datafabric-e2e-employee-directory
+description: >
+  E2E scenario: agent builds an employee directory in Data Fabric from
+  scratch — designs the entity schema, bulk-imports 20 employees from a
+  generated CSV (4 departments, 5 each), evolves the schema by adding a
+  PerformanceScore field post-import, updates 6 employees with scores,
+  queries top performers and paginated department listings, and produces a
+  workforce summary. Tests entity schema evolution with live data, CSV
+  bulk import, addFields after insert, batch updates, and filter+sort
+  queries in a single end-to-end run.
+tags: [uipath-platform, e2e, data-fabric, employee-directory]
+
+run_limits:
+  expected_turns: 35
+  max_turns: 75
+  turn_timeout: 900
+
+initial_prompt: |
+  HR needs a digital employee directory in UiPath Data Fabric.
+
+  Create entity `EmployeeDirectory_<EPOCH>` (Unix epoch seconds suffix —
+  e.g. `EmployeeDirectory_1716163200`) with fields:
+    - FullName    STRING
+    - Department  STRING   (values: Engineering | Sales | Finance | HR)
+    - JobTitle    STRING
+    - HireDate    DATE
+    - Salary      DECIMAL
+
+  Generate `employees.csv` with 20 employees, 5 per department — realistic
+  names and job titles (e.g. "Software Engineer", "Account Executive"),
+  hire dates spread 2020–2024, salaries $45k–$120k. Import via
+  `uip df records import --file employees.csv`.
+
+  Evolve the schema: add `PerformanceScore` (INTEGER). Set scores between
+  70 and 98 on 6 employees spanning all four departments.
+
+  Answer with `records query --body` (filterGroup):
+    1. Top performers — PerformanceScore > 85, sorted PerformanceScore desc.
+    2. Department headcount — one filterGroup query per department.
+
+  Before finishing, write `report.json` to the working directory:
+    {"entity_id": "<created-entity-id>"}
+
+  The harness deletes the entity using `report.json`. Do not delete it
+  yourself.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the entity"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent imported employees from CSV"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+import'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added PerformanceScore field after initial import"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+update'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated employee records with performance scores"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried employees with filterGroup"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used fieldName key in entity create body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*fieldName'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used addFields key when evolving schema"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used filterGroup key in records query body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent included Id key in records update body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+update.*\"Id\"'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "employees.csv was generated"
+    path: "employees.csv"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "employees.csv has 20 data rows (header + 20)"
+    command: "awk 'END { exit (NR == 21 ? 0 : 1) }' employees.csv"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written so cleanup can delete the entity"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
+    timeout: 60

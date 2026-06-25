@@ -420,7 +420,7 @@ Validate JSON file structure and values using JMESPath assertions. Supported ope
 
 ### `run_command`
 
-Execute an arbitrary shell command and check the exit code. Use it for direct verification of state the agent created. From `uipath-data-fabric/integration_csv_import.yaml`:
+Execute an arbitrary shell command and check the exit code. Use it for direct verification of state the agent created. From `uipath-platform/data-fabric/integration_csv_import.yaml`:
 
 ```yaml
 - type: run_command

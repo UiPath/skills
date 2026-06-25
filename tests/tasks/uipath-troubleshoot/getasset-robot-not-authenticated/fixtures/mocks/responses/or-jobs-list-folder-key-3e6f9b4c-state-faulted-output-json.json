@@ -5,7 +5,7 @@
     {
       "Key": "5b8c4d2a-9e3f-4a6b-7c8d-1e2f3a4b5c6d",
       "State": "Faulted",
-      "ProcessName": "AssetRobotUnlicensed",
+      "ProcessName": "AssetRobotAuthFailure",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

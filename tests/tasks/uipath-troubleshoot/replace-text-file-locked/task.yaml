@@ -1,0 +1,146 @@
+task_id: skill-troubleshoot-replace-text-file-locked
+description: >
+  UiPath troubleshooting agent must diagnose a Replace Text file-lock failure:
+  a Use Word File scope with Auto Save enabled edits the same shared file on
+  every iteration of a For Each loop, so a save races the next iteration's
+  access and faults with System.IO.IOException ("being used by another
+  process"). Success = agent matches the replace-text-file-locked playbook AND
+  recommends unchecking Auto Save and/or writing to a distinct output path per
+  iteration (or clearing the lock), not blaming Word or the document content.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, replace-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ContractMerge process faults in Orchestrator (folder "Contracts Batch",
+  machine MOCK-ROBOT-06). It loops over recipients filling a Word document
+  and throws an error about the file being used by another process. The
+  first item seems to work and then it dies.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and give me the fix.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the replace-text-file-locked playbook AND recommended Auto Save off / distinct path / clear lock"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My ContractMerge process faults in Orchestrator (folder 'Contracts
+         Batch', machine MOCK-ROBOT-06). It loops over recipients filling a
+         Word document and throws an error about the file being used by
+         another process. The first item works, then it dies."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/replace-text-file-locked.md
+        because the error
+          "System.IO.IOException: The process cannot access the file
+           '...MasterContract.docx' because it is being used by another
+           process"
+        from a Replace Text / Use Word File save is the file-lock signature.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Use Word File scope has Auto Save enabled and edits the SAME
+            shared file (MasterContract.docx) on every iteration of the For
+            Each loop.
+          - Auto Save persists the file while the next iteration is already
+            opening/holding it, so the save races another access and faults
+            with IOException. The "first item works, then it dies" pattern
+            and the per-iteration logs confirm the loop + Auto Save race.
+          - This is a save-vs-access lock, NOT a corrupt file, missing
+            install, or path problem.
+        The reference fix (any of):
+          - Uncheck Auto Save on the Use Word File scope so the file is
+            written once on scope exit, not continuously, OR
+          - Write each iteration to a DISTINCT output path (Path.Combine per
+            recipient) instead of overwriting the one shared file, OR
+          - Clear the holding process / ensure no concurrent accessor.
+
+      DIMENSION C -- Right target
+        The agent must point at the lock/Auto-Save-in-loop cause and a valid
+        fix. It must NOT conclude the document is corrupt, recreate it,
+        blame a missing Word install or the file path, or fabricate host
+        actions.
+
+      SCORING RUBRIC:
+        1.0  Agent matched replace-text-file-locked AND identified the lock
+             cause (Auto Save racing in the loop and/or the shared file held
+             by another access) AND recommended at least one valid fix:
+             uncheck Auto Save, write to a distinct path per iteration, or
+             clear the lock - without blaming corruption / install / path or
+             fabricating host actions.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "fix
+             the lock" without naming Auto Save off / distinct path / clear
+             the holder).
+        0.5  Recognized a file-in-use / lock problem but did not tie it to
+             the Auto Save + loop on a shared file (e.g., only "kill
+             WINWORD" with no mention of the loop/Auto Save), or matched a
+             sibling playbook.
+        0.2  Surfaced the IOException without diagnosis.
+        0.0  Wrong cause (file corrupt, Word not installed, 256-char limit,
+             file path wrong), or fabricated a host action.
+
+      Reward any valid fix path equally.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing batch process. It loops
+    over recipients editing a Word document; the first item works and then
+    it throws "being used by another process." You are away from the robot
+    host and only have Orchestrator access. You trust the agent and want a
+    diagnosis plus the fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the fix at the end."
+    - "If asked whether anything else opens that document at the same time, say not that you know of - it is the same single template the loop keeps editing."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

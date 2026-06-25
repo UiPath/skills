@@ -64,8 +64,9 @@ before writing. Read a reference only when you reach the structure it covers.
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
-   types; `uip is connections list` for live connections. Confirm every
-   selection with the user (use AskUserQuestion). Never fabricate an identifier.
+   types; `uip is connections list --all-folders` for live connections (always
+   `--all-folders` — a folder-scoped list silently misses connections). Confirm
+   every selection with the user (use AskUserQuestion). Never fabricate an identifier.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen node. Enrich `Intsvc.*` connector nodes with
