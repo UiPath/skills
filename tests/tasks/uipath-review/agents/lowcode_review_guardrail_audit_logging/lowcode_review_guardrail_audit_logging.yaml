@@ -1,14 +1,13 @@
-task_id: skill-review-agents-lowcode-guardrail-unknown-validator
+task_id: skill-review-agents-lowcode-guardrail-audit-logging
 description: >
-  Smoke test for uipath-review on a low-code agent that has a built-in guardrail
-  whose `validatorType` is a made-up name not in the tenant's guardrail catalog.
-  pre_run scaffolds a minimal agent and injects the guardrail. The reviewer must
-  run the review CLI (Step 2.5a), which fetches the live catalog
-  (`uip agent guardrails list`) and emits `GUARDRAIL_UNKNOWN_VALIDATOR`
-  (guardrails category), then carry it into the report. Exercises the
-  catalog-backed built-in format path; needs the authed CLI (the smoke runner
-  passes UIPATH_CLI_* auth).
-tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+  Integration test for uipath-review on a low-code agent with a
+  `SendCustomerEmail` tool that legitimately handles PII (recipient email) and
+  no guardrail. Blocking PII on that tool would break it, so the right
+  recommendation is a Tool-scope LOG guardrail for an audit trail. The reviewer
+  should apply guardrails-review.md Recommend Mode and emit
+  `LC_GUARDRAIL_RECOMMENDED` recommending a log/audit action (not block).
+  Non-gating (integration tag). Needs the authed CLI.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
 
 run_limits:
   turn_timeout: 1200
@@ -20,7 +19,7 @@ sandbox:
   python: {}
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_guardrail_unknown_validator/inject_guardrail_unknown_validator.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_guardrail_audit_logging/inject_guardrail_audit_logging.py"
     timeout: 30
 
 initial_prompt: |
@@ -61,25 +60,25 @@ success_criteria:
     command_pattern: '"file_path":\s*"[^"]*ReviewSol'
     weight: 3.0
 
-  # The unknown-validator finding can ONLY come from `uip agent review` fetching
-  # the live catalog — you can't tell a validator is unknown by eye. This
-  # command_executed criterion is the honesty gate: it proves the catalog-backed
-  # CLI ran, which lets the run_command check below accept either the verbatim
-  # rule_id OR a summarized "validator is not in the catalog" finding without
-  # letting an eyeballed guess pass. (Previously the check required the rule_id
-  # transcribed verbatim into the saved report, which flaked on Bedrock when the
-  # agent ran the review but summarized the finding instead of copying the id.)
   - type: command_executed
-    description: "Ran the catalog-backed review CLI (Step 2.5a) — the only source of the unknown-validator finding"
+    description: "Ran the review CLI first (Step 2.5a)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+review'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Fetched the live guardrail catalog (guardrails-review.md Step 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: run_command
-    description: "Review report surfaces the CLI finding (GUARDRAIL_UNKNOWN_VALIDATOR, or names totally_made_up_validator as uncataloged)"
-    command: "python3 $TASK_DIR/check_lowcode_review_guardrail_unknown_validator.py"
+    description: "Review report recommends a Tool-scope log/audit guardrail (LC_GUARDRAIL_RECOMMENDED, audit flavor)"
+    command: "python3 $TASK_DIR/check_lowcode_review_guardrail_audit_logging.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

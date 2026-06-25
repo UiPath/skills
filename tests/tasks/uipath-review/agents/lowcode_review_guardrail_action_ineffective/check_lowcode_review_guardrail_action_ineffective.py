@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""Check for LC_GUARDRAIL_RECOMMENDED (PII flavor) — the agent processes
-personal data (customer_email / full_name / ssn) but has no pii_detection
-guardrail, so the reviewer should recommend one.
+"""Check for LC_GUARDRAIL_ACTION_INEFFECTIVE — a format-valid Tool-scoped
+`pii_detection` guardrail uses a `block` action on a tool that legitimately
+needs the PII (SendCustomerEmail), which the catalog's `when_not_to_use`
+flags as breaking the tool.
 
-`LC_GUARDRAIL_RECOMMENDED` is the single missing-guardrail recommendation rule
-(it superseded the per-type `LC_GUARDRAIL_PII_MISSING` / `_INJECTION_MISSING`),
-with the specifics — here the PII case — carried in the message. The
-`customer_email` token confirms those details reached the report.
-
-Verifies the saved review report cites the rule_id and references a PII
-field, and that other rule-id citations resolve (catalog or CLI-emitted;
-unknown ids warn, not fail). Exit 0 on PASS; sys.exit on failure.
+`uip agent review` returns the guardrail clean (no `GUARDRAIL_*`), so the only
+signal is the judgment rule. Verifies the saved report cites the rule_id.
+Citing the rule_id already proves the reviewer reached the catalog-grounded
+verdict, so no separate name-token is required (like unknown_validator).
+Other rule-id citations warn, not fail. Exit 0 on PASS; sys.exit on failure.
 """
 import os
 import re
@@ -18,8 +16,11 @@ import sys
 from pathlib import Path
 
 REPORT = Path(os.getcwd()) / "_review_report.md"
-REQUIRED_RULE_ID = "LC_GUARDRAIL_RECOMMENDED"
-REQUIRED_TOKEN = "customer_email"
+REQUIRED_RULE_ID = "LC_GUARDRAIL_ACTION_INEFFECTIVE"
+# The rule_id is only reachable by reading the live catalog's when_not_to_use,
+# so its presence already implies a real, catalog-grounded finding — no separate
+# token (the agent doesn't always echo "SendCustomerEmail" / "Tool" verbatim).
+REQUIRED_TOKEN = ""
 MIN_REPORT_BYTES = 500
 
 NOISE = {

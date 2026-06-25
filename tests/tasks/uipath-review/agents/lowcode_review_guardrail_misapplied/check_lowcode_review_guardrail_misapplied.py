@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
-"""Check for LC_GUARDRAIL_RECOMMENDED (PII flavor) — the agent processes
-personal data (customer_email / full_name / ssn) but has no pii_detection
-guardrail, so the reviewer should recommend one.
+"""Check for LC_GUARDRAIL_MISAPPLIED — a generate-only agent (LLM never sees
+real PII) carries a `pii_detection` guardrail at Llm scope, which the catalog's
+`when_not_to_use` flags as misapplied.
 
-`LC_GUARDRAIL_RECOMMENDED` is the single missing-guardrail recommendation rule
-(it superseded the per-type `LC_GUARDRAIL_PII_MISSING` / `_INJECTION_MISSING`),
-with the specifics — here the PII case — carried in the message. The
-`customer_email` token confirms those details reached the report.
-
-Verifies the saved review report cites the rule_id and references a PII
-field, and that other rule-id citations resolve (catalog or CLI-emitted;
-unknown ids warn, not fail). Exit 0 on PASS; sys.exit on failure.
+`uip agent review` returns it format-clean, so the only signal is the judgment
+rule, reachable only by reading the live catalog. Citing the rule_id proves the
+reviewer reached that verdict — no separate name-token required. Other rule-id
+citations warn, not fail. Exit 0 on PASS; sys.exit on failure.
 """
 import os
 import re
@@ -18,8 +14,8 @@ import sys
 from pathlib import Path
 
 REPORT = Path(os.getcwd()) / "_review_report.md"
-REQUIRED_RULE_ID = "LC_GUARDRAIL_RECOMMENDED"
-REQUIRED_TOKEN = "customer_email"
+REQUIRED_RULE_ID = "LC_GUARDRAIL_MISAPPLIED"
+REQUIRED_TOKEN = ""
 MIN_REPORT_BYTES = 500
 
 NOISE = {
@@ -38,7 +34,7 @@ def main() -> None:
     if REQUIRED_RULE_ID not in text:
         sys.exit(f"FAIL: report does not cite rule_id `{REQUIRED_RULE_ID}`.")
     print(f"OK: report cites `{REQUIRED_RULE_ID}`")
-    if REQUIRED_TOKEN and REQUIRED_TOKEN not in text:
+    if REQUIRED_TOKEN and REQUIRED_TOKEN.lower() not in text.lower():
         sys.exit(f"FAIL: report does not mention `{REQUIRED_TOKEN}`.")
     if REQUIRED_TOKEN:
         print(f"OK: report mentions `{REQUIRED_TOKEN}`")
