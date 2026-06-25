@@ -442,7 +442,8 @@ import { THIRTY_DAYS_AGO, NOW } from '@/lib/time'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { MaestroProcesses } = await import('@uipath/uipath-typescript/maestro-processes')
-  return await new MaestroProcesses(sdk as never).getTopRunCount(THIRTY_DAYS_AGO, NOW)
+  const processes = await new MaestroProcesses(sdk).getTopRunCount(THIRTY_DAYS_AGO, NOW)
+  return processes.map(x => ({ ...x }))
 }
 ```
 
@@ -450,7 +451,7 @@ export const fetchData: MetricFn = async (sdk) => {
 // Process instance status over time (multi-line-chart) — pivot long→wide, seed all series
 export const fetchData: MetricFn = async (sdk) => {
   const { MaestroProcesses } = await import('@uipath/uipath-typescript/maestro-processes')
-  const points = await new MaestroProcesses(sdk as never).getInstanceStatusTimeline(THIRTY_DAYS_AGO, NOW)
+  const points = await new MaestroProcesses(sdk).getInstanceStatusTimeline(THIRTY_DAYS_AGO, NOW)
   const byDate: Record<string, Record<string, unknown>> = {}
   for (const p of points) {
     const d = String(p.startTime)
@@ -466,7 +467,7 @@ export const fetchData: MetricFn = async (sdk) => {
 export const fetchData: MetricFn = async (sdk) => {
   const { CaseInstances } = await import('@uipath/uipath-typescript/cases')
   const { fetchAll } = await import('@/lib/paginate')
-  const rows = await fetchAll(cursor => new CaseInstances(sdk as never).getSlaSummary({ pageSize: 200, cursor }))
+  const rows = await fetchAll(cursor => new CaseInstances(sdk).getSlaSummary({ pageSize: 200, cursor }))
   const by: Record<string, number> = {}
   for (const r of rows) { const k = String(r.slaStatus); by[k] = (by[k] ?? 0) + 1 }
   return Object.entries(by).map(([name, value]) => ({ name, value }))
@@ -478,7 +479,7 @@ export const fetchData: MetricFn = async (sdk) => {
 export const fetchData: MetricFn = async (sdk) => {
   const { CaseInstances } = await import('@uipath/uipath-typescript/cases')
   const { fetchAll } = await import('@/lib/paginate')
-  const rows = await fetchAll(cursor => new CaseInstances(sdk as never).getSlaSummary({ pageSize: 200, cursor }))
+  const rows = await fetchAll(cursor => new CaseInstances(sdk).getSlaSummary({ pageSize: 200, cursor }))
   return rows.filter(r => { const s = String(r.slaStatus); return s === 'At Risk' || s === 'Overdue' })
 }
 ```
@@ -487,7 +488,7 @@ export const fetchData: MetricFn = async (sdk) => {
 // Stage-level SLA (data-table) — flatten stages
 export const fetchData: MetricFn = async (sdk) => {
   const { CaseInstances } = await import('@uipath/uipath-typescript/cases')
-  const data = await new CaseInstances(sdk as never).getStagesSlaSummary()
+  const data = await new CaseInstances(sdk).getStagesSlaSummary()
   return data.flatMap(d => d.stages.map(s => ({
     caseInstanceId: d.caseInstanceId, stage: s.name, slaStatus: s.slaStatus, slaDueTime: s.slaDueTime, latestStatus: s.latestStatus,
   })))
@@ -498,6 +499,7 @@ export const fetchData: MetricFn = async (sdk) => {
 // Element latency stats (T2 — identifiers baked in at authoring time)
 export const fetchData: MetricFn = async (sdk) => {
   const { MaestroProcesses } = await import('@uipath/uipath-typescript/maestro-processes')
-  return await new MaestroProcesses(sdk as never).getElementStats('<processKey>', '<packageId>', THIRTY_DAYS_AGO, NOW, '<version>')
+  const stats = await new MaestroProcesses(sdk).getElementStats('<processKey>', '<packageId>', THIRTY_DAYS_AGO, NOW, '<version>')
+  return stats.map(x => ({ ...x }))
 }
 ```

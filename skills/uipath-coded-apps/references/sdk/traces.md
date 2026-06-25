@@ -6,7 +6,7 @@ Trace-level (span-level) view of agent execution — errors, latency, unit consu
 
 ```typescript
 import { AgentTraces, AgentTraceExecutionType } from '@uipath/uipath-typescript/traces';
-const svc = new AgentTraces(sdk as never)
+const svc = new AgentTraces(sdk)
 ```
 
 **Convention:** every method takes ONE optional options object — `{ startTime?: Date, endTime?: Date, folderKeys?, agentId?, agentVersion?, executionType? }`. Dates go INSIDE the object (unlike `Agents`, which uses positional Dates). Window defaults to the **last 1 year** server-side. `executionType`: `AgentTraceExecutionType.Debug | Runtime` (omit for both).
@@ -55,7 +55,7 @@ import { THIRTY_DAYS_AGO, NOW } from '@/lib/time'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { AgentTraces } = await import('@uipath/uipath-typescript/traces')
-  const points = await new AgentTraces(sdk as never).getErrorsTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
+  const points = await new AgentTraces(sdk).getErrorsTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
   const byDate: Record<string, number> = {}
   for (const p of points) byDate[p.date] = (byDate[p.date] ?? 0) + p.value
   return Object.entries(byDate).sort().map(([date, value]) => ({ date, value }))
@@ -65,7 +65,7 @@ export const fetchData: MetricFn = async (sdk) => {
 ```typescript
 // Trace latency over time — average per date (area-chart: xKey date, yKey value, seconds)
 const { AgentTraces } = await import('@uipath/uipath-typescript/traces')
-const points = await new AgentTraces(sdk as never).getLatencyTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
+const points = await new AgentTraces(sdk).getLatencyTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
 const acc: Record<string, { sum: number; n: number }> = {}
 for (const p of points) {
   acc[p.date] = acc[p.date] ?? { sum: 0, n: 0 }
@@ -76,9 +76,10 @@ return Object.entries(acc).sort().map(([date, { sum, n }]) => ({ date, value: n 
 ```
 
 ```typescript
-// Per-agent unit consumption (ranked-table) — native shape, return as-is
+// Per-agent unit consumption (ranked-table)
 const { AgentTraces } = await import('@uipath/uipath-typescript/traces')
-return await new AgentTraces(sdk as never).getUnitConsumption({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
+const consumption = await new AgentTraces(sdk).getUnitConsumption({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
+return consumption.map(x => ({ ...x }))
 ```
 
 ## Spans (drill-down only)

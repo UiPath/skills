@@ -190,7 +190,7 @@ import type { MetricFn } from '@/lib/metric-contract'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  const rows = (await new Jobs(sdk as never).getAll({ filter: "State eq 'Faulted'" }))?.items ?? []
+  const rows = (await new Jobs(sdk).getAll({ filter: "State eq 'Faulted'" }))?.items ?? []
   const byDate: Record<string, number> = {}
   for (const j of rows) { const d = String(j.createdTime).slice(0, 10); byDate[d] = (byDate[d] ?? 0) + 1 }
   return Object.entries(byDate).sort().map(([date, count]) => ({ date, count }))
@@ -198,7 +198,7 @@ export const fetchData: MetricFn = async (sdk) => {
 
 export const fetchDetail: MetricFn = async (sdk) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  return (await new Jobs(sdk as never).getAll({ filter: "State eq 'Faulted'", orderby: 'CreationTime desc' }))?.items ?? []
+  return ((await new Jobs(sdk).getAll({ filter: "State eq 'Faulted'", orderby: 'CreationTime desc' }))?.items ?? []).map(x => ({ ...x }))
 }
 ```
 
@@ -280,10 +280,10 @@ An agent job is identified by **`packageType === 'Agent'`** (the SDK renames the
 
 ```ts
 // ✗ Wrong — sourceType is the trigger origin, not the agent discriminator
-return (await new Jobs(sdk as never).getAll({ filter: "SourceType eq 'Agent'" }))?.items ?? []
+return ((await new Jobs(sdk).getAll({ filter: "SourceType eq 'Agent'" }))?.items ?? []).map(x => ({ ...x }))
 
 // ✓ Correct — OData filter uses the raw field name ProcessType
-return (await new Jobs(sdk as never).getAll({ filter: "ProcessType eq 'Agent'" }))?.items ?? []
+return ((await new Jobs(sdk).getAll({ filter: "ProcessType eq 'Agent'" }))?.items ?? []).map(x => ({ ...x }))
 // (client-side, the mapped field is packageType: j.packageType === 'Agent')
 ```
 
@@ -301,14 +301,13 @@ If a build or edit against an existing project emits `UPGRADE_AVAILABLE:{from,to
 
 ## The starter-kit archive
 
-The skill ships ONE artifact — `assets/fixtures/governance-dashboard-starter-kit.zip` — and no scaffold source or zip code. The zip bundles the React scaffold (at its root) plus the widget generator templates under `_gen/widgets/` and a version pointer `_gen/starter-kit.json`. The build reads templates from `_gen/widgets` and never ships them into the final app.
+The skill ships ONE artifact — `assets/fixtures/governance-dashboard-starter-kit.tar.gz` — and no scaffold source. The archive bundles the React scaffold (at its root) plus the widget generator templates under `_gen/widgets/` and a version pointer `_gen/starter-kit.json`. The build reads templates from `_gen/widgets` and never ships them into the final app.
 
-> **Extracting the kit (the agent does this — the skill has no unzip code).** Before building, extract the zip into the project dir with your OS's native tool:
-> - **Windows:** `powershell -NoProfile -Command "Expand-Archive -LiteralPath '<ZIP>' -DestinationPath '<PROJECT_DIR>' -Force"`
-> - **macOS:** `unzip -o "<ZIP>" -d "<PROJECT_DIR>"`  (or `ditto -x -k "<ZIP>" "<PROJECT_DIR>"`)
-> - **Linux:** `unzip -o "<ZIP>" -d "<PROJECT_DIR>"`  (or `python3 -m zipfile -e "<ZIP>" "<PROJECT_DIR>"`)
->
-> `build-dashboard.mjs` verifies the kit landed and fails loud with the exact command if not. `<ZIP>` is `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.zip`.
+> **Extracting the kit (the agent does this).** Before building, extract the archive into the project dir with the OS `tar` — built into Windows 10+, macOS, and Linux (one command, no per-OS variants):
+> ```
+> mkdir -p "<PROJECT_DIR>" && tar -xzf "<ARCHIVE>" -C "<PROJECT_DIR>"
+> ```
+> `build-dashboard.mjs` verifies the kit landed and fails loud with the exact command if not. `<ARCHIVE>` is `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz`.
 
 **Source of truth:** the scaffold + widget templates + packer live in the `apps-dev-tools` repo (`uipath-dashboard-starter-kit/`). Maintainers edit there and run `node publish.mjs` to re-pack and copy the refreshed `.zip` + `.version` into this skill. The skill is a pure consumer.
 
@@ -339,7 +338,7 @@ The build subagent prompt:
 > 2. Author `<INTENT_DIR>/intent.json` (pure metadata — `schemaVersion: 2`, no `fnBody`) and one `<INTENT_DIR>/metrics/<name>.ts` per metric (`export const fetchData: MetricFn`), writing each module from the SDK references and applying the Phase 3.5 cross-check. Implement exactly this approved plan:
 >    - Project: dashboardName=`<NAME>`, routingName=`<ROUTING>`, projectDir=`<PROJECT_DIR>`, orgName=`<ORG>`, tenantName=`<TENANT>`, cloudUrl=`<CLOUD_URL>`, apiUrl=`<API_URL>`, timeRange=`<RANGE>`, clientId=`<CLIENT_ID or empty>`
 >    - Widgets (one metric each): [per widget — name, tier, title, displayAs, presentation hints, and the SDK service/method it resolves to]
-> 3. Extract the starter kit into `<PROJECT_DIR>` with your OS's native tool (Windows `Expand-Archive`; macOS/Linux `unzip -o`; see § "The starter-kit archive"), then run: `node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" "<INTENT_JSON_PATH>"` (it verifies the kit and prints the exact extract command if missing)
+> 3. Extract the starter kit into `<PROJECT_DIR>` with the OS `tar` (`tar -xzf "<ARCHIVE>" -C "<PROJECT_DIR>"`; see § "The starter-kit archive"), then run: `node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" "<INTENT_JSON_PATH>"` (it verifies the kit and prints the exact extract command if missing)
 > 4. On `METRICS_RETRY`, fix the named `src/metrics/*.ts` files using the SDK references + the reported errors, then re-run — at most 2 attempts, then drop the metric.
 > 5. Return ONLY the milestone block defined in § "Build subagent — returns".
 
@@ -368,7 +367,7 @@ If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface
 - Write `<INTENT_DIR>/intent.json` — pure metadata: `schemaVersion: 2`, `dashboardName`, `routingName`, `projectDir`, `orgName`, `tenantName`, `cloudUrl`, `apiUrl`, `timeRange`, `clientId`, and a `metrics` array of metadata entries (NO `fnBody`).
 - Write one `<INTENT_DIR>/metrics/<name>.ts` per metric — `export const fetchData: MetricFn = async (sdk) => { … }` written from the SDK references; import time windows from `@/lib/time` and `fetchAll` from `@/lib/paginate`; read-only methods only. Cross-check each against its documented example response (§ "Phase 3.5"). For a chart record-grain drill-down, also export `fetchDetail` and set `"detail": true`. For a **table row-click** drill-down, set `rowLink: { key: "<rowField>" }` on the metric and export `fetchDetailByKey(sdk, key, getToken)` (the clicked row's `<rowField>` arrives as `key`). For a KPI with a change badge, return `[{ value, previous }]` (two windows).
 
-**Step B — Extract the kit, then run the build script once.** First extract `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.zip` into `<PROJECT_DIR>` with your OS's native command (§ "The starter-kit archive"). Then run the build script. Most events are silent — translate the rest to milestones for the return block.
+**Step B — Extract the kit, then run the build script once.** First extract `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz` into `<PROJECT_DIR>` with the OS `tar` (`tar -xzf …`; § "The starter-kit archive"). Then run the build script. Most events are silent — translate the rest to milestones for the return block.
 
 **Silent (never report):** `PREWARM_START`, `PREWARM_DONE`, `SCAFFOLD_READY`, `ENV_WRITTEN`, `PARTIAL_BUILD_DETECTED`.
 

@@ -13,7 +13,7 @@ Two services, **two different calling conventions** — do not mix them up:
 
 ```typescript
 import { Agents, AgentListSortColumn } from '@uipath/uipath-typescript/agents';
-const svc = new Agents(sdk as never)
+const agents = new Agents(sdk)
 ```
 
 ### getAll(startTime: Date, endTime: Date, options?: AgentListOptions)
@@ -117,100 +117,101 @@ Purpose-built aggregate endpoints — all **positional `Date` args** `(startTime
 ```typescript
 // Count of active agents (kpi-card)
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-const result = await new Agents(sdk as never).getAll(THIRTY_DAYS_AGO, NOW)
+const result = await new Agents(sdk).getAll(THIRTY_DAYS_AGO, NOW)
 return [{ count: result?.items?.length ?? 0 }]
 ```
 
 ```typescript
 // Agents ranked by AGU consumption (ranked-table)
 const { Agents, AgentListSortColumn } = await import('@uipath/uipath-typescript/agents')
-const result = await new Agents(sdk as never).getAll(THIRTY_DAYS_AGO, NOW, {
+const result = await new Agents(sdk).getAll(THIRTY_DAYS_AGO, NOW, {
   orderBy: { column: AgentListSortColumn.QuantityAGU, desc: true },
 })
-return result?.items ?? []
+return (result?.items ?? []).map(agent => ({ ...agent }))
 ```
 
 ```typescript
 // Agent errors over time — total across agents (area-chart: xKey date, yKey value)
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-const points = await new Agents(sdk as never).getErrorsTimeline(THIRTY_DAYS_AGO, NOW)
+const points = await new Agents(sdk).getErrorsTimeline(THIRTY_DAYS_AGO, NOW)
 const byDate: Record<string, number> = {}
-for (const p of points) byDate[p.date] = (byDate[p.date] ?? 0) + p.value
+for (const point of points) byDate[point.date] = (byDate[point.date] ?? 0) + point.value
 return Object.entries(byDate).sort().map(([date, value]) => ({ date, value }))
 ```
 
 ```typescript
 // Agent latency P50/P95 over time — pivot long→wide (multi-line-chart: xKey date, series P50/P95)
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-const points = await new Agents(sdk as never).getLatencyTimeline(THIRTY_DAYS_AGO, NOW)
+const points = await new Agents(sdk).getLatencyTimeline(THIRTY_DAYS_AGO, NOW)
 const byDate: Record<string, Record<string, unknown>> = {}
-for (const p of points) {
-  byDate[p.date] = byDate[p.date] ?? { date: p.date }
-  byDate[p.date][p.name] = p.value
+for (const point of points) {
+  byDate[point.date] = byDate[point.date] ?? { date: point.date }
+  byDate[point.date][point.name] = point.value
 }
 return Object.values(byDate).sort((a, b) => String(a.date).localeCompare(String(b.date)))
 ```
 
 ```typescript
-// AGU consumption over time — native shape, return as-is (area-chart: xKey timeSlice, yKey aguConsumption)
+// AGU consumption over time (area-chart: xKey timeSlice, yKey aguConsumption)
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-return await new Agents(sdk as never).getConsumptionTimeline(THIRTY_DAYS_AGO, NOW)
+const series = await new Agents(sdk).getConsumptionTimeline(THIRTY_DAYS_AGO, NOW)
+return series.map(point => ({ ...point }))
 ```
 
 ```typescript
 // Top agent errors ranked by occurrence (ranked-table)
 const { Agents, AgentErrorSortColumn } = await import('@uipath/uipath-typescript/agents')
-const result = await new Agents(sdk as never).getErrors(THIRTY_DAYS_AGO, NOW, {
+const result = await new Agents(sdk).getErrors(THIRTY_DAYS_AGO, NOW, {
   orderBy: { column: AgentErrorSortColumn.ExecutionCount, desc: true },
 })
-return result?.items ?? []
+return (result?.items ?? []).map(agent => ({ ...agent }))
 ```
 
 ```typescript
 // Agents ranked by error count (ranked-table) — ≥ 1.5.0
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-const r = await new Agents(sdk as never).getTopErrorCount(THIRTY_DAYS_AGO, NOW, { limit: 10 })
-return r.data.map(a => ({ name: a.name, value: a.count }))
+const result = await new Agents(sdk).getTopErrorCount(THIRTY_DAYS_AGO, NOW, { limit: 10 })
+return result.data.map(agent => ({ name: agent.name, value: agent.count }))
 ```
 
 ```typescript
 // Agents ranked by consumption (ranked-table) — ≥ 1.5.0
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-return (await new Agents(sdk as never).getTopConsumption(THIRTY_DAYS_AGO, NOW, { limit: 10 })).agents
+return (await new Agents(sdk).getTopConsumption(THIRTY_DAYS_AGO, NOW, { limit: 10 })).agents.map(agent => ({ ...agent }))
 ```
 
 ```typescript
 // Incident distribution (donut) — ≥ 1.5.0: flat response → chart rows
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-const r = await new Agents(sdk as never).getIncidentDistribution(THIRTY_DAYS_AGO, NOW)
+const distribution = await new Agents(sdk).getIncidentDistribution(THIRTY_DAYS_AGO, NOW)
 return [
-  { name: 'Errors', value: r.errorCount },
-  { name: 'Escalations', value: r.escalationCount },
-  { name: 'Policy', value: r.policyCount },
+  { name: 'Errors', value: distribution.errorCount },
+  { name: 'Escalations', value: distribution.escalationCount },
+  { name: 'Policy', value: distribution.policyCount },
 ]
 ```
 
 ```typescript
 // Success-rate KPI with vs-previous delta (kpi-card) — ≥ 1.5.0
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-const r = await new Agents(sdk as never).getSummary(THIRTY_DAYS_AGO, NOW, { lookbackPeriodAnalysis: true })
-return [{ value: r.currentPeriodSummary.successRate, previous: r.lookbackPeriodSummary?.successRate }]
+const summary = await new Agents(sdk).getSummary(THIRTY_DAYS_AGO, NOW, { lookbackPeriodAnalysis: true })
+return [{ value: summary.currentPeriodSummary.successRate, previous: summary.lookbackPeriodSummary?.successRate }]
 ```
 
 ```typescript
 // Total Agent Units consumed, with delta (kpi-card) — ≥ 1.5.0
 const { Agents } = await import('@uipath/uipath-typescript/agents')
-const r = await new Agents(sdk as never).getUnitConsumptionSummary(THIRTY_DAYS_AGO, NOW, { lookbackPeriodAnalysis: true })
-const c = r.currentPeriodSummary.totalAgentUnitConsumption
-const p = r.lookbackPeriodSummary?.totalAgentUnitConsumption
-return [{ value: c.completeJobs + c.incompleteJobs, previous: p ? p.completeJobs + p.incompleteJobs : undefined }]
+const summary = await new Agents(sdk).getUnitConsumptionSummary(THIRTY_DAYS_AGO, NOW, { lookbackPeriodAnalysis: true })
+const current = summary.currentPeriodSummary.totalAgentUnitConsumption
+const prior = summary.lookbackPeriodSummary?.totalAgentUnitConsumption
+return [{ value: current.completeJobs + current.incompleteJobs, previous: prior ? prior.completeJobs + prior.incompleteJobs : undefined }]
 ```
 
 ## AgentMemory Service
 
 ```typescript
 import { AgentMemory, AgentMemoryExecutionType } from '@uipath/uipath-typescript/agent-memory';
-const svc = new AgentMemory(sdk as never)
+const memory = new AgentMemory(sdk)
 ```
 
 All three methods take ONE optional options object — `{ startTime?: Date, endTime?: Date, agentId?, agentVersion?, folderKeys?, executionType? }` (`AgentMemoryExecutionType.Debug | Runtime`; omit for both). Window defaults to the **last 24 hours**. All three return a **bare array** — no `.items` / `.data` unwrapping needed.
@@ -235,5 +236,6 @@ All three methods take ONE optional options object — `{ startTime?: Date, endT
 ```typescript
 // Memory calls over the last 7 days (area-chart: xKey timeSlice, yKey memoryCallsCount)
 const { AgentMemory } = await import('@uipath/uipath-typescript/agent-memory')
-return await new AgentMemory(sdk as never).getCallsTimeline({ startTime: SEVEN_DAYS_AGO, endTime: NOW })
+const series = await new AgentMemory(sdk).getCallsTimeline({ startTime: SEVEN_DAYS_AGO, endTime: NOW })
+return series.map(point => ({ ...point }))
 ```

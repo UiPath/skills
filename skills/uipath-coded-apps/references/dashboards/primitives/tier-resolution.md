@@ -57,22 +57,24 @@ import { THIRTY_DAYS_AGO, NOW } from '@/lib/time'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { AgentMemory } = await import('@uipath/uipath-typescript/agent-memory')
-  return await new AgentMemory(sdk as never).getTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
+  const points = await new AgentMemory(sdk).getTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
+  return points.map(point => ({ ...point }))   // project SDK rows into Row objects
 }
 ```
 
-`MetricFn` is `(sdk: any, getToken: () => Promise<string>) => Promise<any[]>`.
+`MetricFn` is `(sdk: UiPath, getToken: () => Promise<string>) => Promise<Row[]>` where `Row = Record<string, unknown>` — `sdk` is the authenticated SDK client (services take it directly: `new AgentMemory(sdk)`, no cast).
 
 **Rules:**
 - Export `fetchData` (required). Export `fetchDetail` (optional, same `MetricFn` signature) for record-grain drill-downs.
-- Return a **flat array of row objects** — SDK-typed arrays accepted directly. Never add `as unknown as Record<string,unknown>[]` casts.
+- Return a **flat array of `Row` objects** (`Record<string, unknown>`). Rows you build yourself — object literals, `countBy(...)` — satisfy `Row` directly. **SDK response arrays are interfaces and do NOT assign to `Row[]`** — project them with `.map(x => ({ ...x }))` (never `as` casts). E.g. `return (await svc.getAll(...)).items.map(x => ({ ...x }))`.
 - Use dynamic import: `const { ServiceClass } = await import('@uipath/uipath-typescript/...')`
-- Use constructor injection: `new ServiceClass(sdk as never)`
+- Use constructor injection: `new ServiceClass(sdk)`
 - **Read methods ONLY.** Allowed: `getAll`, `getById`, `getAllRecords`, `queryRecordsById`, `getIncidents`, `getErrors`, `getErrorsTimeline`, `getConsumptionTimeline`, `getLatencyTimeline`, `getUnitConsumption`, `getSummary`, `getTopErrorCount`, `getTopConsumption`, `getIncidentDistribution`, `getUnitConsumptionSummary`, `getTimeline`, `getCallsTimeline`, `getTopSpaces`, `getSpansByTraceId`, `getSpansByReference`, `getPolicyTraces`, `getOperationSummary`, `getSlaSummary`, `getStagesSlaSummary`, `getTopRunCount`, `getTopFaultedCount`, `getTopExecutionDuration`, `getTopElementFailedCount`, `getInstanceStatusTimeline`, `getElementStats`. Never call `create`, `complete`, `assign`, `start`, `stop`, `resume`, `restart`, `insert*`, `update*`, `delete*`, `upload*`.
 - **Full listings: use `fetchAll` — never hand-write the cursor loop.**
   ```ts
   import { fetchAll } from '@/lib/paginate'
-  return await fetchAll(cursor => svc.getAll({ pageSize: 200, cursor }))
+  const items = await fetchAll(cursor => svc.getAll({ pageSize: 200, cursor }))
+  return items.map(x => ({ ...x }))
   ```
 - **Don't add your own request caching.** The scaffold wraps `fetch` (`src/lib/fetch-cache.ts`) so identical GET requests share one network call, cached ~15s. Call the SDK normally.
 
@@ -164,7 +166,8 @@ import { THIRTY_DAYS_AGO, NOW } from '@/lib/time'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { AgentMemory } = await import('@uipath/uipath-typescript/agent-memory')
-  return await new AgentMemory(sdk as never).getTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
+  const points = await new AgentMemory(sdk).getTimeline({ startTime: THIRTY_DAYS_AGO, endTime: NOW })
+  return points.map(x => ({ ...x }))
 }
 ```
 
@@ -191,7 +194,7 @@ import { THIRTY_DAYS_AGO, NOW } from '@/lib/time'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { Agents } = await import('@uipath/uipath-typescript/agents')
-  const svc = new Agents(sdk as never)
+  const svc = new Agents(sdk)
   const result = await svc.getAll(THIRTY_DAYS_AGO, NOW)
   return [{ count: result?.items?.length ?? 0 }]
 }
@@ -233,8 +236,8 @@ import type { MetricFn } from '@/lib/metric-contract'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  const svc = new Jobs(sdk as never)
-  return (await svc.getAll({ filter: "State eq 'Faulted'" }))?.items ?? []
+  const svc = new Jobs(sdk)
+  return ((await svc.getAll({ filter: "State eq 'Faulted'" }))?.items ?? []).map(x => ({ ...x }))
 }
 ```
 
@@ -266,7 +269,7 @@ import type { MetricFn } from '@/lib/metric-contract'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  const svc = new Jobs(sdk as never)
+  const svc = new Jobs(sdk)
   const result = await svc.getAll({ filter: "State eq 'Faulted'" })
   const byDate: Record<string, number> = {}
   for (const j of result?.items ?? []) {
@@ -305,7 +308,7 @@ import { THIRTY_DAYS_AGO } from '@/lib/time'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { Governance, PolicyEvaluationResult } = await import('@uipath/uipath-typescript/governance')
-  const result = await new Governance(sdk as never).getPolicyTraces(THIRTY_DAYS_AGO, { evaluationResult: [PolicyEvaluationResult.Deny] })
+  const result = await new Governance(sdk).getPolicyTraces(THIRTY_DAYS_AGO, { evaluationResult: [PolicyEvaluationResult.Deny] })
   const byActor: Record<string, number> = {}
   for (const t of result?.items ?? []) {
     const actor = t.actorProcessId ?? 'unknown'
@@ -337,7 +340,7 @@ import type { MetricFn } from '@/lib/metric-contract'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  const svc = new Jobs(sdk as never)
+  const svc = new Jobs(sdk)
   const result = await svc.getAll({ filter: "State eq 'Running'" })
   return [{ count: result?.items?.length ?? 0 }]
 }
@@ -374,7 +377,7 @@ import type { MetricFn } from '@/lib/metric-contract'
 
 export const fetchData: MetricFn = async (sdk) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  const rows = (await new Jobs(sdk as never).getAll({ filter: "State eq 'Faulted'" }))?.items ?? []
+  const rows = (await new Jobs(sdk).getAll({ filter: "State eq 'Faulted'" }))?.items ?? []
   const byDate: Record<string, number> = {}
   for (const j of rows) { const d = String(j.createdTime).slice(0, 10); byDate[d] = (byDate[d] ?? 0) + 1 }
   return Object.entries(byDate).sort().map(([date, count]) => ({ date, count }))
@@ -382,7 +385,7 @@ export const fetchData: MetricFn = async (sdk) => {
 
 export const fetchDetail: MetricFn = async (sdk) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  return (await new Jobs(sdk as never).getAll({ filter: "State eq 'Faulted'", orderby: 'CreationTime desc' }))?.items ?? []
+  return ((await new Jobs(sdk).getAll({ filter: "State eq 'Faulted'", orderby: 'CreationTime desc' }))?.items ?? []).map(x => ({ ...x }))
 }
 ```
 

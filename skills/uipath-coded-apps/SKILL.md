@@ -1,7 +1,7 @@
 ---
 name: uipath-coded-apps
-description: "UiPath Coded Apps — scaffold, build, run, and deploy Coded Web Apps and Coded Action Apps: React/TypeScript apps that call UiPath Cloud APIs via the `@uipath/uipath-typescript` SDK and ship to Automation Cloud (push/pull to Studio Web, pack, publish, deploy, OAuth-PKCE). Also generates NLP-driven dashboards: a plain-language request — agent health, error rate, invocation volume, latency, KPIs, governance violations, observability — becomes a live, deployable analytics dashboard wired to tenant data through the Insights real-time API, with incremental edit and upgrade flows. For RPA workflows→uipath-rpa, Python agents→uipath-agents, Maestro flows→uipath-maestro-flow, solution packaging→uipath-solution."
-when_to_use: "User wants to scaffold, build, push/pull, pack, publish, or deploy a Coded Web App or Coded Action App, or use the `@uipath/uipath-typescript` SDK inside one. Also dashboard requests: 'build me a dashboard', 'show agent health / error rate / KPIs / governance violations', 'generate an analytics or observability dashboard', or edit an existing one (add/remove/change a widget, change time range, deploy). For RPA workflows→uipath-rpa; Python agents→uipath-agents; Maestro flows→uipath-maestro-flow."
+description: "UiPath Coded Apps — scaffold, build, run, and deploy Coded Web Apps and Coded Action Apps: React/TypeScript apps that call UiPath Cloud APIs via the `@uipath/uipath-typescript` SDK and ship to Automation Cloud (push/pull to Studio Web, pack, publish, deploy, OAuth-PKCE). Also generates live analytics & governance dashboards from a plain-language request, wired to tenant data via the Insights real-time API, with edit and deploy flows. For RPA→uipath-rpa, Python agents→uipath-agents, Maestro flows→uipath-maestro-flow, solution packaging→uipath-solution."
+when_to_use: "User wants to scaffold, build, push/pull, pack, publish, or deploy a Coded Web App or Coded Action App, or use the `@uipath/uipath-typescript` SDK inside one. Also dashboard requests: 'build me a dashboard', 'show agent health / error rate / KPIs / governance violations', 'generate an analytics or observability dashboard', or edit an existing one (add/remove/change a widget, change time range, deploy). For RPA→uipath-rpa; Python agents→uipath-agents; Maestro flows→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, Task
 ---
 
@@ -18,7 +18,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 - User wants to **push/pull source** between local and Studio Web
 - User wants to use the `@uipath/uipath-typescript` SDK from a coded app
 - User wants to run the **full pipeline** (build → pack → publish → deploy)
-- User wants to **generate a dashboard** from a natural-language description — e.g. "build me a dashboard showing agent health, error rates, invocation volume, latency, active agents, KPIs, governance metrics, or consumption trends"
+- User wants to **generate an agent-monitoring / analytics dashboard** from a natural-language description — e.g. "show agent health, error rates, invocation volume, latency, active agents, KPIs, governance metrics, or consumption trends"
 - User says "build/create/generate a dashboard", describes metrics to visualize, or asks for an agent observability, operations, or cost view
 
 ## App Types
@@ -32,7 +32,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 
 ## Critical Rules
 
-1. **Identify the app type before doing anything else.** Ask as a structured choice (Rule 17): **Coded Web App** — custom frontend deployed to UiPath Cloud · **Coded Action App** — form for Action Center human task reviews. The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
+1. **Identify the app type before doing anything else.** Ask as a structured choice (Rule 18): **Coded Web App** — custom frontend deployed to UiPath Cloud · **Coded Action App** — form for Action Center human task reviews. The two paths diverge on scaffolding, redirect URI, and publish flag — do not guess.
 2. **Always check login status first.** Run `uip login status --output json` before any cloud command. If not logged in, run `uip login`.
 3. **Never skip the build step.** Run `npm run build` after scaffolding (to verify the scaffold compiles) and again before `pack` or `push` (to produce the deployable `dist/`). Verify `dist/` exists each time.
 4. **Pack → Publish → Deploy order is required.** Each step depends on the previous one producing its output.
