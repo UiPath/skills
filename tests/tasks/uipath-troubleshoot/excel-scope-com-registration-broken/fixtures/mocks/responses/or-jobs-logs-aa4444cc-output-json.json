@@ -1,0 +1,56 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Key": "log-aa4444cc-001",
+      "JobKey": "aa444444-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T09:15:02.120Z",
+      "Message": "Execution started.",
+      "ProcessName": "ExcelLedgerReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa4444cc-002",
+      "JobKey": "aa444444-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Info",
+      "Timestamp": "2026-05-30T09:15:02.240Z",
+      "Message": "[ExcelLedgerReport] Opening C:\\Robot\\Data\\ledger-2026-05.xlsm to recalc the monthly ledger",
+      "ProcessName": "ExcelLedgerReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa4444cc-003",
+      "JobKey": "aa444444-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T09:15:02.460Z",
+      "Message": "Excel Application Scope: ledger-2026-05.xlsm — surface: Classic ExcelApplicationScope (COM-only). Attempting to acquire Excel.Application COM server.",
+      "ProcessName": "ExcelLedgerReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa4444cc-004",
+      "JobKey": "aa444444-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Trace",
+      "Timestamp": "2026-05-30T09:15:02.980Z",
+      "Message": "Excel Application Scope: ledger-2026-05.xlsm — Excel.Application class factory created, but Microsoft.Office.Interop.Excel type-library resolution FAILED. Host: MOCK-HOST. Robot user: UIPATH\\AUTOMATION1. Excel install state: INSTALLED — Microsoft 365 Apps build 16.0.17928.20114 at C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE (launches interactively). Office was upgraded in place to Microsoft 365 Apps on 2026-05-28 (previous build: Office 2019 Standard 16.0.10396). Stale TypeLib registration detected for {00020813-0000-0000-C000-000000000046} (Microsoft Excel Object Library) pointing at the removed 2019 build.",
+      "ProcessName": "ExcelLedgerReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    },
+    {
+      "Key": "log-aa4444cc-005",
+      "JobKey": "aa444444-cccc-dddd-eeee-ffffaaaabbbb",
+      "Level": "Error",
+      "Timestamp": "2026-05-30T09:15:03.390Z",
+      "Message": "Excel Application Scope: ledger-2026-05.xlsm — UiPath.Excel.BusinessException: Error opening workbook. Make sure Excel is installed. Inner: COMException 0x8002801D TYPE_E_LIBNOTREGISTERED (Library not registered).",
+      "ProcessName": "ExcelLedgerReport",
+      "MachineName": "MOCK-HOST",
+      "RobotName": "AUTOMATION1"
+    }
+  ]
+}

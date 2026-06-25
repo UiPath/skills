@@ -1,0 +1,143 @@
+task_id: skill-troubleshoot-replace-text-loop-overwrite
+description: >
+  UiPath troubleshooting agent must diagnose a Replace Text loop failure: the
+  workflow edits the template in place each iteration, so the first row
+  replaces the [Name] placeholder and consumes it — every later row finds
+  nothing to replace and comes out unchanged. The job SUCCEEDS (per-iteration
+  logs show "Replaced 1 occurrence" then "Replaced 0"). Success = agent
+  matches the replace-text-loop-template-overwrite playbook AND recommends
+  copying the template to a fresh temp file per iteration (treat template as
+  read-only), not treating the green job as healthy.
+tags: [uipath-troubleshoot, e2e, orchestrator, word-activities, replace-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My BulkOfferLetters process runs green in Orchestrator (folder "Bulk
+  Letters", machine MOCK-ROBOT-07) — the job shows Successful — but only the
+  FIRST letter comes out right. Every letter after the first still has the
+  literal "[Name]" placeholder instead of the person's name. No error is
+  reported.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the replace-text-loop-template-overwrite playbook AND recommended a fresh template copy per iteration"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My BulkOfferLetters process shows Successful in Orchestrator (folder
+         'Bulk Letters', machine MOCK-ROBOT-07), but only the FIRST letter is
+         correct — every later letter still has the literal '[Name]'
+         placeholder. No error is reported."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/replace-text-loop-template-overwrite.md
+        because "works on iteration 1, then the placeholder is missing on
+        later rows" with a Successful job is the signature of editing the
+        template in place so the first replacement consumes the placeholder.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The loop's Use Word File scope points at the template
+            ('OfferTemplate.docx') and edits it IN PLACE every iteration
+            (no per-iteration copy).
+          - Iteration 1 replaces '[Name]' and saves — so the placeholder no
+            longer exists in the file. Iterations 2+ find 0 occurrences and
+            leave the (already-mutated) document unchanged. The per-iteration
+            logs confirm: "Replaced 1 occurrence" then "Replaced 0".
+          - The job is Successful because matching 0 occurrences is not an
+            error. This is template mutation across iterations, NOT a
+            run-split placeholder (which fails on row 1 too) or a file lock.
+        The reference fix:
+          - At the START of each iteration, use Copy File to make a fresh
+            temporary copy of the template (a unique per-row output path),
+            and point the Word scope at that temp file. Treat the template
+            as read-only; never edit it in place.
+
+      DIMENSION C -- Did NOT treat the green job as healthy
+        The agent must recognize a Successful job with wrong output (rows 2+)
+        as a real silent failure — using the "Replaced 1 then 0" logs and
+        the in-place-edit structure — NOT dismiss it as working because the
+        job is green, and NOT fabricate a crash/lock/host action.
+
+      SCORING RUBRIC:
+        1.0  Agent matched replace-text-loop-template-overwrite AND
+             identified in-place template editing consuming the placeholder
+             after iteration 1 as the cause AND recommended copying the
+             template to a fresh temp file per iteration (template read-only)
+             — without treating the green job as healthy or fabricating a
+             crash/lock.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "use a
+             fresh file" without naming Copy File per iteration / template
+             read-only).
+        0.5  Recognized later rows aren't replaced but attributed it to the
+             wrong cause (run-split placeholder, file lock, wrong Search
+             value), or matched a sibling Replace Text playbook.
+        0.2  Restated the symptom without a cause.
+        0.0  Concluded the job is healthy because it is Successful, OR blamed
+             a crash / lock / missing install / 256-char limit, OR fabricated
+             a host action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the bulk-letter bug. The job shows
+    Successful but only the first letter is correct; the rest keep the
+    literal "[Name]" placeholder. You are away from the robot host and only
+    have Orchestrator access. You trust the agent and want a diagnosis plus
+    the fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the fix at the end."
+    - "If asked whether the workflow makes a fresh copy of the template per row, say you are not sure - it points at the one template file as far as you know."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

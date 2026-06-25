@@ -22,7 +22,7 @@ description: >
   The trailing delete is the cleanup; the test self-cleans on success.
   If a run fails mid-flow and leaves a `lifecycle-test-access-policy*`
   policy behind, delete it manually before the next run.
-tags: [uipath-governance, e2e, access-policy, mode:build]
+tags: [uipath-governance, e2e, access-policy, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 21
@@ -41,11 +41,6 @@ initial_prompt: |
   3. Update it — rename to `lifecycle-test-access-policy-renamed`. Keep
      every other field as-is.
   4. Delete the policy.
-
-  The uipath-governance skill knows the required `PolicyDefinition` shape,
-  the default status / enforcement values, how to source org and tenant
-  identity from the active login session, and the full-replace semantics
-  of update. Trust it.
 
   Important:
   - Do not prompt the user for confirmation — this is an automated test.

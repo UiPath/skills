@@ -4,6 +4,8 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 
 > **The user tells you which guardrail to add. You derive the full list of available guardrails and their configuration from the official documentation — fetch it at the start of every task.**
 
+> **Validating or fixing an EXISTING guardrail? Start elsewhere.** If the task is to check / diagnose whether a guardrail is configured correctly, or to fix a misplaced / misconfigured one (even if you will also edit code), follow [guardrails-recommend.md § Validate Mode](guardrails-recommend.md) FIRST — that workflow is mandatory for diagnosis. This page covers adding a **new** guardrail.
+
 ---
 
 ## Step 0 — Fetch Official Documentation

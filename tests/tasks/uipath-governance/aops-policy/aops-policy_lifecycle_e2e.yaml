@@ -16,7 +16,7 @@ description: >
   The trailing delete is the cleanup; the test self-cleans on success.
   If a run fails mid-flow and leaves an `aitl-crud-lifecycle-clie2e`
   policy behind, delete it manually before the next run.
-tags: [uipath-governance, e2e, aops-policy, mode:build]
+tags: [uipath-governance, e2e, aops-policy, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 18
@@ -32,10 +32,6 @@ initial_prompt: |
   3. Update it — set the description to `Updated by CRUD lifecycle e2e test`.
      Keep every other field (including the name) as-is.
   4. Delete the policy.
-
-  The uipath-governance skill knows the right CLI surface, how to
-  bootstrap product defaults, the full-replace semantics of update, and
-  what to re-pass to preserve fields. Trust it.
 
   Important:
   - Do not prompt the user for confirmation — this is an automated test.

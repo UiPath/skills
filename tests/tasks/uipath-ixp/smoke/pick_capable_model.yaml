@@ -1,0 +1,41 @@
+task_id: skill-ixp-pick-capable-model-smoke
+description: >
+  Smoke: faced with long, inference-heavy documents and low Flash F1, the
+  agent switches to a more capable model (Gemini Pro).
+
+  Harness is unauthenticated; CLI calls fail with auth errors.
+  Grades command shape, not wire effect.
+tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 5
+
+initial_prompt: |
+  In the IXP project my_invoices-f1afa9ef-ixp, the documents are 150-page
+  filings with many inferred fields, and the current Flash model's F1 is low.
+  Switch to a more capable model.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
+    this environment. Commands will fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  # Deterministic: the skill maps 100+ page docs to gemini_2_5_pro, which the
+  # 150-page prompt triggers (so gpt_4o would be wrong here).
+  - type: command_executed
+    description: "Agent switched to a more capable model via `configure-model --model gemini_2_5_pro`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+projects\s+configure-model\b(?=.*--model\s+gemini_2_5_pro\b).*'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on a uip ixp command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+ixp\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

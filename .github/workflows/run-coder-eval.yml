@@ -133,6 +133,11 @@ jobs:
     # hiccups, etc.).
     timeout-minutes: 330
     name: Run coder-eval (Linux)
+    # Disable uip CLI version-sync: a task's `uip login status` re-pins
+    # ~/.uipath/config.json to a stale line and, via nightly.yaml's shared
+    # ~/.uipath mount, downgrades the CLI for later tasks. Mirrors daily.sh.
+    env:
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -275,6 +280,11 @@ jobs:
     # mirrors smoke-rpa-skills.yml plus headroom for ad-hoc / e2e runs.
     timeout-minutes: 240
     name: Run coder-eval (Windows)
+    # Disable uip CLI version-sync: tempdir tasks share one host ~/.uipath /
+    # global uip, so a `uip login status` re-pin downgrades later tasks.
+    # Mirrors daily.sh.
+    env:
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
 

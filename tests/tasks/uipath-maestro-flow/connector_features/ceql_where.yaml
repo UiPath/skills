@@ -7,7 +7,7 @@ description: >
   uipath-platform skill. The flow must reference the registered connector
   key (`uipath-microsoft-azureactivedirectory`), use Decision + Terminate
   for routing, and pass `uip maestro flow validate`.
-tags: [uipath-maestro-flow, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, ipe]
+tags: [uipath-maestro-flow, integration, connector, ceql, filter, uipath-microsoft-azureactivedirectory, ipe, mode:build]
 
 run_limits:
   expected_turns: 34
@@ -16,60 +16,21 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Do NOT run `uip flow node configure`
-  or any command that requires a live connection — this sandbox has no
-  UiPath tenant. Instead, plan the exact `--detail` JSON you would pass to
-  `uip flow node configure` and emit it to `where_detail.json`.
+  This sandbox has no UiPath tenant, so you can't run the live node-configuration 
+  step. Instead, capture the filter you'd apply to the operation as where_detail.json 
+  so it can be reviewed.
 
-  Read the canonical filter-tree shape before writing:
-  `skills/uipath-platform/references/integration-service/activities.md`,
-  section "Filter Trees (CEQL)". The Maestro Flow connector plugin's
-  Step 6a (`skills/uipath-maestro-flow/references/author/references/plugins/connector/impl.md`)
-  cross-references that section.
+  Build a flow "CeqlWhereTest" with a manual trigger that lists Microsoft Entra (Azure AD) 
+  groups whose displayName equals "active". Find the registered Entra/Azure AD connector key 
+  before wiring the node.
 
-  `where_detail.json` must contain, at minimum:
-    - `connectionId`, `folderKey`, `eventMode` (placeholder values are fine)
-    - a top-level `filter` object using the CANONICAL shape from the doc:
-        `{"groupOperator": <0|1>, "index": 0, "filters": [...], "groups": []}`
-      Each leaf filter must use:
-        - `id`: the field name (e.g. `"displayName"`)
-        - `operator`: PascalCase (`"Equals"`, `"Contains"`, ...)
-        - `value`: a `WorkflowValue` object
-            `{"value": <typed>, "rawString": <verbatim>, "isLiteral": true}`
-
-  Save a short summary to `report.json`:
-    {
-      "scenario": "ceql-where-filter-tree",
-      "uses_filter_tree": true,
-      "used_filter_expression_string": false,
-      "notes": "<one sentence explaining why the tree is the correct input>"
-    }
-
-  Create a flow called "CeqlWhereTest" with a manual trigger that uses the
-  Microsoft Entra (Azure AD) connector's "List groups" operation, filtering
-  on `displayName = "active"`.
-
-  Connector key: use `uipath-microsoft-azureactivedirectory` exactly. That
-  is the registered key for the Microsoft Entra ID connector in this
-  tenant — display names like "Microsoft Entra" or "Microsoft Entra ID"
-  are NOT registry keys. Confirm the key with
-  `uip maestro flow registry search "azureactivedirectory"` before adding
-  the node.
-
-  Add a Decision node to check whether the call succeeded.
-  Route failure to a Terminate node with error message "CeqlWhere test failed".
-  Route success to a final action that logs "CeqlWhere test passed".
-  Validate the final flow file with `uip maestro flow validate`.
+  Branch on the result: if the call fails, stop the flow with the error "CeqlWhere test failed"; 
+  if it succeeds, log "CeqlWhere test passed". 
+  Validate the final flow file.
 
 success_criteria:
-  - type: file_exists
-    description: "where_detail.json exists"
-    path: "where_detail.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "where_detail.json has a canonical CEQL filter tree on displayName='active'; flow references the registered Azure AD / Entra connector key with List Groups + Decision + Terminate nodes"
+    description: "where_detail.json (found anywhere under the solution) has a canonical CEQL filter tree on displayName='active'; flow references the registered Azure AD / Entra connector key with List Groups + Terminate nodes"
     command: "python3 $TASK_DIR/check_ceql_where_flow.py"
     timeout: 60
     expected_exit_code: 0

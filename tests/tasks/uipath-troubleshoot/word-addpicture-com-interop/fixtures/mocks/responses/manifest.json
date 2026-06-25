@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the type-library-not-registered branch (E1) of the word-activities/word-com-interop-failures playbook (reached via add-picture-failures.md C2, which delegates to it). Agent must chain: folders list-current-user -> jobs list --state Faulted -> jobs get / logs (InvalidCastException, HRESULT 0x8002801D / TYPE_E_LIBNOTREGISTERED) -> workflow source (Main.xaml is CORRECT: WordAddImage nested in UseWordFile, valid absolute ImagePath, InsertRelativeTo=Document). The fault is environmental — the Word interop type library is not registered on the robot host — NOT a source defect. The correct conclusion is an Office online repair (and/or bitness check, orphaned WINWORD.EXE, or migrate to file-based Word Document activities), NOT an XAML edit. Scrubbed: host->MOCK-HOST, robot->AUTOMATION1.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "or-jobs-history.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "or-jobs-get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

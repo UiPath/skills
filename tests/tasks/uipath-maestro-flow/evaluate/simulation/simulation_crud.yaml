@@ -1,0 +1,144 @@
+task_id: skill-flow-eval-simulation-crud
+description: >
+  Skill-guided simulation CRUD: agent uses the uipath-maestro-flow skill's
+  evaluate capability to scaffold a Flow project, build an eval set + data
+  point, then add, list, and remove node simulations on that data point via
+  `uip maestro flow eval simulation add/list/remove`. Covers both strategies —
+  `Static` (`--mock-value`) and `Llm` (explicit `--output-schema`, so the
+  auto-resolution-from-.flow path is not exercised). Purely local, no login,
+  no upload, no run. Tests whether the skill teaches the simulation command
+  surface (required flags, strategy selection) and `--output json` discipline,
+  and verifies the simulation actually persists into the eval-set JSON.
+tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, feature:eval]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+initial_prompt: |
+  Use the `uipath-maestro-flow` skill's evaluate capability to scaffold a Flow
+  project, build an eval set with one data point, then add, list, and remove
+  node simulations on that data point — purely local, no Studio Web round-trip.
+
+  Steps:
+  1. Create a solution `SimEval` and a Flow project `SimEval`. The flow file
+     MUST live at `SimEval/SimEval/SimEval.flow` (double-nested layout) and be
+     linked via `uip solution project add`.
+
+  2. Declare a string input variable named `name` on
+     `SimEval/SimEval/SimEval.flow` before adding the data point.
+
+  3. Create an eval set named `Sim Set` in the Flow project at
+     `SimEval/SimEval`. (No `--entry-point`, no `--evaluators` — defaults are
+     fine.)
+
+  4. Add one data point named `hello` to that eval set with inputs
+     `{"name":"Alice"}` and expected `{"greeting":"Hello, Alice!"}`.
+
+  5. Add a `Static` simulation on the `hello` data point targeting component id
+     `connector-send-email`. Use `--component-type connector` and a fixed
+     `--mock-value '{"status":"ok","messageId":"abc123"}'`.
+
+  6. Add an `Llm` simulation on the `hello` data point targeting component id
+     `agent-lookup`. Use `--component-type agent`, supply
+     `--simulation-instructions "Return a plausible lookup result."`, and pass
+     `--output-schema '{"type":"object","properties":{"result":{"type":"string"}}}'`
+     explicitly (do NOT rely on auto-resolution from the .flow file).
+
+  7. List the simulations on the `hello` data point to confirm both are present.
+
+  8. Remove the `connector-send-email` simulation from the `hello` data point.
+
+  Important:
+  - Use `--output json` on every `uip maestro flow eval ...` command.
+  - Do NOT call `uip login`. Do NOT call `uip solution upload`. Do NOT call
+    `uip maestro flow eval run *` — this task tests local CRUD only.
+  - Do NOT run `uip maestro flow debug` or `uip maestro flow validate` — this
+    is not a flow-authoring test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a solution"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(new|init)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent initialized a Flow project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(maestro\s+)?flow\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created at the double-nested path"
+    path: "SimEval/SimEval/SimEval.flow"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created an eval set"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a data point with --inputs and --expected"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added a Static simulation with --strategy Static and --mock-value"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+.*--strategy\s+Static\b.*--mock-value'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added an Llm simulation with --strategy Llm and explicit --output-schema"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+.*--strategy\s+Llm\b.*--output-schema'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed simulations on the data point"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent removed the connector-send-email simulation"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+remove\s+.*connector-send-email'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on every eval command"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+.*--output\s+json'
+    min_count: 5
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Eval-set JSON shows the Llm simulation persisted and the removed one is gone"
+    command: "python3 $TASK_DIR/check_simulation_crud.py"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

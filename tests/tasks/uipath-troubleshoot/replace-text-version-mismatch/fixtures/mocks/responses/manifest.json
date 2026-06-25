@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures for the replace-text-version-mismatch playbook. This is a DESIGN-TIME Studio crash - the process never ran in Orchestrator, so there are no jobs. Diagnosis comes from the project source (UiPath.Word.Activities version vs Studio version), not job evidence.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a8b9c0d1-e2f3-4193-4051-627384950617\" --state Faulted --output json",
+      "file": "or-jobs-list-empty-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key a8b9c0d1-e2f3-4193-4051-627384950617 --state Faulted --output json",
+      "file": "or-jobs-list-empty-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a8b9c0d1-e2f3-4193-4051-627384950617\" --output json",
+      "file": "or-jobs-list-empty-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key a8b9c0d1-e2f3-4193-4051-627384950617 --output json",
+      "file": "or-jobs-list-empty-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands (no jobs exist for this design-time crash)."
+  }
+}

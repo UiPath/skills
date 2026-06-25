@@ -17,18 +17,13 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  I need a read-only role at organization scope called "AccessPolicyViewer_clie2e" that
-  grants only read access to the organization's Access Policies (the
-  Conditional Access Policy "Read" permission).
+  I need an org-scope read-only role named "AccessPolicyViewer_clie2e"
+  that grants only read access to the organization's Access Policies
+  (the Conditional Access Policy "Read" permission).
 
-  Walk the full lifecycle, exercising the create, get, update, and delete
-  commands:
-    1. List the organization-scope permissions to find the Access Policy
-       read permission, confirm no role named "AccessPolicyViewer_clie2e" already exists,
-       then create the role including that permission.
-    2. Update it — change its description.
-    3. Get the role's contents so I can confirm the update.
-    4. Delete the role and confirm it's gone.
+  Create it, then change its description and confirm the change stuck,
+  and finally remove it again so we don't leave it behind — confirm
+  it's gone.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be

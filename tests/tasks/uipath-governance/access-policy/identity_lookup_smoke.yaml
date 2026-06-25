@@ -13,14 +13,14 @@ description: >
   `uip admin` commands that hit Identity Server will fail with an auth
   error. That is acceptable — what matters is that the agent invokes the
   correct commands with the correct flags.
-tags: [uipath-governance, smoke, mode:diagnose, access-policy, identity-lookup]
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, access-policy, identity-lookup]
 
 run_limits:
   expected_turns: 8
 
 initial_prompt: |
-  I am authoring a UiPath access policy and need three UUIDs for the
-  `actorRule.values[]` array. Resolve each one and save every command's
+  I am authoring a UiPath access policy and need three identity UUIDs
+  for the policy's actor rule. Resolve each one and save every command's
   stdout+stderr to ./output.txt (use `> output.txt 2>&1` for the first
   command and `>> output.txt 2>&1` for subsequent ones).
 

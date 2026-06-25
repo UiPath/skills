@@ -1,0 +1,156 @@
+task_id: skill-troubleshoot-word-file-path
+description: >
+  UiPath troubleshooting agent must diagnose a Word Application Scope
+  FileNotFoundException where a relative document path (Output\OfferLetter.docx)
+  resolves against the unattended robot's working directory
+  (C:\Windows\System32\config\systemprofile) instead of the project folder, so
+  the file is not found at runtime. Success = agent matches the
+  word-scope-file-path-not-found playbook AND recommends an absolute path /
+  Path.Combine (or Create if not exists when the doc is generated), not editing
+  the document content or blaming Word.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, word-application-scope, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My OfferLetterGen process faults in Orchestrator (folder "Offer Letters",
+  machine MOCK-ROBOT-03). It says it can't find the document. The file is
+  right there in the project though, and it works when I run it from Studio
+  on my machine.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source. If the fix needs something
+  done on the host, give me the exact steps and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the word-scope-file-path-not-found playbook AND recommended an absolute path / Path.Combine fix"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My OfferLetterGen process faults in Orchestrator (folder 'Offer
+         Letters', machine MOCK-ROBOT-03) saying it can't find the document,
+         but the file is in the project and it works from Studio on my
+         machine."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/word-scope-file-path-not-found.md
+        because the error
+          "System.IO.FileNotFoundException: Could not find file
+           'C:\Windows\System32\config\systemprofile\Output\OfferLetter.docx'"
+        from a Word Application Scope is a document-path resolution failure.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Word Application Scope's FileName is the RELATIVE path
+            'Output\OfferLetter.docx'.
+          - On the unattended robot the relative path resolves against the
+            robot's working directory
+            (C:\Windows\System32\config\systemprofile - the service
+            account profile), NOT the project folder, so the file is not
+            found. The resolved path in the error is the tell.
+          - "Works from Studio, fails on the robot" corroborates a
+            working-directory / relative-path resolution gap, not a missing
+            file or a Word defect.
+        The reference fix:
+          - Build an ABSOLUTE path - an explicit absolute root / UNC path,
+            or an Orchestrator-asset-anchored base with the filename
+            combined onto it - so it resolves deterministically on every
+            host. NOT Path.Combine(Environment.CurrentDirectory, ...): on an
+            unattended robot that is the systemprofile working directory,
+            the same root that just failed, so it resolves to the same
+            missing path. An agent that explicitly steers off
+            Environment.CurrentDirectory is MORE correct, not less.
+          - If the document is meant to be GENERATED rather than opened,
+            enable "Create if not exists" instead.
+          - (If a mapped drive / OneDrive placeholder were involved, use a
+            reachable UNC path / hydrate the file - secondary branch.)
+
+      DIMENSION C -- No fabricated actions / right target
+        The agent must point at the path-resolution fix (workflow change /
+        host check), NOT edit the document content, NOT conclude the file is
+        genuinely missing and tell the user to recreate it, and NOT claim to
+        have run host commands itself.
+
+      SCORING RUBRIC:
+        1.0  Agent matched word-scope-file-path-not-found AND identified the
+             relative-path-resolving-against-the-robot-working-directory
+             cause (or equivalently, a non-absolute path that resolves
+             wrong on the robot) AND recommended an explicit absolute path /
+             UNC / asset-anchored base (or Create if not exists when the doc
+             is generated), without fabricating actions or editing content.
+             Steering OFF Environment.CurrentDirectory earns full marks - it
+             resolves to the same failing root - so do not dock for it.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "fix
+             the path" without naming an absolute/UNC/asset-anchored path or
+             Create if not exists), OR recommends
+             Path.Combine(Environment.CurrentDirectory, ...) as the primary
+             fix (resolves to the same failing systemprofile root).
+        0.5  Recognized a path / file-not-found problem but did not tie it
+             to relative-path resolution (e.g., only said "the file is
+             missing, put it back"), or matched a sibling Word playbook.
+        0.2  Surfaced the error text without diagnosis.
+        0.0  Wrong cause (e.g., Word not installed, missing package, file
+             corrupt, document content at fault), or fabricated an action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. It says it
+    cannot find the document, but the file is in the project and it works
+    from Studio on your machine. You are away from the robot host and only
+    have Orchestrator access. You trust the agent and want a diagnosis plus
+    exact steps.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the steps at the end."
+    - "If asked whether the document is deployed to the robot or where the path resolves on the robot, say you are not sure and cannot check right now - that is exactly what you need the agent to tell you to verify."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -4,7 +4,7 @@ description: >
   trigger activities for a connector. Tests that the skill teaches the correct
   activity discovery workflow and the distinction between activities, triggers,
   and resources.
-tags: [uipath-platform, smoke, integration-service, activities]
+tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, integration-service, connector, feature:activities]
 
 run_limits:
   expected_turns: 9

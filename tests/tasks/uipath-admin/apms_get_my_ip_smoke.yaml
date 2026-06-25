@@ -13,7 +13,10 @@ run_limits:
   expected_turns: 4
 
 initial_prompt: |
-  What public IP does my UiPath organization see for me right now?
+  Before I update our UiPath IP restriction allowlist, I need to verify
+  what IP address the UiPath admin service resolves for my connection.
+  Use the `uip` CLI to query this — a generic IP lookup won't
+  necessarily match what the platform sees behind its gateway.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
