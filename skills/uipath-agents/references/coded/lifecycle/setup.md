@@ -19,9 +19,7 @@ Pick the framework before starting. The package installed in the Workflow determ
 | LlamaIndex | `uipath-llamaindex` | `llama_index.json` | [llamaindex-integration.md](../frameworks/llamaindex-integration.md) |
 | OpenAI Agents | `uipath-openai-agents` | `openai_agents.json` | [openai-agents-integration.md](../frameworks/openai-agents-integration.md) |
 
-> **"Coded agent" ≠ "Coded Function".** The `uipath` / Coded Function row is plain deterministic Python with **no LLM** — it scaffolds `ProjectType: "Function"`, registers as a `function`-type resource, and surfaces in a Flow as a `uipath.core.function.<key>` node. The three LLM frameworks (LangGraph / LlamaIndex / OpenAI Agents) scaffold `ProjectType: "Agent"`, register as an `agent`-type resource, and surface as a `uipath.core.agent.<key>` node.
->
-> When the user asks for an **agent** (or for reasoning, judgment, classification, summarization, or natural-language processing), pick an **LLM framework** — default to **LangGraph** unless the user names another. Do NOT pick Coded Function for an agent request just because the task *looks* deterministic enough to solve with a regex; a request for an agent is binding, and a Coded Function produces the wrong resource type and node. Pick Coded Function only when the user explicitly asks for a coded function / deterministic Python tool, or wants no LLM.
+> **"Coded agent" ≠ "Coded Function".** The `uipath` / Coded Function row is plain deterministic Python with **no LLM** and scaffolds `ProjectType: "Function"`. The three LLM rows (LangGraph / LlamaIndex / OpenAI Agents) scaffold `ProjectType: "Agent"`. When the user asks for an **agent** — anything that reasons, judges, classifies, summarizes, or processes natural language — pick an **LLM framework**, defaulting to **LangGraph** unless another is named. A request for an agent is binding: do NOT pick Coded Function just because the task *looks* deterministic enough to solve with hand-written Python. Pick Coded Function only when the user explicitly wants a deterministic, no-LLM tool.
 
 ## Starting Points
 

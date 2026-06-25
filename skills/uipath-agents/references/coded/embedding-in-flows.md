@@ -52,15 +52,20 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    cd <CodedAgentProject>
    uv venv --python 3.13
    source .venv/bin/activate       # .venv/Scripts/activate on Windows
-   uv pip install <FRAMEWORK_PACKAGE>   # e.g. uipath for Coded Function
+   uv pip install <FRAMEWORK_PACKAGE>   # e.g. uipath-langchain for LangGraph
    uip codedagent setup --force
    uip codedagent new <agent-name>
    uv sync
    ```
 
-   For a simple stub with no LLM call, use the Coded Function framework
-   (`uipath` package). This avoids downloading the full LangGraph or
-   LlamaIndex stack and keeps the setup fast.
+   For a coded **agent** — anything that reasons, classifies, or processes
+   natural language — pick an LLM framework (default `uipath-langchain` /
+   LangGraph unless another is named); this scaffolds `ProjectType: "Agent"`.
+   The `uipath` / Coded Function package is lighter — no LangGraph or
+   LlamaIndex download — but it has no LLM and scaffolds
+   `ProjectType: "Function"`, a deterministic Python function, **not** an
+   agent. Reach for it only when the user explicitly wants a no-LLM tool, not
+   as a faster stand-in for an agent however simple the task looks.
 
 2. Implement `main.py`. Use lazy LLM initialization (create clients inside functions, never at module level).
 
