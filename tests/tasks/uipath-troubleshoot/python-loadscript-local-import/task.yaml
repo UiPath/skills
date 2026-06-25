@@ -57,65 +57,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched load-script-failures, recognized a local sibling-import / WorkingFolder failure (L2c, not a pip-package miss), and recommended setting WorkingFolder"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My PyLedgerSync process faults in Orchestrator on every run (folder
-         'Finance Sync'). It dies at load with 'No module named ledger_utils'.
-         But ledger_utils.py is right there next to my main script. I'm not on
-         the Robot host, only Orchestrator."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/python-activities/playbooks/load-script-failures.md
-        and the specific sub-case is L2c (unresolved local import): the script
-        imports a sibling .py that is not found because WorkingFolder does not
-        point at the script's folder, so the relative import path resolves wrong.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - ledger_sync.py does `import ledger_utils`, a LOCAL module that EXISTS
-            in the same scripts/ folder (ledger_utils.py is in the project).
-          - The Python Scope has NO WorkingFolder set, so the interpreter's CWD /
-            import path is the robot's package directory, not scripts/, and the
-            sibling import is not found -> ModuleNotFoundError at load.
-          - This is NOT a missing third-party package (L2a): the module is a local
-            file present in the repo, so the fix is path/WorkingFolder, NOT pip.
-        The reference fix is:
-          - Set the Python Scope WorkingFolder to the script's folder (scripts/)
-            so sibling imports resolve. (Equivalently, restructure so the import
-            path includes the script's directory.) Do NOT pip install anything.
-
-      DIMENSION C -- No fabricated host actions
-        The user is off-host. The agent may hand over a check but must NOT claim
-        to have edited the project on the robot or run host commands.
-
-      SCORING RUBRIC:
-        1.0  Matched load-script-failures, recognized a LOCAL sibling-module
-             import failing because WorkingFolder is not the script's folder
-             (L2c), AND recommended setting WorkingFolder to the script folder
-             (explicitly NOT pip-installing a package).
-        0.8  Correct playbook and WorkingFolder cause, but the fix is vague (e.g.
-             "fix the path" without naming WorkingFolder / the script folder).
-        0.5  Recognized a ModuleNotFoundError but treated it as a missing
-             third-party package (recommended pip install) instead of a local
-             import / WorkingFolder issue.
-        0.2  Surfaced the ModuleNotFoundError to the user without diagnosis.
-        0.0  Wrong cause (engine init / bitness / syntax / workflow wiring), or
-             fabricated a host action.
-
-      The decisive discriminator: ledger_utils is a LOCAL sibling file present in
-      the project, so the fix is WorkingFolder, not pip install. Penalize a
-      pip-install recommendation.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
