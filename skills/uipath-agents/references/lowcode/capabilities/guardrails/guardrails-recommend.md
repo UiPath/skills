@@ -177,11 +177,13 @@ Run `uip agent guardrails list --output json` (from Step 0) and find the matchin
 | CLI field | What to check |
 |-----------|---------------|
 | `Required: true` | Parameter must be present in `validatorParameters` |
-| `Type` | Must match `$parameterType` — `"enum-list"`, `"map-enum"`, or `"number"` |
-| `Options` | For `enum-list`: every value must be in this list; array must be non-empty |
+| `Type` | Must match `$parameterType` — `"enum-list"`, `"map-enum"`, `"number"`, `"enum"`, `"text"`, or `"text-list"` |
+| `Options` | For `enum-list` and `enum`: every value must be in this list; array must be non-empty. **Exception:** `llm_as_judge` ships `Options: []` for `model` on the wire — discovery happens out-of-band. Use the same flow as the agent's `settings.model`: run `uip agent model list --output json` and pick per [../../model-selection-guide.md](../../model-selection-guide.md). The Gateway rejects any model not authorized for the `llm-as-judge-validator` feature at runtime. |
 | `KeySource` | For `map-enum`: keys must **exactly** match the values of the `Options`-sourced parameter named by `KeySource` — no extra, no missing keys |
 | `Min` / `Max` | For `number` and `map-enum`: values must fall within this range |
 | `Step` | For `number` and `map-enum`: values must be multiples of Step (e.g. Step=2, Min=0, Max=6 → valid values are 0, 2, 4, 6) |
+| `MaxLength` | For `text` and `text-list`: each string value must not exceed this length |
+| `MaxItems` | For `text-list`: array length must not exceed this |
 
 Check that every parameter object has a `$parameterType` discriminator. Missing discriminators cause schema validation failures.
 

@@ -2,11 +2,11 @@
 
 ## Overview
 
-Guardrails are safeguards that inspect agent inputs and outputs for policy violations (PII, harmful content, prompt injection, intellectual property, custom rules). They are configured at the **agent.json root level** as a `guardrails` array.
+Guardrails are safeguards that inspect agent inputs and outputs for policy violations (PII, harmful content, prompt injection, intellectual property, LLM-as-judge natural-language rules, custom rules). They are configured at the **agent.json root level** as a `guardrails` array.
 
 Two types exist:
 - **`custom`** — deterministic rules you define (word matching, number comparison, boolean checks, universal triggers)
-- **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks)
+- **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks, LLM-as-judge)
 
 > **Autonomous agents:** All guardrails are configured at the `agent.json` root `guardrails` array. **Conversational agents:** see § Conversational Support below — the runtime-effective location is each tool's `resources/<Tool>/resource.json` → `guardrail.policies[]`.
 
@@ -576,7 +576,10 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 |-------------------|---------|-------------|
 | `"enum-list"` | Array parameters (e.g., `entities`, `harmfulContentEntities`, `ipEntities`) | string[] |
 | `"map-enum"` | Threshold maps (e.g., `entityThresholds`, `harmfulContentEntityThresholds`) | object (keys = entity names, values = numbers) |
-| `"number"` | Scalar numbers (e.g., `threshold` for prompt injection) | number |
+| `"number"` | Scalar numbers (e.g., `threshold` for prompt injection / llm_as_judge) | number |
+| `"enum"` | Single-select string from a fixed list (e.g., `model` for llm_as_judge) | string |
+| `"text"` | Free-form single string (e.g., `guardrailText` for llm_as_judge) | string |
+| `"text-list"` | Array of free-form strings (e.g., `positiveExamples`, `negativeExamples` for llm_as_judge) | string[] |
 
 ### Validators Quick Reference
 
@@ -589,6 +592,9 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 | `harmful_content` | Agent, Llm, Tool | **Tool only** | Pre + Post | Block, Log, Escalate |
 | `intellectual_property` | Llm, Agent | **Not usable** (no Tool scope) | Post only | Block, Log, Escalate |
 | `user_prompt_attacks` | Llm | **Not usable** (no Tool scope) | Pre only | Block, Log, Escalate |
+| `llm_as_judge` | Agent, Llm, Tool | **Tool only** | Pre + Post | Block, Log, Escalate |
+
+> **`llm_as_judge` — picking the `model` parameter value.** Unlike other validators, `uip agent guardrails list` returns `Parameters[].Options: []` for `model` — there is no enum to choose from in the guardrails-list output. The judge model is sourced from the **same place as the agent's `settings.model`**: run `uip agent model list --output json`, pick per [../../model-selection-guide.md](../../model-selection-guide.md), and copy the chosen entry's `Name` field verbatim into the `enum` parameter's `value`. Example: if `uip agent model list` returns an entry `{ "Name": "anthropic.claude-sonnet-4-6", ... }`, write `{ "$parameterType": "enum", "id": "model", "value": "anthropic.claude-sonnet-4-6" }`. The LLM Gateway rejects any model name that is not authorized for the `llm-as-judge-validator` feature at runtime, so verify the model appears in the live list before authoring — do not invent names or copy from this skill's examples without verification.
 
 Run `uip agent guardrails list --output json` to get the authoritative list. Only use validators where `Status` is `"Available"`. Use the output to populate `validatorType`, `selector.scopes`, and `validatorParameters` fields. **For conversational agents, intersect `AllowedScopes` with `["Tool"]` — if `"Tool"` is not in the validator's `AllowedScopes`, the validator cannot be used in a conversational agent.**
 **How to map `uip agent guardrails list` output to guardrail JSON:**
@@ -949,6 +955,59 @@ Redacts specific fields from a tool's output instead of blocking or logging. Use
 }
 ```
 
+### Example 11: LLM-as-Judge — Natural-Language Rule on Agent Output
+
+Use when a policy is best expressed in plain English and no fixed validator covers it (brand-voice, domain-specific compliance, off-topic drift). A product-configured judge model decides whether the payload complies. Optional positive/negative examples calibrate the verdict; `threshold` is the harmful-content-style 0/2/4/6 scale (lower = stricter; default `2`).
+
+```json
+{
+  "$guardrailType": "builtInValidator",
+  "id": "9a8b7c6d-5e4f-3210-9876-543210fedcba",
+  "name": "Block off-topic agent responses",
+  "description": "Rejects agent responses that drift off the support topic.",
+  "validatorType": "llm_as_judge",
+  "validatorParameters": [
+    {
+      "$parameterType": "text",
+      "id": "guardrailText",
+      "value": "The response must stay on the topic of customer support for our software product. Reject responses about politics, religion, competitors, or unrelated topics."
+    },
+    {
+      "$parameterType": "enum",
+      "id": "model",
+      "value": "anthropic.claude-haiku-4-5-20251001-v1:0"
+    },
+    {
+      "$parameterType": "text-list",
+      "id": "positiveExamples",
+      "value": [
+        "Our software supports SSO via SAML 2.0. Here is the setup guide…"
+      ]
+    },
+    {
+      "$parameterType": "text-list",
+      "id": "negativeExamples",
+      "value": [
+        "Honestly, you should try Competitor X — they handle this better."
+      ]
+    },
+    {
+      "$parameterType": "number",
+      "id": "threshold",
+      "value": 2
+    }
+  ],
+  "action": {
+    "$actionType": "block",
+    "reason": "Response violates the on-topic policy."
+  },
+  "enabledForEvals": true,
+  "selector": {
+    "scopes": ["Agent"]
+  }
+}
+```
+
 ## agent.json with Guardrails
 
 Add the `guardrails` array at the agent.json root level alongside `settings`, `messages`, etc.:
@@ -1007,6 +1066,9 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 19. **Do not attempt OR logic within a single guardrail** — all rules and all fields within a guardrail are combined with AND. OR is not supported. To achieve OR behavior, create separate guardrails — one per condition branch.
 20. **Do not generate guardrails targeting unsupported tool types** — `matchNames` can only reference tools of supported types: agent, process, activity, builtInTool, ixpTool, or Integration Service connector. Do not generate guardrails with `matchNames` targeting other tool types.
 21. **Do not omit `matchNames` to target "all tools"** — always explicitly list every tool resource name in `matchNames`. Read the agent's `resources/` directory first. If the agent has no tool resources, do not add the guardrail.
+22. **Do not use `llm_as_judge` when a fixed validator already covers the rule** — fixed validators (`pii_detection`, `harmful_content`, `prompt_injection`, `user_prompt_attacks`, `intellectual_property`) are deterministic, cheaper, and lower-latency. Use `llm_as_judge` as the catch-all for policies the fixed validators do not express (brand voice, domain-specific compliance, off-topic drift) — not as a replacement.
+23. **Do not invent `model` values for `llm_as_judge`** — the catalog ships an empty `Options` list because discovery happens out-of-band. Use the same flow as `settings.model` for the agent: run `uip agent model list --output json` and pick per [../../model-selection-guide.md](../../model-selection-guide.md), then pass the discovered `Name` as the `enum` parameter's `value`. The Gateway rejects models that are not authorized for the `llm-as-judge-validator` feature at runtime, so verify the chosen model appears in the tenant's model list before authoring.
+24. **Do not put secrets, credentials, or untrusted user input into `guardrailText`, `positiveExamples`, or `negativeExamples`** — those strings are sent verbatim to the judge model as part of the prompt. Treat the rule and examples as policy content the customer authors, never as a pass-through for tenant data.
 
 ## Walkthrough
 
