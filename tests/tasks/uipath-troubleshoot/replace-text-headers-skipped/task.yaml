@@ -1,0 +1,142 @@
+task_id: skill-troubleshoot-replace-text-headers-skipped
+description: >
+  UiPath troubleshooting agent must diagnose a Replace Text silent miss where
+  the [CompanyName] placeholder in the document's header/footer is left
+  unchanged while the body copy IS replaced, because the project pins an older
+  UiPath.Word.Activities (1.6.0) that scans only the primary body text. The
+  job SUCCEEDS. Success = agent matches the replace-text-headers-textboxes-
+  skipped playbook AND recommends updating UiPath.Word.Activities to a version
+  that covers headers/footers/text boxes, not treating the green job as
+  healthy or blaming the template/Search value.
+tags: [uipath-troubleshoot, e2e, orchestrator, word-activities, replace-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My BrandedLetterFill process runs green in Orchestrator (folder "Branded
+  Docs", machine MOCK-ROBOT-08) — the job shows Successful — but the company
+  name in the letter's HEADER still shows the literal "[CompanyName]"
+  placeholder. The same placeholder in the body of the letter gets replaced
+  fine. No error anywhere.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the replace-text-headers-textboxes-skipped playbook AND recommended updating the package"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My BrandedLetterFill process shows Successful in Orchestrator (folder
+         'Branded Docs', machine MOCK-ROBOT-08), but the company name in the
+         letter's HEADER still shows the literal '[CompanyName]' placeholder.
+         The body copy is replaced fine. No error."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/replace-text-headers-textboxes-skipped.md
+        because "body replaced, header/footer/text-box copy survives, no
+        error" is the signature of an older UiPath.Word.Activities version
+        scanning only the primary body text.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The body placeholder was replaced (log: "Replaced 1 occurrence
+            in the document body"), but the same placeholder in the
+            header/footer was not touched.
+          - project.json pins an OLD UiPath.Word.Activities ([1.6.0]) that
+            only scans body text; header/footer/text-box story ranges are
+            outside its scanned range, so those placeholders are never
+            matched. The job is Successful (no error) because the body
+            replacement worked.
+        The reference fix:
+          - Update UiPath.Word.Activities to the latest version (newer
+            versions natively replace inside headers, footers, and text
+            shapes), rebuild, re-publish. (If upgrade is impossible:
+            address the header story range explicitly or do the replacement
+            in code over the document XML.)
+
+      DIMENSION C -- Right target
+        The agent must tie the header miss to the package version / non-body
+        story range, NOT conclude the template is wrong, the Search value is
+        wrong, or the job is healthy because it is Successful, and NOT
+        fabricate a host action.
+
+      SCORING RUBRIC:
+        1.0  Agent matched replace-text-headers-textboxes-skipped AND
+             identified the older UiPath.Word.Activities version scanning
+             only body text (header/footer/text box outside scanned range)
+             as the cause AND recommended updating the package (or, as a
+             fallback, addressing the header range explicitly / in code) —
+             without treating the green job as healthy or blaming the
+             template/Search value.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "update
+             something" without naming the UiPath.Word.Activities upgrade).
+        0.5  Recognized the header isn't replaced but attributed it to the
+             wrong cause (run-split placeholder, wrong Search value, loop
+             issue), or matched a sibling Replace Text playbook.
+        0.2  Restated the symptom without a cause.
+        0.0  Concluded the job is healthy because Successful, OR blamed the
+             template / Search value / a crash / lock, OR fabricated an
+             action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the header bug. The job shows
+    Successful and the body placeholder is replaced, but the header still
+    shows the literal "[CompanyName]" placeholder. You are away from the
+    robot host and only have Orchestrator access. You trust the agent and
+    want a diagnosis plus the fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the fix at the end."
+    - "If asked where the unreplaced placeholder is, confirm it is in the page header (and the body copy of the same placeholder did get replaced)."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

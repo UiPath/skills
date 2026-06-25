@@ -14,7 +14,6 @@ dataset:
     - uipath-api-workflow.jsonl
     - uipath-automation-discovery.jsonl
     - uipath-coded-apps.jsonl
-    - uipath-data-fabric.jsonl
     - uipath-troubleshoot.jsonl
     - uipath-feedback.jsonl
     - uipath-governance.jsonl
@@ -62,11 +61,6 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-coded-apps activation"
     skill_name: uipath-coded-apps
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-  - type: skill_triggered
-    description: "uipath-data-fabric activation"
-    skill_name: uipath-data-fabric
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
   - type: skill_triggered

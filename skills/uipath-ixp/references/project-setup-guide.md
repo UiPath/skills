@@ -36,7 +36,7 @@ uip ixp projects import-taxonomy <project-name> <taxonomy-file> --output json
 The taxonomy file can be in either format — the CLI auto-detects based on which keys are present:
 
 - `{ "field_types": [...], "label_group": {...} }` — use when importing a taxonomy suggested by a previous `project create` run
-- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project (exported via `uip ixp projects get-taxonomy`)
+- `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or cloning from an existing project. `projects get-taxonomy` returns these under a `dataset` wrapper (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` reads `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (e.g. `jq .Data.dataset`), not the whole response
 
 Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
