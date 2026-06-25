@@ -24,14 +24,37 @@ If `routingName` is empty: tell the user to run the build first.
 
 ---
 
-## Step 1 — Provision AdminDashboards folder (skip if folderKey already set)
+## Step 0 — Determine the deployment target (governance vs standard)
+
+A dashboard deploys one of two ways — pick before anything else:
+
+| Target | Where it goes | Tags | Elevated perms? |
+|--------|---------------|------|-----------------|
+| **Governance / admin dashboard** | the `AdminDashboards` folder, pinnable to the Governance section | `governance` (+ `dashboard` if pinned) | yes — Administrators get Folder Administrator on AdminDashboards |
+| **Standard dashboard app** | a regular Orchestrator folder the user chooses | `dashboard` | no |
+
+**Infer the target from `.dashboard/state.json`, then let the user correct it in the plan (Step 4):**
+- **Governance** when any widget's metric is a governance / runtime-compliance metric — its name starts with or equals `violations-`, `agents-by-violations`, `agent-governance-violations`, `recent-violations`, `rule-evaluations-`, `rule-compliance`, `agent-compliance-report`, `policy-denials`, `governance-verdicts`.
+- **Standard** otherwise — a dashboard that happens to show agent health / jobs / KPIs is a normal app, not a governance dashboard.
+
+If `deployment.folderKey` is already set in state.json (a prior deploy), keep that target — don't re-ask.
+
+When genuinely ambiguous (or the user's wording conflicts with the inference), ask ONE structured-choice question (SKILL.md Rule 18): *"Deploy as a governance/admin dashboard (Admin portal, elevated) or a standard dashboard app (a folder you pick)?"* A free-text reply takes precedence.
+
+Everything below marked **(governance only)** runs solely for the governance target; the **(standard only)** notes give the regular-app path.
+
+---
+
+## Step 1 — Provision AdminDashboards folder *(governance only; skip if folderKey already set)*
+
+**Standard target:** skip this step. Resolve the user's chosen deploy folder to a key instead — ask which folder (or use one they named), then `uip or folders list --output json` and match on `Name` (per SKILL.md Rule 11). Persist it as `deployment.folderKey`/`folderName` in state.json. No folder is created and no roles are assigned.
 
 If `deployment.folderKey` is already in state.json, skip this entire step.
 
 Run the provisioning script (silent — no output to user until "AdminDashboards folder is ready"):
 
 ```bash
-node "<SKILL_BASE_DIR>/assets/scripts/setup-admin-folder.mjs" "AdminDashboards" "<PROJECT_DIR>"
+node "<SKILL_BASE_DIR>/assets/scripts/dashboards/setup-admin-folder.mjs" "AdminDashboards" "<PROJECT_DIR>"
 ```
 
 `<PROJECT_DIR>` is the dashboard project directory (e.g. `<cwd>/agent-health-x7k2`). The script reads `.dashboard/state.json` to check if already provisioned and exits immediately if so.
@@ -77,29 +100,33 @@ Step 7 (Publish) still auto-bumps and retries on a 409 / "already exists" as a b
 
 ---
 
-## Step 4 — Show deploy plan and ask about Governance pinning
+## Step 4 — Show deploy plan (and, governance only, ask about pinning)
+
+`<FOLDER_NAME>` is `AdminDashboards` for the governance target, or the user's chosen folder (state.json `deployment.folderName`) for the standard target.
 
 ```
 Your **<APP_NAME>** is ready to be deployed.
 
 📦  Version:    <SEMVER> → <NEXT_SEMVER>
 🔗  URL path:   <ROUTING_NAME>
-📁  Folder:     AdminDashboards
+📁  Folder:     <FOLDER_NAME>
 🔄  Type:       Fresh deploy  OR  Updating existing deployment
 ```
 
-If this is a fresh deploy, also show:
+**(governance only)** If this is a fresh deploy, also show:
 ```
 ⚠️  I'll create the AdminDashboards folder and assign Administrators as Folder Administrators.
     This requires elevated permissions — the coding agent will ask for your approval once.
 ```
+**(standard only)** Show no elevated-permissions warning — deploying to a regular folder assigns no roles.
 
 End the deploy plan with: `Confirm to deploy, or tell me what to change.` — **pure text, no tool calls in this response. HALT.**
 
 **On the user's reply:**
 - Change request / cancel → handle it; re-present if changed
-- Confirmation that already settles pinning (e.g. "deploy and pin" / "deploy without pinning") → proceed with the matching tags, ask nothing
-- Bare confirmation → ask ONE short structured-choice question (SKILL.md Rule 17): *"Pin this dashboard to the Governance UI?"*
+- **(standard target)** Any confirmation → proceed with `--tags "dashboard"`, ask nothing. There is no Governance pinning for a standard dashboard.
+- **(governance target)** Confirmation that already settles pinning (e.g. "deploy and pin" / "deploy without pinning") → proceed with the matching tags, ask nothing
+- **(governance target)** Bare confirmation → ask ONE short structured-choice question (SKILL.md Rule 18): *"Pin this dashboard to the Governance UI?"*
 
   | Option | Meaning |
   |--------|---------|
@@ -149,7 +176,7 @@ cd <PROJECT_DIR> && uip codedapp pack dist -n "<APP_NAME>" --version "<NEXT_SEMV
 A **template** is a dashboard distributed in the ejected regime: one artifact carrying both the deploy face (`dist/`) and the agent-modifiable source. Before `pack`, stage the source + manifest into `dist/_source/`:
 
 ```bash
-cd <PROJECT_DIR> && node "${SKILL_BASE_DIR}/assets/scripts/build-dashboard.mjs" --pack-template <PROJECT_DIR>
+cd <PROJECT_DIR> && node "${SKILL_BASE_DIR}/assets/scripts/dashboards/build-dashboard.mjs" --pack-template <PROJECT_DIR>
 ```
 
 This stages a **tenant-neutral** modify-face (`intent.json`, `src/`, config files, `uipath.json` with tenant identity blanked — only `scope` retained) plus `template.json` (scaffoldVersion, sdkFloor, requiredScopes, routingName, `ejected: true`) into `dist/_source/`, then emits `TEMPLATE_PACKED` with the `pack` command. It never stages `.dashboard/`, `node_modules`, or `dist`. Run the normal `pack` (above) afterward.
@@ -178,9 +205,10 @@ Read the JSON output (silent — no output shown until success or error):
 
 ## Step 8 — Deploy
 
-Set tags based on the user's pinning choice:
-- "deploy and pin" → tags = `"governance,dashboard"`
-- "deploy" → tags = `"governance"`
+Set tags based on the deployment target (and, for governance, the user's pinning choice):
+- **Standard target** → tags = `"dashboard"`
+- **Governance target**, "deploy and pin" → tags = `"governance,dashboard"`
+- **Governance target**, "deploy" (no pin) → tags = `"governance"`
 
 Two flags differ from pack/publish — getting these wrong is the most common deploy failure:
 
@@ -255,11 +283,12 @@ fs.renameSync(fp + '.tmp', fp)
 
 <APP_URL>
 
-Version <NEXT_SEMVER> · AdminDashboards
+Version <NEXT_SEMVER> · <FOLDER_NAME>
 ```
 
-If pinned: "Your dashboard is now visible in the Governance section."
-If not: "To pin it later, say 'redeploy and pin to governance'."
+**(governance only)**
+- If pinned: "Your dashboard is now visible in the Governance section."
+- If not: "To pin it later, say 'redeploy and pin to governance'."
 
 Always: "To update after making changes, say 'deploy this dashboard' again."
 
@@ -286,4 +315,5 @@ Always: "To update after making changes, say 'deploy this dashboard' again."
 - `--version` goes on **pack and publish only — NOT deploy.** Deploy resolves the latest published version; passing `--version` causes a false "has not been published yet" error.
 - `--path-name` goes on **fresh deploy only** — it sets the URL slug. On an upgrade the routing already exists; re-passing it errors "routing name must be unique."
 - Routing name is permanent after the first successful deploy.
-- Always include `--tags` — minimum `governance`, add `dashboard` if the user opted to pin.
+- Always include `--tags`. Standard target → `dashboard`. Governance target → minimum `governance`, add `dashboard` if the user opted to pin.
+- Determine governance vs standard target first (Step 0). Only the governance target provisions `AdminDashboards`, assigns elevated roles, and offers Governance pinning; the standard target deploys to a user-chosen folder with no role assignment and no pin prompt.

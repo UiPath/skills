@@ -48,7 +48,7 @@ Fire all of these simultaneously. Use multiple tool calls in one response — do
 | `references/dashboards/primitives/tier-resolution.md` *(from skill root)* | Metric classification and SDK validation rules |
 | `references/dashboards/aesthetic/layout-patterns.md` *(from skill root)* | Layout rules |
 | `references/dashboards/aesthetic/charting.md` *(from skill root)* | Chart-type selection, colour tokens, delta polarity |
-| `assets/scripts/capability-registry.json` *(from skill root)* | Metric catalog (T1/T2 display hints) |
+| `assets/scripts/dashboards/capability-registry.json` *(from skill root)* | Metric catalog (T1/T2 display hints) |
 | `references/sdk/agents.md` *(from skill root)* | Agents + Agent Memory (Insights RTM, SDK ≥ 1.4.1) — validate agent/memory metrics |
 | `references/sdk/orchestrator.md` *(from skill root)* | Jobs/Queues/Processes methods — validate job/process metrics |
 
@@ -79,14 +79,10 @@ uip login status --output json
 
 **Pre-warm (same message — `run_in_background: true` on the Bash tool call):**
 
-Derive the routing name from the user's request now (e.g. `"agent health dashboard"` → `"agent-health-x7k2"`). The project lands at `<cwd>/<ROUTING_NAME>`. Pre-warm = **extract the starter kit there, then install deps** — both in the background. The skill ships no unzip code, so extract with your OS's native tool (chain with `&&` so it's one background call):
+Derive the routing name from the user's request now (e.g. `"agent health dashboard"` → `"agent-health-x7k2"`). The project lands at `<cwd>/<ROUTING_NAME>`. Pre-warm = **extract the starter kit there, then install deps** — both in the background. Extraction uses the OS `tar` (built into Windows 10+, macOS, Linux — identical on every platform, no hand-rolled code), feeding the archive on **stdin** (`-f -`) so GNU tar doesn't misread the `C:\…` drive colon as a remote host (see `plugins/build/impl.md § The starter-kit archive`). One background call (chain with `&&`):
 
 ```bash
-# Windows (Git Bash):
-mkdir -p "<ROUTING_NAME>" && powershell -NoProfile -Command "Expand-Archive -LiteralPath '<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.zip' -DestinationPath '<ROUTING_NAME>' -Force" && node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"
-
-# macOS / Linux:
-mkdir -p "<ROUTING_NAME>" && unzip -o "<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.zip" -d "<ROUTING_NAME>" && node "<SKILL_BASE_DIR>/assets/scripts/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"
+mkdir -p "<ROUTING_NAME>" && tar -xz -C "<ROUTING_NAME>" -f - < "<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz" && node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" --prewarm "<ROUTING_NAME>"
 ```
 
 The extract is fast; `--prewarm` then runs `npm ci` (the slow part) so it overlaps plan approval. ⚠️ `run_in_background: true` is a tool call parameter, not a shell flag. Without it, the call blocks before the plan appears.
@@ -129,20 +125,22 @@ uip login status --output json
 
 ### Step 2 — Present the deploy plan (pure text, zero CLI calls)
 
-Read `.dashboard/state.json` in memory to get the app name, version, and routing name. Then output the plan:
+Read `.dashboard/state.json` in memory to get the app name, version, and routing name. First determine the deployment target — **governance/admin dashboard** vs **standard dashboard app** — per `plugins/deploy/impl.md` Step 0. The folder line and the pin question depend on it.
 
 ```
 Your **[Dashboard Name]** is ready to be deployed.
 
 📦  Version:    [current] → [bumped]
 🔗  URL path:   [routing-name]
-📁  Folder:     AdminDashboards
+📁  Folder:     [AdminDashboards (governance) | user-chosen folder (standard)]
 🔄  Type:       Fresh deploy  OR  Updating existing deployment
 
-📌  Do you want to pin this dashboard to the Governance UI?
+📌  (governance only) Do you want to pin this dashboard to the Governance UI?
    → "deploy and pin" — visible in the Governance section
    → "deploy" — deploy without pinning
 ```
+
+A standard dashboard deploys to a user-chosen folder with no pin question — see impl.md Step 4.
 
 **HALT. Do not run any CLI command until the user confirms.**
 
