@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-25T07:39:48.866Z",
+      "Message": "Attach Document: C:\\TestData\\evidence\\run-report.pdf\r\nin Main.xaml\r\n    at AttachDocument \"Attach Document\"\r\n    at Sequence \"Archive Evidence\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.IO.FileNotFoundException\r\n   at UiPath.Shared.Testing.Orchestrator.Services.AttachDocumentService.AttachDocument(String filePath, IEnumerable`1 tags, CancellationToken cancellationToken)\r\n   at UiPath.Testing.Activities.AttachDocument.ExecuteAsync(NativeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskNativeImplementation.BookmarkResumptionCallback(NativeActivityContext context, Object value)\r\n   at UiPath.Shared.Activities.AsyncTaskNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at UiPath.Shared.Activities.ContinuableAsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

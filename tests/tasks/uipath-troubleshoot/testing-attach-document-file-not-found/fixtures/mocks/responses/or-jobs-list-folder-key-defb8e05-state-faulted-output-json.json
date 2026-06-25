@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "e192429e-1248-4872-863a-24ad8f6e88fe",
+      "State": "Faulted",
+      "ProcessName": "EvidenceArchival",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-25T07:39:46.717Z",
+      "EndTime": "2026-06-25T07:39:50.263Z",
+      "CreationTime": "2026-06-25T07:39:15.293Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

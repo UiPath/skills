@@ -1,0 +1,65 @@
+{
+  "version": 2,
+  "_doc": "Faithful-replay fixtures captured from a real faulted Orchestrator job (key e192429e-1248-4872-863a-24ad8f6e88fe, process EvidenceArchival, folder Shared). UiPath.Testing.Activities.AttachDocument threw System.IO.FileNotFoundException because FilePath pointed at a non-existent file (C:\\TestData\\evidence\\run-report.pdf). Scrubbed: host -> MOCK-HOST, LocalSystemAccount -> UIPATH\\REPLACEMENT_USER, personal-workspace email -> original_email@test.com.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"defb8e05-e36b-4c36-bf11-0b4d08ce6cd1\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-defb8e05-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-defb8e05-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-defb8e05-state-faulted-output-json.json",
+      "_doc": "Generic jobs-list fallback -> same single target job."
+    },
+    {
+      "match": "or jobs get \"e192429e-1248-4872-863a-24ad8f6e88fe\" --output json",
+      "file": "or-jobs-get-e192429e-output-json.json"
+    },
+    {
+      "match": "or jobs get e192429e-1248-4872-863a-24ad8f6e88fe --output json",
+      "file": "or-jobs-get-e192429e-output-json.json"
+    },
+    {
+      "match": "or jobs history \"e192429e-1248-4872-863a-24ad8f6e88fe\" --output json",
+      "file": "or-jobs-history-e192429e-output-json.json"
+    },
+    {
+      "match": "or jobs history e192429e-1248-4872-863a-24ad8f6e88fe --output json",
+      "file": "or-jobs-history-e192429e-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"e192429e-1248-4872-863a-24ad8f6e88fe\" --level Error --output json",
+      "file": "or-jobs-logs-e192429e-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs e192429e-1248-4872-863a-24ad8f6e88fe --level Error --output json",
+      "file": "or-jobs-logs-e192429e-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"e192429e-1248-4872-863a-24ad8f6e88fe\" --output json",
+      "file": "or-jobs-logs-e192429e-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs e192429e-1248-4872-863a-24ad8f6e88fe --output json",
+      "file": "or-jobs-logs-e192429e-level-error-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback; both trace forms (or jobs traces / traces spans get) fall through to [] — the FileNotFoundException signature is fully carried by jobs get/logs."
+  }
+}

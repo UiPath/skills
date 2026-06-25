@@ -1,0 +1,155 @@
+task_id: skill-troubleshoot-testing-attach-document-file-not-found
+description: >
+  UiPath troubleshooting agent must diagnose an EvidenceArchival job that
+  faults the moment its Attach Document activity
+  (UiPath.Testing.Activities.AttachDocument) runs. The activity throws
+  System.IO.FileNotFoundException whose message is the bare file path
+  C:\TestData\evidence\run-report.pdf, because its FilePath input points at
+  a file that does not exist at runtime. The activity's own File.Exists check
+  faults BEFORE any Orchestrator / test-case call, so the stack has no
+  test-case frames. Success = agent matches the attach-document-file-not-found
+  playbook, cites the FilePath from Main.xaml, and recommends correcting /
+  validating the path (or guarding with File.Exists) without blaming
+  Orchestrator connectivity, permissions, a missing test-job context, or a
+  different activity.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My EvidenceArchival process keeps faulting in Orchestrator (folder Shared).
+  Diagnose why and how to fix it. The project source for the failing process
+  is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched attach-document-file-not-found and reached the same conclusion as RESOLUTION.md: FilePath points at a missing file, fix is to correct/validate the path"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My EvidenceArchival process keeps faulting in Orchestrator (folder
+         Shared). Diagnose why and how to fix it. The project source for the
+         failing process is in the current working directory."
+
+      Grade ONLY the agent's final response to the user and its tool calls.
+      Do NOT inspect or require any internal investigation state under
+      .local/investigations/ (state.json, hypotheses.json, matched_playbooks,
+      scope.domain, requirements, is_root_cause, evidence shapes). What the
+      agent presents IS the contract.
+
+      FAULT the agent must identify:
+        A System.IO.FileNotFoundException raised by the Attach Document
+        activity (UiPath.Testing.Activities.AttachDocument). The exception
+        MESSAGE is the file path itself (C:\TestData\evidence\run-report.pdf).
+        The fault is raised by the activity's own File.Exists check BEFORE any
+        Orchestrator / test-case call — the stack shows
+        AttachDocumentService.AttachDocument with no test-case frames.
+
+      CAUSE the agent must reach:
+        The Attach Document activity's FilePath input points at a file that
+        does not exist at runtime: C:\TestData\evidence\run-report.pdf. This
+        matches the attach-document-file-not-found playbook. The agent should
+        cite the FilePath value read from Main.xaml.
+
+      RESOLUTION the agent must recommend:
+        Correct / validate the FilePath so the file exists at that path at
+        runtime (fix the path, ensure the producing step wrote the file there,
+        or anchor a relative path), and/or guard the activity with a
+        File.Exists check (or Try Catch) before Attach Document.
+
+      Evidence the agent matched it:
+        (1) the agent's final response names the
+            attach-document-file-not-found playbook (or its file under
+            references/activity-packages/testing-activities/playbooks/); AND
+        (2) a tool call that Read a file under
+            references/activity-packages/testing-activities/playbooks/.
+
+      ANTI-FABRICATION HARD GATE (cap the score at 0.2 if the agent concludes
+      any of these as the root cause):
+        - Orchestrator connectivity / the robot could not reach Orchestrator.
+        - A missing Test-Job / test-case context ("must run from a test set").
+          Note: AttachDocument only attaches to a test case inside a Test Job,
+          but the FileNotFoundException is raised by the File.Exists check
+          BEFORE that and IS the real fault — do NOT let the agent dismiss it
+          as "expected outside a test job".
+        - A permissions / access-denied problem.
+        - A different activity or a different package.
+        - An invented config, asset, policy, or setting.
+
+      SCORING RUBRIC:
+        1.0  Agent (a) names the System.IO.FileNotFoundException from Attach
+             Document with the message = the file path, raised before any
+             Orchestrator/test-case call, (b) attributes it to the FilePath
+             input pointing at a non-existent file
+             (C:\TestData\evidence\run-report.pdf), citing Main.xaml, AND
+             (c) recommends correcting/validating the FilePath (ensure the
+             file exists / fix the path / guard with File.Exists).
+        0.8  Correct cause (Attach Document FilePath points at a missing file)
+             AND recommends the path fix, but omits citing Main.xaml or part
+             of the resolution.
+        0.5  Recognized a FileNotFoundException / missing-file class but did
+             not tie it to the Attach Document FilePath input, or offered no
+             actionable fix.
+        0.2  Surfaced the exception to the user without diagnosis, OR concluded
+             one of the WRONG ANSWERS above.
+        0.0  Wrong cause unrelated to a missing file, or the agent fabricated
+             a config / host / Orchestrator action it could not perform.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing EvidenceArchival process.
+    You are away from the Robot host (MOCK-HOST), only have Orchestrator
+    access, and have the failing project source in your current working
+    directory. You trust the agent's expertise and are waiting for a diagnosis
+    and a fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, testing-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the fix at the end."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
