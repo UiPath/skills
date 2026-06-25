@@ -11,7 +11,7 @@ description: >
   switch to Append Range Workbook standalone) with awareness of the
   host's Excel-installed context.
 
-tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, append-range, variant-mismatch]
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, append-range, variant-mismatch]
 
 agent:
   type: claude-code

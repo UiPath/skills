@@ -13,7 +13,7 @@ description: >
   the target's column-name list) — the workflow author's mental model
   of by-name mapping is the trap the test catches.
 
-tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, append-range, column-schema-mismatch]
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, append-range, column-schema-mismatch]
 
 agent:
   type: claude-code
