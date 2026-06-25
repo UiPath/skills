@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "c5d9bf45-8a55-4ea3-abb2-b8a8cca7da02",
+      "State": "Faulted",
+      "StartTime": "2026-06-22T15:10:10.543Z",
+      "EndTime": "2026-06-22T15:10:14.957Z",
+      "ReleaseName": "DriveSync",
+      "Source": "Agent",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 4015234
+    }
+  ]
+}

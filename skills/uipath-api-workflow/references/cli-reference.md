@@ -132,6 +132,7 @@ uip api-workflow registry stub <activity-type-id> \
 | `--instance <n>` | no | Suffix for slot/export bucket key. Default `1`. `--instance 2` produces `<Name>_2` keys. |
 | `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. The export bucket key always derives from `objectName + "_<n>"` (both Curated and Generic) and is not affected by this flag. |
 | `-i, --inputs <json>` | no | JSON object mapping field names to values. Field names match the IS schema (flat dotted keys — `"message.subject"`, not `{message:{subject:…}}`). Pass bare strings for literals; `${...}` for expression references. |
+| `--resource-key <field>=<key>` | no (repeatable) | Bind a Solution-resource picker field (listed in `Data.SolutionResourceFields`) to a solution resource **key**, so StudioWeb's picker renders the selection. The key is the `key` field of the matching file under the solution's `resources/` tree (e.g. `resources/solution_folder/process/process/<Name>.json`). The field's *value* (the resource name) still goes via `--inputs`. Requires a StudioWeb build with `savedResourceSelections` support; older builds ignore the entry (runtime unaffected). |
 
 Success output:
 ```json
@@ -152,7 +153,7 @@ Success output:
 }
 ```
 
-`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.Parameters` (query/path/multipart) and `Data.RequestFields` (body) list the operation's inputs with `required` flags; `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind).
+`Data.Activity` drops directly into the root sequence's `do` array. `Data.ExportBucketKey` is what `$context.outputs.<X>` reads as downstream — bind expressions against this, NOT against `Data.SlotKey`. `Data.Parameters` (query/path/multipart) and `Data.RequestFields` (body) list the operation's inputs with `required` flags; `Data.ResponseFields` lists the fields the IS schema says will be present on the activity output (under `.content.<field>` for IntSvc kind). `Data.SolutionResourceFields` (when present) lists fields StudioWeb renders as Solution-resource pickers — see [Solution resources as activity fields](connector-activity-discovery.md#solution-resources-as-activity-fields-run-job-add-queue-item-) for the authoring recipe.
 
 `Data.Warnings` (when present):
 - `"IS Elements metadata could not be fetched…"` → IS schema lookup failed; stub uses fallback path `/<objectName>` and ships no `requestFields`. Endpoint may be wrong (no hub prefix, no multipart declaration).
@@ -207,7 +208,7 @@ See [connector-activity-discovery.md](connector-activity-discovery.md) for the f
 
 ## `uip api-workflow bindings sync`
 
-Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Pure-local transformation — no auth, no API calls. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resources refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
+Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Connection bindings are derived locally; **Solution-resource bindings** (process/queue/asset fields like Run Job's `ReleaseName`) are derived by querying IS metadata for each activity's object — when IS is unreachable, generation is skipped and any pre-existing entries of those kinds are preserved rather than dropped. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resources refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
 
 **When to run.** After every `registry stub --connection-id <uuid>` that adds an IntSvc activity to a workflow inside a `Solution/` tree. Always paired with `uip solution resources refresh` (the next step in the typical sequence).
 
@@ -232,15 +233,17 @@ Success output:
   "Code": "BindingsSync",
   "Data": {
     "BindingsPath": "<dir>/bindings_v2.json",
-    "ResourceCount": 1,
+    "ResourceCount": 2,
     "ActivitiesVisited": 1,
     "IntSvcActivities": 1,
-    "DuplicatesCollapsed": 0
+    "DuplicatesCollapsed": 0,
+    "ResourceBindings": 1,
+    "PreservedResources": 0
   }
 }
 ```
 
-`ResourceCount` is the number of unique connections in the output (one binding per unique UUID). `DuplicatesCollapsed` reports activities that shared a connection — two Outlook activities reading the same mailbox count as 1 binding, with `DuplicatesCollapsed: 1`.
+`ResourceCount` is the total entries written (connections + resource bindings + preserved). `DuplicatesCollapsed` reports activities that shared a connection — two Outlook activities reading the same mailbox count as 1 binding, with `DuplicatesCollapsed: 1`. `ResourceBindings` counts Solution-resource entries generated from IS metadata (e.g. `process | RPA Workflow` for a Run Job activity); `PreservedResources` counts pre-existing non-connection entries carried over because this run did not regenerate them.
 
 Failure modes:
 - `"Workflow file not found: <path>"` — `--workflow` does not exist. Pass an existing path.

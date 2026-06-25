@@ -1,0 +1,5 @@
+{
+  "Result": "Failure",
+  "Message": "Error reading job traces response",
+  "Instructions": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+}

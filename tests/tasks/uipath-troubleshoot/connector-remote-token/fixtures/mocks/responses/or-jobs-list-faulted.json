@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "9e1f3a5c-7b2d-4f6e-8a0c-1d3b5f7e9a2c",
+      "State": "Faulted",
+      "StartTime": "2026-06-20T06:41:33.210Z",
+      "EndTime": "2026-06-20T06:41:36.882Z",
+      "ReleaseName": "InvoiceTrigger",
+      "Source": "Agent",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 5048771
+    }
+  ]
+}

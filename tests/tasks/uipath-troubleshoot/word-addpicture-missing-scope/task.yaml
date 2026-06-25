@@ -1,0 +1,156 @@
+task_id: skill-troubleshoot-word-addpicture-missing-scope
+description: >
+  UiPath troubleshoot agent must diagnose a Word "Add Picture"
+  (WordAddImage) failure where the activity is placed OUTSIDE the
+  "Use Word File" scope. In Main.xaml the WordAddImage activity is a
+  SIBLING of UseWordFile in the outer Main Sequence (after the scope's
+  closing tag), not nested inside UseWordFile.Body. By the time it runs
+  the scope has exited and no document is open, so it faults with
+  InvalidOperationException: the activity must be used inside a "Use Word
+  File" / "Word Application Scope". Agent must match the
+  activity-packages/word-activities/playbooks/add-picture-failures.md
+  playbook (missing-scope branch / C1), identify from the workflow source
+  that Add Picture is not nested in the scope body, and recommend moving
+  it inside the Use Word File scope, then re-validating.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, missing-scope]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My Orchestrator job WordLogoStamp from folder Shared just faulted —
+  immediately, about a second after it started. It stamps our company
+  logo into the monthly Word report, and it dies with:
+  `System.InvalidOperationException: The 'Add Picture' activity must be used inside a 'Use Word File' or 'Word Application Scope' activity. No Word document is open in the current scope.`
+  This makes no sense to me — I DO have a Use Word File in the workflow,
+  and the document opens fine. Why is it saying there's no document open,
+  and how do I fix it?
+
+  The failing project source is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the add-picture-failures playbook AND identified the missing-scope branch (C1): Add Picture sits outside the Use Word File scope (sibling, not nested) so it has no open document context; fix is to move Add Picture inside the Use Word File scope body, then re-validate"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The attached Reference (RESOLUTION.md) is the
+      authoritative ground truth.
+
+      The user's request was:
+        "My Orchestrator job WordLogoStamp from folder Shared just faulted
+         immediately with
+         System.InvalidOperationException: The 'Add Picture' activity must be
+         used inside a 'Use Word File' or 'Word Application Scope' activity.
+         No Word document is open in the current scope. This makes no sense —
+         I DO have a Use Word File in the workflow ... Why is it saying there's
+         no document open, and how do I fix it?"
+
+      Grade what the agent PRESENTED to the user (its final response is the
+      contract). Score BOTH dimensions in a single number.
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/word-activities/playbooks/add-picture-failures.md
+        (the Word "Add Picture" / WordAddImage failures playbook). The
+        relevant branch is C1 — activity outside a Word scope (missing scope).
+        Evidence (any one suffices): the agent names/reads this playbook,
+        state.json references it, or the agent's narrative clearly identifies
+        the Word Add Picture failure family and the missing-scope branch.
+        NOT penalized: reading neighbouring branches (COM interop, bookmark,
+        image-variable) while ruling them out.
+
+      DIMENSION B -- Same root cause + fix as RESOLUTION.md
+        Correct root cause (REQUIRED for a high score): the `Add Picture`
+        (`WordAddImage`) activity is placed OUTSIDE the `Use Word File` scope —
+        it is a SIBLING of `UseWordFile` in the outer Main Sequence (after the
+        scope's closing tag), NOT nested inside `UseWordFile.Body`. The scope
+        opens the document, then exits and closes the document context; the
+        sibling `Add Picture` then runs with no open document and faults.
+        Both signals should be present for full credit: (1) the source shows
+        `Add Picture` is a sibling of / outside the `Use Word File` body (not
+        nested in it), and (2) the activity therefore has no open document
+        context at runtime (the document opened and the scope closed before it
+        ran) — the decisive smoking gun.
+
+        Correct fix (at least one): move the `Add Picture` activity INSIDE the
+        `Use Word File` (or `Word Application Scope`) body so it executes
+        against the open document, then re-validate / re-run.
+
+        CRITICAL DISTINCTION: concluding instead that the document file is
+        missing/corrupt, that the `logo.png` image file is missing, or that the
+        Word activities package is not installed — rather than the
+        placement/scope-nesting cause — is the WRONG root cause. Cap such
+        answers at 0.5.
+
+      SCORING RUBRIC (single score reflecting both dimensions):
+        1.0  Matched the add-picture-failures playbook AND identified the
+             missing-scope root cause (Add Picture outside / sibling of the Use
+             Word File scope, so no open document context) AND recommended
+             moving Add Picture inside the scope body then re-validating.
+        0.8  Missing-scope root cause + correct fix, but playbook match is
+             weak/implicit; OR playbook + cause correct but fix is vague.
+        0.5  Concluded the document/image file is missing/corrupt or the
+             package isn't installed (wrong cause); OR only one dimension
+             correct.
+        0.2  Recognized a Word Add Picture / scope-related failure but neither
+             matched the playbook nor reached the missing-scope placement cause.
+        0.0  Wrong conclusion (file missing/corrupt, COM interop, bookmark,
+             image-variable, package not installed) or got blocked.
+
+      Be substance-focused, not schema-focused. The decisive signal is that
+      `Add Picture` is NOT nested inside the `Use Word File` scope body (it is
+      a sibling that runs after the scope closes) — penalize agents that miss
+      the placement/nesting cause.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and root cause>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing WordLogoStamp process.
+    You are waiting for the troubleshooting agent to finish its investigation
+    and trust its expertise. You only have the information in your initial
+    report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, rpa, ui-automation), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

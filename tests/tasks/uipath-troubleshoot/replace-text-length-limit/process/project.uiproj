@@ -1,0 +1,6 @@
+{
+  "Name": "TermsLetterGen",
+  "ProjectType": "Process",
+  "Description": "Reproduces a classic Replace Text 256-character input limit failure (ArgumentException) when the replacement clause exceeds the classic activity cap.",
+  "MainFile": "Main.xaml"
+}

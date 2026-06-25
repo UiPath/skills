@@ -1,0 +1,6 @@
+{
+  "Name": "ExcelLedgerReport",
+  "ProjectType": "Process",
+  "Description": "Repro: Classic Excel Application Scope (COM-only) on a Robot host with Excel installed but a corrupted COM/type-library registration after a Microsoft 365 in-place upgrade. Scope acquisition fails with 'Make sure Excel is installed.' (inner TYPE_E_LIBNOTREGISTERED). Exercises branch 1 of the excel-application-scope-failures playbook.",
+  "MainFile": "Main.xaml"
+}

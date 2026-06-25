@@ -30,6 +30,15 @@ If no source code is available, the error message usually names the connection. 
 
 If the connection identity is still unclear, ask the user which connection or connector is involved.
 
+## Connector Activity Runtime Exceptions
+
+When the failure is a robot exception thrown by a connector activity (`ConnectorActivity`, `ConnectorTriggerActivity`, `ConnectorHttpActivity`, `ConnectorPersistenceActivity`), the exception class and its error code route the diagnosis:
+
+- **`GeneralException` / `RuntimeException`** carry a structured `DAP-` code (`DAP-GE-####`, `DAP-RT-####`). The code maps to an exact cause — read it from the job log / Info and match the corresponding playbook before gathering more data. `DAP-GE-*` = connection resolution; `DAP-RT-*` = binding / input / trigger / operation.
+- **`UiPath.Ipc.RemoteException` / `UiPath.CoreIpc.RemoteException`** carry NO DAP code. They are a generic out-of-process wrapper — **unwrap to the innermost message** (follow `--->` chains) and classify on that (token/auth, transport, downstream HTTP). The `RemoteException` class itself is not IS-specific; only treat it as a connector failure when the faulted activity is a connector activity and the inner message fits.
+- **`System.AggregateException`** is never the cause — unwrap `InnerExceptions[0]` (recurse) and re-classify on the inner exception.
+- **`System.NullReferenceException`** has no detail — use the stack frame (often a `ForEach` over a `SWEntities.*_List` connector output) to find which reference was null.
+
 ## Domain-Specific Data Gathering
 
 After the Orchestrator job data bundle (job details, logs, traces) is collected and the connection is identified:

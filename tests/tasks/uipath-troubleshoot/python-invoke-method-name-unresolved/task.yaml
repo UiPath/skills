@@ -1,0 +1,157 @@
+task_id: skill-troubleshoot-python-invoke-method-name-unresolved
+description: >
+  UiPath troubleshooting agent must diagnose an Invoke Python Method failure:
+  the Python engine initializes and Load Python Script succeeds, then the
+  invoke step faults with "AttributeError: module 'transform' has no attribute
+  'clean_records'" because the function is defined only inside the script's
+  if __name__ == '__main__' block and is never bound at module level. Success =
+  agent matches the invoke-method-failures playbook, identifies a name that does
+  not resolve at module level (NOT an engine-init, script-load, or
+  argument-mismatch fault), AND recommends moving the function to module level,
+  without fabricating host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My PyRecordCleaner process faults in Orchestrator on every run. The
+  folder is "Data Pipelines". The weird part: the Python script runs fine
+  when I run it directly on my machine, but the robot keeps failing it.
+
+  I'm not on the Robot host right now and have no shell access to
+  MOCK-ROBOT, only Orchestrator. Diagnose what you can from Orchestrator.
+  If the answer needs evidence from the host itself, give me the exact
+  things to check on the host the next time I'm in front of it; I'll do
+  them and come back with the result. Do not stall waiting for host data
+  - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched invoke-method-failures, identified function-not-at-module-level, and recommended moving it to module level"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My PyRecordCleaner process faults in Orchestrator on every run.
+         Folder 'Data Pipelines'. The Python script runs fine when I run it
+         directly on my machine, but the robot keeps failing it. I'm not on
+         the Robot host, only Orchestrator."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/python-activities/playbooks/invoke-method-failures.md
+        because the runtime error
+          "Invoke Python Method: One or more errors occurred. --->
+           Python.Runtime.PythonException: AttributeError : module 'transform'
+           has no attribute 'clean_records'"
+        occurs at the Invoke Python Method step AFTER the engine initialized
+        and Load Python Script succeeded -- the signature of a function name
+        that does not resolve at module level (M1).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Load Python Script binds functions defined at MODULE LEVEL and
+            skips the `if __name__ == "__main__":` block on import.
+          - In scripts/transform.py, `clean_records` is defined only inside
+            that `__main__` guard, so it is never bound; Invoke Python Method
+            cannot resolve it and raises AttributeError.
+          - This is NOT an engine-init or script-load failure (the logs show
+            the engine initialized and the script loaded first), and NOT an
+            argument/TypeError problem.
+          - "Works when run directly" is explained: `python transform.py`
+            sets __name__=="__main__" and runs the block; UiPath imports the
+            module instead.
+        The reference fix is:
+          - Move `def clean_records(...)` to module level (out of the
+            `__main__` guard) so Load Python Script binds it; re-run.
+          - Optionally validate by IMPORT, not by running the file:
+            `python -c "import transform; print(transform.clean_records)"`.
+
+      DIMENSION C -- No fabricated host actions
+        Because the user is off-host, the agent must recommend the script
+        change (and/or hand over the import-based check). It must NOT claim to
+        have run host commands or executed the robot itself. Editing the local
+        project source / recommending the edit is fine.
+
+      SCORING RUBRIC:
+        1.0  Agent matched invoke-method-failures, identified that
+             `clean_records` is NOT bound at module level because it sits under
+             `if __name__ == "__main__":` (so Load Python Script never binds
+             it), AND recommended moving it to module level. No fabricated host
+             actions.
+        0.8  Correct playbook and module-level/resolution cause, but the fix is
+             vague (e.g., "fix the function definition" without naming the
+             module-level / __main__ issue).
+        0.5  Recognized an Invoke Python Method name-resolution / AttributeError
+             problem but did not tie it to the `__main__` guard / module-level
+             binding, or proposed a plausible-but-wrong M1 variant (e.g. only
+             "rename the method") without addressing module-level binding.
+        0.2  Surfaced the AttributeError to the user without diagnosis.
+        0.0  Wrong cause -- e.g. concluded an engine-init / Library-path /
+             bitness failure, a script-load / ModuleNotFoundError, an argument
+             mismatch / TypeError, or a workflow-wiring defect -- or fabricated
+             a host action.
+
+      Penalize confident wrong causes, especially diagnosing this as an
+      engine-init / load failure (the logs explicitly show the script loaded)
+      or as an argument/TypeError.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. You wrote a
+    Python script that runs fine when you execute it directly on your
+    machine, but the unattended robot faults it on every run. You are away
+    from the robot host and only have Orchestrator access. You trust the
+    agent and want a diagnosis or a host check list.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, python-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked whether the script runs on your machine, confirm that running it directly (python transform.py) works fine - that is part of the puzzle."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

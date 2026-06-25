@@ -1,0 +1,124 @@
+task_id: skill-troubleshoot-append-text-zero-byte-file
+description: >
+  UiPath troubleshooting agent must diagnose an Append Text failure where the
+  target .docx is a 0-byte file (not a valid OpenXML package), so opening it
+  faults with "Archive file cannot be size zero". Success = agent matches the
+  append-text-zero-byte-file playbook AND recommends deleting the empty file +
+  Create if not exists (or fixing the upstream that produced it), not blaming
+  a missing Word install, a lock, or the workflow logic.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, append-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ReportAppender process faults in Orchestrator (folder "Report Build",
+  machine MOCK-ROBOT-16). It opens a Word doc and appends text, and the
+  error says something about an archive file that can't be size zero. The
+  doc was created by one of our team members.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched append-text-zero-byte-file AND recommended delete + Create if not exists / fix upstream"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md is authoritative).
+
+      The user's request:
+        "ReportAppender faults in Orchestrator (folder 'Report Build', machine
+         MOCK-ROBOT-16) opening a Word doc and appending text; the error
+         mentions an archive file that can't be size zero. The doc was
+         created by a team member."
+
+      DIMENSION A -- Correct playbook
+        Matches references/activity-packages/word-activities/playbooks/append-text-zero-byte-file.md
+        because "Archive file cannot be size zero" (InvalidDataException)
+        opening a .docx for an Append Text is the 0-byte / not-a-valid-
+        OpenXML-package signature.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        Root cause: the target `.docx` (`Notes.docx`) is a 0-byte file — not
+        a valid OpenXML/ZIP package (typically a renamed `.txt`, or a
+        failed/truncated write). A real Word file needs internal XML
+        structure, so opening the empty file throws "Archive file cannot be
+        size zero".
+        Fix: delete the 0-byte file and let UiPath generate a valid one —
+        check `Create if not exists` in the Word Application Scope (or
+        provide a real `.docx`); if the empty file came from a failed
+        upstream write, fix that step and guard on size > 0.
+
+      DIMENSION C -- Right target
+        The agent must tie the error to the 0-byte / invalid file, NOT blame
+        a missing Word install, a file lock, the activity placement, or the
+        workflow logic, and NOT fabricate a host action.
+
+      SCORING RUBRIC:
+        1.0  Matched append-text-zero-byte-file AND identified the 0-byte /
+             invalid .docx as the cause AND recommended deleting it +
+             `Create if not exists` (and/or fixing the upstream that produced
+             the empty file), without blaming install/lock/placement/logic or
+             fabricating actions.
+        0.8  Correct playbook and cause but the fix is vague (e.g., "replace
+             the file" without naming delete + Create if not exists / upstream
+             fix).
+        0.5  Recognized a bad/corrupt file but attributed it to the wrong
+             cause (lock, genuine corruption of a non-empty file) or matched
+             a sibling playbook.
+        0.2  Restated the error without a cause.
+        0.0  Wrong cause (Word not installed, activity outside scope, file
+             path wrong) or fabricated a host action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the user who reported the failing append. The error mentions an
+    archive file that can't be size zero; the doc was made by a teammate. You
+    are off-host, Orchestrator only. You want a diagnosis and the fix.
+  goal: |
+    Let the agent complete its flow; approve scope expansions / clarifications.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and hand you the fix."
+    - "If asked how the Notes.docx file was created, say a teammate made it - you think by creating a new text file and renaming it to .docx, but you are not certain."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

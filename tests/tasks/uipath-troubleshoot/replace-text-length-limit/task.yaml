@@ -1,0 +1,139 @@
+task_id: skill-troubleshoot-replace-text-length-limit
+description: >
+  UiPath troubleshooting agent must diagnose a classic Replace Text failure
+  where the Replace value exceeds the classic activity's hard 256-character
+  limit, faulting with System.ArgumentException ("Value cannot be longer than
+  256 characters"). Success = agent matches the replace-text-length-limit
+  playbook AND recommends upgrading UiPath.Word.Activities OR doing the
+  substitution in code (string/regex), not editing the document or blaming Word.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, replace-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My TermsLetterGen process faults in Orchestrator (folder "Mail Merge",
+  machine MOCK-ROBOT-04). It fills a clause into a Word template and throws
+  an error about a value being too long. Shorter clauses work fine; this
+  longer one fails every time.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and give me the fix.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the replace-text-length-limit playbook AND recommended upgrade-or-substitute-in-code"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My TermsLetterGen process faults in Orchestrator (folder 'Mail
+         Merge', machine MOCK-ROBOT-04) with an error about a value being
+         too long when it fills a clause into a Word template. Shorter
+         clauses work; the longer one fails."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/replace-text-length-limit.md
+        because the error
+          "System.ArgumentException: Value cannot be longer than 256
+           characters. (Parameter 'Replace')"
+        from a classic Replace Text activity is the verbatim signature of
+        the classic 256-character input cap on Search/Replace.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The classic Replace Text (WordReplaceText) activity enforces a
+            hard 256-character limit on the Search/Replace inputs.
+          - The replacement clause exceeds 256 characters, so the activity
+            faults with ArgumentException. Shorter clauses pass because they
+            are under the cap.
+          - project.json pins an older UiPath.Word.Activities version where
+            the limit applies.
+        The reference fix (either path):
+          - Upgrade UiPath.Word.Activities to the latest version (the limit
+            is relaxed in current releases), OR
+          - Do the substitution in code: read the document text into a
+            String, replace via myString.Replace(...) / regex, write it
+            back - no 256-char cap.
+
+      DIMENSION C -- Right target
+        The agent must point at the 256-char limit and one of the two fixes.
+        It must NOT conclude the template, the document content, or the
+        file path is at fault, and must NOT fabricate host actions.
+
+      SCORING RUBRIC:
+        1.0  Agent matched replace-text-length-limit AND identified the
+             256-character classic input limit (replacement value over the
+             cap) as the cause AND recommended at least one valid fix
+             (upgrade the package, or substitute via string/regex in code),
+             without fabricating actions or blaming the template.
+        0.8  Correct playbook and cause, but the fix is vague (e.g.,
+             "shorten the text" without naming upgrade or in-code
+             substitution).
+        0.5  Recognized an input-length / ArgumentException problem but did
+             not tie it to the 256-char classic cap, or matched a sibling
+             Replace Text playbook instead.
+        0.2  Surfaced the error text without diagnosis.
+        0.0  Wrong cause (e.g., Word not installed, file corrupt, template
+             at fault, file path wrong), or fabricated an action.
+
+      Reward either valid fix path equally.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing process. A longer
+    clause makes it throw a "value too long" error; shorter ones work. You
+    are away from the robot host and only have Orchestrator access. You
+    trust the agent and want a diagnosis plus the fix.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the fix at the end."
+    - "If asked how long the replacement clause is, say it is a full paragraph - longer than a couple of sentences - but you do not have an exact count."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "_doc": "Canned responses extracted from the original investigation's raw/ CLI outputs (scrubbed). Substring dispatch, first match wins — specific rules precede generic ones.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get 7fd5e890-f162-4591-a895-e649b09aea02",
+      "file": "or-jobs-get-7fd5e890-f162-4591-a895-e649b09aea02-output-json.json"
+    },
+    {
+      "match": "or jobs logs 7fd5e890-f162-4591-a895-e649b09aea02 --level Error",
+      "file": "or-jobs-logs-7fd5e890-f162-4591-a895-e649b09aea02-level-error.json",
+      "_doc": "Recorded verbatim. The session captured only the Error-level log query; the single row is the job's one Error entry."
+    },
+    {
+      "match": "or jobs logs 7fd5e890-f162-4591-a895-e649b09aea02",
+      "file": "or-jobs-logs-7fd5e890-f162-4591-a895-e649b09aea02-level-error.json",
+      "_doc": "No unfiltered-logs raw was recorded; the Error-level set answers any logs variant — the exception row is the only diagnostic content."
+    },
+    {
+      "match": "or jobs history 7fd5e890-f162-4591-a895-e649b09aea02",
+      "file": "or-jobs-history-7fd5e890-f162-4591-a895-e649b09aea02-output-json.json",
+      "_doc": "Recorded verbatim: Pending -> Running -> Faulted in ~8s, single clean execution, no retries."
+    },
+    {
+      "match": "or jobs traces 7fd5e890-f162-4591-a895-e649b09aea02",
+      "file": "traces-retrieval-error-7fd5e890-f162-4591-a895-e649b09aea02.json",
+      "exit_code": 1,
+      "_doc": "Faithful replay of the recorded evidence gap: in the original session trace retrieval FAILED with 'Error retrieving trace ID for job' (exit 1). Every trace-retrieval form returns the same recorded failure so the eval agent faces the same gap — the diagnosis must come from jobs get + error logs."
+    },
+    {
+      "match": "traces spans get --job-key 7fd5e890-f162-4591-a895-e649b09aea02",
+      "file": "traces-retrieval-error-7fd5e890-f162-4591-a895-e649b09aea02.json",
+      "exit_code": 1,
+      "_doc": "The form actually run in the original session; the recorded response is the failure payload above, exit code 1."
+    },
+    {
+      "match": "traces spans get 7fd5e890f1624591a895e649b09aea02",
+      "file": "traces-retrieval-error-7fd5e890-f162-4591-a895-e649b09aea02.json",
+      "exit_code": 1,
+      "_doc": "TraceId-positional form (32-hex from the job record). Not attempted in the original session, but trace retrieval failed there and no span raw exists; serving the same recorded failure preserves the evidence gap instead of fabricating an empty span set via unmocked_default."
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "No --state Faulted raw was recorded in this session, so there is no Faulted-only fixture; substring dispatch routes `--state Faulted` variants here too, returning the full recorded list — the failing job is the most recent row."
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-1965a46b-db4e-469e-aaaa-7e0b379cb34d.json",
+      "_doc": "Fallback for flag-order variations. The tenant has one folder of interest (Shared); the recorded folder-scoped job list is the correct answer for any jobs-list variant the agent tries."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get 7fd5e890-f162-4591-a895-e649b09aea02",
+      "min": 1,
+      "description": "Agent must fetch the failing job: the Info field carries the full Microsoft.Graph.ServiceException — Code: invalidRequest, 'The payload of the request was too large', Inner error Code: maxFileSizeExceeded — with the stack through LargeFileUploadTask.UploadAsync / UploadSliceRequest.PutAsync into legacy UploadFile.ExecuteAsync. This plus the error log is the entire evidence base (traces unavailable)."
+    },
+    {
+      "pattern": "or jobs logs 7fd5e890-f162-4591-a895-e649b09aea02",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log (1 entry) repeats the exception already visible in jobs get, anchored to activity 'Upload File' in O365_UploadQuotaSize.xaml."
+    },
+    {
+      "pattern": "or jobs history 7fd5e890-f162-4591-a895-e649b09aea02",
+      "min": 0,
+      "description": "OPTIONAL — state transitions (Pending -> Running -> Faulted, ~8s) confirm a clean single execution with no retries."
+    },
+    {
+      "pattern": "traces",
+      "min": 0,
+      "description": "OPTIONAL — every trace-retrieval form replays the recorded failure 'Error retrieving trace ID for job' (exit 1). Traces were unavailable in the real session; no span evidence exists for this job."
+    }
+  ]
+}
