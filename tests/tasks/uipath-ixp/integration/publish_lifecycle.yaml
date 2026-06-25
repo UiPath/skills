@@ -45,10 +45,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Untagged a version"
+    description: "Removed each tag by name (untag --tag <live|staging>) — the first version holds both staging and live after the move, so both must be cleared"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+untag\b.*--model-version'
-    min_count: 1
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+untag\b.*--tag\s+(live|staging)'
+    min_count: 2
     weight: 1.5
     pass_threshold: 1.0
 
