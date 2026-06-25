@@ -35,6 +35,7 @@ import ast
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -175,9 +176,33 @@ def main() -> None:
     check_main_py()
     check_entry_points()
     check_bindings()
-    if not (ROOT / "run_marker.txt").is_file():
-        sys.exit(f"FAIL: {ROOT}/run_marker.txt does not exist — `uip codedagent run` likely never finished")
-    print("OK: run_marker.txt exists (run completed cleanly)")
+    check_run()
+
+
+def check_run() -> None:
+    """Re-run the agent and verify it completes cleanly.
+
+    Replaces the old run_marker.txt proof — that marker only existed
+    because the prompt dictated writing it. Re-running is
+    prompt-independent and verifies the same thing the marker did (the
+    triage agent runs to completion through the UiPath gateway).
+    """
+    payload = json.dumps(
+        {"messages": "I was charged twice last month, can you check?", "customer_id": "C-101"}
+    )
+    try:
+        proc = subprocess.run(
+            ["uip", "codedagent", "run", "agent", payload],
+            cwd=ROOT, capture_output=True, text=True, timeout=180,
+        )
+    except FileNotFoundError:
+        sys.exit("FAIL: `uip` CLI not found on PATH — cannot verify the agent runs")
+    except subprocess.TimeoutExpired:
+        sys.exit("FAIL: `uip codedagent run agent` did not finish within 180s")
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()[-800:]
+        sys.exit(f"FAIL: `uip codedagent run agent` exited {proc.returncode}:\n{detail}")
+    print("OK: `uip codedagent run agent` completed cleanly (triage/handoff runs)")
 
 
 if __name__ == "__main__":

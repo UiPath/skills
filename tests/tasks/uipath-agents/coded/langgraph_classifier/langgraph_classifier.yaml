@@ -16,21 +16,16 @@ run_limits:
 
 initial_prompt: |
   Build a LangGraph UiPath coded agent named `support-classifier` that
-  classifies a customer support ticket into one of three categories:
-  `billing`, `technical`, `general`.
+  reads a customer support ticket and sorts it into one of three
+  buckets: billing, technical, or general. It should return the chosen
+  category along with the original ticket text.
 
-  Input: `text` (str). Output: `category` (str — one of the three
-  labels above) and `text` (str — the original text echoed back).
+  Use the platform LLM gateway for the classification, and keep it cheap
+  and deterministic. Build it end-to-end and give it a quick local run on
+  a sample ticket to make sure it classifies sensibly.
 
-  For deterministic test runs, pin the LLM to a low-cost gateway
-  model (e.g. `gpt-4o-mini-2024-07-18`) with `temperature=0`.
-
-  Take the agent end-to-end through scaffold → init → run. Run
-  against `'{"text": "I was charged twice for my last invoice."}'`
-  — the expected category is `billing`.
-
-  Do NOT publish, upload, or deploy. Do NOT pause between planning
-  and implementation. Complete end-to-end in a single pass.
+  All local — nothing to publish or deploy. Run straight through in one
+  pass.
 
 success_criteria:
   - type: command_executed
