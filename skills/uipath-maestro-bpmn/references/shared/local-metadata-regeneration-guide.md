@@ -69,21 +69,22 @@ do not invent `contentFiles` as a substitute for `content`.
 
 ```json
 {
-  "main": "SyntheticProject.bpmn",
+  "main": "/content/SyntheticProject.bpmn#Start_Manual",
   "contentType": "ProcessOrchestration"
 }
 ```
 
-`entry-points.json`:
+`entry-points.json` (deploy schema — see Entry Point Rules below):
 
 ```json
 {
   "entryPoints": [
     {
-      "id": "Entry_ManualStart",
+      "uniqueId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "filePath": "/content/SyntheticProject.bpmn#Start_Manual",
-      "inputSchema": { "type": "object", "properties": {} },
-      "outputSchema": { "type": "object", "properties": {} }
+      "type": "ProcessOrchestration",
+      "input": { "type": "object", "properties": {} },
+      "output": { "type": "object", "properties": {} }
     }
   ]
 }
@@ -117,14 +118,31 @@ imported an external process, queue, connector, or agent.
 
 ## Entry Point Rules
 
+Entry-point identity is **two linked pairs** — get both right or Orchestrator
+solution-deploy fails (the symptom is a generic "Error while installing package"
+with no field-level cause):
+
+| Pair | Value | Why |
+| --- | --- | --- |
+| `<bpmn:startEvent id>` == `entry-points.json` `filePath` `#`fragment | the element id (e.g. `Start_Manual`) | element linkage |
+| `<uipath:entryPointId value>` == `entry-points.json` `uniqueId` | one **GUID** | install **requires a GUID**; trigger resolution requires the two be equal |
+
 For each root start event with `uipath:entryPointId`, generated `entry-points.json` must include:
 
-- `id` equal to the `uipath:entryPointId` value.
-- `filePath` equal to `/content/<bpmn-file>#<start-event-id>`.
-- `inputSchema` from root input variables whose `elementId` matches the start event.
-- `outputSchema` from root output variables.
+- `uniqueId` equal to the `uipath:entryPointId` value, which **must be a GUID**
+  (not the element id). A non-GUID `uniqueId` installs-fails; a GUID that
+  differs from `entryPointId` installs but won't resolve the trigger.
+- `filePath` equal to `/content/<bpmn-file>#<start-event-id>` (the `#`fragment
+  is the element id, not the GUID).
+- `type` equal to `ProcessOrchestration` (PascalCase).
+- `input` from root input variables whose `elementId` matches the start event.
+- `output` from root output variables.
 
-JSON schema variables use their CDATA body as the property schema. Strip `$schema` from generated package schemas. Other primitive variables map by type, such as `string`, `integer`, `number`, `boolean`, `array`, `object`, or `json`.
+`uip maestro bpmn init` (post the deploy-metadata fix) scaffolds this shape; if
+you regenerate by hand, mirror it exactly. JSON schema variables use their CDATA
+body as the property schema. Strip `$schema` from generated package schemas.
+Other primitive variables map by type, such as `string`, `integer`, `number`,
+`boolean`, `array`, `object`, or `json`.
 
 ## Binding Rules
 

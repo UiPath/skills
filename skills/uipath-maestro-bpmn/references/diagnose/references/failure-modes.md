@@ -20,6 +20,26 @@ Entry point inputs reference a start event through `elementId`, but the start ev
 `uipath:entryPointId` or the ID is duplicated.
 Fix root start event extensions and variable scoping.
 
+## Solution deploy fails at install (FailedInstall / "Error while installing package")
+
+The project packs, uploads to Studio Web, and runs in the SW designer, but
+Orchestrator solution-deploy fails install with a generic "Error while
+installing package" and no field-level cause. The cause is almost always the
+entry-point identity:
+
+- `entry-points.json` `uniqueId` **must be a GUID** — a non-GUID value (e.g. the
+  start-event element id `Event_start`) installs-fails even when it otherwise
+  matches `entryPointId`.
+- `uniqueId` **must equal** `<uipath:entryPointId value>` — a GUID that differs
+  installs but the trigger won't resolve.
+
+Both must hold (see the two-identity-pairs table in
+[shared/local-metadata-regeneration-guide.md](../../shared/local-metadata-regeneration-guide.md#entry-point-rules)).
+A current `uip maestro bpmn init` scaffolds this correctly; an older scaffold or
+a hand-regenerated file may not. `uip maestro bpmn validate` flags the
+`uniqueId != entryPointId` mismatch but not a non-GUID `uniqueId`, so verify the
+GUID by eye.
+
 ## Binding reference missing
 
 A node context value refers to `=bindings.<id>` but no matching root binding or generated binding resource exists.

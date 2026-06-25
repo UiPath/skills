@@ -19,11 +19,12 @@ All commands below are discovery/read-only. None mutate cloud state.
 | `uip maestro bpmn registry get <extensionType> [--connection-id <id>] [--object-name <name>]` | Get the full spec for one extension type: `xmlTemplate`, `contextFields`, `bindingInfo`, input/output patterns. `--connection-id`/`--object-name` add live Integration Service field metadata for `Intsvc.*` connector types. |
 | `uip is connections list --all-folders` | List live Integration Service connections (id + state) across all folders. Always pass `--all-folders`; a folder-scoped list silently misses connections. |
 
-These are the **only** commands the skill verifies against the CLI source
-(`packages/maestro-tool/src/commands/registry.ts`). Do not invent flags. In
-particular, there is **no** `uip maestro bpmn validate` command — see
-[Validation](structural-bpmn.md#validation). Validation is done with the bundled
-offline validator, not a CLI.
+These are the **only** registry/discovery commands the skill verifies against
+the CLI source (`packages/maestro-tool/src/commands/registry.ts`). Do not invent
+flags. Structural validation uses the bundled offline validator (see
+[Validation](structural-bpmn.md#validation)); `uip maestro bpmn validate <file>`
+is a separate, complementary deploy-readiness check (extension-tag support and
+`entry-points.json` linkage), not a replacement for the bundled validator.
 
 ## Output parsing
 
