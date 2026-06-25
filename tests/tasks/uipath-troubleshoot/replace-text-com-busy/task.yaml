@@ -1,0 +1,144 @@
+task_id: skill-troubleshoot-replace-text-com-busy
+description: >
+  UiPath troubleshooting agent must diagnose a Replace Text COM-interop
+  failure where WINWORD.EXE is busy (another Word instance already running on
+  the host) and the activity's COM call is rejected with
+  RPC_E_SERVERCALL_RETRYLATER (0x8001010A). Success = agent matches the
+  replace-text-com-busy playbook AND recommends clearing the busy/locked Word
+  session (Kill Process WINWORD before the scope, ensure not open elsewhere)
+  and/or surfacing a blocking dialog, without fabricating host actions.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, replace-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My BatchLetterFill process faults intermittently in Orchestrator (folder
+  "Doc Batch", machine MOCK-HOST). It fills a name into a Word document and
+  sometimes throws a COM error about the application being busy. Re-running
+  sometimes works.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can. If the fix needs the workflow changed or something checked/done on
+  the host, give me the exact steps and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the replace-text-com-busy playbook AND recommended clearing the busy Word session"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My BatchLetterFill process faults intermittently in Orchestrator
+         (folder 'Doc Batch', machine MOCK-HOST) with a COM error about the
+         application being busy when it fills a name into a Word document.
+         Re-running sometimes works."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/word-activities/playbooks/replace-text-com-busy.md
+        because the error
+          "The message filter indicated that the application is busy.
+           (Exception from HRESULT: 0x8001010A (RPC_E_SERVERCALL_RETRYLATER))"
+        from a Replace Text activity is the signature of WINWORD.EXE being
+        busy / locked / dialog-blocked when the COM call is issued.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - Microsoft Word (WINWORD.EXE) was busy when the activity issued
+            its COM call - the job log shows a Word instance was already
+            running on the host when the scope started (an orphaned /
+            concurrent WINWORD.EXE), or Word was stalled on a hidden dialog.
+          - COM rejects the call with RPC_E_SERVERCALL_RETRYLATER; the
+            intermittency ("re-running sometimes works") is the tell of a
+            transient busy state, not a code defect.
+        The reference fix:
+          - Clear the busy/locked Word session: add a Kill Process for
+            WINWORD before the Word scope (and ensure the scope disposes so
+            Word closes cleanly); confirm the document is not open in
+            another desktop window; surface/clear any blocking dialog (run
+            Visible). Optionally wrap in a Retry Scope for transient busy
+            signals.
+
+      DIMENSION C -- No fabricated host actions
+        The user is off-host. The agent may recommend the workflow change
+        (Kill Process / Retry Scope) and hand over host checks (orphaned
+        WINWORD.EXE, file open elsewhere); it must NOT claim to have killed
+        processes or run host commands itself.
+
+      SCORING RUBRIC:
+        1.0  Agent matched replace-text-com-busy AND identified Word being
+             busy/locked/dialog-blocked (orphaned or concurrent WINWORD.EXE)
+             as the cause AND recommended at least one valid step: Kill
+             Process WINWORD before the scope, ensure the file is not open
+             elsewhere / clear the concurrent instance, surface a blocking
+             dialog, or wrap in a Retry Scope - without fabricating host
+             actions.
+        0.8  Correct playbook and cause, but the fix is vague (e.g., "clear
+             the busy state" without naming Kill Process / not-open-elsewhere
+             / Retry Scope).
+        0.5  Recognized a COM / transient problem but did not tie it to a
+             busy/locked Word instance, or matched a sibling Word playbook
+             (not-installed startup COM error) instead.
+        0.2  Surfaced the HRESULT without diagnosis.
+        0.0  Wrong cause (e.g., Word not installed, missing package, file
+             corrupt, 256-char limit, file path wrong), or fabricated a host
+             action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the intermittent failure. It
+    sometimes throws a COM "application is busy" error and re-running
+    sometimes works. You are away from the robot host and only have
+    Orchestrator access. You trust the agent and want a diagnosis plus steps.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the steps at the end."
+    - "If asked whether another Word instance or an orphaned WINWORD.EXE is running on the host, say you are not sure and cannot check right now - that is exactly what you need the agent to tell you to verify."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

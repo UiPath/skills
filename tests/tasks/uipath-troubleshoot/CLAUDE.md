@@ -166,6 +166,20 @@ Must include `uipath-troubleshoot` AND at least one product/domain tag from this
 | `api-workflow` | API workflow artifacts |
 | `orchestrator` | Orchestrator-only failures with no workflow execution involved (e.g., licensing, machine state, asset/queue admin) |
 
+### Tier tag: scenarios are `e2e`, NEVER `smoke`
+
+Every faithful-replay scenario is an end-to-end investigation — tag it **`e2e`**, never `smoke`.
+
+The PR smoke gate (`.github/workflows/smoke-skills.yml`) treats **any** change under `skills/uipath-troubleshoot/` as a skill-source change and runs that skill's **entire `smoke`-tagged set**. A `smoke`-tagged scenario therefore runs on every docs/playbook PR — each scenario is a multi-minute agent run, so the gate becomes slow, expensive, and exposes unrelated PRs to scenario flakiness and CI-infra blips (image-pull, judge variance). That is the wrong signal for a fast PR gate.
+
+**The ONLY troubleshoot task tagged `smoke` is [`smoke-manifest-commands`](./smoke-manifest-commands/task.yaml)** — a fast, deterministic fixture/manifest-command validation (no agent investigation). It is the sole troubleshoot smoke-gate check by design.
+
+Rules:
+
+1. New scenarios get `e2e` (+ product/domain tags) — **do NOT add `smoke`**.
+2. Do not add `smoke` to any scenario to "make it run in CI"; the e2e suite (`tests/experiments/e2e.yaml`) covers scenarios.
+3. The only file that may carry `smoke` is `smoke-manifest-commands/task.yaml`.
+
 ### Investigation output location
 
 The skill writes investigation artifacts to `.local/investigations/` — NOT `.investigations/`. Every `file_exists` criterion path and every post-run script path MUST use `.local/investigations/...`.
@@ -243,6 +257,7 @@ success_criteria:
 - **Do not** ship real email addresses, real personal Windows paths, or real machine hostnames. The scrub pass is mandatory.
 - **Do not** use `git add -A` after generation — the generator drops scratch files in `_tmp/`. Stage explicitly: `git add tests/tasks/uipath-troubleshoot/<scenario>/`.
 - **Do not** create a scenario without a verified resolution. The LLM judge needs an authoritative ground truth; a half-baked `RESOLUTION.md` produces flaky scores.
+- **Do not** tag a scenario `smoke` — scenarios are `e2e`. The only troubleshoot task allowed the `smoke` tag is `smoke-manifest-commands` (see [Tier tag](#tier-tag-scenarios-are-e2e-never-smoke)).
 
 ## Scripts
 

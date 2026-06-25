@@ -9,6 +9,9 @@ tags: [uipath-rpa, windows, smoke, lifecycle:generate]
 
 run_limits:
   expected_turns: 4
+  max_turns: 40
+  turn_timeout: 900
+  task_timeout: 900
 
 initial_prompt: |
   I want to create a new UiPath REFramework project called "InvoiceREF"

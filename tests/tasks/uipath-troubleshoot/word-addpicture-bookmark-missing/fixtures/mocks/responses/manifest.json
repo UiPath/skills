@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the insertion-target / bookmark-not-found branch (C3) of the word-activities/add-picture-failures playbook. Agent must chain: folders list-current-user -> jobs list --state Faulted -> jobs get / logs (BusinessException: bookmark 'LogoAnchor' not found) -> workflow source (Add Picture nested in Use Word File, ImagePath is a valid absolute path, InsertRelativeTo='Bookmark' BookmarkName='LogoAnchor'). The combination of (InsertRelativeTo=Bookmark + BookmarkName=LogoAnchor in source) + (BusinessException 'bookmark LogoAnchor not found' at runtime) is decisive. Scrubbed: host->MOCK-HOST, robot->AUTOMATION1.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "or-jobs-history.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "or-jobs-get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

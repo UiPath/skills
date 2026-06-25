@@ -1,7 +1,7 @@
 ---
 name: uipath-platform
-description: "UiPath platform ops via the uip CLI — use this skill for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / LLM Gateway. Load BEFORE writing any code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, bucket files, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, BYO LLM product configurations (`uip llm-configuration byo-connections` — register / audit / re-probe tenant-owned OpenAI / Azure OpenAI / Bedrock / Vertex / Anthropic keys), context grounding, traces, licensing. For 'why did X fail' / root-cause / error investigations→uipath-troubleshoot. For `uip solution` lifecycle→uipath-solution. For PDD/SDD design & task planning→uipath-planner. For workflow code (.xaml/.cs)→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
-when_to_use: "User mentions UiPath / Orchestrator / Studio Web / Integration Service / LLM Gateway / 'uip' CLI / asset / queue / bucket / library / webhook / trigger / connector / connection / tenant / folder / robot / package / BYO LLM. Also 'upload to UiPath', 'create asset', 'start job', 'list queues', 'deploy a single package to Orchestrator', 'OAuth2 token', 'register my own LLM key', 'configure a model substitution', 'my BYO LLM key stopped working / returns errors', 're-probe / audit a BYO configuration', 'uipath.com REST'. For `uip solution` ops or `.uipx` deploys→uipath-solution."
+description: "UiPath platform ops via the uip CLI — use for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway. Load BEFORE writing code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, Data Fabric entities/records/files/choice-sets (`uip df`), BYO LLM product configurations, context grounding, traces, licensing. For 'why did X fail' / root-cause→uipath-troubleshoot. For `uip solution` lifecycle→uipath-solution. For PDD/SDD design→uipath-planner. For workflow code (.xaml/.cs)→uipath-rpa, .flow (incl. Data Fabric connector nodes)→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
+when_to_use: "User mentions UiPath / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway / 'uip' CLI / asset / queue / bucket / library / webhook / trigger / connector / connection / tenant / folder / robot / package / entity / record / choice set / BYO LLM. Also 'upload to UiPath', 'create asset', 'start job', 'list queues', 'deploy a single package to Orchestrator', 'OAuth2 token', 'create entity', 'insert record', 'query Data Fabric', 'upload file attachment', 'import CSV', 'register my own LLM key', 'configure a model substitution', 'my BYO LLM key stopped working / returns errors', 're-probe / audit a BYO configuration', 'uipath.com REST'. For `uip solution` ops or `.uipx` deploys→uipath-solution. For Data Fabric connector nodes inside a `.flow`→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
@@ -21,6 +21,7 @@ If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Se
 - "create an asset" → `uip or assets create` (NOT a `POST /odata/Assets`)
 - "start a job for a process" → `uip or jobs start <process-key>` (NOT `POST /odata/Jobs/UiPath.Server.Configuration.OData.StartJobs`)
 - "configure an Integration Service connection" → `uip is connections create <connector-key>` (NOT a hand-rolled OAuth flow)
+- "attach a file to a Data Fabric record" → `uip df files upload <entity-id> <record-id> <field-name> --file <path>` (NOT `records insert` / `records update` with the file value — the platform silently strips FILE columns and returns Success, see `references/data-fabric/data-fabric.md` Rule 6)
 
 ## When to Use This Skill
 
@@ -30,6 +31,17 @@ Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 - **Orchestrator core**: folders (`list/get/create/edit/move/delete/runtimes`), processes/releases, jobs (`start/stop/logs/traces/healing-data`), packages (`upload/download/versions`), machines, users / roles / sessions (incl. DirectoryUser/DirectoryGroup/DirectoryRobot/DirectoryExternalApplication), licenses, calendars, settings, audit logs, credential stores, feeds, attachments
 - **Resources (Orchestrator-scoped)**: assets (text/integer/bool/credential), queues + queue items, storage buckets + bucket files (`upload/download/get-download-url/get-upload-url`), libraries (`.nupkg`), webhooks (HMAC signing), triggers (time/queue/api)
 - **Integration Service**: connectors, connections (OAuth flow), activities, IS triggers, agent-workflow reference resolution
+- **Data Fabric (`uip df`)**: UiPath's structured, typed data store. Surfaces:
+  - **Entities** — schemas with typed columns, per-type constraints (`lengthLimit`, `minValue` / `maxValue`, `decimalPrecision`), choice-set / relationship / file fields, `addFields` / `updateFields` / `removeFields` evolution.
+  - **Records** — insert / update / delete / list / get / `query` with server-side filters, sorting, pagination, group-by, and aggregates (`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`).
+  - **Files** — binary attachments stored on `FILE`-typed fields via `files upload / download / delete` (record-level writes silently strip FILE values; the dedicated verbs are mandatory).
+  - **Choice sets** — shared enumerations consumed by `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` fields; values use immutable integer `NumberId`s, not labels.
+  - **Folder scoping** — tenant-level OR folder-scoped via `--folder-key <GUID>` on every write, `--include-folders` on `entities list` / `choice-sets list`.
+  - **CSV bulk import** — Basic field types only; complex fields (CHOICE_SET, RELATIONSHIP, FILE, AUTO_NUMBER) require `records insert --file <json>`.
+
+  **Before issuing any `uip df` command, load [`references/data-fabric/data-fabric.md`](references/data-fabric/data-fabric.md).** That file carries the Critical Rules (folder-scope prompt flow, irreversible-op gates, complex-field config), the exact request-body schema, the per-type operator support matrix, and routes to topic files: [`entity-schema.md`](references/data-fabric/entity-schema.md), [`records-query.md`](references/data-fabric/records-query.md), [`filter-platform-contract.md`](references/data-fabric/filter-platform-contract.md), [`choice-sets.md`](references/data-fabric/choice-sets.md), [`file-attachments.md`](references/data-fabric/file-attachments.md), [`bulk-import.md`](references/data-fabric/bulk-import.md).
+
+  For Query / Create / Update / Delete / GetById connector nodes **inside a `.flow`**, hand off to `uipath-maestro-flow` — that skill owns the in-flow node JSON, `bindings_v2.json`, and connection-resource layout.
 - **LLM Gateway — BYO product configurations**: `uip llm-configuration byo-connections` (`list / get / create / update / delete / list-product-configs`). Register tenant-owned OpenAI / Azure OpenAI / AWS Bedrock / Google Vertex / Anthropic / OpenAI-compatible keys against UiPath product features (agents, agenthub, jarvis, IXP, agent builder, ECS). Two input shapes: single-mapping (for `AnyModelWithOwnAdditions` features) and repeated `--mapping` (required for `AllModels` / `AnyModel`). Server-side validation is mandatory.
 - **LLM Gateway — diagnose a failing BYO config**: re-probe the underlying IS connection with `byo-connections get <id> --force-refresh`, force a fresh server-side probe with an idempotent `update`, audit the tenant with `list --include-connection-details` filtered on `connectionState != Enabled`, check catalog drift with `list-product-configs`, and cross-reference trace evidence with `uip traces spans get <trace-id>`. The gateway does **not** expose per-request invocation logs via CLI — diagnosis is current-state + trace evidence only. See [`references/llmgateway/byo-connections.md` § Diagnostics](references/llmgateway/byo-connections.md#diagnostics). For tenant-wide AI Trust Layer policy that may be overriding routing, see [uipath-governance](/uipath:uipath-governance).
 - **Traces**: `uip traces spans get <trace-id>` (LLM/agentic execution observability)
@@ -144,6 +156,13 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 | **Debug LLM/agent traces (spans)** | [references/traces/traces.md](references/traces/traces.md) |
 | **Annotate traces with feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
 | **Use Integration Service** | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
+| **Use Data Fabric — entities, records, files, choice sets** | [references/data-fabric/data-fabric.md](references/data-fabric/data-fabric.md) |
+| **Build an entity schema / add fields / complex field types** | [references/data-fabric/entity-schema.md](references/data-fabric/entity-schema.md) |
+| **Query records — filters, pagination, aggregates, choice/relationship semantics** | [references/data-fabric/records-query.md](references/data-fabric/records-query.md) |
+| **Filter operator support matrix per field type** | [references/data-fabric/filter-platform-contract.md](references/data-fabric/filter-platform-contract.md) |
+| **Manage choice sets and choice-set values** | [references/data-fabric/choice-sets.md](references/data-fabric/choice-sets.md) |
+| **Upload / download / delete file attachments on records** | [references/data-fabric/file-attachments.md](references/data-fabric/file-attachments.md) |
+| **Bulk import records from CSV** | [references/data-fabric/bulk-import.md](references/data-fabric/bulk-import.md) |
 | **Configure BYO LLM keys (OpenAI / Azure OpenAI / Bedrock / Vertex / Anthropic)** | [references/llmgateway/byo-connections.md](references/llmgateway/byo-connections.md) |
 | **Diagnose / audit / re-probe a BYO LLM configuration** | [references/llmgateway/byo-connections.md#diagnostics](references/llmgateway/byo-connections.md#diagnostics) |
 | **Allocate licenses to tenants** | [references/licensing/tenant-allocations.md](references/licensing/tenant-allocations.md) |
@@ -238,6 +257,7 @@ The UiPath CLI (`uip`) is a unified command-line tool for interacting with the U
 | **Orchestrator** | `or` | Folders, jobs, processes, releases | Available |
 | **Resource** | `resource` | Assets, queues, queue items, storage buckets, bucket files | Available |
 | **Integration Service** | `is` | Connectors, connections, activities, resources | Available |
+| **Data Fabric** | `df` | Entities, records, files, choice sets (`@uipath/data-fabric-tool`) | Available |
 | **Test Manager** | `tm` | Test projects, test sets, test cases, executions, reports | Available |
 | **Tools** | `tools` | CLI tool extension management | Available |
 | **MCP** | `mcp` | Model Context Protocol server | Available |
@@ -279,6 +299,7 @@ Every `uip` command accepts:
 - **[Traces — Spans](references/traces/traces.md)** — LLM execution trace observability
 - **[Traces — Feedback](references/traces/feedback.md)** — Annotate traces with sentiment and comments
 - **[Integration Service](references/integration-service/integration-service.md)** — Connectors, connections, activities, resources
+- **[Data Fabric](references/data-fabric/data-fabric.md)** — Entity schemas, records CRUD, query filters and aggregates, choice sets, file attachments, CSV bulk import, folder scoping
 - **[LLM Gateway — BYO Connections](references/llmgateway/byo-connections.md)** — Register tenant-owned LLM keys against UiPath products
 - **[Licensing](references/licensing/licensing.md)** — Tenant allocations, user/group bundles, consumables reporting
 - **[Coded Workflows](/uipath:uipath-rpa)** — Building coded automation projects

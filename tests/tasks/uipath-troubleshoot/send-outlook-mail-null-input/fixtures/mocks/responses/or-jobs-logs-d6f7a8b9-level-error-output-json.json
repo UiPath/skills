@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-02T08:45:02.120Z",
+      "Message": "[Send Outlook Mail Message] Object reference not set to an instance of an object."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-02T08:45:02.165Z",
+      "Message": "System.NullReferenceException: Object reference not set to an instance of an object.\r\nin Main.xaml\r\n    at SendOutlookMail \"Send Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

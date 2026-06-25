@@ -12,7 +12,7 @@ description: >
   (skip when lastRow=0), switching to Clear Range, or using a literal
   range.
 
-tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, delete-range, invalid-range-syntax]
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, delete-range, invalid-range-syntax]
 
 agent:
   type: claude-code

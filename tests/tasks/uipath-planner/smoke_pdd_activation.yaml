@@ -9,6 +9,7 @@ tags: [uipath-planner, smoke, lifecycle:generate]
 
 run_limits:
   expected_turns: 4
+  task_timeout: 2700
   turn_timeout: 1800  # 30-min per-turn cap
 
 initial_prompt: |
