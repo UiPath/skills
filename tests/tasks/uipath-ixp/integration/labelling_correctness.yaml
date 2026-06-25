@@ -9,12 +9,14 @@ description: >
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
-  max_turns: 68
-  task_timeout: 2400
-  turn_timeout: 900
+  max_turns: 150
+  task_timeout: 3600
+  turn_timeout: 1800
 
 sandbox:
-  driver: tempdir
+  # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
+  # ixp-tool, not the BYOS host's stale pre-migration plugin.
+  driver: docker
   python: {}
   template_sources:
     - type: template_dir
@@ -22,7 +24,8 @@ sandbox:
 
 initial_prompt: |
   Set up a trained invoice project. Use the tenant I'm already signed into
-  (check I'm logged in; don't re-authenticate): create a blank project and upload
+  (check I'm logged in; don't re-authenticate): create a blank project (give it a unique title
+  `ixp-it-labelling-<random-suffix>` so concurrent runs don't collide) and upload
   `./fixtures/csi_tower_invoice.png`. Then set up the taxonomy yourself — add a
   "Line Items" field group with three fields: "Description" (text), "Amount"
   (monetary), and "Tax" (monetary). Give it time to train, then look at the
