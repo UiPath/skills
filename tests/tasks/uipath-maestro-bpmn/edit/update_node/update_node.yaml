@@ -1,0 +1,61 @@
+task_id: skill-bpmn-update-node
+description: >
+  Update the routeByRisk gateway's condition in the existing OrderTriage BPMN so
+  orders route to flagForReview only when risk is 75 or higher. Exercises an
+  in-place edit of an existing node's routing logic while preserving every id,
+  the node set, and the diagram.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:edit", "shape:multi-node", "node:decision"]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 25
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../templates/initial_bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  The existing file `OrderTriage.bpmn` routes through the `routeByRisk` exclusive
+  gateway: the conditioned branch to `flagForReview` currently fires when
+  `risk > 10`, and the default branch goes to `autoApprove`.
+
+  Change the routing so the conditioned branch to `flagForReview` fires only when
+  `risk` is 75 or higher. Edit the existing condition expression in place — do
+  not add or remove nodes, and keep the default branch and every element id
+  unchanged.
+
+  Validate the file with an explicit Bash command before finishing — a
+  well-formed-XML parse, e.g.:
+  `python3 -c "import xml.etree.ElementTree as ET; ET.parse('OrderTriage.bpmn')"`.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Make the complete edit end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the edited BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*OrderTriage\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Edited BPMN source is present"
+    path: "OrderTriage.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Conditioned branch updated to risk >= 75, node set and ids preserved, diagram intact"
+    command: "python3 $TASK_DIR/check_update_node.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

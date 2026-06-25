@@ -1,0 +1,61 @@
+task_id: skill-bpmn-add-node
+description: >
+  Insert a script task into an existing OrderTriage BPMN between classifyOrder
+  and the routeByRisk gateway, rewiring the intervening sequence flow. Exercises
+  surgical insertion of a node onto an existing edge while preserving the rest of
+  the process and keeping the diagram fully shaped.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:edit", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 25
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../templates/initial_bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  The existing file `OrderTriage.bpmn` runs: start -> classifyOrder (script) ->
+  routeByRisk (exclusive gateway) -> flagForReview / autoApprove -> end.
+
+  Insert a new script task named `enrichOrder` between `classifyOrder` and the
+  `routeByRisk` gateway, so the path becomes classifyOrder -> enrichOrder ->
+  routeByRisk. Rewire the sequence flows accordingly and add a BPMNShape for the
+  new node plus a BPMNEdge for every new sequence flow. Preserve every other
+  node, id, and the gateway routing untouched.
+
+  Validate the file with an explicit Bash command before finishing — a
+  well-formed-XML parse, e.g.:
+  `python3 -c "import xml.etree.ElementTree as ET; ET.parse('OrderTriage.bpmn')"`.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Make the complete edit end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the edited BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*OrderTriage\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Edited BPMN source is present"
+    path: "OrderTriage.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "enrichOrder inserted on the classify->gateway edge, rest preserved, diagram fully shaped"
+    command: "python3 $TASK_DIR/check_add_node.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

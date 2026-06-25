@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="OrderTriage-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start">
+      <bpmn:outgoing>flow_start_to_classify</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Activity_Classify" name="classifyOrder" scriptFormat="JavaScript">
+      <bpmn:extensionElements>
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="risk" type="integer" source="=this.result" var="risk" custom="true" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:script>return 25;</bpmn:script>
+      <bpmn:incoming>flow_start_to_classify</bpmn:incoming>
+      <bpmn:outgoing>flow_classify_to_gw</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:exclusiveGateway id="Gateway_Route" name="routeByRisk" default="flow_gw_to_approve">
+      <bpmn:incoming>flow_classify_to_gw</bpmn:incoming>
+      <bpmn:outgoing>flow_gw_to_review</bpmn:outgoing>
+      <bpmn:outgoing>flow_gw_to_approve</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:scriptTask id="Activity_Review" name="flagForReview" scriptFormat="JavaScript">
+      <bpmn:script>return 'REVIEW';</bpmn:script>
+      <bpmn:incoming>flow_gw_to_review</bpmn:incoming>
+      <bpmn:outgoing>flow_review_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Activity_Approve" name="autoApprove" scriptFormat="JavaScript">
+      <bpmn:script>return 'APPROVED';</bpmn:script>
+      <bpmn:incoming>flow_gw_to_approve</bpmn:incoming>
+      <bpmn:outgoing>flow_approve_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="Event_end">
+      <bpmn:incoming>flow_review_to_end</bpmn:incoming>
+      <bpmn:incoming>flow_approve_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start_to_classify" sourceRef="Event_start" targetRef="Activity_Classify" />
+    <bpmn:sequenceFlow id="flow_classify_to_gw" sourceRef="Activity_Classify" targetRef="Gateway_Route" />
+    <bpmn:sequenceFlow id="flow_gw_to_review" sourceRef="Gateway_Route" targetRef="Activity_Review">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=js:vars.risk &gt; 10</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow_gw_to_approve" sourceRef="Gateway_Route" targetRef="Activity_Approve" />
+    <bpmn:sequenceFlow id="flow_review_to_end" sourceRef="Activity_Review" targetRef="Event_end" />
+    <bpmn:sequenceFlow id="flow_approve_to_end" sourceRef="Activity_Approve" targetRef="Event_end" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="Shape_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="150" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Activity_Classify" bpmnElement="Activity_Classify">
+        <dc:Bounds x="240" y="178" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Gateway_Route" bpmnElement="Gateway_Route">
+        <dc:Bounds x="400" y="193" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Activity_Review" bpmnElement="Activity_Review">
+        <dc:Bounds x="510" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Activity_Approve" bpmnElement="Activity_Approve">
+        <dc:Bounds x="510" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Event_end" bpmnElement="Event_end">
+        <dc:Bounds x="680" y="200" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_flow_start_to_classify" bpmnElement="flow_start_to_classify">
+        <di:waypoint x="186" y="218" />
+        <di:waypoint x="240" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow_classify_to_gw" bpmnElement="flow_classify_to_gw">
+        <di:waypoint x="340" y="218" />
+        <di:waypoint x="400" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow_gw_to_review" bpmnElement="flow_gw_to_review">
+        <di:waypoint x="425" y="193" />
+        <di:waypoint x="425" y="140" />
+        <di:waypoint x="510" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow_gw_to_approve" bpmnElement="flow_gw_to_approve">
+        <di:waypoint x="425" y="243" />
+        <di:waypoint x="425" y="300" />
+        <di:waypoint x="510" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow_review_to_end" bpmnElement="flow_review_to_end">
+        <di:waypoint x="610" y="140" />
+        <di:waypoint x="698" y="140" />
+        <di:waypoint x="698" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_flow_approve_to_end" bpmnElement="flow_approve_to_end">
+        <di:waypoint x="610" y="300" />
+        <di:waypoint x="698" y="300" />
+        <di:waypoint x="698" y="236" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
