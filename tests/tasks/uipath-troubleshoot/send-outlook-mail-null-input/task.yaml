@@ -51,91 +51,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched send-outlook-mail-failures Branch 3 AND attributed the NullReferenceException to the uninitialized recipient variable bound to To, recommending a workflow fix (not a host fix)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My OnboardingMailer process is faulting in Orchestrator on every
-         run. The folder is 'RPA Production'. Can you investigate why? The
-         project source for the failing process is in the current working
-         directory."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/mail-activities/playbooks/send-outlook-mail-failures.md
-        specifically Branch 3 (Uninitialized input), because the runtime
-        error is
-          "System.NullReferenceException: Object reference not set to an
-           instance of an object"
-        raised at the Send Outlook Mail Message activity.
-        Evidence the agent matched it:
-          (1) the agent's final response names the send-outlook-mail-failures
-              playbook or its Branch 3 (uninitialized input);
-          (2) a tool call that Read a file under
-              references/.../mail-activities/playbooks/.
-        Do NOT inspect internal investigation state
-        (.local/investigations/*.json, hypotheses, matched_playbooks,
-        scope.domain) to award this dimension - grade only the agent's
-        presented final response and its tool calls.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause: the Send Outlook Mail Message activity
-        threw a NullReferenceException because its `To` field is bound to a
-        variable (`recipient`) that was never assigned (left Nothing) - an
-        upstream step that should have populated it is missing - so the
-        activity dereferenced a null input. The empty-To is visible in the
-        job log Trace ("To='' (empty)").
-        The reference fix is a WORKFLOW fix in Studio: initialize/populate
-        the `recipient` variable (and guard To/Subject/Body) before the
-        Send Outlook Mail Message activity; validate by hardcoding a literal
-        email address into the To field and re-running. This is NOT a
-        host-side fix.
-        Evidence the agent reached it:
-          (1) the agent's final response names the null/empty `To` and the
-              uninitialized `recipient` variable;
-          (2) the agent cited Main.xaml (To="[recipient]", `recipient`
-              declared but never assigned) and/or the empty-To job-log
-              Trace.
-
-      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
-      any of these):
-        - A COM cast / "library not registered" / bitness mismatch problem
-          (that is Branch 1, a different signature).
-        - A timeout / hang, an Outlook security prompt, or Work Offline state
-          (that is Branch 2).
-        - A generic SMTP / network / credentials error.
-        - "The recipient mailbox does not exist" or an invalid-address
-          problem (the address is empty/null, NOT invalid).
-        - A host-side fix (installing/repairing Outlook, killing
-          OUTLOOK.EXE, host provisioning). This is a workflow bug, not a
-          host fix.
-
-      SCORING RUBRIC:
-        1.0  Agent (a) names the NullReferenceException at the Send Outlook
-             Mail Message activity, (b) attributes it to the uninitialized
-             `recipient` variable bound to `To` (empty/null input), AND
-             (c) recommends initializing/populating the input in the
-             workflow (Studio fix), not a host fix.
-        0.8  Correct playbook/Branch 3 and identifies the null/empty To
-             input, but is vague about which variable or omits the
-             validate-by-hardcoding step.
-        0.5  Recognizes a NullReferenceException at the activity but does
-             not tie it to the uninitialized To input, or recommends a
-             generic "add a Try Catch / null guard" without naming the
-             missing assignment.
-        0.2  Matches a sibling branch or a wrong cause from the reject list
-             (COM/bitness, timeout/prompt, SMTP/network, invalid recipient,
-             or any host-side fix).
-        0.0  No diagnosis, surfaced the error without a cause, or escalated
-             to support without trying the playbook.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

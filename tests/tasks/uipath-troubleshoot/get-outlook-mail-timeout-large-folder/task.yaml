@@ -51,83 +51,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched get-outlook-mail-failures Branch 2 (timeout on a large folder) AND recommended raising TimeoutMS plus reducing the batch (Top / OnlyUnreadMessages / Filter)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My ArchiveMailScanner process is faulting in Orchestrator on every
-         run. The folder is 'RPA Production'. Can you investigate why? The
-         project source for the failing process is in the current working
-         directory."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook / branch
-        The matching playbook is
-          references/activity-packages/mail-activities/playbooks/get-outlook-mail-failures.md
-        and the matching cause is Branch 2 (Timeout on a large folder),
-        because the runtime error "The operation has timed out"
-        (System.TimeoutException) fired after the full default TimeoutMS
-        window while enumerating a folder with thousands of messages.
-        Evidence the agent should show:
-          (1) its final response names the get-outlook-mail-failures
-              playbook and/or Branch 2 (timeout on a large folder);
-          (2) a tool-call Read of a file under
-              references/activity-packages/mail-activities/playbooks/.
-        Do NOT inspect the agent's internal investigation state
-        (.local/investigations/, state.json, hypotheses.json, matched
-        playbooks); grade only the final response and the tool calls.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause: the Get Outlook Mail Messages activity
-        timed out enumerating a very large folder ('Archive', approx.
-        18,420 items) within the default TimeoutMS=30000, because Top was
-        high/unset (5000) and OnlyUnreadMessages was off, so it tried to
-        pull far more mail than the 30s window allows. The MailFolder
-        string, the Account, and the Outlook/COM session are all fine -
-        this is volume vs timeout, NOT a folder-resolution or COM problem.
-        The reference fix: raise TimeoutMS (e.g. 60000 or more) AND/OR
-        reduce the batch (set Top to ~10-20, enable OnlyUnreadMessages);
-        for a chronically huge folder, narrow with a Filter or migrate the
-        read to the modern Graph o365-activities.
-        Evidence the agent should show:
-          (1) its final response names the timeout, attributes it to the
-              large folder + high/unset Top + default TimeoutMS, and gives
-              the fix;
-          (2) it cites Main.xaml (the Top and TimeoutMS values) and the
-              job-log volume line (approx. 18,420 items in 'Archive').
-
-      WRONG ANSWERS TO REJECT (cap 0.2):
-        - Concludes the folder was not resolved (Branch 1 - "specified
-          folder does not exist").
-        - Concludes Outlook is not running / a COM cast failure / a
-          privilege mismatch (Branch 3).
-        - Concludes a malformed Filter (Branch 4).
-        - Concludes Cached Exchange Mode desync (Branch 5).
-        - A generic network error or "couldn't read mail".
-        Any wrong CAUSE caps the score at 0.2 even if a timeout is
-        mentioned. NOTE: "raise TimeoutMS" with NO mention of reducing the
-        batch is still the correct cause and is acceptable at 0.8.
-
-      SCORING RUBRIC:
-        1.0  Agent (a) names the timeout enumerating a large folder, (b)
-             attributes it to message volume vs TimeoutMS (Top high/unset,
-             OnlyUnreadMessages off), AND (c) recommends raising TimeoutMS
-             AND reducing the batch (Top / OnlyUnreadMessages / Filter).
-        0.8  Correct cause (timeout on a large folder, volume vs
-             TimeoutMS) but recommends only ONE lever (e.g. only raise
-             TimeoutMS, or only reduce Top).
-        0.5  Recognizes the timeout but does not tie it to folder volume /
-             Top / TimeoutMS, or offers no concrete fix.
-        0.2  Wrong cause (Branch 1 / 3 / 4 / 5, or generic), or surfaces
-             the timeout to the user with no diagnosis.
-        0.0  Wrong cause AND fabricated host actions, or no usable answer.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

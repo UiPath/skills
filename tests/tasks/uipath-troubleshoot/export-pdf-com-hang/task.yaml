@@ -15,6 +15,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -53,62 +54,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched export-pdf-com-hang AND recommended clearing the stale Word session"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md is authoritative).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request:
-        "BatchPdfConvert faults intermittently in Orchestrator (folder 'Batch
-         PDF', machine MOCK-HOST) converting Word docs to PDF; it throws a
-         COM error on export. Re-running sometimes works."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        Matches references/activity-packages/word-activities/playbooks/export-pdf-com-hang.md
-        because a `COMException` (`RPC_E_CALL_REJECTED` / `0x80010001`) from
-        `Export to PDF`, intermittent, with a "Word already running on the
-        host" warning, is the orphaned/busy-WINWORD COM-interop signature.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        Root cause: an orphaned `WINWORD.EXE` (the job log warns a Word
-        instance was already running when the scope started) blocks the
-        export's COM call → `COMException`. Intermittency ("re-running
-        sometimes works") confirms a transient busy/locked Word state, not a
-        code defect.
-        Fix: clear the stale Word session — add a `Kill Process` for WINWORD
-        before the Word scope (and ensure the scope disposes so it doesn't
-        orphan WINWORD), confirm the input doc isn't locked elsewhere;
-        persistent COM errors → an Invoke Code C# `ExportAsFixedFormat`
-        fallback (with `finally { wordApp.Quit(); }`).
-
-      DIMENSION C -- Off-host: no fabricated actions
-        The user is off-host. The agent may recommend the workflow change
-        (Kill Process / Invoke Code) and hand over host checks (orphaned
-        WINWORD.EXE, input lock); it must NOT claim to have killed processes
-        or run host commands itself, and must NOT blame the output path or
-        the document.
-
-      SCORING RUBRIC:
-        1.0  Matched export-pdf-com-hang AND identified an orphaned/busy
-             WINWORD blocking the export's COM call as the cause AND
-             recommended clearing it (Kill Process WINWORD before the scope /
-             dispose / ensure input free), optionally noting the Invoke Code
-             ExportAsFixedFormat fallback — without fabricating host actions
-             or blaming the path/document.
-        0.8  Correct playbook and cause but the fix is vague (e.g., "clear
-             the COM state" without naming Kill Process WINWORD).
-        0.5  Recognized a COM/transient problem but did not tie it to a
-             busy/orphaned WINWORD (e.g., blamed Word-not-installed startup
-             COM), or matched a sibling export-pdf playbook.
-        0.2  Surfaced the HRESULT without diagnosis.
-        0.0  Wrong cause (missing output dir, malformed path, document
-             corrupt, Word not installed as primary) or fabricated a host
-             action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

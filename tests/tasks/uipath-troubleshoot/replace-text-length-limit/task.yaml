@@ -13,6 +13,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -51,70 +52,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the replace-text-length-limit playbook AND recommended upgrade-or-substitute-in-code"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My TermsLetterGen process faults in Orchestrator (folder 'Mail
-         Merge', machine MOCK-ROBOT-04) with an error about a value being
-         too long when it fills a clause into a Word template. Shorter
-         clauses work; the longer one fails."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/replace-text-length-limit.md
-        because the error
-          "System.ArgumentException: Value cannot be longer than 256
-           characters. (Parameter 'Replace')"
-        from a classic Replace Text activity is the verbatim signature of
-        the classic 256-character input cap on Search/Replace.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The classic Replace Text (WordReplaceText) activity enforces a
-            hard 256-character limit on the Search/Replace inputs.
-          - The replacement clause exceeds 256 characters, so the activity
-            faults with ArgumentException. Shorter clauses pass because they
-            are under the cap.
-          - project.json pins an older UiPath.Word.Activities version where
-            the limit applies.
-        The reference fix (either path):
-          - Upgrade UiPath.Word.Activities to the latest version (the limit
-            is relaxed in current releases), OR
-          - Do the substitution in code: read the document text into a
-            String, replace via myString.Replace(...) / regex, write it
-            back - no 256-char cap.
-
-      DIMENSION C -- Right target
-        The agent must point at the 256-char limit and one of the two fixes.
-        It must NOT conclude the template, the document content, or the
-        file path is at fault, and must NOT fabricate host actions.
-
-      SCORING RUBRIC:
-        1.0  Agent matched replace-text-length-limit AND identified the
-             256-character classic input limit (replacement value over the
-             cap) as the cause AND recommended at least one valid fix
-             (upgrade the package, or substitute via string/regex in code),
-             without fabricating actions or blaming the template.
-        0.8  Correct playbook and cause, but the fix is vague (e.g.,
-             "shorten the text" without naming upgrade or in-code
-             substitution).
-        0.5  Recognized an input-length / ArgumentException problem but did
-             not tie it to the 256-char classic cap, or matched a sibling
-             Replace Text playbook instead.
-        0.2  Surfaced the error text without diagnosis.
-        0.0  Wrong cause (e.g., Word not installed, file corrupt, template
-             at fault, file path wrong), or fabricated an action.
-
-      Reward either valid fix path equally.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

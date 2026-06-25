@@ -15,6 +15,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -53,70 +54,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the replace-text-headers-textboxes-skipped playbook AND recommended updating the package"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My BrandedLetterFill process shows Successful in Orchestrator (folder
-         'Branded Docs', machine MOCK-ROBOT-08), but the company name in the
-         letter's HEADER still shows the literal '[CompanyName]' placeholder.
-         The body copy is replaced fine. No error."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/replace-text-headers-textboxes-skipped.md
-        because "body replaced, header/footer/text-box copy survives, no
-        error" is the signature of an older UiPath.Word.Activities version
-        scanning only the primary body text.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The body placeholder was replaced (log: "Replaced 1 occurrence
-            in the document body"), but the same placeholder in the
-            header/footer was not touched.
-          - project.json pins an OLD UiPath.Word.Activities ([1.6.0]) that
-            only scans body text; header/footer/text-box story ranges are
-            outside its scanned range, so those placeholders are never
-            matched. The job is Successful (no error) because the body
-            replacement worked.
-        The reference fix:
-          - Update UiPath.Word.Activities to the latest version (newer
-            versions natively replace inside headers, footers, and text
-            shapes), rebuild, re-publish. (If upgrade is impossible:
-            address the header story range explicitly or do the replacement
-            in code over the document XML.)
-
-      DIMENSION C -- Right target
-        The agent must tie the header miss to the package version / non-body
-        story range, NOT conclude the template is wrong, the Search value is
-        wrong, or the job is healthy because it is Successful, and NOT
-        fabricate a host action.
-
-      SCORING RUBRIC:
-        1.0  Agent matched replace-text-headers-textboxes-skipped AND
-             identified the older UiPath.Word.Activities version scanning
-             only body text (header/footer/text box outside scanned range)
-             as the cause AND recommended updating the package (or, as a
-             fallback, addressing the header range explicitly / in code) —
-             without treating the green job as healthy or blaming the
-             template/Search value.
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "update
-             something" without naming the UiPath.Word.Activities upgrade).
-        0.5  Recognized the header isn't replaced but attributed it to the
-             wrong cause (run-split placeholder, wrong Search value, loop
-             issue), or matched a sibling Replace Text playbook.
-        0.2  Restated the symptom without a cause.
-        0.0  Concluded the job is healthy because Successful, OR blamed the
-             template / Search value / a crash / lock, OR fabricated an
-             action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

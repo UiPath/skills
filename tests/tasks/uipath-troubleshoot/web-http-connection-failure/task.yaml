@@ -12,6 +12,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -46,34 +47,40 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the http-request-connection-failure.md playbook and reached the RESOLUTION.md root cause"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against the attached
-      RESOLUTION.md (authoritative ground truth). The user asked why job
-      419a6787-6cc6-4b93-bae4-ba985bf6fe67 in folder Shared failed (source at ./WebRepro/).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      Grade in a single score:
-      (a) FAULT - the agent identifies the failure as `System.Net.WebException: No such host is known. (service-endpoint-unavailable.invalid:80)`
-          raised by HTTP Request (HttpClient).
-      (b) CAUSE - the agent concludes: The HttpClient request failed DNS resolution for the configured EndPoint host (service-endpoint-unavailable.invalid), faulting with WebException 'No such host is known.'. On .NET 6+ a DNS failure surfaces with this message (legacy: 'The remote name could not be resolved'). It matches
-          skills/uipath-troubleshoot/references/activity-packages/web-activities/playbooks/http-request-connection-failure.md.
-      (c) RESOLUTION - the agent recommends: Correct the EndPoint host, and ensure the robot machine can resolve and reach it (DNS / network / proxy egress).
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      Anti-fabrication (hard gate): score 0.0 if the agent attributes the
-      fault to a timeout (the message is 'No such host is known.', not 'The operation has timed out.'); a deserialization/JSON error; a null input; a non-success HTTP status (the host never resolved, so no HTTP response was received).
-
-      RUBRIC:
-        1.0  Correct fault + cause (playbook matched, no fabrication) + valid fix.
-        0.8  Correct fault + cause but thin/partial fix.
-        0.5  Recognizes the right error family but does not match the playbook
-             OR misses the specific cause (without fabricating a wrong one).
-        0.2  Recognizes an error but no actionable cause/fix.
-        0.0  Fabricates a wrong root cause (see anti-fabrication), concludes a
-             different fault, gets blocked, or fails.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

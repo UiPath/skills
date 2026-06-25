@@ -15,6 +15,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -54,71 +55,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the word-scope-hangs-background-prompt playbook AND recommended surfacing/clearing the blocking dialog"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My NDAFiller process never finishes - in Orchestrator (folder
-         'Legal Docs', machine MOCK-HOST) it hangs for half an hour with no
-         error and I have to cancel it."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/word-scope-hangs-background-prompt.md
-        because the symptom - a Word Application Scope that starts Word,
-        opens the document, then never advances (no error, job runs ~30 min
-        and is cancelled, State=Stopped) - is the signature of Word blocking
-        on a hidden modal dialog.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Word Application Scope opens 'NDA-Protected.docx', a
-            password-protected document, with no Password supplied and
-            Visible=False.
-          - Word raises a password prompt that the unattended robot cannot
-            answer; the modal dialog blocks all COM calls, so the scope
-            hangs until the job is cancelled.
-          - No error log line is the tell: a blocking dialog produces a
-            hang, not an exception. The logs stop at "Starting Microsoft
-            Word" / "Opening document".
-        The reference fix:
-          - Reproduce with the scope Visible=True (on the host, as the robot
-            user) to see the blocking dialog, then EITHER supply the
-            document password in the scope properties / remove protection,
-            OR clear whatever prompt appears (recovery sidebar, Safe Mode,
-            activation, trust-this-file). Also guard against indefinite
-            hangs (finite timeout) and dispose orphaned WINWORD.EXE.
-
-      DIMENSION C -- No fabricated host actions
-        The user is off-host, so the agent must hand over the
-        run-visible/observe steps and the fix; it must NOT claim to have run
-        Word, supplied a password, or run host commands itself.
-
-      SCORING RUBRIC:
-        1.0  Agent matched word-scope-hangs-background-prompt AND identified
-             a hidden/background Word dialog (password prompt for the
-             protected doc, or recovery/Safe Mode/activation) blocking COM
-             as the cause AND recommended at least one valid step: reproduce
-             with Word visible to surface the dialog, supply the password /
-             remove protection, or clear the prompt - without fabricating
-             host actions.
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "clear
-             the dialog" without naming run-visible / password / specific
-             prompt).
-        0.5  Recognized a hang / blocking-dialog class of problem but did
-             not tie it to a Word modal prompt (e.g., blamed performance or
-             network), or matched a sibling Word playbook instead.
-        0.2  Noted the job hangs without diagnosing why.
-        0.0  Wrong cause (e.g., Word not installed, missing package, file
-             corrupt, file path wrong), or fabricated a host action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

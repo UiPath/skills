@@ -84,7 +84,7 @@ Before classifying as **explains-WHY**, apply the upstream-cause gate. The mecha
 - **Eliminated / Inconclusive** → record, test next hypothesis
 - **Confirmed — explains WHY** (and passes upstream-cause gate) → root cause. Go to DEPTH CHECK (do **not** jump straight to Resolution). Multiple confirmed root causes: depth-check each before skipping the rest.
 - **Confirmed — describes WHAT only** → symptom. Re-invoke generator with `trigger: "deepening"` and `parent_hypothesis`.
-- **All high-confidence eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from medium/low + docsai.
+- **All playbook hypotheses eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from docsai (every matched playbook — all confidence levels — was already drafted in the single round).
 
 **Co-equal-roots guard.** Before applying any "skip remaining" exit after a confirmed+verified root cause, check `state.json.matched_playbooks`. If two or more playbooks are present at the same highest confidence level AND they correspond to **distinct, independent** error signatures (different activities, different error codes, neither upstream of the other), every pending hypothesis sourced from those playbooks MUST be tested before stopping. Do not exit on the first confirmed root cause when triage found multiple co-equal roots — you will under-report and miss fixes the user has to make. Only after each co-equal hypothesis is tested (confirmed, eliminated, or inconclusive) and depth-checked when confirmed do you proceed to Resolution.
 

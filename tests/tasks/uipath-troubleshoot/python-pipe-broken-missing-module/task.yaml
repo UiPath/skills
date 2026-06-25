@@ -22,6 +22,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -63,96 +64,40 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the invoke-python-method-pipe-is-broken playbook AND identified that the out-of-process Python host died on a missing third-party module (pandas) absent from the robot's interpreter, recommending installing it into the scope's interpreter / reproducing standalone"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "An unattended Orchestrator job for our PythonInvoiceParser process
-         just faulted with `UiPath.Python.RemoteException wrapping
-         System.IO.IOException: Pipe is broken: "Invoke Python Method:
-         extract_total"`. Faulted job key
-         aa111111-7777-bbbb-cccc-ddddeeeeffff. The exact same Python script
-         runs perfectly in VS Code on my dev machine — it only breaks on the
-         robot. What is going on and how do I fix it?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/python-activities/playbooks/invoke-python-method-pipe-is-broken.md
-        because the signature is `Pipe is broken` /
-        `RemoteException wrapping System.IO.IOException` at Invoke Python
-        Method — the out-of-process-Python-host-died family.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - UiPath.Python.Activities runs Python out-of-process over an IPC
-            pipe. `Pipe is broken` means the Python host process died, not a
-            UiPath-side bug.
-          - The script `parse_invoice.py` does `import pandas` (visible in
-            process/parse_invoice.py). The robot's interpreter (the one
-            Python Scope `Path=C:\Program Files\Python311` resolves) does
-            not have pandas, so the host raises ModuleNotFoundError and
-            exits — breaking the pipe.
-          - UiPath does NOT surface the underlying Python error; the job log
-            shows only the broken pipe. So the decisive evidence is the
-            `import pandas` line in the script PLUS the "runs in my IDE"
-            framing (the IDE uses a different interpreter that has pandas) —
-            NOT the job log.
-          - The scope opened and the script loaded successfully, so this is
-            NOT a "path is not valid" or engine-init/architecture failure.
-
-        The reference fix:
-          - Install the missing module into the EXACT interpreter the scope
-            resolves on the robot host:
-            `"C:\Program Files\Python311\python.exe" -m pip install pandas`
-            (for the robot user, or into a venv the scope points at) — NOT
-            into the dev's IDE environment.
-          - Diagnose first by reproducing standalone from the robot
-            interpreter (`...\python.exe parse_invoice.py`) to reveal the
-            hidden ModuleNotFoundError.
-          - Prevention: requirements.txt installed into the robot
-            interpreter; wrap the Python in try/except to surface real
-            errors.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the pipe-is-broken playbook AND converged on the
-             missing-module-in-the-robot-interpreter root cause (explained
-             the out-of-process pipe model, named `import pandas` from the
-             script source as the trigger, recognized "runs in my IDE" = a
-             different interpreter, and recommended installing pandas into
-             the SCOPE's interpreter / reproducing standalone).
-        0.8  Both dimensions largely correct: matched the playbook and
-             identified the dead-host / missing-dependency cause, but did
-             not pin it to the `import pandas` source line OR did not steer
-             the install to the robot's specific interpreter.
-        0.5  Only one dimension correct: matched the playbook but guessed a
-             different host-death cause with no support; OR identified a
-             Python dependency/environment problem without matching the
-             specific playbook.
-        0.2  Agent recognized the pipe broke / host died but neither matched
-             the playbook nor identified the interpreter/dependency cause
-             (e.g. blamed a generic "UiPath bug" or told the user to just
-             upgrade the package).
-        0.0  Agent confidently picked a wrong root cause (e.g. claimed the
-             Python path is invalid, or an x86/x64 mismatch, with no
-             evidence); got blocked; or failed.
-
-      Be substance-focused. The out-of-process pipe model + the `import
-      pandas` source line + "different interpreter on dev vs robot" is the
-      decisive chain. Penalize agents that treat `Pipe is broken` as the
-      root cause itself rather than a symptom of the host dying, and
-      penalize agents that tell the user to pip install on the DEV machine
-      instead of the robot's interpreter.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -16,6 +16,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -53,68 +54,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the replace-text-multiline-formatting playbook AND recommended Bookmarks/Form Fields (not raw Environment.NewLine)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My AddressBlockFill process shows Successful in Orchestrator (folder
-         'Address Blocks', machine MOCK-ROBOT-09), but the multi-line address
-         it inserts comes out as one long line instead of three separate
-         lines, and the formatting is lost. No error."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/replace-text-multiline-formatting.md
-        because "replacement collapses to one line / loses formatting" with a
-        Successful job is the signature of passing raw Environment.NewLine
-        line breaks into the Replace value.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Replace value is built with Environment.NewLine (the Main.xaml
-            Replace expression joins the address lines with
-            Environment.NewLine).
-          - Replace Text inserts the text as a flat run, so OS line breaks do
-            not become Word paragraph breaks — the address collapses to one
-            line and styling is lost. The replacement itself succeeds (1
-            occurrence), so the job is Successful; only the layout is wrong.
-        The reference fix:
-          - Don't pass raw Environment.NewLine into Replace. For multi-line /
-            styled content use Bookmarks or Form Fields with the Set Bookmark
-            Text activity (preserves formatting), or insert paragraph breaks
-            via the Word object model. Keep Replace Text for plain single-line
-            token swaps.
-
-      DIMENSION C -- Right target
-        The agent must tie the layout loss to Environment.NewLine in the
-        Replace value, NOT conclude the template is wrong, the Search value is
-        wrong, the package is missing, or the job is healthy because it is
-        Successful, and NOT fabricate a host action.
-
-      SCORING RUBRIC:
-        1.0  Agent matched replace-text-multiline-formatting AND identified
-             raw Environment.NewLine in the Replace value as the cause AND
-             recommended a valid fix (Bookmarks / Form Fields + Set Bookmark
-             Text, or inserting paragraph breaks via the object model;
-             keeping Replace Text plain) — without treating the green job as
-             healthy or blaming the template/Search/package.
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "don't
-             use newlines" without naming Bookmarks / Form Fields / object
-             model).
-        0.5  Recognized the formatting/line-break problem but attributed it
-             to the wrong cause (template, package version, wrong Search), or
-             matched a sibling Replace Text playbook.
-        0.2  Restated the symptom without a cause.
-        0.0  Concluded the job is healthy because Successful, OR blamed the
-             template / package / a crash / lock, OR fabricated an action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

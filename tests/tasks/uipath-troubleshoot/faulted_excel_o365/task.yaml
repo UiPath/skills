@@ -21,7 +21,7 @@ agent:
 run_limits:
   expected_turns: 300
   task_timeout: 2400
-  max_turns: 80
+  max_turns: 60
   turn_timeout: 1800
 
 sandbox:
@@ -56,7 +56,7 @@ success_criteria:
     description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
-    include_reference: true       # task.reference (RESOLUTION.md) is shown to the judge
+    include_reference: true
     include_agent_output: true
     prompt: |
       Grade the agent's final answer against the attached RESOLUTION.md.
@@ -75,3 +75,22 @@ success_criteria:
 # Override experiments/default.yaml's 600s limit -- the multi-agent troubleshooting
 # skill (triage -> hypothesis-generator -> tester -> presenter) routinely takes
 # 10-20 minutes when sub-agents run sequentially.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

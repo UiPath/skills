@@ -14,7 +14,7 @@ description: >
   (lockout loop — not yet realised), branch 5 (MFA), or branch 6
   (RDP slot — sibling user succeeded on same machine).
 
-tags: [uipath-diagnostics, e2e, faulted-jobs, orchestrator, logon-failure, credentials]
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, logon-failure, credentials]
 
 agent:
   type: claude-code

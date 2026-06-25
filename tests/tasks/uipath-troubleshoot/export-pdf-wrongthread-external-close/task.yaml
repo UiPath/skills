@@ -20,6 +20,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -58,67 +59,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched word-export-pdf-com-wrong-thread AND tied RPC_E_WRONG_THREAD to the external-attach / mid-run-close cause, recommending no external Word during the run + A/B confirm / System Word"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md is authoritative).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request:
-        "ContractPdfExport faulted in Orchestrator (folder 'Contracts',
-         machine MOCK-HOST) saving a Word doc as PDF, with a COM casting
-         error about a 'different thread'. I was on the same machine with
-         Word open at the time. Job b2c3d4e5-...."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        Matches references/activity-packages/word-activities/playbooks/word-export-pdf-com-wrong-thread.md
-        because the signature is an InvalidCastException to
-        Microsoft.Office.Interop.Word._Document (IID {0002096B-...}) with
-        0x8001010E RPC_E_WRONG_THREAD at Save Document as PDF.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        Root cause: Word Application Scope has no isolated-instance option, so
-        it ATTACHED to an already-open external WINWORD.EXE; the document's
-        _Document COM object lived on that external process's STA apartment.
-        The user CLOSED that Word window MID-RUN (after the doc was bound,
-        before the export), replacing the apartment that owned the proxy, so
-        the export's cross-apartment QueryInterface failed with
-        RPC_E_WRONG_THREAD. The log shows the attach warning AND the
-        mid-run-close warning. The workflow is structurally correct (export is
-        the sole child of the scope) — this is environmental, not a code/path/
-        document defect. RPC_E_WRONG_THREAD (replaced apartment) is distinct
-        from RPC_E_DISCONNECTED (dead server).
-        Fix: ensure no external Word is open during the run (let the scope own
-        its own instance), confirm with an A/B re-run (Trial A: external Word
-        open then closed mid-run → error; Trial B: no external Word → success);
-        for unattended/while-open export, migrate to the System Word
-        (background) activities.
-
-      DIMENSION C -- Off-host discipline
-        The agent may recommend the host/workflow steps and hand over the A/B
-        re-run; it must NOT claim to have closed Word or run host commands
-        itself, and must NOT blame the document or the output path.
-
-      SCORING RUBRIC:
-        1.0  Matched the wrong-thread playbook AND identified the
-             external-attach + mid-run-close cause (citing the attach and
-             close warnings and the replaced-apartment nature of
-             RPC_E_WRONG_THREAD) AND recommended no external Word during the
-             run (+ A/B confirm, and/or System Word for unattended) — without
-             blaming the path/document or fabricating host actions.
-        0.8  Correct playbook and the wrong-thread/external-Word cause, but
-             the fix or the attach-vs-close distinction is vague.
-        0.5  Recognized a COM apartment/thread problem but did not tie it to
-             the external-attach/mid-run-close cause (e.g. only blamed an
-             off-STA runtime, or matched a sibling export-pdf playbook).
-        0.2  Surfaced the HRESULT without diagnosis.
-        0.0  Wrong cause (orphaned-WINWORD RPC_E_CALL_REJECTED, bad output
-             path, corrupt document, Word not installed) or fabricated a host
-             action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

@@ -16,6 +16,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -57,80 +58,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched load-script-failures, identified engine-init failure, and recommended the Library-path / bitness fix"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "I just deployed a new Python automation, PyDataTransform, and it
-         faults in Orchestrator on every run. Folder 'Data Pipelines'. It
-         fails almost immediately - it never gets to my script. I'm not on
-         the Robot host, only Orchestrator."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/python-activities/playbooks/load-script-failures.md
-        because the runtime error
-          "Load Python Script: One or more errors occurred. ---> System.Exception:
-           Error initializing Python engine 64 bit"
-        from a Python Scope is the signature of the scope failing to
-        initialize the Python engine before the script loads (the
-        engine-initialization family, L1).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Python Scope initializes an out-of-process Python engine; the
-            failure is at engine init, before the script body runs.
-          - The project targets Python 3.11 (Path=C:\Python311, Version=Auto,
-            Target=x64) with an EMPTY Library path.
-          - On Windows, for Python > 3.9 the Library path must point at the
-            matching pythonXX.dll (python311.dll); empty fails engine init.
-          - The package (UiPath.Python.Activities 1.10.0) supports Python 3.11,
-            so the version is not the cause; this is NOT a ModuleNotFoundError
-            or a Python syntax / top-level error (the script never loaded).
-        The reference fix is:
-          - Set the Python Scope Library path to C:\Python311\python311.dll
-            (required on Windows for Python > 3.9), AND/OR
-          - Verify a 64-bit Python 3.11 is installed on the host so the
-            interpreter bitness matches Target=x64 (a bitness mismatch yields
-            the same engine-init error).
-
-      DIMENSION C -- No fabricated host actions
-        Because the user is off-host, the agent must hand over the host checks
-        (confirm the interpreter version/bitness and python311.dll location on
-        MOCK-ROBOT) and/or recommend the config fix. It must NOT claim to have
-        run host commands, edited the project on the robot, or installed
-        Python itself.
-
-      SCORING RUBRIC:
-        1.0  Agent matched load-script-failures, identified an
-             ENGINE-INITIALIZATION failure (scope cannot start the Python
-             engine, before the script loads), AND recommended at least one
-             valid fix: set the Library path to the matching pythonXX.dll for
-             Python > 3.9, OR verify/fix the interpreter bitness vs Target.
-             No fabricated host actions.
-        0.8  Correct playbook and engine-init cause, but the recommended fix is
-             vague (e.g., "fix the Python configuration" without naming the
-             Library path / pythonXX.dll or the bitness check).
-        0.5  Recognized a Python Scope / engine configuration problem but did
-             not tie it to engine initialization, or proposed an unrelated
-             Python-activities fix.
-        0.2  Surfaced the error string to the user without diagnosis.
-        0.0  Wrong cause (e.g., concluded a ModuleNotFoundError, a Python
-             syntax/top-level error, the script logic, or the workflow wiring
-             was at fault), or fabricated a host action.
-
-      Reward either valid fix path (Library path or bitness) equally.
-      Penalize confident wrong causes -- especially concluding
-      ModuleNotFoundError or a script syntax error, which the evidence
-      explicitly rules out.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

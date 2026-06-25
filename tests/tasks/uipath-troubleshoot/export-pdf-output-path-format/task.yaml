@@ -14,6 +14,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -51,58 +52,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched export-pdf-output-path-format AND recommended a .pdf-suffixed path"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md is authoritative).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request:
-        "ReportPdfGen faults in Orchestrator (folder 'Report PDFs', machine
-         MOCK-ROBOT-14) exporting a Word report to PDF; the error mentions
-         the file path / a .pdf file. It builds the output path from a folder
-         variable and the report name."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        Matches references/activity-packages/word-activities/playbooks/export-pdf-output-path-format.md
-        because the error "The export file path must specify a .pdf file.
-        Value was 'C:\Reports\MonthlyReport'" from `Export to PDF` is the
-        malformed-output-path / missing-.pdf-extension signature.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        Root cause: the `Export to PDF` output `FileName` is built as
-        `outFolder + "\" + reportName` (Main.xaml) with **no `.pdf`
-        suffix**, so the resolved path `C:\Reports\MonthlyReport` is not a
-        valid PDF target and the activity throws ArgumentException.
-        Fix: format the path with a `.pdf` extension —
-        `Path.Combine(outFolder, reportName & ".pdf")` (or append `& ".pdf"`),
-        and validate the pieces (single separator, no double extension).
-
-      DIMENSION C -- Right target
-        The agent must tie it to the missing `.pdf` extension / path
-        formatting (using the XAML expression + the error's `Value was
-        'C:\Reports\MonthlyReport'`), NOT blame a missing folder, COM, the
-        input document, or a missing install, and NOT fabricate a host
-        action.
-
-      SCORING RUBRIC:
-        1.0  Matched export-pdf-output-path-format AND identified the output
-             path lacking the `.pdf` extension (concatenation) as the cause
-             AND recommended formatting with a `.pdf` suffix
-             (Path.Combine / append ".pdf"), without blaming
-             folder/COM/document or fabricating actions.
-        0.8  Correct playbook and cause but the fix is vague (e.g., "fix the
-             path" without naming the `.pdf` suffix / Path.Combine).
-        0.5  Recognized a path problem but attributed it to the wrong cause
-             (missing directory, COM) or matched a sibling export-pdf
-             playbook.
-        0.2  Restated the error without a cause.
-        0.0  Wrong cause (missing folder as primary, Word not installed,
-             document corrupt, COM) or fabricated a host action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

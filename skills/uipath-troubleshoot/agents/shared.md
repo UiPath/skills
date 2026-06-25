@@ -64,7 +64,7 @@ Read files from paths in `state.json`:
 - `state.json.investigation_guides` — data correlation rules and testing prerequisites
 - `state.json.matched_playbooks` — playbooks matched to the issue, with confidence level
 
-**Confidence is authoritative.** Do NOT override a playbook's confidence level based on symptom match quality.
+**Confidence is a cap on root-cause certainty, not a ranking input** — rank by `signal_match_count` (see `state.schema.md` § Matched Playbooks). Do NOT modify a playbook's frontmatter confidence.
 
 ## Raw Data Rule
 

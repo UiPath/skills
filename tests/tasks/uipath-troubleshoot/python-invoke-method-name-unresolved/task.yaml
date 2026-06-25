@@ -16,6 +16,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -57,81 +58,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched invoke-method-failures, identified function-not-at-module-level, and recommended moving it to module level"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My PyRecordCleaner process faults in Orchestrator on every run.
-         Folder 'Data Pipelines'. The Python script runs fine when I run it
-         directly on my machine, but the robot keeps failing it. I'm not on
-         the Robot host, only Orchestrator."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/python-activities/playbooks/invoke-method-failures.md
-        because the runtime error
-          "Invoke Python Method: One or more errors occurred. --->
-           Python.Runtime.PythonException: AttributeError : module 'transform'
-           has no attribute 'clean_records'"
-        occurs at the Invoke Python Method step AFTER the engine initialized
-        and Load Python Script succeeded -- the signature of a function name
-        that does not resolve at module level (M1).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - Load Python Script binds functions defined at MODULE LEVEL and
-            skips the `if __name__ == "__main__":` block on import.
-          - In scripts/transform.py, `clean_records` is defined only inside
-            that `__main__` guard, so it is never bound; Invoke Python Method
-            cannot resolve it and raises AttributeError.
-          - This is NOT an engine-init or script-load failure (the logs show
-            the engine initialized and the script loaded first), and NOT an
-            argument/TypeError problem.
-          - "Works when run directly" is explained: `python transform.py`
-            sets __name__=="__main__" and runs the block; UiPath imports the
-            module instead.
-        The reference fix is:
-          - Move `def clean_records(...)` to module level (out of the
-            `__main__` guard) so Load Python Script binds it; re-run.
-          - Optionally validate by IMPORT, not by running the file:
-            `python -c "import transform; print(transform.clean_records)"`.
-
-      DIMENSION C -- No fabricated host actions
-        Because the user is off-host, the agent must recommend the script
-        change (and/or hand over the import-based check). It must NOT claim to
-        have run host commands or executed the robot itself. Editing the local
-        project source / recommending the edit is fine.
-
-      SCORING RUBRIC:
-        1.0  Agent matched invoke-method-failures, identified that
-             `clean_records` is NOT bound at module level because it sits under
-             `if __name__ == "__main__":` (so Load Python Script never binds
-             it), AND recommended moving it to module level. No fabricated host
-             actions.
-        0.8  Correct playbook and module-level/resolution cause, but the fix is
-             vague (e.g., "fix the function definition" without naming the
-             module-level / __main__ issue).
-        0.5  Recognized an Invoke Python Method name-resolution / AttributeError
-             problem but did not tie it to the `__main__` guard / module-level
-             binding, or proposed a plausible-but-wrong M1 variant (e.g. only
-             "rename the method") without addressing module-level binding.
-        0.2  Surfaced the AttributeError to the user without diagnosis.
-        0.0  Wrong cause -- e.g. concluded an engine-init / Library-path /
-             bitness failure, a script-load / ModuleNotFoundError, an argument
-             mismatch / TypeError, or a workflow-wiring defect -- or fabricated
-             a host action.
-
-      Penalize confident wrong causes, especially diagnosing this as an
-      engine-init / load failure (the logs explicitly show the script loaded)
-      or as an argument/TypeError.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

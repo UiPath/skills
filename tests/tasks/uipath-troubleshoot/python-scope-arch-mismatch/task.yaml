@@ -21,6 +21,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -62,78 +63,40 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the architecture/version-mismatch playbook AND identified that Python Scope Target=x86 conflicts with the 64-bit Python install (BadImageFormatException), recommending Target be set to x64"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "Our PythonDataCruncher unattended job fails right at the Python
-         Scope with `Python Scope: One or more errors occurred. (Error
-         initializing the Python engine)`. Faulted job key
-         cc333333-7777-bbbb-cccc-ddddeeeeffff. The robot machine has Python
-         3.11 (64-bit) installed and the script is plain standard-library
-         Python. Why won't the Python engine start, and how do I fix it?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/python-activities/playbooks/python-scope-architecture-version-mismatch.md
-        because the signature is `One or more errors occurred` /
-        `Error initializing the Python engine` (with a BadImageFormat inner
-        error) at Python Scope open.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The Python Scope `Target` property is x86 (32-bit), but the
-            interpreter at C:\Program Files\Python311 is 64-bit (the user
-            states a 64-bit install). A 64-bit interpreter cannot load into
-            a 32-bit host, so engine init fails.
-          - The inner exception is BadImageFormatException (0x8007000B) — the
-            canonical 32/64-bit load-mismatch signature.
-          - The script (crunch.py) uses only the standard library, so this
-            is NOT a missing-module / pipe failure; and the error is
-            engine-init, NOT "path is not valid", so Path is fine. Target=x86
-            is the only setting inconsistent with a 64-bit install.
-
-        The reference fix:
-          - Set the Python Scope `Target` from x86 to x64 to match the
-            64-bit install. (Or, if 32-bit is genuinely required, install a
-            32-bit Python and keep x86 — both sides must agree.)
-          - Confirm interpreter bitness via
-            `python.exe -c "import struct; print(struct.calcsize('P')*8)"`.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the architecture/version-mismatch playbook AND
-             identified the x86-vs-64-bit bitness mismatch (cited Target=x86
-             from Main.xaml against the 64-bit install, recognized the
-             BadImageFormat signal), and recommended setting Target to x64.
-        0.8  Both dimensions largely correct: matched the playbook and
-             identified a bitness/Target mismatch, but did not cite Target=x86
-             from the source OR did not give the explicit x64 fix.
-        0.5  Only one dimension correct: matched the playbook but proposed a
-             different engine-init fix (e.g. only "install .NET runtime" or
-             "reinstall Python") without the bitness insight; OR identified
-             the bitness mismatch without matching the specific playbook.
-        0.2  Agent recognized an engine-init / config problem but neither
-             matched the playbook nor identified the Target/bitness mismatch.
-        0.0  Agent confidently picked a wrong root cause (e.g. missing
-             module / Pipe is broken, or invalid Python path) with no
-             evidence; got blocked; or failed.
-
-      Be substance-focused. The decisive chain is Target=x86 (source) +
-      64-bit install (user) + BadImageFormatException => bitness mismatch,
-      fixed by Target=x64. A standard-library-only script rules out the
-      missing-module cause. Penalize agents that blame a missing module or an
-      invalid path here.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

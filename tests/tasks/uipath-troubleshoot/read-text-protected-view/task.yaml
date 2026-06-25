@@ -14,6 +14,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -52,67 +53,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the read-text-protected-view playbook AND recommended unblock / Trusted Locations / disable Protected View"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My InboundDocReader process faults in Orchestrator (folder 'Inbound
-         Docs', machine MOCK-HOST) reading Word documents that arrive as
-         email attachments. The error mentions Protected View. Internally-
-         created documents read fine; externally-arriving ones fail."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/read-text-protected-view.md
-        because a read that faults with "in Protected View / the file
-        originated from an Internet/email location" and fails only on
-        externally-sourced files is the Mark-of-the-Web / Protected View
-        signature.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The document arrived from email/internet, so it carries a
-            Mark-of-the-Web. Word opens such files in Protected View (a
-            read-only sandbox), and the Interop read against a Protected-View
-            document is blocked (COMException). Locally-created files have no
-            Mark-of-the-Web and read fine.
-        The reference fix (any valid):
-          - Unblock the file before reading (Right-click > Properties >
-            Unblock, or Unblock-File <path> as a pre-step), OR
-          - Add the inbound folder to Word Trusted Locations on the
-            execution machine, OR
-          - Disable Protected View on the execution machine (Trust Center >
-            Protected View), noting it lowers a safety control.
-
-      DIMENSION C -- Off-host: no fabricated actions
-        The user is off-host. The agent must hand over the host steps (and
-        may add an Unblock-File pre-step in the workflow); it must NOT claim
-        to have changed Trust Center settings or run host commands itself,
-        and must NOT blame the file format or path.
-
-      SCORING RUBRIC:
-        1.0  Agent matched read-text-protected-view AND identified Protected
-             View / Mark-of-the-Web on the externally-sourced file as the
-             cause AND recommended at least one valid fix (unblock the file,
-             Trusted Locations, or disable Protected View) framed as host
-             steps — without fabricating host actions or blaming format/path.
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "fix the
-             security setting" without naming unblock / Trusted Locations /
-             Protected View).
-        0.5  Recognized an access/security block but did not tie it to
-             Protected View / Mark-of-the-Web (e.g., blamed generic
-             permissions), or matched a sibling playbook.
-        0.2  Surfaced the error without diagnosis.
-        0.0  Wrong cause (file format, file missing/corrupt, path, Word not
-             installed, missing container), or fabricated a host action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

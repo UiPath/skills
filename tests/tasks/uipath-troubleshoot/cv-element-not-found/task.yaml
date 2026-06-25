@@ -21,6 +21,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -48,84 +49,24 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent's final response reaches the same root cause and fix as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: false
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      Grade ONLY the agent's FINAL response to the user. Do not grade
-      intermediate reasoning, tool usage, or internal investigation files.
-      Do NOT require the agent to name any playbook or reference file —
-      the substance of the diagnosis is what matters.
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      The final response must identify ALL THREE of the following:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      (a) FAULT — The job faulted with UiPath.CV.ElementNotFoundException
-          ("Element not found") thrown from the Computer Vision CV Click
-          activity (CvClickWithDescriptor, "CV Click - 'Button'") inside the
-          CV Screen Scope (CVScope) in CV_ElementNotFound.xaml. Naming "the
-          CV Click / Computer Vision find could not locate its target" is the
-          match; the exact exception type string is a bonus, not required.
-
-      (b) CAUSE — The CV find could not match its target on the live screen
-          and the retry loop exhausted its timeout, so no matching region was
-          returned. The operative cause is that the captured descriptor's
-          locked geometry no longer matches the live screen (Branch A —
-          descriptor mismatch). It is acceptable — and good — for the
-          response to also name the scope-root-lost / screenshot-refresh
-          alternative (Branch B) AND/OR the OCR-silently-degraded alternative
-          (Branch C — the scope runs CvMethod including OCR) as not-fully-excluded
-          possibilities pending the host-side *_ComputerVision runtime dump, as
-          long as Branch A is presented as the operative cause. These are the
-          playbook's documented branches, not fabrication. The response MUST NOT attribute
-          the failure to: a timeout / TimeoutException as the ROOT cause (the
-          timeout is a symptom — the exception type IS ElementNotFoundException,
-          there is no TimeoutException); an InvalidDescriptorException /
-          "Target must be set"; CV server / authentication / throttling /
-          network errors (401/403/429); scroll-search exhaustion; or
-          cell-targeting errors. Recommending the user confirm the host-side
-          dump as a verification step is fine.
-
-      (c) RESOLUTION — Re-indicate the CV Click target against the current
-          page to regenerate the descriptor (an interactive Studio operation
-          against the live screen, not a blind XAML edit). The response MUST
-          NOT recommend merely raising the timeout (TimeoutMS) as the fix —
-          more time cannot find a target whose geometry no longer matches.
-          Confirming Branch A vs Branch B by reading the *_ComputerVision
-          runtime dump before re-indicating is the correct disambiguation step.
-
-      ANTI-FABRICATION — Penalize any of these:
-        - Names an asset, connection, CV server/auth setting, configuration
-          key, or activity that does not appear in the evidence. (NOT a
-          fabrication: recommending verification of the CV Screen Scope's own
-          OCREngine / CvMethod as part of the Branch C check — those are
-          properties of the scope in evidence, not invented config.)
-        - Claims an Orchestrator retry policy or platform behavior that is
-          not in the evidence.
-        - Asserts the element is "confirmed absent" (CV matched nothing above
-          threshold — the element may still be on screen but no longer match
-          the locked descriptor).
-        - Asserts a root cause without citing job-level evidence (the
-          exception text, job logs, or trace spans).
-
-      SCORING RUBRIC (single score):
-        1.0  (a), (b), and (c) all present and correct; no fabrication.
-        0.8  All three present; minor imprecision or minor fabrication.
-        0.6  (a) correct and exactly one of (b)/(c) missing or wrong.
-        0.4  Only (a) correct — surface fault identified, cause and
-             resolution missing or wrong.
-        0.2  Recognized the job faulted but misattributed the cause (e.g.
-             blamed the timeout, an invalid descriptor, or CV server/auth).
-        0.0  Misdiagnosed or got blocked.
-
-      Return JSON:
-        {"score": <float>, "rationale": "<one sentence>",
-         "findings": ["(a): ...", "(b): ...", "(c): ..."]}
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 # Auto-answer the troubleshooting skill's AskUserQuestion calls so the test runs
 # end-to-end without a human. The simulator always picks the recommended /

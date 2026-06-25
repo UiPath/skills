@@ -20,6 +20,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -58,116 +59,40 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the write-range-failures playbook AND identified branch 5's formula-prefix sub-cause (NOT the volume sub-cause) from the cell-level rejection naming '=Smith, John' AND recommended a sanitization fix — NOT the Try-Catch anti-pattern"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `System.Runtime.InteropServices.COMException (0x800A03EC):
-         Application-defined or object-defined error.` Pinned job key:
-         ee333333-cccc-dddd-eeee-ffffaaaabbbb. It's a Write Range
-         writing 312 scraped HR records to a directory workbook.
-         Yesterday's run with the same workflow and same workbook
-         succeeded. What changed?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/write-range-failures.md
-        because the runtime error is the Excel COM 0x800A03EC
-        signature for cell-level rejection during a Write Range
-        marshal — branch 5 specifically.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - Row 43 of dtEmployees contains "=Smith, John" in the
-            FullName column.
-          - Excel COM's Range.set_Value interpreted the leading "="
-            as a formula prefix, attempted to parse the value as a
-            formula, failed (unknown name "Smith", comma in wrong
-            context), and rejected the cell with 0x800A03EC.
-          - The workflow has no sanitization step between the HR
-            scrape sub-workflow and the Write Range.
-          - This is the formula-prefix sub-cause of branch 5 — NOT
-            the volume sub-cause (312 rows is well under any volume
-            threshold; the failure is a single cell rejection).
-
-        The reference fix:
-          - Primary: insert a sanitization step (For Each Row +
-            apostrophe escape, OR TrimStart on "=", "+", "-", "@")
-            between scrape and write.
-          - Alternative: switch to OpenXML provider (which stores
-            leading "=" as inline string, not formula).
-          - Alternative: fix the bad record at the HR source.
-          - NOT acceptable: bare Try-Catch + continue (the
-            playbook's anti-pattern #2 — would silently truncate
-            the directory at row 42 of 312).
-
-        Evidence sources (in priority order):
-          1. Job logs -- the decisive cell-level rejection Trace:
-             "Write Range: employee directory — COM Range.set_Value
-             rejected cell B44: source row 43 (0-indexed 42) column
-             'FullName' has value '=Smith, John' (leading '='
-             interpreted as malformed formula by Excel)"
-             This trace names the exact offending cell value AND
-             explains the formula-parsing mechanism — it's the
-             smoking gun.
-          2. The `or jobs get` stack frame
-             `Microsoft.Office.Interop.Excel.Range.set_Value(...)`
-             confirms the failure is in Excel COM's value setter,
-             consistent with branch 5.
-          3. The "yesterday it worked" framing from the user
-             reinforces that the workflow itself didn't change —
-             what changed is the data (one new bad row in the HR
-             scrape). Workflow source review confirms no
-             sanitization.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the write-range-failures playbook AND
-             identified branch 5's formula-prefix sub-cause
-             specifically (not just "branch 5") AND named the
-             offending value or pattern ("=Smith, John" / leading
-             equals / formula-prefix character) AND recommended a
-             sanitization fix (apostrophe escape, TrimStart, OR
-             OpenXML provider switch). The agent must distinguish
-             formula-prefix from the volume sub-cause and avoid
-             the Try-Catch anti-pattern.
-        0.8  Both dimensions partially correct: matched the playbook
-             and identified branch 5 but conflated the two
-             sub-causes; OR identified the formula-prefix root but
-             recommended only a generic "validate input" fix
-             without naming a specific sanitization approach.
-        0.5  Only one dimension correct: matched the playbook but
-             classified the cause-branch incorrectly (uninitialized,
-             file-lock, empty-source, hidden-rows) without
-             supporting evidence; OR identified the formula-prefix
-             chain without matching the specific playbook.
-        0.2  Agent recognized the COMException as a Write Range
-             issue but never identified the formula-prefix
-             interpretation or the offending value.
-        0.0  Recommended bare Try-Catch suppression as the primary
-             fix (the playbook's anti-pattern #2); OR concluded the
-             volume sub-cause and recommended chunking despite the
-             cell-rejection evidence; OR reached the wrong
-             conclusion entirely; OR got blocked / timed out.
-
-      Be substance-focused. The decisive chain is "row 43 column
-      FullName = '=Smith, John' → Excel COM Range.set_Value
-      interprets '=' as formula prefix → parser rejects malformed
-      formula → 0x800A03EC at cell B44." An agent that names this
-      chain AND recommends a sanitization fix scores 1.0. Penalize
-      agents that recommend Try-Catch-and-continue or that fail to
-      distinguish formula-prefix from the volume sub-cause.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

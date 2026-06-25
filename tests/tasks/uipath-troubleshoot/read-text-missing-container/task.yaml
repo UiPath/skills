@@ -14,6 +14,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -51,67 +52,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the read-text-missing-container playbook AND recommended a container or the standalone activity"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My ContractTextExtract process faults in Orchestrator (folder 'Doc
-         Extract', machine MOCK-ROBOT-10) the moment it runs, with an error
-         that the Read Text activity is not valid. I just want to pull text
-         out of a Word document."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/read-text-missing-container.md
-        because the error "The 'Read Text' activity must be placed inside a
-        'Use Word File' or 'Word Application Scope'" is the signature of the
-        modern Word-pack Read Text being dropped outside a container.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - Main.xaml has the modern Word-pack Read Text activity sitting
-            loose in the sequence, NOT inside a Use Word File / Word
-            Application Scope.
-          - That activity has no file input of its own; it reads the
-            document held open by a surrounding container. Outside one it is
-            invalid, so the run faults immediately.
-        The reference fix (either path):
-          - Move Read Text INSIDE a Use Word File (or Word Application Scope)
-            container that opens the target document, OR
-          - Use the standalone Read Text under System > File > Word Document,
-            which takes the file path directly in its own properties (no
-            container).
-
-      DIMENSION C -- Right target
-        The agent must tie the fault to the missing container / wrong
-        Read Text surface, NOT blame the file path, the file format, a
-        missing Word install, or a lock, and NOT fabricate a host action.
-
-      SCORING RUBRIC:
-        1.0  Agent matched read-text-missing-container AND identified the
-             Word-pack Read Text being outside a Use Word File / Word
-             Application Scope as the cause AND recommended a valid fix
-             (nest it in a container, OR switch to the standalone System >
-             File > Word Document Read Text) — without blaming the
-             file/format/install or fabricating actions.
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "add a
-             scope" without naming Use Word File / the standalone activity).
-        0.5  Recognized the Read Text activity is invalid but attributed it
-             to the wrong cause (file path, format, package), or matched a
-             sibling playbook.
-        0.2  Restated the error without a cause.
-        0.0  Wrong cause (file format, Word not installed, file lock,
-             corrupt file), or fabricated a host action.
-
-      Reward either valid fix path equally.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

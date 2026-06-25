@@ -40,59 +40,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent reached the same root cause as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md for this scenario. Treat it as the authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "why did my last job from the Shared folder fail?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      Grade ONLY on what the agent presented to the user (its final response)
-      and the tool-call summary. Do NOT grade on the shape or content of files
-      under `.local/investigations/`.
-
-      (a) FAULT — the job faulted with `System.AggregateException` on a
-          `ConnectorActivity` ("Salesforce: Create Record"). The agent must
-          UNWRAP it to the inner exception
-          (`UiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException`,
-          code `DAP-GE-3000`, detail "Bad Gateway") — not treat the aggregate as
-          the cause.
-
-      (b) CAUSE — a transient upstream 502 Bad Gateway while Integration Service
-          resolved the connection (DAP-GE-3000 / Bad Gateway). The connection is
-          not misconfigured; the platform momentarily failed to return it.
-          MUST NOT attribute the cause to: `AggregateException` itself / "one or
-          more errors occurred" without unwrapping; a disabled connection
-          (`DAP-GE-3005`); an invalid / no-access connection; an auth /
-          `invalid_grant` failure; bad input; or a workflow-logic bug.
-
-      (c) RESOLUTION — retry the job (transient); add a retry around the
-          connector activity; check IS/Identity status only if it recurs.
-
-      SCORING RUBRIC:
-        1.0  Unwraps the AggregateException to the inner GeneralException
-             DAP-GE-3000 / Bad Gateway transient cause (a + b) AND recommends a
-             retry (c). No misattribution per the MUST NOT list.
-        0.8  Unwraps to a transient connection-resolution error and recommends
-             retry but omits the DAP-GE-3000 / Bad Gateway detail; no
-             misattribution.
-        0.5  Recognizes it must unwrap the AggregateException and that the inner
-             error is connection-resolution related, but does not establish it is
-             transient (Bad Gateway) or gives no actionable fix.
-        0.2  Reports the AggregateException surface without unwrapping to the
-             inner cause, OR proposes no credible fix.
-        0.0  Treats AggregateException as the root cause, or misdiagnoses
-             (disabled connection, auth, workflow bug), or got blocked.
-
-      Penalize fabrication: invented connections, inputs, or workflow internals
-      not present in the evidence.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

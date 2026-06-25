@@ -13,6 +13,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -55,70 +56,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the word-scope-com-not-installed playbook AND recommended install-or-fix-bitness"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My DocGenerator process is faulting in Orchestrator on every run.
-         Folder 'Contract Generation'. It ran on my dev machine but started
-         failing after we moved it to the new unattended robot. I'm not on
-         the Robot host, only Orchestrator."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/word-scope-com-not-installed.md
-        because the runtime error
-          "Retrieving the COM class factory for component with CLSID
-           {000209FF-0000-0000-C000-000000000046} failed ... 0x80040154
-           (REGDB_E_CLASSNOTREG)"
-        from a classic Word Application Scope is the verbatim signature of
-        desktop Word not being usable for Interop on the host (not installed,
-        or an Office/robot bitness mismatch / damaged COM registration).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The classic Word Application Scope drives the Microsoft Word
-            Interop API and needs a registered desktop Word install.
-          - The new unattended robot host (MOCK-HOST) cannot create the
-            Word.Application COM class, so the scope faults at startup with
-            REGDB_E_CLASSNOTREG.
-          - The "worked on dev, broke after move to the new robot" detail
-            corroborates a host-environment cause, not a workflow defect.
-        The reference fix is to make desktop Word usable on the host:
-          - Install desktop Microsoft Word / Office on MOCK-HOST, OR
-          - If Word IS installed, resolve an Office/robot bitness mismatch
-            or repair the Office COM registration (Online Repair).
-
-      DIMENSION C -- No fabricated host actions
-        Because the user is off-host, the agent must hand over a check
-        (confirm Word is installed / its bitness on MOCK-HOST) and/or
-        recommend the fix. It must NOT claim to have installed Word or run
-        host commands itself.
-
-      SCORING RUBRIC:
-        1.0  Agent matched word-scope-com-not-installed AND identified
-             "desktop Word not usable for Interop on the robot host" as the
-             cause AND recommended at least one valid fix (install Word, fix
-             bitness, or repair Office COM registration), without fabricating
-             host actions.
-        0.8  Correct playbook and cause, but the recommended fix is vague
-             (e.g., "set up Word" without naming install / bitness / repair).
-        0.5  Recognized a COM / environment problem but did not tie it to a
-             missing-or-unusable Word install, or matched a sibling Word
-             playbook (file-corrupted, unknown-type) instead.
-        0.2  Surfaced the HRESULT to the user without diagnosis.
-        0.0  Wrong cause (e.g., concluded the workflow logic, the template,
-             or the file path was at fault), or fabricated a host action.
-
-      Reward any valid fix path equally. Penalize confident wrong causes.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

@@ -17,6 +17,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -53,72 +54,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the replace-text-version-mismatch playbook AND recommended aligning Studio/package versions"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "I can't open my ClauseInserter workflow - opening it in UiPath
-         Studio (or dropping the Replace Text activity) throws a
-         TargetInvocationException and Studio goes unstable. It has never
-         run; it crashes at design time. I'm on UiPath Studio 2021.10."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/replace-text-version-mismatch.md
-        because a design-time TargetInvocationException when dropping/opening
-        the activity is the signature of a Studio <-> UiPath.Word.Activities
-        version mismatch (the designer cannot be constructed).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - project.json pins UiPath.Word.Activities [2.0.0] but the user is
-            on Studio 2021.10, which cannot construct that newer package's
-            activity designer, so reflection throws
-            TargetInvocationException at DESIGN time.
-          - There are no Orchestrator jobs because the workflow never ran -
-            the failure is in the Studio designer, not at runtime. The agent
-            must reason from the project source + the stated Studio version,
-            NOT from job evidence.
-        The reference fix:
-          - Align the versions via Manage Packages: downgrade
-            UiPath.Word.Activities to a version compatible with Studio
-            2021.10, OR upgrade Studio to a version that supports the newer
-            package.
-
-      DIMENSION C -- Did NOT confuse with the runtime package gap
-        This is a DESIGN-TIME crash. The agent must NOT diagnose it as the
-        runtime "Cannot create unknown type WordApplicationScope" (a robot
-        missing the package at execution) - the cause here is a
-        Studio/package version incompatibility in the designer. It must not
-        chase Orchestrator job evidence as the answer, or fabricate actions.
-
-      SCORING RUBRIC:
-        1.0  Agent matched replace-text-version-mismatch AND identified a
-             Studio <-> UiPath.Word.Activities version mismatch (newer
-             package vs older Studio 2021.10) as the design-time cause,
-             reasoning from project.json + the Studio version AND
-             recommended aligning versions via Manage Packages (downgrade
-             the package or upgrade Studio).
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "fix
-             the versions" without naming Manage Packages downgrade/upgrade).
-        0.5  Recognized a version / package-compatibility problem but did
-             not tie it to Studio-vs-package at design time (e.g., treated
-             it as a runtime restore gap / cannot-create-unknown-type), or
-             matched a sibling playbook.
-        0.2  Restated the error without a cause.
-        0.0  Wrong cause (Word not installed, file corrupt, file path, COM
-             busy), insisted on Orchestrator job evidence, or fabricated an
-             action.
-
-      Reward downgrade-package and upgrade-Studio equally.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

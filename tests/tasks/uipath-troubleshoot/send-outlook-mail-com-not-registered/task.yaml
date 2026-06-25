@@ -57,91 +57,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched send-outlook-mail-failures Branch 1 (COM cast / library not registered) AND handed a host-side check list without fabricating host actions"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      Grade ONLY what the agent presented to the user: its final response
-      plus its tool calls (commands run, files read). Do NOT inspect or
-      require any internal investigation state (no .local/investigations
-      files, no state.json, no hypotheses.json, no matched_playbooks, no
-      scope fields). What the agent presents IS the contract.
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      The user's request was:
-        "My InvoiceMailer process is faulting in Orchestrator on every
-         run. The folder is 'RPA Production'. I'm not on the Robot host
-         (MOCK-HOST) right now, only Orchestrator. Diagnose what you can;
-         if the fix needs the host, hand me the exact things to check
-         next time I'm there and stop."
-
-      DIMENSION A -- Correct playbook (Branch 1)
-        The matching playbook is the Send Outlook Mail Message failures
-        playbook, Branch 1 (COM cast / library not registered):
-          references/activity-packages/mail-activities/playbooks/send-outlook-mail-failures.md
-        Evidence the agent should present:
-          (1) its final response names the send-outlook-mail-failures
-              playbook / Branch 1 (the COM cast / library-not-registered
-              surface), AND
-          (2) a tool call that Read a file under
-              references/activity-packages/mail-activities/playbooks/.
-        Grade only what the agent presented (final response + tool calls);
-        do NOT inspect internal investigation state.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause: the Send Outlook Mail Message activity
-        fails binding the Outlook COM object ("Unable to cast COM object
-        ... to interface type 'Microsoft.Office.Interop.Outlook._Application'"
-        / "Library not registered" 0x8002801D TYPE_E_LIBNOTREGISTERED) -
-        a process-vs-Outlook bitness mismatch (the Robot executor is
-        64-bit, the installed desktop Outlook is 32-bit) or a corrupted
-        Office registration / type library on the Robot host. The fix is
-        HOST-SIDE: install a matching-bitness desktop Outlook, run an
-        Office Quick Repair, and clear any orphaned OUTLOOK.EXE. Because
-        the user is off-host, the agent must HAND the user a host check
-        list and must NOT claim to have run host commands itself.
-        Acceptable / encouraged: also suggesting the Send SMTP Mail
-        Message activity or the modern Microsoft Graph (o365) activities
-        as the more reliable unattended fallback.
-        Evidence the agent should present:
-          (1) its final response names the COM cast / registration
-              failure + the bitness / registration cause + a host
-              check list, AND
-          (2) tool-call or cited evidence: Main.xaml's SendOutlookMail
-              activity, project.json targetFramework "Windows"
-              (64-bit process), and the job logs / job Info.
-
-      WRONG ANSWERS TO REJECT (cap the score at 0.2):
-        - "uninitialized To/Subject/Body / null input" (that is Branch 3).
-        - "security prompt / timeout / Work Offline" (that is Branch 2).
-        - a generic SMTP / network / credentials error.
-        - "the mailbox / recipient is invalid".
-        - fabricating a host action the agent could not perform (claiming
-          it repaired Office, killed OUTLOOK.EXE, reinstalled Outlook, or
-          ran any host-side command itself).
-
-      SCORING RUBRIC:
-        1.0  The agent (a) names the COM cast / library-not-registered
-             failure, (b) attributes it to the Outlook COM registration /
-             bitness mismatch on the host, AND (c) hands the user a
-             host-side check list (matching-bitness desktop Outlook /
-             Office Quick Repair / clear orphaned OUTLOOK.EXE) without
-             fabricating any host action.
-        0.8  Correct cause (COM cast + bitness/registration on the host)
-             but a thin check list (e.g., names only one host step).
-        0.5  Recognized the COM cast / library-not-registered class but
-             gave no host check list / no actionable host-side fix.
-        0.2  Surfaced the error or matched a sibling branch (timeout /
-             null input / generic SMTP) without the Branch 1 conclusion,
-             or fabricated a host action.
-        0.0  Wrong cause entirely, or fabricated a host action it could
-             not perform.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

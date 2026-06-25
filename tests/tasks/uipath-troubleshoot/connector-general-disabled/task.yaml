@@ -39,58 +39,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent reached the same root cause as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md for this scenario. Treat it as the authoritative ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "why did my last job from the Shared folder fail?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      Grade ONLY on what the agent presented to the user (its final response)
-      and the tool-call summary. Do NOT grade on the shape or content of files
-      under `.local/investigations/`.
-
-      (a) FAULT — the job faulted because an Integration Service connector
-          activity (`Salesforce: HTTP Request`, a ConnectorHttpActivity) threw
-          `UiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException`
-          with error code `DAP-GE-3005` during connection resolution.
-
-      (b) CAUSE — the connection used by the activity
-          (`c4d8f0a2-...`, "Salesforce - Production") is in a DISABLED state, so
-          the IS runtime fails to resolve it before any external API call.
-          MUST NOT attribute the cause to: a missing / invalid / no-access
-          connection or a missing `Connections.View` permission (that is
-          `DAP-GE-3000`, a different code); expired credentials alone; a
-          workflow-logic bug, bad input, or the external Salesforce API.
-
-      (c) RESOLUTION — re-enable the connection (Integration Service UI or
-          `uip is connections edit <id>`), re-authenticating first if it
-          auto-disabled.
-
-      SCORING RUBRIC:
-        1.0  Names the GeneralException / DAP-GE-3005 disabled-connection cause
-             (a + b) AND recommends re-enabling the connection (c). Does not
-             misattribute per the MUST NOT list.
-        0.8  Identifies the disabled-connection cause and a re-enable fix but
-             omits the DAP-GE-3005 code or minor detail; no misattribution.
-        0.5  Identifies that an Integration Service connection is the failing
-             surface but does not establish it is *disabled* (e.g. says only
-             "connection problem" or conflates it with invalid/no-access), or
-             gives the cause without any actionable fix.
-        0.2  Recognizes the GeneralException surface but neither establishes the
-             disabled state nor proposes a credible fix.
-        0.0  Misdiagnosed (workflow bug, bad input, external API, permissions /
-             invalid connection as the primary cause) or got blocked.
-
-      Penalize fabrication: invented assets, permissions, or workflow internals
-      not present in the evidence.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

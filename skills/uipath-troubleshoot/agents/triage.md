@@ -64,11 +64,11 @@ Signal extraction is not a separate plan step — it happens as part of each dat
 
 ### C. Resolve identity / fetch primary entity
 
-The plan steps that gather the primary entity. Their action shape is taken from the matched system's investigation guide's Entry-Point Map for the identified entity type.
+The plan steps that gather the primary entity. Their action shape is taken from the matched system's investigation guide — the documented first locator command for the identified entity type.
 
 **Branch on anchor presence:**
 
-- **Anchored** — the user named a concrete locator (id/key, process/package/queue/folder name, instance/incident id, or specific error code/message), or the working directory implies one (recognisable UiPath project at the top level). Step action: the deterministic first command from the Entry-Point Map for the identified entity type.
+- **Anchored** — the user named a concrete locator (id/key, process/package/queue/folder name, instance/incident id, or specific error code/message), or the working directory implies one (recognisable UiPath project at the top level). Step action: the deterministic first locator command the matched system's investigation guide documents for the identified entity type.
 - **No anchor** — the user described the problem without a locator. Step action: `ask user (select): <option> | <option> | ...` offering the plausible anchor candidates. Do NOT plan a `get <placeholder>` for an entity you have not located. Do NOT enumerate every folder/queue/entity hoping to find the right one. Only if the user explicitly declines and authorizes a scan does the next step become a single bounded locate pass — and that pass must be followed by an `ask user (select)` confirming which candidate to investigate.
 
 **Entity-instance selection.** When a step yields multiple candidate entities (e.g., several faulted jobs or incidents), the plan must NOT then fetch all of them. Use this priority order in the next appended step:

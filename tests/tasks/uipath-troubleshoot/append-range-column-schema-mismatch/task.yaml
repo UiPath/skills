@@ -20,6 +20,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -58,115 +59,40 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the append-range-failures playbook AND identified the column-schema-mismatch branch (same column names but different ORDER between source DataTable and target sheet — Append writes by position) AND recommended an explicit column-reorder step"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `System.Runtime.InteropServices.COMException (0x800A03EC):
-         Application-defined or object-defined error.` Pinned job
-         key: ff222222-cccc-dddd-eeee-ffffaaaabbbb. The workflow
-         appends new hires to employees.xlsx. Both the source
-         DataTable and the target sheet have the same 4 columns —
-         I double-checked the names match. What's wrong?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/append-range-failures.md
-        because the runtime error is the COMException 0x800A03EC
-        signature for branch 5 (column schema mismatch) when source
-        and target column counts match but positions don't.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - Source DataTable column order:
-            [EmployeeId, HireDate, FullName, Department]
-          - Target sheet header order:
-            [FullName, EmployeeId, Department, HireDate]
-          - Same 4 columns by name, different ORDER.
-          - Append Range writes by POSITION (not by header name).
-          - Source column 0 (EmployeeId, numeric Int64) lands in
-            target column A (FullName, stored type Text).
-          - Excel COM rejects the cell write with 0x800A03EC.
-
-        The reference fix:
-          - Primary: insert an Assign between the source-producing
-            activity and Append Range that reorders the DataTable
-            via `DefaultView.ToTable(False, <target column-name
-            list in target order>)`. The list must match the
-            target's header exactly.
-          - Alternative: fix the source sub-workflow to produce
-            columns in the target's canonical order.
-          - Alternative: restructure the target sheet (data
-            migration, not a per-run fix).
-          - NOT acceptable: bare Try-Catch + continue (would
-            produce silent partials with misaligned data).
-
-        Evidence sources (in priority order):
-          1. Job logs -- the decisive Trace line:
-             "Append Range: new hires — COM Range.set_Value
-             rejected cell A848: source column order
-             ['EmployeeId', 'HireDate', 'FullName', 'Department']
-             vs target header order ['FullName', 'EmployeeId',
-             'Department', 'HireDate'] — Append writes by
-             POSITION, columns don't align"
-             This single line names BOTH column orders and
-             explains the position-vs-name semantics.
-          2. The `or jobs get` stack through `Range.set_Value`
-             confirms the failure is in Excel COM's value setter.
-          3. Workflow source -- Main.xaml shows no column-reorder
-             transformation between the sub-workflow's output and
-             the Append Range.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the append-range-failures playbook AND
-             identified the column-schema-mismatch branch AND
-             named the by-position semantics specifically (Append
-             writes by position, NOT by header name) AND
-             recommended an explicit column-reorder fix (with
-             DataTable.DefaultView.ToTable or equivalent). The
-             agent must explicitly disabuse the workflow author's
-             "names match so it should work" mental model.
-        0.9  Primary diagnosis + fix correct, but the agent didn't
-             clearly articulate WHY the names matching doesn't
-             help (didn't explain the by-position semantics
-             explicitly).
-        0.8  Both dimensions partially correct: matched the playbook
-             and identified that columns don't align but recommended
-             only a vague "check the columns" fix without the
-             concrete reorder step; OR identified the position
-             mismatch but didn't match the specific playbook.
-        0.5  Only one dimension correct: matched the playbook but
-             classified the cause-branch incorrectly (variant
-             mismatch, file-lock, hidden-rows) without supporting
-             evidence; OR identified the column-order issue
-             without matching the specific playbook.
-        0.2  Agent recognized the COMException as an Append Range
-             issue but never connected it to the column-order
-             mismatch.
-        0.0  Recommended bare Try-Catch suppression as the primary
-             fix; OR concluded a different root cause (workbook
-             corruption, file lock, missing sheet); OR got blocked
-             / timed out.
-
-      Be substance-focused. The decisive chain is "source columns
-      [EmployeeId, HireDate, FullName, Department] vs target
-      [FullName, EmployeeId, Department, HireDate] → Append writes
-      by position → EmployeeId (Int64) into FullName (Text) → COM
-      rejects 0x800A03EC." An agent that names this chain AND
-      explains the by-position semantics AND recommends a viable
-      reorder fix scores 1.0.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

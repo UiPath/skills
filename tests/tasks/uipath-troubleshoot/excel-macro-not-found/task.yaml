@@ -53,83 +53,40 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the execute-macro-failures playbook AND identified the macro-not-found branch (configured 'RunImport' is absent from the workbook's VBA project; the enumerated modules in the logs show only Module1.ProcessData and Module2.UpdateReport)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as the authoritative
-      ground truth.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My Orchestrator job just faulted with
-         `System.Runtime.InteropServices.COMException: Cannot run the
-         macro 'RunImport'. The macro may not be available in this
-         workbook or all macros may be disabled.` Pinned job key:
-         aa111111-cccc-dddd-eeee-ffffaaaabbbb. The workbook opens
-         fine and the macro used to work — what's missing?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      You must grade BOTH dimensions in a single score:
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          skills/uipath-troubleshoot/references/activity-packages/excel-activities/playbooks/execute-macro-failures.md
-        because the runtime error is the macro-not-found COMException
-        signature.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The workflow's Execute Macro activity is configured with
-            `MacroName: "RunImport"`.
-          - The workbook's VBA project contains macros
-            `Module1.ProcessData` and `Module2.UpdateReport` -- NOT
-            `RunImport`. The configured name does not match any
-            macro in the workbook.
-          - Job logs from the activity surface the macro enumeration
-            ("VBA modules: ['Module1.ProcessData', 'Module2.UpdateReport']")
-            BEFORE the COM dispatch attempt; the enumeration is the
-            authoritative evidence.
-
-        The reference fix:
-          - Confirm the actual macro name in the workbook
-            (`Alt+F11` in Excel; the VBA editor shows the modules
-            and their public Sub names).
-          - Update the activity's `MacroName` to the correct
-            qualified name (e.g., `Module1.ProcessData`).
-          - If `RunImport` is supposed to exist (the workflow was
-            ported from a different workbook), either add it to
-            this workbook's VBA, or open the source workbook
-            instead.
-
-      SCORING RUBRIC:
-
-        1.0  Agent matched the execute-macro-failures playbook AND
-             converged on the macro-not-found branch (named
-             RunImport as the configured-but-absent macro, listed
-             the actual macros present, recommended the correction).
-        0.8  Both dimensions partially correct: matched the playbook
-             and identified the macro as missing but did not
-             explicitly contrast against the workbook's actual VBA
-             modules.
-        0.5  Only one dimension correct: matched the playbook but
-             classified the cause-branch incorrectly (Trust Center,
-             VBA error, etc.) without supporting evidence; OR
-             identified the macro-not-found pattern without
-             matching the specific playbook.
-        0.2  Agent recognized the COMException as a macro-related
-             issue but neither matched the playbook nor identified
-             the missing macro.
-        0.0  Reached the wrong branch with no evidence (typically
-             Trust Center given the same error string), concluded
-             a different root cause, got blocked, or failed.
-
-      Be substance-focused. The contrast between the configured
-      RunImport and the workbook's actual VBA modules
-      (Module1.ProcessData, Module2.UpdateReport) is the
-      decisive signal -- penalize agents that miss it.
-
-      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

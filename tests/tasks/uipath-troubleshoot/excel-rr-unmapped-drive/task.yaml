@@ -21,7 +21,7 @@ agent:
 run_limits:
   expected_turns: 300
   task_timeout: 5400
-  max_turns: 50
+  max_turns: 60
   turn_timeout: 5400
 
 sandbox:

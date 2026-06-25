@@ -14,6 +14,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -51,60 +52,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched export-pdf-missing-output-dir AND recommended Create Folder before the export"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md is authoritative).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request:
-        "InvoicePdfExport faults in Orchestrator (folder 'PDF Export',
-         machine MOCK-ROBOT-13) exporting a Word doc to PDF. Only a generic
-         'Command Failed', no detail. The export path is a dated folder
-         under C:\Output."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        Matches references/activity-packages/word-activities/playbooks/export-pdf-missing-output-dir.md
-        because a generic `Command Failed` from `Export to PDF` whose output
-        path points at a nested folder that isn't created is the
-        missing-output-directory signature (the activity does not
-        auto-create directories).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        Root cause: the `Export to PDF` (`WordExportToPdf`) output path is
-        `C:\Output\2026\Invoices\Invoice.pdf`; that parent folder does not
-        exist on the robot, and no `Create Folder` precedes the export, so
-        the save fails and surfaces only as `Command Failed`.
-        Fix: add a `Create Folder` (target = the output directory)
-        immediately before the export (or otherwise pre-create the tree).
-
-      DIMENSION C -- Right target
-        The agent must tie the generic error to the missing output directory
-        (using the XAML output path + absence of a Create Folder), NOT blame
-        Word/COM, the input document, or a missing Word install, and NOT
-        fabricate a host action. It is fine for the agent to also note the
-        generic error could mask a path-format or COM cause and recommend
-        confirming the folder exists — as long as missing-directory is the
-        primary diagnosis with the Create Folder fix.
-
-      SCORING RUBRIC:
-        1.0  Matched export-pdf-missing-output-dir AND identified the
-             non-existent output directory (activity won't auto-create) as
-             the cause AND recommended Create Folder before the export (or
-             pre-creating the tree), without blaming Word/COM/document or
-             fabricating actions.
-        0.8  Correct playbook and cause but the fix is vague (e.g., "make the
-             folder" without naming Create Folder before the export).
-        0.5  Recognized an output/path problem but attributed it to the
-             wrong cause (format, COM, permissions) or matched a sibling
-             export-pdf playbook.
-        0.2  Restated the generic error without a cause.
-        0.0  Wrong cause (Word not installed, document corrupt, COM hang as
-             primary, file path of the INPUT) or fabricated a host action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

@@ -5,7 +5,7 @@
 Every `uip` data-gathering command below assumes two patterns to keep the agent's context lean AND preserve an audit trail:
 
 1. **Filter at the source with `--output-filter`** — only pull the fields you actually need. Do NOT fetch the full response and truncate the output with `[:3000]` or similar post-hoc slicing — that silently drops information.
-2. **Save AND inspect in one call with `| tee`** — pipe the filtered response through `tee` to `.local/investigations/raw/<command>.json`. The response is visible in the tool result for immediate use AND saved on disk for the hypothesis-tester to re-read later.
+2. **Save AND inspect in one call with `| tee`** — pipe the filtered response through `tee` to `.local/investigations/raw/<command>.json`. The response is visible in the tool result for immediate use AND saved on disk for the hypothesis-tester to re-read later. **Run `mkdir -p .local/investigations/raw` once before the first fetch — `tee` does not create the directory and will otherwise drop the file silently.**
 
 Reference shape:
 

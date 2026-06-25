@@ -23,6 +23,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -51,81 +52,45 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  # Single comprehensive check graded on the agent's FINAL RESPONSE only
-  # (include_tool_calls: false) against the authoritative RESOLUTION.md.
   - type: llm_judge
-    description: "Agent reached the same root cause as RESOLUTION.md: a duplicate sheet-name conflict (ConflictResolution=Fail)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: false
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md from the real investigation that troubleshot this exact
-      failing job. Treat it as the authoritative ground truth. Grade ONLY the
-      agent's final response to the user — not its tool calls or intermediate
-      files.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "why did my last job from folder Shared fail?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      The agent had to find the most-recent Faulted job in folder Shared and
-      diagnose it from evidence. Grade three dimensions together:
-
-      DIMENSION A -- FAULT
-        Identifies the most-recent Faulted job in folder Shared:
-        job 2fbf6ba4-b347-462f-a83e-33c6c34bbea6, process
-        GSuite_AddSheetNameConflict, failing in the GSuite "Add Sheet"
-        activity (UiPath.GSuite.Activities.AddSheetConnections).
-
-      DIMENSION B -- CAUSE
-        The target spreadsheet already contains a sheet (tab) whose name
-        matches the configured SheetName, and the activity's ConflictResolution
-        was left at its default Fail, so Add Sheet refused to create a duplicate
-        and threw "A sheet with the same name already exists."
-        (raised synchronously by AddSheetWithConflictResolution). This is a
-        deterministic name-conflict; the connection authenticated and the
-        spreadsheet resolved fine.
-
-        MUST-NOT-ATTRIBUTE list. Attributing the fault to ANY of these is
-        WRONG and caps the score at 0.0 for the cause:
-          - an HTTP 404 / resource-not-found
-          - an invalid/inaccessible connection or auth failure
-          - a null/empty or unparseable range
-          - rate limiting / HTTP 429 / throttling
-          - a transient 5xx / Google server error
-          - a per-request timeout
-
-      DIMENSION C -- RESOLUTION
-        Resolve the name conflict by any of: set SheetName to a value that is
-        unique within the target spreadsheet, OR change ConflictResolution to
-        Replace or Rename, OR remove/rename the pre-existing same-named tab,
-        then re-run. NOT a connection fix, NOT a range fix, NOT a retry.
-
-      ANTI-FABRICATION: penalize invented connection IDs, invented 404s, or any
-      claim of an outage. The connections are Enabled and valid; the only fault
-      is the same-name conflict.
-
-      SCORING RUBRIC (single score):
-        1.0  Correct job (names 2fbf6ba4 / GSuite_AddSheetNameConflict, GSuite
-             Add Sheet) AND same-name-conflict cause (names "A sheet with the
-             same name already exists" AND ConflictResolution=Fail) AND correct
-             conflict-resolution fix (unique name / Replace / Rename / remove
-             the pre-existing tab).
-        0.7  Cause is right (same-name conflict) but the fix is vague, or the
-             agent did not clearly name the specific job.
-        0.5  Identified the GSuite Sheets / Add Sheet surface but did not reach
-             the name-conflict cause, or proposed the wrong fix.
-        0.2  Recognized a failure but the wrong domain.
-        0.0  Wrong cause — especially attributing to anything on the
-             MUST-NOT-ATTRIBUTE list — or no conclusion.
-
-      Be substance-focused, not schema-focused.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 # Override experiments/default.yaml's 600s limit -- the multi-agent troubleshooting
 # skill (triage -> hypothesis-generator -> tester -> presenter) routinely takes
 # 10-20 minutes when sub-agents run sequentially.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

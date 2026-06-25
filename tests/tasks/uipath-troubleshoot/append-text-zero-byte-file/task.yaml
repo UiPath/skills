@@ -13,6 +13,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -50,59 +51,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched append-text-zero-byte-file AND recommended delete + Create if not exists / fix upstream"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md is authoritative).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request:
-        "ReportAppender faults in Orchestrator (folder 'Report Build', machine
-         MOCK-ROBOT-16) opening a Word doc and appending text; the error
-         mentions an archive file that can't be size zero. The doc was
-         created by a team member."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        Matches references/activity-packages/word-activities/playbooks/append-text-zero-byte-file.md
-        because "Archive file cannot be size zero" (InvalidDataException)
-        opening a .docx for an Append Text is the 0-byte / not-a-valid-
-        OpenXML-package signature.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        Root cause: the target `.docx` (`Notes.docx`) is a 0-byte file — not
-        a valid OpenXML/ZIP package (typically a renamed `.txt`, or a
-        failed/truncated write). A real Word file needs internal XML
-        structure, so opening the empty file throws "Archive file cannot be
-        size zero".
-        Fix: delete the 0-byte file and let UiPath generate a valid one —
-        check `Create if not exists` in the Word Application Scope (or
-        provide a real `.docx`); if the empty file came from a failed
-        upstream write, fix that step and guard on size > 0.
-
-      DIMENSION C -- Right target
-        The agent must tie the error to the 0-byte / invalid file, NOT blame
-        a missing Word install, a file lock, the activity placement, or the
-        workflow logic, and NOT fabricate a host action.
-
-      SCORING RUBRIC:
-        1.0  Matched append-text-zero-byte-file AND identified the 0-byte /
-             invalid .docx as the cause AND recommended deleting it +
-             `Create if not exists` (and/or fixing the upstream that produced
-             the empty file), without blaming install/lock/placement/logic or
-             fabricating actions.
-        0.8  Correct playbook and cause but the fix is vague (e.g., "replace
-             the file" without naming delete + Create if not exists / upstream
-             fix).
-        0.5  Recognized a bad/corrupt file but attributed it to the wrong
-             cause (lock, genuine corruption of a non-empty file) or matched
-             a sibling playbook.
-        0.2  Restated the error without a cause.
-        0.0  Wrong cause (Word not installed, activity outside scope, file
-             path wrong) or fabricated a host action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

@@ -14,6 +14,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -51,70 +52,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the read-text-doc-format playbook AND recommended Use Word File / convert to .docx"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My LegacyDocReader process faults in Orchestrator (folder 'Legacy
-         Docs', machine MOCK-ROBOT-11) reading text from Word documents. It
-         works on newer files but throws a format error on older ones; the
-         file it choked on is an older Word document."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/read-text-doc-format.md
-        because a FileFormatException / "not a valid Office Open XML
-        document … only .docx supported" on the standalone System Read Text,
-        failing on older files, is the signature of the .docx-only limitation
-        hitting a legacy binary .doc.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - Main.xaml uses the standalone System > File > Word Document Read
-            Text (its own FileName, no Word scope; project depends only on
-            UiPath.System.Activities, not UiPath.Word.Activities).
-          - That activity is OpenXML .docx-only. The input
-            'Contract.doc' is a legacy binary .doc, so it throws
-            FileFormatException. Newer .docx files work; older .doc files
-            don't.
-        The reference fix (either path):
-          - Read the .doc through a Use Word File (or Word Application Scope)
-            and the Word-pack Read Text — the Word Interop the container uses
-            opens both .doc and .docx. (Requires desktop Word.) OR
-          - Convert the .doc to .docx up front, then read the .docx with the
-            standalone activity.
-
-      DIMENSION C -- Right target
-        The agent must tie the fault to the .doc-vs-.docx format limitation
-        of the standalone activity, NOT conclude the file is missing,
-        corrupt, the path is wrong, or Word is not installed, and NOT
-        fabricate a host action.
-
-      SCORING RUBRIC:
-        1.0  Agent matched read-text-doc-format AND identified the standalone
-             System Read Text being .docx-only failing on a legacy .doc as
-             the cause AND recommended a valid fix (read via Use Word File /
-             Interop, or convert to .docx first) — without blaming a
-             missing/corrupt file, the path, or the install, or fabricating
-             actions.
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "use a
-             different activity" without naming Use Word File / convert).
-        0.5  Recognized a format problem but attributed it to the wrong cause
-             (genuinely corrupt file, missing file, wrong path), or matched a
-             sibling playbook.
-        0.2  Restated the error without a cause.
-        0.0  Wrong cause (file missing/corrupt, path wrong, Word not
-             installed, container/scope), or fabricated a host action.
-
-      Reward either valid fix path equally.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

@@ -21,6 +21,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -49,80 +50,45 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  # Single comprehensive check graded on the agent's FINAL RESPONSE only
-  # (include_tool_calls: false) against the authoritative RESOLUTION.md.
   - type: llm_judge
-    description: "Agent reached the same root cause as RESOLUTION.md: a Sheets API 400 on a malformed A1 range (Sheet1!A0)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: false
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md from the real investigation that troubleshot this exact
-      failing job. Treat it as the authoritative ground truth. Grade ONLY the
-      agent's final response to the user — not its tool calls or intermediate
-      files.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "why did my last job from folder Shared fail?"
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      The agent had to find the most-recent Faulted job in folder Shared and
-      diagnose it from evidence. Grade three dimensions together:
-
-      DIMENSION A -- FAULT
-        Identifies the most-recent Faulted job in folder Shared:
-        job d5e0e6b0-55b8-4256-8494-c601cb986dab, process
-        GSuite_SheetsInvalidRange, failing in the GSuite "Write Range"
-        activity (UiPath.GSuite.Activities.WriteRangeConnections).
-
-      DIMENSION B -- CAUSE
-        The Write Range activity sent a malformed A1 range — `Sheet1!A0` —
-        to the Google Sheets API, which rejected it with HTTP 400
-        BadRequest: "Unable to parse range: Sheet1!A0". Row 0 is invalid
-        because Google Sheets is 1-indexed. This is a server-side range-parse
-        (400) failure that occurred AFTER the spreadsheet resolved and the
-        connection authenticated.
-
-        MUST-NOT-ATTRIBUTE list. Attributing the fault to ANY of these is
-        WRONG and caps the score at 0.0 for the cause:
-          - an HTTP 404 / resource-not-found (e.g. a missing spreadsheet/file)
-          - an invalid / inaccessible connection or an auth failure
-          - a null or empty input (the range is present, just malformed)
-          - rate limiting / HTTP 429 / throttling
-          - a transient 5xx / Google server error
-          - a per-request timeout
-
-      DIMENSION C -- RESOLUTION
-        Use a valid 1-based A1 range (e.g. `Sheet1!A1` or `Sheet1!A1:B2`), or
-        fix the off-by-one in dynamically-built range construction so the row
-        index is >= 1. NOT a connection re-auth, NOT a file-id fix, NOT a
-        transient retry.
-
-      ANTI-FABRICATION: penalize invented connection IDs, an invented
-      file-not-found, invented quota/scope settings, or any claim of an
-      outage. The connections are Enabled and valid; the only fault is the
-      Sheets 400 on the unparseable range.
-
-      SCORING RUBRIC (single score):
-        1.0  Correct job (names d5e0e6b0 / GSuite_SheetsInvalidRange, GSuite
-             Write Range) AND 400/unparseable-range cause (names "Unable to
-             parse range" / "Sheet1!A0" / row-0 / 1-indexed) AND correct fix
-             direction (use a valid 1-based A1 range / fix the off-by-one).
-        0.7  Cause is right (Sheets 400 on a malformed A1 range) but the fix
-             is vague, or the agent did not clearly name the specific job.
-        0.5  Identified the GSuite / Google Sheets surface but gave no
-             range-parse (400) cause, or proposed the wrong fix.
-        0.2  Recognized a failure but the wrong domain.
-        0.0  Wrong cause — especially attributing to anything on the
-             MUST-NOT-ATTRIBUTE list — or no conclusion.
-
-      Be substance-focused, not schema-focused.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
 # Override experiments/default.yaml's 600s limit -- the multi-agent troubleshooting
 # skill (triage -> hypothesis-generator -> tester -> presenter) routinely takes
 # 10-20 minutes when sub-agents run sequentially.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the diagnostic agent to finish its investigation
+    and trust its expertise. You only have the information you wrote in
+    your initial report — no extra data.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion or clarification the
+    agent requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, system-activities, activity-packages), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -14,6 +14,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -54,76 +55,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the word-scope-file-corrupted playbook AND recommended clearing the lock + save-as-new-file"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My MonthlyReportFiller scheduled process (folder 'Reporting',
-         machine MOCK-HOST) worked for the first few runs and now faults
-         saying the file is corrupted, but the template opens fine when I
-         double-click it on my own machine."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/word-scope-file-corrupted.md
-        because the error
-          "Word experienced an error trying to open the file ... The file
-           appears to be corrupted"
-        from a Word Application Scope, on a job that ran successfully before,
-        is the signature of a locked / half-written document rather than a
-        genuinely corrupt source.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The workflow opens the template 'MonthlyTemplate.docx' and edits
-            it IN PLACE (no save-as-new). The scheduled job log shows a Word
-            instance was already running on the host when the scope started
-            (orphaned WINWORD.EXE from a prior run holding the file handle).
-          - The lock leaves the template partially written, so the next run
-            opens it and Word reports it as corrupted.
-          - "Worked the first few runs, opens fine on my own machine" points
-            at a host-state / locking problem, not a workflow-logic defect or
-            a genuinely corrupt template.
-        The reference fix offers:
-          - Clear the locked Word session: add a Kill Process for WINWORD
-            BEFORE the Word Application Scope (and ensure the scope disposes
-            so Word always closes); one-time, end stray WINWORD.EXE on the
-            host.
-          - Stop overwriting the template in place: save to a NEW output file
-            (distinct path) so the source template is never half-written.
-
-      DIMENSION C -- No fabricated host actions
-        The user is off-host, so the agent must hand over the host check /
-        steps; it must NOT claim to have killed processes or run host
-        commands itself. Recommending the workflow change (Kill Process /
-        save-as-new) is expected.
-
-      SCORING RUBRIC:
-        1.0  Agent matched word-scope-file-corrupted AND identified an
-             orphaned/locked Word session and/or in-place template overwrite
-             as the cause AND recommended at least one of: clear the lock
-             (Kill Process WINWORD before the scope / end orphan WINWORD.EXE)
-             OR save to a new file instead of overwriting the template -
-             without fabricating host actions. Both fixes is ideal; either
-             alone earns 1.0.
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "clear
-             the lock" without naming Kill Process / save-as-new).
-        0.5  Recognized a file-lock / process issue but concluded the
-             template is genuinely corrupt and only suggested replacing it,
-             or matched a sibling Word playbook instead.
-        0.2  Surfaced the error text without diagnosis.
-        0.0  Wrong cause (e.g., Word not installed, missing package, file
-             path wrong), or fabricated a host action.
-
-      Reward either valid fix path equally. Penalize confident wrong causes.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

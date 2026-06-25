@@ -15,6 +15,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -53,71 +54,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the replace-text-loop-template-overwrite playbook AND recommended a fresh template copy per iteration"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My BulkOfferLetters process shows Successful in Orchestrator (folder
-         'Bulk Letters', machine MOCK-ROBOT-07), but only the FIRST letter is
-         correct — every later letter still has the literal '[Name]'
-         placeholder. No error is reported."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/replace-text-loop-template-overwrite.md
-        because "works on iteration 1, then the placeholder is missing on
-        later rows" with a Successful job is the signature of editing the
-        template in place so the first replacement consumes the placeholder.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The loop's Use Word File scope points at the template
-            ('OfferTemplate.docx') and edits it IN PLACE every iteration
-            (no per-iteration copy).
-          - Iteration 1 replaces '[Name]' and saves — so the placeholder no
-            longer exists in the file. Iterations 2+ find 0 occurrences and
-            leave the (already-mutated) document unchanged. The per-iteration
-            logs confirm: "Replaced 1 occurrence" then "Replaced 0".
-          - The job is Successful because matching 0 occurrences is not an
-            error. This is template mutation across iterations, NOT a
-            run-split placeholder (which fails on row 1 too) or a file lock.
-        The reference fix:
-          - At the START of each iteration, use Copy File to make a fresh
-            temporary copy of the template (a unique per-row output path),
-            and point the Word scope at that temp file. Treat the template
-            as read-only; never edit it in place.
-
-      DIMENSION C -- Did NOT treat the green job as healthy
-        The agent must recognize a Successful job with wrong output (rows 2+)
-        as a real silent failure — using the "Replaced 1 then 0" logs and
-        the in-place-edit structure — NOT dismiss it as working because the
-        job is green, and NOT fabricate a crash/lock/host action.
-
-      SCORING RUBRIC:
-        1.0  Agent matched replace-text-loop-template-overwrite AND
-             identified in-place template editing consuming the placeholder
-             after iteration 1 as the cause AND recommended copying the
-             template to a fresh temp file per iteration (template read-only)
-             — without treating the green job as healthy or fabricating a
-             crash/lock.
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "use a
-             fresh file" without naming Copy File per iteration / template
-             read-only).
-        0.5  Recognized later rows aren't replaced but attributed it to the
-             wrong cause (run-split placeholder, file lock, wrong Search
-             value), or matched a sibling Replace Text playbook.
-        0.2  Restated the symptom without a cause.
-        0.0  Concluded the job is healthy because it is Successful, OR blamed
-             a crash / lock / missing install / 256-char limit, OR fabricated
-             a host action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

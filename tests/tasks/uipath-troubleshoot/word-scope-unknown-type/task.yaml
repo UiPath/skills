@@ -14,6 +14,7 @@ agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
 
 run_limits:
+  expected_turns: 300
   task_timeout: 5400
   max_turns: 60
   turn_timeout: 3600
@@ -51,73 +52,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched the word-scope-cannot-create-unknown-type playbook AND recommended restoring/pinning the package on the robot"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is
-      the RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My InvoiceLetters process runs fine in Studio but faults
-         immediately when run via Orchestrator on the new unattended robot
-         (folder 'Doc Automation', machine MOCK-ROBOT-02). Fails in under a
-         second, before doing real work."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/word-activities/playbooks/word-scope-cannot-create-unknown-type.md
-        because the runtime error
-          "Cannot create unknown type
-           '{clr-namespace:UiPath.Word.Activities;assembly=UiPath.Word.Activities}WordApplicationScope'"
-        is a load/compile-time failure: the activity type cannot be created
-        because the UiPath.Word.Activities assembly is not restored on the
-        execution host.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The XAML references WordApplicationScope from
-            UiPath.Word.Activities (project.json pins [1.17.2]).
-          - The unattended robot (MOCK-ROBOT-02) lacks that package version
-            (missing from its feed / not bundled in the published package),
-            so the type cannot be created and the process faults at load,
-            before any activity runs (~0.8s, no COM/document error).
-          - "Works in Studio, fails only on the remote robot" is the
-            signature of a package restore / version-availability gap, NOT
-            a workflow-logic defect.
-        The reference fix:
-          - Ensure the exact UiPath.Word.Activities version (project.json
-            dependency) is available on the feed the robot restores from,
-            pin it, and republish the process so the dependency is bundled;
-            confirm the robot can reach that feed.
-
-      DIMENSION C -- No fabricated actions / no wrong fix
-        The agent must hand over the package/feed steps for the user to
-        perform; it must NOT claim to have republished or edited the robot
-        feed itself, and must NOT "fix" the workflow logic or the XAML
-        activity (the workflow is correct).
-
-      SCORING RUBRIC:
-        1.0  Agent matched word-scope-cannot-create-unknown-type AND
-             identified a missing/mismatched UiPath.Word.Activities package
-             on the robot as the cause AND recommended making the version
-             available on the feed / pinning it / republishing (any of these
-             package-restore remedies), without fabricating actions or
-             editing workflow logic.
-        0.8  Correct playbook and cause, but the fix is vague (e.g., "fix
-             the package" without naming feed availability / pin / republish).
-        0.5  Recognized a dependency / package problem but did not tie it to
-             UiPath.Word.Activities on the robot, or proposed only "update
-             the package in Studio" without addressing robot-side
-             availability.
-        0.2  Surfaced the error text without diagnosis.
-        0.0  Wrong cause (e.g., concluded Word is not installed, the
-             document is corrupt, or the workflow logic / XAML is at fault),
-             or fabricated an action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
