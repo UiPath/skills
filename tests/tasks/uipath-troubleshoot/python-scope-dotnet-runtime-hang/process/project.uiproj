@@ -1,0 +1,6 @@
+{
+  "Name": "PyScoreModel",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Python Scope hang: a Windows-target project on UiPath.Python.Activities 1.10.0 whose robot host is missing the .NET Desktop Runtime, so the Python host process never starts and the scope hangs with no error.",
+  "MainFile": "Main.xaml"
+}
