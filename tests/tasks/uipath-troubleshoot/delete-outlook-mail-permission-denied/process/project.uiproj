@@ -1,0 +1,6 @@
+{
+  "Name": "SharedInboxArchiver",
+  "ProjectType": "Process",
+  "Description": "Reads a shared mailbox and deletes processed messages. Reproduces a Delete Outlook Mail Message access-denied failure (0x80070005 E_ACCESSDENIED): the Robot account has Send-As but not Full Access on the shared mailbox ap-shared@contoso.com.",
+  "MainFile": "Main.xaml"
+}

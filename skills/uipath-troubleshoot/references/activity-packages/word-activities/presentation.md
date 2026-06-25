@@ -1,8 +1,11 @@
 # Word Activities Presentation Rules
 
-- **Activities** — use the display name (e.g., "Save Document as PDF", "Word Application Scope", "Replace Text"), not the fully qualified class name (e.g., `UiPath.Word.Activities.WordExportToPdf`)
-- **Documents** — refer to documents by their filename (e.g., "document 'Doc1.docx'") or full path when ambiguous; not by the variable holding the document reference
-- **Word instances** — refer to the external Word process as "Microsoft Word (`WINWORD.EXE`)" so the user knows which process to check for or close
-- **HRESULTs** — quote the exact code and symbol together (e.g., "`0x8001010E RPC_E_WRONG_THREAD`"), and name the IID's interface (`{0002096B-...}` = `Microsoft.Office.Interop.Word._Document`) so the user can correlate it with the stack trace
+- **Activities** — use the display name (e.g., "Word Application Scope", "Use Word File", "Kill Process"), not the fully qualified class name (e.g., `UiPath.Word.Activities.WordApplicationScope`)
+- **Documents** — refer to documents by their filename (e.g., "document 'Contract.docx'") or full path when ambiguous; not by the variable holding the document reference
 - **Office versions** — refer to Office by its installed product name and bitness (e.g., "Microsoft 365 Apps for Enterprise (64-bit)", "Office 2019 (32-bit)"), not by internal version numbers like `16.0` unless they are the only identifier available
-- **Run surface** — name the surface in the user's terms (e.g., "Studio Run/Debug (foreground)", "unattended robot (Session 0)"), not internal runtime flags like `isAttended`
+- **Word settings** — refer to Trust Center settings by the exact UI label path the user navigates (e.g., `File > Options > Trust Center > Trust Center Settings > Trusted Locations`), so the user can find the toggle without guessing
+- **Processes** — refer to the Word process as `WINWORD.EXE` (the executable name the user sees in Task Manager), not "Word process" alone
+- **Replace Text** — refer to the activity by display name ("Replace Text in Document" / classic "Replace Text"), and to its inputs by the property labels the user sees (`Search` / "Search for", `Replace` / "Replace with"); quote placeholder tokens exactly as they appear in the template (e.g. "`[Name]`")
+- **Word instances** — refer to the external Word process as "Microsoft Word (`WINWORD.EXE`)" so the user knows which process to check for or close
+- **HRESULTs** — quote the exact code and symbol together (e.g. "`0x8001010E RPC_E_WRONG_THREAD`"), and name the IID's interface (`{0002096B-...}` = `Microsoft.Office.Interop.Word._Document`) so the user can correlate it with the stack trace
+- **Run surface** — name the surface in the user's terms (e.g. "Studio Run/Debug (foreground)", "unattended robot (Session 0)"), not internal runtime flags like `isAttended`

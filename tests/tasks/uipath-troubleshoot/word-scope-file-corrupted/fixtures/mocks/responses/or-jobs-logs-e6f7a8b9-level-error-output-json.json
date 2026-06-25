@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-10T06:00:11.790Z",
+      "Message": "[Word Application Scope] Word experienced an error trying to open the file 'C:\\UiPath\\Reporting\\data\\MonthlyTemplate.docx'. The file appears to be corrupted."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-10T06:00:11.840Z",
+      "Message": "Word experienced an error trying to open the file. The file appears to be corrupted.\r\nin Main.xaml\r\n    at WordApplicationScope \"Word Application Scope\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

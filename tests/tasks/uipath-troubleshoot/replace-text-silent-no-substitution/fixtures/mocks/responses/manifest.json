@@ -1,0 +1,68 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the replace-text-silent-no-substitution playbook signature. The job SUCCEEDED but the placeholder was not replaced (run-split token), so there is no faulted job and no error log.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"c4d5e6f7-a8b9-4193-0c1d-2e3f40516273\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-c4d5e6f7-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key c4d5e6f7-a8b9-4193-0c1d-2e3f40516273 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-c4d5e6f7-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"c4d5e6f7-a8b9-4193-0c1d-2e3f40516273\" --state Successful --output json",
+      "file": "or-jobs-list-folder-key-c4d5e6f7-state-successful-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key c4d5e6f7-a8b9-4193-0c1d-2e3f40516273 --state Successful --output json",
+      "file": "or-jobs-list-folder-key-c4d5e6f7-state-successful-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"c4d5e6f7-a8b9-4193-0c1d-2e3f40516273\" --output json",
+      "file": "or-jobs-list-folder-key-c4d5e6f7-state-successful-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key c4d5e6f7-a8b9-4193-0c1d-2e3f40516273 --output json",
+      "file": "or-jobs-list-folder-key-c4d5e6f7-state-successful-output-json.json"
+    },
+    {
+      "match": "or jobs get \"d5e6f7a8-b9c0-4204-1d2e-3f4051627384\" --output json",
+      "file": "or-jobs-get-d5e6f7a8-output-json.json"
+    },
+    {
+      "match": "or jobs get d5e6f7a8-b9c0-4204-1d2e-3f4051627384 --output json",
+      "file": "or-jobs-get-d5e6f7a8-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"d5e6f7a8-b9c0-4204-1d2e-3f4051627384\" --level Error --output json",
+      "file": "or-jobs-logs-d5e6f7a8-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs d5e6f7a8-b9c0-4204-1d2e-3f4051627384 --level Error --output json",
+      "file": "or-jobs-logs-d5e6f7a8-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"d5e6f7a8-b9c0-4204-1d2e-3f4051627384\" --output json",
+      "file": "or-jobs-logs-d5e6f7a8-output-json.json"
+    },
+    {
+      "match": "or jobs logs d5e6f7a8-b9c0-4204-1d2e-3f4051627384 --output json",
+      "file": "or-jobs-logs-d5e6f7a8-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

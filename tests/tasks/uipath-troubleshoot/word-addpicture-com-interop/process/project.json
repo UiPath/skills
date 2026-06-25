@@ -1,0 +1,41 @@
+{
+  "name": "WordContractStamp",
+  "projectId": "b2c2e1f0-5a60-4178-92a3-bb222299c8d9",
+  "description": "Repro: Word Add Picture process whose XAML is correct (WordAddImage nested in UseWordFile, valid absolute ImagePath) but faults with a COM HRESULT 0x8002801D (TYPE_E_LIBNOTREGISTERED) because the Word interop type library is not registered on the robot host. Exercises the type-library-not-registered branch (E1) of the word-com-interop-failures playbook (reached via add-picture-failures.md C2, which delegates to it).",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.Word.Activities": "[1.21.0]",
+    "UiPath.System.Activities": "[26.2.6]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "26.0.194.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "netFrameworkLazyLoading": false,
+    "isPausable": false,
+    "isAttended": false,
+    "requiresUserInteraction": false,
+    "supportsPersistence": false,
+    "workflowSerialization": "NewtonsoftJson",
+    "excludedLoggedData": ["Private:*", "*password*"],
+    "executionType": "Workflow",
+    "readyForPiP": false,
+    "startsInPiP": false,
+    "mustRestoreAllDependencies": true,
+    "pipType": "ChildSession"
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {"privateWorkflows": []},
+    "processOptions": {"ignoredFiles": []},
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "VisualBasic",
+  "modernBehavior": true,
+  "targetFramework": "Windows"
+}

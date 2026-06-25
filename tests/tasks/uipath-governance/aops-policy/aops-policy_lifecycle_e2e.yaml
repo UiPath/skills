@@ -16,7 +16,7 @@ description: >
   The trailing delete is the cleanup; the test self-cleans on success.
   If a run fails mid-flow and leaves an `aitl-crud-lifecycle-clie2e`
   policy behind, delete it manually before the next run.
-tags: [uipath-governance, e2e, aops-policy, mode:build]
+tags: [uipath-governance, e2e, aops-policy, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 18

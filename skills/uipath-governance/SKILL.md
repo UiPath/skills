@@ -1,6 +1,6 @@
 ---
 name: uipath-governance
-description: "UiPath governance via `uip gov` — author and deploy policies on two layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case), gated by tag, caller, or actor (User/Group). Skill classifies product-layer vs resource/tool-use intent before authoring. For platform ops→uipath-platform."
+description: "UiPath governance via `uip gov` — author and deploy policies on two layers. AOps product policies (`uip gov aops-policy`): block/restrict/enforce features in Studio, StudioX, Assistant, Robot, AI Trust Layer, Agent Builder; deploy to user/group/tenant. Access ToolUsePolicy (`uip gov access-policy`): allow/deny when one workflow invokes another as a tool (Agent→Agent/Maestro/Flow/RPA/API/Case), gated by tag, caller, or actor (User/Group). Skill classifies product-layer vs resource/tool-use intent before authoring. Operate: deploy/undeploy policies to user/group/tenant, query effective deployed policy, list deployment subjects. Diagnose: investigate policy not taking effect, debug deployment precedence (user>group>tenant), evaluate access-policy rules, troubleshoot blocked tool invocations. For platform ops→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 ---
 
@@ -25,6 +25,15 @@ Activate on **any** governance / policy / rule intent — even when the user did
 - `allow only / permit only / limit to / restrict to` X
 - `who can / which … can / on behalf of` — actor- or identity-shaped governance
 - `compliance / posture / audit` framing on top of policies
+
+### Troubleshoot
+
+- Investigate why a governance policy isn't taking effect
+- Debug deployment precedence (user > group > tenant override)
+- Evaluate access-policy rules against test scenarios (`access-policy evaluate`)
+- Troubleshoot blocked tool/workflow invocations
+- Audit which policies are deployed and to whom
+- Identify license-type / product mismatch causing silent no-ops
 
 **Sibling redirects:**
 - Platform ops (auth, Orchestrator resources, packaging, deploy) → `uipath-platform`
@@ -79,6 +88,9 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 | **Look up CLI flags / output shapes** (AOps) | [`references/aops-policy/aops-policy-commands.md`](./references/aops-policy/aops-policy-commands.md) |
 | **Look up CLI flags / output shapes** (Access) | [`references/access-policy/access-policy-commands.md`](./references/access-policy/access-policy-commands.md) |
 | **Resolve a name to a UUID for Access** | [`references/access-policy/resource-lookup-guide.md`](./references/access-policy/resource-lookup-guide.md) |
+| **Diagnose a governance failure (capability index)** | [`references/diagnose/CAPABILITY.md`](./references/diagnose/CAPABILITY.md) |
+| **Recognize a known governance failure pattern** | [`references/diagnose/references/failure-modes.md`](./references/diagnose/references/failure-modes.md) |
+| **Walk the diagnostic priority ladder** | [`references/diagnose/references/troubleshooting-guide.md`](./references/diagnose/references/troubleshooting-guide.md) |
 
 ## Anti-patterns
 

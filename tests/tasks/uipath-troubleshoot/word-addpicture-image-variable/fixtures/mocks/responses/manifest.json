@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the image-variable branch (C4) of the word-activities/add-picture-failures playbook. Agent must chain: folders list-current-user -> jobs list --state Faulted -> jobs get / logs (resolved ImagePath is the literal 'UiPath.Core.Image') -> workflow source (ImagePath bound to screenshotImage.ToString(), an in-memory UiPath.Core.Image). The combination of (Image variable bound to ImagePath in source) + (filename 'UiPath.Core.Image' in the resolved path) is decisive. Scrubbed: host->MOCK-HOST, robot->AUTOMATION1.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "or-jobs-history.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "or-jobs-get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}
