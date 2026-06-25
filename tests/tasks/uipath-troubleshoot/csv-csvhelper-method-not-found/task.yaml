@@ -1,0 +1,133 @@
+task_id: skill-troubleshoot-csv-csvhelper-method-not-found
+description: >
+  UiPath troubleshooting agent must diagnose an Append To CSV failure caused by a
+  CsvHelper version conflict: CsvHelper.dll is bundled in both
+  UiPath.System.Activities and UiPath.Excel.Activities, and the project pins
+  mismatched versions of the two, so the activity binds an incompatible CsvHelper
+  and faults with "Method not found: 'Void CsvHelper.CsvWriter..ctor(...)'".
+  Success = agent matches the csv-helper-method-not-found playbook, identifies the
+  CsvHelper dependency conflict between UiPath.System.Activities and
+  UiPath.Excel.Activities, AND recommends aligning/upgrading both packages,
+  without fabricating host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, csv-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My CsvExporter process faults in Orchestrator on every run. The folder is
+  "Reporting". It reads an Excel sheet and appends it to a CSV, but it dies at
+  the Append To CSV step with a "Method not found" error mentioning CsvHelper.
+  I recently upgraded one of the activity packages.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator and the project
+  source in the current working directory. If the answer needs evidence from
+  the host itself, hand me the exact checks to run and stop - don't stall
+  waiting on host data.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched csv-helper-method-not-found, identified the CsvHelper System/Excel version conflict, and recommended aligning both packages"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My CsvExporter process faults on every run (folder 'Reporting'). It
+         reads Excel and appends to a CSV but dies at Append To CSV with a
+         'Method not found' error mentioning CsvHelper. I recently upgraded one
+         of the activity packages. I'm not on the Robot host, only Orchestrator."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/csv-activities/playbooks/csv-helper-method-not-found.md
+        because `Append To CSV: Method not found: 'Void CsvHelper.CsvWriter..ctor(...)'`
+        is the signature of a CsvHelper assembly-binding conflict.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - CsvHelper.dll is bundled in BOTH UiPath.System.Activities (which
+            provides the CSV activities) and UiPath.Excel.Activities.
+          - project.json pins mismatched versions (UiPath.System.Activities
+            [23.4.0] and UiPath.Excel.Activities [2.24.4]), so the CSV activity
+            is compiled against one CsvHelper but binds the other at runtime ->
+            MissingMethodException / "Method not found".
+          - This is a dependency/binding conflict, NOT a file lock, NOT a
+            DataTable shape problem, NOT a host issue.
+        The reference fix is:
+          - In Manage Packages, upgrade BOTH UiPath.System.Activities and
+            UiPath.Excel.Activities to aligned current-stable versions so their
+            bundled CsvHelper matches, then rebuild/republish.
+
+      DIMENSION C -- No fabricated host actions
+        The fix is a Studio/project dependency change. The agent must not claim
+        to have edited the project on the robot or run host commands itself.
+
+      SCORING RUBRIC:
+        1.0  Matched csv-helper-method-not-found, identified the CsvHelper
+             conflict between UiPath.System.Activities and UiPath.Excel.Activities
+             (mismatched versions bundling incompatible CsvHelper), AND
+             recommended aligning/upgrading both packages.
+        0.8  Correct playbook and CsvHelper-conflict cause, but the fix is vague
+             (e.g. "update the packages" without naming both System + Excel /
+             aligning their versions).
+        0.5  Recognized a dependency / assembly-binding problem but did not tie it
+             to the System.Activities <-> Excel.Activities CsvHelper conflict.
+        0.2  Surfaced the "Method not found" error without diagnosis.
+        0.0  Wrong cause (file lock, DataTable shape, file path, host/runtime), or
+             fabricated a host action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing CsvExporter process. You
+    recently upgraded one activity package in Manage Packages and the CSV append
+    started failing. You are away from the robot host and only have Orchestrator
+    access.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, csv-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked which package you upgraded, say you bumped one of them (Excel or System) recently and aren't sure the other matches."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

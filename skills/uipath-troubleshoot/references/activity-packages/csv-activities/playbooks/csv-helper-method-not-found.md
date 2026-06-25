@@ -1,0 +1,33 @@
+---
+confidence: high
+---
+
+# Append / Write CSV — "Method not found: 'CsvHelper...'"
+
+## Context
+
+What this looks like:
+- A CSV activity (`Append To CSV` / `Write CSV` / `Read CSV`) faults with `Method not found: 'Void CsvHelper.CsvWriter..ctor(...)'` (or another `CsvHelper.*` member / type-load error).
+- The failure is at the **first CSV activity that runs** (or at compile), before any row is meaningfully processed — not a data error.
+
+What can cause it:
+- A **`CsvHelper` version conflict.** `CsvHelper.dll` is bundled in **both** `UiPath.System.Activities` (which provides the CSV activities) and `UiPath.Excel.Activities`. When the two packages are at versions that ship **incompatible `CsvHelper` builds**, the CSV activity is compiled against one `CsvHelper` API but binds the other at runtime — so the constructor/method signature it calls does not exist, and .NET throws `Method not found`.
+- Typically surfaces after one package was upgraded (or added) without the other, leaving the project with two packages that disagree on `CsvHelper`.
+
+What to look for:
+- The installed versions of **`UiPath.System.Activities`** and **`UiPath.Excel.Activities`** in `project.json` — are they from compatible release lines, or did one get upgraded independently?
+- Whether the error names a `CsvHelper` type/member (the signature of a binding conflict) rather than a file or data error.
+
+## Investigation
+
+1. Read the error from job evidence. Confirm it is a `Method not found` / type-load error naming a **`CsvHelper`** member at a CSV activity (not a file-lock or DataTable error — those are different playbooks).
+2. Read `project.json` `dependencies` and note the versions of `UiPath.System.Activities` and `UiPath.Excel.Activities`.
+3. A mismatch (e.g. an old System.Activities with a newer Excel.Activities, or vice versa) is the conflict — both bundle `CsvHelper` and the resolved assembly satisfies only one.
+
+## Resolution
+
+- **Align the two packages:** open **Manage Packages** in Studio and upgrade **both** `UiPath.System.Activities` and `UiPath.Excel.Activities` to their latest stable versions (from the same release line) so their bundled `CsvHelper` requirements match, then rebuild/republish.
+- **If only one package needs the upgrade functionally:** still bring the other to a compatible version — leaving them on divergent lines re-introduces the conflict.
+- **Confirm:** after aligning, the CSV activity binds a single consistent `CsvHelper` and the `Method not found` disappears on re-run.
+
+This is a high-confidence dependency fix: the error names a `CsvHelper` member, and a `UiPath.System.Activities` / `UiPath.Excel.Activities` version split in `project.json` is the conflict.

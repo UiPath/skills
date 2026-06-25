@@ -1,0 +1,128 @@
+task_id: skill-troubleshoot-csv-append-file-locked
+description: >
+  UiPath troubleshooting agent must diagnose an Append To CSV failure caused by a
+  file lock: the target daily.csv is open in Microsoft Excel on the robot host,
+  so the append cannot acquire write access and faults with "The process cannot
+  access the file because it is being used by another process". Success = agent
+  matches the csv-file-locked-or-invalid-path playbook, identifies the file lock
+  (open in Excel / held by another process), AND recommends closing or killing
+  the Excel lock holder (e.g. Kill Process EXCEL before the step), without
+  fabricating host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, csv-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My CsvDailyAppend process faults in Orchestrator on most runs. The folder is
+  "Daily Loads". It appends the day's rows to daily.csv, but it dies at the
+  Append To CSV step saying the file "is being used by another process". People
+  sometimes have that CSV open in Excel to eyeball it.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator and the project
+  source in the current working directory. If the answer needs evidence from
+  the host itself, hand me the exact checks to run and stop - don't stall
+  waiting on host data.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched csv-file-locked-or-invalid-path, identified the Excel file lock, and recommended closing/killing the lock holder"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My CsvDailyAppend process faults on most runs (folder 'Daily Loads').
+         It appends rows to daily.csv but dies at Append To CSV saying the file
+         'is being used by another process'. People sometimes have that CSV open
+         in Excel. I'm not on the Robot host, only Orchestrator."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/csv-activities/playbooks/csv-file-locked-or-invalid-path.md
+        because `The process cannot access the file ... because it is being used
+        by another process` at Append To CSV is the file-lock signature.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - daily.csv is locked by another process (open in Microsoft Excel on
+            the host, or held by another session/job), so Append To CSV cannot
+            get exclusive write access -> System.IO.IOException.
+          - This is a file-access/lock problem, NOT a CsvHelper dependency
+            conflict and NOT a DataTable shape problem.
+        The reference fix is:
+          - Close the workbook / ensure the file is not open in Excel; add a
+            Kill Process activity targeting EXCEL before the CSV step to clear
+            stray local instances; and/or serialize access so no concurrent
+            job/iteration holds the file.
+
+      DIMENSION C -- No fabricated host actions
+        The user is off-host. The agent may hand over checks / the workflow fix
+        but must NOT claim to have killed Excel or run host commands itself.
+
+      SCORING RUBRIC:
+        1.0  Matched csv-file-locked-or-invalid-path, identified the file lock
+             (open in Excel / held by another process), AND recommended closing
+             or killing the lock holder (e.g. Kill Process EXCEL before the
+             append) and/or serializing access.
+        0.8  Correct playbook and lock cause, but the fix is vague (e.g. "free
+             the file" without naming Excel / Kill Process / closing the holder).
+        0.5  Recognized a file-access problem but attributed it to a path error,
+             permissions, or a different cause rather than a lock.
+        0.2  Surfaced the IOException without diagnosis.
+        0.0  Wrong cause (CsvHelper conflict, DataTable shape, host/runtime), or
+             fabricated a host action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing CsvDailyAppend process.
+    Colleagues sometimes open daily.csv in Excel to review it. You are away from
+    the robot host and only have Orchestrator access.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, csv-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked whether the CSV might be open in Excel during runs, say yes, colleagues sometimes leave it open to review it."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

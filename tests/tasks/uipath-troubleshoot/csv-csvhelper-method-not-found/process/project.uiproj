@@ -1,0 +1,6 @@
+{
+  "Name": "CsvExporter",
+  "ProjectType": "Process",
+  "Description": "Reproduces an Append To CSV 'Method not found: CsvHelper...' failure caused by a CsvHelper version conflict between mismatched UiPath.System.Activities and UiPath.Excel.Activities versions.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,51 @@
+{
+  "name": "CsvExporter",
+  "projectId": "ca010001-d4e5-4f60-8a01-000000000001",
+  "description": "Reproduces an Append To CSV 'Method not found: CsvHelper...' failure caused by a CsvHelper version conflict between mismatched UiPath.System.Activities and UiPath.Excel.Activities versions.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.System.Activities": "[23.4.0]",
+    "UiPath.Excel.Activities": "[2.24.4]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "25.10.7.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "isAttended": false,
+    "executionType": "Workflow",
+    "requiresUserInteraction": false,
+    "supportsPersistence": false,
+    "excludedLoggedData": [
+      "Private:*",
+      "*password*"
+    ]
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {
+      "privateWorkflows": []
+    },
+    "processOptions": {
+      "ignoredFiles": []
+    },
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "CSharp",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "ca1b2c3d-4e5f-6071-8293-a4b5c6d7e801",
+      "input": [],
+      "output": []
+    }
+  ],
+  "isTemplate": false,
+  "templateProjectData": {},
+  "publishData": {},
+  "targetFramework": "Windows"
+}

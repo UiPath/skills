@@ -1,0 +1,132 @@
+task_id: skill-troubleshoot-csv-append-column-mismatch
+description: >
+  UiPath troubleshooting agent must diagnose an Append To CSV failure caused by a
+  DataTable column-structure mismatch: the workflow builds a 2-column DataTable
+  (OrderId, Customer) and appends it to orders.csv, which has 3 columns (OrderId,
+  Customer, Total), so the rows cannot be appended. Success = agent matches the
+  csv-datatable-structure-mismatch playbook, identifies the column count/header
+  mismatch between the input DataTable and the existing CSV, AND recommends
+  aligning the DataTable's columns to the file (e.g. Build Data Table with
+  identical headers), without fabricating host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, csv-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My CsvMerger process faults in Orchestrator on every run. The folder is
+  "Data Integration". It builds a data table and appends it to orders.csv, but
+  it dies at the Append To CSV step with something about the columns not
+  matching. The CSV already has an existing header.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator and the project
+  source in the current working directory. If the answer needs evidence from
+  the host itself, hand me the exact checks to run and stop - don't stall
+  waiting on host data.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched csv-datatable-structure-mismatch, identified the column count/header mismatch, and recommended aligning the DataTable columns to the file"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My CsvMerger process faults on every run (folder 'Data Integration').
+         It builds a data table and appends it to orders.csv but dies at Append
+         To CSV with something about the columns not matching. The CSV already
+         has an existing header. I'm not on the Robot host, only Orchestrator."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/csv-activities/playbooks/csv-datatable-structure-mismatch.md
+        because the failure is a DataTable column/structure mismatch at Append To
+        CSV (the input table's columns don't line up with the existing file).
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The workflow builds a 2-column DataTable (OrderId, Customer) via the
+            Add Data Column steps, then appends it to orders.csv, which has 3
+            columns (OrderId, Customer, Total).
+          - The column count/headers do not match, so Append To CSV cannot align
+            the rows and faults.
+          - This is a DataTable shape problem, NOT a CsvHelper dependency conflict
+            and NOT a file lock.
+        The reference fix is:
+          - Define the input DataTable with the SAME columns (names, order, count)
+            as the existing CSV - e.g. add the missing Total column (use Build
+            Data Table to lay out the identical header schema) before the
+            Add Data Row / append - so the structures align.
+
+      DIMENSION C -- No fabricated host actions
+        The fix is a workflow/DataTable change. The agent must not claim to have
+        edited the project on the robot or run host commands itself.
+
+      SCORING RUBRIC:
+        1.0  Matched csv-datatable-structure-mismatch, identified the column
+             count/header mismatch between the input DataTable (2 cols) and the
+             existing CSV (3 cols), AND recommended aligning the DataTable's
+             columns to the file (add the missing column / Build Data Table with
+             identical headers).
+        0.8  Correct playbook and column-mismatch cause, but the fix is vague
+             (e.g. "fix the columns" without naming the missing column / matching
+             the file's header structure).
+        0.5  Recognized a data/column problem but attributed it to a different
+             cause, or proposed an unrelated fix.
+        0.2  Surfaced the mismatch error without diagnosis.
+        0.0  Wrong cause (CsvHelper conflict, file lock, host/runtime), or
+             fabricated a host action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing CsvMerger process. You
+    build a data table in the workflow and append it to an existing orders.csv.
+    You are away from the robot host and only have Orchestrator access.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, csv-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked what columns the existing orders.csv has, say it has OrderId, Customer, and Total."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
