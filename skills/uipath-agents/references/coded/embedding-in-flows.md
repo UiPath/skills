@@ -58,14 +58,7 @@ If the solution and flow project don't yet exist, run `uip solution init "<Solut
    uv sync
    ```
 
-   For a coded **agent** — anything that reasons, classifies, or processes
-   natural language — pick an LLM framework (default `uipath-langchain` /
-   LangGraph unless another is named); this scaffolds `ProjectType: "Agent"`.
-   The `uipath` / Coded Function package is lighter — no LangGraph or
-   LlamaIndex download — but it has no LLM and scaffolds
-   `ProjectType: "Function"`, a deterministic Python function, **not** an
-   agent. Reach for it only when the user explicitly wants a no-LLM tool, not
-   as a faster stand-in for an agent however simple the task looks.
+   Pick `<FRAMEWORK_PACKAGE>` per [lifecycle/setup.md § Framework Selection](lifecycle/setup.md#framework-selection): a coded **agent** takes an LLM framework (default `uipath-langchain` / LangGraph → `ProjectType: "Agent"`). The `uipath` / Coded Function package downloads less but has no LLM and scaffolds `ProjectType: "Function"` — a deterministic function, **not** an agent. Do not pick it as a faster stand-in for an agent, however simple the task looks.
 
 2. Implement `main.py`. Use lazy LLM initialization (create clients inside functions, never at module level).
 

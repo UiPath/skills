@@ -122,8 +122,6 @@ Same shape as the published variant — no `model` on the instance.
 
 **Validate.** After writing the flow, group `bindings[]` by `(resourceKey, propertyAttribute)`. Each group must have length 1. If any group has length > 1, deduplicate before saving.
 
-> **`folderPath` MUST NOT be empty.** It is the Orchestrator folder where `StartAgentJob` looks up the agent's process. For an **in-solution** agent, set it to the folder the solution deploys into — the `folders[].fullyQualifiedName` from `resources/solution_folder/process/agent/<CodedAgentProject>.json` (typically `solution_folder`), which must match the folder `uip maestro flow debug` targets. An empty `folderPath` passes `uip maestro flow validate` but fails `uip maestro flow debug` with `[170007] Failure to start the Orchestrator job ... "The job's associated process could not be found"` — the `StartAgentJob` surface of the same root cause [file-format.md](../../../../shared/file-format.md#bindings--orchestrator-resource-bindings-top-level-bindings) describes as "Folder does not exist".
-
 ```json
 "bindings": [
   {
@@ -142,7 +140,7 @@ Same shape as the published variant — no `model` on the instance.
     "type": "string",
     "resource": "process",
     "resourceKey": "<resourceKey>",
-    "default": "<folder-path>",
+    "default": "<folder-path-or-empty>",
     "propertyAttribute": "folderPath",
     "resourceSubType": "Agent"
   }
@@ -186,7 +184,6 @@ For the resource file format and wiring details, see the `uipath-agents` skill:
 | --- | --- | --- |
 | Node type not found in registry | Agent not published, or registry stale | If in same solution: run `registry list --local`. Otherwise: run `uip login` then `uip maestro flow registry pull --force`. For coded agents, ensure `uip codedagent deploy` completed successfully |
 | In-solution node doesn't resolve | `resourceKey` was hand-invented rather than read from the resource file, or `uip solution project add` was never run for the agent project | Run `uip maestro flow registry list --local` and use the returned `resourceKey` (same value as `resource.key` in `resources/solution_folder/process/agent/<CodedAgentProject>.json`) |
-| `[170007] Failure to start the Orchestrator job ... associated process could not be found` (validate passed) | The `folderPath` binding's `default` is empty | Set the `folderPath` binding `default` to the solution's deployed folder (`folders[].fullyQualifiedName` in the agent resource file, typically `solution_folder`); ensure `uip maestro flow debug` targets the same folder |
 | Agent execution failed | Underlying agent errored | Check `$vars.{nodeId}.error` for details. For coded agents, test locally first with `uip codedagent run` |
 | Empty `output.content` | Agent returned no response | Verify the agent is configured correctly (published: in Orchestrator; in-solution: in Studio Web) |
 | `inputDefinition` is empty | Expected — agents accept input via flow wiring, not typed fields | Wire upstream data to the agent via `$vars` expressions |
