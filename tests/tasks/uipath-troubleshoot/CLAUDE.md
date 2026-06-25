@@ -27,6 +27,7 @@ A new scenario needs four sources. Three are mandatory; the fourth is optional.
 | `--transcript <path>` | yes | A `.jsonl` file or a directory. Directory mode walks `*.jsonl` recursively and treats files under `subagents/` as sub-agent transcripts (their `uip` calls count, their final text is ignored). Source of truth for `uip` calls + presenter output. |
 | `--resolution <file>` | no | Pre-written `RESOLUTION.md`. If omitted, the generator extracts the presenter's final assistant message from the transcript. |
 | `--scenario-name <name>` | no | Folder name for the new scenario. If omitted, inferred from project name + failing job key. |
+| `--group <group>` | yes | Group folder mirroring the playbook tree — e.g. `activity-packages/word-activities`, `products/orchestrator`, `runtime-exceptions`, `cross-system`. Sets placement, the depth-correct `_shared` path, and the default domain tag. See [Scenario grouping](#scenario-grouping). |
 
 ## Workflow — ask before writing
 
@@ -41,8 +42,11 @@ python tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py \
   --transcript <path> \
   [--resolution <path>] \
   [--scenario-name <name>] \
+  --group <group> \
   --dry-run
 ```
+
+`--group` is the group folder the scenario belongs to (see [Scenario grouping](#scenario-grouping)). It sets three things at once: where the scenario folder is written, the depth-correct `_shared` path inside `task.yaml`, and the default product/domain tag. Pass it for every new scenario — omitting it falls back to flat placement at the suite root (deprecated).
 
 Output: a plan describing every file that would be written (paths + sizes + first lines), the inferred scenario name, the manifest rules extracted, and any scrub substitutions that would be applied.
 
@@ -74,7 +78,7 @@ After write:
 1. Run the smoke test pattern to confirm the mock dispatcher resolves:
    ```bash
    cd tests
-   .venv/bin/coder-eval run tasks/uipath-troubleshoot/<scenario>/task.yaml -e experiments/default.yaml -v
+   .venv/bin/coder-eval run tasks/uipath-troubleshoot/<group>/<scenario>/task.yaml -e experiments/default.yaml -v
    ```
 2. The first run should score 1.0 — the test was generated from a known-good resolution.
 3. Open `mocks/.calls.jsonl` from the run artifact to confirm every expected call was hit.
@@ -95,10 +99,47 @@ Scrub applies to: every fixture JSON, every Markdown body, every YAML field, eve
 
 The generator MUST surface its scrub-substitution table during the dry-run preview so the user can verify mappings before write.
 
-## Scenario folder layout
+## Scenario grouping
+
+Scenarios are **grouped into folders mirroring the playbook tree** (`skills/uipath-troubleshoot/references/`). Do NOT add a scenario at the flat suite root — pick its group folder. Tests within a group are NOT sub-grouped further; they sit flat inside the group.
 
 ```
-tests/tasks/uipath-troubleshoot/<scenario-name>/
+tests/tasks/uipath-troubleshoot/
+├── _shared/                     # shared mock dispatcher + scripts (never a scenario)
+├── smoke-manifest-commands/     # the sole smoke task (stays at root)
+├── activity-packages/
+│   ├── word-activities/         <scenario>/ …
+│   ├── excel-activities/        <scenario>/ …
+│   ├── database-activities/  python-activities/  mail-activities/
+│   ├── o365-activities/  gsuite-activities/  web-activities/  cv-activities/
+│   ├── system-activities/  ui-automation/  classic-activities/
+├── products/
+│   ├── orchestrator/            <scenario>/ …
+│   ├── integration-service/     <scenario>/ …
+│   └── maestro/                 <scenario>/ …
+├── runtime-exceptions/          <scenario>/ …
+└── cross-system/                <scenario>/ …   # root cause spans ≥2 systems
+```
+
+**Pick the group by where the failure's playbook lives:**
+
+| Failure surface | Group |
+|---|---|
+| An activity package (Word, Excel, Python, Mail/Outlook, O365, GSuite, Web, CV, System, UI Automation, Classic, Database) | `activity-packages/<package>` |
+| Orchestrator-only (job/robot/queue/licensing/logon state, no single activity) | `products/orchestrator` |
+| Integration Service connectors / connections | `products/integration-service` |
+| Maestro / BPMN instances | `products/maestro` |
+| Generic .NET workflow exception (null-ref, argument-null) not tied to a package | `runtime-exceptions` |
+| Root cause genuinely spans ≥2 systems (e.g. an Excel activity failing on an IS connection) | `cross-system` |
+
+The `--group` flag wires all of this up — placement, the depth-correct `_shared` path, and the default tag. The `_shared` path depth follows the nesting: `activity-packages/<pkg>/` and `products/<product>/` scenarios use `../../../_shared/mock_template`; `runtime-exceptions/` and `cross-system/` use `../../_shared/mock_template`.
+
+## Scenario folder layout
+
+A single scenario (leaf) under its group folder:
+
+```
+tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 ├── task.yaml                    # tags, mock_path_dirs, llm_judge criteria
 ├── README.md                    # what the original session uncovered
 ├── RESOLUTION.md                # ground truth for the LLM judge
@@ -165,6 +206,10 @@ Must include `uipath-troubleshoot` AND at least one product/domain tag from this
 | `data-fabric` | Data Fabric tables, entities |
 | `api-workflow` | API workflow artifacts |
 | `orchestrator` | Orchestrator-only failures with no workflow execution involved (e.g., licensing, machine state, asset/queue admin) |
+
+**Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
+
+**Multiple tags are encouraged.** A scenario that touches more than one domain carries a tag for each — this is required for `cross-system/` scenarios (e.g. an Excel activity faulting on an IS connection gets `rpa` AND `integration-service`). Add the extra tags by hand after generation; `--group` only seeds the primary one.
 
 ### Tier tag: scenarios are `e2e`, NEVER `smoke`
 
@@ -294,7 +339,7 @@ success_criteria:
 - **Do not** hand-edit a generated scenario's `manifest.json` to "make tests pass." If the agent calls a command not in the manifest, that's a coverage gap — add a rule with the verbatim recorded response.
 - **Do not** include the original `.local/investigations/` outputs in the committed scenario. The fresh run produces its own.
 - **Do not** ship real email addresses, real personal Windows paths, or real machine hostnames. The scrub pass is mandatory.
-- **Do not** use `git add -A` after generation — the generator drops scratch files in `_tmp/`. Stage explicitly: `git add tests/tasks/uipath-troubleshoot/<scenario>/`.
+- **Do not** use `git add -A` after generation — the generator drops scratch files in `_tmp/`. Stage explicitly: `git add tests/tasks/uipath-troubleshoot/<group>/<scenario>/`.
 - **Do not** create a scenario without a verified resolution. The LLM judge needs an authoritative ground truth; a half-baked `RESOLUTION.md` produces flaky scores.
 - **Do not** tag a scenario `smoke` — scenarios are `e2e`. The only troubleshoot task allowed the `smoke` tag is `smoke-manifest-commands` (see [Tier tag](#tier-tag-scenarios-are-e2e-never-smoke)).
 
@@ -315,5 +360,6 @@ If a user says "save this as a regression test" mid-session and provides no flag
 - `--transcript` → most-recent JSONL under `~/.claude/projects/<slug>/sessions/`
 - `--resolution` → omit, extract from transcript
 - `--scenario-name` → infer from the failing job's `ReleaseName` + a short slug
+- `--group` → infer from the faulted activity's package / the investigated product, using the [Scenario grouping](#scenario-grouping) table (e.g. a `UiPath.Word.Activities` fault → `activity-packages/word-activities`; an Orchestrator-only job/robot issue → `products/orchestrator`; a root cause spanning ≥2 systems → `cross-system`)
 
 Then run `--dry-run`, show the plan, confirm.
