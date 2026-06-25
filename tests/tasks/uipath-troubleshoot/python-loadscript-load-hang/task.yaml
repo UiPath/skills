@@ -1,0 +1,138 @@
+task_id: skill-troubleshoot-python-loadscript-load-hang
+description: >
+  UiPath troubleshooting agent must diagnose a Load Python Script hang: aggregate.py
+  has a module-level loop that prints every row to stdout at import, so when Load
+  Python Script executes the module body the stdout flood saturates the engine
+  pipe and the scope never returns within the 30s Timeout, faulting with a
+  TimeoutException. Success = agent matches the load-script-failures playbook,
+  identifies a hang / oversized-output failure (L3, NOT engine init / syntax /
+  ModuleNotFoundError), AND recommends removing or reducing the load-time stdout
+  (and/or raising Timeout), without fabricating host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My PyBatchAggregate process faults in Orchestrator on every run. The folder
+  is "Batch Analytics". It runs a Python script through a Python Scope and
+  instead of finishing it just hangs for about 30 seconds and then dies with a
+  timeout. It never gets to my data.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator. If the answer
+  needs evidence from the host itself, give me the exact things to check on
+  the host the next time I'm in front of it; I'll do them and come back with
+  the result. Do not stall waiting for host data - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched load-script-failures, identified an L3 hang/stdout-flood at load, and recommended removing the load-time stdout (and/or raising Timeout)"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My PyBatchAggregate process faults in Orchestrator on every run (folder
+         'Batch Analytics'). It runs a Python script through a Python Scope and
+         instead of finishing it hangs ~30 seconds then dies with a timeout. It
+         never gets to my data. I'm not on the Robot host, only Orchestrator."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/python-activities/playbooks/load-script-failures.md
+        and the specific sub-case is L3 (hang or oversized data): excessive
+        stdout during load freezes the engine pipe, or a long-running load
+        exceeds Timeout.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - aggregate.py has a module-level loop (`for _i in range(5_000_000): ...
+            print(...)`) that runs at import because Load Python Script executes
+            the module body.
+          - The per-row stdout floods the engine's output pipe at load; combined
+            with the heavy loop, the load never completes within the 30s Timeout,
+            so the scope faults with TimeoutException.
+          - The engine initialized fine and there is no syntax error or
+            ModuleNotFoundError - this is NOT L1 engine-init and NOT L2.
+        The reference fix is:
+          - Remove or drastically reduce the stdout produced at load (do not
+            print per row; keep Log Python Output to File off in production),
+            and move the heavy warm-up out of module scope into a function, AND/OR
+          - raise the Python Scope Timeout for a legitimately slow load. (If the
+            problem were a large return value rather than stdout, the fix would be
+            to write data to a file / raise Script Data Size Limit.)
+
+      DIMENSION C -- No fabricated host actions
+        The user is off-host. The agent may hand over a check but must NOT claim
+        to have edited the script on the robot or run host commands.
+
+      SCORING RUBRIC:
+        1.0  Matched load-script-failures, identified an L3 hang caused by
+             load-time stdout flood / heavy module-level work exceeding Timeout,
+             AND recommended removing/reducing the load-time stdout (move work
+             into a function) and/or raising Timeout.
+        0.8  Correct playbook and hang/timeout cause, but the fix is vague (e.g.
+             "make the script faster" without naming the stdout flood / Timeout).
+        0.5  Recognized a timeout/hang but attributed it to engine init, a
+             missing module, or generic "slow script" without tying it to the
+             load-time stdout flood / module-level work.
+        0.2  Surfaced the TimeoutException to the user without diagnosis.
+        0.0  Wrong cause (engine init / bitness / ModuleNotFound / syntax /
+             workflow wiring), or fabricated a host action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing PyBatchAggregate process.
+    You wrote the Python script; it builds a lookup and prints progress as it
+    goes. You are away from the robot host and only have Orchestrator access.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, python-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked what the script does as it runs, say it builds a big lookup table and prints each row for progress."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
