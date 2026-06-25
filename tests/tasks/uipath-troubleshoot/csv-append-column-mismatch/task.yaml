@@ -53,62 +53,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched csv-datatable-structure-mismatch, identified the column count/header mismatch, and recommended aligning the DataTable columns to the file"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My CsvMerger process faults on every run (folder 'Data Integration').
-         It builds a data table and appends it to orders.csv but dies at Append
-         To CSV with something about the columns not matching. The CSV already
-         has an existing header. I'm not on the Robot host, only Orchestrator."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/csv-activities/playbooks/csv-datatable-structure-mismatch.md
-        because the failure is a DataTable column/structure mismatch at Append To
-        CSV (the input table's columns don't line up with the existing file).
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - The workflow builds a 2-column DataTable (OrderId, Customer) via the
-            Add Data Column steps, then appends it to orders.csv, which has 3
-            columns (OrderId, Customer, Total).
-          - The column count/headers do not match, so Append To CSV cannot align
-            the rows and faults.
-          - This is a DataTable shape problem, NOT a CsvHelper dependency conflict
-            and NOT a file lock.
-        The reference fix is:
-          - Define the input DataTable with the SAME columns (names, order, count)
-            as the existing CSV - e.g. add the missing Total column (use Build
-            Data Table to lay out the identical header schema) before the
-            Add Data Row / append - so the structures align.
-
-      DIMENSION C -- No fabricated host actions
-        The fix is a workflow/DataTable change. The agent must not claim to have
-        edited the project on the robot or run host commands itself.
-
-      SCORING RUBRIC:
-        1.0  Matched csv-datatable-structure-mismatch, identified the column
-             count/header mismatch between the input DataTable (2 cols) and the
-             existing CSV (3 cols), AND recommended aligning the DataTable's
-             columns to the file (add the missing column / Build Data Table with
-             identical headers).
-        0.8  Correct playbook and column-mismatch cause, but the fix is vague
-             (e.g. "fix the columns" without naming the missing column / matching
-             the file's header structure).
-        0.5  Recognized a data/column problem but attributed it to a different
-             cause, or proposed an unrelated fix.
-        0.2  Surfaced the mismatch error without diagnosis.
-        0.0  Wrong cause (CsvHelper conflict, file lock, host/runtime), or
-             fabricated a host action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
