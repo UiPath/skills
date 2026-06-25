@@ -1,0 +1,10 @@
+{
+  "Result": "Failure",
+  "Code": "ConnectionPing",
+  "Message": "Connection 'c4d8f0a2-6b1e-4d93-a7c5-8f201b3e9d40' is disabled.",
+  "Data": {
+    "Id": "c4d8f0a2-6b1e-4d93-a7c5-8f201b3e9d40",
+    "IsActive": false,
+    "State": "Disabled"
+  }
+}
