@@ -1,7 +1,7 @@
 task_id: skill-ixp-delete-field-group-smoke
 description: >
   Smoke: agent deletes a field group — a destructive cascade that drops all
-  annotations on all its fields, so it must pass --confirm-data-loss (the CLI
+  annotations on all its fields, so it must pass -y/--yes (the CLI
   refuses without it).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
@@ -23,9 +23,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent deleted the group via `groups delete … --confirm-data-loss`"
+    description: "Agent deleted the group via `groups delete … -y/--yes`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+groups\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--name\s+["'']?name group)(?=.*--confirm-data-loss).*'
+    command_pattern: 'uip\s+ixp\s+groups\s+delete\b(?=.*my_invoices-f1afa9ef-ixp)(?=.*--name\s+["'']?name group)(?=.*(--yes\b|-y\b)).*'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

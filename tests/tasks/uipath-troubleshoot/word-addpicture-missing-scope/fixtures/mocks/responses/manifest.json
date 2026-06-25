@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the missing-scope branch (C1) of the word-activities/add-picture-failures playbook. Agent must chain: folders list-current-user -> jobs list --state Faulted -> jobs get / logs (InvalidOperationException: Add Picture must be used inside a Use Word File / Word Application Scope) -> workflow source (WordAddImage is a SIBLING of UseWordFile in the outer Main Sequence, not nested in UseWordFile.Body). The combination of (InvalidOperationException about no open document scope) + (source shows Add Picture outside the Use Word File body) is decisive. Scrubbed: host->MOCK-HOST, robot->AUTOMATION1.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "or-jobs-history.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "or-jobs-get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

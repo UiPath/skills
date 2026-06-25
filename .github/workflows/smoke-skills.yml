@@ -253,6 +253,11 @@ jobs:
     # masking real hangs.
     timeout-minutes: 120
     name: Run skill smoke tests
+    # Disable uip CLI version-sync: a task's `uip login status` re-pins
+    # ~/.uipath/config.json to a stale line and, via smoke.yaml's shared
+    # ~/.uipath mount, downgrades the CLI for later tasks. Mirrors daily.sh.
+    env:
+      UIPATH_CLI_DISABLE_VERSION_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
 
