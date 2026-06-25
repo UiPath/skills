@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: ConnectorActivity faults with RuntimeException DAP-RT-1101 (connector operation returned NotFound). Signature mined verbatim from failed-job telemetry. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs get c5d9bf45-8a55-4ea3-abb2-b8a8cca7da02",
+      "file": "or-jobs-get.json"
+    },
+    {
+      "match": "or jobs logs c5d9bf45-8a55-4ea3-abb2-b8a8cca7da02",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get c5d9bf45-8a55-4ea3-abb2-b8a8cca7da02",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the RuntimeException DAP-RT-1101 'Status code: NotFound' signature and the ConnectorActivity stack frame."
+    }
+  ]
+}

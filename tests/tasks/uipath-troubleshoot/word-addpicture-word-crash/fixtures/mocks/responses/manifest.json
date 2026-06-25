@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the Word process-crash branch (E4) of the word-activities/word-com-interop-failures playbook. Agent must chain: folders list-current-user -> jobs list --state Faulted -> jobs get / logs (InvalidCastException casting to Word._Document, HRESULT 0x8001010E / RPC_E_WRONG_THREAD, thrown from WordInteropActivity.EndExecute on the async-completion path; logs show WINWORD.EXE exited unexpectedly mid-insert) -> workflow source (Main.xaml is CORRECT: WordAddImage nested in UseWordFile, valid absolute ImagePath, InsertRelativeTo=Document). The originating fault is that Microsoft Word CRASHED while inserting the image; the RPC_E_WRONG_THREAD cast is a DOWNSTREAM SYMPTOM of the torn-down COM proxy, NOT a workflow defect. The correct conclusion is an environmental Word crash (repair Office / bitness / kill orphaned WINWORD.EXE, and capture the WINWORD faulting module to confirm the trigger; for Add Picture, a very large image is a known crash trigger -> pre-resize / smaller image / Paste Chart-Picture Into Document), NOT an XAML edit. Scrubbed: host->MOCK-HOST, robot->AUTOMATION1.",
+  "rules": [
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Open-ended natural-language query; proxy to the real uip CLI per troubleshoot test rules."
+    },
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs logs",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs history",
+      "file": "or-jobs-history.json"
+    },
+    {
+      "match": "or jobs get",
+      "file": "or-jobs-get.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  }
+}

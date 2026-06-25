@@ -1,0 +1,167 @@
+task_id: skill-troubleshoot-move-outlook-mail-com-session-loss
+description: >
+  UiPath troubleshooting agent must diagnose a Move Outlook Mail Message
+  failure that faults 100% on an unattended robot with "The operation
+  failed" (COMException, RPC server unavailable 0x800706BA). Root cause is
+  Branch 1 of the move-outlook-mail-failures playbook: there is no live
+  local Outlook COM session on the unattended Windows profile (Classic
+  Outlook installed but not running/synced), so the folder tree cannot be
+  indexed. The destination path 'Inbox\Processed' is VALID - the problem
+  is the COM session, not a folder-path typo, type mismatch, or New
+  Outlook. Fix is host-side: keep Outlook running (foreground window /
+  Startup apps), wrap in a Retry Scope, or move to Graph for unattended.
+  Success = agent matches Branch 1 AND hands a host-side check list without
+  fabricating host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  node: {}
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My MailboxTriageMover process runs unattended every night and is
+  faulting in Orchestrator on every run. The folder is "RPA Production".
+
+  I'm not on the Robot host (MOCK-HOST), only Orchestrator. Diagnose what
+  you can; if the fix needs the host, hand me the exact things to check
+  next time I'm there and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched move-outlook-mail-failures Branch 1 (COM session loss) AND handed a host-side check list without fabricating host actions"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      Grade ONLY what the agent presented: its final response to the user
+      and its tool calls. Do NOT inspect or reward internal investigation
+      state (anything under .local/investigations/).
+
+      The user's request was:
+        "My MailboxTriageMover process runs unattended every night and is
+         faulting in Orchestrator on every run. The folder is 'RPA
+         Production'. I'm not on the Robot host (MOCK-HOST), only
+         Orchestrator. Diagnose what you can; if the fix needs the host,
+         hand me the exact things to check next time I'm there and stop."
+
+      DIMENSION A -- Correct playbook (Branch 1)
+        The matching playbook is
+          references/activity-packages/mail-activities/playbooks/move-outlook-mail-failures.md
+        and the matching cause is Branch 1 (COM session loss). Evidence to
+        look for:
+          (1) the agent's final response names the move-outlook-mail-failures
+              playbook and/or Branch 1 (COM session loss) by concept; AND
+          (2) a tool call that Read a file under
+              references/.../mail-activities/playbooks/.
+        Grade only what the agent presented (final response + tool calls);
+        do NOT inspect internal investigation state.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause: the move failed because there was no live
+        local Outlook COM session on the unattended robot (Classic Outlook
+        is installed but was not running/synced for UIPATH\ROBOTUSER1), so
+        the destination folder tree could not be indexed. The destination
+        path 'Inbox\Processed' is VALID - it is not the cause. The error
+        surfaces as "The operation failed" / a COMException indicating the
+        Outlook COM server was unreachable (RPC server unavailable
+        0x800706BA).
+        The reference fix is host-side: keep a live Outlook available to the
+        robot (leave a foreground Classic Outlook window open / add Outlook
+        to Startup apps for the robot's Windows user), wrap the move in a
+        Retry Scope (2-3 s delay), and/or migrate unattended mail moves to
+        the modern Graph o365-activities Move Email (no desktop dependency).
+        Because the user is off-host, the agent must hand a host-side check
+        list and must NOT fabricate host actions (must not claim it started
+        Outlook, edited Startup apps, or ran host commands itself).
+        Evidence to look for:
+          (1) the agent's final response names the COM-session-loss /
+              Outlook-not-running cause AND the host fix/check list; AND
+          (2) the agent cited Main.xaml (showing the destination path is a
+              valid nested path) and the job-log line stating no live
+              Outlook COM session could be bound.
+
+      WRONG ANSWERS TO REJECT (cap the score at 0.2 if the agent concludes
+      any of these as the root cause):
+        - a folder-path or Account typo (that is Branch 2; the path
+          'Inbox\Processed' is valid here);
+        - a modern-vs-classic type mismatch / String->IResource cast
+          (Branch 3);
+        - New Outlook removed the desktop COM API (Branch 4; Classic
+          Outlook IS installed, it just was not running);
+        - a COM library not registered / bitness install error;
+        - a generic SMTP / network error;
+        - OR the agent fabricated host actions it could not perform.
+
+      SCORING RUBRIC:
+        1.0  Agent (a) names "The operation failed" as a lost-or-absent
+             Outlook COM session on the unattended robot, (b) attributes it
+             to no live/synced Outlook (NOT a folder-path, type-mismatch, or
+             registration issue), AND (c) hands a host-side check list (keep
+             Outlook running / add to Startup apps / Retry Scope / Graph
+             o365 for unattended) without fabricating host actions.
+        0.8  Correct cause and correctly attributes it to the COM session,
+             but the check list is thin (e.g., only suggests a Retry Scope).
+        0.5  Recognizes the COM-session class but offers no actionable host
+             check list, or hedges between Branch 1 and a sibling branch
+             without committing.
+        0.2  Surfaces the error to the user without diagnosis, OR concludes
+             one of the WRONG ANSWERS above.
+        0.0  Wrong cause AND fabricated a host action it could not perform.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are away from the Robot host (MOCK-HOST) and only have Orchestrator
+    access. You trust the agent's expertise and are waiting for either a
+    diagnosis or a list of host-side things to check the next time you are
+    in front of the machine.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, mail-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered and to hand you the host check list at the end."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

@@ -134,7 +134,7 @@ success_criteria:
 
 # ---------------------------------------------------------------------------
 # Tenant fixture this task expects to exist (Path 1 / persistent shared
-# fixture pattern — see tests/tasks/uipath-data-fabric/integration_preseeded_entity.yaml:189-190).
+# fixture pattern — see tests/tasks/uipath-platform/data-fabric/integration_preseeded_entity.yaml:189-190).
 #
 #   Tenant: codereval / DefaultTenant
 #   Project: BANK ("Banking — Loan Approvals")

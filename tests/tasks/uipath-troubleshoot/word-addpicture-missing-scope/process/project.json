@@ -1,0 +1,41 @@
+{
+  "name": "WordLogoStamp",
+  "projectId": "a1c2e1f0-5a60-4178-92a3-aa111199c8d9",
+  "description": "Repro: Word Add Picture process where the Add Picture activity is placed OUTSIDE the Use Word File scope (as a sibling, not nested in its Body). With no open document context, the activity faults with InvalidOperationException. Exercises the missing-scope branch of the add-picture-failures playbook (C1).",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.Word.Activities": "[1.21.0]",
+    "UiPath.System.Activities": "[26.2.6]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "26.0.194.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "netFrameworkLazyLoading": false,
+    "isPausable": false,
+    "isAttended": false,
+    "requiresUserInteraction": false,
+    "supportsPersistence": false,
+    "workflowSerialization": "NewtonsoftJson",
+    "excludedLoggedData": ["Private:*", "*password*"],
+    "executionType": "Workflow",
+    "readyForPiP": false,
+    "startsInPiP": false,
+    "mustRestoreAllDependencies": true,
+    "pipType": "ChildSession"
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {"privateWorkflows": []},
+    "processOptions": {"ignoredFiles": []},
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "VisualBasic",
+  "modernBehavior": true,
+  "targetFramework": "Windows"
+}

@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-10T17:12:13.804Z",
+      "Message": "Copy Item with null DriveItem (expect ArgumentNullException): Value cannot be null. (Parameter 'DriveItem')\r\nin O365_CopyItemArgNull.xaml\r\n    at CopyItem \"Copy Item with null DriveItem (expect ArgumentNullException)\"\r\n    at Sequence \"Do\"\r\n    at Office365ApplicationScope \"Microsoft 365 Scope\"\r\n    at Sequence \"O365 Copy Item null DriveItem repro\"\r\n    at O365_CopyItemArgNull \"O365_CopyItemArgNull\"\r\n\r\n--- .NET stack trace ---\r\nSystem.ArgumentNullException\r\n   at UiPath.MicrosoftOffice365.Activities.Files.CopyItem.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.ContinuableAsyncCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.MicrosoftOffice365.Activities.Office365BaseClientActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.MicrosoftOffice365.Activities.Office365ClientActivity`2.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

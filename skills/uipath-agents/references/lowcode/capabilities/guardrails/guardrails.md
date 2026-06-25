@@ -12,7 +12,7 @@ Two types exist:
 
 ## Conversational Support
 
-**Status: Tool-scoped only, per-tool resource files are authoritative.** Conversational agents support guardrails with `selector.scopes: ["Tool"]` only — `"Agent"` and `"Llm"` scopes are not honored by the conversational runtime, even though `uip agent validate` accepts them.
+**Status: Tool-scoped only, per-tool resource files are authoritative.** Conversational agents support guardrails with `selector.scopes: ["Tool"]` only — DO NOT use `"Agent"` or `"Llm"`.
 
 This restriction is enforced as [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1.
 
@@ -34,6 +34,8 @@ Every guardrail object in the `guardrails` array shares these base fields:
 
 The `selector` field controls where the guardrail applies.
 
+> **Conversational agents — use `["Tool"]` ONLY. `"Agent"` and `"Llm"` are NOT available; DO NOT use them.** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Rule 1).
+
 ```json
 "selector": {
   "scopes": ["Agent", "Llm", "Tool"],
@@ -43,7 +45,7 @@ The `selector` field controls where the guardrail applies.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required |
+| `scopes` | string[] | Yes | Array of `"Agent"`, `"Llm"`, `"Tool"` — at least one required. **Conversational agents: use `["Tool"]` ONLY — `"Agent"`/`"Llm"` are NOT available, DO NOT use them**. |
 | `matchNames` | string[] | Yes (when `Tool` in scopes) | Target tools by name. Required when `"Tool"` is in `scopes` — always list tool names explicitly. |
 
 ### Scope Definitions
@@ -100,7 +102,7 @@ Each entry in the `Data` array contains:
 
 Do not hardcode assumptions about scope/stage support or availability.
 
-> **Conversational override** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1)**.** `AllowedScopes` describes what the validator's schema accepts — it is **not** the set of scopes valid for the runtime you're targeting. For low-code conversational agents, **intersect `AllowedScopes` with `["Tool"]`** before writing `selector.scopes`. If the validator does not list `"Tool"` in `AllowedScopes`, it cannot be used in a conversational agent — do not substitute `"Agent"` or `"Llm"` as a workaround; the conversational runtime ignores those scopes silently.
+> **Conversational override** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1)**.** `AllowedScopes` describes what the validator's schema accepts — it is **not** the set of scopes valid for the runtime you're targeting. For low-code conversational agents, **intersect `AllowedScopes` with `["Tool"]`** before writing `selector.scopes`. If the validator does not list `"Tool"` in `AllowedScopes`, it cannot be used in a conversational agent — do not substitute `"Agent"` or `"Llm"` as a workaround — those scopes are not available for conversational agents.
 
 ## Actions
 
@@ -578,7 +580,7 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 
 ### Validators Quick Reference
 
-> **For conversational agents (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1): use `"Tool"` only — ignore the `Agent` and `Llm` entries below.** The Scopes column is the validator's schema-level support, not the conversational runtime's support. Conversational runtime silently ignores `Agent` and `Llm` scopes.
+> **For conversational agents (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1): use `"Tool"` only — DO NOT use the `Agent` and `Llm` entries below.** The Scopes column is the validator's schema-level support, not the conversational runtime's support: `Agent`/`Llm` are not available for conversational agents.
 
 | Validator | Scopes (autonomous) | Conversational | Stages | Supported Actions |
 |-----------|---------------------|----------------|--------|-------------------|

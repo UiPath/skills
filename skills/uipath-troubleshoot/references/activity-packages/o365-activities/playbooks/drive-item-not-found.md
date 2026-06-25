@@ -29,7 +29,7 @@ What activities can produce this error:
 - **Check In/Out File** (`CheckinCheckoutFileConnections`) — when the target `File` doesn't resolve.
 - **Assign Sensitivity Label** (`AssignSensitivityLabelConnections`), **Get Sensitivity Labels** (`GetSensitivityLabelsConnections`) — when the target `Item` doesn't resolve.
 - **Wait For File Created** / **Wait For File Updated** (persistence triggers) — when the watched parent `Folder` doesn't resolve.
-- Legacy activities: `DownloadFile`, `ExportAsPdf`, and other files activities that take a `DriveItem` argument.
+- Legacy activities: `DownloadFile`, `ExportAsPdf`, `FindFilesAndFolders`, `ForEachFileFolder`, `CopyItem`, `UploadFile`, `GetItem`, `MoveItem`, `DeleteItem`, `ShareItem`, `CreateFolder`, and other files activities that take a `DriveItem` argument. Legacy activities surface this as a **raw `Microsoft.Graph.ServiceException`** whose message embeds `Code: itemNotFound` plus the same sentence — match the sentence; the raw exception type itself confirms a legacy activity.
 
 What can cause it:
 - **Item no longer exists.** The configured ID, URL, path, or browse selection points to a OneDrive/SharePoint item that has been deleted, moved to the recycle bin, or permanently removed. Graph authoritatively returns 404.

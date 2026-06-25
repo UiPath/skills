@@ -1,0 +1,119 @@
+task_id: skill-troubleshoot-connector-general-no-access
+description: >
+  Faithful replay built from a REAL Orchestrator faulted job: a Google Drive
+  ConnectorActivity faults with GeneralException DAP-GE-3000 because the robot
+  lacks Connections.View in the folder where the connection lives. The agent runs
+  the uipath-troubleshoot skill against a uip CLI mock whose responses are the
+  verbatim (scrubbed) job evidence. Success = same root cause as RESOLUTION.md.
+tags: [uipath-troubleshoot, integration-service, rpa, orchestrator, e2e, faithful-replay]
+
+agent:
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 30
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  why did my last job from the Shared folder fail?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent reached the same root cause as RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md for this scenario. Treat it as the authoritative ground truth.
+
+      The user's request was:
+        "why did my last job from the Shared folder fail?"
+
+      Grade ONLY on what the agent presented to the user (its final response)
+      and the tool-call summary. Do NOT grade on the shape or content of files
+      under `.local/investigations/`.
+
+      (a) FAULT — the job faulted because a `ConnectorActivity`
+          ("Google Drive: Get File or Folder") threw
+          `UiPath.IntegrationService.Activities.Runtime.Exceptions.GeneralException`
+          with error code `DAP-GE-3000` during connection resolution.
+
+      (b) CAUSE — the executing robot lacks `Connections.View` permission in the
+          folder where the connection lives (the connection is bound to a
+          different folder, `dea5d8d6-…`, than the Shared folder the job ran in).
+          The connection itself is fine; it's an RBAC / cross-folder visibility
+          problem for the robot identity.
+          MUST NOT attribute the cause to: a *disabled* connection
+          (`DAP-GE-3005`); an invalid / deleted / nonexistent connection;
+          expired credentials or an OAuth/`invalid_grant` auth failure; a
+          `DAP-RT` operation error or downstream provider 404; an IPC
+          `RemoteException`; or a workflow-logic bug.
+
+      (c) RESOLUTION — grant the robot `Connections.View` on the connection's
+          folder, OR move/recreate the connection in a folder the robot can
+          access, then re-run.
+
+      SCORING RUBRIC:
+        1.0  Names the GeneralException / DAP-GE-3000 cause (a + b) — robot lacks
+             Connections.View in the connection's folder — AND recommends
+             granting the permission or relocating the connection (c). No
+             misattribution per the MUST NOT list.
+        0.8  Identifies the permission / cross-folder connection-resolution cause
+             and a fix but omits the DAP-GE-3000 code or the Connections.View
+             specifics; no misattribution.
+        0.5  Identifies that connection resolution failed (Integration Service
+             connection problem) but does not establish the Connections.View /
+             cross-folder permission cause, OR gives the cause without an
+             actionable fix.
+        0.2  Recognizes a connection-related GeneralException but misframes it
+             (e.g. as disabled/invalid/auth) OR proposes no credible fix.
+        0.0  Misdiagnosed (operation error, workflow bug, platform outage as the
+             primary cause) or got blocked.
+
+      Penalize fabrication: invented assets, permissions, or workflow internals
+      not present in the evidence.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing job. You are waiting for
+    the troubleshooting agent to finish and trust its expertise. You only have
+    the information in your initial report — no extra data.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification it requests so
+    the investigation reaches a final resolution.
+  constraints:
+    - "If the agent asks where the project source code / project directory / XAML files are, tell it the source is not available and to proceed best-effort from the Orchestrator job evidence."
+    - "If the agent asks whether to expand investigation scope (e.g. integration-service, orchestrator, runtime-exceptions), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

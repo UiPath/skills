@@ -1,0 +1,79 @@
+task_id: skill-troubleshoot-web-deserialize-null-input
+description: >
+  UiPath troubleshoot agent must diagnose a ReadConfig job fault
+  (System.ArgumentNullException: Value cannot be null. (Parameter 'JSON string')) and match the
+  activity-packages/web-activities/playbooks/deserialize-null-input.md playbook.
+  Replayed from a real staging faulted job.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, web-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My last job in folder Shared just faulted. Job key 1dc1992a-7f84-40bf-b61d-75b50f861170. Why
+  did it fail and how do I fix it?
+
+  The project source for the failing process is at ./WebRepro/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the deserialize-null-input.md playbook and reached the RESOLUTION.md root cause"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against the attached
+      RESOLUTION.md (authoritative ground truth). The user asked why job
+      1dc1992a-7f84-40bf-b61d-75b50f861170 in folder Shared failed (source at ./WebRepro/).
+
+      Grade in a single score:
+      (a) FAULT - the agent identifies the failure as `System.ArgumentNullException: Value cannot be null. (Parameter 'JSON string')`
+          raised by Deserialize JSON (DeserializeJson).
+      (b) CAUSE - the agent concludes: The DeserializeJson activity received a null/empty JsonString; the activity's guard throws ArgumentNullException with parameter name 'JSON string'. The input is empty, not malformed. It matches
+          skills/uipath-troubleshoot/references/activity-packages/web-activities/playbooks/deserialize-null-input.md.
+      (c) RESOLUTION - the agent recommends: Ensure JsonString is assigned a non-null, non-empty value before the activity on every path; if it comes from an upstream step that can return nothing, guard/branch on empty before deserializing.
+
+      Anti-fabrication (hard gate): score 0.0 if the agent attributes the
+      fault to a malformed-JSON parse error (JsonReaderException) -- this is an empty/null input (ArgumentNullException), the parser never saw a character; an HTTP failure; an invented endpoint.
+
+      RUBRIC:
+        1.0  Correct fault + cause (playbook matched, no fabrication) + valid fix.
+        0.8  Correct fault + cause but thin/partial fix.
+        0.5  Recognizes the right error family but does not match the playbook
+             OR misses the specific cause (without fabricating a wrong one).
+        0.2  Recognizes an error but no actionable cause/fix.
+        0.0  Fabricates a wrong root cause (see anti-fabrication), concludes a
+             different fault, gets blocked, or fails.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}

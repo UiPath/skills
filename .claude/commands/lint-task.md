@@ -4,7 +4,7 @@ Review a coder-eval task YAML against a quality rubric and surface anti-patterns
 
 **Input:** `$ARGUMENTS`
 - A path to one task YAML, e.g. `tests/tasks/uipath-maestro-flow/smoke/init_validate.yaml`
-- Or a glob, e.g. `tests/tasks/uipath-data-fabric/*.yaml`
+- Or a glob, e.g. `tests/tasks/uipath-platform/data-fabric/*.yaml`
 - Or a directory, e.g. `tests/tasks/uipath-rpa/` (lints every YAML beneath it)
 
 **Output:** One markdown report per task, printed to chat. No file writes.

@@ -1,0 +1,6 @@
+{
+  "Name": "BulkDocPdf",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Save Document as PDF COM wrong-thread fault where a Parallel between scope-open and the export runs the export on a non-creator thread, off the STA that owns the document.",
+  "MainFile": "Main.xaml"
+}

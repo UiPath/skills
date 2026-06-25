@@ -12,7 +12,7 @@ description: >
   recommend clearing the orphan plus fixing what leaves orphans, and
   scope any Kill Process EXCEL advice to dedicated unattended hosts.
 
-tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, excel-application-scope, orphan-process-lock]
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, excel-application-scope, orphan-process-lock]
 
 agent:
   type: claude-code

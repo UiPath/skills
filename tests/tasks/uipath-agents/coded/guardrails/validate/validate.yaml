@@ -9,7 +9,7 @@ description: >
   the catalog/list/SDK docs were consulted, the misuse is gone, the
   user_prompt_attacks guardrail now decorates the LLM factory, and graph.py
   still parses. Neither the diagnosis nor the fix is stated in the prompt.
-tags: [uipath-agents, e2e, coded, mode:build, guardrail]
+tags: [uipath-agents, e2e, coded, mode:diagnose, lifecycle:edit, guardrail]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
@@ -20,7 +20,7 @@ sandbox:
       path: ../_fixtures/MisplacedPromptAttacksAgent
 
 initial_prompt: |
-  I have a coded LangGraph customer-support agent in graph.py. I added a
+  I have a coded UiPath LangGraph customer-support agent in graph.py. I added a
   guardrail to block prompt-injection / adversarial user inputs, but I'm not
   confident I attached it in the right place. Can you check whether it's
   configured correctly and fix it if it isn't? Make sure graph.py still parses

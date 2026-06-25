@@ -224,7 +224,7 @@ Do not edit this embedded table on the fly; report drift so a human updates the 
 | Agent Hub (uip agenthub) | `uipath-agenthub` | |
 | IXP | `uipath-ixp` | |
 | RPA / Studio / Computer Vision | `uipath-rpa` (incl. `legacy/`) | three product rows share one skill |
-| Data Fabric (df / entities) | `uipath-data-fabric` | |
+| Data Fabric (df / entities) | `uipath-platform/data-fabric` | folded into platform skill |
 | API Workflow | `uipath-api-workflow` | +api-workflow-tool tasks in agents |
 | Coded Apps | `uipath-coded-apps` | skill exists, 0 tests |
 | Orchestrator | `uipath-platform/orchestrator` + `uipath-platform/resources` | |
