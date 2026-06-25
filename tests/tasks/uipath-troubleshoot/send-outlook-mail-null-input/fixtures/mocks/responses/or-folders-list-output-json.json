@@ -1,0 +1,22 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "c5e6f7a8-9012-4d1e-8f2a-4b5c6d7e8f90",
+      "Name": "RPA Production",
+      "Path": "RPA Production",
+      "Description": "Production folder for HR onboarding automations.",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "a9b8c7d6-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+      "Name": "Shared",
+      "Path": "Shared",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    }
+  ]
+}

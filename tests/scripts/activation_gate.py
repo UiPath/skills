@@ -5,7 +5,7 @@ Runs the activation eval restricted to one skill's positives and fails if
 recall.yes drops more than DROP_PP (10pp) below the skill's baseline.
 Re-baseline by editing BASELINES_PCT after a fresh full activation run.
 
-Usage: activation_gate.py --skill uipath-data-fabric
+Usage: activation_gate.py --skill uipath-platform
 """
 
 from __future__ import annotations
@@ -25,7 +25,6 @@ from pathlib import Path
 # full activation positives and updating the values here.
 BASELINES_PCT: dict[str, int] = {
     "uipath-automation-discovery": 100,
-    "uipath-data-fabric": 100,
     "uipath-troubleshoot": 100,
     "uipath-feedback": 100,
     "uipath-governance": 100,

@@ -1,0 +1,134 @@
+task_id: skill-troubleshoot-append-text-not-installed
+description: >
+  UiPath troubleshooting agent must diagnose an Append Text COM startup
+  failure on a server with no desktop Word: the Word Application Scope cannot
+  create the Word.Application COM object and faults with REGDB_E_CLASSNOTREG /
+  "make sure Word application is installed". Success = agent matches the
+  word-scope-com-not-installed playbook (the shared signature) AND recommends
+  installing desktop Word OR switching to the standalone Word Document Append
+  Text activity (which needs no Word install) on the server, without
+  fabricating host actions.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, append-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ServerAppend process faults in Orchestrator (folder "Server Docs",
+  machine MOCK-HOST). It opens a Word doc and appends text. It worked on my
+  dev machine but fails on the server with an error about Word not being
+  installed / a COM class not registered. The server is a locked-down
+  unattended box.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can. If the fix needs something done on the host, give me the exact steps
+  and stop.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the Word-not-installed signature AND recommended install Word OR switch to Word Document activities"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md is authoritative).
+
+      The user's request:
+        "ServerAppend faults in Orchestrator (folder 'Server Docs', machine
+         MOCK-HOST) opening a Word doc and appending text. Worked on dev,
+         fails on the server with 'Word not installed' / a COM class not
+         registered. The server is a locked-down unattended box."
+
+      DIMENSION A -- Correct playbook
+        Matches references/activity-packages/word-activities/playbooks/word-scope-com-not-installed.md
+        (the shared signature) because the runtime error
+        "make sure Word application is installed / REGDB_E_CLASSNOTREG
+         (0x80040154) on CLSID {000209FF-...}" from the Append Text's
+        Word Application Scope is the verbatim signature of desktop Word not
+        being usable for Interop on the host. (The Append Text playbook
+        cross-references this signature.)
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        Root cause: the Word Application Scope drives Word via Interop and
+        needs a registered desktop Word; the locked-down server has no Word,
+        so the Word.Application COM class can't be created and the scope
+        faults at startup. "Worked on dev, fails on the server" corroborates
+        a host-environment cause.
+        Fix (either path):
+          - Install desktop Microsoft Word on the server, OR
+          - Switch to the **standalone Word Document Append Text** activity
+            (the Word Document category), which uses OpenXML and needs **no
+            Word install** — the recommended path on servers / unattended
+            hosts without Office.
+
+      DIMENSION C -- Off-host: no fabricated actions
+        The user is off-host. The agent must hand over the host check / fix;
+        it must NOT claim to have installed Word or run host commands itself.
+
+      SCORING RUBRIC:
+        1.0  Matched the Word-not-installed signature AND identified desktop
+             Word missing on the server as the cause AND recommended at least
+             one valid fix (install Word, OR switch to the standalone Word
+             Document activities which need no Word) — without fabricating
+             host actions. Naming the Word Document / no-Word migration is
+             the ideal server-side answer; install-Word alone also earns 1.0.
+        0.8  Correct cause but the fix is vague (e.g., "set up Word" without
+             naming install vs the Word Document migration).
+        0.5  Recognized a COM/environment problem but didn't tie it to a
+             missing Word install, or matched a sibling playbook.
+        0.2  Surfaced the HRESULT without diagnosis.
+        0.0  Wrong cause (file corrupt, activity outside scope, zero-byte
+             file, file lock) or fabricated a host action.
+
+      Reward either valid fix path equally.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the user who reported the failing process. It worked on your dev
+    machine but fails on a locked-down unattended server with a Word-not-
+    installed / COM-class-not-registered error. You are off-host, Orchestrator
+    only. You want a diagnosis plus host steps.
+  goal: |
+    Let the agent complete its flow; approve scope expansions / clarifications.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and hand you the steps."
+    - "If asked whether Microsoft Word is installed on the server, say you are not sure and cannot check right now - it is a locked-down box that may not have Office."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

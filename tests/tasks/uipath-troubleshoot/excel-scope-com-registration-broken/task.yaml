@@ -13,7 +13,7 @@ description: >
   registration (Office Online Repair / UiPath Repair Tool / TypeLib
   cleanup) rather than installing Excel.
 
-tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, excel-application-scope, com-registration]
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, excel-application-scope, com-registration]
 
 agent:
   type: claude-code

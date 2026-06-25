@@ -1,0 +1,51 @@
+{
+  "name": "MonthlyReportFiller",
+  "projectId": "d4e5f6a7-b8c9-4193-a5b6-c7d8e9f01403",
+  "description": "Reproduces a Word Application Scope failure where the document opens corrupted because the workflow edits a template in place and an orphaned WINWORD.EXE holds the file lock.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.Word.Activities": "[1.17.2]",
+    "UiPath.System.Activities": "[25.10.5]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "25.10.7.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "isAttended": false,
+    "executionType": "Workflow",
+    "requiresUserInteraction": true,
+    "supportsPersistence": false,
+    "excludedLoggedData": [
+      "Private:*",
+      "*password*"
+    ]
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {
+      "privateWorkflows": []
+    },
+    "processOptions": {
+      "ignoredFiles": []
+    },
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "CSharp",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "d2e3f4a5-b6c7-8901-2345-6789abcdef02",
+      "input": [],
+      "output": []
+    }
+  ],
+  "isTemplate": false,
+  "templateProjectData": {},
+  "publishData": {},
+  "targetFramework": "Windows"
+}

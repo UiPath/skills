@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-14T13:30:09.380Z",
+      "Message": "The process cannot access the file 'C:\\UiPath\\Contracts Batch\\data\\MasterContract.docx' because it is being used by another process.\r\nin Main.xaml\r\n    at ReplaceTextInDocument \"Replace Text in Document\"\r\n    at WordApplicationCard \"Use Word File\"\r\n    at ForEach<String> \"For Each recipient\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}
