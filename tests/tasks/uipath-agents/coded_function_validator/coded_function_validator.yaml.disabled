@@ -1,3 +1,4 @@
+# DISABLED until #1144 merges (Coded Function moving to uipath-functions skill).
 task_id: skill-agent-coded-function-validator
 description: >
   Coded Function inference via the updated `uip functions` CLI. A naturally-phrased
