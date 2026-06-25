@@ -1,0 +1,6 @@
+{
+  "Name": "PyForecast",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Load Python Script engine-init failure where the installed Python (3.13) is newer than the pinned UiPath.Python.Activities 1.8.1 package supports.",
+  "MainFile": "Main.xaml"
+}

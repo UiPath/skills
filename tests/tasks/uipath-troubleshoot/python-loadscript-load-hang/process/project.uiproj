@@ -1,0 +1,6 @@
+{
+  "Name": "PyBatchAggregate",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Load Python Script hang: module-level code floods stdout at import, saturating the engine pipe so the scope never returns within Timeout.",
+  "MainFile": "Main.xaml"
+}

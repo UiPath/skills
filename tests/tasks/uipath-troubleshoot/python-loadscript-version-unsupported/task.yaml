@@ -1,0 +1,148 @@
+task_id: skill-troubleshoot-python-loadscript-version-unsupported
+description: >
+  UiPath troubleshooting agent must diagnose a Load Python Script engine-init
+  failure caused by the installed Python being newer than the package supports:
+  the project pins UiPath.Python.Activities 1.8.1 (max Python 3.12) but the robot
+  has Python 3.13 (Version=Auto detects 3.13), so the engine cannot initialize
+  and faults with "Error initializing the Python engine. The detected Python
+  version 3.13 is not supported by UiPath.Python.Activities 1.8.1". Success =
+  agent matches the load-script-failures playbook, identifies an engine-init
+  version-unsupported failure (L1d, NOT Library path / bitness / ModuleNotFound),
+  AND recommends upgrading the package to a version that supports Python 3.13
+  (1.10.0) or pinning Version to a supported interpreter, without fabricating host
+  actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My PyForecast process faults in Orchestrator on every run. The folder is
+  "Forecasting". It runs a Python script through a Python Scope and dies almost
+  immediately with something about "the Python engine" and a version. We
+  recently upgraded Python on the new robot. It never gets to my script.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator. If the answer
+  needs evidence from the host itself, give me the exact things to check on
+  the host the next time I'm in front of it; I'll do them and come back with
+  the result. Do not stall waiting for host data - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched load-script-failures, identified an L1d version-unsupported engine-init failure, and recommended upgrading the package / pinning a supported Version"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is the
+      RESOLUTION.md for this scenario. Treat it as authoritative.
+
+      The user's request was:
+        "My PyForecast process faults in Orchestrator on every run (folder
+         'Forecasting'). It dies almost immediately with something about 'the
+         Python engine' and a version. We recently upgraded Python on the new
+         robot. It never gets to my script. I'm not on the Robot host, only
+         Orchestrator."
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          references/activity-packages/python-activities/playbooks/load-script-failures.md
+        and the specific sub-case is L1d (engine init - Version unsupported by
+        the package): the pinned Version / Auto-detected interpreter is newer
+        than the UiPath.Python.Activities package supports.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The project pins UiPath.Python.Activities 1.8.1 (project.json), which
+            supports up to Python 3.12.
+          - The robot now has Python 3.13 (Version=Auto detected 3.13). The pack
+            cannot initialize an engine for an unsupported Python version, so the
+            scope faults at engine init: "Error initializing the Python engine.
+            The detected Python version 3.13 is not supported by
+            UiPath.Python.Activities 1.8.1".
+          - The Library path is set correctly (python313.dll) and Target matches,
+            so this is NOT L1c / L1b; the script never loads, so it is NOT a
+            ModuleNotFoundError or a top-level error.
+        The reference fix is:
+          - Upgrade UiPath.Python.Activities to a version whose supported matrix
+            includes Python 3.13 (1.10.0), OR pin the scope to a Python version
+            the current package supports (<= 3.12) and point Path/Version at it.
+
+      DIMENSION C -- No fabricated host actions
+        The user is off-host. The agent may hand over a check (confirm the
+        interpreter version on MOCK-ROBOT) but must NOT claim to have upgraded
+        the package, edited the project on the robot, or run host commands.
+
+      SCORING RUBRIC:
+        1.0  Matched load-script-failures, identified an engine-init failure
+             caused by the installed/detected Python version being unsupported by
+             the pinned package (L1d), AND recommended upgrading the package to a
+             version that supports Python 3.13 (1.10.0) OR pinning Version to a
+             supported interpreter.
+        0.8  Correct playbook and version-unsupported cause, but the fix is vague
+             (e.g. "update Python settings" without naming the package upgrade /
+             supported-version pin).
+        0.5  Recognized an engine-init problem but attributed it to Library path,
+             bitness, or a missing module rather than the package-vs-Python
+             version support.
+        0.2  Surfaced the error string to the user without diagnosis.
+        0.0  Wrong cause (ModuleNotFound / top-level error / bitness / Library
+             path / workflow wiring), or fabricated a host action.
+
+      Penalize concluding Library path (L1c) or bitness (L1b) -- the evidence
+      (Library path set, error names the Python version vs the package) points to
+      version support (L1d).
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing PyForecast process. Your
+    team recently upgraded Python on the new robot. You are away from the robot
+    host and only have Orchestrator access.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, python-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked which Python version is installed on the robot now, say the team recently upgraded it and you believe it is a newer 3.x but cannot check the exact version right now."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
