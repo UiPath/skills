@@ -1,16 +1,16 @@
-task_id: skill-agent-coded-simple-echo
+task_id: skill-functions-simple-echo
 description: >
-  Simple Function coded agent zero-to-running. Verifies the agent
-  scaffolds via `uip codedagent new`, registers the function
-  entrypoint in `uipath.json`, runs `uip codedagent init` to emit
+  UiPath Coded Function zero-to-running. Verifies the agent
+  scaffolds via `uip functions new`, registers the function
+  entrypoint in `uipath.json`, runs `uip functions init` to emit
   `entry-points.json` with Pydantic-derived schemas, then runs
-  `uip codedagent run main` to execute deterministically (no LLM,
+  `uip functions run main` to execute deterministically (no LLM,
   no cloud auth needed).
-tags: [uipath-agents, smoke, coded, lifecycle:generate, lifecycle:execute, feature:framework-simple]
+tags: [uipath-functions, smoke, mode:build, lifecycle:generate, lifecycle:execute, feature:framework-simple]
   # Default smoke max_turns is 20, but the full scaffold -> init -> run
-  # loop (uv venv, uv sync, uip codedagent setup, uip codedagent new,
-  # rewrite main.py, init, run, write marker) lands at ~25 turns even
-  # without an LLM call. Bumping headroom to 40.
+  # loop (uv venv, uv sync, uip functions new, rewrite main.py, init,
+  # run, write marker) lands at ~25 turns even without an LLM call.
+  # Bumping headroom to 40.
 
 run_limits:
   expected_turns: 25
@@ -18,7 +18,7 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a Simple Function UiPath coded agent named `echo-agent` whose
+  Build a UiPath Coded Function named `echo-agent` whose
   `main(input)` echoes `input.message` repeated `input.repeat` times
   and reports the resulting length. No LLM calls — purely
   deterministic Python.
@@ -26,8 +26,8 @@ initial_prompt: |
   Input fields: `message: str`, `repeat: int` (default 1).
   Output fields: `echoed: str`, `length: int`.
 
-  Take the agent end-to-end through scaffold → init → run. After
-  `uip codedagent run main '{"message": "hi ", "repeat": 3}'`
+  Take the function end-to-end through scaffold → init → run. After
+  `uip functions run main '{"message": "hi ", "repeat": 3}'`
   succeeds, write `RAN_OK` to a file `run_marker.txt` in the project
   root so the test harness can verify the run completed cleanly.
 
@@ -38,25 +38,25 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent scaffolded the project with uip codedagent new"
+    description: "Agent scaffolded the project with uip functions new"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+new'
+    command_pattern: 'uip\s+functions\s+new'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uip codedagent init to generate entry-points.json"
+    description: "Agent ran uip functions init to generate entry-points.json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+init'
+    command_pattern: 'uip\s+functions\s+init'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent executed the agent locally with uip codedagent run"
+    description: "Agent executed the agent locally with uip functions run"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+run\s+main'
+    command_pattern: 'uip\s+functions\s+run\s+main'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

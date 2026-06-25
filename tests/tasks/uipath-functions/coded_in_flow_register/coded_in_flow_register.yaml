@@ -1,4 +1,4 @@
-task_id: skill-agent-coded-in-flow-register
+task_id: skill-functions-in-flow-register
 description: >
   Smoke test: scaffold a UiPath solution containing a Flow project and a
   sibling Coded Function agent project, then confirm the agent is registered
@@ -6,7 +6,7 @@ description: >
   registers the project and writes a process resource file with a `resource.key`
   UUID under `resources/solution_folder/process/`, and that
   `uip solution resources list` surfaces it as a Local resource.
-tags: [uipath-agents, coded, mode:build, lifecycle:generate, resource, feature:registry]
+tags: [uipath-functions, smoke, mode:build, lifecycle:generate, resource, feature:registry]
 
 run_limits:
   expected_turns: 43

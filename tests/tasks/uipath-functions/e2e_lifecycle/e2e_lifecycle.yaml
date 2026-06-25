@@ -1,12 +1,13 @@
-task_id: skill-agent-coded-function-validator
+task_id: skill-functions-python-e2e-lifecycle
 description: >
-  Coded Function inference via the updated `uip functions` CLI. A naturally-phrased
+  Python Coded Function e2e lifecycle via the `uip functions` CLI. A naturally-phrased
   validation request — no mention of LLM, AI, or frameworks — must be recognised as
-  a Python Coded Function. Verifies the agent passes `-l py` to `uip functions new`,
-  runs `uip functions init`, produces a correct @dataclass schema, includes SDK
-  tracing, declares `[tool.uipath] type = "function"` in pyproject.toml, and
-  contains no LLM imports.
-tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, lifecycle:execute, feature:framework-simple]
+  a Python Coded Function and routed to the `uipath-functions` skill. Verifies the
+  agent passes `-l py` to `uip functions new`, runs `uip functions init`, produces
+  a correct typed I/O schema (pydantic/dataclass), includes SDK tracing, registers
+  the entrypoint in `uipath.json`'s `functions` map, contains no LLM imports, and
+  runs the function locally with `uip functions run`.
+tags: [uipath-functions, e2e, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 31
@@ -27,6 +28,13 @@ initial_prompt: |
   and write `RAN_OK` to `run_marker.txt` after success. Do NOT deploy.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent recognised the prompt as a Python Coded Function and invoked the uipath-functions skill"
+    skill_name: "uipath-functions"
+    expected_skill: "uipath-functions"
+    weight: 3.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent scaffolded a Python Functions project with uip functions new -l py"
     tool_name: "Bash"
@@ -52,8 +60,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Correct @dataclass schema, [tool.uipath] type=function, no LLM imports, init ran, SDK tracing present"
-    command: "python3 $TASK_DIR/check_coded_function_validator.py"
+    description: "Correct typed I/O schema, uipath.json functions entrypoint, no LLM imports, init ran, SDK tracing present"
+    command: "python3 $TASK_DIR/check_e2e_lifecycle.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

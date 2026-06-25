@@ -1,0 +1,48 @@
+task_id: skill-functions-python-smoke-trigger
+description: >
+  Smoke test: agent should trigger the uipath-functions skill when the user
+  asks for a deterministic Python function with typed I/O that runs as a
+  UiPath job. Fans out over several Python-Functions-signal prompts and grades
+  the trigger RATE (recall.yes) rather than a single run, so LLM routing
+  nondeterminism doesn't flake the gate. Verifies the skill fires on the
+  Python Functions signal (no LLM reasoning) and is NOT routed to uipath-agents.
+tags: [uipath-functions, smoke, mode:build, lifecycle:discover]
+
+dataset:
+  id_field: id
+  rows:
+    - id: invoice-validate
+      prompt: |
+        I need a Python function that validates incoming invoice data: takes an
+        invoice number, vendor name, total amount, and currency, then returns
+        whether it's valid plus a list of validation errors. It should be
+        invocable as a UiPath job from a Maestro Service Task. Tell me which
+        skill to use and the file structure I'll need. Do NOT scaffold any
+        files yet — just identify the right skill and outline the project shape.
+    - id: csv-transform
+      prompt: |
+        I want a deterministic Python function (no LLM) that takes a CSV of
+        orders, dedupes rows by order id, and returns the cleaned rows with a
+        typed output model, packaged so I can run it as a UiPath job. Which
+        UiPath skill should I use and what's the project layout? Don't create
+        files yet.
+    - id: api-custom-auth
+      prompt: |
+        I need to call a third-party REST API with a custom HMAC auth header
+        and map the response into typed fields — pure code, no agent or LLM.
+        It has to be packageable and invocable from UiPath. Which skill do I
+        use and what files does the project need? Just outline it, don't build.
+
+initial_prompt: "${row.prompt}"
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-functions skill"
+    skill_name: "uipath-functions"
+    expected_skill: "uipath-functions"
+    weight: 3.0
+    # Rate-based gate across the rows above: tolerates LLM routing
+    # nondeterminism by requiring the skill to fire on >=2/3 of rows rather
+    # than failing on a single unlucky run (the n=1 brittleness). 0.66 < 2/3
+    # (0.667), so 2 of 3 rows triggering passes; only <=1/3 fails.
+    suite_thresholds: {recall.yes: 0.66}
