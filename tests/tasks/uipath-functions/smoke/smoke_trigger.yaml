@@ -43,5 +43,6 @@ success_criteria:
     weight: 3.0
     # Rate-based gate across the rows above: tolerates LLM routing
     # nondeterminism by requiring the skill to fire on >=2/3 of rows rather
-    # than failing on a single unlucky run (the n=1 brittleness).
-    suite_thresholds: {recall.yes: 0.67}
+    # than failing on a single unlucky run (the n=1 brittleness). 0.66 < 2/3
+    # (0.667), so 2 of 3 rows triggering passes; only <=1/3 fails.
+    suite_thresholds: {recall.yes: 0.66}

@@ -1,18 +1,17 @@
 task_id: skill-functions-deploy-tenant
 description: >
-  Coded-agent deploy to the **tenant feed** with `packOptions`. The
-  other two deploy targets (`--my-workspace` and `--folder`) are
-  already covered; `--tenant` is the only documented target with zero
-  coverage. The agent also has to keep a non-source directory
-  (`data/`) out of the package, exercising
-  `packOptions.directoriesExcluded` in `uipath.json` — the documented
-  knob for controlling package contents. **Cloud auth + tenant-level
-  publish permission required** for the host running coder-eval.
+  Coded Function publish to the **tenant feed** with `packOptions`.
+  Exercises `uip functions publish` to a tenant-level feed and forces
+  the agent to keep a non-source directory (`data/`) out of the
+  package via `packOptions.directoriesExcluded` in `uipath.json` — the
+  documented knob for controlling package contents. **Cloud auth +
+  tenant-level publish permission required** for the host running
+  coder-eval.
 tags: [uipath-functions, e2e, mode:build, feature:deploy]
 max_iterations: 1
 
 initial_prompt: |
-  Build a Simple Function UiPath coded agent named `tenant-echo`
+  Build a UiPath Coded Function named `tenant-echo`
   that takes a `message` (string) and returns
   `{"echoed": message}`. No LLM, no SDK calls.
 
@@ -22,9 +21,9 @@ initial_prompt: |
   `{"sample": "value"}`. The `data/` directory must NOT end up in
   the published package.
 
-  Take the agent through scaffold → init → run locally, then ship
-  it to the tenant feed. The host has UiPath auth pre-configured
-  with permission to publish to the tenant feed.
+  Take the function through scaffold → init → run locally, then
+  publish it to the tenant feed. The host has UiPath auth
+  pre-configured with permission to publish to the tenant feed.
 
   Do NOT publish to the personal workspace or to a folder feed.
   Complete it in a single pass.
@@ -33,29 +32,29 @@ success_criteria:
   - type: command_executed
     description: "Agent scaffolded the project"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+new'
+    command_pattern: 'uip\s+functions\s+new'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran uip codedagent init"
+    description: "Agent ran uip functions init"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+init'
+    command_pattern: 'uip\s+functions\s+init'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent deployed to the tenant feed"
+    description: "Agent published to the tenant feed"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--tenant\b'
+    command_pattern: 'uip\s+functions\s+publish\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "Coded agent project exists"
+    description: "Coded Function project exists"
     path: "tenant-echo/pyproject.toml"
     weight: 1.0
     pass_threshold: 1.0

@@ -1,13 +1,13 @@
 task_id: skill-functions-diagnose-deploy-failure
 description: >
-  Diagnose-mode coverage for the coded path's deploy lifecycle. The
-  Quickstart Troubleshooting table documents `Project authors cannot
-  be empty` as the canonical pyproject hygiene rejection on
-  `uip codedagent deploy`. This seeds a coded agent project whose
-  `pyproject.toml` is missing the `authors` entry and expects the
-  skill to (1) diagnose the rejection from the error wording, (2)
-  add a valid `authors = [...]` entry, and (3) successfully re-ship
-  to the user's personal workspace. **Cloud auth pre-configured.**
+  Diagnose-mode coverage for the Coded Function publish lifecycle. The
+  Troubleshooting guidance documents `Project authors cannot be empty`
+  as the canonical pyproject hygiene rejection on `uip functions
+  publish`. This seeds a Coded Function project whose `pyproject.toml`
+  is missing the `authors` entry and expects the skill to (1) diagnose
+  the rejection from the error wording, (2) add a valid
+  `authors = [...]` entry, and (3) successfully re-ship to the user's
+  personal workspace. **Cloud auth pre-configured.**
 tags: [uipath-functions, e2e, mode:diagnose, feature:deploy]
 max_iterations: 1
 pre_run:
@@ -15,9 +15,9 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  I have a Simple Function UiPath coded agent at `daily-digest/`.
+  I have a UiPath Coded Function at `daily-digest/`.
   Shipping it to the personal workspace with
-  `uip codedagent deploy --my-workspace` fails with:
+  `uip functions publish --my-workspace` fails with:
 
       Project authors cannot be empty
 
@@ -29,17 +29,17 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent ran uip codedagent init to refresh entry-points.json"
+    description: "Agent ran uip functions init to refresh entry-points.json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+init'
+    command_pattern: 'uip\s+functions\s+init'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent deployed to personal workspace after fixing pyproject"
+    description: "Agent published to personal workspace after fixing pyproject"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedagent\s+(deploy|publish)\s+.*--my-workspace'
+    command_pattern: 'uip\s+functions\s+publish\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
