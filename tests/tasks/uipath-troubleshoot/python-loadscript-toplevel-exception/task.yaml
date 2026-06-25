@@ -57,71 +57,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched load-script-failures, identified a top-level-exception script-load failure (L2b), and recommended guarding the module-level code"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My PyOrderImport process faults in Orchestrator on every run (folder
-         'Order Processing'). It runs a Python script through a Python Scope and
-         dies right away with 'Error loading the python script'. The same script
-         runs fine in my editor. I'm not on the Robot host, only Orchestrator."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/python-activities/playbooks/load-script-failures.md
-        and the specific sub-case is L2b (script load / compile / top-level
-        exception): Load Python Script executes the module body to bind its
-        functions, so module-level code that raises aborts the load with
-        "Error loading the python script" / "One or more errors occurred".
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - order_import.py has a module-level statement `DEFAULT_DISCOUNT = 100 / 0`
-            that raises ZeroDivisionError at import time.
-          - Load Python Script runs the module body (to bind functions), so the
-            top-level statement executes at load and faults before import_orders
-            is ever invoked.
-          - The engine initialized fine (logs show "Python engine initialized")
-            and there is no ModuleNotFoundError - this is NOT L1 engine-init and
-            NOT a missing-package (L2a) case.
-          - "Runs fine in my editor" is a red herring: the editor may run a
-            different entry path, but the module-level crash still occurs on load.
-        The reference fix is:
-          - Move the executable module-level code into a function, OR guard it
-            with `if __name__ == "__main__":`, so importing the module (which is
-            what Load Python Script does) does not execute it. Remove/repair the
-            divide-by-zero.
-
-      DIMENSION C -- No fabricated host actions
-        The user is off-host. The agent may hand over a verification step (run
-        the script with the scope's interpreter to see the traceback) but must
-        NOT claim to have edited the script on the robot or run host commands.
-
-      SCORING RUBRIC:
-        1.0  Matched load-script-failures, identified a top-level / module-scope
-             exception at load (L2b) as the cause, AND recommended moving the
-             code into a function or behind `if __name__ == "__main__":`.
-        0.8  Correct playbook and load-time-exception cause, but the fix is vague
-             (e.g. "fix the script error" without naming the function / __main__
-             guard).
-        0.5  Recognized a Python-script load problem but attributed it to engine
-             init (L1), a missing module (L2a), or invoke-time logic instead of
-             top-level code at load.
-        0.2  Surfaced the error string to the user without diagnosis.
-        0.0  Wrong cause (engine init / bitness / library path / ModuleNotFound /
-             workflow wiring), or fabricated a host action.
-
-      Penalize concluding engine-init (L1) or ModuleNotFoundError (L2a) -- the
-      evidence (engine initialized, divide-by-zero traceback at module level)
-      rules those out.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 

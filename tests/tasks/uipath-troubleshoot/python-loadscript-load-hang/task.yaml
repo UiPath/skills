@@ -56,65 +56,22 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent matched load-script-failures, identified an L3 hang/stdout-flood at load, and recommended removing the load-time stdout (and/or raising Timeout)"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome. The Reference solution attached to this prompt is the
-      RESOLUTION.md for this scenario. Treat it as authoritative.
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      The user's request was:
-        "My PyBatchAggregate process faults in Orchestrator on every run (folder
-         'Batch Analytics'). It runs a Python script through a Python Scope and
-         instead of finishing it hangs ~30 seconds then dies with a timeout. It
-         never gets to my data. I'm not on the Robot host, only Orchestrator."
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION A -- Correct playbook
-        The matching playbook is
-          references/activity-packages/python-activities/playbooks/load-script-failures.md
-        and the specific sub-case is L3 (hang or oversized data): excessive
-        stdout during load freezes the engine pipe, or a long-running load
-        exceeds Timeout.
-
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The reference root cause is:
-          - aggregate.py has a module-level loop (`for _i in range(5_000_000): ...
-            print(...)`) that runs at import because Load Python Script executes
-            the module body.
-          - The per-row stdout floods the engine's output pipe at load; combined
-            with the heavy loop, the load never completes within the 30s Timeout,
-            so the scope faults with TimeoutException.
-          - The engine initialized fine and there is no syntax error or
-            ModuleNotFoundError - this is NOT L1 engine-init and NOT L2.
-        The reference fix is:
-          - Remove or drastically reduce the stdout produced at load (do not
-            print per row; keep Log Python Output to File off in production),
-            and move the heavy warm-up out of module scope into a function, AND/OR
-          - raise the Python Scope Timeout for a legitimately slow load. (If the
-            problem were a large return value rather than stdout, the fix would be
-            to write data to a file / raise Script Data Size Limit.)
-
-      DIMENSION C -- No fabricated host actions
-        The user is off-host. The agent may hand over a check but must NOT claim
-        to have edited the script on the robot or run host commands.
-
-      SCORING RUBRIC:
-        1.0  Matched load-script-failures, identified an L3 hang caused by
-             load-time stdout flood / heavy module-level work exceeding Timeout,
-             AND recommended removing/reducing the load-time stdout (move work
-             into a function) and/or raising Timeout.
-        0.8  Correct playbook and hang/timeout cause, but the fix is vague (e.g.
-             "make the script faster" without naming the stdout flood / Timeout).
-        0.5  Recognized a timeout/hang but attributed it to engine init, a
-             missing module, or generic "slow script" without tying it to the
-             load-time stdout flood / module-level work.
-        0.2  Surfaced the TimeoutException to the user without diagnosis.
-        0.0  Wrong cause (engine init / bitness / ModuleNotFound / syntax /
-             workflow wiring), or fabricated a host action.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 
