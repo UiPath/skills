@@ -10,9 +10,9 @@ description: >
 tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
 
 run_limits:
-  max_turns: 120
-  task_timeout: 2400
-  turn_timeout: 1800
+  max_turns: 60
+  task_timeout: 1800
+  turn_timeout: 600
 
 sandbox:
   # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
