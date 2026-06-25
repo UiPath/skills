@@ -271,7 +271,7 @@ For conversational, typically general behavior and steps to respond to users. Sh
 
 ### User Message
 
-For autonomous agents, templates input fields into the prompt using `{{input.fieldName}}`, and agent resources/outputs using `@{ }` expressions — `@{tools.<Name>}`, `@{contexts.<Name>}`, `@{escalations.<Name>}`, `@{output.<path>}` (see § contentTokens Construction). For `job-attachment` fields the token renders metadata only (see § File Attachments).
+For autonomous agents, templates input fields into the prompt using `{{input.fieldName}}`, and agent resources/outputs using `@{ }` expressions (see § contentTokens Construction). For `job-attachment` fields the token renders metadata only (see § File Attachments).
 
 ```json
 {
@@ -300,16 +300,7 @@ Three token types: `simpleText`, `variable`, `expression`.
 3. Text inside `@{ }` → `{ "type": "expression", "rawString": "<expr>" }` (strip delimiters; Studio expression referencing an agent resource or output — see families below)
 4. Every segment including whitespace gets its own entry
 
-`@{ }` expression families (the `rawString` is the inner text verbatim, prefix included):
-
-| Prefix | References | Example rawString |
-|--------|-----------|-------------------|
-| `tools.<Name>` | a tool resource | `tools.SearchWeb` |
-| `contexts.<Name>` | a context (index) resource | `contexts.Test` |
-| `escalations.<Name>` | an escalation resource | `escalations.HumanReview` |
-| `output.<path>` | the agent's output schema (dotted path) | `output.result.data` |
-
-`{{ }}` (`variable`) is for `inputSchema` fields only; `@{ }` (`expression`) is for everything else (tools, contexts, escalations, outputs). None of the `@{ }` targets are `inputSchema` fields — do not declare them under `inputSchema.properties`.
+`@{ }` (`expression`) references an agent resource or output by family + name — `tools.<Name>`, `contexts.<Name>`, `escalations.<Name>`, or `output.<path>` — with the inner text verbatim as `rawString` (e.g. `@{contexts.Knowledge}` → `rawString: "contexts.Knowledge"`). `{{ }}` (`variable`) is for `inputSchema` fields only; `@{ }` targets are runtime-resolved and must never be declared under `inputSchema.properties`.
 
 **Example — adjacent variables:**
 
@@ -325,7 +316,7 @@ Content: `"{{input.field1}} {{input.field2}}"`
 
 **Example — resource reference (`@{ }` expression):**
 
-Reference an agent resource by family + name, e.g. a context (`resources/<Name>/resource.json`, `contextType: "index"`) with `@{contexts.<Name>}`. The resource is resolved at runtime — it is **not** an `inputSchema` field, so do not declare it under `inputSchema.properties`.
+Reference an agent resource by family + name, e.g. a context (`resources/<Name>/resource.json`) with `@{contexts.<Name>}`.
 
 Content: `"Extract information from the @{contexts.Test} context"`
 
@@ -341,7 +332,6 @@ Content: `"Extract information from the @{contexts.Test} context"`
 - Forgetting to update contentTokens after editing content
 - Including `{{`/`}}` or `@{`/`}` in the rawString
 - Missing whitespace tokens between adjacent variables
-- Declaring a `@{ }` target (tool, context, escalation, output) as an `inputSchema` field — those are runtime-resolved resources/outputs, not inputs
 
 ## entry-points.json
 
