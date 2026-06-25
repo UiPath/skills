@@ -1,0 +1,133 @@
+task_id: skill-troubleshoot-python-scope-path-is-file
+description: >
+  UiPath troubleshoot agent must diagnose a Python Scope failure where the
+  scope faults at open with `The specified Python path is not valid:
+  C:\Program Files\Python311\python.exe`. The Python Scope `Path` property
+  must be the install FOLDER (C:\Program Files\Python311), but it is set to
+  the python.exe executable. The scope appends the interpreter internally
+  and cannot resolve a valid interpreter from a path ending in python.exe.
+  The decisive evidence is the trailing \python.exe on the Python Scope
+  Path in Main.xaml, matching the path echoed in the error. Agent must
+  match the python-activities/playbooks/python-path-not-valid.md playbook,
+  identify the file-vs-folder mistake, and recommend stripping \python.exe
+  to the containing folder.
+
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope, path-not-valid, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My `PythonHelloWorld` job keeps failing at the Python Scope with:
+
+  `Python Scope: The specified Python path is not valid: C:\Program Files\Python311\python.exe`
+
+  Faulted job key: bb222222-7777-bbbb-cccc-ddddeeeeffff. But that path is
+  correct — python.exe really is at C:\Program Files\Python311\python.exe, I
+  can double-click it and it opens. Why does UiPath say it's not valid?
+
+  The project source for the failing process is at ./PythonHelloWorld/ in the
+  current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched the python-path-not-valid playbook AND identified that the Python Scope Path points at python.exe (the file) instead of the install folder, recommending the user strip \\python.exe to the containing folder"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome. The Reference solution attached to this prompt is
+      the RESOLUTION.md for this scenario. Treat it as the authoritative
+      ground truth.
+
+      The user's request was:
+        "My PythonHelloWorld job keeps failing at the Python Scope with
+         `Python Scope: The specified Python path is not valid:
+         C:\Program Files\Python311\python.exe`. Faulted job key
+         bb222222-7777-bbbb-cccc-ddddeeeeffff. But that path is correct —
+         python.exe really is at C:\Program Files\Python311\python.exe, I can
+         double-click it and it opens. Why does UiPath say it's not valid?"
+
+      You must grade BOTH dimensions in a single score:
+
+      DIMENSION A -- Correct playbook
+        The matching playbook is
+          skills/uipath-troubleshoot/references/activity-packages/python-activities/playbooks/python-path-not-valid.md
+        because the signature is `The specified Python path is not valid:
+        <path>` at Python Scope open.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        The reference root cause is:
+          - The Python Scope `Path` property must be the install FOLDER that
+            contains python.exe (e.g. C:\Program Files\Python311), NOT the
+            python.exe executable itself.
+          - It is set to C:\Program Files\Python311\python.exe (visible in
+            process/Main.xaml), which ends in \python.exe. The scope appends
+            the interpreter name internally and cannot resolve a valid
+            interpreter, so it faults at scope open before any Python runs.
+          - The file existing on disk is a red herring — the property
+            expects a directory.
+
+        The reference fix:
+          - Change the Python Scope `Path` from
+            `C:\Program Files\Python311\python.exe` to
+            `C:\Program Files\Python311` (drop the trailing \python.exe).
+          - Optionally set Library path to python311.dll and Version to the
+            installed version after fixing Path.
+
+      SCORING RUBRIC:
+
+        1.0  Agent matched the python-path-not-valid playbook AND identified
+             that `Path` points at the python.exe file instead of the
+             install folder (citing the trailing \python.exe in Main.xaml),
+             and recommended setting Path to the containing folder
+             (C:\Program Files\Python311).
+        0.8  Both dimensions largely correct: matched the playbook and gave
+             the folder-not-file fix, but did not explicitly cite the
+             Main.xaml Path value OR did not show the corrected value.
+        0.5  Only one dimension correct: matched the playbook but proposed a
+             different fix (e.g. reinstall Python, fix PATH env var) without
+             the file-vs-folder insight; OR gave the folder fix without
+             matching the specific playbook.
+        0.2  Agent recognized a Python path/config problem but neither
+             matched the playbook nor identified the file-vs-folder mistake.
+        0.0  Agent confidently picked a wrong root cause (e.g. missing
+             module, architecture mismatch) with no evidence; got blocked;
+             or failed.
+
+      Be substance-focused. The decisive insight is that `Path` is a folder
+      property and the trailing \python.exe is the mistake. Penalize agents
+      that tell the user to reinstall Python or edit the system PATH instead
+      of correcting the Path property to the folder.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence covering both playbook and conclusion>"}

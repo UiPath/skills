@@ -1,0 +1,38 @@
+{
+  "Result": "Success",
+  "Code": "JobGet",
+  "Data": {
+    "Key": "bb222222-7777-bbbb-cccc-ddddeeeeffff",
+    "StartTime": "2026-06-18T11:02:10.300Z",
+    "EndTime": "2026-06-18T11:02:12.180Z",
+    "State": "Faulted",
+    "JobPriority": "Normal",
+    "Source": "Manual",
+    "SourceType": "Manual",
+    "Info": "Python Scope: The specified Python path is not valid: C:\\Program Files\\Python311\\python.exe\r\n   at UiPath.Python.Service.PythonClient.Initialize(PythonConfig config)\r\n   at UiPath.Python.Activities.PythonScope.OnExecuteAsync(NativeActivityContext context)\r\n",
+    "CreationTime": "2026-06-18T11:02:10.100Z",
+    "ReleaseName": "PythonHelloWorld",
+    "Type": "Unattended",
+    "OutputArguments": "{}",
+    "HostMachineName": "MOCK-HOST",
+    "RuntimeType": "Unattended",
+    "RequiresUserInteraction": false,
+    "OrganizationUnitId": 6020002,
+    "FolderKey": "fb222222-2222-3333-4444-555566667777",
+    "Reference": "HelloRunA",
+    "ProcessType": "Process",
+    "LocalSystemAccount": "UIPATH\\AUTOMATION1",
+    "OrchestratorUserIdentity": "automation1",
+    "LastModificationTime": "2026-06-18T11:02:12.180Z",
+    "JobError": {
+      "ErrorCode": "Activity",
+      "Type": "InvalidOperationException",
+      "ActivityName": "PythonScope_1",
+      "ActivityDisplayName": "Python Scope",
+      "WorkflowFilePath": "Main.xaml"
+    },
+    "ErrorCode": "Activity",
+    "TraceId": "bb222222-7777-bbbb-cccc-ddddeeeeffff",
+    "Id": 680078202
+  }
+}

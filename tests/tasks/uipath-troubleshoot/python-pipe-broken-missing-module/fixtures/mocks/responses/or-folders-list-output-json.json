@@ -1,0 +1,18 @@
+{
+  "Result": "Success",
+  "Code": "FoldersListCurrentUser",
+  "Data": [
+    {
+      "Key": "fa111111-2222-3333-4444-555566667777",
+      "DisplayName": "PythonAutomations",
+      "FullyQualifiedName": "PythonAutomations",
+      "Description": "Folder for Python-backed automations.",
+      "ProvisionType": "Manual",
+      "PermissionModel": "FineGrained",
+      "FeedType": "Processes",
+      "Id": 6020001,
+      "ParentId": null,
+      "ParentKey": null
+    }
+  ]
+}
