@@ -1,0 +1,125 @@
+task_id: skill-troubleshoot-export-pdf-output-path-format
+description: >
+  UiPath troubleshooting agent must diagnose an Export to PDF failure where
+  the output path is built by string concatenation WITHOUT a .pdf extension
+  (`outFolder + "\" + reportName` → `C:\Reports\MonthlyReport`), so the
+  activity faults with an ArgumentException requiring a .pdf file. Success =
+  agent matches the export-pdf-output-path-format playbook AND recommends
+  formatting the path with a .pdf suffix (Path.Combine(folder, name & ".pdf")),
+  not blaming a missing folder, COM, or the document.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, export-pdf, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ReportPdfGen process faults in Orchestrator (folder "Report PDFs",
+  machine MOCK-ROBOT-14). It exports a Word report to PDF and the error
+  mentions the file path / a .pdf file. It builds the output path from a
+  folder variable and the report name.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched export-pdf-output-path-format AND recommended a .pdf-suffixed path"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md is authoritative).
+
+      The user's request:
+        "ReportPdfGen faults in Orchestrator (folder 'Report PDFs', machine
+         MOCK-ROBOT-14) exporting a Word report to PDF; the error mentions
+         the file path / a .pdf file. It builds the output path from a folder
+         variable and the report name."
+
+      DIMENSION A -- Correct playbook
+        Matches references/activity-packages/word-activities/playbooks/export-pdf-output-path-format.md
+        because the error "The export file path must specify a .pdf file.
+        Value was 'C:\Reports\MonthlyReport'" from `Export to PDF` is the
+        malformed-output-path / missing-.pdf-extension signature.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        Root cause: the `Export to PDF` output `FileName` is built as
+        `outFolder + "\" + reportName` (Main.xaml) with **no `.pdf`
+        suffix**, so the resolved path `C:\Reports\MonthlyReport` is not a
+        valid PDF target and the activity throws ArgumentException.
+        Fix: format the path with a `.pdf` extension —
+        `Path.Combine(outFolder, reportName & ".pdf")` (or append `& ".pdf"`),
+        and validate the pieces (single separator, no double extension).
+
+      DIMENSION C -- Right target
+        The agent must tie it to the missing `.pdf` extension / path
+        formatting (using the XAML expression + the error's `Value was
+        'C:\Reports\MonthlyReport'`), NOT blame a missing folder, COM, the
+        input document, or a missing install, and NOT fabricate a host
+        action.
+
+      SCORING RUBRIC:
+        1.0  Matched export-pdf-output-path-format AND identified the output
+             path lacking the `.pdf` extension (concatenation) as the cause
+             AND recommended formatting with a `.pdf` suffix
+             (Path.Combine / append ".pdf"), without blaming
+             folder/COM/document or fabricating actions.
+        0.8  Correct playbook and cause but the fix is vague (e.g., "fix the
+             path" without naming the `.pdf` suffix / Path.Combine).
+        0.5  Recognized a path problem but attributed it to the wrong cause
+             (missing directory, COM) or matched a sibling export-pdf
+             playbook.
+        0.2  Restated the error without a cause.
+        0.0  Wrong cause (missing folder as primary, Word not installed,
+             document corrupt, COM) or fabricated a host action.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the user who reported the failing PDF export. The error mentions
+    the file path / a .pdf file; the output path is built from a folder
+    variable and the report name. You are off-host, Orchestrator only. You
+    want a diagnosis and the fix.
+  goal: |
+    Let the agent complete its flow; approve scope expansions / clarifications.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and hand you the fix."
+    - "If asked how the output path is built, confirm it concatenates the folder variable, a backslash, and the report name."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

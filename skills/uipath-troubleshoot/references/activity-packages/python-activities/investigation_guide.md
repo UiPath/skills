@@ -4,29 +4,29 @@
 
 Before using any fetched data, verify it matches the user's reported problem:
 
-- **Activity** — the faulted activity's namespace and class match the reported failure (`UiPath.Python.Activities.PythonScope`, `UiPath.Python.Activities.LoadScript`, `InvokeMethod`, `GetObject`). A `Load Python Script` fault is distinct from an invocation fault: a load failure means the scope/script never bound; an `Invoke Python Method` fault means the script loaded and the failure is in the called function.
-- **Interpreter identity** — the Python install at the scope's `Path` on the robot host matches the interpreter the user tested. The same script behaves differently per interpreter: a venv/conda env in an IDE has different `site-packages` than a system Python or the env at `Path`. Evidence from the developer's IDE env is not transferable to the robot.
-- **Bitness + version** — the installed interpreter's bitness matches `Target` (`x86`/`x64`), and its version is `≤` the max the `UiPath.Python.Activities` package supports. Bitness/version mismatch with the package or `Library path` is a known engine-init cause.
-- **Robot / machine identity** — the robot account and the machine where Python is installed match the one the user reports. Python install location, `PATH`, the `pythonXX.dll`, and the .NET Desktop Runtime are per-machine; evidence from a different host is not transferable.
-- **Package version** — the `UiPath.Python.Activities` version in `project.json` matches what is installed on the execution host, and supports the Python version in use.
-- **Timestamp** — the failure occurred during the window the user reported (load-bearing for hang/timeout investigations).
+- **Activity** — the faulted activity's namespace and class match the reported failure (e.g., `UiPath.Python.Activities.InvokeMethod` / "Invoke Python Method", `UiPath.Python.Activities.PythonScope` / "Python Scope", `UiPath.Python.Activities.RunScript` / "Run Python Script"). A `Pipe is broken` fault at `Invoke Python Method` and an interpreter-resolution fault at `Python Scope` are different code paths — treat them as different.
+- **Python script** — the `.py` file (or inline code) in evidence matches the script the user is asking about. `Load Python Script` / `Run Python Script` reference a specific `File`; a different script is unrelated data.
+- **Interpreter identity** — the Python install the scope's `Path` / `Version` / `Target` resolves to matches the interpreter the user reports. The packages available at runtime are those installed in **that** interpreter, not the developer's IDE environment and not a different Python on the same host.
+- **Robot / machine identity** — the robot account and the machine where Python is installed match the one the user reports. Python interop is per-machine and per-interpreter; evidence from the developer's machine (where "it runs fine") is not transferable to the robot host.
+- **Run surface** — whether the run was foreground Studio / attended or unattended / Session 0 / background. Load-bearing for `WorkingFolder` / relative-path causes (the robot's CWD differs from Studio's) and for interpreter access (the robot user may not see a per-user Python install).
+- **Package + runtime version** — the `UiPath.Python.Activities` version from `project.json`, the interpreter version, and the installed .NET Desktop Runtime. The pack supports a specific Python-version / runtime matrix; a skew here produces engine-init failures unrelated to the user's code.
+- **Timestamp** — the failure occurred during the time window the user reported.
 
 If the data doesn't match: **discard it**. Do NOT use unrelated data as a proxy. Report the mismatch and ask for clarification.
 
-## What to Capture
-
-1. **Workflow source** — read the `PythonScope` node from the `.xaml` for the literal `Path`, `Library path`, `Version`, `Target`, `WorkingFolder`, `Timeout`, and `Script Data Size Limit` expressions, and the `LoadScript` file path / inline script. Property-panel summaries truncate; the XAML is authoritative.
-2. **The script itself** — the `.py` file (or inline text). Identify any **top-level (module-body) code** that runs at load: loose statements, `import` lines, and prints. `Load Python Script` executes the module body, so a top-level error crashes the load.
-3. **Interpreter facts on the robot host** — Python version and bitness (`python --version`, `python -c "import struct;print(struct.calcsize('P')*8)"`), the install/venv folder, and whether the imported modules exist in *that* interpreter's `site-packages` (`python -m pip show <module>`).
-4. **`Library path` correctness** — for Python > 3.9 on Windows, whether `Library path` points at the matching `pythonXX.dll`; for ≤ 3.9 on Windows, whether it is (correctly) empty; on Linux, the `libpythonXX.so` path.
-5. **.NET Desktop Runtime** — whether .NET Desktop Runtime 6+ is installed on the host (`dotnet --list-runtimes` → look for `Microsoft.WindowsDesktop.App 6/8`). Required for Windows projects on package v1.9.0+.
-6. **Package version** — `UiPath.Python.Activities` in `project.json` vs the version restored on the execution host, and whether it supports the target Python version.
-
 ## Testing Prerequisites
 
-Before drawing conclusions, gather and verify:
+When testing hypotheses for `Python Scope` failures, gather and verify these before drawing conclusions:
 
-1. **Script runs standalone** — the exact `python.exe` from the scope's `Path` runs the script from a Windows Command Prompt with the scope's `WorkingFolder` as the current directory (`cd <WorkingFolder> && "<Path>\python.exe" script.py`). If it fails there, the fault is the environment/script, not UiPath.
-2. **Interpreter ↔ scope alignment** — confirmed bitness match (`Target` vs interpreter), version `≤` package max, and `Library path` set per the > 3.9 rule.
-3. **Module availability** — every imported third-party module is installed in the interpreter at `Path`, not only in the IDE's venv/conda env.
-4. **Load vs invoke isolation** — confirm whether the failure is at load (`LoadScript`) or at invocation (`InvokeMethod`); they have different root causes and fixes.
+1. **Activity identity** — confirm the faulted activity (`Python Scope`, `Load Python Script`, `Run Python Script`, `Invoke Python Method`, `Get Python Object`) and the exact error string. `Pipe is broken`, `The specified Python path is not valid`, and `One or more errors occurred` / `Error initializing the Python engine` map to different playbooks.
+2. **Scope configuration** — from the `.xaml`, capture the `Python Scope` `Path`, `Library path`, `Version`, `Target`, and `WorkingFolder`. Check `Path` for the two classic traps: ending in `\python.exe`, or pointing at `...\WindowsApps\python`.
+3. **Script source** — read the `.py` file(s) referenced by `Load Python Script` / `Run Python Script`. Note every `import` (third-party modules are the prime `Pipe is broken` suspect), any top-level `sys.exit` / `os._exit`, heavy stdout/print volume, and any relative file path the script opens.
+4. **Interpreter packages** — whether the third-party modules the script imports are installed in the interpreter the scope's `Path` resolves to (not the dev's IDE). Not visible in the job log — the user (or someone with access to the robot host) confirms via `<scope-path>\python.exe -m pip list`.
+5. **Interpreter bitness / version** — the actual install's bitness (x86 / x64) and version vs the scope's `Target` / `Version`. Run-surface dependent: a per-user install under the developer's profile may not exist for the robot user.
+6. **Run surface** — foreground Studio Run/Debug vs attended vs unattended / Session 0. Confirms or eliminates the `WorkingFolder` CWD-divergence cause and per-user-interpreter visibility.
+7. **Package + .NET runtime version** — `UiPath.Python.Activities` version from `project.json` and the installed .NET Desktop Runtime, checked against the pack's supported matrix.
+8. **Load vs invoke isolation** — confirm whether the failure is at load (`Load Python Script` — engine init or script import; the scope/script never bound) or at invocation (`Invoke Python Method` — the script loaded and the failure is in the called function). They have different root causes and fixes; an engine-init / load fault surfacing under an invoke routes to [load-script-failures.md](./playbooks/load-script-failures.md).
+
+### Out-of-band confirmation
+
+The deciding proof for several Python causes lives on the robot host, not in the job log: whether the imported module is installed in the scope's interpreter (`pip list`), the interpreter's true bitness, and whether the script runs standalone from that exact interpreter (`<scope-path>\python.exe <script>`). Record these as out-of-band confirmation steps — they do not block a hypothesis when no alternative cause is better supported, but they are how the user closes the case.

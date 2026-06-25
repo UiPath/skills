@@ -105,6 +105,26 @@ Before reviewing implementation details, verify the right agent type was chosen:
 | Custom tool guardrails for destructive operations | Info | Check tool guardrail rules |
 | Guardrail actions appropriate (Log/Block/Escalate) | Info | Review action types |
 
+**Guardrail format (built-in validators).** These run in `uip agent review`, which fetches the live validator catalog (`uip agent guardrails list`) when a built-in guardrail is present and validates each one against it. They are skipped (not failed) when the catalog can't be fetched (offline / not authed) — note that in "Rules Skipped" if relevant.
+
+| Check | Severity | How to Verify |
+|---|---|---|
+| `validatorType` is a real validator in the catalog | Critical | *(rule: `GUARDRAIL_UNKNOWN_VALIDATOR`)* |
+| Scope is one the validator allows | Critical | *(rule: `GUARDRAIL_SCOPE_NOT_ALLOWED`)* |
+| Required `validatorParameters` are present | Critical | *(rule: `GUARDRAIL_MISSING_REQUIRED_PARAM`)* |
+| No unknown parameters (incl. params on a validator that takes none) | Warning | *(rule: `GUARDRAIL_UNKNOWN_PARAM`)* |
+| Parameter `$parameterType` matches the validator's type | Critical | *(rule: `GUARDRAIL_PARAM_TYPE_MISMATCH`)* |
+| Parameter values are legal (enum options / map keys / number range) | Critical | *(rule: `GUARDRAIL_PARAM_VALUE_INVALID`)* |
+
+**Guardrail format (custom guardrails).** Pure static — validated against the fixed custom-rule schema, no catalog needed.
+
+| Check | Severity | How to Verify |
+|---|---|---|
+| Discriminators present (`$ruleType`, `$selectorType`, `$actionType`) | Critical | *(rule: `GUARDRAIL_CUSTOM_BAD_DISCRIMINATOR`)* |
+| Operator valid for the rule type | Critical | *(rule: `GUARDRAIL_CUSTOM_BAD_OPERATOR`)* |
+| Value type matches the rule type | Critical | *(rule: `GUARDRAIL_CUSTOM_BAD_VALUE`)* |
+| `Tool` scope only, with exactly one tool in `matchNames` | Critical | *(rule: `GUARDRAIL_CUSTOM_SCOPE_INVALID`)* |
+
 ### Memory Management
 
 | Check | Severity | How to Verify |

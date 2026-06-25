@@ -1,0 +1,128 @@
+task_id: skill-troubleshoot-append-text-missing-container
+description: >
+  UiPath troubleshooting agent must diagnose an Append Text failure where the
+  App-Integration Append Text activity is dropped outside a Word Application
+  Scope and faults with "Activity is valid only inside WordApplicationScope"
+  (it has no file input of its own). Success = agent matches the
+  append-text-missing-container playbook AND recommends nesting Append Text in
+  a Word Application Scope / Use Word File OR using the standalone Word
+  Document Append Text that takes a file path, not blaming the file/document.
+tags: [uipath-troubleshoot, e2e, faulted-jobs, orchestrator, word-activities, append-text, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My AppendNotes process faults in Orchestrator (folder "Doc Append",
+  machine MOCK-ROBOT-15) the moment it runs. The error says the Append Text
+  activity is valid only inside WordApplicationScope. I just want to append
+  a note to a Word document.
+
+  I'm not on the robot host right now, only Orchestrator. Diagnose what you
+  can from Orchestrator and the project source, and tell me how to fix it.
+
+  The project source for the process is in the current working directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent matched append-text-missing-container AND recommended a scope or the standalone activity"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent against a known-correct
+      reference outcome (the attached RESOLUTION.md is authoritative).
+
+      The user's request:
+        "AppendNotes faults in Orchestrator (folder 'Doc Append', machine
+         MOCK-ROBOT-15) the moment it runs, with an error that the Append
+         Text activity is valid only inside WordApplicationScope. I just want
+         to append a note to a Word document."
+
+      DIMENSION A -- Correct playbook
+        Matches references/activity-packages/word-activities/playbooks/append-text-missing-container.md
+        because "Activity is valid only inside WordApplicationScope" from
+        `Append Text` is the App-Integration-activity-outside-its-container
+        signature.
+
+      DIMENSION B -- Same conclusion as RESOLUTION.md
+        Root cause: Main.xaml has the App-Integration `Append Text`
+        (`WordAppendText`) loose in the sequence, NOT inside a
+        `Word Application Scope` / `Use Word File`. It has no file input of
+        its own; outside a container it is invalid, so the run faults.
+        Fix (either path): move Append Text INSIDE a Word Application Scope
+        (or Use Word File) that opens the target document, OR use the
+        standalone `Append Text` under the Word Document category, which
+        takes the file path directly (no container).
+
+      DIMENSION C -- Right target
+        The agent must tie the fault to the missing container / wrong Append
+        Text surface, NOT blame the file path, the document, a missing Word
+        install, or a lock, and NOT fabricate a host action.
+
+      SCORING RUBRIC:
+        1.0  Matched append-text-missing-container AND identified the
+             App-Integration Append Text being outside a Word Application
+             Scope / Use Word File as the cause AND recommended a valid fix
+             (nest it in a scope, OR switch to the standalone Word Document
+             Append Text), without blaming the file/document/install or
+             fabricating actions.
+        0.8  Correct playbook and cause but the fix is vague (e.g., "add a
+             scope" without naming Word Application Scope / the standalone
+             activity).
+        0.5  Recognized the activity is invalid but attributed it to the
+             wrong cause (file path, document, package), or matched a
+             sibling playbook.
+        0.2  Restated the error without a cause.
+        0.0  Wrong cause (Word not installed, document corrupt, file lock,
+             zero-byte file) or fabricated a host action.
+
+      Reward either valid fix path equally.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the user who reported the failing process. It faults immediately
+    saying Append Text is valid only inside WordApplicationScope; you just
+    want to append a note to a Word document. You are off-host, Orchestrator
+    only. You want a diagnosis and the fix.
+  goal: |
+    Let the agent complete its flow; approve scope expansions / clarifications.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (orchestrator, word-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and hand you the fix."
+    - "If asked whether the Append Text activity is inside a Word Application Scope, say you are not sure - you just dragged the activity in and set the text."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

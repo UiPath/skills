@@ -12,7 +12,7 @@ description: >
   fix (Remove Data Filter / route to different sheet / unhide
   explicitly) — NOT the package-downgrade anti-pattern.
 
-tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, append-range, hidden-rows-target]
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, append-range, hidden-rows-target]
 
 agent:
   type: claude-code

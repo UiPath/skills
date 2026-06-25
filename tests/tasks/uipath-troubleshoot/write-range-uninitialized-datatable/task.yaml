@@ -13,7 +13,7 @@ description: >
   failing fast on the missing source, or restructuring the workflow
   to make the dependency explicit.
 
-tags: [uipath-troubleshoot, smoke, e2e, mode:diagnose, excel-activities, write-range, uninitialized-datatable]
+tags: [uipath-troubleshoot, e2e, mode:diagnose, excel-activities, write-range, uninitialized-datatable]
 
 agent:
   type: claude-code

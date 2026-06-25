@@ -115,6 +115,16 @@ Namespaces: `UiPath.Word.Activities`
 
 - [activity-packages/word-activities/overview.md](./activity-packages/word-activities/overview.md) — Package overview, execution models, and common failure patterns
 - [activity-packages/word-activities/summary.md](./activity-packages/word-activities/summary.md) — All playbooks for Word Activities issues
+
+## Python Activities
+
+Activities for invoking Python from a workflow. `UiPath.Python.Activities` does not run Python in-process — `Python Scope` launches a separate Python host process and marshals objects over an IPC pipe; `Load Python Script` / `Run Python Script` / `Invoke Python Method` / `Get Python Object` call into that host. Issues here involve `Pipe is broken` / `Error invoking Python method` (the out-of-process host died — a pip module missing from the scope's interpreter, an unhandled exception, a hard `sys.exit`, or stdout flooding), `The specified Python path is not valid` (`Path` points at `python.exe` instead of the install folder, or the `WindowsApps\python` Store alias), `One or more errors occurred` / engine-init failures (`Target` bitness, `Version`, or `Library path` mismatch, or a missing .NET Desktop Runtime), and scripts that run but read/write the wrong files (relative paths resolving against the robot's per-package `WorkingFolder`).
+
+Namespaces: `UiPath.Python.Activities`
+
+- [activity-packages/python-activities/overview.md](./activity-packages/python-activities/overview.md) — Package overview, out-of-process execution model, and common failure patterns
+- [activity-packages/python-activities/summary.md](./activity-packages/python-activities/summary.md) — All playbooks for Python Activities issues
+
 ## Database Activities
 
 Activities for querying and modifying relational databases over ADO.NET (SQL Server, Oracle, MySQL, ODBC, OLE DB). A `DatabaseConnection` opened by `Connect to Database` / `Start Transaction` is consumed by `Execute Query`, `Execute Non Query`, `Run Command`, and the bulk/insert activities. Issues here involve null/out-of-scope connections, provider/driver mismatches after Windows-Legacy → Windows migration, SQL syntax / unsafe concatenation, query text in the connection-string field, command timeouts, `0xE0434352` CLR crashes, and using the wrong activity for the statement type.
