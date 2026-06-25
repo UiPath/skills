@@ -6,7 +6,7 @@ description: >
   the word "secret" in the input. The user may choose middleware or decorator style.
   Verifies that the guardrails list was fetched, a rule checking for "secret" is
   present, and BlockAction is used.
-tags: [uipath-agents, e2e, coded, mode:build, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
