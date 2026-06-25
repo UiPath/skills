@@ -45,11 +45,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Removed each tag by name (untag --tag <live|staging>) — the first version holds both staging and live after the move, so both must be cleared"
+    description: "Removed the staging tag by name (untag --tag staging)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+untag\b.*--tag\s+(live|staging)'
-    min_count: 2
-    weight: 1.5
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+untag\b.*--tag\s+["'']?staging\b'
+    min_count: 1
+    weight: 0.75
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Removed the live tag by name (untag --tag live)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ixp\s+projects\s+untag\b.*--tag\s+["'']?live\b'
+    min_count: 1
+    weight: 0.75
     pass_threshold: 1.0
 
   - type: command_executed
