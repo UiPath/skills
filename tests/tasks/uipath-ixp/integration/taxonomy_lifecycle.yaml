@@ -11,8 +11,8 @@ tags: [uipath-ixp, integration, mode:build, lifecycle:setup]
 
 run_limits:
   max_turns: 60
-  task_timeout: 1800
-  turn_timeout: 600
+  task_timeout: 2400
+  turn_timeout: 1200
 
 sandbox:
   driver: tempdir

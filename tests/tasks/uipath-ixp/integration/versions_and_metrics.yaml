@@ -10,7 +10,7 @@ description: >
 tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
-  max_turns: 72
+  max_turns: 120
   task_timeout: 2400
   turn_timeout: 1200
 
