@@ -11,7 +11,7 @@ Synthesizes and deploys AOPS policies for the NLP-matched clause/product subset 
 
 ## Step 1: Synthesize formData overrides per product
 
-For each `productIdentifier` in `targetProducts`:
+Run the shipped [`synthesize-formdata`](synthesize-formdata-guide.md) script (args, exit codes, and warning handling are in that guide). For each `productIdentifier` in `targetProducts`:
 
 ```bash
 # Read the session dir written by catalog get — same unique dir across all tool calls.
@@ -23,8 +23,9 @@ $tmpDir = (Get-Content "$env:TEMP\uipath-compliance-current-session.txt" -Raw).T
 ```
 
 ```bash
-# Write synthesize-formdata.mjs to disk first — script at references/compliance-pack/scripts/synthesize-formdata.md
-node "$SESSION_TEMP/synthesize-formdata.mjs" \
+# Run the shipped script in place (do NOT recreate it). See synthesize-formdata-guide.md.
+# <SKILL_DIR> = the folder containing this skill's SKILL.md.
+node "<SKILL_DIR>/scripts/synthesize-formdata.mjs" \
   --catalog    "$SESSION_TEMP/catalog.json" \
   --product    "<productIdentifier>" \
   --clause-ids "<clauseId1,clauseId2,...>" \
@@ -91,9 +92,12 @@ foreach ($product in $targetProducts) {
 
 ## Step 3: Merge overrides onto template defaults
 
+Run the shipped [`merge-overrides`](merge-overrides-guide.md) script (merge rules and exit codes are in that guide).
+
 ```bash
-# Write merge-overrides.mjs to disk first — script at references/compliance-pack/scripts/merge-overrides.md
-node "$SESSION_TEMP/merge-overrides.mjs" \
+# Run the shipped script in place (do NOT recreate it). See merge-overrides-guide.md.
+# <SKILL_DIR> = the folder containing this skill's SKILL.md.
+node "<SKILL_DIR>/scripts/merge-overrides.mjs" \
   --base      "$SESSION_TEMP/products/<product>/form-data.json" \
   --overrides "$SESSION_TEMP/overrides/<product>.json" \
   --out       "$SESSION_TEMP/merged/<product>.json" \

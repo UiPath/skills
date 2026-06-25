@@ -1,30 +1,3 @@
-# merge-overrides
-
-Deep-merges compliance pack overrides onto a base formData object (template defaults for new policies, or existing deployed policy data for subset updates). Output is ready to pass directly to `uip gov aops-policy create|update --input`.
-
-**Merge rules:**
-- Objects → recursive key-by-key merge
-- Arrays → wholesale replace (override wins; `[]` is a deliberate clear)
-- Scalars → replace
-- Explicit `null` → clear that leaf
-- Paths the override doesn't touch → kept from base
-
-**Write to disk before running:**
-```bash
-node "$SESSION_TEMP/merge-overrides.mjs" \
-  --base      "$SESSION_TEMP/products/<product>/form-data.json" \
-  --overrides "$SESSION_TEMP/overrides/<product>.json" \
-  --out       "$SESSION_TEMP/merged/<product>.json" \
-  --summary
-```
-
-`--summary` prints the list of overridden paths — useful for confirming which compliance pack settings were applied.
-
-**Exit codes:** `0` = merged file written · `2` = missing or malformed inputs
-
-## Script
-
-```js
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
@@ -106,4 +79,3 @@ if (args.summary) {
     }
     if (touched.length > 20) process.stdout.write(`  … and ${touched.length - 20} more\n`);
 }
-```

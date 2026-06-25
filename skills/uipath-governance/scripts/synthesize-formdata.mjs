@@ -1,31 +1,3 @@
-# synthesize-formdata
-
-Extracts compliance pack catalog contributions for a given product + clause subset and writes them as a flat formData overrides object.
-
-**Write to disk before running:**
-```bash
-# Unix
-cat > "$SESSION_TEMP/synthesize-formdata.mjs" << 'SCRIPT'
-# Windows PS
-Set-Content "$tmpDir\synthesize-formdata.mjs" -Value @'
-```
-
-Paste the script block below, then:
-```bash
-node "$SESSION_TEMP/synthesize-formdata.mjs" \
-  --catalog    "$SESSION_TEMP/catalog.json" \
-  --product    "<productIdentifier>" \
-  --clause-ids "<clauseId1,clauseId2,...>" \
-  --out        "$SESSION_TEMP/overrides/<product>.json"
-```
-
-**Exit codes:** `0` = written · `2` = bad args · `3` = no contributions for product+clauses (skip this product, continue)
-
-**Warnings on stdout:** lines starting with `⚠` indicate controls whose values are org-specific (`notEmpty`) or are access-policy checks (`exists`) — collect those values from the user before proceeding.
-
-## Script
-
-```js
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
@@ -112,4 +84,3 @@ warnings.forEach(w => console.warn(`  ⚠ ${w}`));
 fs.mkdirSync(path.dirname(path.resolve(args["out"])), { recursive: true });
 fs.writeFileSync(args["out"], JSON.stringify(formData, null, 2));
 process.stdout.write(`SYNTHESIZED: ${path.resolve(args["out"])} (${count} contributions)\n`);
-```

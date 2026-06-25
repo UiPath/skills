@@ -43,7 +43,7 @@ Common examples:
 | Allowed Applications (RBT-UIA-003) | "Which applications should UIAutomation be allowed to interact with?" |
 | Forbidden Applications (RBT-UIA-004) | "Which applications should be blocked?" |
 
-When `synthesize-formdata.mjs` logs `⚠` warnings, check this table and collect values from the user before merging (see impl.md Step 1b).
+When `synthesize-formdata.mjs` logs `⚠` warnings, check this table and collect values from the user before merging (see [impl.md](impl.md) Step 1b).
 
 ## Ambiguous signals → ask before proceeding
 
@@ -76,4 +76,7 @@ When the user adds an org-level signal ("apply the traceability settings organiz
 
 ## See also
 
-`assets/examples/partial-apply-example.md` — worked example of the full flow.
+- [impl.md](impl.md) — the per-step apply implementation.
+- [synthesize-formdata-guide.md](synthesize-formdata-guide.md) — the `synthesize-formdata` script (args, exit codes, warnings).
+- [merge-overrides-guide.md](merge-overrides-guide.md) — the `merge-overrides` script (merge rules, exit codes).
+- `assets/examples/partial-apply-example.md` — worked example of the full flow.
