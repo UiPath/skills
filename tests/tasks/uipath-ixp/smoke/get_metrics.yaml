@@ -12,6 +12,12 @@ tags: [uipath-ixp, smoke, lifecycle:discover]
 run_limits:
   expected_turns: 4
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   A document automation engineer wants to inspect the per-field F1 scores
   of the IXP project named `my_invoices-f1afa9ef-ixp` before iterating on

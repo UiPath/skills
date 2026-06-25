@@ -13,6 +13,9 @@ tags: [uipath-ixp, smoke, lifecycle:execute]
 sandbox:
   driver: tempdir
   python: {}
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
   Yesterday I confirmed the `Invoice Number` field (field id `f-001`)

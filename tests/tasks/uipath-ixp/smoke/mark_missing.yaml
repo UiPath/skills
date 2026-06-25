@@ -9,6 +9,12 @@ tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 6
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, document doc-abc-123, the field
   "Discount Code" (field id a7c3e9105f2b4d86) is genuinely absent from the
