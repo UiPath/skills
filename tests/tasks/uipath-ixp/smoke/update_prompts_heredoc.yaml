@@ -14,6 +14,12 @@ tags: [uipath-ixp, smoke, lifecycle:edit]
 run_limits:
   expected_turns: 8
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   The InvoiceNumber field on IXP project `my_invoices-f1afa9ef-ixp` is
   scoring poorly. Validation shows the model is confusing the Purchase
