@@ -1,0 +1,406 @@
+{
+  "Result": "Success",
+  "Code": "FolderList",
+  "Data": [
+    {
+      "Key": "8e932457-37d5-4cd2-9cce-bc91874adfcd",
+      "Name": "robotuser@test.com's workspace",
+      "Path": "robotuser@test.com's workspace",
+      "Description": "",
+      "Type": "Personal",
+      "ParentKey": ""
+    },
+    {
+      "Key": "39c60d62-9966-4b4e-8b30-812e7387901f",
+      "Name": "Debug_AP_Inv_Contract_Disscrep_Agent_Solution",
+      "Path": "robotuser@test.com's workspace/Debug_AP_Inv_Contract_Disscrep_Agent_Solution",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "af1ed9b3-fbfd-437a-b3a5-1970ca53f7e8",
+      "Name": "Debug_AP_Inv_PO_Discrep_Agent_Solution",
+      "Path": "robotuser@test.com's workspace/Debug_AP_Inv_PO_Discrep_Agent_Solution",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "03e00c16-2fc1-4018-9ee2-55e61a91f36c",
+      "Name": "Debug_Agent_Inv_Contract_Disscrep-Solution",
+      "Path": "robotuser@test.com's workspace/Debug_Agent_Inv_Contract_Disscrep-Solution",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "b0455ad6-b71e-4ef0-8cba-aae25678823c",
+      "Name": "Debug_Agent_Invoice_PO_Validation-Solution",
+      "Path": "robotuser@test.com's workspace/Debug_Agent_Invoice_PO_Validation-Solution",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "e406b53a-f8b4-4d69-9381-a1ef527f5d16",
+      "Name": "Debug_Invoice Validation Against Contract Agreement",
+      "Path": "robotuser@test.com's workspace/Debug_Invoice Validation Against Contract Agreement",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "4eb3a086-db1a-4526-b5dd-17be14fe3702",
+      "Name": "Debug_Monthly Product - Multiple Product Solution",
+      "Path": "robotuser@test.com's workspace/Debug_Monthly Product - Multiple Product Solution",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "f87bbfdc-812e-4c85-9dba-bef89a83a551",
+      "Name": "Debug_Monthly Product Agent - Modern - Backup - 072925",
+      "Path": "robotuser@test.com's workspace/Debug_Monthly Product Agent - Modern - Backup - 072925",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "bc2dec28-73bc-4466-8f7b-8fd08fa27a53",
+      "Name": "Debug_Solution 5",
+      "Path": "robotuser@test.com's workspace/Debug_Solution 5",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "f6c5ece2-17b0-48c1-9565-10502827d4f4",
+      "Name": "Debug_Solution 5 1",
+      "Path": "robotuser@test.com's workspace/Debug_Solution 5 1",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "e073c5a1-401c-4ecf-b840-0e69eaa9eaec",
+      "Name": "Debug_Solution 5 3",
+      "Path": "robotuser@test.com's workspace/Debug_Solution 5 3",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "f265f7cf-45a7-43d9-ab0d-015d44d89274",
+      "Name": "Debug_Solution 5 4",
+      "Path": "robotuser@test.com's workspace/Debug_Solution 5 4",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "a5bcbc94-d626-4059-8b9a-103b440008c6",
+      "Name": "Debug_Solution 5 5",
+      "Path": "robotuser@test.com's workspace/Debug_Solution 5 5",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "45251550-4790-4441-8c08-b726324260f9",
+      "Name": "Debug_Solution 6",
+      "Path": "robotuser@test.com's workspace/Debug_Solution 6",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "bd4828b6-9b88-4cd4-ada0-0a03e168611f",
+      "Name": "Debug_Solution 6 1",
+      "Path": "robotuser@test.com's workspace/Debug_Solution 6 1",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "d9f5da77-67c2-4fea-b25e-e61b983dcfd7",
+      "Name": "Debug_UB_AP_InvoiceValidation_Workshop_Aug07",
+      "Path": "robotuser@test.com's workspace/Debug_UB_AP_InvoiceValidation_Workshop_Aug07",
+      "Description": "",
+      "Type": "DebugSolution",
+      "ParentKey": "8e932457-37d5-4cd2-9cce-bc91874adfcd"
+    },
+    {
+      "Key": "bc15c0f1-ec50-462e-9303-364d271926ac",
+      "Name": "1 Master Folder",
+      "Path": "1 Master Folder",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "47c4b6d0-9bc9-4a26-95f7-cde3f4bbf0a2",
+      "Name": "1 Sub Folder",
+      "Path": "1 Master Folder/1 Sub Folder",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "bc15c0f1-ec50-462e-9303-364d271926ac"
+    },
+    {
+      "Key": "8e5a6b21-d16f-4aa7-a77c-01a21035005d",
+      "Name": "2 Sub Folder",
+      "Path": "1 Master Folder/2 Sub Folder",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "bc15c0f1-ec50-462e-9303-364d271926ac"
+    },
+    {
+      "Key": "dafc2633-4f3f-4989-a5ce-d888ec91a095",
+      "Name": "AI Center and Document Understanding",
+      "Path": "AI Center and Document Understanding",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "0c8e715d-da7b-471c-abfb-e7708cd1ce1d",
+      "Name": "API",
+      "Path": "API",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "e6be1d82-cdc9-418d-b55e-5731f5e4494f",
+      "Name": "Action Center & Apps",
+      "Path": "Action Center & Apps",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "b0b7ba57-ccdd-426b-a33c-61b3c3a5a165",
+      "Name": "AppTest",
+      "Path": "Action Center & Apps/AppTest",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "e6be1d82-cdc9-418d-b55e-5731f5e4494f"
+    },
+    {
+      "Key": "9e37d51a-5c1e-4b26-8117-a41373bc6951",
+      "Name": "Web App",
+      "Path": "Action Center & Apps/Web App",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "e6be1d82-cdc9-418d-b55e-5731f5e4494f"
+    },
+    {
+      "Key": "e11503ad-67b6-4391-9c2c-e568944b9827",
+      "Name": "Web App Process Only",
+      "Path": "Action Center & Apps/Web App Process Only",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "e6be1d82-cdc9-418d-b55e-5731f5e4494f"
+    },
+    {
+      "Key": "0e0ae20e-9963-42f3-a3c0-0f8c8e1a0a60",
+      "Name": "Agentic Folder Packages",
+      "Path": "Agentic Folder Packages",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "050e45a2-da2d-4b59-afa7-fe8281804af3",
+      "Name": "Autopilot",
+      "Path": "Autopilot",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": ""
+    },
+    {
+      "Key": "1c065ea1-ca5b-439c-9d32-06c4ee468d64",
+      "Name": "Autopilot Agentic and Gen AI",
+      "Path": "Autopilot Agentic and Gen AI",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": ""
+    },
+    {
+      "Key": "1932bb29-7d23-4719-b119-273e8bb10554",
+      "Name": "AV Gen AI Automation",
+      "Path": "Autopilot Agentic and Gen AI/AV Gen AI Automation",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "3afa42bc-1a72-4a48-b999-cee11dceff83",
+      "Name": "Agent Escalation Templates",
+      "Path": "Autopilot Agentic and Gen AI/Agent Escalation Templates",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "b9402439-bfed-4e0d-bde9-62701aebfdab",
+      "Name": "Agentic",
+      "Path": "Autopilot Agentic and Gen AI/Agentic",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "77ae6e18-071c-4f71-84d3-6d42def5cb2e",
+      "Name": "Automated Email Response and Task Creation Agent",
+      "Path": "Autopilot Agentic and Gen AI/Automated Email Response and Task Creation Agent",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "15f8da84-28e7-4d9e-b7c9-dcf1882c3224",
+      "Name": "Automated Email Response and Task Creation Solution",
+      "Path": "Autopilot Agentic and Gen AI/Automated Email Response and Task Creation Agent/Automated Email Response and Task Creation Solution",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "77ae6e18-071c-4f71-84d3-6d42def5cb2e"
+    },
+    {
+      "Key": "b983d3be-09f4-4128-8ea2-da5b1523f9e5",
+      "Name": "Autopilot for Agentic Prompt Engineering",
+      "Path": "Autopilot Agentic and Gen AI/Autopilot for Agentic Prompt Engineering",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "f6b7f396-dc45-4fce-9fe5-91cff5912ba6",
+      "Name": "Autopilot for Everyone",
+      "Path": "Autopilot Agentic and Gen AI/Autopilot for Everyone",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "4e4f5aa6-7721-4c3b-9e5c-43f25fc3d689",
+      "Name": "Coded APP",
+      "Path": "Autopilot Agentic and Gen AI/Coded APP",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "e17d4ad4-858f-4531-b9a6-339f64606bf8",
+      "Name": "AV First Sample Case Solution",
+      "Path": "Autopilot Agentic and Gen AI/Coded APP/AV First Sample Case Solution",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "4e4f5aa6-7721-4c3b-9e5c-43f25fc3d689"
+    },
+    {
+      "Key": "0c654174-0256-40c5-abf1-58fdbb036d1d",
+      "Name": "Coding Agents",
+      "Path": "Autopilot Agentic and Gen AI/Coding Agents",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "b0780845-d7ba-49b3-b7d7-0345fd9cb29d",
+      "Name": "Customers",
+      "Path": "Autopilot Agentic and Gen AI/Customers",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "5433c6f9-aade-4d11-8086-e276140a4881",
+      "Name": "DV",
+      "Path": "Autopilot Agentic and Gen AI/Customers/DV",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "b0780845-d7ba-49b3-b7d7-0345fd9cb29d"
+    },
+    {
+      "Key": "a8a095df-62fa-4abb-8d68-bf1b212d37df",
+      "Name": "DV Watchlist Agent",
+      "Path": "Autopilot Agentic and Gen AI/DV Watchlist Agent",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "fab0229a-7489-42d6-9546-0b11451f0856",
+      "Name": "Email Agent",
+      "Path": "Autopilot Agentic and Gen AI/Email Agent",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "29984e66-7569-4551-aaac-9ed80964a8a3",
+      "Name": "Hack A Thon",
+      "Path": "Autopilot Agentic and Gen AI/Hack A Thon",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "bc6b59f9-5552-4669-b032-099b36df6d0a",
+      "Name": "CustomerSearchAgent-Hackathon",
+      "Path": "Autopilot Agentic and Gen AI/Hack A Thon/CustomerSearchAgent-Hackathon",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "29984e66-7569-4551-aaac-9ed80964a8a3"
+    },
+    {
+      "Key": "df0336f5-580e-4c64-9659-3579754e56ea",
+      "Name": "RiskAssessmentAgent-Hackathon",
+      "Path": "Autopilot Agentic and Gen AI/Hack A Thon/RiskAssessmentAgent-Hackathon",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "29984e66-7569-4551-aaac-9ed80964a8a3"
+    },
+    {
+      "Key": "3c770204-4a3f-4e2b-a05e-6db30e13fcf8",
+      "Name": "RiskAssessmentSolutionAgent",
+      "Path": "Autopilot Agentic and Gen AI/Hack A Thon/RiskAssessmentSolutionAgent",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "29984e66-7569-4551-aaac-9ed80964a8a3"
+    },
+    {
+      "Key": "119feda2-f41c-4116-9820-28458cb24bd8",
+      "Name": "Invoice Validation",
+      "Path": "Autopilot Agentic and Gen AI/Invoice Validation",
+      "Description": "",
+      "Type": "Standard",
+      "ParentKey": "1c065ea1-ca5b-439c-9d32-06c4ee468d64"
+    },
+    {
+      "Key": "840e9569-e92c-4b57-96a2-d8331f57aa96",
+      "Name": "AP_HITL_SW_App_Solution",
+      "Path": "Autopilot Agentic and Gen AI/Invoice Validation/AP_HITL_SW_App_Solution",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "119feda2-f41c-4116-9820-28458cb24bd8"
+    },
+    {
+      "Key": "53527abb-8839-453a-a9c4-35269845f70c",
+      "Name": "AP_Inv_Contract_Disscrep_Agent_Solution",
+      "Path": "Autopilot Agentic and Gen AI/Invoice Validation/AP_Inv_Contract_Disscrep_Agent_Solution",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "119feda2-f41c-4116-9820-28458cb24bd8"
+    },
+    {
+      "Key": "0ee888ef-d3f0-476d-9ef0-099d1d9cc01b",
+      "Name": "AP_Inv_PO_Discrep_Agent_Solution",
+      "Path": "Autopilot Agentic and Gen AI/Invoice Validation/AP_Inv_PO_Discrep_Agent_Solution",
+      "Description": "",
+      "Type": "Solution",
+      "ParentKey": "119feda2-f41c-4116-9820-28458cb24bd8"
+    }
+  ]
+}

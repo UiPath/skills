@@ -1,0 +1,5 @@
+{
+  "Result": "Failure",
+  "Message": "Error getting job logs",
+  "Instructions": "Failed to create Jobs API client: Not logged in. Run 'uip login' first."
+}

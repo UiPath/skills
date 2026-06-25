@@ -1,0 +1,461 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T20:34:30.510Z",
+      "Message": "HealingAgent_GetEmployeeInformation execution ended"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.835Z",
+      "Message": "Main Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.835Z",
+      "Message": "Main Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.835Z",
+      "Message": "Try Catch Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.835Z",
+      "Message": "Body Faulted"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T20:34:29.835Z",
+      "Message": "AcmeTest_Login - Invoke Workflow File (AcmeTest_Login.xaml): It was not possible to access the portal\r\nin Main.xaml\r\n    at InvokeWorkflowFile \"AcmeTest_Login - Invoke Workflow File (AcmeTest_Login.xaml)\"\r\n    at Sequence \"Try\"\r\n    at TryCatch \"Try Catch\"\r\n    at Sequence \"Main\"\r\n    at Main \"Main\"\r\n"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.835Z",
+      "Message": "Rethrow Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.834Z",
+      "Message": "Rethrow Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.834Z",
+      "Message": "AcmeTest_Logout - Invoke Workflow File (AcmeTest_Logout.xaml) Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.832Z",
+      "Message": "AcmeTest_Logout Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.831Z",
+      "Message": "Acme_Logout Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.831Z",
+      "Message": "Edge ACME System 1 - Logout Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.166Z",
+      "Message": "Do Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.166Z",
+      "Message": "Check App State 'Login' Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.166Z",
+      "Message": "LogMessage Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:29.165Z",
+      "Message": "LogMessage Executing"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T20:34:29.165Z",
+      "Message": "Logout successfully"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:28.719Z",
+      "Message": "Check App State 'Login' Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:28.717Z",
+      "Message": "If - Logout button is visible? Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:28.717Z",
+      "Message": "Else Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:28.717Z",
+      "Message": "Else Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:28.717Z",
+      "Message": "If - Logout button is visible? Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:28.717Z",
+      "Message": "Check App State 'Log Out' Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:28.716Z",
+      "Message": "LogMessage Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:28.716Z",
+      "Message": "LogMessage Executing"
+    },
+    {
+      "Level": "Warn",
+      "TimeStamp": "2026-06-15T20:34:28.716Z",
+      "Message": "Logout button not visible"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:23.375Z",
+      "Message": "Check App State 'Log Out' Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:23.373Z",
+      "Message": "Do Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:23.179Z",
+      "Message": "Edge ACME System 1 - Logout Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:23.178Z",
+      "Message": "Audit: Using Web App. Browser: Edge URL: https://acme-test.uipath.com"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:23.175Z",
+      "Message": "Log Message Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:23.175Z",
+      "Message": "Log Message Executing"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T20:34:23.174Z",
+      "Message": "Logging out from Acme..."
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:23.171Z",
+      "Message": "Acme_Logout Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:23.171Z",
+      "Message": "AcmeTest_Logout Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:23.171Z",
+      "Message": "AcmeTest_Logout - Invoke Workflow File (AcmeTest_Logout.xaml) Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.824Z",
+      "Message": "Log Message Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.824Z",
+      "Message": "Log Message Executing"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T20:34:22.823Z",
+      "Message": "Process failed. Exception message: It was not possible to access the portal"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.822Z",
+      "Message": "Body Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.821Z",
+      "Message": "Try Canceled"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.820Z",
+      "Message": "AcmeTest_Login - Invoke Workflow File (AcmeTest_Login.xaml) Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.806Z",
+      "Message": "AcmeTest_Login Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.805Z",
+      "Message": "ACME_Login Faulted"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T20:34:22.804Z",
+      "Message": "Throw: System Exception: It was not possible to access the portal\r\nin AcmeTest_Login.xaml\r\n    at Throw \"Throw: System Exception\"\r\n    at Sequence \"Target does not appear\"\r\n    at NCheckState \"Check App State 'These credentials'\"\r\n    at NCheckState \"Check App State 'Welcome, expected.user…'\"\r\n    at Sequence \"ACME_Login\"\r\n    at AcmeTest_Login \"AcmeTest_Login\"\r\n"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.794Z",
+      "Message": "Check App State 'Welcome, expected.user…' Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.793Z",
+      "Message": "Check App State 'These credentials' Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.793Z",
+      "Message": "Target does not appear Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.792Z",
+      "Message": "Throw: System Exception Faulted"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.791Z",
+      "Message": "Throw: System Exception Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.785Z",
+      "Message": "Assign Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.785Z",
+      "Message": "Assign Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.784Z",
+      "Message": "Log Message It was not possible to access the portal Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.784Z",
+      "Message": "Log Message It was not possible to access the portal Executing"
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-15T20:34:22.784Z",
+      "Message": "It was not possible to access the portal"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:22.783Z",
+      "Message": "Target does not appear Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:17.359Z",
+      "Message": "Check App State 'These credentials' Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:07.135Z",
+      "Message": "Check App State 'Welcome, expected.user…' Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:07.132Z",
+      "Message": "Edge ACME System 1 - Log In Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:07.130Z",
+      "Message": "Workflow for user login process Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:07.129Z",
+      "Message": "Click 'Login' Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:06.629Z",
+      "Message": "Click 'Login' Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:06.310Z",
+      "Message": "Type Into 'Password' Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:04.520Z",
+      "Message": "Type Into 'Password' Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:04.323Z",
+      "Message": "Type Into 'Email' Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:02.496Z",
+      "Message": "Type Into 'Email' Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:02.347Z",
+      "Message": "If Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:02.347Z",
+      "Message": "Else Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:02.347Z",
+      "Message": "Else Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:02.346Z",
+      "Message": "If Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:02.345Z",
+      "Message": "Check App State 'Login' Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:00.948Z",
+      "Message": "Check App State 'Login' Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:34:00.862Z",
+      "Message": "Workflow for user login process Executing"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T20:33:54.979Z",
+      "Message": "Healing agent configuration."
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:54.107Z",
+      "Message": "Edge ACME System 1 - Log In Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:54.056Z",
+      "Message": "Audit: Using Web App. Browser: Edge URL: https://acme-test.uipath.com/login"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:52.122Z",
+      "Message": "Retrieve Credential from Asset Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:51.457Z",
+      "Message": "Retrieve Credential from Asset Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:51.433Z",
+      "Message": "Kill Process Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:51.433Z",
+      "Message": "Kill Process Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:51.365Z",
+      "Message": "Log Message: Starting System 1 Login Closed"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:51.365Z",
+      "Message": "Log Message: Starting System 1 Login Executing"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T20:33:51.364Z",
+      "Message": "Starting System 1 Login"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:51.356Z",
+      "Message": "ACME_Login Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:51.355Z",
+      "Message": "AcmeTest_Login Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:51.354Z",
+      "Message": "AcmeTest_Login - Invoke Workflow File (AcmeTest_Login.xaml) Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:47.030Z",
+      "Message": "Try Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:47.030Z",
+      "Message": "Try Catch Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:47.029Z",
+      "Message": "Main Executing"
+    },
+    {
+      "Level": "Trace",
+      "TimeStamp": "2026-06-15T20:33:47.026Z",
+      "Message": "Main Executing"
+    },
+    {
+      "Level": "Info",
+      "TimeStamp": "2026-06-15T20:33:46.956Z",
+      "Message": "HealingAgent_GetEmployeeInformation execution started"
+    }
+  ]
+}

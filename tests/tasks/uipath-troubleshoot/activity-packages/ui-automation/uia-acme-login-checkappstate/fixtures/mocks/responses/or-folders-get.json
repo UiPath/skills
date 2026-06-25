@@ -1,0 +1,17 @@
+{
+  "Result": "Success",
+  "Code": "FolderGet",
+  "Data": {
+    "Name": "Healing Agent",
+    "ID": 2047182,
+    "Key": "1b3ea55c-1b71-4cfd-9327-d50a28c2123b",
+    "Description": "No description",
+    "Path": "Healing Agent",
+    "ParentID": "Root",
+    "FolderType": "Standard",
+    "IsPersonal": "No",
+    "ProvisionType": "Automatic",
+    "PermissionModel": "FineGrained",
+    "FeedType": "Processes"
+  }
+}

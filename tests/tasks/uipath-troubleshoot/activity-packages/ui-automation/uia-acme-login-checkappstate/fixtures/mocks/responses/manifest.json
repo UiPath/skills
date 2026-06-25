@@ -1,0 +1,60 @@
+{
+  "rules": [
+    {
+      "match": "traces spans get --job-key 3735ac5a",
+      "file": "traces-spans-job.json"
+    },
+    {
+      "match": "traces spans get 3735ac5a",
+      "file": "traces-spans-traceid.json"
+    },
+    {
+      "match": "or jobs get 3735ac5a",
+      "file": "or-jobs-get.json"
+    },
+    {
+      "match": "or jobs history 3735ac5a",
+      "file": "or-jobs-history.json"
+    },
+    {
+      "match": "or jobs logs 3735ac5a --level Error",
+      "file": "or-jobs-logs-error.json"
+    },
+    {
+      "match": "or jobs logs 3735ac5a",
+      "file": "or-jobs-logs-all.json"
+    },
+    {
+      "match": "or jobs traces 3735ac5a",
+      "file": "or-jobs-traces.json"
+    },
+    {
+      "match": "or folders get 1b3ea55c",
+      "file": "or-folders-get.json"
+    },
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs healing-data 3735ac5a",
+      "file": "or-jobs-healing-data-empty.json"
+    },
+    {
+      "match": "or jobs list --folder-key 1b3ea55c",
+      "file": "or-jobs-list-empty.json"
+    },
+    {
+      "match": "or licenses info",
+      "file": "or-licenses-info-empty.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"error\": \"command not mocked in this replay scenario\"}",
+    "exit_code": 1
+  }
+}
