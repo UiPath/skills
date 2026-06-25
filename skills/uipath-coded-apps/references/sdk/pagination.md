@@ -20,7 +20,7 @@
 >
 > Code that does `result.items.length` after a single call is almost always a bug — it returns at most the page size, not the total. Use `totalCount` for cardinality, the cursor loop for full retrieval. If the source has fewer rows than the default cap (e.g., 30 of a 100-cap), a single call works but you cannot rely on that as data grows.
 >
-> **Dashboard widgets:** don't hand-write this loop in `fnBody` — the dashboard scaffold ships a typed helper: `const { fetchAll } = await import('@/lib/paginate')` then `return await fetchAll(cursor => svc.getAll({ pageSize: 200, cursor }))`.
+> **Dashboard widgets:** don't hand-write this loop in `fnBody` — the dashboard scaffold ships a typed helper: `const { fetchAll } = await import('@/lib/paginate')` then `const items = await fetchAll(cursor => svc.getAll({ pageSize: 200, cursor }))` and return `items.map(x => ({ ...x }))` (project SDK rows into `Row` objects).
 
 ## Imports
 

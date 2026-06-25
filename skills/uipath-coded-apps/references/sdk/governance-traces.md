@@ -109,7 +109,7 @@ import { scanViolations, scanEvaluations } from '@/lib/governance-scan'
 export const fetchData: MetricFn = async (sdk) => countBy(await scanViolations(sdk), v => v.standard)
 
 // fetchDetail = the individual matched-rule records behind the donut (record-grain drill-down).
-export const fetchDetail: MetricFn = async (sdk) => await scanViolations(sdk)
+export const fetchDetail: MetricFn = async (sdk) => (await scanViolations(sdk)).map(v => ({ ...v }))
 ```
 
 `scanViolations` = recent-runs scan mapped through `parseGovernanceSpans().violations` (matched only);
@@ -172,19 +172,19 @@ const HOOKS = ['BEFORE_AGENT', 'BEFORE_MODEL', 'AFTER_MODEL', 'AFTER_AGENT'] as 
 export const fetchData: MetricFn = async (sdk) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
   const { Traces } = await import('@uipath/uipath-typescript/traces')
-  const jobs = (await new Jobs(sdk as never).getAll(
+  const jobs = (await new Jobs(sdk).getAll(
     { filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc', pageSize: 50 }))?.items ?? []
-  const rows: any[] = []
-  for (const j of jobs as Array<{ processName?: string | null; traceId?: string | null; startTime?: string | null }>) {
-    if (!j.traceId) continue
-    const spans = await new Traces(sdk as never).getById(j.traceId)
-    const evals = parseRuleEvaluations(spans)
+  const rows: Record<string, unknown>[] = []
+  for (const job of jobs as Array<{ processName?: string | null; traceId?: string | null; startTime?: string | null }>) {
+    if (!job.traceId) continue
+    const spans = await new Traces(sdk).getById(job.traceId)
+    const evaluations = parseRuleEvaluations(spans)
     const { violations } = parseGovernanceSpans(spans)
     rows.push({
-      runKey: j.traceId,                       // rowLink key → drills into THIS run
-      agentName: j.processName ?? '—',
-      startTime: j.startTime ?? '',
-      evaluated: evals.length,
+      runKey: job.traceId,                     // rowLink key → drills into THIS run
+      agentName: job.processName ?? '—',
+      startTime: job.startTime ?? '',
+      evaluated: evaluations.length,
       matched: violations.length,
       finalAction: violations.some(v => v.action === 'block') ? 'block'
         : violations.some(v => v.action === 'audit') ? 'audit' : 'allow',
@@ -198,7 +198,7 @@ export const fetchData: MetricFn = async (sdk) => {
 export const fetchDetailByKey: MetricDetailByKeyFn = async (sdk, runKey) => {
   const { Traces } = await import('@uipath/uipath-typescript/traces')
   const { parseGovernanceSpans, parseRuleEvaluations, countBy } = await import('@/lib/governance')
-  const spans = await new Traces(sdk as never).getById(runKey)
+  const spans = await new Traces(sdk).getById(runKey)
   const rows = parseRuleEvaluations(spans)             // ALL checks (PASS + MATCHED)
   const { violations } = parseGovernanceSpans(spans)
   return {

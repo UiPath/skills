@@ -4,7 +4,7 @@
 
 ```typescript
 import { Governance, PolicyEvaluationResult } from '@uipath/uipath-typescript/governance';
-const svc = new Governance(sdk as never)
+const svc = new Governance(sdk)
 ```
 
 Both methods take a **required positional `startTime: Date`** first; everything else lives in the options object.
@@ -53,17 +53,17 @@ Aggregate enforcement counts for the window. Options: `{ endTime?: Date, fullOrg
 ```typescript
 // Denied actions (data-table)
 const { Governance, PolicyEvaluationResult } = await import('@uipath/uipath-typescript/governance')
-const result = await new Governance(sdk as never).getPolicyTraces(SEVEN_DAYS_AGO, {
+const result = await new Governance(sdk).getPolicyTraces(SEVEN_DAYS_AGO, {
   endTime: NOW,
   evaluationResult: [PolicyEvaluationResult.Deny, PolicyEvaluationResult.SimulatedDeny],
 })
-return result?.items ?? []
+return (result?.items ?? []).map(x => ({ ...x }))
 ```
 
 ```typescript
 // Allow / Deny / NoOp breakdown (donut-chart: xKey name, yKey value)
 const { Governance } = await import('@uipath/uipath-typescript/governance')
-const s = await new Governance(sdk as never).getOperationSummary(SEVEN_DAYS_AGO, { endTime: NOW })
+const s = await new Governance(sdk).getOperationSummary(SEVEN_DAYS_AGO, { endTime: NOW })
 return [
   { name: 'Allowed', value: s.allowedCount },
   { name: 'Denied', value: s.deniedCount },

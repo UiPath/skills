@@ -302,10 +302,10 @@ import type { MetricDetailByKeyFn } from '@/lib/metric-contract'
 export const fetchDetailByKey: MetricDetailByKeyFn = async (sdk, agentName) => {
   const { Jobs } = await import('@uipath/uipath-typescript/jobs')
   const { AgentTraces } = await import('@uipath/uipath-typescript/traces')
-  const jobs = (await new Jobs(sdk as never).getAll({ filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc' }))?.items ?? []
+  const jobs = (await new Jobs(sdk).getAll({ filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc' }))?.items ?? []
   const job = jobs.find(j => j.processName === agentName)   // client-side match — processName is read-only
   if (!job?.traceId) return []
-  return await new AgentTraces(sdk as never).getSpansByTraceId(job.traceId)   // Job carries traceId (see traces.md)
+  return await new AgentTraces(sdk).getSpansByTraceId(job.traceId)   // Job carries traceId (see traces.md)
 }
 ```
 
