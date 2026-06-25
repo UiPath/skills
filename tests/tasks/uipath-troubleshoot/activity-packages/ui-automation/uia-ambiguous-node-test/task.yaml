@@ -9,7 +9,7 @@ description: >
   (id='example'). Success = the agent matches the ambiguous-selector
   playbook, reaches branch (B), and never recommends an anti-pattern fix
   (extend Timeout, switch InteractionMode, enable Healing Agent, Retry Scope).
-tags: [uipath-troubleshoot, rpa, e2e]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

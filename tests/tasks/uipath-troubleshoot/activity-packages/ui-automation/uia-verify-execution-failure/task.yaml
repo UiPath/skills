@@ -7,7 +7,7 @@ description: >
   is non-deterministic ("I'm Feeling Lucky") and the verify target is
   over-specific. Success = the agent matches the verify-execution-failure
   playbook, reaches branch (D), and never recommends removing VerifyOptions.
-tags: [uipath-troubleshoot, rpa, e2e]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code
