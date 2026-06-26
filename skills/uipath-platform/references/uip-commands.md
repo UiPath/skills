@@ -19,6 +19,32 @@
 
 ---
 
+## Installation / bootstrap
+
+For fresh macOS/Linux/Windows machines, missing `uip`, or LLM coding-agent setup, use the official onboarding installers. They are idempotent and install Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
+
+macOS/Linux:
+```bash
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+```
+
+Windows PowerShell:
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
+```
+
+For CI/minimal CLI setup, skip agent skills and runtimes:
+```bash
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash -s -- --skip-skills --skip-runtimes
+```
+
+```powershell
+iwr https://download.uipath.com/uipath-cli/install.ps1 -OutFile install.ps1
+./install.ps1 -SkipSkills -SkipRuntimes
+```
+
+---
+
 ## Authentication
 
 | Command | Description |
