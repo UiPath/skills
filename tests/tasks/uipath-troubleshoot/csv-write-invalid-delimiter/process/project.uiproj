@@ -1,6 +1,6 @@
 {
   "Name": "DelimitedExport",
   "ProjectType": "Process",
-  "Description": "Reproduces a Write CSV 'Failed to create a Delimitator from the text' failure caused by passing the word 'Tab' into the Delimiter property.",
+  "Description": "DelimitedExport automation project.",
   "MainFile": "Main.xaml"
 }

@@ -1,7 +1,7 @@
 {
   "name": "CsvExporter",
   "projectId": "ca010001-d4e5-4f60-8a01-000000000001",
-  "description": "Reproduces an Append To CSV 'Method not found: CsvHelper...' failure caused by a CsvHelper version conflict between mismatched UiPath.System.Activities and UiPath.Excel.Activities versions.",
+  "description": "CsvExporter automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[23.4.0]",

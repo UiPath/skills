@@ -1,6 +1,6 @@
 {
   "Name": "CsvDailyAppend",
   "ProjectType": "Process",
-  "Description": "Reproduces an Append To CSV file-lock failure: the target daily.csv is open in Microsoft Excel on the robot host, so the append cannot get write access.",
+  "Description": "CsvDailyAppend automation project.",
   "MainFile": "Main.xaml"
 }

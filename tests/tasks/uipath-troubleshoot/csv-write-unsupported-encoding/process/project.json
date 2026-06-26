@@ -1,7 +1,7 @@
 {
   "name": "CsvEncode",
   "projectId": "ea040004-d4e5-4f60-8a04-000000000004",
-  "description": "Reproduces a Write CSV 'Unsupported encoding name' failure caused by setting the Encoding property to a string .NET does not recognize (utf8-bom).",
+  "description": "CsvEncode automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[25.10.5]"

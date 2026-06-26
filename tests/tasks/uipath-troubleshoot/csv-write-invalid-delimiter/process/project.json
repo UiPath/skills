@@ -1,7 +1,7 @@
 {
   "name": "DelimitedExport",
   "projectId": "ea020002-d4e5-4f60-8a02-000000000002",
-  "description": "Reproduces a Write CSV 'Failed to create a Delimitator from the text' failure caused by passing the word 'Tab' (a string) into the Delimiter property instead of the enum value / character literal.",
+  "description": "DelimitedExport automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[25.10.5]"

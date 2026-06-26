@@ -1,7 +1,7 @@
 {
   "name": "CsvDailyAppend",
   "projectId": "ca020002-d4e5-4f60-8a02-000000000002",
-  "description": "Reproduces an Append To CSV file-lock failure: the target daily.csv is open in Microsoft Excel on the robot host, so the append cannot get write access.",
+  "description": "CsvDailyAppend automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[25.10.5]"

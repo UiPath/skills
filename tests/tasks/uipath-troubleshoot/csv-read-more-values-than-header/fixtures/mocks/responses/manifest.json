@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures hand-authored from the read-csv-more-values-than-header playbook signature.",
+  "_doc": "Synthetic fixtures hand-authored from the documented error signature.",
   "rules": [
     {
       "match": "or folders list --output json",
