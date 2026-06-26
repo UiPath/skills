@@ -1,0 +1,6 @@
+{
+  "Name": "CsvFetcher",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Read CSV 'Could not find file' failure: the CSV is produced by an upstream download just before the read and is not on disk yet when Read CSV runs.",
+  "MainFile": "Main.xaml"
+}

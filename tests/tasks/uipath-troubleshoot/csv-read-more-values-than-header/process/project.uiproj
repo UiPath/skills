@@ -1,0 +1,6 @@
+{
+  "Name": "CsvIngest",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Read CSV parse failure ('Line X contains more values than the header line') caused by an unquoted comma inside a data field while IgnoreQuotes is on.",
+  "MainFile": "Main.xaml"
+}
