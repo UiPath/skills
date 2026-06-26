@@ -156,21 +156,13 @@ jobs:
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). No source checkout.
+      # codex is NOT installed on the host here: under the docker driver the
+      # agent runs inside skills-image, so the codex SDK belongs in that image
+      # (separate TODO), not on the host CLI.
       - name: Install coder-eval
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
-          AGENT: ${{ inputs.agent }}
-        run: |
-          pkgs="coder-eval==${CE_VERSION}"
-          # codex agent needs the openai-codex SDK. Under the docker driver the
-          # agent runs INSIDE skills-image, so codex must also be installed in
-          # that image (separate TODO) — this host install only covers the
-          # tempdir path. 0.1.0b3 is the version verified against coder-eval 0.6.2.
-          if [ "$AGENT" = "codex" ]; then
-            pkgs="$pkgs openai-codex==0.1.0b3"
-          fi
-          uv pip install --system $pkgs
+        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
 
       # Pull the pinned agent image from GHCR (never built from source); the
       # skills image extends it below. GH_PAT needs read:packages.
@@ -340,14 +332,16 @@ jobs:
           CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
           AGENT: ${{ inputs.agent }}
         run: |
-          pkgs="coder-eval==${CE_VERSION}"
+          uv pip install --system "coder-eval==${CE_VERSION}"
           # Windows runs the tempdir driver (agent on host), so the codex SDK
-          # installed here is what the codex agent actually uses. 0.1.0b3 is the
-          # version verified against coder-eval 0.6.2.
+          # installed here is what the codex agent actually uses. openai-codex
+          # 0.1.0b3 (verified against coder-eval 0.6.2) pulls a pre-release
+          # cli-bin that spans both internal feeds, so allow pre-releases and
+          # best-match across indexes.
           if [ "$AGENT" = "codex" ]; then
-            pkgs="$pkgs openai-codex==0.1.0b3"
+            uv pip install --system --prerelease=allow --index-strategy unsafe-best-match \
+              "openai-codex==0.1.0b3"
           fi
-          uv pip install --system $pkgs
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
