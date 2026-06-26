@@ -14,10 +14,13 @@ actually executed:
 3. The connector result is surfaced as an array output variable.
 
 The generic list activity is identified by its SEMANTICS — a Generic-type
-`list` operation — not by a hard-coded node-type slug. The registry has emitted
-both `…list-all-records` and `…list-records` for this same generic activity
-across connector versions, so the dynamically-resolved `objectName` (not the
-slug) is the real signal that the generic node was configured correctly.
+`list` operation — not by a hard-coded node-type slug. The registry's slug for
+it is `…list-records` ("List Records" — object-agnostic; the object-specific
+lists are named after their object, e.g. `…list-incidents`); the activity's
+*display* name is "List All Records", which is why an earlier slug guess of
+`…list-all-records` (a node the registry does not emit) slipped in. The
+dynamically-resolved `objectName` (not the slug) is the real signal that the
+generic node was configured correctly.
 
 The `acr_user` table is empty in the codereval ServiceNow tenant, so the
 list call legitimately returns `[]`. The runtime assertion therefore
@@ -42,11 +45,12 @@ from _shared.flow_check import (  # noqa: E402
 )
 
 CONNECTOR_KEY = "uipath-servicenow-servicenow"
-# Known node-type slugs for the generic list activity. The registry has emitted
-# both across connector versions for the SAME generic activity, so treat either
-# as a match — and fall back to the parsed configuration (Generic + `list`) when
-# the slug is something new. Keep these lowercase for substring matching.
-OPERATION_SLUGS = ("list-all-records", "list-records")
+# Node-type slugs for the generic list activity. The live registry uses
+# `…list-records`; `…list-all-records` is kept only as a defensive alias (it
+# matches the activity's "List All Records" display name) in case the slug ever
+# changes. When neither slug matches, fall back to the parsed configuration
+# (Generic + `list`). Keep these lowercase for substring matching.
+OPERATION_SLUGS = ("list-records", "list-all-records")
 # API object name (not the "Acr User" display name) — `node configure` stores
 # the connector's case-sensitive `Name`, which for this table is `acr_user`.
 OBJECT_NAME = "acr_user"
