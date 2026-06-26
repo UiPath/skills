@@ -174,6 +174,8 @@ Middleware classes take **no `stage` argument**. Each validator's stage is fixed
 
 ### Intellectual property (output-only) middleware
 
+> **`scopes=` is REQUIRED** on `UiPathIntellectualPropertyMiddleware` (and on PII / harmful-content middleware). It has no default — omitting it raises `TypeError: missing 1 required positional argument: 'scopes'`. Always pass `scopes=[GuardrailScope.LLM]` or `[GuardrailScope.AGENT]` (Tool not supported).
+
 ```python
 from uipath_langchain.guardrails import (
     BlockAction,
@@ -184,7 +186,7 @@ from uipath.core.guardrails import GuardrailScope
 
 *UiPathIntellectualPropertyMiddleware(
     name="Intellectual property",
-    scopes=[GuardrailScope.LLM],   # LLM or AGENT; Tool not supported
+    scopes=[GuardrailScope.LLM],   # REQUIRED — LLM or AGENT; Tool not supported
     action=BlockAction(),
     entities=[
         IntellectualPropertyEntityType.TEXT,
