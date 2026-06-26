@@ -57,6 +57,14 @@
       },
       "last_synced": null
     },
+    "uipath-connector-builder": {
+      "status": "in-development",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-feedback": {
       "status": "stable",
       "confluence": {

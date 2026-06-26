@@ -103,6 +103,10 @@
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
 /tests/tasks/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
 
+# Connector Builder skill
+/skills/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
+/tests/tasks/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
+
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
