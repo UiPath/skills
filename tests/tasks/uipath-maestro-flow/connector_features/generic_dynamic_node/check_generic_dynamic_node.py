@@ -3,17 +3,24 @@
 
 Validates a generic connector activity: the node type encodes only the
 operation, so the object is supplied dynamically at configure time and must be
-resolved + set on the node. Uses ServiceNow `list-all-records` on `acr_user` as
-the concrete generic activity. Structural pre-checks fail fast and prevent
-gaming, then a live `flow debug` proves the generic node actually executed:
+resolved + set on the node. Uses ServiceNow's generic "List All Records"
+activity on `acr_user` as the concrete generic activity. Structural pre-checks
+fail fast and prevent gaming, then a live `flow debug` proves the generic node
+actually executed:
 
 1. A connector node targets the ServiceNow connector (`uipath-servicenow-servicenow`)
-   using the generic `list-all-records` operation on `objectName: "acr_user"`.
+   using the generic list operation on `objectName: "acr_user"`.
 2. `flow debug` completes (`finalStatus == "Completed"`).
 3. The connector result is surfaced as an array output variable.
 
+The generic list activity is identified by its SEMANTICS — a Generic-type
+`list` operation — not by a hard-coded node-type slug. The registry has emitted
+both `…list-all-records` and `…list-records` for this same generic activity
+across connector versions, so the dynamically-resolved `objectName` (not the
+slug) is the real signal that the generic node was configured correctly.
+
 The `acr_user` table is empty in the codereval ServiceNow tenant, so the
-list-all-records call legitimately returns `[]`. The runtime assertion therefore
+list call legitimately returns `[]`. The runtime assertion therefore
 checks that the connector completed and surfaced an array output (empty
 allowed) — not that rows came back. When records ARE present the IS connector
 returns FLATTENED records (top-level `sys_id`, …), which the check reports.
@@ -35,7 +42,11 @@ from _shared.flow_check import (  # noqa: E402
 )
 
 CONNECTOR_KEY = "uipath-servicenow-servicenow"
-OPERATION = "list-all-records"
+# Known node-type slugs for the generic list activity. The registry has emitted
+# both across connector versions for the SAME generic activity, so treat either
+# as a match — and fall back to the parsed configuration (Generic + `list`) when
+# the slug is something new. Keep these lowercase for substring matching.
+OPERATION_SLUGS = ("list-all-records", "list-records")
 # API object name (not the "Acr User" display name) — `node configure` stores
 # the connector's case-sensitive `Name`, which for this table is `acr_user`.
 OBJECT_NAME = "acr_user"
@@ -50,29 +61,67 @@ def _load_flow_nodes(project_dir: str) -> list[dict]:
     return flow.get("nodes") or []
 
 
-def _detail_object_name(detail: dict) -> str | None:
-    """Resolve the configured object name for a generic connector node.
+def _parse_detail_config(detail: dict) -> dict:
+    """Deserialize a connector node's `configuration` payload.
 
-    `node configure` stores it in a few places depending on CLI version: a
-    top-level `inputs.detail.objectName`, or inside the serialized
-    `configuration` string (`=jsonString:{...}`) at `objectName`,
-    `essentialConfiguration.objectName`, or `…instanceParameters.objectName`."""
-    if detail.get("objectName"):
-        return detail["objectName"]
+    `node configure` serializes it as a `=jsonString:{...}` string (newer CLIs)
+    or stores a plain dict (older shapes). Returns {} when nothing parses."""
     cfg = detail.get("configuration")
+    if isinstance(cfg, dict):
+        return cfg
     if isinstance(cfg, str):
         prefix = "=jsonString:"
         body = cfg[len(prefix):] if cfg.startswith(prefix) else cfg
         try:
             obj = json.loads(body)
         except (json.JSONDecodeError, ValueError):
-            return None
-        ess = obj.get("essentialConfiguration") if isinstance(obj, dict) else None
-        ess = ess if isinstance(ess, dict) else {}
-        params = ess.get("instanceParameters") if isinstance(ess, dict) else None
-        params = params if isinstance(params, dict) else {}
-        return obj.get("objectName") or ess.get("objectName") or params.get("objectName")
-    return None
+            return {}
+        return obj if isinstance(obj, dict) else {}
+    return {}
+
+
+def _config_layers(detail: dict) -> tuple[dict, dict, dict]:
+    """Return the (top, essentialConfiguration, instanceParameters) dicts of the
+    parsed `configuration`, each defaulted to {} so callers can read freely."""
+    obj = _parse_detail_config(detail)
+    ess = obj.get("essentialConfiguration")
+    ess = ess if isinstance(ess, dict) else {}
+    params = ess.get("instanceParameters")
+    params = params if isinstance(params, dict) else {}
+    return obj, ess, params
+
+
+def _detail_object_name(detail: dict) -> str | None:
+    """Resolve the configured object name for a generic connector node.
+
+    `node configure` stores it in a few places depending on CLI version: a
+    top-level `inputs.detail.objectName`, or inside the serialized
+    `configuration` payload at `objectName`, `essentialConfiguration.objectName`,
+    or `…instanceParameters.objectName`."""
+    if detail.get("objectName"):
+        return detail["objectName"]
+    obj, ess, params = _config_layers(detail)
+    return obj.get("objectName") or ess.get("objectName") or params.get("objectName")
+
+
+def _is_generic_list(node: dict, detail: dict) -> bool:
+    """Identify the generic (dynamic) list activity by its semantics.
+
+    A generic list node either carries one of the known list slugs in its node
+    type, or — slug-agnostically — its parsed configuration marks the activity
+    `Generic` with a `list` operation. Keying on semantics (not the slug) keeps
+    the check stable as the registry's node-type slug drifts across versions."""
+    node_type = str(node.get("type", "")).lower()
+    if any(slug in node_type for slug in OPERATION_SLUGS):
+        return True
+    obj, ess, params = _config_layers(detail)
+    activity_type = str(
+        params.get("activityType") or ess.get("activityType") or obj.get("activityType") or ""
+    ).lower()
+    operation = str(
+        params.get("operation") or ess.get("operation") or obj.get("operation") or ""
+    ).lower()
+    return activity_type == "generic" and operation == "list"
 
 
 def _assert_structure() -> None:
@@ -80,20 +129,22 @@ def _assert_structure() -> None:
     assert_flow_uses_connector_target(CONNECTOR_KEY)
 
     nodes = _load_flow_nodes(find_project_dir())
-    list_nodes = [
-        n
-        for n in nodes
-        if CONNECTOR_KEY in str(n.get("type", "")).lower()
-        and OPERATION in str(n.get("type", "")).lower()
-    ]
+    list_nodes = []
+    for n in nodes:
+        if CONNECTOR_KEY not in str(n.get("type", "")).lower():
+            continue
+        detail = (n.get("inputs") or {}).get("detail") or {}
+        if isinstance(detail, dict) and _is_generic_list(n, detail):
+            list_nodes.append(n)
     if not list_nodes:
         types = sorted({str(n.get("type", "")) for n in nodes})
         sys.exit(
-            f"FAIL: No ServiceNow {OPERATION!r} connector node found. "
+            f"FAIL: No generic ServiceNow list activity found on the "
+            f"{CONNECTOR_KEY} connector (expected a Generic 'list' operation). "
             f"Node types seen: {types}"
         )
 
-    # The configured object must be Acr User. Generic list-all-records carries
+    # The configured object must be Acr User. The generic list activity carries
     # objectName on inputs.detail (top-level) or inside the serialized
     # `configuration` payload — accept either.
     found = []
@@ -106,8 +157,8 @@ def _assert_structure() -> None:
         if name == OBJECT_NAME:
             return
     sys.exit(
-        f"FAIL: ServiceNow {OPERATION} node found but objectName != {OBJECT_NAME!r} "
-        f"(resolved object names: {found}). The list-all-records activity is generic — "
+        f"FAIL: Generic ServiceNow list node found but objectName != {OBJECT_NAME!r} "
+        f"(resolved object names: {found}). The list activity is generic — "
         f"it must set the object name to {OBJECT_NAME!r}."
     )
 
@@ -117,7 +168,7 @@ def _assert_array_output(payload: dict) -> None:
 
     `run_debug` already enforced `finalStatus == "Completed"`, so the connector
     call succeeded by the time we get here. The `acr_user` table is empty in the
-    codereval ServiceNow tenant, so the list-all-records call legitimately
+    codereval ServiceNow tenant, so the generic list call legitimately
     returns `[]` — assert an array-typed output exists rather than requiring it
     to be non-empty. When records ARE present they carry a `sys_id`, so report
     that to keep the check meaningful if the table is ever populated.
