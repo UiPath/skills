@@ -1,0 +1,58 @@
+# Asserts REAL EXECUTION (not just invocation): the agent executes a test set via
+# the TM connector, then polls until the execution reaches a TERMINAL status.
+# Pinned to the runnable fixture HEALTH:21 ("Automated - Healthcare Compliance
+# Suite") in codereval — its executions complete in seconds (status "Finished").
+# Validated live on codereval: SUCCESS 1.000 (agent executed -> polled -> terminal).
+# integration tier -> runs in nightly, not the required PR smoke gate.
+task_id: skill-platform-is-testmanager-execute-terminal
+description: >
+  Data-grounded execution: agent runs the test set HEALTH:21 via the
+  uipath-uipath-testmanager connector (Execute Test Set), captures the ExecutionId,
+  and polls the execution (Get Test Execution) until it reaches a terminal status.
+  Graded on invoking Execute + Get AND on the execution actually reaching terminal
+  (Finished/Passed/Failed/…), i.e. a real run happened — not just that Execute was
+  called.
+tags: [uipath-platform, integration, integration-service, resources, execute]
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+run_limits:
+  expected_turns: 18
+  task_timeout: 1800
+
+initial_prompt: |
+  Using the UiPath Test Manager Integration Service connector, run the test set HEALTH:21,
+  then keep checking the resulting execution until it reaches a final status (no longer
+  pending or running). Record result.json with `execution_id` and the final `status`.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent executed the test set (`uip is resources run create uipath-uipath-testmanager ExecuteTestSet`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?ExecuteTestSet'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+    require_success: true
+
+  - type: command_executed
+    description: "Agent polled the execution (`uip is resources run get uipath-uipath-testmanager TestExecution`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestExecution'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data-grounded: the execution reached a TERMINAL status (real run completed, not just Execute invoked)"
+    command: "python3 $TASK_DIR/check_terminal.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
