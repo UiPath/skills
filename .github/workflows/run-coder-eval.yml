@@ -36,6 +36,13 @@ on:
         description: 'coder_eval version to test (blank = pinned).'
         type: string
         default: ''
+      # Decouples the GHCR agent image from the wheel version, so an ad-hoc /
+      # unreleased image (e.g. a codex-baked `sha-<commit>` build) can be tested
+      # while the host CLI installs a matching dev wheel via coder_eval_version.
+      coder_eval_image_tag:
+        description: 'Agent image tag (blank = coder_eval_version).'
+        type: string
+        default: ''
       cli_version:
         description: '@uipath/cli version.'
         type: string
@@ -62,6 +69,7 @@ jobs:
       linux_count:    ${{ steps.split.outputs.linux_count }}
       windows_count:  ${{ steps.split.outputs.windows_count }}
       coder_eval_version: ${{ steps.ceref.outputs.version }}
+      coder_eval_image_tag: ${{ steps.ceref.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -73,12 +81,17 @@ jobs:
         id: ceref
         env:
           CE_VERSION_INPUT: ${{ inputs.coder_eval_version }}
+          CE_IMAGE_TAG_INPUT: ${{ inputs.coder_eval_image_tag }}
         run: |
           if [ -n "$CE_VERSION_INPUT" ]; then
-            echo "version=$CE_VERSION_INPUT" >> "$GITHUB_OUTPUT"
+            version="$CE_VERSION_INPUT"
           else
-            echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
+            version="$(tr -d '[:space:]' < tests/.coder-eval-version)"
           fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # Agent image tag defaults to the wheel version; a non-blank input
+          # decouples them (ad-hoc / unreleased image vs. dev-wheel host CLI).
+          echo "image_tag=${CE_IMAGE_TAG_INPUT:-$version}" >> "$GITHUB_OUTPUT"
 
       - name: Resolve globs, split by tag, enforce large-run gate
         id: split
@@ -164,19 +177,21 @@ jobs:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
 
-      # Pull the pinned agent image from GHCR (never built from source); the
-      # skills image extends it below. GH_PAT needs read:packages.
-      - name: Pull pinned coder-eval-agent image
+      # Pull the agent image from GHCR (never built from source); the skills
+      # image extends it below. Tag defaults to the wheel version but can be
+      # overridden (coder_eval_image_tag) for ad-hoc / unreleased images.
+      # GH_PAT needs read:packages.
+      - name: Pull coder-eval-agent image
         run: |
           echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker pull ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_version }}
+          docker pull ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }}
 
       # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
       # on top of coder-eval-agent). Matches smoke-skills.yml + daily.sh.
       - name: Build skills Docker image
         run: |
           docker build \
-            --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_version }} \
+            --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }} \
             --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             -t skills-image:latest \
