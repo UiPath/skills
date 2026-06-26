@@ -6,11 +6,30 @@ Reference for XAML test automation features in UiPath RPA projects — XAML test
 
 ## Table of Contents
 
+- [Test Manager Setup (CLI)](#test-manager-setup-cli)
 - [XAML Test Case Structure (Given-When-Then)](#xaml-test-case-structure-given-when-then)
 - [Data-Driven Testing](#data-driven-testing)
 - [XAML Test Activities](#xaml-test-activities)
 - [Execution Templates](#execution-templates)
 - [Mock Testing (XAML Only) — WIP](#mock-testing-xaml-only--wip)
+
+---
+
+## Test Manager Setup (CLI)
+
+Linking a project to Test Manager (server connection + default project) can be done headlessly with `uip rpa tm`, without opening Studio — useful before authoring test cases that reference Test Manager test cases. Full verb/flag reference: [cli-reference.md § Test Manager](cli-reference.md). The essentials:
+
+```
+uip rpa tm connect --url "https://<host>/<org>/<tenant>/testmanager_" --project-dir "<PROJECT_DIR>" --output json
+uip rpa tm set-default-project --id <project-guid> --name "<name>" --key "<KEY>" --project-dir "<PROJECT_DIR>" --output json
+uip rpa tm status --project-dir "<PROJECT_DIR>" --output json
+```
+
+Behavior to know when authoring:
+- **`set-default-project` requires a connected server** — run `connect` first, or it is rejected (nothing is written).
+- **Switching to a different server** (`connect` to a different host/org/tenant) **clears the default project** — it belonged to the old server. Re-link one with `set-default-project` afterwards.
+- **`reloadHint` in the output**: if the project is open in a **Studio older than 26.0.197**, the change isn't picked up until the project is reloaded. When you see `reloadHint`, tell the user to **close and reopen the project in Studio**. Studio 26.0.197+ applies the change live (no `reloadHint`).
+- The CLI does **not** validate the project id against the server; obtain a real id from Test Manager (the runtime `uip tm project list` tool can list them).
 
 ---
 
