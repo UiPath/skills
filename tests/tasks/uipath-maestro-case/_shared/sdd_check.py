@@ -108,12 +108,23 @@ def main() -> None:
         )
 
     # 3. task-type enum
+    # Per-stage **Type:** is always "Stage" post-consolidation; "ExceptionStage"
+    # stays whitelisted for back-compat with un-migrated SDDs. Task rows carry the
+    # 9 legal task types. The new **Stage Kind:** field is matched separately below.
     bad_types = sorted(
         {t for t in re.findall(r"^\*\*Type:\*\*\s*(\S+)", text, re.M)
          if t not in ("Stage", "ExceptionStage") and t not in TASK_TYPES}
     )
     if bad_types:
         issues.append(f"task-type: invalid type(s): {', '.join(bad_types)}")
+
+    # 3b. **Stage Kind:** enum — optional field; when present must be primary|secondary.
+    bad_kinds = sorted(
+        {k for k in re.findall(r"^\*\*Stage Kind:\*\*\s*(\S+)", text, re.M)
+         if k not in ("primary", "secondary")}
+    )
+    if bad_kinds:
+        issues.append(f"stage-kind: invalid Stage Kind value(s): {', '.join(bad_kinds)}")
 
     # 4 + 5. per-gate rule legality + entry/exit presence (context-tracking walk)
     gate = cur_stage = None
@@ -126,12 +137,13 @@ def main() -> None:
     et_idx: int | None = None
     for line in text.splitlines():
         s = line.strip()
-        m = re.match(r"###\s+(Stage \d+|Exception Stage):\s*(.+)", s)
+        m = re.match(r"###\s+(Stage \d+|Exception Stage|Secondary Stage):\s*(.+)", s)
         if m:
             cur_stage = re.sub(r"\(.*", "", m.group(2)).strip()
             has_entry.setdefault(cur_stage, False)
             has_exit.setdefault(cur_stage, False)
-            is_exc[cur_stage] = m.group(1) == "Exception Stage"
+            # "Secondary Stage" is the v22 heading; "Exception Stage" kept for back-compat
+            is_exc[cur_stage] = m.group(1) in ("Exception Stage", "Secondary Stage")
             exit_types.setdefault(cur_stage, set())
             gate = None
             continue
@@ -226,7 +238,7 @@ def main() -> None:
     if "required-stages-completed" not in text:
         issues.append("conditions: no required-stages-completed case-completion row (case cannot close)")
 
-    stage_sections = re.findall(r"^###\s+(?:Stage \d+|Exception Stage):", text, re.M)
+    stage_sections = re.findall(r"^###\s+(?:Stage \d+|Exception Stage|Secondary Stage):", text, re.M)
     if len(stage_sections) < 3:
         issues.append(f"conditions: expected several stage sections; found {len(stage_sections)}")
 
