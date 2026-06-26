@@ -1,7 +1,7 @@
-# Resolution — GSuite_GetFileInfoMalformedUrl (Shared)
+# Resolution — DriveFileInspector (Shared)
 
 ## Fault
-The last job in folder **Shared** (`GSuite_GetFileInfoMalformedUrl`, job `0e3938d5-e2b0-480b-99d5-bcaf0e9123d6`, Unattended on `MOCK-HOST`) ended **Faulted** ~6s after start. It ran a single legacy GSuite **Get File Info** (`UiPath.GSuite.Activities.GetFileInfo`) activity inside a Google Workspace Scope.
+The last job in folder **Shared** (`DriveFileInspector`, job `0e3938d5-e2b0-480b-99d5-bcaf0e9123d6`, Unattended on `MOCK-HOST`) ended **Faulted** ~6s after start. It ran a single legacy GSuite **Get File Info** (`UiPath.GSuite.Activities.GetFileInfo`) activity inside a Google Workspace Scope.
 
 ## Cause
 **Client-side input validation** — the activity threw before any call reached Google Drive (no HTTP status, no Google API round-trip). The File ID input was a **malformed Drive URL with no extractable object id**:

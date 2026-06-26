@@ -1,5 +1,5 @@
 {
-  "name": "GetAssetFailure",
+  "name": "AssetLookupRunner",
   "projectId": "529427d9-55d0-42cf-b10b-a994bbf0b498",
   "description": "Blank Process",
   "main": "Main.xaml",

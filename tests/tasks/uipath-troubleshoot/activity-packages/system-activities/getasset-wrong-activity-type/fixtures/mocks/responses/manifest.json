@@ -19,7 +19,7 @@
       "file": "or-jobs-list-folder-key-8f6c5d4e-state-faulted-output-json.json"
     },
     {
-      "match": "or jobs list --process-name AssetWrongActivityType",
+      "match": "or jobs list --process-name AssetValueLoader",
       "file": "or-jobs-list-folder-key-8f6c5d4e-state-faulted-output-json.json"
     },
     {

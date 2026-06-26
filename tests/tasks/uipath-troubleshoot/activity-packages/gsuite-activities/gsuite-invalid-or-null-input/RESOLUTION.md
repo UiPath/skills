@@ -1,7 +1,7 @@
-# Resolution — GSuite_WriteRangeEmptyRange (Shared)
+# Resolution — SheetExportRunner (Shared)
 
 ## Fault
-The last job in folder **Shared** (`GSuite_WriteRangeEmptyRange`, job `c123367e-8e5e-4ec0-9903-fd75d5ef9ad7`, Unattended on `MOCK-HOST`) ended **Faulted** ~7s after start. It ran a single GSuite **Write Range** (`UiPath.GSuite.Activities.WriteRangeConnections`) activity.
+The last job in folder **Shared** (`SheetExportRunner`, job `c123367e-8e5e-4ec0-9903-fd75d5ef9ad7`, Unattended on `MOCK-HOST`) ended **Faulted** ~7s after start. It ran a single GSuite **Write Range** (`UiPath.GSuite.Activities.WriteRangeConnections`) activity.
 
 ## Cause
 **Client-side input validation** — the activity threw before any call reached Google Sheets (no HTTP status, no Google API round-trip). The `range` input fed to Write Range was null/empty:

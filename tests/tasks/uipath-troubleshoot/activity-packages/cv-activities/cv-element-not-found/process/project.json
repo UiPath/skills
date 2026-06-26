@@ -2,7 +2,7 @@
   "name": "CV",
   "projectId": "12e29bc3-3511-415b-bdfd-a20ba7e2a533",
   "description": "CV activities troubleshooter repros",
-  "main": "CV_ElementNotFound.xaml",
+  "main": "InvoiceEntryUI.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[26.4.1-preview]",
     "UiPath.UIAutomation.Activities": "26.10.0-alpha.12331261"
@@ -45,7 +45,7 @@
   "expressionLanguage": "CSharp",
   "entryPoints": [
     {
-      "filePath": "CV_ElementNotFound.xaml",
+      "filePath": "InvoiceEntryUI.xaml",
       "uniqueId": "a1000000-0000-0000-0000-000000000001",
       "input": [],
       "output": []

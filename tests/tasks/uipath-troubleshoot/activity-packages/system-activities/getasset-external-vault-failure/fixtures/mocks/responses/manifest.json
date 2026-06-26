@@ -19,7 +19,7 @@
       "file": "or-jobs-list-folder-key-4f7a9b3d-state-faulted-output-json.json"
     },
     {
-      "match": "or jobs list --process-name AssetVaultFailure",
+      "match": "or jobs list --process-name VaultCredentialReader",
       "file": "or-jobs-list-folder-key-4f7a9b3d-state-faulted-output-json.json"
     },
     {

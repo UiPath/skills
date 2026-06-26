@@ -1,5 +1,5 @@
 {
-  "name": "AssetNetworkConnectivity",
+  "name": "TenantConfigReader",
   "projectId": "c4a8b7d6-2f1e-4a9d-b5c8-3e6f7a8b9c0d",
   "description": "Blank Process",
   "main": "Main.xaml",

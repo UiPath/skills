@@ -5,7 +5,7 @@
     {
       "Key": "909ed39c-08a1-48fb-921a-06d332f8f5fb",
       "State": "Faulted",
-      "ProcessName": "ERN_O365_CopyItemArgNull",
+      "ProcessName": "DriveItemCopier",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

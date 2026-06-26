@@ -19,7 +19,7 @@
       "file": "or-jobs-list-folder-key-6d8c5e3f-state-faulted-output-json.json"
     },
     {
-      "match": "or jobs list --process-name AssetFolderMismatch",
+      "match": "or jobs list --process-name ConfigAssetReader",
       "file": "or-jobs-list-folder-key-6d8c5e3f-state-faulted-output-json.json"
     },
     {

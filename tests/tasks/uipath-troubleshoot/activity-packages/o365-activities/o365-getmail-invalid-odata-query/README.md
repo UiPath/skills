@@ -7,7 +7,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_InvalidODataQuery` (key `4b4a58f8-6a7c-4af2-8700-1b6479b51028`),
+job, `InboxQueryRunner` (key `4b4a58f8-6a7c-4af2-8700-1b6479b51028`),
 faulted with a raw `Microsoft.Graph.ServiceException` `Code: BadRequest` —
 `Invalid filter clause: ')' or operator expected at position 56 in
 '(receivedDateTime ge 1900-01-01T00:00:00Z) and (subject equals 'invoice' and

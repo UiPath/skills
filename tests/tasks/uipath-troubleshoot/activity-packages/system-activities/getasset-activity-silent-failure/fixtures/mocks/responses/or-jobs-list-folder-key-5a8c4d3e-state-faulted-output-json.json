@@ -5,7 +5,7 @@
     {
       "Key": "7d2e5f3c-1a6b-4e9f-8c4d-3e2f1a0b9c8d",
       "State": "Faulted",
-      "ProcessName": "AssetSilentFailure",
+      "ProcessName": "SettingsAssetFetcher",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

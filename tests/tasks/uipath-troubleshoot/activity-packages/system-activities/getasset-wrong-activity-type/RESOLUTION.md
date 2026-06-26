@@ -11,7 +11,7 @@ Orchestrator rejects the runtime call with HTTP 400 / "Activity does
 not work with assets of type 'Text'. Invalid asset type." and the
 job faults.
 
-**What went wrong:** The `AssetWrongActivityType` job (started
+**What went wrong:** The `AssetValueLoader` job (started
 2026-05-13T08:14:33Z) faulted ~1 second after launch because the
 `Get Credential` activity called Orchestrator with a `Text` asset
 that it cannot read.
@@ -32,7 +32,7 @@ present with `ValueType: "Text"`.
 **Evidence:**
 
 ### Orchestrator (Propagation)
-- Job: AssetWrongActivityType — Faulted at 2026-05-13T08:14:34.512Z (ran for ~1.1 seconds)
+- Job: AssetValueLoader — Faulted at 2026-05-13T08:14:34.512Z (ran for ~1.1 seconds)
 - Job type: Unattended, triggered manually by user "user1" on machine MOCK-HOST
 - Folder: Remote Debugging (key `8f6c5d4e-3a2b-4c9d-7e6f-1a2b3c4d5e6f`) — folder exists
 - Asset list: `ApiBaseUrl` is present in the folder with `ValueType: "Text"` (NOT `Credential`)

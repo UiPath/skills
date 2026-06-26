@@ -1,5 +1,5 @@
 {
-  "Name": "AssetRobotAuthFailure",
+  "Name": "RuntimeConfigReader",
   "ProjectType": "Process",
   "Description": "Reproduces a Get Credential failure where the robot is licensed and connected but its Orchestrator API token is rejected (HTTP 401, 'You are not authenticated! Error code: 0').",
   "MainFile": "Main.xaml"

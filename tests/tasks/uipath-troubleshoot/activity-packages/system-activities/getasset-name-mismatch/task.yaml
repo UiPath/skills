@@ -36,7 +36,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My GetAssetFailure process is faulting in Orchestrator on every run.
+  My AssetLookupRunner process is faulting in Orchestrator on every run.
   The folder is "Remote Debugging". Can you investigate?
 
   The project source for the failing process is in the current working

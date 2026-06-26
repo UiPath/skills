@@ -9,7 +9,7 @@ A1 range and hit a Google Sheets **HTTP 400**.
 The user asked only *"why did my last job from folder Shared fail?"*. The agent:
 
 1. Listed folders → resolved **Shared** to key `1965a46b-db4e-469e-aaaa-7e0b379cb34d`.
-2. Listed Faulted jobs in Shared → newest is **GSuite_SheetsInvalidRange**,
+2. Listed Faulted jobs in Shared → newest is **SheetRangeWriter**,
    job `d5e0e6b0-55b8-4256-8494-c601cb986dab`.
 3. Read the job's `Info` → a `UiPath.GSuite.Exceptions.GSuiteException`
    wrapping `Google.GoogleApiException` with **HttpStatusCode BadRequest** and

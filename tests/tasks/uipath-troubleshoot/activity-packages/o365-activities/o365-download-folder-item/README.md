@@ -7,7 +7,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 ## What the original session uncovered
 
 The user asked why their last job in folder `Shared` failed. The most recent
-job, `ERN_O365_DownloadConversion` (key `64580780-4aa1-4ec2-b5f2-abd5439ea200`),
+job, `ReportDownloader` (key `64580780-4aa1-4ec2-b5f2-abd5439ea200`),
 faulted with `UiPath.MicrosoftOffice365.Office365Exception: Folders cannot be
 downloaded with this activity. Please input a different DriveItem.` thrown by
 the legacy O365 `DownloadFile` activity. Job trace spans proved the binding

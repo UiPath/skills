@@ -13,7 +13,7 @@
     "BatchExecutionKey": "6e3f8a4b-2c5d-4f7e-9d3c-1a2b3c4d5e6f",
     "Info": "Get Asset: The asset 'MyPerRobotConfig' does not have a value associated with this robot.\r\n\r\nin Main.xaml\r\n    at GetRobotAsset \"Get Asset\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n\r\nUiPath.Core.Activities.OrchestratorCommunicationException: The asset 'MyPerRobotConfig' does not have a value associated with this robot.",
     "CreationTime": "2026-05-13T11:08:23.950Z",
-    "ReleaseName": "AssetPerRobotNoValue",
+    "ReleaseName": "PerRobotConfigReader",
     "Type": "Unattended",
     "EnvironmentVariables": "",
     "OutputArguments": "{}",

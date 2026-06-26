@@ -19,7 +19,7 @@
       "file": "or-jobs-list-folder-key-6b9d2c5e-state-faulted-output-json.json"
     },
     {
-      "match": "or jobs list --process-name AssetNetworkConnectivity",
+      "match": "or jobs list --process-name TenantConfigReader",
       "file": "or-jobs-list-folder-key-6b9d2c5e-state-faulted-output-json.json"
     },
     {

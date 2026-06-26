@@ -19,7 +19,7 @@
       "file": "or-jobs-list-folder-key-5a8b9c2d-state-faulted-output-json.json"
     },
     {
-      "match": "or jobs list --process-name GetAssetFailure",
+      "match": "or jobs list --process-name AssetLookupRunner",
       "file": "or-jobs-list-folder-key-5a8b9c2d-state-faulted-output-json.json"
     },
     {

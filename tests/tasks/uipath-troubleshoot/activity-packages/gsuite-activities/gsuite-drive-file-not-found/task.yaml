@@ -4,7 +4,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose responses
   are the verbatim, scrubbed sub-agent outputs from the real session
   (.local/investigations/raw/*.json). The most-recent Faulted job in folder
-  Shared (GSuite_DriveFileNotFound, job f41ed418-163b-487b-8077-e51f8af4a1af)
+  Shared (DriveDocSync, job f41ed418-163b-487b-8077-e51f8af4a1af)
   ran a single GSuite Download File activity that hit a Google Drive HTTP 404
   ("File not found: 1AbCnonexistentFILEid000000000000000."). Success = the
   agent reaches the same root cause as RESOLUTION.md: a Drive resource-resolution

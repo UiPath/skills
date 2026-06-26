@@ -19,7 +19,7 @@
       "file": "or-jobs-list-folder-key-5a8c4d3e-state-faulted-output-json.json"
     },
     {
-      "match": "or jobs list --process-name AssetSilentFailure",
+      "match": "or jobs list --process-name SettingsAssetFetcher",
       "file": "or-jobs-list-folder-key-5a8c4d3e-state-faulted-output-json.json"
     },
     {

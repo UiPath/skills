@@ -5,7 +5,7 @@
     {
       "Key": "8e3f4d5c-2b1a-4c9d-7e6f-1a2b3c4d5e6f",
       "State": "Faulted",
-      "ProcessName": "AssetNetworkConnectivity",
+      "ProcessName": "TenantConfigReader",
       "ReleaseKey": "",
       "Source": "Manual",
       "Type": "Unattended",

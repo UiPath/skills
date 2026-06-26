@@ -76,7 +76,7 @@
     {
       "pattern": "or jobs list --folder-key 1965a46b-db4e-469e-aaaa-7e0b379cb34d --state Faulted",
       "min": 1,
-      "description": "Agent finds the most-recent Faulted job in Shared (0e3938d5 GSuite_GetFileInfoMalformedUrl is the latest by StartTime)."
+      "description": "Agent finds the most-recent Faulted job in Shared (0e3938d5 DriveFileInspector is the latest by StartTime)."
     },
     {
       "pattern": "or jobs get 0e3938d5-e2b0-480b-99d5-bcaf0e9123d6",

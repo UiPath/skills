@@ -19,7 +19,7 @@
       "file": "or-jobs-list-folder-key-2c5e8f4a-state-faulted-output-json.json"
     },
     {
-      "match": "or jobs list --process-name AssetPerRobotNoValue",
+      "match": "or jobs list --process-name PerRobotConfigReader",
       "file": "or-jobs-list-folder-key-2c5e8f4a-state-faulted-output-json.json"
     },
     {

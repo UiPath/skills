@@ -19,7 +19,7 @@
       "file": "or-jobs-list-folder-key-3e6f9b4c-state-faulted-output-json.json"
     },
     {
-      "match": "or jobs list --process-name AssetRobotUnlicensed",
+      "match": "or jobs list --process-name RobotConfigLoader",
       "file": "or-jobs-list-folder-key-3e6f9b4c-state-faulted-output-json.json"
     },
     {
