@@ -1,6 +1,6 @@
 {
   "Name": "CsvMerger",
   "ProjectType": "Process",
-  "Description": "Reproduces an Append To CSV failure where the input DataTable's columns (OrderId, Customer) do not match the existing orders.csv (OrderId, Customer, Total), so the rows cannot be appended.",
+  "Description": "CsvMerger automation project.",
   "MainFile": "Main.xaml"
 }

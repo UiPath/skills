@@ -1,6 +1,6 @@
 {
   "Name": "FeedLoader",
   "ProjectType": "Process",
-  "Description": "Reproduces a Read CSV 'The CSV file format ... is invalid' failure caused by leading blank lines at the top of the file with AddHeaders enabled.",
+  "Description": "FeedLoader automation project.",
   "MainFile": "Main.xaml"
 }

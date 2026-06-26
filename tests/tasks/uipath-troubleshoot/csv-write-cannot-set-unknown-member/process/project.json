@@ -1,7 +1,7 @@
 {
   "name": "ReportExport",
   "projectId": "ea010001-d4e5-4f60-8a01-000000000001",
-  "description": "Reproduces a Write CSV 'Cannot set unknown member' failure caused by activity-package version skew: the runtime robot has an older UiPath.System.Activities than the project targets, so the Encoding property set in the XAML is unknown to the runtime activity.",
+  "description": "ReportExport automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[25.10.5]"

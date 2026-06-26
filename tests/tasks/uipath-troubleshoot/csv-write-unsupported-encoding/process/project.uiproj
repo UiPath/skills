@@ -1,6 +1,6 @@
 {
   "Name": "CsvEncode",
   "ProjectType": "Process",
-  "Description": "Reproduces a Write CSV 'Unsupported encoding name' failure (invalid Encoding string).",
+  "Description": "CsvEncode automation project.",
   "MainFile": "Main.xaml"
 }

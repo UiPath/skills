@@ -1,7 +1,7 @@
 {
   "name": "FeedLoader",
   "projectId": "da020002-d4e5-4f60-8a02-000000000002",
-  "description": "Reproduces a Read CSV 'The CSV file format ... is invalid' failure caused by leading blank lines at the top of the file with AddHeaders enabled.",
+  "description": "FeedLoader automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[25.10.5]"

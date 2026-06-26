@@ -1,7 +1,7 @@
 {
   "name": "CsvPublish",
   "projectId": "ea030003-d4e5-4f60-8a03-000000000003",
-  "description": "Reproduces a Write CSV 'Access to the path is denied' failure: the output file is read-only / open in Excel / the robot user lacks write permission.",
+  "description": "CsvPublish automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[25.10.5]"
