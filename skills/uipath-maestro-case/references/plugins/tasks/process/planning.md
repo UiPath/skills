@@ -59,7 +59,7 @@ If no match is found across both cache files after `registry pull`:
 
 When an `AGENTIC_PROCESS` is unresolved at the [Rule 17 empty-lookup gate](../../../registry-discovery.md#must-confirm-before-placeholder-fallback) and the user selects it for **Create**, the skill builds it as an **in-solution Process Orchestration sibling** — the process-side analog of [agent/planning.md § Creating an Agent inline](../agent/planning.md#creating-an-agent-inline). The cross-cutting orchestration (probe, multi-select, parallel build, sequential register, rediscover/verify/bind) lives in [registry-discovery.md § Create-on-Missing](../../../registry-discovery.md#create-on-missing-build-and-rediscovery). This section covers the agentic-process-specific parts. **Regular `PROCESS` (RPA) is not buildable inline** — only `AGENTIC_PROCESS`.
 
-**The case skill never runs the BPMN CLI itself.** It spawns a sub-agent that invokes the **`uipath-maestro-bpmn`** skill (the BPMN / Process Orchestration authoring skill) — build knowledge lives there, including whether to scaffold via `uip maestro bpmn init` or author the `.bpmn` directly. Cross-skill invocation is allowed for this path. **Only agentic processes the user selected at the gate are built — never from SDD content alone.**
+**The case skill never runs the BPMN CLI itself.** It spawns a sub-agent that invokes the **`uipath-maestro-bpmn`** skill (the BPMN / Process Orchestration authoring skill) — build knowledge lives there, including how to scaffold or author the `.bpmn` directly. Cross-skill invocation is allowed for this path. **Only agentic processes the user selected at the gate are built — never from SDD content alone.**
 
 ### Step 1 — Compute the pinned I/O contract
 
@@ -97,10 +97,12 @@ publish/upload/deploy.
   `validate` will NOT flag a drift between them, and the caller reads the I/O back from
   `entry-points.json` to bind the task.
   Do NOT register the project into the solution — the caller registers it (via
-  `uip solution project add`). If you scaffold via `uip maestro bpmn init`, it auto-registers
-  when run inside a solution dir — pass `--skip-solution-registration` to opt out (like
-  `uip agent init`); if you hand-author the `.bpmn`, nothing auto-registers, so no flag is needed.
+  `uip solution project add`). However you scaffold it (per the uipath-maestro-bpmn skill),
+  do NOT self-register: if your scaffold step auto-registers inside a solution dir, opt out
+  per that skill's documented flag; if you hand-author the `.bpmn`, nothing auto-registers.
   Either way: do not register.
+  If you cannot locate/load the uipath-maestro-bpmn skill, do NOT improvise a build — return
+  { built:false, error:"skill uipath-maestro-bpmn not installed" }.
 Return JSON: { built: bool, path, finalInputs:[{name,type}], finalOutputs:[{name,type}], error? }
 ```
 
@@ -118,7 +120,7 @@ Binding is **identical to [agent/planning.md § Creating an Agent inline → Ste
 
 ### Failure — surface and re-prompt, never stall
 
-Same contract as [agent/planning.md § Creating an Agent inline](../agent/planning.md#creating-an-agent-inline): on build failure, surface the `error`, AskUserQuestion `Retry create` / `Skip (defer)`, Skip → placeholder + report, never halt. A verify-time I/O mismatch is a **warning** (rewire matched, report missing/extra), never a block. **"Already exists" is NOT a failure** — if `bpmn init` reports the directory exists or `project add` returns "Project name already exists" (a sibling from an interrupted prior run not surfaced by the pre-gate local check), register it if needed, then rediscover + bind.
+Same contract as [agent/planning.md § Creating an Agent inline](../agent/planning.md#creating-an-agent-inline): on build failure, surface the `error`, AskUserQuestion `Retry create` / `Skip (defer)`, Skip → placeholder + report, never halt. A verify-time I/O mismatch is a **warning** (rewire matched, report missing/extra), never a block. **"Already exists" is NOT a failure** — if the build reports the project directory already exists or `project add` returns "Project name already exists" (a sibling from an interrupted prior run not surfaced by the pre-gate local check), register it if needed, then rediscover + bind.
 
 ## tasks.md Entry Format
 

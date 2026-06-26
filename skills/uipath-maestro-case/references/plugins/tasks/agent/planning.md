@@ -93,6 +93,8 @@ do not ask for approval; do not publish/upload/deploy.
   Low-code `uip agent init` auto-registers inside a solution dir — pass
   `--skip-solution-registration` to opt out (`OptedOut` is expected, not an error); coded
   `uip codedagent init` does not auto-register, so no flag is needed. Either way: do not register.
+  If you cannot locate/load the uipath-agents skill, do NOT improvise a build — return
+  { built:false, error:"skill uipath-agents not installed" }.
 Return JSON: { built: bool, path, finalInputs:[{name,type}], finalOutputs:[{name,type}], error? }
 ```
 
