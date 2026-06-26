@@ -1008,7 +1008,7 @@
         glyph.setAttribute("fill", stroke);
         glyph.setAttribute("font-weight", "600");
         glyph.setAttribute("text-transform", "uppercase");
-        glyph.textContent = n.kind === "trigger" ? "TRIGGER" : (n.kind === "exception" ? "EXCEPTION" : "STAGE");
+        glyph.textContent = n.kind === "trigger" ? "TRIGGER" : (n.kind === "exception" ? "SECONDARY" : "STAGE");
         g.appendChild(glyph);
 
         // label
@@ -1086,7 +1086,7 @@
       const title = el("div", { class: "stage-title" }, [
         el("span", { class: "seq" }, "Stage " + (idx + 1) + " ·"),
         document.createTextNode(stage.name || "(unnamed)"),
-        el("span", { class: "stage-type" }, isException ? "Exception" : "Stage")
+        el("span", { class: "stage-type" }, isException ? "Secondary" : "Stage")
       ]);
       titleWrap.appendChild(title);
       const summary = el("div", { class: "stage-summary" });

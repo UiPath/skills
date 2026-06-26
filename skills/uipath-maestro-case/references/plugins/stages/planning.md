@@ -9,7 +9,7 @@ A stage node inside the case. Stages contain tasks and connect via entry/exit co
 | Regular stage | `case-management:Stage` (default) |
 | Secondary stage | `case-management:Stage` with `data.stageType: "secondary"` |
 
-The only difference is `data.stageType` (omitted/`"primary"` for regular, `"secondary"` for exception); both use `type: case-management:Stage`. All other fields (label, description, entry/exit conditions, tasks, SLA) behave identically. A secondary stage can carry `slaRules` (expression-driven SLA) the same as a regular Stage; conditional SLA rules themselves are root-only.
+The only difference is `data.stageType`: omitted for a primary/regular stage (do NOT emit `"primary"`), `"secondary"` for a secondary stage; both use `type: case-management:Stage`. All other fields (label, description, entry/exit conditions, tasks, SLA) behave identically. A secondary stage can carry `slaRules` (expression-driven SLA) the same as a regular Stage; conditional SLA rules themselves are root-only.
 
 ## When to Pick `secondary` vs `stage`
 

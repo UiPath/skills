@@ -147,6 +147,12 @@ def main() -> None:
             exit_types.setdefault(cur_stage, set())
             gate = None
             continue
+        mk = re.match(r"\*\*Stage Kind:\*\*\s*`?(\w+)", s)
+        if mk and cur_stage and mk.group(1).lower() == "secondary":
+            # **Stage Kind:** secondary is the authoritative discriminator (it maps to
+            # data.stageType); flag the stage as secondary regardless of heading form.
+            is_exc[cur_stage] = True
+            continue
         if s.startswith("### Case Exit Conditions"):
             gate = "case-exit"; continue
         if s.startswith("####") and "Entry Conditions" in s:

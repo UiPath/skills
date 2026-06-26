@@ -34,7 +34,7 @@ initial_prompt: |
   ```
   # SDD — ExceptionStage
 
-  **Case Definition Blueprint** · Generic — Exception Stage Coverage
+  **Case Definition Blueprint** · Generic — Secondary Stage Coverage
 
   One regular Process stage plus TWO secondary stages (Issues, Critical) reached only via interrupting entry conditions and exiting via return-to-origin (edges retired — reachability is condition-driven). Exercises multi-exception flow, interrupting entry (selected-stage-exited ×2 on Process exit), return-to-origin exit, secondary-stage SLA with sla-breached escalation, UserGroup recipient scope, a task embedded inside a secondary stage, and the wait-for-timer plugin's timeDate branch.
 
@@ -185,7 +185,7 @@ initial_prompt: |
   ##### Task 3.1: Handle Critical (`critical.handleCritical`)
 
   **Type:** wait-for-timer
-  **Description:** Placeholder in-stage timer for the Critical exception stage.
+  **Description:** Placeholder in-stage timer for the Critical secondary stage.
 
   **Entry Condition**
 

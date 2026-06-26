@@ -198,7 +198,7 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 
 ### c) Secondary (Exception) Stage — `case-management:Stage` with `data.stageType: "secondary"`
 
-Not a distinct node type. A secondary stage is a Stage node (§2b) with `data.stageType: "secondary"` as the FIRST field inside `data` (before `label`). Same top-level and render fields as a primary Stage. Adds `entryConditions`, `exitConditions` initialized at creation time. The literal node type `case-management:ExceptionStage` is removed at schema v22 and MUST NOT be emitted.
+Not a distinct node type. A secondary stage is a Stage node (§2b) with `data.stageType: "secondary"`. Same top-level and render fields as a primary Stage. Adds `entryConditions`, `exitConditions` initialized at creation time. The literal node type `case-management:ExceptionStage` is removed at schema v22 and MUST NOT be emitted.
 
 ```json
 {

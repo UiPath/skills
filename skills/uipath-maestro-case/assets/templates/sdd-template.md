@@ -302,8 +302,10 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 ### Stage {N}: {Stage Name}
 
+> **Heading form:** a **primary** stage uses `### Stage {N}: {Stage Name}` (N = main-flow sequence number); a **secondary** stage uses `### Secondary Stage: {Stage Name}` instead (no number). Both render a `case-management:Stage` node — the kind is set by the `**Stage Kind:**` field below.
+
 **Type:** Stage
-**Stage Kind:** {primary \| secondary} _(secondary stages set `secondary`; primary stages OMIT this line — default = primary)_
+**Stage Kind:** {primary \| secondary} _(secondary stages use the `### Secondary Stage:` heading AND set `secondary`; primary stages use `### Stage {N}:` and OMIT this line — default = primary)_
 **Description:** {Prose description of what this stage accomplishes in the case lifecycle}
 **Required for Case Completion:** {Yes \| No}
 **Interrupting:** {Yes \| No} _(secondary stages only — i.e. Stage Kind: secondary; omit for primary)_
@@ -326,7 +328,7 @@ The runtime engine resolves the binding when the task completes, writing the res
 
 > **WHEN ↔ Marks Stage Complete pairing is a schema constraint (see Key Rule 4):** `Yes` row MUST use `required-tasks-completed` (or `required-stages-completed`); `No` row MAY use `selected-tasks-completed(...)`. Mixing is invalid.
 > Completion (`Yes`) and routing (`No`) rows share this one table. **Regular stage-to-stage routing is expressed by the destination stages' Entry Conditions** (`selected-stage-completed("This Stage")` / `selected-stage-exited("This Stage")`) — one stage can fan out to N stages, each declaring it as their entry trigger. `return-to-origin` returns to the origin stage automatically.
-> **Exception carve-out:** to route this stage INTO a decision/signal-routed exception lane, add a gated divert row here — `Marks Stage Complete: No`, `selected-tasks-completed("<decider>")`, `IF =js:(<signal> === <exception-value>)`, `exit-only`, with `exitToStageId` → the exception stage — AND gate this stage's `Yes` completion row with the inverse `IF`. The lane returns via `return-to-origin`. Omitting the divert row → dual-fire or deadlock. See sdd-generation-rules § Logical integrity step 5.
+> **Exception carve-out:** to route this stage INTO a decision/signal-routed exception lane, add a gated divert row here — `Marks Stage Complete: No`, `selected-tasks-completed("<decider>")`, `IF =js:(<signal> === <exception-value>)`, `exit-only`, with `exitToStageId` → the secondary stage — AND gate this stage's `Yes` completion row with the inverse `IF`. The lane returns via `return-to-origin`. Omitting the divert row → dual-fire or deadlock. See sdd-generation-rules § Logical integrity step 5.
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
