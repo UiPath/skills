@@ -32,17 +32,20 @@ Required prompt shape:
 
 ```
 Question: <N> registry lookup(s) returned 0 matches: <comma-list of <name> in <folder>>.
-          Run `uip maestro case registry pull --force` to bypass the cache and re-resolve?
-Header:   Force pull
+Header:   Resolve empties
 Options:
-  - Yes, force pull and re-resolve
-      → run `uip maestro case registry pull --force`, re-search caches, update registry-resolved.json with the second-pass results.
-        Any STILL-empty lookups go to placeholder ONLY after this round.
+  - Force pull and re-resolve
+      → run `uip maestro case registry pull --force`, re-search caches, update registry-resolved.json with the
+        second-pass results, then LOOP BACK to this prompt for any STILL-empty lookup.
+  - Create the missing agent(s) / agentic process(es) inline   # shown ONLY when ≥1 still-empty is an `agent` or `AGENTIC_PROCESS` AND the CLI has `registry --local`
+      → multi-select which to build as in-solution siblings (agent → uipath-agents; agentic
+        process → uipath-maestro-bpmn); build them (§ Create-on-Missing). Unselected items +
+        all non-creatable empties (regular RPA process, action, connectors) → placeholder.
   - Skip and use placeholders
       → proceed to per-plugin Unresolved Fallback paths for the unmatched lookups.
 ```
 
-**Apply once per planning batch, not per-task.** A single prompt covers every empty in that batch.
+**Apply once per planning batch, not per-task.** Each option is batch-level — never a per-task yes/no chain. Force pull loops back to this same prompt for whatever stays empty. The **Create** option covers **agents and agentic processes only** (never regular RPA process, action apps, or connectors); it appears only when ≥1 still-empty is creatable AND the CLI supports `registry --local` (capability probe — see [§ Create-on-Missing](#create-on-missing-build-and-rediscovery)). When `--local` is absent the gate degrades to Force pull / Skip exactly as before.
 
 **Do NOT pre-judge.** Resource-name heuristics ("looks vendor-specific, won't be in registry anyway", "this is an obvious custom connector") are the user's call to make, not the agent's. Always ask. SKILL.md Rule 17.
 
@@ -62,6 +65,61 @@ Each resource type has a `<type>-index.json` file at `~/.uip/case-resources/`:
 | `typecache-triggers-index.json` | `uiPathActivityTypeId` | `displayName` | *(none)* |
 
 Each file is a JSON array of resource entries.
+
+## Create-on-Missing build and rediscovery
+
+When the user picks **Create** at the gate, the skill builds each selected resource as an **in-solution sibling** (during Phase-1 planning) and wires it in as a normal resolved task — no placeholder. **v1 builds two kinds — `agent` (via `uipath-agents`) and `agentic process` / Process Orchestration (via `uipath-maestro-bpmn`)**; the orchestration below is type-agnostic so other non-connector kinds can be enabled later via their own type skill. Connectors and regular RPA process (a `PROCESS`, not an `AGENTIC_PROCESS`) are never built here.
+
+> **Create depends on the type skill being installed.** The build runs in a sub-agent that invokes `uipath-agents` (agents) or `uipath-maestro-bpmn` (agentic processes). If that skill is not installed, the sub-agent returns `built:false` and the resource degrades to a placeholder via the per-plugin Failure contract — Create never hard-fails the run.
+
+### 0 — Capability probe (once per run)
+
+Before offering Create, confirm the CLI supports local discovery: run `uip maestro case registry list --local --output json`. If it errors with an unknown-option message, `--local` is absent → **suppress the Create option entirely** (the gate stays Force pull / Skip) and use placeholders. Only offer Create when the probe succeeds. Run the probe **at first need and cache the result for the rest of the run** — whichever comes first: the pre-gate in-solution sibling check ([agent](plugins/tasks/agent/planning.md#registry-resolution) / [process](plugins/tasks/process/planning.md#registry-resolution) § Registry Resolution, which also gates on `--local`) or this gate.
+
+### 1 — Select
+
+On Create, present an `AskUserQuestion` **multiSelect** of the still-empty **creatable** resources — agents and agentic processes. The option list is capped at 4; when >4 creatable resources are empty, batch the selection across successive prompts (≤4 each). Checked → build. Unchecked items **and all non-creatable empties** (regular RPA process, action, connectors, …) → `<UNRESOLVED>` placeholder. If two selected resources share a name, AskUserQuestion to rename one before building — the `solution_folder.<name>` sentinel resourceKey and the exact-name `search --local` rediscovery (§4) both key on the name and must be unique.
+
+### 1b — Choose build kind (agents only)
+
+For each selected **agent**, ask the build kind before building: an `AskUserQuestion` with options **Low-code** and **Coded (Python)** — presented as **equal choices** (neither marked recommended); one question per selected agent (batch ≤4 per prompt). For a non-interactive run the fallback is **Low-code** (`uip agent init`, the platform default kind); coded is `uip codedagent`. The choice sets the brief's `Kind:` line ([agent/planning.md § Creating an Agent inline → Step 2](plugins/tasks/agent/planning.md#creating-an-agent-inline)) and the sub-agent builds that kind. Kind is **never inferred from the SDD**. **Agentic processes have no kind choice** — always Process Orchestration; skip this for them. Coded integration is kind-agnostic on the case side but carries an Orchestrator-deploy caveat — see [agent/planning.md § Coded agents](plugins/tasks/agent/planning.md#creating-an-agent-inline).
+
+### 2 — Build (parallel, capped, skip-registration)
+
+For each selected resource, compute its build brief — per the resource's plugin: [agent/planning.md § Creating an Agent inline](plugins/tasks/agent/planning.md#creating-an-agent-inline) or [process/planning.md § Creating an agentic process inline](plugins/tasks/process/planning.md#creating-an-agentic-process-inline) — and **spawn one sub-agent per resource that invokes the type-appropriate skill** (`uipath-agents` for agents; `uipath-maestro-bpmn` for agentic processes). Spawn **up to 10 concurrently; process in waves** if more are selected (cap is a resource throttle, not a safety mechanism). Each sub-agent builds **without registering the project into the solution** (agents: per the §1b kind — low-code `uip agent init` or coded `uip codedagent`, built without self-registration; agentic processes: hand-author the `.bpmn` or `uip maestro bpmn init --skip-solution-registration` — the parent registers either way, § 3) and returns `{ built, path, finalInputs[], finalOutputs[], error? }`.
+
+The skill itself never runs the type CLI's `init` — build knowledge lives in the type skill. Only gate-selected resources are built; SDD content alone never triggers a build.
+
+### 3 — Register (sequential)
+
+The `.uipx` is a shared file; concurrent registration races. So build skips registration, and **the parent registers each built sibling sequentially** after the wave returns:
+
+```bash
+uip solution project add "<built path>" "<solution .uipx>" --output json   # one per built sibling, sequential
+```
+
+Both positionals MUST be absolute paths — the relative form fails with `Failed to add project to solution` regardless of CWD (see [implementation.md](implementation.md) § Step 6.0b). Then run `uip solution resources refresh` (Rule 14) so the solution-level resource files + `debug_overwrites.json` are generated before any upload/debug.
+
+### 4 — Rediscover + verify + bind (offline `--local`)
+
+Rediscover **by name** with `search` (not `get`): `registry get <id> --local` matches only on `entityKey`/project Id, never the display name, so `get "<Name>"` returns 0. `search` matches the keyword against the name. Read keys in **PascalCase** (`--output json` PascalCases recursively):
+
+```bash
+# --type is the resource's local kind: agent | processOrchestration
+uip maestro case registry search "<Name>" --type <agent|processOrchestration> --local --output json
+```
+
+`Code: "ResourceSearchSuccess"`, `Data.ResultCount`, `Data.Resources[]` each `{ ResourceType, Resource: {...} }`. Select the entry whose `Resource.Name` exactly equals `<Name>` and `Resource.Source == "local"` (keyword search may return partial-name matches — filter to the exact name). Use this `--local` result to **confirm the sibling exists** and registered (`Source == "local"`, `Folders[0].FullyQualifiedName == "solution_folder"`). `Resource.EntityKey` is an opaque, derived local key (NOT the `.uipx` `Projects[].Id`, NOT any on-disk id) — **audit-only**; the node binds by name+folder, so never write it. No exact-name local match → the build/registration didn't take → failure contract.
+
+> ⚠️ **Do NOT read I/O field names from `Resource.{Inputs,Outputs}`.** `--output json` PascalCases object keys recursively, so the declared property keys come back mis-cased (`poText` → `PoText`, `classification` → `Classification`) — wiring against those names would bind to fields the resource doesn't have. Read the **case-preserving** names + types from the sibling's raw `entry-points.json` on disk instead (`<sibling path>/entry-points.json`). **The key path differs by kind:** an **agent** keys I/O under `entryPoints[0].input.properties` / `.output.properties`; an **agentic process** (Process Orchestration) keys it under `entryPoints[0].inputSchema.properties` / `.outputSchema.properties` — reading `input.properties` on a BPMN sibling returns `undefined`, yielding an empty contract → silent mis-wire. Use `--local` only to locate/confirm the sibling. **Agentic process:** read the I/O names from `entry-points.json` (`inputSchema`/`outputSchema`, per above; the build keeps it consistent with the `.bpmn`); the `.bpmn` is source-of-record (its I/O lives in root `<uipath:variables>`, input variables associated to the start event by `elementId`). On suspected drift do NOT hand-patch — re-invoke `uipath-maestro-bpmn` to regenerate consistent files (see [process/planning.md § Creating an agentic process inline](plugins/tasks/process/planning.md#creating-an-agentic-process-inline)).
+
+> Shapes: `search`/`get` nest each entry under `Data.Resources[].Resource.*`; `list --local` flattens to `Data.Resources[].{EntityKey,Name,Category,Source}` (no `Resource` wrapper, no I/O). Use `search` here because it matches by name and confirms the sibling; the sub-agent's returned `finalInputs/finalOutputs` are a liveness signal only — the on-disk `entry-points.json` is authoritative.
+
+**Verify** the sibling's declared I/O (read the case-preserving names from `entry-points.json` per the warning above — agent: CLI-synced; agentic process: build-kept-consistent, `.bpmn` is source-of-record on drift) against the pinned contract → matched / missing-in-sibling / extra-in-sibling. **Record** the reconciled contract into `tasks.md` + `registry-resolved.json` and resolve the task (taskTypeId/folder-path filled) — it is now a normal resolved task. The actual write into `caseplan.json` `data.inputs[]`/`data.outputs[]` (and the io-binding pass) happens in Phase 2/3 when the resolved task is materialized, exactly like any other resolved resource — not in Phase 1. **Warn+diff** missing/extra into the completion report; **never block**. The task binds with `resourceKey="solution_folder.<Name>"` **and `folderPath` binding `default` = `""`** (the runtime folder — empty = co-located; the `solution_folder` sentinel lives ONLY in `resourceKey`, NOT in `folderPath`, else runtime `folder not exist` — per the resource's plugin: [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [agentic process](plugins/tasks/process/planning.md#creating-an-agentic-process-inline)); it binds by name+folder, so `EntityKey` stays audit-only.
+
+### Reject case
+
+If a built sibling's task is later dropped (user aborts or removes it on `Request changes`), leave the sibling **on disk** (it is reusable) and **name it in the completion report** ("built but not referenced"). It stays **registered in the `.uipx`** (Step 3 already added it), so it co-deploys with the solution as an unused sibling — harmless; do **not** silently deregister. If the user wants it gone, that is manual cleanup (deregister from the `.uipx` and delete the directory), flagged in the report. Never silently delete it, never silently omit it.
 
 ## Procedure
 
@@ -118,14 +176,16 @@ for item in data:
 
 > **Required precondition.** Before reaching this step, the [§ MUST: Confirm Before Placeholder Fallback](#must-confirm-before-placeholder-fallback) gate above MUST have been satisfied. If you have not yet run AskUserQuestion for the empty-result batch, do that first. Force pull and per-plugin Unresolved Fallback both flow through that gate.
 
+> **Agents & agentic processes: resolve in-solution siblings before counting a lookup empty.** For an `agent` (or `AGENTIC_PROCESS`) that misses the tenant index, first check for an existing in-solution sibling via `registry search "<name>" --type <agent|processOrchestration> --local` (per [agent/planning.md § Registry Resolution](plugins/tasks/agent/planning.md#registry-resolution) / [process/planning.md § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution)). A `Source: "local"` exact-name match **resolves** it (bind via `solution_folder.<name>`) — it is NOT empty and does NOT reach the gate or Create. Only resources absent from **both** the tenant index and the local siblings are empty here. (This keeps re-runs idempotent: an already-built sibling resolves instead of rebuilding.)
+
 If no match is found across all relevant cache files:
 
-1. **Already gated above.** AskUserQuestion confirmation already ran. If the user picked `Yes, force pull and re-resolve`, the force pull has already executed; this step is reached for lookups that remained empty after the second-pass search.
+1. **Already gated above.** AskUserQuestion confirmation already ran. If the user picked `Force pull and re-resolve`, the force pull has already executed; this step is reached for lookups that remained empty after the second-pass search.
    ```bash
-   # already executed during the gate's "Yes" branch:
+   # already executed during the gate's Force-pull branch:
    uip maestro case registry pull --force
    ```
-2. If still no match (or user picked `Skip`), mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]` and proceed to the per-plugin Unresolved Fallback path.
+2. If still no match (or the user picked `Skip and use placeholders`, and any agent was not selected for Create), mark it in tasks.md: `[REGISTRY LOOKUP FAILED: <name> in <folder>]` and proceed to the per-plugin Unresolved Fallback path.
 
 ### 4. Return All Matches
 
