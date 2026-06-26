@@ -60,7 +60,9 @@ ensure_npm() {
 
   if ! command -v npm &> /dev/null; then
     echo "Node.js was installed but npm is not yet available in this session." >&2
-    echo "Please restart your terminal, then run: npm install -g @uipath/cli" >&2
+    echo "Please restart your terminal, then run the UiPath CLI installer:" >&2
+    echo "  macOS/Linux: curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash" >&2
+    echo "  Windows PowerShell: irm https://download.uipath.com/uipath-cli/install.ps1 | iex" >&2
     exit 2
   fi
 }

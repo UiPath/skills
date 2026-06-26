@@ -56,7 +56,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
    which uip && uip --version
    uip login status --output json
    ```
-   If not installed: `npm install -g @uipath/uipcli`. If not logged in: `uip login` (`--authority <URL>` for non-prod). For Access `evaluate`, login MUST be tenant-scoped.
+   If not installed, run the official installer (`curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash` on macOS/Linux; `irm https://download.uipath.com/uipath-cli/install.ps1 | iex` in Windows PowerShell). If not logged in: `uip login` (`--authority <URL>` for non-prod). For Access `evaluate`, login MUST be tenant-scoped.
 3. **Route to the chosen mechanic** and follow its flow end-to-end.
    - Branch A → [`references/aops-policy/aops-policy-overview-guide.md`](./references/aops-policy/aops-policy-overview-guide.md)
    - Branch B → [`references/access-policy/access-policy-overview-guide.md`](./references/access-policy/access-policy-overview-guide.md)

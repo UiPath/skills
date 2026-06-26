@@ -33,7 +33,7 @@ uip solution init --help --output json
 
 - Result `Success` → post-rename CLI (default). Use the commands and flags as documented in the references.
 - `unknown command` / non-zero exit → pre-rename CLI. Translate via the table below before each call. Re-probe on any later `unknown command` error.
-- `command not found` / `uip: not found` / `'uip' is not recognized` → CLI not installed. Tell the user to run `npm install -g @uipath/cli`, then `uip login`, and abort the work until those succeed.
+- `command not found` / `uip: not found` / `'uip' is not recognized` → CLI not installed. Tell the user to run the official installer (`curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash` on macOS/Linux; `irm https://download.uipath.com/uipath-cli/install.ps1 | iex` in Windows PowerShell), then `uip login`, and abort the work until those succeed.
 
 | Post-rename (default) | Pre-rename equivalent |
 |---|---|

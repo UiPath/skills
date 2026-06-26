@@ -7,38 +7,21 @@ UiPath Agent Skills give AI coding agents the domain knowledge to build, run, te
 
 ## Quick Start
 
-> **Prerequisite:** [Node.js](https://nodejs.org/) (LTS) is required — it includes `npm`.
+Use the official onboarding installer. It installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
 
+**macOS/Linux**
 ```bash
-npm -g install @uipath/cli
-uip skills install
-```
-
-`uip skills install` finds the AI coding agents installed on your machine and installs the skills for all of them, into each agent's directory, ready to use. If it can't find any agent, it asks which one to target. To install for just one agent, pass `--agent <name>` (e.g. `--agent claude`).
-
-<details>
-<summary>Don't have Node.js installed?</summary>
-
-**macOS**
-```bash
-brew install node
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
 ```
 
 **Windows**
-```bash
-winget install OpenJS.NodeJS.LTS
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
 ```
 
-**Linux**
-```bash
-curl -fsSL https://fnm.vercel.app/install | bash
-fnm install --lts
-```
-See [Installing Node.js via package manager](https://nodejs.org/en/download/package-manager) for other methods.
+The installer runs `uip skills install --no-interactive` to wire the skills into detected AI coding agents. To re-run manually or install for one agent, use `uip skills install` or pass `--agent <name>` (e.g. `--agent claude`).
 
-After installing, verify with `node -v` and then run the quick start command above.
-
-</details>
+For CI or a CLI-only machine, skip agent skills and runtime installs with `--skip-skills --skip-runtimes` on macOS/Linux or `-SkipSkills -SkipRuntimes` on Windows.
 
 ## Skill Catalog
 
