@@ -40,6 +40,13 @@ on:
         description: '@uipath/cli version.'
         type: string
         default: alpha
+      agent:
+        description: 'Agent (codex = gpt-5.4).'
+        type: choice
+        options:
+          - claude
+          - codex
+        default: claude
 
 concurrency:
   group: run-coder-eval-${{ github.ref }}
@@ -152,7 +159,18 @@ jobs:
       - name: Install coder-eval
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
+          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
+          AGENT: ${{ inputs.agent }}
+        run: |
+          pkgs="coder-eval==${CE_VERSION}"
+          # codex agent needs the openai-codex SDK. Under the docker driver the
+          # agent runs INSIDE skills-image, so codex must also be installed in
+          # that image (separate TODO) — this host install only covers the
+          # tempdir path. 0.1.0b3 is the version verified against coder-eval 0.6.2.
+          if [ "$AGENT" = "codex" ]; then
+            pkgs="$pkgs openai-codex==0.1.0b3"
+          fi
+          uv pip install --system $pkgs
 
       # Pull the pinned agent image from GHCR (never built from source); the
       # skills image extends it below. GH_PAT needs read:packages.
@@ -207,15 +225,26 @@ jobs:
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
+          AGENT:                    ${{ inputs.agent }}
+          CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
+          CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
         working-directory: tests
         id: eval
         run: |
           # Guard the empty case (e.g. a future non-dispatch trigger): the
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
-          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml -j $j ($TASK_COUNT task files)"
+          # Agent selection. claude (default) takes the experiment YAML's
+          # claude-code/sonnet config; codex overrides to gpt-5.4 and authenticates
+          # via CODEX_API_KEY/CODEX_BASE_URL. Driver is unchanged (docker here).
+          agent_flags=""
+          if [ "$AGENT" = "codex" ]; then
+            agent_flags="--type codex --model gpt-5.4"
+          fi
+          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
             -e experiments/nightly.yaml \
+            $agent_flags \
             -j "$j" -v \
             --run-dir /tmp/runs
 
@@ -308,7 +337,17 @@ jobs:
         shell: bash
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
+          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
+          AGENT: ${{ inputs.agent }}
+        run: |
+          pkgs="coder-eval==${CE_VERSION}"
+          # Windows runs the tempdir driver (agent on host), so the codex SDK
+          # installed here is what the codex agent actually uses. 0.1.0b3 is the
+          # version verified against coder-eval 0.6.2.
+          if [ "$AGENT" = "codex" ]; then
+            pkgs="$pkgs openai-codex==0.1.0b3"
+          fi
+          uv pip install --system $pkgs
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
@@ -431,6 +470,9 @@ jobs:
           BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
+          AGENT:                    ${{ inputs.agent }}
+          CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
+          CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
           # Redirect the temp root off the default %TEMP%. On the GH-hosted
           # Windows runner %TEMP% resolves to its 8.3 short form
           # (C:\Users\RUNNER~1\AppData\Local\Temp). coder-eval creates each
@@ -449,6 +491,13 @@ jobs:
           shopt -s globstar nullglob
           # Create the tilde-free temp root pinned via TMP/TEMP above.
           mkdir -p /c/cetmp
+          # Agent selection. claude (default) takes the experiment YAML config;
+          # codex overrides to gpt-5.4 (auth via CODEX_API_KEY/CODEX_BASE_URL).
+          # Driver is unchanged (tempdir here).
+          agent_flags=""
+          if [ "$AGENT" = "codex" ]; then
+            agent_flags="--type codex --model gpt-5.4"
+          fi
           overall_exit=0
           for task in $TASK_GLOBS; do
             echo "--- Killing leftover Helm/Studio processes ---"
@@ -457,7 +506,7 @@ jobs:
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
               if coder-eval run "$task" \
-                  -e experiments/smoke-windows.yaml -j 1 -v; then
+                  -e experiments/smoke-windows.yaml $agent_flags -j 1 -v; then
                 break
               fi
               # Only retry on Bedrock content-filter ERRORs. Real task

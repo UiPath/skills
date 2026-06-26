@@ -26,6 +26,10 @@ defaults:
         - TRACES_SMOKE_PROCESS_KEY
         - E2E_PROCESS_KEY
         - E2E_LONG_PROCESS_KEY
+        # codex agent auth — passed into the container so the codex SDK can
+        # authenticate. Unset / no-op for the default claude-code agent.
+        - CODEX_API_KEY
+        - CODEX_BASE_URL
       extra_mounts:
         - ~/.uipath:/.uipath:rw
 
