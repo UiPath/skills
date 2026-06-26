@@ -62,7 +62,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Project shape: bindings.json + ActivityMetadata mapped from describe fixture + lazy SDK init + no lowcode sidecar + 2-field resourceOverwrites"
+    description: "Project shape: bindings.json connection envelope + ActivityMetadata mapped from describe fixture + lazy SDK init + no lowcode sidecar"
     command: "python3 $TASK_DIR/check_is_smoke.py"
     timeout: 30
     expected_exit_code: 0
