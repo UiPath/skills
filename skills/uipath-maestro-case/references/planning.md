@@ -8,7 +8,7 @@ Generate reviewable task plan (`tasks.md`) from design document (`sdd.md`). Disc
 
 > **Per-node-type detail lives in plugins.** This document covers the cross-cutting planning workflow. For how to fill fields for a specific node, consult the relevant plugin:
 > - Root case → `plugins/case/planning.md`
-> - Stages (regular / exception) → `plugins/stages/planning.md`
+> - Stages (primary / secondary) → `plugins/stages/planning.md`
 > - Tasks → `plugins/tasks/<type>/planning.md`
 > - Triggers → `plugins/triggers/<type>/planning.md`
 > - Conditions → `plugins/conditions/<scope>/planning.md`
@@ -250,9 +250,9 @@ Do **not** collapse the unresolved trigger into a note on T02 or omit it entirel
 
 ### 4.4 Create stages
 
-Title format: `Create stage "<name>"` or `Create exception stage "<name>"`
+Title format: `Create stage "<name>"` or `Create secondary stage "<name>"`
 
-One task per stage. Consult [`plugins/stages/planning.md`](plugins/stages/planning.md) for required fields and the `stage` vs `exception` (a.k.a. secondary) decision. Basic properties only — SLA and escalation come later (§4.7).
+One task per stage. Consult [`plugins/stages/planning.md`](plugins/stages/planning.md) for required fields and the `stage` vs `secondary` decision. Basic properties only — SLA and escalation come later (§4.7).
 
 ### 4.5 Edges — not authored (RETIRED)
 
