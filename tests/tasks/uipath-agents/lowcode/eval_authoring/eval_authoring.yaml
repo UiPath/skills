@@ -1,0 +1,97 @@
+task_id: skill-agent-lowcode-eval-authoring
+description: >
+  Low-code eval authoring lifecycle, offline path (no cloud execution).
+  Verifies the skill guides the agent to author an evaluation harness on a
+  low-code agent using the `uip agent eval` CLI: add a deterministic Exact
+  Match evaluator (category 0, type 1) the init defaults lack, reference it
+  from the Default Evaluation Set, add test cases with `uip agent eval add`,
+  and `uip agent validate` the result. Closes the gap where the low-code
+  eval CLI (separate from the coded `uip codedagent eval` engine) had zero
+  test coverage.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, feature:eval]
+
+run_limits:
+  expected_turns: 18
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath low-code autonomous agent "FaqAgent" in a solution named
+  "EvalSol". It accepts a required `question` (string) and returns an
+  `answer` (string).
+
+  Then build an evaluation harness for it using the eval CLI:
+    - Add an LLM-as-a-judge semantic-similarity evaluator with the CLI.
+    - The defaults are LLM-based only — I also want a deterministic check that
+      the answer matches the expected text exactly (no LLM, no wording
+      variation). Add that evaluator too.
+    - Make the Default Evaluation Set use your evaluators and add at least
+      three test cases (question in, expected answer out).
+  Validate when done.
+
+  Do NOT upload, publish, or deploy. Do NOT run the evaluations (no cloud).
+  Do NOT call `uip login`. Do NOT ask for approval, confirmation, or
+  feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added an evaluator with the eval CLI (semantic-similarity or trajectory)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+evaluator\s+add\s+.*--type\s+(semantic-similarity|trajectory)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added test cases with uip agent eval add"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+eval\s+add\b'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the agent (validate also checks evals/evaluators)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: file_exists
+    description: "FaqAgent/agent.json was created"
+    path: "EvalSol/FaqAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Deterministic evaluator authored + referenced + >=2 test cases in the eval set"
+    command: "python3 $TASK_DIR/check_eval_authoring.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
