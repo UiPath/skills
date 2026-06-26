@@ -219,6 +219,15 @@ Namespaces: `UiPath.Core.Activities`
 - [activity-packages/csv-activities/overview.md](./activity-packages/csv-activities/overview.md) — Package overview, execution model, and common failure patterns
 - [activity-packages/csv-activities/summary.md](./activity-packages/csv-activities/summary.md) — All playbooks for CSV Activities issues
 
+## File Operations Activities
+
+Modern **System > File** activities under the `UiPath.Activities.System.FileOperations` namespace (shipped in `UiPath.System.Activities`). Currently covers **Download File from URL** (`DownloadFileFromUrl`) — a native HTTP(S) download to the robot's local file system (it carries no browser session/cookies). Issues here involve `This instance has already started one or more requests` (the internal HTTP client reused across a `For Each` loop), HTTP `401`/`403` (authenticated/portal-gated URLs the native download can't reach, or a blocked `User-Agent`), the downloaded file left stuck as a `.tmp` (download/finalize race), and `Don't know about such a host` (DNS / firewall / SSL-inspection blocking the automated outbound connection).
+
+Namespaces: `UiPath.Activities.System.FileOperations`
+
+- [activity-packages/file-operations/overview.md](./activity-packages/file-operations/overview.md) — Package overview, Download File from URL execution model, and common failure patterns
+- [activity-packages/file-operations/summary.md](./activity-packages/file-operations/summary.md) — All playbooks for File Operations issues
+
 
 ## Playbooks
 
