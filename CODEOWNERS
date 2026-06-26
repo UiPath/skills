@@ -124,6 +124,7 @@
 # Troubleshooting
 /skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+/tests/tasks/activation/uipath-troubleshoot.jsonl @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /skills/uipath-troubleshoot/references/products/agents/ @UiPath/llmops-team @andreibalas-uipath
 
 # Governance skill
