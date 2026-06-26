@@ -62,10 +62,24 @@ Both tracks are **manually triggered** — there is no auto-publish on push to `
 1. Bump `package.json` to the target version (match the CLI minor line), run `npm run version:sync`, merge.
 2. Create a GitHub Release tagged `v<version>` → `publish.yml` publishes to npmjs.
 
+### Automated sprint cut (`sprint-release-cut.yml`)
+
+Steps 1–2 are automated per sprint by `sprint-release-cut.yml`. It runs **Sunday 06:00 UTC**, gated to the **14-day cadence** anchored at `2026-06-14` — the same cadence as `UiPath/cli`, but **6 hours earlier** so the skills package lands before the CLI release. It is **self-driven**: the target line is the current skills minor **+ 1**; it never reads the CLI version (skills lead, never follow), so no cross-repo secret is required. On a release Sunday it:
+
+1. cuts `release/v<minor>` from `main` at `M.N.0` (`sync-version.mjs` resets plugin/marketplace/Codex to `M.N.0` too);
+2. publishes `@uipath/skills@M.N.0` to npm `latest` — creates the GitHub Release `v<minor>.0` as the durable record, then **dispatches `publish.yml` on the tag** (`gh workflow run publish.yml --ref v<minor>.0 -f target=npmjs`). A release created with the default `GITHUB_TOKEN` does not trigger other workflows, so `release: published` would never start `publish.yml`; the explicit `workflow_dispatch` (which `GITHUB_TOKEN` *can* trigger) is what publishes. Guarded on `npm view` so a re-run doesn't re-dispatch an already-published version;
+3. opens the matching version-bump PR against `main`.
+
+Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`) to skip the gate and the auto-increment, or `dry_run` to print the plan without pushing.
+
+> **Operational dependency — merge the bump PR before the next cut.** The target line is `current + 1` read from `main`'s `package.json`. If the bump PR from step 3 is not merged before the next release Sunday, `main` is still on the old line, so the cut re-targets the line it already created: it finds `release/v<minor>` already at `M.N.0` and **resumes idempotently** (skips the publish since npm already has the version, leaves the existing PR open) — no new line is cut. Safe, but a forgotten bump PR silently **stalls the cadence**. Merge sprint-cut bump PRs promptly. (If the branch exists at a *different* version, the cut stops loudly with `already exists at version <X> (expected <Y>)` for manual resolution.)
+
+> **Repo setup:** branch protection must allow the Actions identity to push `release/v*` branches.
+
 ## Required setup
 
 - [x] **npmjs Trusted Publishing** — configure a GitHub Actions trusted publisher on the `@uipath/skills` package (npmjs → package → Settings → Trusted Publisher): repository `UiPath/skills`, workflow `publish.yml`. No `NPM_TOKEN` secret is used — the `publish-release` job authenticates via OIDC (`id-token: write`). Do **not** set `NODE_AUTH_TOKEN`; a token makes npm bypass OIDC and (with 2FA) fail `EOTP`.
 - [x] Package name/scope confirmed: **`@uipath/skills`** (published).
-- [x] Seed version confirmed: **`1.197.0`** (current CLI minor line). Automating the ongoing CLI↔skills lockstep is tracked in PILOT-5518.
+- [x] Seed version confirmed: **`1.197.0`** (current CLI minor line). The ongoing CLI↔skills lockstep is automated by `sprint-release-cut.yml` (Sunday 06:00 UTC, 6 h before the CLI's own cut, on the same 14-day cadence anchored at `2026-06-14`).
 
 > The alpha track also needs no secret — `publish-alpha` uses the built-in `GITHUB_TOKEN` with `packages: write`.
