@@ -54,9 +54,9 @@ Maps project signals to the judgment catalog files that must be loaded. Extend t
 | Signals present | Project type | Catalog files |
 |---|---|---|
 | `agent.json` AND no `main.py` AND no `pyproject.toml` | Agent (low-code) | `agents/agents-common-rules.md` + `agents/agents-lowcode-rules.md` (+ `agents/guardrails/guardrails-review.md` when `guardrails[]` is present or a guardrail use case matches — see Step 2.5b item 3) |
-| `pyproject.toml` + `main.py` + any framework config (`langgraph.json` / `llama_index.json` / `openai_agents.json` / `google_adk.json` / `pydantic_ai.json` / `agent_framework.json`) | Agent (coded) | `agents/agents-common-rules.md` + `agents/agents-coded-rules.md` |
+| `pyproject.toml` + `main.py` + any framework config (`langgraph.json` / `llama_index.json` / `openai_agents.json` / `google_adk.json` / `pydantic_ai.json` / `agent_framework.json`) | Agent (coded) | `agents/agents-common-rules.md` + `agents/agents-coded-rules.md` (+ `agents/guardrails/coded-guardrails-review.md` when the entry source wires SDK guardrails or a guardrail use case matches — see Step 2.5b item 3) |
 | `pyproject.toml` + `main.py` + `uipath.json[functions]` only (no framework config) | Agent (coded — Simple Function) | same as Agent (coded) |
-| `agent.json` + `pyproject.toml` + `main.py` (agent-builder coded layout) | Agent (low-code + coded) | all three: common + lowcode + coded; tag each finding with its source file; also `agents/guardrails/guardrails-review.md` for the `agent.json` guardrails |
+| `agent.json` + `pyproject.toml` + `main.py` (agent-builder coded layout) | Agent (low-code + coded) | all three: common + lowcode + coded; tag each finding with its source file; also `agents/guardrails/guardrails-review.md` for the `agent.json` guardrails and `agents/guardrails/coded-guardrails-review.md` for SDK guardrails wired in the entry `.py` |
 | `project.json` + `.xaml` / `.cs` | RPA | *(phase 2 — catalog not yet authored)* |
 | `*.flow` + `project.uiproj` with `ProjectType: "Flow"` | Flow | *(phase 2)* |
 | `.uipath/` or `app.config.json` | Coded App | *(phase 2)* |
