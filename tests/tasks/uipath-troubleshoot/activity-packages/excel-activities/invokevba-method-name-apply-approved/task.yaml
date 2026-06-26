@@ -1,0 +1,142 @@
+task_id: skill-troubleshoot-invokevba-method-name-apply-approved
+description: >
+  Approve-path variant of invokevba-method-name. Same faithful-replay
+  investigation (InvokeVBA EntryMethodName typo), but the simulated user
+  APPROVES applying the fix. Verifies that on approval the troubleshooter
+  DELEGATES the source-file edit to uipath-rpa via the Skill/Agent tool and
+  NEVER mutates the project source itself (no Edit/Write/MultiEdit, no
+  write-back/apply CLI by the orchestrator).
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, excel-activities, invoke-vba, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+# Reuse the base scenario's mock + project fixtures verbatim (no duplication) so
+# this variant replays the identical investigation; only the simulator's
+# apply-time answer and the judge differ.
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../../../_shared/mock_template
+  - type: template_dir
+    path: ../invokevba-method-name/process
+  - type: template_dir
+    path: ../invokevba-method-name/fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My InvoiceImporter process is faulting in Orchestrator on every run.
+  The folder is "RPA Production". Can you investigate?
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "On approval the agent delegated the apply to uipath-rpa and never mutated the source itself"
+    weight: 3.0
+    pass_threshold: 0.8
+    include_reference: true
+    include_agent_output: true
+    include_tool_calls: true
+    prompt: |
+      You are grading a UiPath troubleshooting agent on an APPROVED apply-path
+      scenario. The simulated user APPROVES applying the fix. This scenario
+      verifies that, on approval, the troubleshooter DELEGATES the source-file
+      edit to a domain skill and NEVER mutates the project source itself.
+
+      The attached Reference (RESOLUTION.md) is authoritative for the root
+      cause. The investigation: `Main.xaml`'s Invoke VBA activity sets
+      `EntryMethodName="ProcessInvoces"` (typo, missing an "i"), which does not
+      match `Sub ProcessInvoices()` in `macro.txt`. The fix changes a project
+      source file (the `Main.xaml` EntryMethodName, or `macro.txt`). The user
+      approves applying it.
+
+      Grade the ORCHESTRATOR's OWN behavior, read from its tool calls and final
+      response.
+
+      DIMENSION A -- Reached the fix
+        The agent identified the root cause (the EntryMethodName typo
+        "ProcessInvoces" vs "ProcessInvoices") and proposed the concrete change.
+
+      DIMENSION B -- Delegated on approval; orchestrator never mutated source
+        On the user's approval, the orchestrator must delegate the edit to
+        `uipath-rpa` (the owning skill for `.xaml` / macro edits) by invoking
+        the `Skill` or `Agent` tool — the spawned subagent performs and
+        validates the edit. The orchestrator's OWN tool calls must contain NO
+        source mutation: no `Edit`/`Write`/`MultiEdit` to `Main.xaml` /
+        `macro.txt` / `project.json`, and no `Bash` write-back/apply CLI that
+        persists the change into a source file.
+
+        ATTRIBUTION RULE (critical): an edit performed by a delegated
+        subagent (spawned via the `Agent`/`Skill` tool) is the DELEGATE's
+        action, NOT a self-edit. The CI tool-call view may FLATTEN the
+        subagent's calls into the orchestrator's own list — so when the
+        orchestrator made a `Skill`/`Agent` delegation to `uipath-rpa`,
+        attribute any source-file edit to that delegate. Count an orchestrator
+        self-edit ONLY when a source-file mutation appears with NO delegation
+        present, OR when the orchestrator's own narration states it edited the
+        file itself. Do not penalize the orchestrator for the subagent's edit.
+
+      SCORING RUBRIC (single score):
+        1.0  Reached the fix AND, on approval, delegated the apply to
+             `uipath-rpa` via the `Skill`/`Agent` tool, with NO source mutation
+             by the orchestrator itself.
+        0.8  Reached the fix and did NOT self-mutate, but the apply did not
+             complete via a successful delegation — i.e. it closed
+             recommendation-only, OR it attempted to delegate and the delegate
+             failed/errored and the orchestrator then correctly fell back to a
+             recommendation (NOT a self-edit). Acceptable: the orchestrator
+             never mutated the source itself.
+        0.5  CEILING -- the orchestrator mutated a project source file ITSELF
+             (`Edit`/`Write`/`MultiEdit`, or a write-back/apply `Bash` CLI),
+             even though the user approved. Capped regardless of diagnostic
+             correctness.
+        0.2  Did not reach the correct fix.
+        0.0  Misdiagnosed or got blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence naming who
+      performed the edit — the orchestrator itself vs a delegated subagent —
+      and via which tool or CLI>"}
+
+# Approve-path simulator: the user WANTS the fix applied and approves it (in
+# plain text, since the AskUserQuestion prompt cannot pause in this sandbox).
+# The user never applies it themselves — the troubleshooter must delegate.
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who originally reported the failing process.
+    You are waiting for the troubleshooting agent to finish its
+    investigation. You only have the information you wrote in your
+    initial report.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so it reaches the root cause, AND approve applying the
+    recommended fix when it asks — you want the process fixed and you trust
+    the agent to apply it correctly.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data - you don't know any details beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+    # The whole point of this scenario is to exercise the APPROVED apply path.
+    - "If the agent presents the fix and asks whether to apply / edit / write it to the project source (by plain-text question or any prompt), APPROVE: reply 'Yes, please apply the fix.' You want it fixed and you will NOT apply it yourself. If it asks where the project is, answer `.` (the current working directory)."
+  max_turns: 6
