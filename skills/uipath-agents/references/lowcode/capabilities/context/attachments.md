@@ -25,6 +25,7 @@ For other context variants, see [context.md](context.md).
   "description": "",
   "contextType": "attachments",
   "indexName": "<ContextName>",          // same as name for attachments
+  "folderPath": "solution_folder",       // REQUIRED — refresh/validate fail without it
   "attachments": {
     "description": "Array of files, documents, images to process."
   },
@@ -41,11 +42,12 @@ For other context variants, see [context.md](context.md).
 
 ## Solution-Level Files
 
-None. No solution-level file is produced — attachments are runtime-only.
+None. No solution-level file is produced — attachments are runtime-only. The agent-level `resource.json` still carries `folderPath: "solution_folder"` (Critical Rule 11) — this is a field on the resource, not a generated solution file.
 
 ## Gotchas
 
-`contextType` value MUST be `"attachments"` (all lowercase) — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
+- `contextType` value MUST be `"attachments"` (all lowercase) — see [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Anti-pattern 12.
+- `folderPath` is REQUIRED on the resource even though attachments produce no solution-level file. Omitting it fails `uip agent refresh`/`validate` with `resources/<Name>/resource.json: Invalid input`.
 
 ## References
 
