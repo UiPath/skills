@@ -72,6 +72,8 @@ Steps 1–2 are automated per sprint by `sprint-release-cut.yml`. It runs **Sund
 
 Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`) to skip the gate and the auto-increment, or `dry_run` to print the plan without pushing.
 
+> **Drift realignment.** The skills and CLI lines stay paired only because both cut on the same 14-day anchor; nothing reads the other side. If either repo skips a cut or cuts off-cadence, the minors drift permanently. The cut emits a **non-blocking warning** when its target isn't exactly one minor ahead of the CLI's latest npm release (`npm view @uipath/cli`) — the signal that the lines have drifted. **`minor_override` is the realignment lever:** dispatch the cut with `minor_override=<correct M.N>` to skip the gate and the auto-increment and cut exactly that line back into alignment.
+
 > **Operational dependency — merge the bump PR before the next cut.** The target line is `current + 1` read from `main`'s `package.json`. If the bump PR from step 3 is not merged before the next release Sunday, `main` is still on the old line, so the cut re-targets the line it already created: it finds `release/v<minor>` already at `M.N.0` and **resumes idempotently** (skips the publish since npm already has the version, leaves the existing PR open) — no new line is cut. Safe, but a forgotten bump PR silently **stalls the cadence**. Merge sprint-cut bump PRs promptly. (If the branch exists at a *different* version, the cut stops loudly with `already exists at version <X> (expected <Y>)` for manual resolution.)
 
 > **Repo setup:** branch protection must allow the Actions identity to push `release/v*` branches.

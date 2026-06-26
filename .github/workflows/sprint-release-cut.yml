@@ -108,6 +108,27 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "proceed=true" >> "$GITHUB_OUTPUT"
+
+            # Warn-only drift check (NO gate — skills lead, never follow). Skills
+            # cuts 6 h before the CLI on the same anchor, so at this moment the
+            # CLI's latest published minor should be exactly one behind our
+            # target. A gap in either direction means a skipped/extra cut has
+            # drifted the lines apart — surface it (it's otherwise silent, and
+            # `targetCli` would keep claiming a pairing that no longer holds).
+            # Reads public npm only — no token, no cross-repo coupling.
+            CLI_LATEST=$(npm view @uipath/cli version 2>/dev/null || echo "")
+            if [ -n "$CLI_LATEST" ]; then
+              CLI_MINOR=$(echo "$CLI_LATEST" | cut -d. -f1-2)
+              EXPECTED=$(echo "$CLI_MINOR" | awk -F. '{print $1"."$2+1}')
+              if [ "$TARGET_LINE" != "$EXPECTED" ]; then
+                echo "::warning::Skills target $TARGET_LINE is not CLI_latest+1 (CLI latest published is $CLI_LATEST, minor $CLI_MINOR) — the skills/CLI lines may have drifted. Realign with a minor_override dispatch (see docs/RELEASE.md)."
+                {
+                  echo "## ⚠️ Possible skills/CLI line drift"
+                  echo ""
+                  echo "Target is \`$TARGET_LINE\`; the CLI's latest npm release is \`$CLI_LATEST\` (minor \`$CLI_MINOR\`), so the expected target is \`$EXPECTED\`. If unexpected, realign with a \`minor_override\` dispatch — see docs/RELEASE.md. (Proceeding with the cut regardless — this is a warning, not a gate.)"
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+            fi
           fi
 
       - name: Dry run — print plan
