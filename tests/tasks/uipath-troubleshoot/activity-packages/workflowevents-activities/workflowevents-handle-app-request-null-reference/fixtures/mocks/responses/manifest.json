@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "_doc": "Hand-built faithful-replay fixtures for a UiPath.WorkflowEvents.Activities HandleAppRequest NullReferenceException. Signatures and stack frames are source-grounded (UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute). Substring dispatch, first match wins — specific rules precede generic ones.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "file": "or-jobs-get-b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49-output-json.json"
+    },
+    {
+      "match": "or jobs logs b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49 --level Error",
+      "file": "or-jobs-logs-b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49-level-error.json",
+      "_doc": "Error-level log row repeats the exception already visible in jobs get."
+    },
+    {
+      "match": "or jobs logs b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "file": "or-jobs-logs-b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49-level-error.json",
+      "_doc": "The Error-level set answers any logs variant — the exception row is the only diagnostic content."
+    },
+    {
+      "match": "or jobs history b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "file": "or-jobs-history-b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49-output-json.json",
+      "_doc": "Pending -> Running -> Faulted transition set; confirms a clean single execution, no diagnostic signal beyond jobs get."
+    },
+    {
+      "match": "or jobs traces b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "file": "or-jobs-traces-b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49-output-json.json",
+      "_doc": "Three spans: RobotJob (NullReferenceException stack with the HandleAppRequest.EndExecute faulting frame), the Handle Apps Request activity span (FullTypeName UiPath.WorkflowEvents.Activities.HandleAppRequest, WorkflowFile=ProcessRequest.xaml, ConnectionMode=RobotJS — proves this is an App-invoked workflow), and the faulting Assign span (Value io_Records.Rows.Count, the null dereference inside the invoked workflow). The WorkflowFile + Assign expression are the cause-disambiguation evidence (in-workflow null vs WorkflowEvents-package bug vs SignalR channel)."
+    },
+    {
+      "match": "traces spans get --job-key b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "file": "or-jobs-traces-b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49-output-json.json",
+      "_doc": "Alternate trace-retrieval form (platform traces command); same span payload."
+    },
+    {
+      "match": "traces spans get b41d9f072e6a4c8b9d3f5a1e7c0b2d49",
+      "file": "or-jobs-traces-b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49-output-json.json",
+      "_doc": "Positional TraceId (32-char hex from the job record). Same span payload."
+    },
+    {
+      "match": "or jobs list --folder-key 2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82",
+      "file": "or-jobs-list-folder-key-2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82.json",
+      "_doc": "Substring dispatch routes --state Faulted variants here too; the failing job is the most recent row."
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82.json",
+      "_doc": "Fallback for flag-order variations. The folder of interest is Shared; the recorded folder-scoped job list is the correct answer for any jobs-list variant."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by rules returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the System.NullReferenceException surfaced through UiPath.WorkflowEvents.Activities.HandleAppRequest.EndExecute."
+    },
+    {
+      "pattern": "traces",
+      "min": 1,
+      "description": "Cause disambiguation: the Handle Apps Request span carries WorkflowFile=ProcessRequest.xaml and the faulting Assign span carries Value=io_Records.Rows.Count, together pinning the null dereference to the App-invoked workflow rather than the WorkflowEvents package or the SignalR channel."
+    },
+    {
+      "pattern": "or jobs logs b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
+      "min": 0,
+      "description": "OPTIONAL — state transitions confirm a clean single execution."
+    }
+  ]
+}
