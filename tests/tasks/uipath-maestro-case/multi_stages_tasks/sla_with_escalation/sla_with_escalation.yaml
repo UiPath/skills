@@ -7,8 +7,8 @@ description: >
   priority + conditional 5 days (unit=d) for Standard priority,
   inserted in priority order. Resolve (regular stage) carries its own
   default SLA of 1 month (unit=m) — the regular-stage SLA path that
-  no other multi_stages_tasks test covers (exception_stage uses h on an
-  ExceptionStage). The root default rule carries an at-risk 80%
+  no other multi_stages_tasks test covers (exception_stage uses h on a
+  secondary stage). The root default rule carries an at-risk 80%
   MULTI-RECIPIENT escalation (User manager@corp.com + UserGroup
   "Operations Leadership" both notified at 80% risk); the Urgent
   conditional rule carries an sla-breached escalation to a single

@@ -52,7 +52,7 @@ Node-level layout fields move to a top-level `layout` block. The frontend transf
 
 | Entity | Prefix | Suffix length | Example |
 |---|---|---|---|
-| Stage (regular + exception) | `Stage_` | 6 | `Stage_aB3kL9` |
+| Stage (primary + secondary) | `Stage_` | 6 | `Stage_aB3kL9` |
 | Trigger (added after initial) | `trigger_` | 6 | `trigger_xY2mNp` |
 | Task | `t` | 8 | `t8GQTYo8O` |
 | Task entry condition | `c` | 8 | `c4fGhJ2Mn` |
@@ -129,7 +129,7 @@ Rule structure uses DNF — see §4.
 
 ---
 
-## 2. nodes (four types, discriminated on `type`)
+## 2. nodes (three types, discriminated on `type`)
 
 ### a) Trigger Node — `"case-management:Trigger"`
 
@@ -154,7 +154,7 @@ No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Tri
 
 ### b) Stage Node — `"case-management:Stage"`
 
-Standard workflow stage. Contains tasks.
+Workflow stage. Contains tasks. Covers BOTH primary and secondary stages — discriminated by `data.stageType` (see §2c for the secondary variant). A primary stage omits `stageType`; a secondary stage sets `data.stageType: "secondary"`.
 
 ```json
 {
@@ -181,6 +181,7 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `stageType` | `"primary" \| "secondary"` ? | Stage kind discriminator. Omitted on a primary stage (do NOT emit `"primary"`); set to `"secondary"` for a secondary stage, where it is the FIRST field in `data` (before `label`). See §2c. |
 | `label` | string? | Display label |
 | `description` | string? | Stage description |
 | `isRequired` | boolean? | Whether the stage must complete before case exit (used by case-exit rule `required-stages-completed`) |
@@ -189,24 +190,41 @@ No `position`, `style`, `measured`, `width`, `height`, or `zIndex` at the node l
 | `isPendingParent` | boolean | Always `false` (UI drag-drop flag) |
 | `tasks` | Task[][] | 2D array: `tasks[lane][index]`. Default: one task per lane (`tasks[0][0]`, `tasks[1][0]`, …) so the FE lays them out in separate columns; lane is layout-only, sequencing comes from task-entry conditions. Exception: tasks in a `runs-sequentially` group that should execute in parallel share the same lane — there, shared lane carries execution semantics (parallel siblings inside the sequential group). Empty array `[]` when no tasks yet. |
 | `slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for this stage. Default SLA is the trailing `"=js:true"` entry. Escalations nest inside each rule. See §6. |
-| `entryConditions` | EntryCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
-| `exitConditions` | ExitCondition[]? | See §3. Not initialized on regular Stage creation — added later by the conditions plugins. |
+| `entryConditions` | EntryCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
+| `exitConditions` | ExitCondition[]? | See §3. Not initialized on primary Stage creation — added later by the conditions plugins. (A secondary stage initializes these at creation — see §2c.) |
 | `instanceIdPrefix` | string? | Prefix for instance IDs |
 
-> **Regular `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a regular stage. They are added later by the condition plugins when entry/exit conditions are written. See §3 for the condition shapes. Transitions are driven entirely by these conditions — edges are retired and `edges` stays `[]` (§4).
+> **A primary `Stage` is created without `entryConditions`/`exitConditions`.** Match this by not emitting empty arrays for those fields when writing a primary stage. They are added later by the condition plugins when entry/exit conditions are written. (A secondary stage — `data.stageType: "secondary"` — initializes both to `[]` at creation; see §2c.) See §3 for the condition shapes. Transitions are driven entirely by these conditions — edges are retired and `edges` stays `[]` (§4).
 
-### c) Exception Stage Node — `"case-management:ExceptionStage"`
+### c) Secondary (Exception) Stage — `case-management:Stage` with `data.stageType: "secondary"`
 
-Same top-level and render fields as regular Stage. Adds `entryConditions`, `exitConditions` initialized at creation time.
+Not a distinct node type. A secondary stage is a Stage node (§2b) with `data.stageType: "secondary"` as the FIRST field inside `data` (before `label`). Same top-level and render fields as a primary Stage. Adds `entryConditions`, `exitConditions` initialized at creation time. The literal node type `case-management:ExceptionStage` is removed at schema v22 and MUST NOT be emitted.
 
-**Additional `ExceptionStageNodeData` fields:**
+```json
+{
+  "id": "Stage_cD4mNt",
+  "type": "case-management:Stage",
+  "data": {
+    "stageType": "secondary",
+    "label": "Handle Rejection",
+    "parentElement": { "id": "root", "type": "case-management:root" },
+    "isInvalidDropTarget": false,
+    "isPendingParent": false,
+    "tasks": [],
+    "entryConditions": [],
+    "exitConditions": []
+  }
+}
+```
+
+**Secondary-stage init on `StageNodeData`:** a secondary stage initializes these at creation (a primary stage omits them — see §2b):
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `entryConditions` | EntryCondition[] | Initialized to `[]` on create; see §3 |
 | `exitConditions` | ExitCondition[] | Initialized to `[]` on create; see §3 |
 
-> **SLA on ExceptionStage** — the runtime accepts `slaRules[]` on `ExceptionStage` the same way it does on regular `Stage`. Author per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
+> **SLA on a secondary Stage (`data.stageType: "secondary"`)** — the runtime accepts `slaRules[]` on a secondary Stage the same way it does on a primary Stage. Author per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 ### d) Sticky Note Node — `"case-management:StickyNote"`
 
@@ -432,7 +450,7 @@ Escalation `action.recipients[].scope`: `"User"` or `"UserGroup"`. `target` is t
 
 Evaluated in array order; the first truthy expression wins. The trailing `"=js:true"` entry acts as the default.
 
-> **SLA capabilities** — escalation rules can attach to any rule (not only the default `"=js:true"`). `slaRules[]` is supported on `ExceptionStage`. A single `EscalationRule` may carry multiple `recipients[]`. See [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
+> **SLA capabilities** — escalation rules can attach to any rule (not only the default `"=js:true"`). `slaRules[]` is supported on a secondary Stage (`data.stageType: "secondary"`). A single `EscalationRule` may carry multiple `recipients[]`. See [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md).
 
 ---
 
