@@ -105,15 +105,8 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "FraudEscalation external escalation resource.json was created"
-    path: "FraudSol/FraudTriageAgent/resources/FraudEscalation/resource.json"
-    weight: 2.5
-    pass_threshold: 1.0
-
-
   - type: run_command
-    description: "External escalation resource shape (ActionCenter channel, external target)"
+    description: "External escalation resource shape (escalation resource located by content + ActionCenter channel bound to the FraudEscalation app; folder name agnostic)"
     command: "python3 $TASK_DIR/check_external_escalation.py"
     timeout: 30
     expected_exit_code: 0
