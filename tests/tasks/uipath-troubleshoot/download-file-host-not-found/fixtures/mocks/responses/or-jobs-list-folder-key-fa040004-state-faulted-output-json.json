@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "fb040004-e5f6-4071-9b04-000000000004",
+      "State": "Faulted",
+      "ProcessName": "FeedDownloader",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT",
+      "MachineKey": "",
+      "StartTime": "2026-06-16T14:26:51.140Z",
+      "EndTime": "2026-06-16T14:26:53.300Z",
+      "CreationTime": "2026-06-16T14:26:50.700Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}
