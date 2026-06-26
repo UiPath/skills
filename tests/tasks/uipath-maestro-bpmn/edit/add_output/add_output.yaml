@@ -1,0 +1,61 @@
+task_id: skill-bpmn-add-output
+description: >
+  Add a second output named category to the classifyOrder task in the existing
+  OrderTriage BPMN so the process surfaces an order category alongside risk,
+  preserving the existing risk output. Exercises extending a node's
+  BPMN.Variables output mapping in place without disturbing the rest of the
+  process or the diagram.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:edit", "shape:multi-node"]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 25
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../templates/initial_bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  The existing file `OrderTriage.bpmn` has a `classifyOrder` script task that
+  writes a single integer output `risk` via its BPMN.Variables mapping.
+
+  Add a second output named `category` (a string) to the `classifyOrder` task so
+  the process surfaces an order category alongside `risk`. Keep the existing
+  `risk` output unchanged. Do not add or remove any node, and leave the gateway
+  routing and every element id untouched.
+
+  Validate the file with an explicit Bash command before finishing — a
+  well-formed-XML parse, e.g.:
+  `python3 -c "import xml.etree.ElementTree as ET; ET.parse('OrderTriage.bpmn')"`.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Make the complete edit end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the edited BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*OrderTriage\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Edited BPMN source is present"
+    path: "OrderTriage.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "classifyOrder gained a category output, risk preserved, node set and diagram intact"
+    command: "python3 $TASK_DIR/check_add_output.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

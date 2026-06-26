@@ -1,0 +1,65 @@
+task_id: skill-bpmn-move-node
+description: >
+  Move the flagForReview task off the conditioned branch of the OrderTriage
+  gateway onto the default branch so it runs after autoApprove, and route the
+  conditioned branch straight to the end event. Exercises relocating an existing
+  node between branches — rewiring its edges and the freed branch without
+  changing the node set or the diagram's completeness.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:edit", "shape:multi-node", "node:decision"]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 25
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../templates/initial_bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  The existing file `OrderTriage.bpmn` runs: start -> classifyOrder (script) ->
+  routeByRisk (exclusive gateway). The gateway's conditioned (high-risk) branch
+  goes to `flagForReview` then end; its default branch goes to `autoApprove`
+  then end.
+
+  Move the existing `flagForReview` task onto the default branch so it runs after
+  `autoApprove` (classifyOrder -> gateway -[default]-> autoApprove ->
+  flagForReview -> end). The conditioned (high-risk) branch must now lead
+  directly to the end event. Reuse the same `flagForReview` node and id — do not
+  add or delete any node. Rewire the sequence flows and keep a BPMNShape for
+  every node and a BPMNEdge for every flow.
+
+  Validate the file with an explicit Bash command before finishing — a
+  well-formed-XML parse, e.g.:
+  `python3 -c "import xml.etree.ElementTree as ET; ET.parse('OrderTriage.bpmn')"`.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Make the complete edit end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the edited BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*OrderTriage\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Edited BPMN source is present"
+    path: "OrderTriage.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "flagForReview relocated to the default branch, conditioned branch routed to end, node set and diagram intact"
+    command: "python3 $TASK_DIR/check_move_node.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

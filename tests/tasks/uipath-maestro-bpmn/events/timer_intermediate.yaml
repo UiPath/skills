@@ -1,0 +1,75 @@
+task_id: skill-bpmn-timer-intermediate
+description: >
+  Author a Maestro BPMN with a timer intermediate catch event that pauses the
+  process for a fixed duration between the start and end events. Exercises
+  authoring a bpmn:intermediateCatchEvent carrying a bpmn:timerEventDefinition
+  with a timeDuration — the BPMN equivalent of a Delay node.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "node:delay"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `DelayProcess.bpmn` for a process that waits
+  a fixed duration partway through:
+    - a start event,
+    - a timer intermediate catch event that waits 15 minutes,
+    - then an end event (start -> timer -> end).
+
+  Requirements:
+  - The wait MUST be a `bpmn:intermediateCatchEvent` carrying a
+    `bpmn:timerEventDefinition` with a `bpmn:timeDuration` of `PT15M`. It must
+    have an incoming flow from the start and an outgoing flow to the end.
+  - Author the structural BPMN (definitions/process scaffold, sequence flows)
+    per the skill's structural reference. Do not hand-author any `uipath:*`
+    payload from prose.
+  - Include a `bpmndi:BPMNDiagram` with a BPMNShape for every node (including the
+    intermediate catch event) and a BPMNEdge for every sequence flow.
+  - Validate the file with an explicit Bash command before finishing — a
+    well-formed-XML parse, e.g.:
+    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('DelayProcess.bpmn')"`.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Author the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*DelayProcess\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "DelayProcess.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file carries a timer intermediate catch event"
+    path: "DelayProcess.bpmn"
+    includes:
+      - "intermediateCatchEvent"
+      - "timerEventDefinition"
+      - "timeDuration"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Timer intermediate catch event present, wired, and shaped; diagram integral"
+    command: "python3 $TASK_DIR/check_timer_intermediate.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

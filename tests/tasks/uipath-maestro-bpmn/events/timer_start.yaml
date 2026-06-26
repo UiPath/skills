@@ -1,0 +1,76 @@
+task_id: skill-bpmn-timer-start
+description: >
+  Author a Maestro BPMN whose process is started by a timer start event that
+  recurs every hour, then runs a task to an end event. Exercises authoring a
+  bpmn:startEvent carrying a bpmn:timerEventDefinition with a recurring timeCycle
+  — the BPMN equivalent of a scheduled trigger.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "node:scheduled-trigger", "feature:trigger"]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  Author a single Maestro BPMN file `ScheduledReport.bpmn` for a process that is
+  started on a schedule:
+    - a timer start event that recurs every hour,
+    - leading to one task (e.g. a script task that builds a report),
+    - then an end event.
+
+  Requirements:
+  - The start event MUST carry a `bpmn:timerEventDefinition` with a recurring
+    `bpmn:timeCycle` of `R/PT1H` (every hour). It must be the process's only
+    start event.
+  - Author the structural BPMN (definitions/process scaffold, sequence flows)
+    per the skill's structural reference. Do not hand-author any `uipath:*`
+    payload from prose; if you add a UiPath extension node, pull its template
+    from the registry first.
+  - Include a `bpmndi:BPMNDiagram` with a BPMNShape for every node and a
+    BPMNEdge for every sequence flow.
+  - Validate the file with an explicit Bash command before finishing — a
+    well-formed-XML parse, e.g.:
+    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('ScheduledReport.bpmn')"`.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Author the complete file end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the authored BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*ScheduledReport\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "BPMN source was authored"
+    path: "ScheduledReport.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "BPMN file carries a timer start event definition"
+    path: "ScheduledReport.bpmn"
+    includes:
+      - "timerEventDefinition"
+      - "timeCycle"
+      - "bpmndi:BPMNDiagram"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Single start event carries a timer definition; diagram fully shaped and integral"
+    command: "python3 $TASK_DIR/check_timer_start.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

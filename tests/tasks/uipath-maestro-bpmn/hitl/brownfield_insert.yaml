@@ -1,0 +1,67 @@
+task_id: skill-bpmn-hitl-brownfield-insert
+description: >
+  Insert a human-in-the-loop approval task into the existing OrderTriage BPMN
+  between classifyOrder and the routeByRisk gateway, so an approver gates the
+  routing. Exercises brownfield insertion of a HITL node into an existing process
+  — wiring it onto an existing edge while preserving everything else.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:edit", "shape:multi-node", "node:hitl"]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 80
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../../skills/uipath-maestro-bpmn
+    - type: template_dir
+      path: ../edit/templates/initial_bpmn
+
+initial_prompt: |
+  Load and follow the uipath-maestro-bpmn skill.
+
+  The existing file `OrderTriage.bpmn` runs: start -> classifyOrder (script) ->
+  routeByRisk (exclusive gateway) -> flagForReview / autoApprove -> end.
+
+  Insert a human-in-the-loop approval task named `Approve order` between
+  `classifyOrder` and the `routeByRisk` gateway, so the path becomes
+  classifyOrder -> Approve order -> routeByRisk. Rewire the sequence flows and
+  add a BPMNShape for the new node plus a BPMNEdge for every new flow. Preserve
+  every other node, id, and the gateway routing untouched.
+
+  Requirements:
+  - Model the approval as a `bpmn:userTask` using a documented `Actions.HITL`
+    `uipath:activity` shell. Pull the extension template from the registry; do
+    not hand-author the `uipath:*` payload from prose.
+  - Use synthetic placeholder resource names only — no tenant URLs, folder keys,
+    connection IDs, or real user names.
+  - Validate the file with an explicit Bash command before finishing — a
+    well-formed-XML parse, e.g.:
+    `python3 -c "import xml.etree.ElementTree as ET; ET.parse('OrderTriage.bpmn')"`.
+
+  Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
+  approval, confirmation, or feedback. Do NOT pause between planning and
+  implementation. Make the complete edit end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran an explicit well-formed-XML validation on the edited BPMN"
+    tool_name: "Bash"
+    command_pattern: 'python3?\s+-c\s+[\s\S]*ET\.parse\([\s\S]*OrderTriage\.bpmn'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Edited BPMN source is present"
+    path: "OrderTriage.bpmn"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "HITL approval inserted on the classify->gateway edge, rest preserved, diagram integral"
+    command: "python3 $TASK_DIR/check_brownfield_insert.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
