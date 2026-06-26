@@ -1,0 +1,84 @@
+task_id: skill-agent-context-datafabric
+description: >
+  Build a low-code agent with a DataFabric entity-set context resource
+  ($resourceType "context", contextType "datafabricentityset"). Verifies the
+  agent authors the DataFabric-specific shape — an `entitySet` array of entity
+  references, no indexName, no settings (entirely different from index/
+  attachments) — with the lowercase contextType, and validates it. Solution-
+  level generation is unsupported for DataFabric, so this grades the agent-
+  level resource.json. Closes the gap where only the "index" context variant
+  was tested.
+tags: [uipath-agents, smoke, mode:build, lifecycle:generate, low-code, context-grounding]
+
+run_limits:
+  expected_turns: 18
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath low-code autonomous agent "CustomerInsightsAgent" in a
+  solution named "DataFabricSol". It answers a `question` (string) about our
+  customers and returns an `answer` (string), grounding its answers on our
+  existing UiPath DataFabric "Customers" entity set (already set up in our
+  tenant) rather than general knowledge.
+
+  Wire the "Customers" DataFabric entity set in as the agent's context, then
+  refresh and validate.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: file_exists
+    description: "CustomerInsightsAgent/agent.json was created"
+    path: "DataFabricSol/CustomerInsightsAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "DataFabric entity-set context resource shape + lowercase contextType"
+    command: "python3 $TASK_DIR/check_context_datafabric.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
