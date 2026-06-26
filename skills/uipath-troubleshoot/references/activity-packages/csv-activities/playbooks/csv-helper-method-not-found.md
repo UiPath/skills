@@ -8,11 +8,12 @@ confidence: high
 
 What this looks like:
 - A CSV activity (`Append To CSV` / `Write CSV` / `Read CSV`) faults with `Method not found: 'Void CsvHelper.CsvWriter..ctor(...)'` (or another `CsvHelper.*` member / type-load error).
+- Or `Read CSV` faults with `Unable to load document` (or a generic load/assembly error) on a file that **worked flawlessly before** — the change was a Studio or package upgrade, not the file.
 - The failure is at the **first CSV activity that runs** (or at compile), before any row is meaningfully processed — not a data error.
 
 What can cause it:
-- A **`CsvHelper` version conflict.** `CsvHelper.dll` is bundled in **both** `UiPath.System.Activities` (which provides the CSV activities) and `UiPath.Excel.Activities`. When the two packages are at versions that ship **incompatible `CsvHelper` builds**, the CSV activity is compiled against one `CsvHelper` API but binds the other at runtime — so the constructor/method signature it calls does not exist, and .NET throws `Method not found`.
-- Typically surfaces after one package was upgraded (or added) without the other, leaving the project with two packages that disagree on `CsvHelper`.
+- A **`CsvHelper` version conflict.** `CsvHelper.dll` is bundled in **both** `UiPath.System.Activities` (which provides the CSV activities) and `UiPath.Excel.Activities`. When the two packages are at versions that ship **incompatible `CsvHelper` builds**, the CSV activity is compiled against one `CsvHelper` API but binds the other at runtime — so the constructor/method signature it calls does not exist, and .NET throws `Method not found` (or, on `Read CSV`, fails to load the document).
+- Typically surfaces after a **Studio upgrade** or after one package was upgraded (or added) without the other, leaving the project with two packages that disagree on `CsvHelper`. A previously-working file that now throws `Unable to load document` after such an upgrade is the same dependency conflict.
 
 What to look for:
 - The installed versions of **`UiPath.System.Activities`** and **`UiPath.Excel.Activities`** in `project.json` — are they from compatible release lines, or did one get upgraded independently?
@@ -27,6 +28,7 @@ What to look for:
 ## Resolution
 
 - **Align the two packages:** open **Manage Packages** in Studio and upgrade **both** `UiPath.System.Activities` and `UiPath.Excel.Activities` to their latest stable versions (from the same release line) so their bundled `CsvHelper` requirements match, then rebuild/republish.
+- **If a Studio/package upgrade broke a previously-working file** (`Unable to load document`): **downgrade or upgrade `UiPath.Excel.Activities`** to a version whose bundled `CsvHelper` matches `UiPath.System.Activities` again — realigning the shared dependency restores the load.
 - **If only one package needs the upgrade functionally:** still bring the other to a compatible version — leaving them on divergent lines re-introduces the conflict.
 - **Confirm:** after aligning, the CSV activity binds a single consistent `CsvHelper` and the `Method not found` disappears on re-run.
 
