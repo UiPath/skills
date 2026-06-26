@@ -17,6 +17,8 @@ run_limits:
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_llm_judges/_fixtures/intent-classifier ."
     timeout: 10
+  - command: "bash -c 'cd intent-classifier && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 300
 
 initial_prompt: |
   I want to test that this UiPath coded agent works as it should.
