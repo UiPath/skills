@@ -1,12 +1,25 @@
 name: Daily Version Bump
 
+# Bumps the plugin version (Claude Code plugin.json + marketplace.json + Codex
+# plugin.json) on the current release line. The marketplace tracks
+# `release/latest`, and plugin auto-update fires when the `version` field on
+# that ref changes — so the bump commits directly to the durable release branch
+# (`release/v<minor>`) and fast-forwards `release/latest` to it. `main` gets NO
+# daily bumps: its plugin version is pinned at `M.N.0` once per sprint by the
+# release cut. See docs/RELEASE.md ("Marketplace channel").
+
 on:
   schedule:
     - cron: '0 7 * * *' # every day at 07:00 UTC
   workflow_dispatch:
     inputs:
+      legacy_main_bump:
+        description: 'Transition-only: bump via PR to main instead of the release line (delete after one sprint)'
+        type: boolean
+        required: false
+        default: false
       assignees:
-        description: 'Comma-separated GitHub usernames to assign to the PR'
+        description: 'Comma-separated GitHub usernames to assign to the legacy PR'
         required: false
         default: ''
 
@@ -14,8 +27,119 @@ permissions:
   contents: write
   pull-requests: write
 
+# Shared with the sprint release cut so a daily bump never races the Sunday
+# branch advance.
+concurrency:
+  group: release-line-updates
+  cancel-in-progress: false
+
 jobs:
-  bump-version:
+  bump-release-line:
+    if: github.event_name == 'schedule' || github.event.inputs.legacy_main_bump != 'true'
+    runs-on: ubuntu-latest
+    env:
+      # Shared constant for the bump-commit subject. The skip-guard matches on
+      # it and the commit step writes it — both read this one value so they
+      # can't silently desync. (A hand-edited message that no longer matches
+      # the guard would resume forcing identical-content plugin re-downloads,
+      # with no failure to alert anyone.)
+      BUMP_COMMIT_PREFIX: "chore: bump plugin version to"
+      # The sprint cut (sprint-release-cut.yml) commits "chore(release): cut
+      # <line> line" and ALREADY sets the plugin version + moves release/latest,
+      # so the morning-after bump would be a version-only change over identical
+      # skills content — a redundant plugin re-download. Treat the cut commit as
+      # a "no new content" state too. Keep in sync with the cut commit subject.
+      CUT_COMMIT_PREFIX: "chore(release): cut"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+
+      - name: Resolve release/latest
+        id: resolve
+        run: |
+          if ! git ls-remote --exit-code --heads origin release/latest > /dev/null; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Skipped: release/latest does not exist yet"
+              echo ""
+              echo "Create the release line first (see docs/RELEASE.md, Marketplace channel)."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+          git fetch origin release/latest
+          git checkout --detach FETCH_HEAD
+
+      - name: Skip if nothing landed since the last bump
+        id: guard
+        if: steps.resolve.outputs.exists == 'true'
+        run: |
+          SUBJECT=$(git log -1 --format=%s)
+          if [[ "$SUBJECT" == "$BUMP_COMMIT_PREFIX"* || "$SUBJECT" == "$CUT_COMMIT_PREFIX"* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "## Skipped: no new content on the release line"
+              echo ""
+              echo "HEAD is a version-only commit (\`$SUBJECT\`) — a bump or the sprint cut, which already set the version and moved release/latest. Bumping again would force a plugin re-download for identical content."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump plugin version (shared major.minor, daily patch counter)
+        id: bump
+        if: steps.resolve.outputs.exists == 'true' && steps.guard.outputs.skip != 'true'
+        run: |
+          # Single source of the bump rule: `sync-version.mjs --bump-patch`
+          # advances the plugin/marketplace/Codex patch (resetting onto
+          # package.json's minor line if it has moved on). The rule lives only
+          # in the script — not duplicated in jq here. See docs/RELEASE.md.
+          PKG_LINE=$(node -p "require('./package.json').version.split('.').slice(0,2).join('.')")
+          OLD_VERSION=$(node -p "require('./.claude-plugin/plugin.json').version")
+          node scripts/sync-version.mjs --bump-patch
+          NEW_VERSION=$(node -p "require('./.claude-plugin/plugin.json').version")
+          echo "old_version=$OLD_VERSION" >> "$GITHUB_OUTPUT"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "release_branch=release/v$PKG_LINE" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push to the release line
+        if: steps.resolve.outputs.exists == 'true' && steps.guard.outputs.skip != 'true'
+        run: |
+          BRANCH="${{ steps.bump.outputs.release_branch }}"
+
+          # Invariant: release/latest HEAD belongs to the durable branch for
+          # the current minor. If that branch is missing, the release line is
+          # broken — fail loudly instead of inventing a branch.
+          if ! git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+            echo "::error::release/latest is at $(git rev-parse --short HEAD) but $BRANCH does not exist on origin."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json
+          git commit -m "$BUMP_COMMIT_PREFIX ${{ steps.bump.outputs.new_version }}"
+          # --atomic: both refs update or neither does. Without it a transient
+          # failure on the second refspec could leave release/v<minor> ahead of
+          # release/latest, breaking the "they're always equal" invariant the
+          # next run assumes.
+          git push --atomic origin "HEAD:$BRANCH" "HEAD:release/latest"
+
+          {
+            echo "## Plugin version bumped"
+            echo ""
+            echo "\`${{ steps.bump.outputs.old_version }}\` → \`${{ steps.bump.outputs.new_version }}\` on \`$BRANCH\` (+ \`release/latest\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Transition-only fallback: the pre-release-line flow (PR to main). Kept for
+  # one sprint after the marketplace cutover to release/latest; delete after.
+  legacy-main-bump:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.legacy_main_bump == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,10 +177,6 @@ jobs:
         id: bump
         if: steps.check.outputs.exists != 'true'
         run: |
-          # Single source of the bump rule: `sync-version.mjs --bump-patch`
-          # advances the plugin/marketplace/Codex patch (resetting onto
-          # package.json's minor line if it has moved on). The rule lives only
-          # in the script — not duplicated in jq here. See docs/RELEASE.md.
           OLD_VERSION=$(node -p "require('./.claude-plugin/plugin.json').version")
           node scripts/sync-version.mjs --bump-patch
           NEW_VERSION=$(node -p "require('./.claude-plugin/plugin.json').version")
@@ -70,7 +190,7 @@ jobs:
           commit-message: "chore: bump version to ${{ steps.bump.outputs.new_version }}"
           title: "chore: bump version from ${{ steps.bump.outputs.old_version }} to ${{ steps.bump.outputs.new_version }}"
           body: |
-            Automated daily version bump.
+            Automated daily version bump (legacy main flow).
 
             `${{ steps.bump.outputs.old_version }}` → `${{ steps.bump.outputs.new_version }}`
 
