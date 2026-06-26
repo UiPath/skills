@@ -449,7 +449,7 @@ All `uip` commands support:
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `401 Unauthorized` | User token expired or missing | Run `uip login` (or re-export `UIP_S2S_TOKEN` for S2S modes) and retry |
-| `command not found: uip` | UiPath CLI not installed | `npm install -g @uipath/uipcli` |
+| `command not found: uip` | UiPath CLI not installed | macOS/Linux: `curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash`; Windows PowerShell: `irm https://download.uipath.com/uipath-cli/install.ps1 | iex` |
 | `unknown productIdentifier` | Used the product label instead of the `name` | Re-fetch via [product list](#uip-gov-aops-policy-product-list) and pass the `name` field |
 | `unknown licenseTypeIdentifier` | Used the license type label instead of its `name` in a tenant assignment | Re-fetch via [license-type list](#uip-gov-aops-policy-license-type-list) and copy the `name` field |
 | `unknown policyIdentifier` (GUID) | Stale or wrong GUID | Re-run `list` and copy the `identifier` from the result |

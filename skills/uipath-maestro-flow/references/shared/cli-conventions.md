@@ -4,20 +4,37 @@ Shared conventions for the `uip` CLI across Author, Operate, and Diagnose. Read 
 
 ## 1. Resolve `uip` and detect the command prefix
 
-Resolve the npm-installed binary, which may be absent from PATH in nvm environments:
+Resolve the `uip` binary, which may be absent from PATH in nvm environments:
 
 ```bash
-UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
+UIP=$(command -v uip 2>/dev/null || true)
+if [ -z "$UIP" ] && command -v npm >/dev/null 2>&1; then
+  UIP="$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip"
+fi
+if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
+  curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+  UIP=$(command -v uip 2>/dev/null || true)
+fi
+if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
+  echo "Open a new shell so installer PATH changes take effect, then rerun this step." >&2
+  exit 2
+fi
 CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
 ```
 
-If `uip` is not found, run:
+If `uip` is not found, the snippet above runs the official onboarding installer. It installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
 
 ```bash
-npm install -g @uipath/cli@latest
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
 ```
 
-If global installation fails with a permission error, prompt the user to rerun it with appropriate privileges; do not retry automatically.
+On Windows PowerShell, run:
+
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
+```
+
+For CI or a minimal CLI setup, add `--skip-skills --skip-runtimes` on macOS/Linux or `-SkipSkills -SkipRuntimes` on Windows.
 
 Use `uip maestro flow` for CLI version **≥ 0.3.4** and `uip flow` for versions **< 0.3.4**: <!-- uip-check-skip -->
 

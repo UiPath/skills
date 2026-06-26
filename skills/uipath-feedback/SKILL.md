@@ -32,7 +32,7 @@ uip --version 2>&1
 | Result | Action |
 |---|---|
 | Version output | Proceed to Step 2 |
-| `uip: command not found` | Tell user to install UiPath CLI. Stop. |
+| `uip: command not found` | Tell user to run the official installer: `curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash` on macOS/Linux, or `irm https://download.uipath.com/uipath-cli/install.ps1 | iex` in Windows PowerShell. Stop. |
 | Other error | Show the error. Stop. |
 
 ### Step 2 -- Introspect and capture (silent -- no user interaction)
