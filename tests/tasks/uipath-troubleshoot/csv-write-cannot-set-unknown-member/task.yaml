@@ -1,0 +1,93 @@
+task_id: skill-troubleshoot-csv-write-cannot-set-unknown-member
+description: >
+  UiPath troubleshooting agent must diagnose a Write CSV failure caused by
+  activity-package version skew between the build machine and the runtime robot:
+  the project targets UiPath.System.Activities 25.10.5 and sets the Write CSV
+  Encoding property, but the robot runs an older version whose WriteCsvFile has
+  no Encoding member, so the workflow fails to initialize with "Cannot set
+  unknown member 'UiPath.Core.Activities.WriteCsvFile.Encoding'". Success = agent
+  matches the write-csv-cannot-set-unknown-member playbook and recommends the
+  same fix as RESOLUTION.md (align the robot's package versions with project.json,
+  or rebuild against the runtime's versions), without fabricating host actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, csv-activities, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My ReportExport process faults in Orchestrator on the unattended robot. The
+  folder is "Exports". It reads a CSV and writes another with Write CSV. It runs
+  fine in Studio on my machine, but on the robot it dies at startup with "Cannot
+  set unknown member" mentioning Write CSV.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator and the project
+  source in the current working directory. If the answer needs evidence from
+  the host itself, hand me the exact checks to run and stop - don't stall
+  waiting on host data.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing ReportExport process. It
+    runs in Studio on your machine but fails on the unattended robot. You are
+    away from the robot host and only have Orchestrator access.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, csv-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked whether the robot has the same activity-package versions as your project, say you are not sure what versions the robot has installed."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

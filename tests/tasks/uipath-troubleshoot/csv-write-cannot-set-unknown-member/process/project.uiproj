@@ -1,0 +1,6 @@
+{
+  "Name": "ReportExport",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Write CSV 'Cannot set unknown member' failure caused by activity-package version skew between the build machine and the runtime robot.",
+  "MainFile": "Main.xaml"
+}
