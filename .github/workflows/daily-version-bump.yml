@@ -44,6 +44,12 @@ jobs:
       # the guard would resume forcing identical-content plugin re-downloads,
       # with no failure to alert anyone.)
       BUMP_COMMIT_PREFIX: "chore: bump plugin version to"
+      # The sprint cut (sprint-release-cut.yml) commits "chore(release): cut
+      # <line> line" and ALREADY sets the plugin version + moves release/latest,
+      # so the morning-after bump would be a version-only change over identical
+      # skills content — a redundant plugin re-download. Treat the cut commit as
+      # a "no new content" state too. Keep in sync with the cut commit subject.
+      CUT_COMMIT_PREFIX: "chore(release): cut"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,12 +80,12 @@ jobs:
         if: steps.resolve.outputs.exists == 'true'
         run: |
           SUBJECT=$(git log -1 --format=%s)
-          if [[ "$SUBJECT" == "$BUMP_COMMIT_PREFIX"* ]]; then
+          if [[ "$SUBJECT" == "$BUMP_COMMIT_PREFIX"* || "$SUBJECT" == "$CUT_COMMIT_PREFIX"* ]]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             {
               echo "## Skipped: no new content on the release line"
               echo ""
-              echo "HEAD is already a bump commit (\`$SUBJECT\`). Bumping again would force a plugin re-download for identical content."
+              echo "HEAD is a version-only commit (\`$SUBJECT\`) — a bump or the sprint cut, which already set the version and moved release/latest. Bumping again would force a plugin re-download for identical content."
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
