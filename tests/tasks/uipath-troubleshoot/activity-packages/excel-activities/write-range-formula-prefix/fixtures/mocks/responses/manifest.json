@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the formula-prefix sub-cause of branch 5 in the excel-activities/write-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException 0x800A03EC Application-defined or object-defined error from Range.set_Value during the Write Range dispatch) → jobs logs (DataTable marshal Trace exposes the offending row: row 43 column 'FullName' contains the literal value '=Smith, John' — leading equals sign triggers Excel COM formula parsing) → workflow source. The leading-equals cell value is the smoking gun.",
+  "_doc": "Synthetic fixture set for the Write Range employee-directory scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},

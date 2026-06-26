@@ -1,7 +1,7 @@
 {
   "name": "SharedInboxArchiver",
   "projectId": "e6c20c64-960b-495d-930d-09f58b3ef834",
-  "description": "Reads a shared mailbox and deletes processed messages. Reproduces a Delete Outlook Mail Message failure caused by an access-denied COMException (0x80070005 E_ACCESSDENIED): the Robot account has Send-As but not Full Access (delete) rights on the shared mailbox ap-shared@contoso.com.",
+  "description": "Reads a shared mailbox and deletes processed messages.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Mail.Activities": "[1.18.3]",

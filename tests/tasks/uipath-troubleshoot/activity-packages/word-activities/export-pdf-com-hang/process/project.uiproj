@@ -1,6 +1,6 @@
 {
   "Name": "BatchPdfConvert",
   "ProjectType": "Process",
-  "Description": "Reproduces an Export to PDF COM interop failure (COMException) where an orphaned WINWORD.EXE from a prior run blocks the export.",
+  "Description": "Opens a Word contract document and exports it to a PDF file.",
   "MainFile": "Main.xaml"
 }

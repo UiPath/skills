@@ -1,7 +1,7 @@
 {
   "name": "ReportAppender",
   "projectId": "d2e3f4a5-b6c7-4193-a283-94a5b6c7d8e9",
-  "description": "Reproduces an Append Text 'Archive file cannot be size zero' failure caused by a 0-byte .docx that is not a valid OpenXML package.",
+  "description": "Opens a Word report document and appends the latest run notes to it.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

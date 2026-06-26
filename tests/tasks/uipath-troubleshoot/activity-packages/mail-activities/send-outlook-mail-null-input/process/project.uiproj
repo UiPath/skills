@@ -1,6 +1,6 @@
 {
   "Name": "OnboardingMailer",
   "ProjectType": "Process",
-  "Description": "Reproduces a Send Outlook Mail Message failure caused by a NullReferenceException: the To field is bound to a recipient variable that is never assigned (left Nothing), so the activity dereferences a null input.",
+  "Description": "Sends onboarding emails to a recipient address with Send Outlook Mail Message.",
   "MainFile": "Main.xaml"
 }

@@ -1,6 +1,6 @@
 {
   "Name": "ExcelMacroProcess",
   "ProjectType": "Process",
-  "Description": "Repro: Excel Execute Macro with same 'Cannot run the macro' COMException as the macro-not-found case, but the macro IS in the workbook; Trust Center on the Robot host blocks it. Exercises the Trust Center branch of the execute-macro-failures playbook.",
+  "Description": "Runs the Module1.ProcessData macro in the macro-enabled workbook at C:\\Robot\\Data\\sales-macro.xlsm via Execute Macro inside a Use Excel File scope.",
   "MainFile": "Main.xaml"
 }

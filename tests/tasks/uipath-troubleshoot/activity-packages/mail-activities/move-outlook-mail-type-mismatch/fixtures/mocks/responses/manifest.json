@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures hand-authored from the move-outlook-mail-failures playbook Branch 3 (modern-vs-classic type mismatch) signature.",
+  "_doc": "Synthetic fixture set for the Move Outlook Mail Message scenario; mock dispatcher only -- do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

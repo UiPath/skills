@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for export-pdf-wrongthread-session0. Save Document as PDF faults with InvalidCastException / RPC_E_WRONG_THREAD (0x8001010E) because the job runs unattended in Session 0 (non-interactive), where Word interop has no interactive STA to own the document. No external Word is involved; the run surface is the cause. The workflow is structurally correct.",
+  "_doc": "Synthetic fixture set for the export-pdf wrongthread-session0 scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

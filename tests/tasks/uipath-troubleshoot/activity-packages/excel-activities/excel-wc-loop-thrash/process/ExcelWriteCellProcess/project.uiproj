@@ -1,6 +1,6 @@
 {
   "Name": "ExcelWriteCellProcess",
   "ProjectType": "Process",
-  "Description": "Repro: Excel Write Cell inside For Each Row loop. Cell-by-cell write thrashes Excel COM after N iterations. Exercises branch 3 of the write-cell-failures playbook.",
+  "Description": "Reads the 'Sales' sheet from the sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx and writes a per-row status into column E for each row via Write Cell inside a For Each Row loop.",
   "MainFile": "Main.xaml"
 }

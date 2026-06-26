@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for read-text-doc-format. The standalone System Read Text (OpenXML, .docx-only) faults on a legacy binary .doc file.",
+  "_doc": "Synthetic fixture set for the read-text doc-format scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

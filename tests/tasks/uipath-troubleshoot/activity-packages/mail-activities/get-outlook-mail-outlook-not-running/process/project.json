@@ -1,7 +1,7 @@
 {
   "name": "QueueMailIntake",
   "projectId": "b2c3d4e5-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
-  "description": "Reproduces a Get Outlook Mail Messages failure on an unattended Robot where the desktop Outlook COM session is not available -- no running Outlook instance for the Robot's Windows user (and/or a UiPath-vs-Outlook privilege mismatch) -- surfacing as 'The Outlook application is not running.' The MailFolder='Inbox' and Filter are fine; the problem is the COM session, not folder resolution or registration.",
+  "description": "Reads Inbox messages with Get Outlook Mail Messages on an unattended Robot to feed an intake queue.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Mail.Activities": "[1.18.3]",

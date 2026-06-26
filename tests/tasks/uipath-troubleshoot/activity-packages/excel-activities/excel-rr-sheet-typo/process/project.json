@@ -1,7 +1,7 @@
 {
   "name": "ExcelDailyImport",
   "projectId": "e1c2d3e4-5f60-4178-92a3-aa111177c8d9",
-  "description": "Repro: Excel Read Range process with a one-character typo in the configured SheetName ('Datab' instead of 'Data'). Used to exercise the activity-packages/excel-activities/playbooks/read-range-sheet-not-found.md playbook (typo branch).",
+  "description": "Reads the daily sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx into a DataTable via Read Range inside a Use Excel File scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

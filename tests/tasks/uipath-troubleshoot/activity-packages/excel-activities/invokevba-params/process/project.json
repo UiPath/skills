@@ -1,7 +1,7 @@
 {
   "name": "LedgerPoster",
   "projectId": "b4c5d6e7-f8a9-4b01-c2d3-e4f5a6b70801",
-  "description": "Reproduces an Invoke VBA failure caused by EntryMethodParameters arity mismatch (1-element array passed to a Sub that requires 2 arguments).",
+  "description": "Runs the PostRow VBA macro against the Ledger workbook via Invoke VBA inside an Excel Process Scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[3.4.1]",

@@ -1,7 +1,7 @@
 {
   "name": "ExcelWriteCellProcess",
   "projectId": "b5c6d7e8-9203-44b1-95d6-33cc3333eefe",
-  "description": "Repro: Excel Write Cell nested inside For Each Row loop. Cell-by-cell writes thrash Excel COM state after N iterations. Exercises branch 3 of the write-cell-failures playbook.",
+  "description": "Reads the 'Sales' sheet from the sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx and writes a per-row status into column E for each row via Write Cell inside a For Each Row loop.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

@@ -1,7 +1,7 @@
 {
   "name": "WordReportImage",
   "projectId": "d4c2e1f0-5a60-4178-92a3-dd444499c8d9",
-  "description": "Repro: Word Add Picture process that binds an in-memory UiPath.Core.Image to ImagePath instead of a file path string. Exercises the image-variable branch of the add-picture-failures playbook (C4).",
+  "description": "Builds a monthly report by capturing a dashboard chart screenshot and inserting it into the report document via Word activities.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.21.0]",

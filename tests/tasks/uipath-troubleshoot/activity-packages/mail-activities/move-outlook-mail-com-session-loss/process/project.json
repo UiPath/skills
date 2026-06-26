@@ -1,7 +1,7 @@
 {
   "name": "MailboxTriageMover",
   "projectId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
-  "description": "Reproduces a Move Outlook Mail Message failure caused by COM session loss on an unattended robot: no live local Outlook instance is running for the robot's Windows profile, so the destination folder tree cannot be indexed and the move faults with The operation failed (RPC server unavailable 0x800706BA). The destination path Inbox\\Processed is valid.",
+  "description": "Triages mailbox messages by moving them into the Inbox\\Processed folder with Move Outlook Mail Message on an unattended robot.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Mail.Activities": "[1.18.3]",

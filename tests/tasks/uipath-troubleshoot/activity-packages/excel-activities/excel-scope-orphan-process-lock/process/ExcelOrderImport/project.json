@@ -1,7 +1,7 @@
 {
   "name": "ExcelOrderImport",
   "projectId": "a5c2d3e4-5f60-4178-92a3-aa5555ccd8d9",
-  "description": "Repro: Classic Excel Application Scope failing to open a workbook that is locked by an orphan EXCEL.EXE left running by a prior crashed job. Exercises branch 2 of the excel-application-scope-failures playbook (workbook held by another EXCEL.EXE).",
+  "description": "Reads the 'Orders' sheet from the inbound orders workbook at C:\\Robot\\Data\\orders-inbound.xlsx into a DataTable via Read Range inside an Excel Application Scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

@@ -1,6 +1,6 @@
 {
   "Name": "OfferLetterGen",
   "ProjectType": "Process",
-  "Description": "Reproduces a Word Application Scope file-path failure where a relative document path resolves against the robot working directory and is not found at runtime.",
+  "Description": "Generates an offer letter by opening the letter document and replacing the candidate placeholder with the recipient name via Word activities.",
   "MainFile": "Main.xaml"
 }

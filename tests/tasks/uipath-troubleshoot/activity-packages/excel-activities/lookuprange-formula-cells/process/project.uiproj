@@ -1,6 +1,6 @@
 {
   "Name": "DailyPriceSync",
   "ProjectType": "Process",
-  "Description": "Reproduces a Lookup Range silent miss caused by the target cell being the computed result of a cross-sheet VLOOKUP that the unattended robot's Excel Interop session reads with a stale/empty cached value.",
+  "Description": "Looks up a SKU's published price in the prices workbook with Lookup Range during the daily price sync.",
   "MainFile": "Main.xaml"
 }

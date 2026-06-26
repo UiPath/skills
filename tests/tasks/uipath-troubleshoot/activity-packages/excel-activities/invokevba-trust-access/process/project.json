@@ -1,7 +1,7 @@
 {
   "name": "InvoiceMacroRunner",
   "projectId": "8c4f1e9d-7b2a-4d63-91e8-5a2c0fb1d3e7",
-  "description": "Reproduces an Invoke VBA failure caused by the robot machine's Trust Center setting 'Trust access to the VBA project object model' being disabled.",
+  "description": "Runs the RefreshPivotTables VBA macro against the Q3Pivot workbook via Invoke VBA inside an Excel Process Scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[3.4.1]",

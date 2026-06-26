@@ -1,7 +1,7 @@
 {
   "name": "InboundDocReader",
   "projectId": "c9d0e1f2-a3b4-4193-bf50-14a5b6c7d8e9",
-  "description": "Reproduces a Read Text failure where Word opens an email-sourced document in Protected View (Mark-of-the-Web), blocking the read.",
+  "description": "Opens an inbound Word document and reads its full text for downstream processing.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures hand-authored from the load-script-failures playbook engine-init (L1) signature.",
+  "_doc": "Synthetic fixture set for the python-loadscript-engine-init scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

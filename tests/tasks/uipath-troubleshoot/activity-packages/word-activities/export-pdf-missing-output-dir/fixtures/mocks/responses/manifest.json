@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for export-pdf-missing-output-dir. Export to PDF faults with generic 'Command Failed' because the output folder doesn't exist.",
+  "_doc": "Synthetic fixture set for the Word export-pdf missing-output-dir scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",
