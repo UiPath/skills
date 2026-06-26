@@ -16,12 +16,12 @@ correct fix are different.
 
 ## What this scenario uncovers
 
-**Root Cause:** The `MisconfiguredForeground` workflow's `Main.xaml`
+**Root Cause:** The `ExpenseValidation` workflow's `Main.xaml`
 contains only `LogMessage` and `Delay` activities — **no UI
 automation activities at all**. Yet `project.json` declares
 `runtimeOptions.requiresUserInteraction: true`, so the Robot treats it
 as a foreground process. It collides with a legitimately foreground
-`ForegroundHolder` job that was running on the same Robot session and
+`AttendedReportJob` job that was running on the same Robot session and
 faults at start.
 
 This maps to:
@@ -36,8 +36,8 @@ fix:
 
 | Dimension | `rpa-foreground-already-running` | `rpa-foreground-misconfigured` (this) |
 |---|---|---|
-| Failing process | `ForegroundHolder` (legitimately foreground) | `MisconfiguredForeground` (workflow does no UI work) |
-| Blocking job | another `ForegroundHolder` (scheduled, overlap) | `ForegroundHolder` (active, holding the slot) |
+| Failing process | `AttendedReportJob` (legitimately foreground) | `ExpenseValidation` (workflow does no UI work) |
+| Blocking job | another `AttendedReportJob` (scheduled, overlap) | `AttendedReportJob` (active, holding the slot) |
 | Cause-branch | Two foreground triggers overlap | One workflow is misconfigured as foreground |
 | Primary fix | Stagger triggers / "Run only one job at a time" | **Set `requiresUserInteraction: false` in `project.json` / Studio "Starts in Background: Yes"** |
 | Required agent action | Read job records to find overlap | **Read `Main.xaml` to confirm no UI activities, then read `project.json` to find the misconfig** |
@@ -48,7 +48,7 @@ fix:
 | Layer | Source |
 |---|---|
 | `mocks/uip` + `mocks/uip.cmd` | shared from `../_shared/mock_template/` |
-| `process/` | snapshot of `skills/uipath-troubleshoot/fixtures/foreground-already-running/MisconfiguredForeground/` — the misconfigured project |
+| `process/` | snapshot of `skills/uipath-troubleshoot/fixtures/foreground-already-running/ExpenseValidation/` — the misconfigured project |
 | `fixtures/mocks/responses/*.json` | **synthetic** canned `uip` responses authored from the documented playbook |
 | `fixtures/mocks/responses/manifest.json` | dispatch table |
 
@@ -68,7 +68,7 @@ fix:
   `requiresUserInteraction: true` as the misconfiguration
 - Conclusion recommends the `project.json` flip / Studio "Starts in
   Background: Yes" as the **primary** fix, targeted at
-  `MisconfiguredForeground` (not at `ForegroundHolder`)
+  `ExpenseValidation` (not at `AttendedReportJob`)
 
 ## Regenerating from a real session
 

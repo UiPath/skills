@@ -1,6 +1,6 @@
 task_id: skill-troubleshoot-rpa-foreground-already-running
 description: >
-  UiPath diagnostic agent must diagnose a faulted ForegroundHolder job that
+  UiPath diagnostic agent must diagnose a faulted AttendedReportJob job that
   failed with System.InvalidOperationException: "A foreground process is
   already running. Only one foreground process can run at a time." Two
   foreground triggers fire on overlapping schedules against the same Robot
@@ -35,7 +35,7 @@ reference:
   file: RESOLUTION.md
 
 initial_prompt: |
-  My ForegroundHolder process just faulted in Orchestrator a few seconds
+  My AttendedReportJob process just faulted in Orchestrator a few seconds
   after it started — can you investigate? The project source is in the
   current working directory.
 
