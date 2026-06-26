@@ -133,6 +133,13 @@ def main() -> None:
     args_input = first_uipath_input(task, "args")
     if args_input is None:
         fail('script mapping must include uipath:input name="args"')
+    # The parser drops any uipath:input missing type/target, which silently
+    # discards the args and faults the script at runtime ("Arguments is
+    # required"). Enforce the attributes the doc marks as mandatory.
+    if args_input.attrib.get("type") != "json":
+        fail('uipath:input name="args" must have type="json"')
+    if args_input.attrib.get("target") != "bodyField":
+        fail('uipath:input name="args" must have target="bodyField"')
     args_body = text_content(args_input)
     for variable_name in ("amount", "daysOverdue"):
         expected = f"=vars.{variables[variable_name]}"

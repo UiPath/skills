@@ -79,15 +79,19 @@ before writing. Read a reference only when you reach the structure it covers.
    authoring runs out of time. Add only the structural pieces your process needs
    (extra gateways, events, boundary events, containers, multi-instance markers),
    then generate one `BPMNShape`/`BPMNEdge` per node and flow.
-4. **Validate.** There is **no** `uip maestro bpmn validate` CLI command. Run the
-   bundled validator — it reconstructs the canvas model and runs every
-   PO.Frontend rule:
+4. **Validate.** Run the bundled validator — it reconstructs the canvas model and
+   runs every PO.Frontend structural rule:
 
    ```bash
    cd skills/uipath-maestro-bpmn/validator && npm install --silent
    node validate-bpmn.mjs <file.bpmn>   # prints VALID (exit 0) or the errors (exit 1)
    ```
 
+   It is the authoritative structural check. `uip maestro bpmn validate <file>`
+   is **complementary, not a substitute**: it checks deploy-readiness
+   (supported extension tags; `entry-points.json` `filePath`/start-event linkage
+   and `uniqueId == <uipath:entryPointId value>`) but does **not** run the
+   structural rules or assert `uniqueId` is a GUID. Before deploying, run both.
    A well-formed-XML parse is the secondary fallback if Node is unavailable. See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
    Validate once; fix only ERROR-severity findings (warnings do not block import).
@@ -135,8 +139,12 @@ and honestly surfaced to the user as gaps when asked.
 
 1. **Registry owns every `uipath:*` payload.** Author from
    `registry get` templates; never hand-write `uipath:` XML from prose.
-2. **Never fabricate an identifier.** Connection IDs, process/queue/connector
-   keys, app IDs, folder ids/paths come from discovery or the user.
+2. **Never fabricate or copy an identifier.** Connection IDs, process/queue/connector
+   keys, app IDs, folder ids/paths come from discovery or the user. Every concrete
+   value in a skill example — GUIDs, connection/release keys, URLs, folder names,
+   variable ids — is an **illustrative placeholder**: replace each with a value you
+   discovered or generated (e.g. a fresh GUID for an entry-point `uniqueId`), never
+   the literal from the doc.
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.
