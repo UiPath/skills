@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures hand-authored from the write-csv-invalid-delimiter playbook signature.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"ea020002-d4e5-4f60-8a02-000000000002\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-ea020002-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key ea020002-d4e5-4f60-8a02-000000000002 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-ea020002-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"eb020002-e5f6-4071-9b02-000000000002\" --output json",
+      "file": "or-jobs-get-eb020002-output-json.json"
+    },
+    {
+      "match": "or jobs get eb020002-e5f6-4071-9b02-000000000002 --output json",
+      "file": "or-jobs-get-eb020002-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"eb020002-e5f6-4071-9b02-000000000002\" --level Error --output json",
+      "file": "or-jobs-logs-eb020002-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs eb020002-e5f6-4071-9b02-000000000002 --level Error --output json",
+      "file": "or-jobs-logs-eb020002-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"eb020002-e5f6-4071-9b02-000000000002\" --output json",
+      "file": "or-jobs-logs-eb020002-output-json.json"
+    },
+    {
+      "match": "or jobs logs eb020002-e5f6-4071-9b02-000000000002 --output json",
+      "file": "or-jobs-logs-eb020002-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

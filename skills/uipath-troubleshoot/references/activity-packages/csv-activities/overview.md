@@ -24,6 +24,10 @@ Failures originate at distinct layers — **package/dependency load** (the bundl
 - **`Read CSV`: `Line X contains more values than the header line`** — a **parse mismatch**: the `Delimiter` property doesn't match the file, or a field contains the delimiter unquoted. See `read-csv-more-values-than-header.md`.
 - **`Read CSV`: `The CSV file format for <Path> is invalid`** — **leading blank lines** at the top of the file, or a `Has headers` setting that disagrees with the file's first row. See `read-csv-invalid-format.md`.
 - **`Read CSV`: `Could not find file` / `Could not find a part of the path`** — the path is broken or **evaluated too early** (async download not yet written), a path variable quoted as a literal, or a relative path resolving wrong. See `read-csv-file-not-found.md`.
+- **`Write CSV`: `Cannot set unknown member`** — **package version skew** between the build machine and the robot/runtime; a property in the XAML doesn't exist in the runtime activity's version. See `write-csv-cannot-set-unknown-member.md`.
+- **`Write CSV`: `Failed to create a 'Delimitator' from the text '...'`** — the `Delimiter` is a **string/localized name** (`"Tab"`) instead of the enum value or character literal. See `write-csv-invalid-delimiter.md`.
+- **`Write CSV`: `Access to the path is denied`** — **permissions / read-only / open-in-Excel** on the output (`UnauthorizedAccessException`). See `write-csv-access-denied.md`.
+- **`Write CSV`: `Unsupported encoding name`** — the `Encoding` property is an invalid .NET encoding name. See `write-csv-unsupported-encoding.md`.
 
 ## Package
 

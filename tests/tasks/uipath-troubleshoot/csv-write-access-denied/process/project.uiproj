@@ -1,0 +1,6 @@
+{
+  "Name": "CsvPublish",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Write CSV 'Access to the path is denied' failure (permissions / read-only / open in Excel).",
+  "MainFile": "Main.xaml"
+}
