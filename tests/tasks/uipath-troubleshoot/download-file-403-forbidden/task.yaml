@@ -1,0 +1,92 @@
+task_id: skill-troubleshoot-download-file-403-forbidden
+description: >
+  UiPath troubleshooting agent must diagnose a Download File from URL HTTP 403
+  (Forbidden) failure: the native download issues a plain HTTP request that
+  carries no authentication / cookies / browser session, so a portal-gated URL
+  returns 403. Success = agent matches the download-file-403-401-auth playbook and
+  recommends the same fix as RESOLUTION.md (the native download can't carry the
+  sign-in: authenticate / set UserAgentHeader, or download via an authenticated UI
+  browser session with Click + Wait for Download), without fabricating host
+  actions.
+tags: [uipath-troubleshoot, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, file-operations, rpa]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My PortalFetch process faults in Orchestrator on every run. The folder is
+  "Portal Sync". It uses Download File from URL to grab a report from our portal,
+  but it dies with "The remote server returned an error: (403) Forbidden". The
+  same link downloads fine in my browser where I'm logged in.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator and the project
+  source in the current working directory. If the answer needs evidence from
+  the host itself, hand me the exact checks to run and stop - don't stall
+  waiting on host data.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing PortalFetch process. The
+    report URL is behind your portal login; it works in your logged-in browser.
+    You are away from the robot host and only have Orchestrator access.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, file-operations, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the host check list at the end."
+    - "If asked whether the URL needs a login, say yes - it only works in the browser after you sign in to the portal."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
