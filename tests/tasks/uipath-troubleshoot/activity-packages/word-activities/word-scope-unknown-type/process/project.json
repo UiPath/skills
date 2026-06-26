@@ -1,7 +1,7 @@
 {
   "name": "InvoiceLetters",
   "projectId": "b2c3d4e5-f6a7-4182-93a4-b5c6d7e8f902",
-  "description": "Reproduces a Word Application Scope load failure on a robot whose UiPath.Word.Activities package version does not match the published dependency (Cannot create unknown type).",
+  "description": "Generates invoice letters by opening a letter document and replacing the recipient placeholder with the recipient name via Word activities.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

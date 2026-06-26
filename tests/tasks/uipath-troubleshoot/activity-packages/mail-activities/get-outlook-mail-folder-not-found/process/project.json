@@ -1,7 +1,7 @@
 {
   "name": "InvoiceMailReader",
   "projectId": "da1eb5dc-4e71-4ab3-9fed-97874798db2b",
-  "description": "Reproduces a Get Outlook Mail Messages failure where MailFolder=\"Inbox\\Invoices\" (backslash nested-path syntax) does not resolve under the default Outlook profile, surfacing as 'The specified folder does not exist.'",
+  "description": "Reads incoming invoice emails from the Inbox\\Invoices Outlook folder with Get Outlook Mail Messages for downstream processing.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Mail.Activities": "[1.18.3]",

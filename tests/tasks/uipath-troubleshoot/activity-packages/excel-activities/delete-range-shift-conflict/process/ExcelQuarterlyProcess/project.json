@@ -1,7 +1,7 @@
 {
   "name": "ExcelQuarterlyProcess",
   "projectId": "d2c2d3e4-5f60-4178-92a3-dd2222ccd8d9",
-  "description": "Repro: Excel Delete Range with ShiftCells=True ShiftOption=ShiftUp on range A3:C5 colliding with a merged region D5:D7. Exercises the shift-conflict branch of delete-range-failures playbook.",
+  "description": "Trims a stale data block from the quarterly report workbook via Delete Range inside an Excel Application Scope.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

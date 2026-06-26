@@ -1,6 +1,6 @@
 {
   "Name": "CustomerLookup",
   "ProjectType": "Process",
-  "Description": "Reproduces an Execute Query failure caused by building SQL via unsafe string concatenation; an apostrophe in the value breaks the SQL literal.",
+  "Description": "Looks up customers by running a SELECT over the Customers table filtered by last name via Execute Query into a DataTable.",
   "MainFile": "Main.xaml"
 }

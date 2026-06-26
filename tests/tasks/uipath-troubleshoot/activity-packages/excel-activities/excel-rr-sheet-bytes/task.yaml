@@ -48,20 +48,11 @@ initial_prompt: |
   the spaces — everything looks identical between what the workflow
   says and what the workbook has. What am I missing?
 
-  I'm not on the Robot host right now and have no shell access to
-  MOCK-HOST — only Orchestrator. PowerShell, byte-dump tools, and
-  any host-side analysis are unavailable to you too; do not attempt
-  to run them — any such call will be rejected. This is a
-  diagnose-from-evidence task.
-
-  If you can identify the root cause directly from the workflow
-  source and the job's Orchestrator evidence (especially the Get
-  Workbook Sheets output in the job logs), name it. Otherwise give
-  me the exact host-side commands as a plain text list and stop —
-  I will run them on the host and come back with the output. Do not
-  loop on tool failures; if a Bash/PowerShell call is rejected once,
-  treat that as a hard signal to switch to writing recommendations
-  for me.
+  I only have Orchestrator access right now — I'm not on the Robot
+  host and can't run anything on it. Work out what you can from
+  Orchestrator and the workflow (the Get Workbook Sheets output is
+  in the job logs); if you need a host-side check to be sure, give
+  me the commands to run and I'll come back with the output.
 
   The project source for the failing process is at ./ExcelDailyImport/ in the
   current working directory.

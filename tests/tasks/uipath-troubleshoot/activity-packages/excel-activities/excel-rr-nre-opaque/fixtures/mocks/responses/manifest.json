@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the opaque/needs-inspection path of the excel-activities/read-range-null-reference playbook. Job logs show workbook opened OK but parsing failed with TIE wrapping generic NRE. No label evidence (rules out branch 1); workflow source uses empty Range (rules out branch 3). The remaining branches (corruption / unsupported OpenXML / heavy formatting) cannot be distinguished by CLI alone; agent must hand the user a workbook-inspection checklist.",
+  "_doc": "Synthetic fixture set for the Excel Read Range daily-import scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},

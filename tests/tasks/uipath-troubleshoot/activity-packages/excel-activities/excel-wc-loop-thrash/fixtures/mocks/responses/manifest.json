@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the loop-thrash variant (branch 3) of the excel-activities/write-cell-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (BusinessException 'wrong format, or Excel is busy' — same wording as branch 2) → jobs logs (~247 successful Write Cell iterations preceding the failure — the smoking gun for branch 3) → workflow source (Write Cell nested inside For Each Row). The combination of partial-success pattern in logs + For Each Row pattern in source distinguishes branch 3 from branch 2 which shares the same error wording.",
+  "_doc": "Synthetic fixture set for the Excel Write Cell per-row status scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},

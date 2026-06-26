@@ -1,7 +1,7 @@
 {
   "name": "ReportPdfGen",
   "projectId": "c5d6e7f8-a9b0-4193-bc2d-3e4f50617283",
-  "description": "Reproduces an Export to PDF failure where the output path is built by concatenation without a .pdf extension, producing an invalid output file path.",
+  "description": "Opens a Word report document and exports it to a PDF file in the reports output folder.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Word.Activities": "[1.17.2]",

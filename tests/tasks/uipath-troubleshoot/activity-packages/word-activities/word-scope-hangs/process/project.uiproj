@@ -1,6 +1,6 @@
 {
   "Name": "NDAFiller",
   "ProjectType": "Process",
-  "Description": "Reproduces a Word Application Scope hang where Word blocks on a background password prompt for a protected document, so the job never completes and is eventually stopped.",
+  "Description": "Fills an NDA document by opening it and replacing the counterparty placeholder with the counterparty name via Word activities.",
   "MainFile": "Main.xaml"
 }

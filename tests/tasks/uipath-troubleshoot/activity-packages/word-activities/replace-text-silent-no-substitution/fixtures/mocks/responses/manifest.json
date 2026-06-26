@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures hand-authored from the replace-text-silent-no-substitution playbook signature. The job SUCCEEDED but the placeholder was not replaced (run-split token), so there is no faulted job and no error log.",
+  "_doc": "Synthetic fixture set for the Replace Text silent-no-substitution scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

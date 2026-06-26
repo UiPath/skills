@@ -1,7 +1,7 @@
 {
   "name": "ExcelDailyImport",
   "projectId": "e1c2d3e4-5f60-4178-92a3-aa111111b2c3",
-  "description": "Repro: minimal Excel Read Range process. Reads a single range from C:\\Robot\\Data\\sales-2026-05.xlsx into a DataTable. Used to exercise the activity-packages/excel-activities/playbooks/read-range-file-locked.md playbook.",
+  "description": "Reads the daily sales workbook at C:\\Robot\\Data\\sales-2026-05.xlsx into a DataTable via Read Range for downstream import.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Excel.Activities": "[2.24.7]",

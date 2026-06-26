@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for read-text-missing-container. The modern Word-pack Read Text is placed outside a Use Word File and faults as invalid at runtime.",
+  "_doc": "Synthetic fixture set for the Word Read Text scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

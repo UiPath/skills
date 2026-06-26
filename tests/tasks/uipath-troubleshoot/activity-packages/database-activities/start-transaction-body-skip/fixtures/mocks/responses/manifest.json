@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures hand-authored from the start-transaction-failures playbook (Branch 2: transaction scope skips its body on the defective UiPath.Database.Activities v1.5.0 build — the Start Transaction scope enters and exits cleanly with NO error, but every child activity is skipped, so nothing is read or written and the job reports Success having done nothing). Replace with verbatim captures from a real .local/investigations/ before treating as a regression signal (see ../_shared/scripts/generate_scenario.py).",
+  "_doc": "Synthetic fixture set for the Start Transaction scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

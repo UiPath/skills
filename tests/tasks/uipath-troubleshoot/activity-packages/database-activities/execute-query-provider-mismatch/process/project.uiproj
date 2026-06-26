@@ -1,6 +1,6 @@
 {
   "Name": "InvoiceReconciliation",
   "ProjectType": "Process",
-  "Description": "Reproduces an Execute Query failure caused by a post-migration driver/provider mismatch; a Windows project still uses System.Data.SqlClient with a connection-string keyword the modern provider rejects.",
+  "Description": "Reconciles invoices by running a SELECT of InvoiceId, Amount and Status from the Invoices table via Execute Query into a DataTable.",
   "MainFile": "Main.xaml"
 }

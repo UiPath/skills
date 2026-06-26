@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for export-pdf-output-path-format. Export to PDF faults because the output path lacks a .pdf extension (built by concatenation).",
+  "_doc": "Synthetic fixture set for the export-pdf output-path-format scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

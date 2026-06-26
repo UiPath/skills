@@ -1,6 +1,6 @@
 {
   "Name": "ExcelCleanupProcess",
   "ProjectType": "Process",
-  "Description": "Repro: Excel Delete Range with Range = \"A1:B\" + lastRow.ToString() that resolves to \"A1:B0\" when the workbook is empty. Exercises the invalid-range-syntax branch of the delete-range-failures playbook.",
+  "Description": "Reads the used data in the sales-cleanup workbook and deletes the stale data block via Delete Range inside a Use Excel File scope.",
   "MainFile": "Main.xaml"
 }

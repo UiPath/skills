@@ -1,6 +1,6 @@
 {
   "Name": "PythonHelloWorld",
   "ProjectType": "Process",
-  "Description": "Repro: Python Scope Path set to python.exe instead of the install folder. Exercises the 'specified Python path is not valid' branch of the python-activities playbook.",
+  "Description": "Runs a simple Python hello-world script inside a Python Scope.",
   "MainFile": "Main.xaml"
 }

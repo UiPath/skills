@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for append-text-missing-container. App-Integration Append Text placed outside a Word Application Scope faults as invalid.",
+  "_doc": "Synthetic fixture set for the Word append-text missing-container scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

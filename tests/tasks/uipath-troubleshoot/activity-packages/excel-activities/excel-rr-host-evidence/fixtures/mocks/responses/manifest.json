@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the needs-host-evidence path of the excel-activities/read-range-file-locked playbook. Agent must chain: folders list-current-user → jobs list --state Faulted → jobs get → jobs logs → jobs list (broader, returns only this single failure — no siblings, no prior fails) → triggers list (single trigger). At this point CLI evidence is exhausted; the agent must surface a host-side investigation recommendation instead of guessing a branch.",
+  "_doc": "Synthetic fixture set for the Excel Read Range daily-import scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

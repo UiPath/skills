@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures for append-text-not-installed. Word Application Scope + Append Text faults at startup with REGDB_E_CLASSNOTREG because desktop Word is not installed on the server.",
+  "_doc": "Synthetic fixture set for the Word append-text not-installed scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {
       "match": "or folders list --output json",

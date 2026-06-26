@@ -1,6 +1,6 @@
 {
   "Name": "BulkMailPurger",
   "ProjectType": "Process",
-  "Description": "Reproduces a Delete Outlook Mail Message failure caused by deleting inside a For Each over the live MailMessage collection from Get Outlook Mail Messages, mutating the collection mid-enumeration and raising 'Collection was modified; enumeration operation may not execute.'",
+  "Description": "Reads the Inbox with Get Outlook Mail Messages and deletes each retrieved message in a For Each loop to clear processed mail in bulk.",
   "MainFile": "Main.xaml"
 }

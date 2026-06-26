@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixture set for the shift-conflict (branch 3) of the excel-activities/delete-range-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException 0x800A03EC Application-defined or object-defined error from Excel Range.Delete) → jobs logs (resolved DeleteRange config ShiftCells=True ShiftOption=ShiftUp on A3:C5 + pre-execution merged-region scan detecting D5:D7 on the bottom edge) → workflow source. The merged-region collision is the smoking gun: ShiftUp cannot move rows 6-7 into row 5 without breaking the merge anchor at D5.",
+  "_doc": "Synthetic fixture set for the Delete Range quarterly-report trim scenario; mock dispatcher only — do not treat as investigation evidence.",
   "rules": [
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
     {"match": "or folders list --output json", "file": "or-folders-list-current-user-output-json.json"},
