@@ -163,6 +163,15 @@ Namespaces: `UiPath.Web.Activities`
 - [activity-packages/web-activities/overview.md](./activity-packages/web-activities/overview.md) — Package overview, activity families, and common failure patterns
 - [activity-packages/web-activities/summary.md](./activity-packages/web-activities/summary.md) — All playbooks for Web Activities issues
 
+## CSV Activities
+
+The CSV file activities — `Read CSV`, `Write CSV`, `Append To CSV` (namespace `UiPath.Core.Activities`, shipped in `UiPath.System.Activities`) — read/write delimited files to and from a `DataTable` against a local path, using the bundled `CsvHelper` library. Issues here involve `CsvHelper` version conflicts (`Method not found: 'CsvHelper...'` from a `UiPath.System.Activities` ↔ `UiPath.Excel.Activities` version split — both bundle `CsvHelper`), file-access failures (`The process cannot access the file because it is being used by another process` when the CSV is open in Excel; `The filename, directory name, or volume label syntax is incorrect` from an invalid or raw `https://` cloud path — these activities are local-file only), and `DataTable` shape problems (uninitialized table, or a column count/header mismatch vs the existing file).
+
+Namespaces: `UiPath.Core.Activities`
+
+- [activity-packages/csv-activities/overview.md](./activity-packages/csv-activities/overview.md) — Package overview, execution model, and common failure patterns
+- [activity-packages/csv-activities/summary.md](./activity-packages/csv-activities/summary.md) — All playbooks for CSV Activities issues
+
 
 ## Playbooks
 
