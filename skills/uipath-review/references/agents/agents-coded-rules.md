@@ -92,16 +92,33 @@ LLM-judge-only is acceptable when the agent has no tools, no classification outp
 
 ## GuardrailsChecker
 
-> **Agent-builder coded layout** (`agent.json` + `main.py`): the low-code semantic guardrail rules
-> (`LC_GUARDRAIL_RECOMMENDED` / `LC_GUARDRAIL_ACTION_INEFFECTIVE` / `LC_GUARDRAIL_MISAPPLIED`) apply against
-> `agent.json`'s `guardrails[]` via the low-code catalog + [`guardrails/guardrails-review.md`](guardrails/guardrails-review.md)
-> (this layout loads all three catalogs — see the detection table). Guardrail effectiveness/recommendation for
-> **pure-coded** agents (SDK decorators/middleware in `main.py`, no `agent.json`) is future work; use the bucket
-> below for any coded guardrail/policy observation a specific rule doesn't cover.
+> **Agent-builder coded layout** (`agent.json` + `main.py`): `agent.json`'s `guardrails[]` are reviewed by the
+> low-code semantic rules (`LC_GUARDRAIL_*`) via the low-code catalog + [`guardrails/guardrails-review.md`](guardrails/guardrails-review.md)
+> (this layout loads all three catalogs — see the detection table). The rules below cover **pure-coded** guardrails —
+> SDK middleware / `@guardrail` decorators wired in the entry `.py` (LangChain/LangGraph today), no `agent.json`.
+
+> **Validator-name authority.** Same caution as low-code: do NOT name a platform-documented validator
+> (`harmful_content` / `intellectual_property` / `user_prompt_attacks`) unless it is already present in the agent's
+> code — phrase generically (e.g. "an appropriate content-safety guardrail"). `pii_detection` / `prompt_injection`
+> are SDK-confirmed and may be named.
+
+> **Apply these via the structured workflow.** The guardrail rules below are applied through
+> [`guardrails/coded-guardrails-review.md`](guardrails/coded-guardrails-review.md) — Step 0 (fetch the live
+> `uip agent guardrails catalog` + `list`, 30-min cache, **plus** the public Python SDK docs that map a `validator_id`
+> to its Python class / scope / entity enums) → **Audit Mode** (effectiveness / relevance / wiring of existing
+> guardrails) + **Recommend Mode** (missing-guardrail recommendations), modeled on the `uipath-agents` coded
+> guardrail recommend/validate capability and driven by the same live catalog. **Boundary:** `uip codedagent review`
+> (Step 2.5a) owns every deterministic coded guardrail check and emits `CODED_GUARDRAIL_WRONG_IMPORT` /
+> `CODED_GUARDRAIL_TOOL_SCOPE_NO_TOOLS` / `CODED_GUARDRAIL_INVALID_CONTRACT`; the rules below fire **only** on
+> guardrails the CLI did not flag and **never** re-emit a CLI finding. If the catalog is unavailable, defer the
+> Audit-Mode rows (Rules Skipped) — see the workflow's Step 0.
 
 | rule_id | severity | category | trigger | detection_method | suggested_fix |
 |---|---|---|---|---|---|
-| `CODED_GUARDRAILS_ISSUE` | warning | guardrails | Guardrails / safety / PII observation that no specific rule fits | Use ONLY when no specific rule fits. Coded agents have most safety concerns covered under `## SecurityChecker` (`CODED_PROMPT_USER_INPUT_UNSANITIZED`, `CODED_PII_IN_TRACES`) and the deterministic secret/`.env` checks in the review CLI. Reach here only for guardrail / policy observations none of those cover. | (Defined per finding.) |
+| `CODED_GUARDRAIL_RECOMMENDED` | info | guardrails | A guardrail is recommended for a use case the coded agent matches but doesn't wire (one finding per missing guardrail; specifics in the message) | Apply `guardrails/coded-guardrails-review.md` **Recommend Mode**: fetch the live catalog + SDK docs (Step 0); read the entry `.py` (system prompt, Pydantic input/output schemas, `@tool` docstrings); for each catalog entry whose `when_to_use` / `use_cases` / `security_risk_addressed` match the agent and which is not already wired (no matching middleware / `@guardrail`), emit one finding. The message names the guardrail / `security_category`, the matched use case, the recommended scope, and the recommended **action** — **block/escalate** when protection is needed (PII that must not enter, injection, harmful content) or **log** for audit only. De-dup by `security_category`. Do NOT name a platform-documented validator unless already present. file = entry `.py`. | Wire the named guardrail at the catalog-recommended scope/action (middleware or `@guardrail`; cite `examples[].config`) — see the `uipath-agents` coded guardrails-recommend capability. |
+| `CODED_GUARDRAIL_ACTION_INEFFECTIVE` | judgment | guardrails | A guardrail's action is ineffective or counterproductive for its scope | Apply `guardrails/coded-guardrails-review.md` **Audit Mode → Actionability**: for each guardrail the CLI did not flag, compare its validator + scope (`GuardrailScope.*` or decorator target) + action class (`BlockAction` / `LogAction` / `EscalateAction` / custom) against the catalog entry's `when_not_to_use` / `examples[].config` action for that scope. Emit when counterproductive — a security-critical guardrail using `LogAction` where the example blocks; PII `Block`/filter at Tool scope on a tool that legitimately needs the data; PII `Log` at Agent/Llm. Name the recommended action. file = entry `.py`, element = guardrail name. | Use the action the catalog recommends for that scope, or move the guardrail to a scope where the action is effective. |
+| `CODED_GUARDRAIL_MISAPPLIED` | judgment | guardrails | A guardrail is present but doesn't belong on this agent, or is wired where it won't guard as intended | Apply `guardrails/coded-guardrails-review.md` **Audit Mode → Relevance + Wiring**: (a) Relevance — establish the agent's context (system prompt, schemas, tool docstrings), read the catalog entry's `when_not_to_use` / `NOT_recommended_for`, emit when the agent matches a disqualifying condition (e.g. a generate-only agent carrying a PII guardrail). (b) Wiring — a `@guardrail` LLM/Agent-scope decorator on a function that does **not** return `UiPathChat(...)` / `create_agent(...)` (or on a non-factory) silently no-ops; emit when the decorated target won't be wrapped as intended. Wrong import module / Tool-scope-without-`tools=` / contract violations are the CLI's deterministic rules — do not re-flag. Cite the matched clause or the mis-wiring. file = entry `.py`, element = guardrail name. | Remove the misapplied guardrail, or move the decorator onto the correct factory / `@tool` so it actually wraps the target. |
+| `CODED_GUARDRAILS_ISSUE` | warning | guardrails | Guardrails / safety / PII observation that no specific rule fits | Use ONLY when no specific rule fits. Coded agents have most safety concerns covered under `## SecurityChecker` (`CODED_PROMPT_USER_INPUT_UNSANITIZED`, `CODED_PII_IN_TRACES`), the three rules above, and the deterministic CLI guardrail/secret checks. Reach here only for guardrail / policy observations none of those cover. | (Defined per finding.) |
 
 ---
 
