@@ -13,7 +13,7 @@ All agents (including you) follow the invariants and confidence-level behavior d
 ## 1. Critical Rules
 
 1. **You NEVER run uip commands, query endpoints, or read reference docs.** Sub-agents do everything else.
-2. **You NEVER confirm/eliminate hypotheses yourself.** Always spawn a tester.
+2. **You NEVER confirm/eliminate hypotheses yourself.** Always spawn a tester. *(Fast-path exception: when `state.json.fast_path.eligible`, triage's match on a cause-naming signal against a single high-confidence, single-cause playbook — backed by the playbook's own confirming fetch — IS the confirmation; no tester is spawned. See § FAST PATH.)*
 3. **You own all decisions:** phase transitions, root cause vs. symptom classification, when to present resolution.
 4. **You present the presenter's output verbatim.** The presenter agent formats all findings — you do not rewrite or reformat them. The one exception: you parse and act on the `## Post-presentation actions` block (see §6).
 5. **Test hypotheses one at a time, sequentially.** Never spawn parallel testers.
@@ -25,8 +25,8 @@ All state lives in `.local/investigations/` (relative to working directory). Sch
 
 | File | Purpose | Writers |
 |------|---------|---------|
-| `state.json` | Scope, phase, matched playbooks | triage, orchestrator |
-| `hypotheses.json` | All hypotheses + status | generator, tester, orchestrator |
+| `state.json` | Scope, phase, matched playbooks, fast-path flag | triage, orchestrator |
+| `hypotheses.json` | All hypotheses + status | generator, tester, orchestrator, triage (fast path: confirmed H1) |
 | `evidence/*.json` | Interpreted summaries | triage, tester |
 | `raw/*.json` | Full raw CLI/API responses | triage, tester |
 | `scope-check.json` | Domain expansion verdict | scope-checker |
@@ -50,16 +50,39 @@ Update `state.json.phase` at each transition:
 | `resolution` | Depth check verified, or all hypotheses exhausted | `complete` |
 | `complete` | Findings presented to user | — |
 
+**Fast path:** when `state.json.fast_path.eligible`, triage confirms the single unambiguous cause inline (its cause-naming match + the playbook's confirming fetch) and writes the confirmed `H1` — set `phase: resolution` and spawn only the presenter. No generator/tester/depth-verifier. If triage's confirming fetch does NOT hold the unambiguous cause, it clears `fast_path.eligible`, and the standard `hypotheses` flow runs (see § FAST PATH).
+
 ## 4. Investigation Flow
 
 ### TRIAGE
 
 1. **Spawn triage** (`agents/triage.md`). Pass the user's problem **as-is** — do NOT pre-classify or constrain scope.
 2. **Sanity gate.** Verify triage evidence relates to the reported problem (process/entity/time window). If it's about a different entity: discard, inform the user, re-spawn or ask for clarification.
-3. **Scope check.** Spawn scope-checker (`agents/scope-checker.md`); read its `scope-check.json`. Missing domains (`missing_domains`) → `AskUserQuestion` whether to expand; if approved, re-spawn triage with them. Unnecessary domains (`unnecessary_domains`) → remove from `state.json.scope.domain`.
+3. **Scope check.** Spawn scope-checker (`agents/scope-checker.md`) ONLY IF triage expanded scope (step D added a domain) or `state.json.scope.domain` lists more than one domain. Single-domain triage that did not expand needs no narrowing — skip the spawn. When spawned, read its `scope-check.json`: missing domains (`missing_domains`) → `AskUserQuestion` whether to expand; if approved, re-spawn triage with them. Unnecessary domains (`unnecessary_domains`) → remove from `state.json.scope.domain`. (This gate is separate from the reactive scope check in EVALUATE, which always fires on a mid-investigation out-of-domain signal.)
 4. **User input.** If triage returned `needs_user_input: true`, ask via `AskUserQuestion`, then **continue the existing triage agent** via `SendMessage` — do NOT spawn a fresh one (a fresh spawn re-discovers everything from scratch). Re-spawn only if the answer fundamentally changes scope (different product/entity type).
 
-**Never skip the hypothesis loop.** Even conclusive-looking triage evidence proceeds through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root cause; a non-obvious cause surfaces only in the test cycle.
+**Never skip the hypothesis loop** — UNLESS `state.json.fast_path.eligible` (see § FAST PATH). Outside the fast path, even conclusive-looking triage evidence proceeds through GENERATE → TEST → EVALUATE, and the cause is confirmed only by a testing sub-agent, never by triage or by you. On the fast path, triage's cause-naming match against a single-cause high-confidence playbook plus the playbook's confirming fetch stands in for the loop.
+
+### After TRIAGE — MANDATORY branch (do this before anything else)
+
+The instant triage returns, read `state.json.fast_path.eligible` and branch. This is a hard fork, not a suggestion:
+
+- **`eligible: true`** → go to **§ FAST PATH**. Spawn ONLY the presenter. **You MUST NOT spawn the hypothesis-generator, hypothesis-tester, or depth-verifier** — triage already confirmed `H1`. Spawning any of them on an eligible case is a contract violation that throws away the confirmation and the whole point of the fast path. Do not "double-check" with the full chain.
+- **`eligible: false`** (or absent) → run the standard **GENERATE HYPOTHESES → TEST → EVALUATE** flow. Ignore § FAST PATH.
+
+There is no third path. If `eligible: true`, the next sub-agent you spawn is the presenter — full stop.
+
+### FAST PATH (when `state.json.fast_path.eligible`)
+
+When triage set `state.json.fast_path.eligible: true`, the evidence is an obvious single-cause error: one high-confidence playbook, matched on a cause-naming signal, with a single cause branch. The generate→test→depth fan-out would only re-confirm what the error code already names. So:
+
+1. **Triage has already confirmed it.** On the eligible path, triage ran the playbook's single documented confirming fetch (the `## Investigation` command that pins the cause-specific entity/state — see `agents/triage.md` step E.4) and wrote the confirmed `H1` to `hypotheses.json`. No generator, tester, or depth-verifier spawn — the depth gate is vacuous when the cause list resolves to one branch and the confirming fetch pinned it.
+2. **Skip the post-triage scope check** — the single-playbook + no-Pass-2 predicate already bounds the investigation (scope may legitimately span more than one domain for a single cross-product fault). The reactive scope check is moot here (no further testing stage).
+3. **Go straight to Resolution.** Spawn the presenter (`agents/presenter.md`) with the confirmed `H1` and the matched playbook. It assembles the `## Resolution` using the entities triage already pinned.
+
+**Fallback:** if triage's confirming fetch did NOT hold the unambiguous cause (the cause-specific state differed, a competing cause surfaced, or the fetch was inconclusive), triage clears `fast_path.eligible` and records why in `fast_path.reason`. Run the **standard flow from GENERATE HYPOTHESES** — do NOT re-run triage; the gathered evidence stands.
+
+When `fast_path.eligible` is false, ignore this section and run the standard flow.
 
 ### GENERATE HYPOTHESES
 

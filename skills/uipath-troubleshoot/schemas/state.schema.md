@@ -43,6 +43,11 @@ Updated by: Orchestrator (phase transitions)
       "signals_matched": ["job state is Running", "no error logs present"]
     }
   ],
+  "fast_path": {
+    "eligible": true,
+    "reason": "one high-confidence playbook with >=2 cause-naming signals; single named cause; no co-equal sibling; no Pass-2 gap",
+    "aborted": false
+  },
   "eliminated_playbooks": [
     {
       "path": "references/activity-packages/system-activities/playbooks/get-asset-not-found.md",
@@ -101,6 +106,16 @@ Playbooks whose signature was contradicted by triage evidence. Each entry record
 The hypothesis generator MUST exclude these from consideration. The depth-verifier MUST NOT confirm a hypothesis that maps to an eliminated playbook.
 
 **Why count over confidence.** Multiple playbooks can match the same surface signal (e.g., "Get Asset activity failed" appears in five distinct get-asset playbooks at frontmatter `high`). Ranking purely on frontmatter confidence then surfaces 5-way false positives at HIGH. Counting actual signal hits per playbook discriminates between them: the one whose specific signature is most fully satisfied by the evidence wins. Frontmatter confidence still caps the root-cause certainty downstream (`high` matches can fast-path; `medium`/`low` require deeper testing) — but it does not decide ordering.
+
+## Fast Path
+
+Set by triage after matching (triage step E.3). Records whether the obvious-error fast path applies — a single high-confidence playbook with a cause-naming signal, where the full generate→test→depth fan-out would add no diagnostic value. When `eligible`, triage confirms the cause inline via the playbook's single confirming fetch (step E.4) and writes the confirmed `H1`; the orchestrator then skips generator/tester/depth-verifier and goes straight to the presenter.
+
+Fields:
+
+- `eligible` — `true` only when ALL hold: exactly one matched playbook at frontmatter `confidence: high`; its `signal_match_count >= 2`; no other matched playbook at the same top rank (no co-equal sibling); at least one matched signal is **cause-naming** (an explicit error code, or an authoritative message that names both the failing resource and the failure mode — not a generic/opaque exception with no code and no resource-specific message); the matched playbook's cause list resolves to a single branch for this signal set (no competing sub-causes needing disambiguation); Pass 2 did not fire (all matched-playbook evidence already satisfied, no unfetched linked entity). Any failure → `false`. **Scope spanning more than one domain does NOT disqualify** — a single fault seen across two products is still bounded; a true multi-hop chain is excluded via the single-playbook (co-equal sibling) and no-Pass-2 conditions, not via a domain-count gate.
+- `reason` — one short sentence naming the deciding condition (which condition made it eligible, or the first that failed).
+- `aborted` — written by triage in step E.4. Set `true` (and `eligible` flipped to `false`) when the single confirming fetch did not hold the unambiguous cause (cause-specific state differed, fetch inconclusive, or a competing cause surfaced). The orchestrator then runs the standard pipeline on the gathered evidence. Absent/`false` otherwise.
 
 ## Plan
 

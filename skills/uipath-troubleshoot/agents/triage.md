@@ -13,6 +13,7 @@ See `shared.md` § Invariants and § Plan Loop first.
 1. `.local/investigations/state.json` — see `schemas/state.schema.md` (includes the plan with all steps recorded)
 2. `.local/investigations/raw/triage-{command-name}.json` — raw CLI responses per fetch step
 3. `.local/investigations/evidence/triage-initial.json` — see `schemas/evidence.schema.md`
+4. `.local/investigations/hypotheses.json` — **fast path only** (step E.4): the single confirmed `H1`. Not written on the standard path (the generator owns it there).
 
 ## Plan loop
 
@@ -24,6 +25,8 @@ Run the loop in `shared.md` § Plan Loop. Plan location: `state.json.plan`. Seed
   status: "pending" }
 ```
 Step 6 (write outputs): consolidate into `evidence/triage-initial.json`; return to the orchestrator.
+
+**Seed the foreseeable walk in one pass — don't drip one step at a time.** Once step A resolves the entity type and an anchor exists (job key, named process/folder, or a project in the working dir), seed the *entire* locator walk the matched investigation guide documents for that entity type (e.g. resolve folder → list faulted jobs → get the job → read its error logs) as foreseeable steps in a single planning pass, then execute them in order. This is the common path and it is fully predictable — appending and re-planning one fetch at a time multiplies the loop's bookkeeping cost for no benefit. `revise_if` still applies: only when a fetch returns something a `revise_if` did not anticipate do you append/mutate remaining steps. Reserve per-step incremental planning for genuinely ambiguous cases (no anchor, unclear classification).
 
 ## Required steps that MUST appear in every triage plan
 
@@ -45,10 +48,10 @@ Cross-check the candidate values against `references/summary.md` — if either i
 ### B. Look up investigation guide
 
 Reasoning + Read step. Record the resolved guide paths to `state.json.investigation_guides`:
-- Always include `references/investigation_guide.md`.
-- If the matched system has an `investigation_guide.md`, include it.
+- If the matched system has an `investigation_guide.md`, include it and read it — its Data Correlation rules govern the single-product walk.
+- Include and read the generic `references/investigation_guide.md` when the matched system has NO product guide, OR as soon as step D expands scope to a second domain (its cross-product correlation rules are what a multi-domain/chain investigation needs). For a single-domain investigation with a product guide, the generic guide is not needed up front — defer it.
 
-Read the resolved guides and apply their Data Correlation rules to the steps that follow.
+Apply the resolved guides' Data Correlation rules to the steps that follow.
 
 ### B.5 Signal extraction — running throughout C, D, E
 
@@ -101,7 +104,9 @@ This is a classification correction, not a data-gathering loop — do NOT append
 
 Reasoning + Read step. Read the product/package summary for every domain in `state.json.scope.domain` (which may have just expanded in step D). Iterate the `signals` array in `evidence/triage-initial.json` (populated by step B.5 and the data-fetch steps) — do NOT re-scan raw files; the signal inventory is the canonical source.
 
-For each candidate playbook in scope, read its `## Context` and `## Investigation` sections, identify the playbook's signature signals, and classify the evidence-vs-signature relationship into ONE of three categories:
+**Pre-filter on the domain summary before opening any playbook (read-cost control).** Each domain `summary.md` carries a signal table mapping observed signals to the playbooks they implicate. Using your `signals` inventory against that table, shortlist only the playbooks the summary associates with at least one observed signal. **Open the full `## Context` / `## Investigation` sections ONLY for that shortlist (typically 1–3 playbooks).** Do NOT open every playbook in the domain: a playbook the summary associates with no observed signal would classify as **Silent** anyway, so reading it in full is wasted I/O. If the summary's table is too coarse to discriminate (it shortlists several siblings under one shared category), open that sibling set — the per-playbook signature read is what separates them. If the shortlist is empty, that is a Pass-2 trigger (zero matched playbook), not a reason to brute-force every file.
+
+For each shortlisted candidate playbook, read its `## Context` and `## Investigation` sections, identify the playbook's signature signals, and classify the evidence-vs-signature relationship into ONE of three categories:
 
 - **Positively supported** — at least one signal from the inventory satisfies a signature signal of the playbook. List the playbook in `state.json.matched_playbooks` with `signal_match_count` (integer count of distinct signals satisfied) and `signals_matched` (the `name` of each satisfied signal — audit trail).
 - **Silent** — no signal from the inventory addresses any of the playbook's signature signals. Do NOT list. The playbook is uninformed by available evidence and can't be tested productively yet.
@@ -119,6 +124,8 @@ Every triage plan MUST include a Pass 2 trigger-evaluation step appended immedia
 
 The step's `action` is `evaluate Pass 2 triggers against matched_playbooks and gathered evidence`. After evaluation, mark `status: done` if a trigger fired (and append the resulting fetch steps), or `status: skipped` with the reason recorded in `purpose` (e.g., `"all matched playbooks' Investigation requirements are already satisfied"`).
 
+**You may evaluate Pass 2 (E.2) and fast-path eligibility (E.3) in the SAME reasoning pass as the match (E)** — they all reason against the just-matched playbooks and the gathered signals. Record each result (E.2 `done`/`skipped`, E.3 `fast_path`), but you need not spend a separate think-and-record turn on each. This is post-data reasoning, not data gathering. (Step D — the cross-domain scope check — stays its own step; do NOT fold it in.)
+
 **Pass 2 fires if ANY of the following is true:**
 
 - Zero high-confidence playbook matched.
@@ -135,6 +142,35 @@ The step's `action` is `evaluate Pass 2 triggers against matched_playbooks and g
 
 Single Pass 2 round only. Do not start a Pass 3 — record what is still missing in `evidence/triage-initial.json` and let the hypothesis-tester gather the rest against a specific hypothesis.
 
+### E.3 — Fast-path eligibility — MANDATORY reasoning step
+
+Reasoning step (no tool call). After matching settles, decide whether this is an **obvious-error** case you can confirm inline (step E.4) and hand straight to the presenter, instead of handing off to the full generate→test→depth fan-out. Write the verdict to `state.json.fast_path` (`{eligible, reason}` — see `schemas/state.schema.md` § Fast Path).
+
+Set `eligible: true` ONLY when ALL of the following hold:
+
+1. `matched_playbooks` has exactly **one** entry at frontmatter `confidence: high`.
+2. That entry's `signal_match_count >= 2`.
+3. No other matched playbook sits at the same top rank — no co-equal sibling.
+4. At least one matched signal is **cause-naming**: an explicit error code, OR an authoritative message that names both the failing resource and the failure mode. A bare exception class with no code and no resource-specific message does NOT qualify.
+5. The matched playbook's cause list (`## Context`) resolves to a **single** branch for this signal set — the evidence does not leave two or more sub-causes competing.
+6. Pass 2 (step E.2) did not fire — every matched-playbook evidence requirement is already satisfied, with no unfetched linked entity.
+
+Scope spanning more than one domain does NOT by itself disqualify: a single fault visible across two products (e.g. a job in one domain whose cause is a resource in another) is still obvious. A genuine multi-hop chain — where a linked entity has its own originating fault to investigate — disqualifies, but it already surfaces as either a second matched playbook (fails condition 1/3) or an unsatisfied linked-entity fetch (fires Pass 2, fails condition 6). Do not add a separate domain-count gate.
+
+If any condition fails, set `eligible: false`. Record in `reason` the deciding condition (which one made it eligible, or the first that failed, e.g. `"opaque exception — no error code or resource-specific message (cond 4)"`). This is a classification flag only — do NOT change your matching or gather more data to force eligibility.
+
+### E.4 — Fast-path confirmation (ONLY when E.3 set `fast_path.eligible: true`)
+
+When E.3 marked the case eligible, you finish the diagnosis here instead of handing a hypothesis to a separate tester — the orchestrator will then go straight to the presenter (no generator / tester / depth-verifier). You are already warm: you read the matched playbook during step E. Do exactly this, no more:
+
+1. **Run the single confirming fetch.** From the matched playbook's `## Investigation`, run the ONE documented command that pins the cause-specific entity/state and supplies the identity the `## Resolution` needs (e.g. the command that shows the offending resource's state and its identifier). Reuse evidence already gathered — run only what is still missing. This is the sole fetch beyond triage-level bounds, and it is permitted **only** on the eligible path.
+
+   **Also read project source when the resolution depends on it.** If the matched playbook's `## Resolution` references a specific that lives in the project source — a connection owner, a selector, an asset binding, an activity configuration — AND a recognizable UiPath project is in the working directory, read the relevant source file (including the project's resource/binding definitions, not only the main workflow) and extract the specific before confirming. Skipping it produces a vague fix the user cannot fully apply (e.g. "repoint the connection" without naming the owner/which connection), which the judge scores as right-area-but-vague. This source read is part of the single confirming step on the eligible path — not a separate investigation.
+2. **Cause holds → confirm.** If the fetch shows the playbook's single cause is real (the cause-specific state matches), write the confirmed hypothesis `H1` to `hypotheses.json` (`status: confirmed`, `is_root_cause: true`, `signals_supporting` citing the cause-naming signal + this fetch, `evidence_refs` to the raw/evidence files). The diagnosis is done.
+3. **Cause does NOT hold → fall back.** If the cause-specific state differs, the fetch is empty/inconclusive, or a competing cause appears, set `fast_path.eligible: false` and record why in `fast_path.reason`. Do NOT write a confirmed hypothesis. The orchestrator runs the standard generate→test→depth flow on the evidence you gathered.
+
+Do NOT depth-gate or present here: eligibility (condition 5) already established the cause list resolves to one branch, so there is no depth gap to close, and the presenter owns resolution. The confirming fetch IS the confirmation — this is the documented exception to "triage does not determine root cause."
+
 ### F. Write evidence summary
 
 Final step. Consolidate findings into `evidence/triage-initial.json`. Return to the orchestrator. Triage does NOT check source-code availability — that is the hypothesis-tester's job, evaluated per-hypothesis only when a specific `to_confirm` / `to_eliminate` item requires source. Asking upfront is wasted work when no hypothesis turns out to need it.
@@ -143,6 +179,6 @@ Final step. Consolidate findings into `evidence/triage-initial.json`. Return to 
 
 - Primary classification agent that reads `references/summary.md` and browses the *reference* knowledge base (scope-checker, depth-verifier, and presenter also browse references per shared.md).
 - Tool-call steps in the plan run only data-gathering uip commands documented in the matched investigation guide or the matched playbook's `## Investigation` section. Anything else is a contract violation.
-- Do NOT generate hypotheses — that's the generator's job.
-- Do NOT do hypothesis-tester-level deep gathering (traces, healing data, element executions, connection pings, etc.) outside a triggered Pass 2.
+- Do NOT generate hypotheses — that's the generator's job. **Fast-path exception:** when `fast_path.eligible`, you write the single confirmed `H1` per step E.4 (the matched playbook *is* the hypothesis; no drafting needed).
+- Do NOT do hypothesis-tester-level deep gathering (traces, healing data, element executions, connection pings, etc.) outside a triggered Pass 2 **or the single confirming fetch of fast-path step E.4**.
 - If you cannot get data about the specific entity the user reported, **STOP and say so**.
