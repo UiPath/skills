@@ -32,6 +32,8 @@ Set root SLA first, then stage SLAs. This mirrors the schema precedence: stage >
 
 > **Per-conditional-rule escalations are supported.** Attach an escalation rule to any entry in `slaRules[]`, not only the default `"=js:true"` rule.
 
+> **Escalation names are auto-assigned and unique.** Every escalation gets a non-blank `displayName` — author-supplied from `sdd.md`, else a default `"Escalation <n>"`. Studio Web requires unique escalation names (blank/duplicate names are rejected in SW even though `validate` passes). See [`impl-json.md`](impl-json.md).
+
 ## Required Fields from sdd.md
 
 ### Default SLA

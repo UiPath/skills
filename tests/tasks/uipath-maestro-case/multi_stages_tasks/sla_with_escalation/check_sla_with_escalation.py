@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
+    assert_unique_sla_escalation_names,
     find_node_by_label,
     get_default_sla,
     get_sla_rules,
@@ -15,6 +16,7 @@ from _shared.case_check import (  # noqa: E402
 
 def main():
     plan = read_caseplan()
+    assert_unique_sla_escalation_names(plan)
     rules = get_sla_rules(plan)
 
     if len(rules) < 3:
