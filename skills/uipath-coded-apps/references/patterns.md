@@ -569,7 +569,7 @@ Use these to render any value cleanly — primitives as text, objects/arrays as 
 
 ```typescript
 /** Renders a typed value from globalVariables */
-function FormattedValue({ value, type }: { value: any; type: string }) {
+function FormattedValue({ value, type }: { value: unknown; type: string }) {
   if (value === null || value === undefined) {
     return <span className="text-gray-400 italic">—</span>;
   }
