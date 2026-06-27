@@ -20,9 +20,9 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process â€
    - [Stage 5: Debrief](#stage-5-debrief-stage-debrief) â€” 3 tasks
    - [Stage 6: Offer](#stage-6-offer-stage-offer) â€” 5 tasks
    - [Stage 7: Hired](#stage-7-hired-stage-hired) â€” 3 tasks
-   - [Exception Stage: Rejected](#exception-stage-rejected-stage-rejected) â€” 2 tasks
-   - [Exception Stage: Withdrawn](#exception-stage-withdrawn-stage-withdrawn) â€” 2 tasks
-   - [Exception Stage: On Hold](#exception-stage-on-hold-stage-on-hold) â€” 2 tasks
+   - [Secondary Stage: Rejected](#secondary-stage-rejected-stage-rejected) â€” 2 tasks
+   - [Secondary Stage: Withdrawn](#secondary-stage-withdrawn-stage-withdrawn) â€” 2 tasks
+   - [Secondary Stage: On Hold](#secondary-stage-on-hold-stage-on-hold) â€” 2 tasks
 3. [Personas & App Views](#section-3-personas--app-views) â€” 5 Personas, Process App Views
 4. [Integrations](#section-4-integrations) â€” Integration Service Connectors
 
@@ -845,7 +845,7 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process â€
 ##### Task 5.3: Record Debrief Decision (`t17`)
 
 **Type:** action
-**Description:** The Hiring Manager submits the final hire/no-hire decision following the debrief discussion, which routes the case to either the Offer stage or the Rejected exception stage.
+**Description:** The Hiring Manager submits the final hire/no-hire decision following the debrief discussion, which routes the case to either the Offer stage or the Rejected secondary stage.
 
 **Entry Condition:**
 
@@ -874,7 +874,7 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process â€
 | Button | Maps To | Behavior |
 |--------|---------|----------|
 | Advance to Offer | applicationStatus = "Advance" | Hire decision made; route to Offer stage |
-| Reject | applicationStatus = "Reject" | No-hire decision made; route to Rejected exception |
+| Reject | applicationStatus = "Reject" | No-hire decision made; route to Rejected secondary stage |
 
 ---
 
@@ -1236,9 +1236,10 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process â€
 
 ---
 
-### Exception Stage: Rejected (`stage-rejected`)
+### Secondary Stage: Rejected (`stage-rejected`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Handles the rejection path for candidates eliminated at any stage of the hiring process. Sends a rejection notification and updates Greenhouse.
 **Required for Case Completion:** No
 **Interrupting:** No
@@ -1337,9 +1338,10 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process â€
 
 ---
 
-### Exception Stage: Withdrawn (`stage-withdrawn`)
+### Secondary Stage: Withdrawn (`stage-withdrawn`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Handles cases where the candidate voluntarily withdraws from the interview process at any stage. Records the withdrawal reason and updates Greenhouse.
 **Required for Case Completion:** No
 **Interrupting:** No
@@ -1440,9 +1442,10 @@ A Case Definition Blueprint for the Helix end-to-end candidate hiring process â€
 
 ---
 
-### Exception Stage: On Hold (`stage-on-hold`)
+### Secondary Stage: On Hold (`stage-on-hold`)
 
-**Type:** ExceptionStage
+**Type:** Stage
+**Stage Kind:** secondary
 **Description:** Temporarily pauses the hiring process when the Recruiter determines the case should be held (e.g., budget freeze, role re-scoping). Resumes to the origin stage after the hold review date passes.
 **Required for Case Completion:** No
 **Interrupting:** Yes

@@ -135,7 +135,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 | Plugin | Scope |
 |--------|-------|
 | [case](references/plugins/case/planning.md) | Root case (T01) |
-| [stages](references/plugins/stages/planning.md) | Regular and exception stages |
+| [stages](references/plugins/stages/planning.md) | Regular (primary) and secondary stages |
 | [sla](references/plugins/sla/planning.md) | Default SLA, conditional rules, escalation |
 | [global-vars](references/plugins/variables/global-vars/planning.md) | Case variables and arguments |
 | [io-binding](references/plugins/variables/io-binding/planning.md) | Task I/O wiring, cross-task refs |

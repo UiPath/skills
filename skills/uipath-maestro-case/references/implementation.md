@@ -246,7 +246,7 @@ Skip the re-Read between sibling Edits. One validate at section end. Per-scope c
 
 ## Step 11 — SLA and escalation (per-target Edit batch)
 
-One Read of `caseplan.json` at Step 11 entry. Group `tasks.md §4.8` entries by target (root or stage). For each target, one Edit replacing that target's full `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Skip the re-Read between sibling Edits. Supports per-conditional-rule escalations, ExceptionStage SLA, and multi-recipient single rules. One validate at section end.
+One Read of `caseplan.json` at Step 11 entry. Group `tasks.md §4.8` entries by target (root or stage). For each target, one Edit replacing that target's full `slaRules[]` array per [`plugins/sla/impl-json.md`](plugins/sla/impl-json.md). Skip the re-Read between sibling Edits. Supports per-conditional-rule escalations, secondary-stage SLA, and multi-recipient single rules. One validate at section end.
 
 ## Step 11.5 — Resolve in-expression `vars.$xref` markers (whole-file pass)
 
