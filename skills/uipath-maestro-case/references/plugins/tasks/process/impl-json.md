@@ -34,6 +34,8 @@ uip maestro case tasks describe --type process --id "<entityKey>" --output json
 
 Fallback: planning-captured schema from tasks.md. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
+> **Built-inline agentic-process sibling.** An `AGENTIC_PROCESS` built inline at the Rule 17 gate ([planning.md § Creating an agentic process inline](planning.md#creating-an-agentic-process-inline)) is a **fully resolved task** by Phase 2 — bound during planning. Its I/O was read during planning from the sibling's `.bpmn` (authoritative source of record) / `entry-points.json`, located via `registry search "<Name>" --type processOrchestration --local --output json` (`search`, not `get`). NOT tenant `tasks describe`. Skip Step 0's `tasks describe`; the binding shape below is identical, only the `folderPath` default differs: it is **empty `""`** (co-located — see [planning.md § Step 3 Binding](planning.md#creating-an-agentic-process-inline)), NOT the `solution_folder` sentinel (`resourceKey` keeps the sentinel; `folderPath` does not).
+
 **Step 1 — Root-level bindings:**
 
 Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
