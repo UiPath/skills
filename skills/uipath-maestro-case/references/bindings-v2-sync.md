@@ -132,6 +132,6 @@ All three required for `uip solution upload` and `uip maestro case debug` to wor
 
 ## Cleanup on task or rule removal
 
-When any task or connector condition rule is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § Delete a node / § Delete a connector condition rule):
+When any task or connector condition rule is removed and its root bindings are pruned (per [case-editing-operations.md](case-editing-operations.md) § Delete a node / § Delete a condition rule / § Delete a task):
 
 1. After pruning root bindings, regenerate `bindings_v2.json` from the updated array.

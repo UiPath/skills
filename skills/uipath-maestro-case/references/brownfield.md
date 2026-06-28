@@ -32,21 +32,30 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 | Add a task to a stage | [case-editing-operations.md § Add a task to a stage](case-editing-operations.md#add-a-task-to-a-stage) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
 | Bind / change a task input | [case-editing-operations.md § Bind an input](case-editing-operations.md#bind-an-input) + [bindings-and-expressions.md](bindings-and-expressions.md) |
 | Move a task to a different stage or lane | [case-editing-operations.md § Move a task to a different stage or lane](case-editing-operations.md#move-a-task-to-a-different-stage-or-lane) |
+| Remove / delete a task | [case-editing-operations.md § Delete a task](case-editing-operations.md#delete-a-task) |
 | Add / change a condition (4 scopes) | the matching [plugins/conditions/<scope>/impl-json.md](plugins/conditions/) |
+| Modify a condition rule in place (operator / expression / type) | [case-editing-operations.md § Modify a condition rule in place](case-editing-operations.md#modify-a-condition-rule-in-place) |
+| Delete a condition rule (plain or connector, any scope) | [case-editing-operations.md § Delete a condition rule](case-editing-operations.md#delete-a-condition-rule) |
+| Remove a case-exit completion / exit rule | [case-editing-operations.md § Delete a case-exit completion rule](case-editing-operations.md#delete-a-case-exit-completion-rule) |
 | Replace a placeholder task with a real one | [case-editing-operations.md § Replace a placeholder task with an enriched task](case-editing-operations.md#replace-a-placeholder-task-with-an-enriched-task) + [placeholder-tasks.md](placeholder-tasks.md) |
 | Re-sync a task whose source schema changed | [case-editing-operations.md § Re-sync a task after its source schema changed](case-editing-operations.md#re-sync-a-task-after-its-source-schema-changed) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
 | Repoint a non-connector task at a different resource (swap which process/agent it runs) | [case-editing-operations.md § Repoint a non-connector task at a different resource](case-editing-operations.md#repoint-a-non-connector-task-at-a-different-resource) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
 | Replace a trigger with a different type | [case-editing-operations.md § Replace a trigger with a different type](case-editing-operations.md#replace-a-trigger-with-a-different-type) |
+| Re-target an event trigger (same type, different event) | [case-editing-operations.md § Re-target an event trigger](case-editing-operations.md#re-target-an-event-trigger-same-type-different-event) |
+| Convert a Stage to/from an Exception Stage | [case-editing-operations.md § Convert a Stage to/from an Exception Stage](case-editing-operations.md#convert-a-stage-tofrom-an-exception-stage) |
 | Delete a node (incl. a stage with successors — repoint their entry conditions) | [case-editing-operations.md § Delete a node](case-editing-operations.md#delete-a-node) |
-| Delete a connector condition rule | [case-editing-operations.md § Delete a connector condition rule](case-editing-operations.md#delete-a-connector-condition-rule) |
+| Delete a trigger (prune `entry-points.json` + In-arg variable cascade) | [case-editing-operations.md § Delete a node](case-editing-operations.md#delete-a-node) (Trigger branch, steps 5–6) |
+| Delete a connector condition rule | [case-editing-operations.md § Delete a condition rule](case-editing-operations.md#delete-a-condition-rule) (connector cascade, steps 4–6) |
 | Add SLA / escalation | [plugins/sla/impl-json.md](plugins/sla/impl-json.md) |
+| Modify / remove an SLA or escalation | [case-editing-operations.md § Modify or remove an SLA or escalation](case-editing-operations.md#modify-or-remove-an-sla-or-escalation) |
 | Add a global variable / argument | [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 | Rename / delete a global variable or argument | [case-editing-operations.md § Rename or delete a global variable or argument](case-editing-operations.md#rename-or-delete-a-global-variable-or-argument) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
+| Change a variable's type or default | [case-editing-operations.md § Change a variable's type or default](case-editing-operations.md#change-a-variables-type-or-default) + [plugins/variables/global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md) |
 
 ## After edits
 
 1. **Validate** — `uip maestro case validate <ProjectName>/caseplan.json --output json`. Authoritative; retry ≤3, fix on failure. On 3rd failure HARD STOP: AskUserQuestion `Retry with fix` / `Pause for manual edit` / `Abort` (same contract as Phase 4).
-2. **Connector add/remove only** — regenerate `bindings_v2.json` per [bindings-v2-sync.md](bindings-v2-sync.md), then `uip solution resources refresh --solution-folder <SolutionDir> --output json` (Rule 14) before any debug/publish.
+2. **Any edit that adds, removes, or repoints a resource binding — connector OR non-connector** — regenerate `bindings_v2.json` per [bindings-v2-sync.md](bindings-v2-sync.md), then `uip solution resources refresh --solution-folder <SolutionDir> --output json` (Rule 14) before any debug/publish. `bindings_v2.json` holds non-connector bindings too (process/agent/rpa/action/api-workflow/case-management — [bindings-v2-sync.md § What `resource refresh` produces](bindings-v2-sync.md#what-resource-refresh-produces)); a stale file makes `uip solution upload` / `debug` throw "Resource is not configured". A pure schema-only re-sync (same resource, no binding change) needs no refresh.
 
 ## Completion Output
 

@@ -268,22 +268,65 @@ Details per plugin — see [bindings-and-expressions.md](bindings-and-expression
 2. Remove the node from `schema.nodes` by ID.
 3. **If the deleted node is a stage with successors, repoint them — do NOT skip.** Edges are retired, so a successor reaches only via an entry-condition rule naming the deleted stage in `selectedStageId`. Find every stage whose `data.entryConditions[].rules[][]` has a `selected-stage-completed` / `selected-stage-exited` rule with `selectedStageId == <removedStageId>`, and repoint each to a surviving predecessor (the deleted stage's own predecessor, or `case-entered` if the deleted stage was first). Leaving them unrepointed orphans every successor — the case can validate structurally yet the successors never execute. Inverse of § Insert a stage between two existing stages.
 4. Edges are not authored — `schema.edges` is `[]`, nothing to remove. (Defensive: if an imported file has a stray edge referencing the removed node's ID, drop it.)
-5. If the node was a stage containing a connector task **or a connector condition rule** (in `entryConditions[]` / `exitConditions[]` / task `entryConditions[]`), prune entries from the top-level `bindings` referenced only by that task/rule. A connector rule contributes the same Connection/Folder binding pair as a task — `rule.uipath.context[name="connection"|"folderKey"]` references `=bindings.<bindingId>`. Walk every remaining task/trigger/rule; an entry whose `resourceKey` is no longer referenced anywhere is the one to prune. Case-exit rules are NOT in scope here — they live on root, not inside a node; use § Delete a connector condition rule for those.
-6. If the removed node held connector rule outputs that were bound to case variables (B/C feature), prune their `root.inputOutputs[]` companions. The companion's `elementId` is `"root"` — `<removedStageId>-<ruleId>` is the rule output entry's `elementId`, not the companion's. For each removed rule output at `elementId = <removedStageId>-<ruleId>`, read its `var`, then prune the companion whose `id == <var>` and `elementId == "root"` that no longer has a producer.
-7. Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
-8. Edit — separate slices for `schema.nodes`, the bindings array, and (if applicable) `inputOutputs[]`. Never whole-file Write.
+5. **If the deleted node is a Trigger, prune its `entry-points.json` entry.** Triggers live in `schema.nodes`, so trigger removal routes here — but every trigger plugin mandates a matching `entry-points.json` entry ([manual/impl-json.md § Recipe — entry-points.json](plugins/triggers/manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints), timer, event). Remove the entry whose `filePath` ends in `#<removedTriggerId>` from `entry-points.json.entryPoints`. Leaving it orphans a `#<triggerId>` fragment pointing at a node that no longer exists.
+6. **If the deleted node is a Trigger with In-args / trigger outputs, run the variable cascade.** An In-arg emits three entries keyed by the trigger ([global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md)): the formal slot in `root.inputs[]` (`elementId == <triggerId>`), the companion in `root.inputOutputs[]` (`elementId == "root"`), and the bridge on `triggerNode.data.uipath.outputs[]`. The bridge dies with the node, but the formal slot and companion survive — leaving every `=vars.<name>` consumer reading undefined (`validate` does not catch dangling `=vars.*`). For the deleted trigger:
+   - Prune `root.inputs[]` entries with `elementId == <removedTriggerId>`.
+   - For each, read its companion's name, then sweep consumers of `=vars.<name>` and prune the `root.inputOutputs[]` companion (`id == <name>`, `elementId == "root"`) when no other producer remains — per § Rename or delete a global variable or argument (Delete path).
+   - Step 7's companion-prune below is scoped to connector *rule* outputs (`elementId == "root"`); this trigger branch covers the In-arg companions specifically.
+7. If the node was a stage containing a connector task **or a connector condition rule** (in `entryConditions[]` / `exitConditions[]` / task `entryConditions[]`), prune entries from the top-level `bindings` referenced only by that task/rule. A connector rule contributes the same Connection/Folder binding pair as a task — `rule.uipath.context[name="connection"|"folderKey"]` references `=bindings.<bindingId>`. Walk every remaining task/trigger/rule; an entry whose `resourceKey` is no longer referenced anywhere is the one to prune. Case-exit rules are NOT in scope here — they live on root, not inside a node; use § Delete a condition rule for those.
+8. If the removed node held connector rule outputs that were bound to case variables (B/C feature), prune their `root.inputOutputs[]` companions. The companion's `elementId` is `"root"` — `<removedStageId>-<ruleId>` is the rule output entry's `elementId`, not the companion's. For each removed rule output at `elementId = <removedStageId>-<ruleId>`, read its `var`, then prune the companion whose `id == <var>` and `elementId == "root"` that no longer has a producer.
+9. Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
+10. Edit — separate slices for `schema.nodes`, `entry-points.json` (trigger only), `root.inputs[]` / `inputOutputs[]`, and the bindings array. Never whole-file Write.
 
-### Delete a connector condition rule
+### Delete a task
 
-When removing a single rule from a condition (without deleting the parent stage/task/case-exit), the cascade is the same as deleting a connector node — but scoped to one rule:
+Remove a task from a stage. Tasks live in `stageNode.data.tasks[laneIndex][]` — **never** in `schema.nodes` — so § Delete a node cannot reach them. Deleting a task also dangles every reference to its `TaskId`; sweep them all, then re-pack lanes.
+
+1. Read `caseplan.json`. Locate the task in its owning `stageNode.data.tasks[laneIndex]` and note its `id` (the `TaskId`) and `elementId`.
+2. **Remove the task** from `data.tasks[laneIndex]`.
+3. **Re-pack lanes.** Removing the only task in a lane leaves an empty inner array. Drop the empty lane and re-index the surviving lanes so `laneIndex` stays contiguous from 0 (Pre-flight Item 8). A lane shared by `runs-sequentially` parallel siblings keeps its other members — only drop the lane when it becomes empty.
+4. **Prune conditions that reference the dead `TaskId`:**
+   - Any task's `entryConditions[].rules[][]` `selected-tasks-completed` rule whose `selectedTasksIds` names the deleted task — remove the id from the array; if it empties, remove the rule (and the parent condition object when it empties), per § Delete a condition rule's DNF removal mechanic.
+   - Any `conditionExpression` (`=js:...`) referencing the deleted task's outputs — repoint or remove.
+5. **Repoint cross-task bindings that consumed this task's outputs.** Any other task input with `sourceTask == <deletedTaskId>` (and `sourceStage == <ownerStageId>`) now dangles — repoint to a surviving producer or clear the binding. A consumer left bound to a deleted producer reads undefined at runtime; `validate` does not catch it.
+6. **Connector-task cascade (connector tasks only).** If the deleted task was a connector-activity / wait-for-connector task, prune its top-level `bindings[]` (Connection/Folder pair no longer referenced by any task/trigger/rule), prune any `root.inputOutputs[]` companions tied to its rule outputs, and regenerate `bindings_v2.json` — same cascade as § Delete a node steps 5–7.
+7. Update the task's `id-map.json` entry (remove it) if the sidecar is present.
+8. Edit — narrow slices for the source `data.tasks` (removal + lane re-pack), each swept condition, each repointed consumer binding, and (connector only) the bindings array / `inputOutputs[]`. Never whole-file Write. Validate at the section boundary.
+
+> **Reverse of § Add a task to a stage.** § Move a task always re-pushes to a destination; § Delete a task is the terminal removal — there is no destination, so the cascade prunes references instead of repointing them to a new stage.
+
+### Delete a condition rule
+
+Remove a single rule from a condition (without deleting the parent stage / task / case-exit). Applies to **any** rule scope — stage entry/exit, task entry, case exit — and to both plain and connector-bound rules. The generic DNF removal (steps 1–3) is all a **plain** rule needs; the binding cascade (steps 4–6) is **connector-only** and a no-op for plain rules.
 
 1. Read `caseplan.json`.
 2. Locate the rule by `id`. **FE composes one rule per condition** (OR-style across multiple condition objects), so the target is almost always a condition object that contains exactly this one rule. The underlying shape is DNF (`rules[][]`), so honor it: if other rules share the inner AND-array, remove just the rule; if the rule is the sole entry, remove the entire condition object.
-3. Remove the rule (or the parent condition object when it becomes empty).
-4. Walk all remaining tasks/triggers/rules; prune root `bindings[]` entries whose `resourceKey` is no longer referenced.
-5. Prune `root.inputOutputs[]` companions tied to this rule's outputs. The companion's `elementId` is `"root"`; `<ownerNodeId>-<ruleId>` is the rule output entry's `elementId`, not the companion's. For each of this rule's outputs at `elementId = <ownerNodeId>-<ruleId>`, read its `var`, then prune the companion whose `id == <var>` and `elementId == "root"` when its case variable has no other producer.
-6. Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
-7. Edit — separate slices for the conditions array, the bindings array, and (if applicable) `inputOutputs[]`. Never whole-file Write.
+3. Remove the rule (or the parent condition object when it becomes empty). **Plain (non-connector) rules stop here** — skip steps 4–6. **For case-exit completion rules, first run the ≥1-completion-rule guard** in § Delete a case-exit completion rule below.
+4. **(Connector rules only)** Walk all remaining tasks/triggers/rules; prune root `bindings[]` entries whose `resourceKey` is no longer referenced.
+5. **(Connector rules only)** Prune `root.inputOutputs[]` companions tied to this rule's outputs. The companion's `elementId` is `"root"`; `<ownerNodeId>-<ruleId>` is the rule output entry's `elementId`, not the companion's. For each of this rule's outputs at `elementId = <ownerNodeId>-<ruleId>`, read its `var`, then prune the companion whose `id == <var>` and `elementId == "root"` when its case variable has no other producer.
+6. **(Connector rules only)** Regenerate `bindings_v2.json` per [bindings-v2-sync.md § Cleanup on task or rule removal](bindings-v2-sync.md#cleanup-on-task-or-rule-removal).
+7. Edit — separate slices for the conditions array, and (connector only) the bindings array and `inputOutputs[]`. Never whole-file Write.
+
+#### Modify a condition rule in place
+
+Change a rule's behavior without removing it — keep the rule `id` so any reference stays valid.
+
+1. Read `caseplan.json`; locate the rule by `id` in its `rules[][]` DNF array.
+2. Edit the rule fields in place:
+   - **Operator / expression:** rewrite `conditionExpression` (`=js:<expr>`) — use strict `===` / `!==`, parenthesize each sub-clause of a combined boolean ([bindings-and-expressions.md § Canonical form per sink](bindings-and-expressions.md#canonical-form-per-sink)). Re-validate any `=vars.<id>` referenced still type-checks.
+   - **`rule` type:** swap the `rule` value (e.g., `selected-stage-completed` ↔ `selected-stage-exited`) and add/drop the side field the new type requires (`selectedStageId`, `selectedTasksIds`). For case-exit, honor the rule-type × `marksCaseComplete` matrix ([case-exit-conditions/impl-json.md](plugins/conditions/case-exit-conditions/impl-json.md#rule-type--markscasecomplete-matrix)).
+   - **`marksCaseComplete` (case-exit only):** flipping `true`→`false` may remove the last completion rule — run the ≥1-completion-rule guard in § Delete a case-exit completion rule first.
+3. Connector-bound rules: if the connector configuration (`rule.uipath`) changed, re-fetch via `uip maestro case spec` (never hand-author) and re-run the bindings cascade (steps 4–6 above).
+4. Edit — narrow slice targeting that rule. Never whole-file Write. Validate at the section boundary.
+
+### Delete a case-exit completion rule
+
+Remove a plain completion / exit rule from `metadata.caseExitRules[]`. **Guard: a case must keep ≥1 rule with `marksCaseComplete: true`** — `validate` rejects an all-`marksCaseComplete:false` case ("Case has no completion rules").
+
+1. Read `caseplan.json`; locate the rule in `metadata.caseExitRules[]`.
+2. **Before removing, check the invariant.** If the rule being removed is the only entry with `marksCaseComplete: true`, removing it leaves the case with no completion path. Do NOT silently remove — AskUserQuestion: `Replace it with a different completion rule` / `Keep it` / `Remove anyway (case will fail validation)`. Removing the last completer is almost always a mistake; surfacing it here avoids the After-edits retry thrash (validate would reject it on the next loop).
+3. Remove the condition object from `metadata.caseExitRules[]` (DNF removal per § Delete a condition rule steps 2–3). Connector-bound case-exit rules also run the connector cascade (steps 4–6).
+4. Edit — narrow slice targeting `metadata.caseExitRules`. Never whole-file Write. Validate at the section boundary.
 
 ### Delete an edge — defensive only
 
@@ -316,7 +359,7 @@ The task's source resource (action-app / agent / process / api-workflow / connec
 3. Edit the task's `data` slice to match the fetched schema: update `taskTypeId` if it changed; add / remove / rename `data.inputs[]` and `data.outputs[]`. Keep `id` and `elementId = ${stageId}-${taskId}` unchanged.
 4. **Re-bind affected inputs.** For each added / renamed / retyped input, fix its `data.inputs[i]` entry (literal/expression `value` or cross-task `sourceStage`/`sourceTask`/`sourceOutput`) per [bindings-and-expressions.md](bindings-and-expressions.md). Prefix: `=vars.X` / `=bindings.X` for a single lookup, `=js:...` for dotted access or operators.
 5. **Repoint consumers of removed/renamed outputs.** Any other task input or condition referencing a dropped output now dangles — repoint or remove it. Prune top-level `bindings` entries no longer referenced.
-6. **Connector tasks only** — if connection/folder bindings changed, regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14).
+6. **If the resource binding set changed (connector or non-connector), regenerate `bindings_v2.json`** ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14) — same scope as § Repoint a non-connector task step 5 and the brownfield After-edits step 2. A pure schema-only re-sync (same resource, `data.inputs`/`data.outputs` reshaped but no `bindings[]` entry added/removed/repointed) leaves `bindings_v2.json` unchanged — skip the refresh in that case.
 7. Edit — narrow slices targeting the task's `data` (and any consumer / bindings slices). Never whole-file Write. Validate at the section boundary.
 
 ### Repoint a non-connector task at a different resource
@@ -347,6 +390,7 @@ Relocate a task within the case. **Keep the task `id`** so conditions and cross-
    - `current-stage-entered` — no change; it follows the task to the destination stage.
    - `selected-tasks-completed` — `selectedTasksIds` left behind in the source stage now gate across stages; repoint to a task in the destination or remove if the dependency no longer applies.
    - `runs-sequentially` — the move splits the source group; re-evaluate lane membership (step 3) in both stages.
+   - **Reverse sweep — tasks left behind in the source stage.** Any task remaining in the source stage whose `selected-tasks-completed.selectedTasksIds` names the moved task now gates *across stages* (the gater stayed put, the gated task left). Repoint each such reference to a surviving source-stage task, or remove it if the dependency no longer applies. This is the inverse of the moved task's own gater re-check above — easy to miss because step 5 otherwise looks only at the moved task.
 6. Update the task's `id-map.json` entry `stageId` if the sidecar is present.
 7. Edit — narrow slices for the source and destination `data.tasks`, the recomputed `elementId`s, and any consumer-binding slices. Never whole-file Write. Validate at the section boundary.
 
@@ -365,15 +409,68 @@ The runtime resolver matches `=vars.<id>` by **exact string equality on `Variabl
 4. Connector consumers only — if a swept reference was a connector binding, regenerate `bindings_v2.json` ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish.
 5. Edit — narrow slices per consumer location and the owning array. Never whole-file Write. Validate at the section boundary.
 
+### Change a variable's type or default
+
+Mutate a variable's `type` / `body` / `default` in place — keep its `id` so every `=vars.<id>` reference stays valid. **Cannot be faked by delete + re-add**: re-adding re-mints a fresh `id` and dangles every consumer (§ Rename or delete). The `type` is duplicated across several coordinated slots ([global-vars/impl-json.md](plugins/variables/global-vars/impl-json.md)); change all of them in one pass or the FE picker and runtime disagree.
+
+1. Read `caseplan.json`. Identify the variable's category and every slot that carries its `type`:
+   - **Internal variable** (`variables.inputOutputs[]`): the single companion entry's `type` (+ `body` when `type == "jsonSchema"`).
+   - **Out argument** (`variables.outputs[]` formal + `inputOutputs[]` companion): both entries' `type`; the companion's `body` for `jsonSchema`.
+   - **In argument** (three entries — `root.inputs[]` formal slot, `root.inputOutputs[]` companion, `triggerNode.data.uipath.outputs[]` bridge): change `type` on **all three**. The bridge's `type` must match or the fire-time copy mis-types.
+2. **Type change** — set the new `type` on every slot from step 1. For `type == "jsonSchema"`, set `body` to the new schema on the formal slot and companion (the FE picker reads `body` to discover sub-fields). For `type == "file"`, apply the file-type carve-outs ([global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md)): companion + formal slot get `body: <FILE_TYPE_JSON_SCHEMA>`, and an In-arg's `default` MUST stay `""`.
+3. **Default change** — set `default` on the formal slot (`root.inputs[]` for an In-arg, the `variables.outputs[]`/`inputOutputs[]` entry otherwise). A file-typed variable rejects any `default` other than `""`.
+4. **Re-validate every `=vars.<id>` consumer against the new type.** A condition/SLA expression that compared the variable as one type (`=js:vars.amount > 5`) may now be malformed against the new type (e.g., string). Repoint or fix each consumer; `validate` does not catch a type-mismatched `=js:*` expression.
+5. Edit — narrow slices for each coordinated slot and any reworked consumer. Never whole-file Write. Validate at the section boundary.
+
+### Modify or remove an SLA or escalation
+
+The add path is [plugins/sla/impl-json.md](plugins/sla/impl-json.md); this is the in-place modify / remove. SLA rules live in `metadata.slaRules[]` (root target) or `node.data.slaRules[]` (stage target); each rule carries an `escalationRule[]`. Conditional rules have **no `id`** — address them by array index; escalations carry an `esc_` id.
+
+1. Read `caseplan.json`. Locate the SLA array — `metadata.slaRules[]` for the root target, else the stage node's `data.slaRules[]` (find by `data.label`).
+2. **Modify a rule:** edit the target rule's `count` / `unit` / `expression` in place. Keep the default rule (`expression == "=js:true"`) **last**; never reorder it ahead of a conditional rule.
+3. **Remove a rule:** delete the rule object from `slaRules[]` (its nested `escalationRule[]` goes with it — drop those `esc_` ids from `id-map.json`). If removing leaves the target with **no** SLA rules, remove the `slaRules` key entirely ([sla/impl-json.md](plugins/sla/impl-json.md) emission rule 5) — do not leave an empty array or an orphan default. If conditional rules remain, the `=js:true` default must still be present and last.
+4. **Modify an escalation:** edit its `action.recipients[]`, `triggerInfo.type`, or `atRiskPercentage` in place. `atRiskPercentage` is present only when `triggerInfo.type == "at-risk"` — drop the field when switching to `sla-breached`. Omit `displayName` entirely rather than emitting `undefined`.
+5. **Remove an escalation:** delete the entry from its parent rule's `escalationRule[]` by `esc_` id; drop the `esc_` id from `id-map.json`. Leave `escalationRule: []` on the rule (never omit the key — [sla/impl-json.md](plugins/sla/impl-json.md) emission rule 4).
+6. Edit — narrow slices targeting the specific rule / escalation entry. Never whole-file Write. Validate at the section boundary.
+
 ### Replace a trigger with a different type
 
 Swap a trigger's type in place (e.g., manual → timer, or manual → event) — keep the node `id` so `id-map.json` and any references stay valid.
 
 1. Read `caseplan.json`.
-2. Locate the Trigger node by `id`. Replace its `data.uipath` block with the target type's shape (`serviceType` + type-specific fields) per the target plugin's recipe — [triggers/manual](plugins/triggers/manual/impl-json.md), [triggers/timer](plugins/triggers/timer/impl-json.md), [triggers/event](plugins/triggers/event/impl-json.md). Preserve `data.label`, `data.description`, and `data.parentElement` (secondary triggers).
-3. Update the matching `entry-points.json` entry if the trigger's `displayName`/`input`/`output` shape changes; the `filePath` `#<triggerId>` fragment stays (id unchanged).
-4. Edit — narrow slices targeting that node's `data.uipath` and the `entry-points.json` entry. Never whole-file Write.
-5. Validate at the section boundary.
+2. Locate the Trigger node by `id`. Rewrite its `data.uipath` to the target type's shape per the target plugin's recipe — [triggers/manual](plugins/triggers/manual/impl-json.md), [triggers/timer](plugins/triggers/timer/impl-json.md), [triggers/event](plugins/triggers/event/impl-json.md). The target type dictates the move:
+   - **→ manual:** **delete the `data.uipath` key entirely** — a manual trigger has no `data.uipath` ([manual/impl-json.md](plugins/triggers/manual/impl-json.md) "No `data.uipath` key"). Do not leave an empty or stale block.
+   - **→ timer:** set `data.uipath = { serviceType: "Intsvc.TimerTrigger", … }` per the timer recipe.
+   - **→ event:** set `data.uipath = { serviceType: "Intsvc.EventTrigger", … }` per the event recipe (or the placeholder shape if the connector is unresolved).
+
+   Preserve `data.label`, `data.description`, and `data.parentElement` (secondary triggers).
+3. **Run the In-arg / trigger-output variable cascade when the bridge host changes.** The In-arg bridge lives on `triggerNode.data.uipath.outputs[]` ([global-vars/impl-json.md § In argument](plugins/variables/global-vars/impl-json.md)). Replacing → manual removes `data.uipath` and therefore the only host for `outputs[]`, silently orphaning every bridge and its trigger-sourced companion. For each bridge dropped by the type change, sweep `=vars.<name>` consumers and prune/repoint the `root.inputs[]` formal slot + `root.inputOutputs[]` companion per § Rename or delete a global variable or argument (Delete path). When the target type still hosts `outputs[]` (timer / event), re-emit the bridges on the new `data.uipath.outputs[]`.
+4. Update the matching `entry-points.json` entry. The `filePath` `#<triggerId>` fragment stays (id unchanged). **Note:** manual and timer entry-points `input`/`output` are always empty `{ "type": "object", "properties": {} }` ([manual/impl-json.md](plugins/triggers/manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints), [timer/impl-json.md § entry-points.json append](plugins/triggers/timer/impl-json.md)) — only `displayName` can change for those targets. Event triggers may carry a non-empty io shape.
+5. Edit — narrow slices targeting that node's `data.uipath`, the `entry-points.json` entry, and any swept variable slices. Never whole-file Write.
+6. Validate at the section boundary.
+
+### Re-target an event trigger (same type, different event)
+
+Keep an event trigger as an event trigger but point it at a different connector event (different object / operation / filter). Distinct from § Replace a trigger with a different type (which changes the *type*). Keep the node `id`.
+
+1. **Re-fetch the case-spec** for the new event — `uip maestro case spec --type trigger --output json` (never hand-author connector schemas; see [connector-integration.md](connector-integration.md) and [plugins/triggers/event/impl-json.md](plugins/triggers/event/impl-json.md)).
+2. Read `caseplan.json`; locate the Trigger node by `id`. Rebuild `data.uipath` (`serviceType: "Intsvc.EventTrigger"` + the new `context[]` / `inputs[]` / `outputs[]` / `bindings[]`) from the fetched spec.
+3. **Regenerate the trigger's root bindings + variable bridges.** A different event changes the Connection/Folder bindings and the trigger-output → companion wiring. Re-run the trigger-output dispatch ([global-vars/impl-json.md Loop A](plugins/variables/global-vars/impl-json.md)): drop bridges/companions for outputs the old event produced and the new event no longer does (sweep `=vars.*` consumers per § Rename or delete a global variable or argument), add the new ones.
+4. **Update `entry-points.json`** `input`/`output` if the event's io shape changed; the `#<triggerId>` fragment stays.
+5. **Regenerate `bindings_v2.json`** + repopulate the IS connection cache ([bindings-v2-sync.md](bindings-v2-sync.md)) and run `uip solution resources refresh` before debug/publish (Rule 14) — the new event needs its own Connection resource declaration.
+6. Edit — narrow slices for the node's `data.uipath`, root bindings / `inputOutputs[]`, and `entry-points.json`. Never whole-file Write. Validate at the section boundary.
+
+> If the connector / connection is unresolved, downgrade to the event placeholder shape ([plugins/triggers/event/impl-json.md § Placeholder fallback](plugins/triggers/event/impl-json.md)) rather than fabricating IDs.
+
+### Convert a Stage to/from an Exception Stage
+
+An exception (secondary) stage is **not** a distinct node type — it is a regular `case-management:Stage` node carrying `data.stageType: "secondary"`. `stageType` is the enum `["primary", "secondary"]`; primary stages **omit** the field entirely. So the node `type` never changes — the **only** JSON delta is the presence/value of `data.stageType`. Keep the node `id` so tasks, conditions, and `=vars.*` references stay valid (delete + re-add is forbidden, [brownfield.md](brownfield.md) "preserve IDs").
+
+1. Read `caseplan.json`; locate the stage node by `id` (always `type: "case-management:Stage"`).
+2. **Primary → Secondary (exception):** add `data.stageType: "secondary"`. Leave `data.entryConditions` / `data.exitConditions` as they are — a secondary stage is condition-entered, so ensure it has ≥1 entry condition (add one per [plugins/conditions/stage-entry-conditions/impl-json.md](plugins/conditions/stage-entry-conditions/impl-json.md) if it has none).
+3. **Secondary → Primary:** **remove the `data.stageType` key** (primary stages omit it — do not set `"primary"` explicitly unless the file already does). Re-check the stage's reachability: a primary stage still needs ≥1 entry condition (`case-entered` if first, else `selected-stage-completed` / `selected-stage-exited`).
+4. `isInterrupting` is **not** part of this delta — it lives on the entry-condition *rule*, not the stage node. Leave it alone.
+5. Edit — narrow slice targeting that node's `data.stageType` key (and any reworked entry condition). Never whole-file Write. Validate at the section boundary.
 
 ### Re-wire a stage transition — RETIRED (no edges)
 
