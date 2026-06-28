@@ -45,6 +45,10 @@ Please answer these questions to continue:
    - If yes, paste it
    - If no, say **"create one"** and I'll set it up via browser automation
 
+**6. Default UI styling** — apply UiPath's Apollo Vertex design system (`@uipath/apollo-wind` components, semantic tokens, and a light/dark theme toggle out of the box)?
+   - `yes` *(recommended)* — apollo-wind + `next-themes` on top of Tailwind: Apollo Vertex design system, light/dark theme toggle out of the box
+   - `no` — Tailwind only; bring your own component library
+
 ---
 
 **Wait for the user's reply before proceeding.**
@@ -87,51 +91,89 @@ Then `cd` into `<app-name>`. Every subsequent step runs from this directory.
 
 ### 4.3 — Install dependencies
 
-Run these as **two separate commands** in order. The `--@uipath:registry` flag binds only to the first command (the SDK install) — do not apply it to the second, and do not run a bare `npm install` with the flag.
+Run these as **separate commands** in order. The `--@uipath:registry` flag binds only to commands installing `@uipath/*` packages — do not apply it to the others, and do not run a bare `npm install` with the flag.
+
+**Common (always run):** both Q6 paths use `new UiPath()` (no config) — the SDK reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` from `<meta name="uipath:*">` tags injected by `@uipath/coded-apps-dev` (locally) or by the platform (in production). Tailwind is shared too.
 
 ```bash
-# 1. UiPath SDK (registry flag forces public npm to bypass GitHub Packages auth)
+# UiPath SDK (registry flag forces public npm to bypass GitHub Packages auth)
 npm install @uipath/uipath-typescript --@uipath:registry=https://registry.npmjs.org
 
-# 2. Remaining runtime + Tailwind dependencies
-npm install path-browserify tailwindcss@3 postcss autoprefixer
+# coded-apps-dev Vite plugin — injects <meta name="uipath:*"> tags from
+# uipath.json so `new UiPath()` (no config) works in local dev
+npm install -D @uipath/coded-apps-dev --@uipath:registry=https://registry.npmjs.org
+
+# Tailwind — shared across both Q6 paths
+npm install -D tailwindcss@4 @tailwindcss/postcss postcss autoprefixer
 ```
 
-> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces `@uipath/uipath-typescript` to install from the public npm registry.
+> **Why the registry flag?** Users may have `@uipath` scoped to GitHub Packages in their `.npmrc`, which requires authentication and causes a 401. The flag forces `@uipath/*` packages to install from the public npm registry.
+
+**Then branch on the Q6 styling answer for the component layer only:**
+
+- **If `default styling = yes`** *(recommended)* — apollo-wind brings Apollo Vertex tokens, dark-mode toggle, and React components:
+
+  ```bash
+  # apollo-wind + apollo-core (UiPath design system, public on npm)
+  npm install @uipath/apollo-wind @uipath/apollo-core --@uipath:registry=https://registry.npmjs.org
+
+  # Theme toggle deps
+  npm install next-themes lucide-react
+  ```
+
+- **If `default styling = no`** — keep the SDK + Tailwind baseline above and bring your own component library; only one extra runtime dep is needed:
+
+  ```bash
+  # SDK browser-bundle polyfill (defensive — the current SDK doesn't strictly
+  # require it, but a future version could)
+  npm install path-browserify
+  ```
 
 ### 4.4 — Remove Vite defaults that will be overwritten
 
-`npx create-vite` ships default versions of three files we replace in Step 4.5. Delete them first so the Write tool can create them fresh — otherwise each Write requires a Read-first round-trip and produces a benign-but-noisy "Error writing file" message.
+`npx create-vite` ships default versions of files we replace in Step 4.5. Delete them first so the Write tool can create them fresh — otherwise each Write requires a Read-first round-trip and produces a benign-but-noisy "Error writing file" message.
 
-```bash
-rm vite.config.ts src/App.tsx src/index.css
-```
+- **`default styling = yes`** — also overwrites `src/main.tsx` to wrap `<App>` in the theme provider:
+
+  ```bash
+  rm vite.config.ts src/App.tsx src/index.css src/main.tsx
+  ```
+
+- **`default styling = no`**:
+
+  ```bash
+  rm vite.config.ts src/App.tsx src/index.css
+  ```
 
 ### 4.5 — Write project files from templates
 
 All file content lives in [../assets/templates/web-app-template.md](../assets/templates/web-app-template.md). For each row below, copy the named section from that file verbatim into the path shown, applying the listed substitutions. Create `src/hooks/` first; the rest of the directories already exist from `create-vite`.
 
-| Path | Template section | Substitutions |
-|------|------------------|---------------|
-| `vite.config.ts` | `## vite.config.ts` | none |
-| `uipath.json` | `## uipath.json` | `{{SCOPES}}`, `{{CLIENT_ID}}` |
-| `.env` | `## .env` | `{{CLIENT_ID}}`, `{{SCOPES}}`, `{{ORG_NAME}}`, `{{TENANT_NAME}}`, `{{BASE_URL}}` |
-| `.env.example` | `## .env.example` | none |
-| `src/hooks/useAuth.tsx` | `## src/hooks/useAuth.tsx` | none |
-| `src/App.tsx` | `## src/App.tsx` | none |
-| `tailwind.config.js` | `## tailwind.config.js` | none |
-| `postcss.config.js` | `## postcss.config.js` | none |
-| `src/index.css` | `## src/index.css` | none |
+**Pick the template-section column based on the Q6 styling answer.** When the column says `—`, skip that row entirely (the file isn't needed on that path). `uipath.json` and `useAuth.tsx` are shared verbatim — the same SDK init (`new UiPath()` no config) runs on both paths.
 
-### 4.6 — Append `.env` to `.gitignore`
+| Path | Template section — `default styling = yes` | Template section — `default styling = no` | Substitutions |
+|------|---|---|---|
+| `vite.config.ts` | `## vite.config.ts (default styling)` | `## vite.config.ts` | none |
+| `uipath.json` | `## uipath.json` | `## uipath.json` | `{{SCOPES}}`, `{{CLIENT_ID}}` |
+| `src/hooks/useAuth.tsx` | `## src/hooks/useAuth.tsx` | `## src/hooks/useAuth.tsx` | none |
+| `src/components/Theme.tsx` | `## src/components/Theme.tsx (default styling)` | — | none |
+| `src/main.tsx` | `## src/main.tsx (default styling)` | — | none |
+| `src/App.tsx` | `## src/App.tsx (default styling)` | `## src/App.tsx` | none |
+| `postcss.config.js` | `## postcss.config.js (default styling)` | `## postcss.config.js` | none |
+| `src/index.css` | `## src/index.css (default styling)` | `## src/index.css` | none |
 
-```bash
-echo ".env" >> .gitignore
-```
+> **No `tailwind.config.js` on either path** — Tailwind configuration lives directly in `src/index.css`. No `.env` file either — `uipath.json` (committed) plus `.uipath/` (populated by `uip login`) are the single config source.
+
+### 4.6 — `.gitignore`
+
+Neither path writes a `.env`, so no `.gitignore` change is needed for OAuth config. The `.uipath/` directory (populated by `uip login` and holding tenant/org/baseUrl info) is gitignored by `npx create-vite`'s default plus `uip codedapp`'s conventions — verify with `cat .gitignore | grep -i uipath` and add `.uipath/` if missing.
 
 ### 4.7 — Verify the scaffold
 
-First, confirm all files exist: `vite.config.ts`, `uipath.json`, `.env`, `.env.example`, `tailwind.config.js`, `postcss.config.js`, `src/hooks/useAuth.tsx`, `src/App.tsx`, `src/index.css`. If any are missing, re-run the corresponding row from Step 4.5.
+First, confirm all expected files for your Q6 branch exist. If any are missing, re-run the corresponding row from Step 4.5.
+
+- **`default styling = yes`:** `vite.config.ts`, `uipath.json`, `postcss.config.js`, `src/index.css`, `src/hooks/useAuth.tsx`, `src/components/Theme.tsx`, `src/main.tsx`, `src/App.tsx`
+- **`default styling = no`:** `vite.config.ts`, `uipath.json`, `postcss.config.js`, `src/index.css`, `src/hooks/useAuth.tsx`, `src/App.tsx`
 
 Then run `npm run build` to verify the scaffold compiles and SDK imports resolve:
 
@@ -175,7 +217,7 @@ const records = await entities.getAllRecords('<entity-id>'); // entity ID is a U
 
 See [oauth-scopes.md](oauth-scopes.md) for the full list of methods and their required scopes.
 
-If the user wants a **Document Understanding validation UI** (review/correct extraction results), embed the Validation Station widget — see [widgets/validation-station.md](widgets/validation-station.md). Required scope: `OR.Buckets` (plus `OR.Tasks` if the widget completes an Action Center task on save). Add to `VITE_UIPATH_SCOPE` during scaffold (Step 1).
+If the user wants a **Document Understanding validation UI** (review/correct extraction results), embed the Validation Station widget — see [widgets/validation-station.md](widgets/validation-station.md). Required scope: `OR.Buckets` (plus `OR.Tasks` if the widget completes an Action Center task on save). Add to the `scope` field in `uipath.json` during scaffold (Step 1).
 
 When implementing specific SDK services, read the corresponding reference:
 

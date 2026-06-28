@@ -3,12 +3,12 @@
 Required OAuth scopes for each `@uipath/uipath-typescript` SDK service and method.
 
 Use this reference to:
-1. Determine which scopes to include in `VITE_UIPATH_SCOPE` (`.env`)
+1. Determine which scopes to include in the `scope` field of `uipath.json`
 2. Determine which scopes to add to the UiPath External Application
 
 **Note:** Broader scopes cover granular ones (e.g., `OR.Assets` covers `OR.Assets.Read`). Use the most specific scope that satisfies the operations the app performs.
 
-> **Update scopes WHEN you add the feature.** Any new service call — a write op (`insertRecordById`, `updateRecordById`, `deleteRecordById`), an action-causing method (`Jobs.stop`/`resume`/`restart`, `Tasks.complete`/`assign`, `ProcessInstances.cancel`, `Exchanges.createFeedback`, etc.), or a call to a service the app hasn't used before — may need a scope broader than what the current `VITE_UIPATH_SCOPE` in `.env` carries. Check the tables below before shipping the feature. The External Application registration must also allow the scope; if not, the token request is rejected entirely (see [oauth-client-setup.md](oauth-client-setup.md)).
+> **Update scopes WHEN you add the feature.** Any new service call — a write op (`insertRecordById`, `updateRecordById`, `deleteRecordById`), an action-causing method (`Jobs.stop`/`resume`/`restart`, `Tasks.complete`/`assign`, `ProcessInstances.cancel`, `Exchanges.createFeedback`, etc.), or a call to a service the app hasn't used before — may need a scope broader than what the current `scope` field in `uipath.json` carries. Check the tables below before shipping the feature. The External Application registration must also allow the scope; if not, the token request is rejected entirely (see [oauth-client-setup.md](oauth-client-setup.md)).
 
 ---
 
