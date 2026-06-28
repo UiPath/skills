@@ -204,7 +204,7 @@ uip maestro case tasks describe --type connector-trigger --id <typeId> --connect
 
 | Flag | Description |
 |------|-------------|
-| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `connector-activity`, `connector-trigger`. Use `processOrchestration` for `AGENTIC_PROCESS`. |
+| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `connector-activity`, `connector-trigger`. **For `AGENTIC_PROCESS` use `--type process`** — the CLI routes it to the processOrchestration index internally; `processOrchestration` is NOT a valid `tasks describe` type (it's accepted only by `registry search`/`get --type`). |
 | `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
 | `--connection-id <id>` | Connection UUID (required for `connector-activity` and `connector-trigger` types) |
 

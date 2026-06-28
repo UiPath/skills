@@ -265,7 +265,8 @@ Run `uip maestro case registry pull` first if cache absent. See [registry-discov
 | `wait-for-connector` | connector-trigger `typeId` (`typecache-triggers-index.json`) | an IS connection for the inbound event |
 | `agent` | `agentId` (`agent-index.json`) | the agent is **deployed** |
 | `action` (human task / HITL) | `actionAppId` (`action-apps-index.json`) when a deployed Action App matches | else `<UNRESOLVED>` + Rule-8 placeholder — inline JSON-schema authoring is NOT supported by the action plugin |
-| `process` / `rpa` | `processOrchestrationId` (`process-index.json` / `processOrchestration-index.json`) | the process is **published** |
+| `process` (regular) / `rpa` | `entityKey` (`process-index.json`) | the process is **published** |
+| `AGENTIC_PROCESS` | `entityKey` (`processOrchestration-index.json`) | published; **or** built inline at the Phase 1 Rule 17 Create gate (in-solution Process Orchestration sibling) |
 | `api-workflow` | `apiWorkflowId` (`api-index.json`) | the API workflow is **deployed** |
 | `case-management` | child case (`caseManagement-index.json`) | the child case is **published** |
 
@@ -302,10 +303,10 @@ Per-task AskUserQuestion (4 options max). **When candidate matches differ by fol
 |---|---|
 | `<top match — name · folder · version · type>` | Record selection (incl. chosen folder). |
 | `<second match — name · folder · version · type>` (if available) | Record selection (incl. chosen folder). |
-| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. **For an `agent`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match agent need not stay manual. |
+| `Placeholder — resolve later` | Keep `<UNRESOLVED>` on `taskTypeId` / `typeId` / `connectionId`. Phase 1 emits placeholder task per Rule 8. **For an `agent` or `AGENTIC_PROCESS`,** Phase 1's Rule 17 gate additionally offers to build it inline as an in-solution sibling ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a no-match agent/agentic-process need not stay manual. |
 | `Something else` | Free-text re-search keyword, retry. |
 
-**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` — plus, when ≥1 still-empty is an `agent` AND the CLI supports `registry --local`, `Create the missing agent(s) inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
+**Empty registry match** across bucket C → AskUserQuestion `Force pull and re-resolve` / `Skip and use placeholders` — plus, when ≥1 still-empty is an `agent` or `AGENTIC_PROCESS` AND the CLI supports `registry --local`, `Create the missing agent(s) / agentic process(es) inline` (build as in-solution siblings; see [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — per Rule 17, applied per batch, not per task. When the user picks `Skip and use placeholders`, every unresolved task emits a high-severity review item per [sdd-generation-rules.md § Review items](sdd-generation-rules.md#review-items).
 
 #### Schema discovery — pull each resolved task's I/O contract
 
