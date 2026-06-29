@@ -11,6 +11,15 @@ CLI: `uip or --help`
 - [products/orchestrator/overview.md](./products/orchestrator/overview.md) — Product overview, features, and dependencies
 - [products/orchestrator/summary.md](./products/orchestrator/summary.md) — All playbooks for Orchestrator issues
 
+## Studio
+
+UiPath Studio (Desktop and Web) — the authoring IDE. This domain covers Studio-level *platform* failures that are not workflow-code or activity faults: license acquisition (License Provider = Orchestrator), profile entitlement (Studio vs StudioX), and in-IDE AI features (Autopilot for developers). Issues here involve Studio running unlicensed ("No license exist for this installation"), Autopilot greyed out / "disabled by your organization", and tenant-service enablement gaps. For `.xaml` / `.cs` authoring and activity faults use UI Automation / System Activities / Runtime Exceptions; for agent/product LLM routing use LLM Gateway.
+
+CLI: `uip login status`, `uip admin tenants get`, `uip admin tenants services enable`, `uip platform users licenses get`
+
+- [products/studio/overview.md](./products/studio/overview.md) — Profiles, license acquisition, Autopilot, tenant-service dependencies, and CLI surface
+- [products/studio/summary.md](./products/studio/summary.md) — All playbooks for Studio issues
+
 ## Runtime Exceptions
 
 General .NET runtime exceptions originating from the user's own workflow code — not from activity packages or platform internals. Covers null references, null arguments, and similar errors in workflow logic, variable handling, and data processing.
