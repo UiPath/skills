@@ -16,7 +16,7 @@ Product × delivery-model availability matrix. Consulted by the [Constraint Gate
 
 ## Availability Matrix
 
-> **Scope.** Lists products the planner can route to a skill, plus the few skill-less products that serve as a documented fallback or manual deliverable (e.g. UiPath Apps low-code → Coded Apps fallback). Document Understanding / IXP route through `uipath-ixp`. Pure platform/analytics features with no planner build path (Insights, AI Center, Task Mining, Autopilot for Everyone, Studio Web) are intentionally omitted — gate those manually if a PDD names them.
+> **Scope.** Lists products the planner can route to a skill. Document Understanding / IXP route through `uipath-ixp`. Pure platform/analytics features with no planner build path (Insights, AI Center, Task Mining, Autopilot for Everyone, Studio Web) are intentionally omitted — gate those manually if a PDD names them.
 
 | Product | Cloud | Automation Suite | AS notes | Alternative when blocked |
 |---|---|---|---|---|
@@ -24,8 +24,7 @@ Product × delivery-model availability matrix. Consulted by the [Constraint Gate
 | Solutions (`.uipx` deploy) | ✅ | ✅ since **2.2510** | Older AS cannot ingest `.uipx` — the planner's terminal artifact degrades to per-package Orchestrator deploys | Per-package publish via Orchestrator (route deploy tasks to `uipath-platform` instead of `uipath-solution`) |
 | Maestro (.flow / BPMN orchestration) | ✅ | ✅ since **2.2510.2** — EKS/AKS + OpenShift profiles only | Requires Temporal-as-a-Service (auto-enabled); Optimize dashboard cloud-only | Orchestrator queues + dispatcher/performer state machine; Action Center approvals for human gates |
 | Agents / Agent Builder | ✅ | ✅ since **2.2510.2** | Requires AI Trust Layer toggle + ≥1 LLM connection (cloud-hosted or self-hosted model); coded agents via Orchestrator 2.2510 | Deterministic RPA + rule-based decisioning; HITL escalation for judgment steps |
-| UiPath Apps (low-code) | ✅ | ✅ since 2021.10 | The on-prem app product. **No CLI/skill in this toolchain builds it** — design the app with the low-code Apps SDD template (`product-selection-guide.md` → Template Mapping); the build is a manual Apps-designer deliverable (§10 of that template). Its data sources / bound processes remain buildable and route normally. | — |
-| Coded Apps (TypeScript web apps) | ✅ (some geo limits) | ❌ **Not available** — cloud only | Official: "Automation Suite and Dedicated deployments are not supported at this time" | UiPath Apps (low-code, manual build — see row above) or Action Center HITL forms for approval/validation touchpoints |
+| Coded Apps (TypeScript web apps) | ✅ (some geo limits) | ❌ **Not available** — cloud only | "Automation Suite and Dedicated deployments are not supported at this time" | **None** — no on-prem app equivalent in this toolchain. Flag the app touchpoint as `[SME REVIEW]`; do not substitute a product the planner cannot build. |
 | API Workflows | ✅ | ✅ since **2.2510** | Maestro integration needs 2.2510.2+ | RPA Process invoked via Orchestrator API / queue |
 | Data Service (Data Fabric entities) | ✅ | ✅ since 2022.4 | No retention/TTL policy on file fields on any delivery model — design storage lifecycle (cleanup process) explicitly when storing files | — |
 | Integration Service | ✅ (full catalog) | ✅ full since **2.2510** (2024.10 EKS/AKS-only, patched) | Not supported with FIPS 140-2 or air-gapped installs; connectors are admin-curated per tenant, not the full cloud catalog — confirm the needed connector is installed | Direct HTTP/REST calls from RPA or API Workflows |

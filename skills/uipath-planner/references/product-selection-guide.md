@@ -167,7 +167,7 @@ The goal of Level 1.75 is to produce a concrete list of projects the SDD will co
 
 ### Pass A — Select products to include (multi-select)
 
-**Gate the option list first.** Before composing the questions, drop every product the [Constraint Gate](#constraint-gate) blocks for this delivery model (matrix block or user exclusion) — do not show a blocked product as a selectable option. When a dropped product had matching Level 1 signals, say so in the question preamble with the alternative (e.g., "Coded Apps is not available on Automation Suite — the app touchpoint is covered per the availability guide's alternative").
+**Gate the option list first.** Before composing the questions, drop every product the [Constraint Gate](#constraint-gate) blocks for this delivery model (matrix block or user exclusion) — do not show a blocked product as a selectable option. When a dropped product had matching Level 1 signals, say so in the question preamble with the alternative from the availability matrix. When the matrix lists no alternative (e.g., Coded Apps on Automation Suite — no on-prem equivalent), state that and mark the touchpoint `[SME REVIEW]`; do not substitute a product the planner cannot build.
 
 `AskUserQuestion` has a hard 4-option cap per question. Pass A covers 8 candidate products, so it **must be a single `AskUserQuestion` call containing two question objects**, each with `multiSelect: true` and ≤4 options. The user answers both questions on one screen; both sets of selections return together.
 
@@ -340,10 +340,7 @@ Based on the Level 1 primary, select one template:
 | Case Management | `../assets/templates/case-sdd-template.md` |
 | Agents | `../assets/templates/agent-sdd-template.md` |
 | Coded Apps | `../assets/templates/coded-app-sdd-template.md` |
-| UiPath Apps (low-code) | `../assets/templates/apps-lowcode-sdd-template.md` |
 | API Workflows | `../assets/templates/api-workflow-sdd-template.md` |
-
-> **Low-code Apps is design-only here** — no CLI/skill builds it; the template marks the build as a manual UiPath Apps-designer deliverable. Use it when the primary is an app touchpoint AND Coded Apps is blocked (Automation Suite / standalone), or when the PDD explicitly asks for low-code Apps.
 
 ### Solution scope (Level 1 = Solution or user picked Solution (customize))
 

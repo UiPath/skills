@@ -467,16 +467,21 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 ### Step 2.5: Word (.docx) Delivery — only when requested
 
-When the user asks for a Word deliverable (client-facing SDD, "official template", ".docx"), convert the written SDD — do not author Word content by hand and never drive Word via COM automation:
+When the user asks for a Word or client-facing deliverable, convert the written SDD — do not author Word content by hand or drive Word via COM.
+
+**Plain `.docx` of the SDD:**
 
 ```bash
-bash <SKILL_DIR>/scripts/sdd-to-docx.sh "<SDD_PATH>.md"
+bash <SKILL_DIR>/scripts/sdd-to-docx.sh "<SDD_PATH>.md" [--reference-doc "<TEMPLATE>.docx"]
 ```
 
-- **Corporate styling:** if the user has an official SDD Word template, pass it as a style reference — `--reference-doc "<TEMPLATE_PATH>.docx"`. The output picks up its fonts, heading styles, and margins. Section *structure* still follows this skill's markdown SDD. To map content into the official **ASDD** section skeleton, see [asdd-crosswalk-guide.md](asdd-crosswalk-guide.md) — the user supplies their ASDD skeleton; section structure is not auto-generated.
-- **Mermaid diagrams** stay as code blocks in the .docx (the script warns) — there is no built-in image rendering, by design (a renderer would add a heavy Node/Chromium dependency, and a remote renderer would leak customer architecture). They are valid SDD content as-is. If the deliverable needs diagram *images*, tell the user the manual path: copy each ` ```mermaid ` block into a Mermaid renderer (e.g. the Mermaid Live Editor, or a local `mmdc` they install themselves), export PNG/SVG, and replace the code block in the .docx. Caution the user not to paste sensitive architecture into a third-party web renderer.
-- **Diagram "reflow" is automatic on regeneration, not a hand-edit.** The planner builds each Mermaid diagram from the current step/node set every run (e.g. RPA §2 Process Map is built strictly from the Phase 1 steps). To change a diagram after nodes are added/removed, regenerate the SDD — do not hand-edit Mermaid nodes in the .docx.
-- If the script reports pandoc missing, relay its install command. Do not fall back to COM, HTML-to-doc tricks, or hand-built XML.
+`--reference-doc` applies a customer template's fonts, heading styles, and margins. The section structure stays as the markdown SDD.
+
+**Official ASDD (client structure):** the markdown SDD is agent-first; the ASDD is the client deliverable in the customer's own section layout. Ask the user for the ASDD template path, then follow [asdd-crosswalk-guide.md](asdd-crosswalk-guide.md) to match the SDD into the ASDD sections and compute the missing pieces. Do not invent the official section structure.
+
+**Diagrams:** keep them as Mermaid and make them readable — clear node labels, one node per step, a logical direction. They convert as code blocks. Rendering them to images and styling the final document are not this skill's job — leave that to the user or their doc tooling.
+
+If the script reports pandoc missing, relay its install command.
 
 Skip this step entirely when the user did not ask for Word output.
 

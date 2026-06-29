@@ -34,7 +34,7 @@ A request is **single-skill** when:
 
 `uipath-rpa` does not deploy. Deploy to Orchestrator for solution-bundled RPA goes through `uipath-solution` (`uip solution pack/publish/deploy`). For raw single-package Orchestrator ops not wrapped in a `.uipx`, defer to `uipath-platform`.
 
-> **Attended re-auth handoff is inside the RPA build step, not a separate skill.** When the SDD carries a §9 *Interactive Authentication / Re-auth Handoff* subsection (human-only login — hardware token, smart card, biometric), the `uipath-rpa` build task implements the pause/handoff/state-verified-resume per [attended-reauth-pattern-guide.md](attended-reauth-pattern-guide.md). Pass the handoff contract as business intent; do not split it into its own task or describe the activities (Critical Rule 8).
+> **Attended re-auth handoff is inside the RPA build step, not a separate skill.** When the SDD carries a §9 *Interactive Authentication / Re-auth Handoff* subsection (human-only login — hardware token, smart card, biometric), the `uipath-rpa` build task implements the pause/handoff/state-verified-resume per [attended-reauth-pattern-guide.md](attended-reauth-pattern-guide.md). Pass the handoff contract as business intent; do not split it into its own task or describe the activities.
 
 ## Pattern 2 — Flow with local resources
 
