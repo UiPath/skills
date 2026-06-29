@@ -75,7 +75,7 @@ Both tracks are **manually triggered** — there is no auto-publish on push to `
 Off-cadence or ad-hoc cut: dispatch manually with `release_override` (e.g. `1.197`) to set the release line and skip the cadence gate, or `dry_run` to print the plan without pushing.
 
 > **Required repo setup (both are hard prerequisites):**
-> - Branch protection must allow the Actions identity (`github-actions[bot]` via `GITHUB_TOKEN`) to **push `main` directly** and to push `release/v*` — otherwise the bump push and the cut 403. (Configure a branch-protection/ruleset bypass for the Actions app, or switch the bump to a PAT/GitHub App token.)
+> - A `GH_PAT` secret — a write token whose identity is a **bypass actor on `main`'s ruleset** — used as the checkout token so the workflow can push `release/v*` and **push `main` directly** (the default `GITHUB_TOKEN` can't push a protected branch). This mirrors `UiPath/cli`'s `create-release-branch.yml` (`GH_WRITE_TOKEN`); no PR / auto-merge is used.
 > - `actions: write` permission on this workflow (already set) so it can dispatch `publish.yml`.
 
 > **Recovery if a run fails *after* the main bump.** Because the bump pushes straight to `main`, once `main` has advanced a re-run of the whole cut would target the *new* line. So if a run bumps `main` but the alpha dispatch fails, **don't re-run the cut** — re-dispatch just the publisher: `gh workflow run publish.yml --ref main -f target=github-alpha`. (The 14-day cadence gate prevents an accidental scheduled re-run in the meantime.)

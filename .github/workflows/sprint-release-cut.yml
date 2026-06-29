@@ -6,8 +6,8 @@ name: Sprint Release Cut
 #   1. cuts release/v<current> from main — the release line is the version main
 #      is currently on (main on 1.197.0 -> release/v1.197, frozen at 1.197.0);
 #   2. bumps main forward to the next minor (1.197.0 -> 1.198.0), pushed
-#      DIRECTLY to main (requires branch protection to let the Actions identity
-#      push main — see docs/RELEASE.md);
+#      DIRECTLY to main via the GH_PAT write token (a bypass actor on main's
+#      ruleset) — same approach as UiPath/cli's create-release-branch.yml;
 #   3. publishes an ALPHA of the new main line to GitHub Packages only
 #      (dispatches publish.yml target=github-alpha → 1.198.0-alpha.<date>.<run>).
 #
@@ -55,6 +55,11 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          # Privileged write token (a bypass actor on main's ruleset) so the
+          # release-branch and direct main push go through — the default
+          # GITHUB_TOKEN can't push a protected branch. Mirrors UiPath/cli's
+          # create-release-branch.yml (GH_WRITE_TOKEN).
+          token: ${{ secrets.GH_PAT }}
 
       - uses: actions/setup-node@v4
         with:
@@ -147,14 +152,26 @@ jobs:
             exit 0
           fi
 
+          # Guard against a race: main must not have moved since this run was
+          # queued (we cut release/v<current> from this exact HEAD). If it has,
+          # bail rather than push a stale bump. (Mirrors UiPath/cli.)
+          BASE_SHA=$(git rev-parse HEAD)
+          git fetch origin main
+          ORIGIN_MAIN=$(git rev-parse origin/main)
+          if [ "$ORIGIN_MAIN" != "$BASE_SHA" ]; then
+            echo "::error::main moved after this run was queued (origin/main=$ORIGIN_MAIN, based on $BASE_SHA). Re-run."
+            exit 1
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           npm version "$NEXT_VERSION" --no-git-tag-version --allow-same-version
           node scripts/sync-version.mjs
           git add package.json version-manifest.json .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json
           git commit -m "chore(release): open $NEXT_LINE dev line (cut release/v${{ steps.target.outputs.release_line }})"
-          # Direct push to main — requires branch protection to allow the
-          # Actions identity to push main (otherwise this 403s).
+          # Direct push to main via the GH_PAT checkout token (a bypass actor on
+          # main's ruleset) — same approach as UiPath/cli. The default
+          # GITHUB_TOKEN cannot push a protected branch.
           git push origin HEAD:main
           echo "bumped=true" >> "$GITHUB_OUTPUT"
 
