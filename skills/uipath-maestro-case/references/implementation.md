@@ -61,10 +61,11 @@ Before Step 6, seed TodoWrite with the section-level items below. Mark each `in_
 1. Scaffold solution + project + root case (Step 6)
 2. Add triggers (Step 6.1)
 3. Declare variables + arguments (Step 6.2)
-4. Add stages (Step 7)
-5. Write task shapes (Step 9)
-6. Regenerate bindings_v2.json (Step 9.4)
-7. Skeleton validate + hard stop (Step 9.5)
+4. Refresh entry-points.json input/output (Step 6.3)
+5. Add stages (Step 7)
+6. Write task shapes (Step 9)
+7. Regenerate bindings_v2.json (Step 9.4)
+8. Skeleton validate + hard stop (Step 9.5)
 
 (No edge step — edges are retired; stage transitions are condition-driven and written in Phase 3 Step 10.)
 
@@ -100,6 +101,10 @@ Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to 
 ## Step 6.2 — Declare global variables and arguments
 
 For each variable/argument T-entry from `tasks.md §4.2.1`, write entries directly into `caseplan.json` per [`plugins/variables/global-vars/impl-json.md`](plugins/variables/global-vars/impl-json.md). This step populates top-level `variables` (inputs, outputs, inputOutputs) and trigger output mappings. Execute these before adding stages — downstream tasks and conditions reference variables via `=vars.<id>`.
+
+## Step 6.3 — Refresh entry-points.json input/output
+
+After Step 6.2, project the declared In/Out arguments onto every `entry-points.json` entry's `input`/`output` schema per [entry-points-sync.md](entry-points-sync.md). Triggers (Step 6.1) scaffold each entry with empty `input`/`output` because variables don't exist yet; this back-fills them. Prerequisites — all entries (Step 6.1) + all In/Out args (Step 6.2) — are complete here, and In/Out formal args never change in Phase 3, so the file is correct from the Phase-2 publish branch onward. Idempotent — re-run on regenerate. Verified by Step 12 Check 6.
 
 ## Step 7 — Add stages
 
@@ -256,7 +261,7 @@ Runs after bindings (9.8), conditions (10), and SLA (11) — when every task / t
 
 > **Algorithm reference:** the per-check pseudocode + AskUserQuestion prompt templates + skill-response-per-pick details all live in [`plugins/variables/io-binding/impl-json.md § Binding Procedure`](plugins/variables/io-binding/impl-json.md#binding-procedure). This step is the orchestration hook; that doc is the algorithm. When in doubt, follow the impl-json doc.
 
-After all value bindings (Step 9.8), conditions (Step 10), SLA (Step 11), and marker resolution (Step 11.5) are written, invoke the end-of-Phase-3 validator — Checks 1, 2, 3, 4, 5.
+After all value bindings (Step 9.8), conditions (Step 10), SLA (Step 11), and marker resolution (Step 11.5) are written, invoke the end-of-Phase-3 validator — Checks 1, 2, 3, 4, 5, 6.
 
 - **Check 1** — Resolve every `=vars.X` reference against `variables.{inputs, inputOutputs}[].id`. Scan all task input `value` fields, entry/exit condition expressions (stage and task), case-exit and trigger rule expressions, SLA expressions, and `=js:` expressions anywhere they appear. On unresolved → **AskUserQuestion** offering: (a) name the intended variable, (b) remove the reference, (c) continue with best-effort emit (entry logged under Open Items, runtime returns undefined).
 - **Check 2 — Out-arg producer presence** — For every formal Out-arg in `variables.outputs[]`, verify the producer/Default situation per [`io-binding/impl-json.md` § Check 2](plugins/variables/io-binding/impl-json.md):
@@ -266,6 +271,7 @@ After all value bindings (Step 9.8), conditions (Step 10), SLA (Step 11), and ma
 - **Check 3** — Type mismatch between `=vars.X` reference and consumer slot → log WARN inline (non-blocking; string coercion is runtime-tolerant).
 - **Check 4 — No surviving `$xref` markers** — Scan every string value in `caseplan.json` for the literal `$xref(`. Step 11.5 resolves all; any survivor means its name-triple failed (typo'd stage / task / output) — the same class of failure as a Check 1 unresolved `=vars.X`, so it gets the same interactive remediation. On unresolved → **AskUserQuestion** (present the outputs that DO exist on the named task as candidates): (a) name the intended source output — skill rewrites the triple, re-resolves, substitutes `vars.<var>`; (b) edit the SDD expression + re-run the Phase 1 dispatcher (when the output genuinely doesn't exist); (c) continue with best-effort emit (token left unsubstituted, entry logged under Open Items; `vars.$xref(...)` throws at runtime until fixed). Detail: [`io-binding/impl-json.md` § Check 4](plugins/variables/io-binding/impl-json.md).
 - **Check 5 — Resolved-resource I/O completeness** — For each task with a persisted contract in `tasks/registry-resolved.json`, verify every **required** declared input has a bound `value` and every extract output `Field` exists in the resolved output contract. An upstream-output-fed input (`=vars.<var>` / resolved `$xref`) counts as bound with NO §1.5 row. On unbound-required-input or phantom-output-field → **AskUserQuestion**: (a) bind / re-point, (b) `<UNRESOLVED>`+review-item / drop row, (c) continue with best-effort emit (entry logged under Open Items; runtime null until fixed). Tasks with no contract (placeholder / `<UNRESOLVED>`) are skipped. Detail: [`io-binding/impl-json.md` § Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness).
+- **Check 6 — Entry-point schema parity** — Verify every `entry-points.json` entry's `input`/`output` matches the In/Out args projected at Step 6.3 (keys, type mapping, `required`, `file`/`jsonSchema` shapes), plus unique `filePath` fragments and no orphaned `inputs[].elementId`. **Non-interactive:** on mismatch re-run the Step 6.3 refresh once; if still divergent (or a uniqueness/orphan finding) log to `## Open Items for User` and continue. No AskUserQuestion. Algorithm: [`entry-points-sync.md § Check 6`](entry-points-sync.md#check-6--entry-point-schema-parity-step-12-validator).
 
 **Build-with-best policy:** for any user pick of "continue with best-effort emit" on a Check 1, Check 2, Check 4, or Check 5 AskUserQuestion, append a `## Open Items for User` entry to `tasks/build-issues.md` and proceed to Phase 4. AskUserQuestion is the surface; build-with-best is the escape. The skill conservatively emits what it has; Phase 4 validate stays green (structural validity is intact); runtime concerns are listed for pre-publish review.
 

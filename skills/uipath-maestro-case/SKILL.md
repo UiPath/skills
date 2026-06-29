@@ -79,10 +79,11 @@ Read [references/implementation.md](references/implementation.md) + [references/
 1. Solution + project + root case (Step 6)
 2. Triggers — manual / timer / event, including placeholder event triggers per Rule 8 (Step 6.1)
 3. Global variables + arguments (Step 6.2) — including In arguments whose `elementId` references the `TriggerId` (captured in Step 6.1) of the trigger named by the row's `sourceTriggers`, or the primary trigger when blank
-4. Stages (Step 7)
-5. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `case spec`); unresolved as placeholders per Rule 8
-6. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
-7. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resources refresh --solution-folder <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 3` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
+4. Refresh entry-points.json input/output from the declared In/Out args (Step 6.3) — per [`references/entry-points-sync.md`](references/entry-points-sync.md)
+5. Stages (Step 7)
+6. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `case spec`); unresolved as placeholders per Rule 8
+7. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings
+8. **HARD STOP** (Step 9.5.2–9.5.5): `Publish for review` / `Skip publish and continue` / `Abort`. On `Publish`: `uip solution resources refresh --solution-folder <SolutionDir> --output json` then `uip solution upload`, print DesignerUrl, AskUserQuestion: `Continue to phase 3` / `Abort`. On `Abort`: dump `build-issues.md`, exit (no cleanup).
 
 ### Phase 3 — Implementation
 
@@ -127,6 +128,7 @@ Completion report + **HARD STOP** AskUserQuestion (Step 13): `Run debug session`
 | Construct `case spec --input-details` JSON | [references/case-spec-input-details.md](references/case-spec-input-details.md) |
 | Placeholder tasks for unresolved resources | [references/placeholder-tasks.md](references/placeholder-tasks.md) |
 | Sync bindings_v2.json + connection resources | [references/bindings-v2-sync.md](references/bindings-v2-sync.md) |
+| Refresh entry-points.json input/output from In/Out args | [references/entry-points-sync.md](references/entry-points-sync.md) |
 
 ### Plugin Index
 
