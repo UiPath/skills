@@ -25,7 +25,8 @@ initial_prompt: |
   Write a couple evaluations backed by LLMs if possible: 
   one that checks the answer the agent gives back and one that checks
   the path it took to get there.
-  Save the eval results to `eval-results.json`.
+  Save the eval results to `eval-results.json` in the agent project
+  root, next to `pyproject.toml`.
   
 
   Don't publish, upload, or deploy. Just work through it to the end in
