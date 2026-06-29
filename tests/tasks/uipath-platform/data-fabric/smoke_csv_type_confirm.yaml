@@ -1,0 +1,102 @@
+task_id: skill-datafabric-smoke-csv-type-confirm
+description: >
+  Smoke test for data-fabric.md Rule 14 (CSV / sample-data inference clause): when the user
+  asks to create an entity FROM a CSV file, the agent MUST flag every field type as inferred,
+  surface ambiguous columns (date-shaped strings, 0/1 flags, decimal precision), and wait for
+  explicit user confirmation before invoking `entities create`. Silent inference + immediate
+  CLI invocation is a Rule 14 violation.
+tags: [uipath-platform, smoke, data-fabric, entities, bulk-import]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 15
+
+initial_prompt: |
+  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
+  Any uip df command WILL fail with an auth error — that is expected. Do NOT
+  attempt to login. Do NOT retry failed commands.
+
+  Consider this CSV content (header + 3 sample rows):
+
+      order_id,placed_at,total_amount,is_paid,customer_uuid
+      ORD-001,2026-04-12T09:15:00Z,142.50,1,3f8d2a1e-9e0c-4b88-b9a5-2d8a5e1f0a11
+      ORD-002,2026-04-13T14:02:30Z,89.00,0,12c6c4a2-3f5b-4d2e-b6c7-22ab9f0d3e88
+      ORD-003,2026-04-14T18:47:11Z,1024.99,1,3f8d2a1e-9e0c-4b88-b9a5-2d8a5e1f0a11
+
+  Goal: create a Data Fabric entity named "Order" from this CSV so the
+  columns map to fields.
+
+  Important — the column types are NOT spelled out for you. Several columns
+  are AMBIGUOUS:
+    - placed_at: ISO-8601 string → could be STRING or DATETIME
+    - total_amount: decimal → DECIMAL (which decimalPrecision?), FLOAT, or DOUBLE
+    - is_paid: 0/1 → could be INTEGER or BOOLEAN
+    - customer_uuid: UUID-shaped string → could be STRING, UUID, or
+      RELATIONSHIP (target entity Customer)
+
+  Before invoking `uip df entities create`, write a schema proposal to
+  `proposal.md` covering EVERY column. For each column include:
+    - column header
+    - inferred UPPERCASE type (your best guess)
+    - the sample value(s) the inference came from
+    - mark ambiguous columns explicitly with the word "inferred" and list
+      plausible alternative types
+
+  Do NOT run `uip df entities create` in this test — the gate is "agent
+  paused for user confirmation." Use --output json on any uip df call you
+  do make (e.g. environment checks).
+
+success_criteria:
+  - type: file_exists
+    description: "Schema proposal was written before any create attempt"
+    path: "proposal.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Proposal explicitly marks types as inferred (Rule 14 CSV clause)"
+    path: "proposal.md"
+    includes:
+      - "inferred"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Proposal lists all five source columns by name"
+    path: "proposal.md"
+    includes:
+      - "order_id"
+      - "placed_at"
+      - "total_amount"
+      - "is_paid"
+      - "customer_uuid"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Proposal surfaces ambiguous types per Rule 14 (DATETIME / BOOLEAN / DECIMAL / RELATIONSHIP)"
+    path: "proposal.md"
+    includes:
+      - "DATETIME"
+      - "BOOLEAN"
+      - "DECIMAL"
+      - "RELATIONSHIP"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT invoke a real `entities create` before user confirmation (--help lookups OK)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create\s+(?!--help)\S+.*--body'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on any uip df calls (Rule 14 / repo convention)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+.*--output\s+json'
+    min_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

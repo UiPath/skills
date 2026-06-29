@@ -1,5 +1,7 @@
 # Bulk Import Reference
 
+> **Creating the entity FROM the CSV?** If no entity exists yet and the user wants one built around the CSV's columns, that's `entities create` — and field types must be **confirmed, not silently inferred**. See [`data-fabric.md` Rule 14 → CSV / sample-data inference](data-fabric.md#critical-rules). Flag every inferred type with the sample value(s) it came from, surface ambiguous columns (date-shaped strings, `0`/`1` flags, UUID-shaped strings, decimal precision) as `AskUserQuestion` dropdowns, and wait for explicit user approval before invoking `entities create`. *Then* `records import` to load the data.
+
 > **⚠ `records import` does not support complex field types — surface this to the user before invoking (data-fabric.md Rule 20).** `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` columns are **not supported**: the CSV header is accepted but the values are ignored (no error, no `ErrorFileLink` entry — `null` on every imported row, or row failure if the field is `isRequired` without a `defaultValue`). This is current Data Fabric platform behavior, not a bug — do not work around it. Run `entities get <entity-id>` first; if any field is in that set, switch to `records insert --file <json>` (handles all types except `FILE` — use `files upload` for those, see Rule 6). See [Complex Field Types Not Supported](#complex-field-types-not-supported) below.
 
 ## Import Records from CSV

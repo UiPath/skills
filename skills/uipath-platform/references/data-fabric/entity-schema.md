@@ -173,7 +173,7 @@ uip df entities update <entity-id> \
 
 - `referenceEntityId` — UUID of the target entity. Get it from `entities list --native-only` (the `Id` column). Target must exist and be native (no federated targets).
 - `referenceFieldId` — UUID of the join field on the target entity. Get it from `entities get <target-entity-id>` (`Fields[].Id`). Configures join-on-read; the stored value is still the target record's `Id`.
-- `referenceFolderKey` — **only when the target lives in a different folder** than the parent entity. UUID of the target's folder. Omit when the target is tenant-level OR in the same folder as the parent. See [Cross-folder references](#cross-folder-references) for the full lookup flow.
+- `referenceFolderKey` — **only when the target lives in a different folder** than the parent entity (folder ↔ folder cross-references are allowed). Omit when both parent and target are in the same folder, or when both are tenant-level. **Folder-scoped parent fields cannot reference tenant-level targets** — and vice versa. See [Cross-folder references](#cross-folder-references) for the allowed combinations and the lookup flow.
 - The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
 - Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
 - Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required (and `referenceFolderKey` for cross-folder targets).
@@ -194,13 +194,20 @@ uip df records insert <child-entity-id> --body '{"customerId":"<resolved-uuid>",
 
 ### Cross-folder references
 
-Folder-scoped entities can hold RELATIONSHIP, FILE, or CHOICE_SET_* fields whose target lives in a **different folder** (or at the tenant level). Use the per-field `referenceFolderKey` to disambiguate; omit it when the target is tenant-level or in the same folder as the parent.
+`RELATIONSHIP`, `FILE`, and `CHOICE_SET_*` field bindings require the parent and the target to share **scope class** (both tenant, or both folder — possibly different folders). **Crossing the tenant ↔ folder boundary is not allowed.** A folder-scoped entity cannot bind a tenant-level choice set / target entity; a tenant-level entity cannot bind a folder-scoped target. Folder ↔ different-folder works for entities AND choice sets — use per-field `referenceFolderKey`.
 
-| Target location | Per-field key |
-|---|---|
-| Same folder as parent (or both tenant-level) | Omit `referenceFolderKey` |
-| Different folder | `"referenceFolderKey": "<target-folder-guid>"` |
-| Tenant level (target outside any folder) | Omit `referenceFolderKey` |
+| Parent scope | Target scope | Allowed? | Per-field key |
+|---|---|---|---|
+| Tenant | Tenant | ✅ | Omit `referenceFolderKey` |
+| Folder A | Folder A (same folder) | ✅ | Omit `referenceFolderKey` |
+| Folder A | Folder B (different folder) | ✅ | `"referenceFolderKey": "<folder-B-guid>"` |
+| Folder | Tenant user-authored entity / choice set | ❌ | Not supported — move the target into a folder, or move the parent to tenant |
+| Folder | Tenant **system** entity (e.g. `EntityAttachment` for FILE; `User` referenced by every entity's `CreatedBy` / `UpdatedBy`) | ✅ | Omit `referenceFolderKey` — system entities are platform-managed and bindable from any scope |
+| Tenant | Folder | ❌ | Not supported — move the target to tenant, or move the parent into a folder |
+
+System entities live at tenant level but are exempt from the folder ↔ tenant block — that's how FILE fields work on folder-scoped entities (they point at the tenant-level `EntityAttachment` system entity). The exemption is specific to system entities; ordinary tenant entities and choice sets stay blocked.
+
+Surface this constraint to the user **before** invoking `entities create` / `addFields` whenever the proposed parent and target sit on opposite sides of the tenant ↔ folder boundary AND the target is not a system entity. Do not silently fall back to a different field type — see Rule 18 (no silent substitution).
 
 **Lookup sequence:**
 
@@ -302,10 +309,11 @@ uip df entities update <entity-id> \
 
 Irreversible — drops the column and every record's value in it. Note the body shape: `removeFields` takes `{"fieldName": "..."}`, **NOT** `{"id": "..."}` (that's `updateFields`). Mixing those forms returns *"Each field in removeFields must include a non-empty 'fieldName' string"*.
 
-Before invoking, surface the impact to the user:
+Before invoking, surface the impact to the user **and** run the cascade-ask (data-fabric.md Rule 11):
 
-- **RELATIONSHIP / FILE fields** — confirm no flow / coded app reads the value. The FK column disappears entirely.
-- **CHOICE_SET_* fields** — the choice set itself is shared and isn't affected; only this entity's link to it is removed.
+- **CHOICE_SET_* fields** — choice set is shared. Resolve `Fields[].ChoiceSetId` from `entities get <id>`, list other entities binding that choice set (`entities list --output json` → entries whose `Fields[].ChoiceSetId == <id>`), then raise an `AskUserQuestion` dropdown: `Delete only the field` · `Also delete choice set <Name> (<id>)` · `Stop`. On `Also delete …`, run the choice-set-delete flow ([`choice-sets.md` → Delete a choice set](choice-sets.md#delete-a-choice-set)) with its own dependent-discovery.
+- **RELATIONSHIP fields** — confirm no flow / coded app reads the value. Resolve `Fields[].ReferenceEntity.Id`, list other inbound references (`entities list --output json` → entries whose `Fields[].ReferenceEntity.Id == <id>`), then raise an `AskUserQuestion` dropdown: `Delete only the field` · `Also delete target entity <Name> (<id>)` · `Stop`. On `Also delete …`, run the entity-delete flow (Rule 10) with its own dependent-discovery. The FK column on the parent disappears either way.
+- **FILE fields** — drop only the column. The `referenceEntityId` points at platform-managed FILE storage; do **not** offer to delete it.
 - **System fields** (`Id`, `CreatedBy`, …) can't be removed regardless.
 
 Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reason } }`.
@@ -315,6 +323,7 @@ Response: `{ Code: "EntityUpdated", Data: { Id, RemovedFields: ["<name>"], Reaso
 | Operation | Action |
 |-----------|--------|
 | Change a field's data type | Not supported — type is fixed at creation and cannot be changed via `updateFields` |
+| Toggle `isUnique` on an existing field (either direction) | Not supported — `isUnique` is fixed at creation. `updateFields` with `isUnique: true/false` returns `Result: Success` but the server silently ignores the change; the Data Fabric UI renders the toggle as **disabled** on existing fields. To enforce uniqueness on a field that doesn't have it: (1) confirm with the user that the field can be recreated, then (2) `removeFields` it (drops all existing values in that column — see Rule 11), then (3) `addFields` with `isUnique: true`. Do NOT report success on a no-op `updateFields` — verify via `entities get` (see Verify-after-update below). |
 | Field name matching a SQL / language keyword | API returns `RESERVED_LANGUAGE_KEYWORDS` — rename before retrying (see Name Validation above) |
 
 Record-level writes against FILE fields (insert / update / import) are anti-patterns documented in data-fabric.md Rule 6 and [`records-query.md` → FILE fields](records-query.md#file-fields--never-write-through-insertupdate). This file covers schema only.
@@ -353,13 +362,19 @@ uip df entities update <entity-id> \
 uip df entities update <entity-id> \
   --body '{
     "updateFields": [
-      { "id": "<field-id>", "displayName": "Unit Price", "isRequired": true, "isUnique": false }
+      { "id": "<field-id>", "displayName": "Unit Price", "isRequired": true }
     ]
   }' \
   --output json
 ```
 
-`updateFields` entry supports: `id` (required), `displayName`, `description`, `isRequired`, `isUnique`, `isRbacEnabled`, `isEncrypted`, `defaultValue`, `lengthLimit`, `maxValue`, `minValue`, `decimalPrecision`. The four constraint keys follow the per-type allow-list in [Advanced Field Constraints](#advanced-field-constraints).
+`updateFields` entry supports: `id` (required), `displayName`, `description`, `isRequired`, `isRbacEnabled`, `isEncrypted`, `defaultValue`, `lengthLimit`, `maxValue`, `minValue`, `decimalPrecision`. The four constraint keys follow the per-type allow-list in [Advanced Field Constraints](#advanced-field-constraints).
+
+**`isUnique` is NOT updateable** — see Not Supported above. The API accepts it on `updateFields`, returns `Result: Success`, but silently ignores the value (the Data Fabric UI toggle is disabled on existing fields). Recreate the field (`removeFields` → `addFields` with `isUnique: true`) to add or remove uniqueness — with explicit user confirmation, since `removeFields` drops every existing value in the column.
+
+#### Verify-after-update — never trust the Success response alone
+
+`updateFields` can return `Result: Success` while silently ignoring fields the platform doesn't allow to change (today: `isUnique`; previously: any future immutable constraint). After ANY `updateFields` call, re-run `entities get <entity-id> --output json` and compare the response with what you sent. For each key you tried to change, if the post-update value doesn't match what you sent, surface this verbatim to the user — *"The platform accepted the request but did not apply `isUnique: true` on field X — that toggle is immutable after creation."* Do NOT report the change as applied just because the CLI exit code was 0.
 
 ### Supported `entities update` Body Keys
 

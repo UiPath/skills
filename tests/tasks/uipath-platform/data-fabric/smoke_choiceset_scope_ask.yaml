@@ -1,0 +1,59 @@
+task_id: skill-datafabric-smoke-choiceset-scope-ask
+description: >
+  Smoke test for data-fabric.md Rule 19 (mandatory scope-prompt flow) applied to `choice-sets create`.
+  When the user names a choice set + values but does NOT specify tenant vs folder scope, the agent
+  MUST raise an AskUserQuestion-style scope prompt BEFORE invoking `uip df choice-sets create`.
+  Silently defaulting to tenant level (or to personal workspace) is a Rule 19 violation. None of
+  the bypass clauses apply here — the prompt does not say "do not ask", does not name a folder,
+  does not state tenant, and does not derive a folder GUID.
+tags: [uipath-platform, smoke, data-fabric, complex-fields]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 12
+
+initial_prompt: |
+  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
+  Any uip df command WILL fail with an auth error — that is expected. Do NOT
+  attempt to login. Do NOT retry failed commands.
+
+  Create a choice set called "Demo45" with two values: A and B.
+
+  Before invoking `uip df choice-sets create`, write your understanding of
+  what still needs to be resolved to a file called `scope_question.md`. This
+  file is where you document the open question(s) you need answered before
+  the create call is safe to run. Use --output json on any uip df call you
+  do make (e.g. schema lookups).
+
+success_criteria:
+  - type: file_exists
+    description: "Agent wrote a scope-question file before attempting create"
+    path: "scope_question.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Scope-question file surfaces the tenant-vs-folder choice (Rule 19)"
+    path: "scope_question.md"
+    includes:
+      - "folder"
+      - "tenant"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT invoke a real `choice-sets create` before scope is confirmed (--help lookups OK)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+choice-sets\s+create\s+(?!--help)\S'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on any uip df calls (repo convention)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+.*--output\s+json'
+    min_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
