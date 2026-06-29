@@ -35,6 +35,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # Required for `gh workflow run publish.yml` (the Actions
+  # POST .../dispatches endpoint) — without it the dispatch 403s with
+  # "Resource not accessible by integration".
+  actions: write
 
 # GitHub cron runs in UTC and cannot express "every two Sundays" — fire every
 # Sunday, then gate on the 14-day cadence anchor (mirrors UiPath/cli).
