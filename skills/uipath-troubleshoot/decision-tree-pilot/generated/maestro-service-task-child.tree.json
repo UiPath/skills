@@ -1,0 +1,146 @@
+{
+  "_doc": "Maestro service-task-child-job-faulted (incident 170002). Cross-system tree built from skills/uipath-troubleshoot/references/products/maestro/playbooks/service-task-child-job-faulted.md, constrained by tests/tasks/uipath-troubleshoot/products/maestro/maestro-stuck-rpa-job/fixtures. KEY: incident 170002 is a SYMPTOM raised BY the child fault ('Failure in the Orchestrator Job') — NOT a terminal cause. The 170002 branch carries domain=maestro + propagation_ref to this playbook and MUST route into the child: gather the faulted service task + child job, then dispatch on the child exception FQN (routes_to UIA/IS/Excel). The child's exact root cause lives in the child's domain subtree, never inlined here. In this fixture the child job key (c5a19942...) returns HTTP 404, so the child exception FQN is read from the incident's errorDetails/Detail JSON, which carries the full child stack incl. UiPath.UIAutomationNext.Exceptions.NodeNotFoundException — the deterministic dispatch token.",
+  "entry": "g_parent_job",
+  "playbook": "skills/uipath-troubleshoot/references/products/maestro/playbooks/service-task-child-job-faulted.md",
+  "classification": "hybrid",
+  "nodes": [
+    {
+      "id": "g_parent_job",
+      "kind": "gather",
+      "cmd": "uip or jobs get {{instance_id}} --output json",
+      "reads": {
+        "process_type": { "path": "$.Data.ProcessType", "regex": "ProcessOrchestration" },
+        "latest_run_status": { "path": "$.Data.InstanceRuns[0].Status" }
+      },
+      "next": "g_incidents"
+    },
+    {
+      "id": "g_incidents",
+      "kind": "gather",
+      "cmd": "uip maestro bpmn instance incidents {{instance_id}} -f {{folder_key}} --output json",
+      "reads": {
+        "incident_code": { "path": "$.Data[0].errorCode" },
+        "incident_status": { "path": "$.Data[0].incidentStatus" },
+        "incident_message": { "path": "$.Data[0].errorMessage" },
+        "element_id": { "path": "$.Data[0].elementId" },
+        "element_run_id": { "path": "$.Data[0].elementRunId" },
+        "dependent_fault_code": { "path": "$.Data[0].dependentFaultCode" },
+        "child_exception_fqn": { "path": "$.Data[0].errorDetails", "regex": "(UiPath\\.[A-Za-z0-9.]+\\.Exceptions\\.[A-Za-z0-9]+Exception)" }
+      },
+      "next": "b_incident_code"
+    },
+    {
+      "id": "b_incident_code",
+      "kind": "symptom",
+      "symptom": true,
+      "domain": "maestro",
+      "propagation_ref": "references/products/maestro/playbooks/service-task-child-job-faulted.md",
+      "_note": "Incident 170002 = 'Failure in the Orchestrator Job' — raised BY the child fault. SYMPTOM, FORBIDDEN as terminal. Must route into the child: identify the faulted service task, then dispatch on the child exception FQN. The parent stuck-Running state is the visible symptom, not the cause.",
+      "on": "incident_code",
+      "children": [
+        {
+          "when": { "field": "incident_code", "op": "eq", "value": "170002" },
+          "evaluator": "exact",
+          "goto": "g_service_task"
+        }
+      ],
+      "default": "llm_not_this_playbook"
+    },
+    {
+      "id": "g_service_task",
+      "kind": "gather",
+      "cmd": "uip maestro bpmn instance element-executions {{instance_id}} -f {{folder_key}} --output json",
+      "_note": "Identify which BPMN service task launched the faulted child job, and whether a boundary error event is attached. The Failed ServiceTask with elementExtensionType=Orchestrator.StartJob is the launcher; traceId carries the child job key.",
+      "reads": {
+        "faulted_element_id": { "path": "$.Data.elementExecutions[?(@.status=='Failed')].elementId" },
+        "faulted_element_type": { "path": "$.Data.elementExecutions[?(@.status=='Failed')].elementType" },
+        "faulted_element_ext_type": { "path": "$.Data.elementExecutions[?(@.status=='Failed')].elementExtensionType" },
+        "child_job_key": { "path": "$.Data.traceId" }
+      },
+      "next": "g_child_job"
+    },
+    {
+      "id": "g_child_job",
+      "kind": "gather",
+      "cmd": "uip or jobs get {{child_job_key}} --output json",
+      "_note": "Inspect the child job for its own error message + final state — the child's failure is the actual root cause. In this fixture the child job key resolves to HTTP 404 (job not retained), so child_job_result=Failure; the child exception FQN is already bound from the incident errorDetails/Detail in g_incidents. on_missing falls forward to dispatch rather than terminating.",
+      "reads": {
+        "child_job_result": { "path": "$.Result" },
+        "child_job_state": { "path": "$.Data.State" },
+        "child_job_info": { "path": "$.Data.Info" }
+      },
+      "on_missing": "b_dispatch_child",
+      "next": "b_dispatch_child"
+    },
+    {
+      "id": "b_dispatch_child",
+      "kind": "branch",
+      "_note": "Cross-domain dispatch on the child exception FQN package — same mechanism a top-level prompt uses to route into a domain subtree. routes_to carries the bound child_job_key + child_exception_fqn so the target domain subtree continues the investigation. The child's EXACT root cause (e.g. which selector attribute mismatched) is resolved in that subtree, not here.",
+      "on": "child_exception_fqn",
+      "children": [
+        {
+          "when": { "field": "child_exception_fqn", "op": "matches", "value": "UiPath\\.UIAutomationNext\\.Exceptions\\.NodeNotFoundException" },
+          "evaluator": "exact",
+          "goto": "leaf_uia_handoff",
+          "routes_to": "ui-automation"
+        },
+        {
+          "when": { "field": "child_exception_fqn", "op": "matches", "value": "UiPath\\.UIAutomationNext\\.Exceptions\\." },
+          "evaluator": "exact",
+          "goto": "leaf_uia_handoff",
+          "routes_to": "ui-automation"
+        },
+        {
+          "when": { "field": "child_exception_fqn", "op": "matches", "value": "UiPath\\.IntegrationService\\." },
+          "evaluator": "exact",
+          "goto": "leaf_is_handoff",
+          "routes_to": "integration-service"
+        },
+        {
+          "when": { "field": "child_exception_fqn", "op": "matches", "value": "UiPath\\.Excel\\." },
+          "evaluator": "exact",
+          "goto": "leaf_excel_handoff",
+          "routes_to": "excel-activities"
+        }
+      ],
+      "default": "llm_child_unknown"
+    },
+    {
+      "id": "leaf_uia_handoff",
+      "kind": "leaf",
+      "cause": "Root cause is in the CHILD RPA job, not the stuck Maestro parent: a UI Automation strict-selector mismatch (UiPath.UIAutomationNext.Exceptions.NodeNotFoundException) faulted the child job that service task '{{faulted_element_id}}' launched. Incident 170002 ('Failure in the Orchestrator Job') is the symptom the parent surfaced; with no BPMN boundary error event on the service task the instance stayed Running with an Open incident.",
+      "routes_to": "ui-automation",
+      "resolution_ref": "service-task-child-job-faulted.md#resolution",
+      "confidence": "high",
+      "last_mile_llm": "The EXACT selector correction (which attribute/value to fix) is resolved in the ui-automation domain subtree against the child .xaml + the incident's strict-selector match list — NOT a deterministic branch here."
+    },
+    {
+      "id": "leaf_is_handoff",
+      "kind": "leaf",
+      "cause": "Child fault is an Integration Service exception ({{child_exception_fqn}}). Incident 170002 is the parent symptom; the actual cause is in the child IS connector execution.",
+      "routes_to": "integration-service",
+      "resolution_ref": "service-task-child-job-faulted.md#resolution",
+      "confidence": "medium"
+    },
+    {
+      "id": "leaf_excel_handoff",
+      "kind": "leaf",
+      "cause": "Child fault is an Excel activity exception ({{child_exception_fqn}}). Incident 170002 is the parent symptom; the actual cause is in the child Excel execution.",
+      "routes_to": "excel-activities",
+      "resolution_ref": "service-task-child-job-faulted.md#resolution",
+      "confidence": "medium"
+    },
+    {
+      "id": "llm_child_unknown",
+      "kind": "llm",
+      "mode": "continue",
+      "reason": "Incident is 170002 (child job faulted) but the child exception FQN did not match a known child domain. Read the full incident errorDetails/Detail (and child job Info if available) and reason from the verbatim child stack before concluding — the cause is in the child domain, never the parent."
+    },
+    {
+      "id": "llm_not_this_playbook",
+      "kind": "llm",
+      "mode": "jump",
+      "reason": "Maestro instance incident is not 170002 ('Failure in the Orchestrator Job'). Route to a different Maestro playbook or hand back to triage."
+    }
+  ]
+}

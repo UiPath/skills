@@ -89,6 +89,7 @@ def walk(tree, manifest, resp_dir, ctx):
     nid = tree["entry"]
     raw_all = []
     trace = []
+    propagation = []   # domains/playbooks the path passed THROUGH (cross-system propagation)
     visited = set()
     while True:
         if nid in visited:
@@ -121,6 +122,9 @@ def walk(tree, manifest, resp_dir, ctx):
             nid = node["next"]
         elif kind == "branch":
             observed = ctx.get(node["on"])
+            if node.get("propagation_ref"):
+                propagation.append({"domain": node.get("domain"), "ref": node["propagation_ref"]})
+                trace.append(("propagation", nid, node.get("domain"), node["propagation_ref"]))
             trace.append(("branch", nid, node["on"], observed))
             goto = node.get("default")
             for case in node.get("cases", []):
@@ -130,9 +134,10 @@ def walk(tree, manifest, resp_dir, ctx):
             nid = goto
         elif kind == "leaf":
             trace.append(("leaf", nid))
-            return {"outcome": "leaf", "node": nid, "cause": node["cause"],
-                    "fix": node["fix"], "confidence": node.get("confidence"),
-                    "playbook": node.get("playbook")}, trace
+            return {"outcome": "leaf", "node": nid,
+                    "root_cause": {"cause": node["cause"], "resolution_ref": node.get("playbook") or node.get("resolution_ref"),
+                                   "confidence": node.get("confidence")},
+                    "propagation_domains": propagation}, trace
         elif kind == "llm":
             trace.append(("llm", nid, node.get("mode")))
             return {"outcome": "llm_fallback", "node": nid, "mode": node.get("mode"),

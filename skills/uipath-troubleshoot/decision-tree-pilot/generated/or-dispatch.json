@@ -1,0 +1,21 @@
+{
+  "_doc": "Orchestrator per-domain dispatch. Orchestrator faults don't carry a 'UiPath.Orchestrator' exception package — they're discriminated by job State + PendingReason + logon HRESULTs. The trunk routes here when the failing entity is an Orchestrator job with no leaf-level activity exception (job-level fault/pending/stuck). Routes to the orchestrator subtrees.",
+  "domain": "orchestrator",
+  "entry": "or_dispatch",
+  "nodes": [
+    {
+      "id": "or_dispatch",
+      "kind": "branch",
+      "on": "or_signal",
+      "_reads_from": "trunk gather: state, PendingReason/PendingReasons.Errors, logon HRESULT (regex from Info/logs)",
+      "children": [
+        { "when": { "field": "pending_reason", "op": "matches", "value": "RobotNoMatchingUsernames|TemplateNoLicense" }, "evaluator": "exact", "goto": "robot-credentials.tree.json" },
+        { "when": { "field": "message", "op": "contains", "value": "No host is available on the machine template" }, "evaluator": "exact", "goto": "job-pending-no-host.tree.json" },
+        { "when": { "field": "logon_hresult", "op": "matches", "value": "0x0000052E|0x00000775|0x00000532|131092|Logon failed" }, "evaluator": "exact", "goto": "job-faulted-logon-failure.tree.json" },
+        { "when": { "field": "runtime_type", "op": "matches", "value": "ProcessOrchestration" }, "evaluator": "judgment", "judgment_q": "Stuck/Running ProcessOrchestration parent with no own fault? -> cross-system, go to the Maestro traversal.", "goto": "maestro-tree.json" }
+      ],
+      "default": "llm_or_uncovered"
+    },
+    { "id": "llm_or_uncovered", "kind": "llm", "mode": "jump", "reason": "Orchestrator job fault not covered by a built subtree (queue-items-failing, foreground-already-running, job-stopped-exit-code, job-stuck single-domain, stale-dispatch). Hand to the LLM loop seeded with the matched playbook from exception-table / orchestrator summary." }
+  ]
+}

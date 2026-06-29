@@ -1,0 +1,131 @@
+{
+  "entry": "g_folders",
+  "playbook": "skills/uipath-troubleshoot/references/products/orchestrator/playbooks/job-faulted-logon-failure.md",
+  "classification": "hybrid",
+  "_doc": "Logon-failure faulted job. Spine is exact on the HRESULT/Windows code, but 0x0000052E is shared by branches 2/3/4 (locked vs stale-password vs lockout-loop) and the session-config (b1) / RDP-slot (b6) causes are not codeable — they are read from LoginToConsole, the cross-job success pattern, and AD-side facts the CLI cannot see. So the code narrows the family deterministically and the LLM disambiguates the sub-cause from evidence.",
+  "nodes": [
+    { "id": "g_folders", "kind": "gather", "cmd": "uip or folders list --output json",
+      "reads": { "folder_key": { "path": "$.Data[?(@.Name=='UnattendedDemo')].Key" } }, "next": "g_faulted_jobs" },
+
+    { "id": "g_faulted_jobs", "kind": "gather", "cmd": "uip or jobs list --folder-key {{folder_key}} --state Faulted --output json",
+      "reads": { "job_key": { "path": "$.Data[0].Key" }, "release_name": { "path": "$.Data[0].ProcessName" }, "machine": { "path": "$.Data[0].Machine" } }, "next": "g_job_get" },
+
+    { "id": "g_job_get", "kind": "gather", "cmd": "uip or jobs get {{job_key}} --output json",
+      "reads": {
+        "state": { "path": "$.Data.State" },
+        "start_time": { "path": "$.Data.StartTime" },
+        "end_time": { "path": "$.Data.EndTime" },
+        "requires_user_interaction": { "path": "$.Data.RequiresUserInteraction" },
+        "local_system_account": { "path": "$.Data.LocalSystemAccount" },
+        "info": { "path": "$.Data.Info" },
+        "logon_failed": { "regex": "(Could not start executor|Logon failed for user)" },
+        "win_code": { "regex": "\\((0x0000[0-9A-Fa-f]{3,4})\\)" }
+      }, "next": "b_win_code" },
+
+    { "id": "b_win_code", "kind": "branch", "on": "win_code",
+      "_doc": "The Windows code is the strongest single discriminator. 0x00000532 (password expired) and 0x00000775 (account locked) each map to a single branch deterministically. 0x0000052E (bad password / unknown user) is the AMBIGUOUS code shared by branches 2/3/4 and also surfaces with MFA(5) and session/RDP(1/6) edge cases — it routes into a judgment sub-tree, never a leaf.",
+      "children": [
+        { "when": { "field": "win_code", "op": "eq", "value": "0x00000532" }, "evaluator": "exact", "goto": "leaf_password_expired" },
+        { "when": { "field": "win_code", "op": "eq", "value": "0x00000775" }, "evaluator": "exact", "goto": "leaf_account_locked" },
+        { "when": { "field": "win_code", "op": "eq", "value": "0x0000052E" }, "evaluator": "exact", "goto": "g_login_to_console" }
+      ],
+      "default": "llm_unknown_code" },
+
+    { "id": "leaf_password_expired", "kind": "leaf",
+      "cause": "Robot user's Windows/AD password has expired (0x00000532). Windows refuses the logon until the password is reset.",
+      "resolution_ref": "job-faulted-logon-failure.md#resolution-branch-3-password-mismatch", "confidence": "high" },
+
+    { "id": "leaf_account_locked", "kind": "leaf",
+      "cause": "Robot user's AD account is locked out (0x00000775). Windows refuses every logon until the account is unlocked. Confirm whether a stale credential (branch 3) is driving the lockout before unlocking, else it re-locks (branch 4).",
+      "resolution_ref": "job-faulted-logon-failure.md#resolution-branch-2-account-locked", "confidence": "high" },
+
+    { "id": "g_login_to_console", "kind": "gather",
+      "_doc": "0x0000052E is ambiguous. First read LoginToConsole on the robot user — this is the one exact discriminator available via CLI that cleanly rules branch 1 in or out.",
+      "cmd": "uip or users get {{user_key}} --output json",
+      "reads": {
+        "login_to_console": { "path": "$.Data.UnattendedRobot.ExecutionSettings.LoginToConsole" },
+        "pw_last_set_orch": { "path": "$.Data.UnattendedRobot.PasswordLastSet" },
+        "credential_store_id": { "path": "$.Data.UnattendedRobot.CredentialStoreId" }
+      },
+      "gather_more": "If user_key is unknown, derive it: jobs get gives LocalSystemAccount/OrchestratorUserIdentity, then `uip or users list` to map identity -> Key.",
+      "next": "b_login_to_console" },
+
+    { "id": "b_login_to_console", "kind": "branch", "on": "login_to_console",
+      "children": [
+        { "when": { "field": "login_to_console", "op": "eq", "value": false }, "evaluator": "exact", "goto": "leaf_session_config" },
+        { "when": { "field": "login_to_console", "op": "eq", "value": true }, "evaluator": "exact", "goto": "g_pattern" }
+      ],
+      "default": "g_pattern" },
+
+    { "id": "leaf_session_config", "kind": "leaf",
+      "cause": "Branch 1 — Session configuration mismatch. requiresUserInteraction is true but LoginToConsole is false and no user is logged in, so the Robot has no session to attach to and no permission to create one.",
+      "resolution_ref": "job-faulted-logon-failure.md#resolution-branch-1-session-configuration-mismatch", "confidence": "medium" },
+
+    { "id": "g_pattern", "kind": "gather",
+      "_doc": "LoginToConsole=true: the Robot may create its own session, so 0x0000052E points at the credential/account itself (branches 2/3/4) or — if other users also fail or the same user succeeds elsewhere — at MFA(5) or RDP-slot(6). Pull the broader job history to read the cross-job pattern, and the error-level logs for the LSA sub-status.",
+      "cmd": "uip or jobs list --folder-key {{folder_key}} --output json",
+      "reads": {
+        "same_user_failures": { "path": "$.Data[?(@.ProcessName=='{{release_name}}' && @.State=='Faulted')].Key" },
+        "other_user_success_same_machine": { "path": "$.Data[?(@.Machine=='{{machine}}' && @.State=='Successful')].Key" }
+      },
+      "next": "g_error_logs" },
+
+    { "id": "g_error_logs", "kind": "gather",
+      "cmd": "uip or jobs logs {{job_key}} --level Error --output json",
+      "reads": {
+        "ntstatus": { "regex": "NTSTATUS=(0x[0-9A-Fa-f]{8})" },
+        "substatus": { "regex": "Sub-status=(0x[0-9A-Fa-f]{8})" },
+        "lsa_message": { "regex": "rejected by LSA\\. .*" },
+        "account_not_locked": { "regex": "Account is (NOT locked|locked)" },
+        "mfa_required": { "regex": "(interactive|MFA|multi-factor|Conditional Access)" }
+      },
+      "next": "b_052e_subcause" },
+
+    { "id": "b_052e_subcause", "kind": "branch", "on": "lsa_message",
+      "_doc": "JUDGMENT HUB. The 0x0000052E family (2/3/4/5/6) shares the same HRESULT — the LSA sub-status, the 'Account is NOT locked' clause, the cross-job pattern, and AD-side facts (PasswordLastSet vs rotation, badPwdCount, MFA rollout) disambiguate. No child here is exact; the LLM picks the branch the evidence best supports and cites it. Order encodes the playbook's cheaper-first narrowing.",
+      "children": [
+        { "when": { "field": "other_user_success_same_machine", "op": "exists", "value": "" },
+          "evaluator": "judgment",
+          "judgment_q": "Does a DIFFERENT robot user succeed on this same machine while THIS user fails every attempt? If yes, the machine/RDP/session is fine and the fault is user-credential-specific — keep going down 2/3/4/5, do NOT conclude branch 6. If instead this user succeeds on another machine but fails here, or no robot slot was free, lean branch 6.",
+          "goto": "j_credential_vs_machine" }
+      ],
+      "default": "j_credential_vs_machine" },
+
+    { "id": "j_credential_vs_machine", "kind": "branch", "on": "account_not_locked",
+      "_doc": "Within the user-credential family, separate locked(2) / lockout-loop(4) / stale-password(3) / MFA(5) / RDP-slot(6). All judgment — the deciding facts (badPwdCount trend, AD PasswordLastSet vs Orchestrator PasswordLastSet, MFA policy rollout, who holds the RDP slot) are partly outside the CLI and must be weighed.",
+      "children": [
+        { "when": { "field": "account_not_locked", "op": "eq", "value": "locked" },
+          "evaluator": "judgment",
+          "judgment_q": "LSA reports the account locked AND badPwdCount climbed fast around job-trigger times (stale credential re-tried each run). Is this the lockout LOOP (branch 4: stale password driving repeated lockouts) rather than a one-off admin lockout (branch 2)? Rapid repeat-failures then a harder block => branch 4.",
+          "goto": "leaf_lockout_loop" },
+        { "when": { "field": "mfa_required", "op": "exists", "value": "" },
+          "evaluator": "judgment",
+          "judgment_q": "Do the logs/policy show an interactive-auth / MFA / Conditional Access requirement the unattended logon cannot satisfy, with NO bad-password sub-status? If so this is branch 5, not a password problem.",
+          "goto": "leaf_mfa" },
+        { "when": { "field": "account_not_locked", "op": "eq", "value": "NOT locked" },
+          "evaluator": "judgment",
+          "judgment_q": "LSA sub-status is wrong-password (0xC000006A) and the account is NOT locked, the same user fails persistently while the machine serves other users, and the Orchestrator-stored PasswordLastSet predates the AD PasswordLastSet (password rotated in AD but not updated in Orchestrator). Is this the stale-credential branch 3?",
+          "goto": "leaf_password_mismatch" }
+      ],
+      "default": "leaf_password_mismatch" },
+
+    { "id": "leaf_password_mismatch", "kind": "leaf",
+      "cause": "Branch 3 — Password mismatch / stale Orchestrator credential. The robot user's AD password was rotated but the credential stored in Orchestrator still holds the old one, so every job logs on with the wrong password (0x0000052E, sub-status wrong-password, account NOT locked, Orchestrator PasswordLastSet older than the AD rotation).",
+      "resolution_ref": "job-faulted-logon-failure.md#resolution-branch-3-password-mismatch", "confidence": "high" },
+
+    { "id": "leaf_lockout_loop", "kind": "leaf",
+      "cause": "Branch 4 — Lockout loop. A stale Orchestrator credential (branch 3) is driving repeated failed logons; each retry increments badPwdCount until AD locks the account (branch 2). Must be treated as a sequence: pause triggers, fix the stored password, unlock, verify manually, re-enable — unlocking alone re-arms the loop.",
+      "resolution_ref": "job-faulted-logon-failure.md#resolution-branch-4-lockout-loop", "confidence": "high" },
+
+    { "id": "leaf_mfa", "kind": "leaf",
+      "cause": "Branch 5 — MFA / Conditional Access enforced on the service account. A tenant policy now requires interactive multi-factor / Conditional Access auth the unattended Robot cannot satisfy, so Windows/Entra rejects the logon.",
+      "resolution_ref": "job-faulted-logon-failure.md#resolution-branch-5-mfa-conditional-access", "confidence": "medium" },
+
+    { "id": "leaf_rdp_slot", "kind": "leaf",
+      "cause": "Branch 6 — RDP slot conflict. Another user (active or disconnected-not-logged-off) holds the only available RDP session on the host, leaving no slot for the Robot to create a session.",
+      "resolution_ref": "job-faulted-logon-failure.md#resolution-branch-6-rdp-slot-conflict", "confidence": "medium" },
+
+    { "id": "llm_unknown_code", "kind": "llm", "mode": "continue",
+      "reason": "Logon failure carries a Windows code not in the playbook table (or none parsed). Read the verbatim Info / error-level logs and reason from the exact wording (Logon failed / account locked / password expired / RDP connection failed) and the cross-job pattern before concluding." }
+  ]
+}

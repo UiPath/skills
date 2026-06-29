@@ -22,6 +22,8 @@
       "kind": "branch",
       "_note": "stuck ProcessOrchestration parent = SYMPTOM, not terminal -> traverse to the Maestro instance (job_key == instance_key)",
       "on": "state",
+      "domain": "orchestrator",
+      "propagation_ref": "references/products/orchestrator/playbooks/job-stuck.md",
       "cases": [ { "when": { "op": "matches", "value": "Running" }, "goto": "maestro_incidents" } ],
       "default": "llm_signature"
     },
@@ -39,6 +41,8 @@
       "kind": "branch",
       "_note": "incident 170002 = 'Failure in the Orchestrator Job', raised BY the child fault. SYMPTOM, forbidden terminal -> dispatch on the child exception.",
       "on": "incident_code",
+      "domain": "maestro",
+      "propagation_ref": "references/products/maestro/playbooks/service-task-child-job-faulted.md",
       "cases": [ { "when": { "op": "eq", "value": "170002" }, "goto": "dispatch_child" } ],
       "default": "llm_signature"
     },

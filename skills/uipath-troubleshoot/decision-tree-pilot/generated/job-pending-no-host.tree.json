@@ -1,0 +1,72 @@
+{
+  "entry": "g_folders",
+  "playbook": "skills/uipath-troubleshoot/references/products/orchestrator/playbooks/job-pending-no-host.md",
+  "classification": "hybrid",
+  "nodes": [
+    { "id": "g_folders", "kind": "gather", "cmd": "uip or folders list --output json",
+      "reads": { "shared_folder_key": { "path": "$.Data[?(@.Name=='Shared')].Key" } }, "next": "g_pending_jobs" },
+
+    { "id": "g_pending_jobs", "kind": "gather", "cmd": "uip or jobs list --folder-key {{shared_folder_key}} --output json",
+      "reads": { "job_key": { "path": "$.Data[?(@.State=='Pending')].Key" },
+        "release_name": { "path": "$.Data[?(@.State=='Pending')].ProcessName" },
+        "job_machine_key": { "path": "$.Data[?(@.State=='Pending')].MachineKey" } }, "next": "g_job_get" },
+
+    { "id": "g_job_get", "kind": "gather", "cmd": "uip or jobs get {{job_key}} --output json",
+      "reads": { "state": { "path": "$.Data.State" },
+        "pending_errors": { "path": "$.Data.PendingReasons.Errors" },
+        "pending_error_codes": { "path": "$.Data.PendingReasons.ErrorCodes" },
+        "no_host_msg": { "regex": "No host is available on the machine template assigned for this job" } }, "next": "b_state_pending" },
+
+    { "id": "b_state_pending", "kind": "branch", "on": "state",
+      "children": [
+        { "when": { "field": "state", "op": "eq", "value": "Pending" }, "evaluator": "exact", "goto": "b_no_host_code" } ],
+      "default": "llm_not_this_playbook" },
+
+    { "id": "b_no_host_code", "kind": "branch", "on": "pending_error_codes",
+      "children": [
+        { "when": { "field": "pending_error_codes", "op": "contains", "value": "TemplateNoHostsAvailable" }, "evaluator": "exact", "goto": "g_machines_all_fields" } ],
+      "default": "llm_not_this_playbook" },
+
+    { "id": "g_machines_all_fields", "kind": "gather", "cmd": "uip or machines list --all-fields --output json",
+      "reads": {
+        "template_names": { "path": "$.Data[*].name" },
+        "connected_runtime_count": { "path": "$.Data[?(@.scope!='PersonalWorkspace')].robotVersions.length" },
+        "shared_template_robot_versions": { "path": "$.Data[?(@.scope=='Default')].robotVersions" } },
+      "next": "b_host_presence" },
+
+    { "id": "b_host_presence", "kind": "branch", "on": "shared_template_robot_versions",
+      "children": [
+        { "when": { "field": "shared_template_robot_versions", "op": "eq", "value": "[]" }, "evaluator": "exact",
+          "judgment_q": "n/a — structured: the standard (non-PersonalWorkspace) template assigned to the job has an empty robotVersions array, so zero runtimes are connected.",
+          "goto": "b_on_assigned_machine" },
+        { "when": { "field": "shared_template_robot_versions", "op": "gt", "value": "0" }, "evaluator": "exact",
+          "goto": "leaf_stale_dispatch" } ],
+      "default": "llm_ambiguous_host" },
+
+    { "id": "b_on_assigned_machine", "kind": "branch", "on": "template_names",
+      "children": [
+        { "when": { "field": "template_names", "op": "exists", "value": "true" }, "evaluator": "judgment",
+          "judgment_q": "Is the local host one of the machines registered to the assigned (Default-scope) template? No uip command maps the local hostname to template membership — decide from gathered hostname evidence (Investigation steps 2/6). If the host is NOT a member of the assigned template, take leaf_not_on_assigned_machine; if it IS a member but its Assistant/runtime is offline, take leaf_no_host_connected.",
+          "goto": "leaf_no_host_connected" } ],
+      "default": "leaf_no_host_connected" },
+
+    { "id": "leaf_no_host_connected", "kind": "leaf",
+      "cause": "Job stuck Pending — 'No host is available on the machine template assigned for this job'. The assigned standard template (Default scope) has zero connected runtimes (robotVersions empty): no signed-in Assistant / Robot Service in Service or Unattended mode pointed at this Orchestrator URL + tenant. Re-triggering will NOT help — a fresh dispatch finds the same empty template and lands back in Pending.",
+      "resolution_ref": "job-pending-no-host.md#resolution", "confidence": "high" },
+
+    { "id": "leaf_not_on_assigned_machine", "kind": "leaf",
+      "cause": "Job targets a machine template the current host is not a member of — the user is on a different machine, or no host has ever connected to the assigned template. Connect to the assigned machine and restore Assistant connectivity, or reassign the job to a template that includes the current machine.",
+      "resolution_ref": "job-pending-no-host.md#resolution", "confidence": "high" },
+
+    { "id": "leaf_stale_dispatch", "kind": "leaf",
+      "cause": "NOT no-host: the assigned template currently HAS a connected runtime (robotVersions populated). The PendingReasons.Errors/ErrorCodes are a stale snapshot from the original dispatch attempt. Remediation is to stop and re-trigger, not to provision a host.",
+      "resolution_ref": "job-pending-stale-dispatch.md#resolution", "confidence": "high",
+      "routes_to": "job-pending-stale-dispatch" },
+
+    { "id": "llm_ambiguous_host", "kind": "llm", "mode": "continue",
+      "reason": "Host presence on the assigned template is ambiguous (mixed/partial robotVersions, or which template the job targets is unclear). Inspect machines list --all-fields per template and the job's PendingReasons before concluding no-host vs stale-dispatch. Do not treat empty Job.MachineKey as evidence — it is empty for every Pending job." },
+
+    { "id": "llm_not_this_playbook", "kind": "llm", "mode": "jump",
+      "reason": "Pending job is not a no-available-host case (no TemplateNoHostsAvailable code, or job not Pending). Route to another orchestrator job-pending playbook or hand back to triage." }
+  ]
+}
