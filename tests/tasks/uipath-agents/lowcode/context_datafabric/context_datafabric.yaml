@@ -21,8 +21,7 @@ initial_prompt: |
   existing UiPath DataFabric "Customers" entity set (already set up in our
   tenant) rather than general knowledge.
 
-  Wire the "Customers" DataFabric entity set in as the agent's context, then
-  refresh and validate.
+  Wire the "Customers" DataFabric entity set in as the agent's context.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation. Complete the

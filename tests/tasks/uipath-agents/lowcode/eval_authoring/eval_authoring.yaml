@@ -19,14 +19,14 @@ initial_prompt: |
   "EvalSol". It accepts a required `question` (string) and returns an
   `answer` (string).
 
-  Then build an evaluation harness for it using the eval CLI:
-    - Add an LLM-as-a-judge semantic-similarity evaluator with the CLI.
+  Then set up evaluations for it:
+    - I want an LLM-as-a-judge evaluator that scores how semantically close
+      the agent's answer is to the expected one.
     - The defaults are LLM-based only — I also want a deterministic check that
       the answer matches the expected text exactly (no LLM, no wording
-      variation). Add that evaluator too.
-    - Make the Default Evaluation Set use your evaluators and add at least
-      three test cases (question in, expected answer out).
-  Validate when done.
+      variation).
+    - Have the default evaluation set use both evaluators, and give it at
+      least three test cases (question in, expected answer out).
 
   Do NOT upload, publish, or deploy. Do NOT run the evaluations (no cloud).
   Do NOT call `uip login`. Do NOT ask for approval, confirmation, or

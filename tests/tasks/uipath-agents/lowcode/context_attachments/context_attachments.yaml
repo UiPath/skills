@@ -20,8 +20,7 @@ initial_prompt: |
   an `answer` (string). There is no pre-built knowledge index — the files are
   provided fresh with each run.
 
-  Wire the uploaded files in as the agent's context, then refresh and
-  validate.
+  Wire the uploaded files in as the agent's context.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation. Complete the
