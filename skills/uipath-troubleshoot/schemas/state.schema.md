@@ -53,6 +53,13 @@ Updated by: Orchestrator (phase transitions)
     "folder_id": 2157426,
     "source_code_path": "/path/to/project"
   },
+  "routing": {
+    "path": "dedicated | generic",
+    "product": "integration-service",
+    "outcome": "resolved | escalated",
+    "playbook": "references/products/<product>/playbooks/<playbook>.md",
+    "reason": "short note when escalated"
+  },
   "plan": [
     {
       "n": 1,
@@ -135,6 +142,18 @@ Generic key-value store for data gathered during the investigation. Any agent ca
 
 - Keys are freeform — use descriptive names (e.g., `folder_id`, `source_code_path`, `queue_name`)
 - Values are whatever was collected (string, number, etc.)
+
+## Routing
+
+Records which investigation path the orchestrator took for the in-scope product (see `SKILL.md` § ROUTING). Optional — present only once routing is decided.
+
+- `path` — `dedicated` (a product `investigation_agent.md` handled it) or `generic` (the generate→test loop).
+- `product` — the product whose dedicated agent ran (when `path: dedicated`).
+- `outcome` — `resolved` (dedicated agent confirmed a known root cause; orchestrator goes straight to depth-check) or `escalated` (dedicated agent fell back to the generic pipeline).
+- `playbook` — the matched playbook the dedicated agent resolved against (`resolved` only).
+- `reason` — short note on why it escalated (`escalated` only).
+
+Written by the dedicated agent (path/product/outcome/playbook/reason) and the orchestrator (when no dedicated agent exists, it records `path: generic`).
 
 ## Rules
 

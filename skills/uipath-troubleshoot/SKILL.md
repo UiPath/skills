@@ -25,10 +25,10 @@ All state lives in `.local/investigations/` (relative to working directory). Sch
 
 | File | Purpose | Writers |
 |------|---------|---------|
-| `state.json` | Scope, phase, matched playbooks | triage, orchestrator |
-| `hypotheses.json` | All hypotheses + status | generator, tester, orchestrator |
-| `evidence/*.json` | Interpreted summaries | triage, tester |
-| `raw/*.json` | Full raw CLI/API responses | triage, tester |
+| `state.json` | Scope, phase, matched playbooks, routing | triage, orchestrator, dedicated agent |
+| `hypotheses.json` | All hypotheses + status | generator, tester, orchestrator, dedicated agent |
+| `evidence/*.json` | Interpreted summaries | triage, tester, dedicated agent |
+| `raw/*.json` | Full raw CLI/API responses | triage, tester, dedicated agent |
 | `scope-check.json` | Domain expansion verdict | scope-checker |
 | `depth-check.json` | Depth-gate verdict on confirmed root causes | depth-verifier |
 | `needs_input.json` | User-input request (sub-agent halts; orchestrator reads it, asks via `AskUserQuestion`) | triage, generator, tester |
@@ -50,6 +50,8 @@ Update `state.json.phase` at each transition:
 | `resolution` | Depth check verified, or all hypotheses exhausted | `complete` |
 | `complete` | Findings presented to user | — |
 
+**The default path is the FULL loop** `triage → hypotheses → test → evaluate → (deepen) → depth_check → resolution`, run to completion. The ONLY shortcut: when triage set `routing.path == "dedicated"` AND the dedicated agent returns `resolved`, the investigation jumps `triage → depth_check → resolution` (skipping `hypotheses`/`test`/`evaluate`); `depth_check` is never skipped. **Every other case — generic, escalated, multi-domain, and every "stuck/hung/cancelled" investigation — runs the full loop.** Do not shortcut the loop because triage evidence looks conclusive.
+
 ## 4. Investigation Flow
 
 ### TRIAGE
@@ -59,7 +61,20 @@ Update `state.json.phase` at each transition:
 3. **Scope check.** Spawn scope-checker (`agents/scope-checker.md`); read its `scope-check.json`. Missing domains (`missing_domains`) → `AskUserQuestion` whether to expand; if approved, re-spawn triage with them. Unnecessary domains (`unnecessary_domains`) → remove from `state.json.scope.domain`.
 4. **User input.** If triage returned `needs_user_input: true`, ask via `AskUserQuestion`, then **continue the existing triage agent** via `SendMessage` — do NOT spawn a fresh one (a fresh spawn re-discovers everything from scratch). Re-spawn only if the answer fundamentally changes scope (different product/entity type).
 
-**Never skip the hypothesis loop.** Even conclusive-looking triage evidence proceeds through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root cause; a non-obvious cause surfaces only in the test cycle.
+**Triage never determines root cause; never skip the hypothesis loop.** Triage classifies and gathers data only. Unless triage set `routing.path == "dedicated"` (an explicit high-confidence single-cause fast-resolve — see ROUTING), the investigation MUST run the full GENERATE → TEST → EVALUATE loop, including deepening, to completion. Even conclusive-looking triage evidence is not a root cause until tested — a non-obvious cause surfaces only in the test cycle.
+
+**For multi-system / cross-domain failures this is critical.** A stuck, hung, or cancelled parent entity (a Maestro instance, an Orchestrator job) is almost always a *symptom* — the originating fault usually lives in a **child job or a downstream domain** (e.g., a UI Automation selector failure in the child automation, an Integration Service connection fault). Before confirming any "stuck / cancelled / hung" cause, the loop MUST traverse into the referenced child / sub-execution, fetch its logs and traces, expand `scope.domain` to the child's domain, and test the child's fault as the upstream cause. Confirming a parent-level "cancelled / stuck" hypothesis while a referenced child job's failure is still unexamined is a depth failure — do NOT stop there (the upstream-cause gate in EVALUATE enforces this).
+
+### ROUTING — dedicated product agent vs generic pipeline
+
+After triage + scope-check, read `state.json.routing` (triage sets it in its route-early step, § E.1):
+
+1. **`routing.path == "dedicated"`** — triage found a fast-resolve candidate: the top-ranked matched playbook is high-confidence single-cause and its owning product `P` (in `routing.product`) has a dedicated agent. Spawn that agent — `references/products/<P>/investigation_agent.md` or `references/activity-packages/<P>/investigation_agent.md` (pass the `state.json` path + the user problem). It returns ONE of:
+   - **resolved** — confirmed `H1` (root cause + resolution branch) written to `hypotheses.json`; `routing.outcome = "resolved"`. Go to **DEPTH CHECK** on `H1`, then Resolution. The shared depth-verifier still gates it — the fast path does **not** skip the symptom≠cause gate.
+   - **escalate** — confirm failed or turned out ambiguous; `routing.outcome = "escalated"`. Fall through to **GENERATE HYPOTHESES** and run the generic loop.
+2. **Otherwise** (`routing.path` unset or `"generic"`) — no fast-resolve candidate. Set `routing.path = "generic"` and run the generic pipeline (GENERATE → TEST → EVALUATE).
+
+The dedicated agent runs ONLY when triage flagged a high-confidence single-cause candidate, so it never adds a hop to opaque or multi-cause investigations — those go straight to the generic pipeline. It is chosen by the **top matched playbook's product**, so a cross-domain root cause routes to the root-cause product's agent, not the surfacing product's. If several distinct products tie at the top (co-equal cross-domain roots), do NOT route to one dedicated agent — run the generic pipeline. The dedicated agent is a product-specialized accelerator, not a bypass of rigor: its root cause is depth-checked and presented through the same shared agents, and it degrades gracefully — absent or escalating, the generic pipeline delivers the full investigation.
 
 ### GENERATE HYPOTHESES
 

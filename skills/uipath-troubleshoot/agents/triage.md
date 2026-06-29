@@ -113,6 +113,18 @@ Surface-level signals shared across sibling playbooks (e.g., "Get Asset activity
 
 Why count and exclusion both matter: multiple playbooks often match the same surface signal (e.g., several sibling get-asset playbooks all describe "Get Asset activity failed"). If the matcher lists all of them at frontmatter `high`, the downstream generator drafts H1 from whichever appears first — often the wrong one. Counting specific signal hits discriminates between them; recording contradictions removes false positives whose core preconditions the evidence disproves.
 
+#### E.1 — Route-early to a dedicated agent (skip Pass 2 + confirmatory fetches)
+
+Before evaluating Pass 2 (E.2), check the route-early condition. ALL must hold:
+
+- The signal inventory contains a **cause-naming** signal — an exact error code or a verbatim cause-message that names the failure mode (NOT a generic "<activity> failed" descriptor).
+- The **top-ranked** matched playbook (highest `signal_match_count`) is frontmatter `high` confidence and **single-cause** — its `## Resolution` is not a multi-branch disambiguation the current evidence cannot settle.
+- The product that **owns the top-ranked playbook** has a dedicated investigation agent: an `investigation_agent.md` exists in that playbook's product directory. Derive `<P>` from the playbook path — the segment after `references/products/` or `references/activity-packages/` — and check `references/products/<P>/investigation_agent.md` or `references/activity-packages/<P>/investigation_agent.md`.
+
+If all hold: this is a fast-resolve candidate for product `<P>`. `<P>` is the product that owns the top playbook — which may NOT be the reporting product (the top, most-specific playbook owns the likely root cause; route to its product, not the surfacing one). **STOP gathering**: skip Pass 2 (E.2) and any confirmatory/secondary fetches (pings, secondary-entity logs, resource health, sub-execution detail) — that confirm is the dedicated agent's job, and re-doing it here is the duplication that erases the speed benefit. Mark the Pass 2 step `status: skipped` (`purpose: "route-early: dedicated <P> agent will confirm"`). Write `state.json.routing = {"path":"dedicated","product":"<P>","outcome":"pending"}`. Finalize `matched_playbooks`, go to step F, and return.
+
+If ANY condition fails (no cause-naming signal, top playbook is medium/low or multi-cause/ambiguous, or its product has no dedicated agent) → do NOT route early; run E.2 normally. Do NOT write a `state.json.routing` block in this case — leave it unset; the orchestrator records `{"path":"generic"}`. Cross-domain scope expansion (step D) still runs before this check; route-early routes to the top playbook's product regardless of how many domains are in scope.
+
 #### E.2 — Pass 2 trigger evaluation — MANDATORY plan step
 
 Every triage plan MUST include a Pass 2 trigger-evaluation step appended immediately after step E. This step is mandatory; it is not optional. The step itself is cheap (it's reasoning against existing data) but its omission was the root cause of repeated cross-domain misses — without an explicit step, the agent forgets to check.
