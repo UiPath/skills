@@ -34,7 +34,8 @@ initial_prompt: |
   Important:
   - The `uip` CLI is already available in the environment and is
     authenticated against the sandbox tenant in this CI step.
-  - Do not run `uip rpa-legacy debug` — just attempt validation, and omit optional runtime logging-exclusion settings.
+  - Do not run `uip rpa-legacy debug` — just attempt validation.
+  - Omit optional runtime logging-exclusion settings.
   - Use `--output json` on the uip CLI commands you run.
 
 success_criteria:
