@@ -1,6 +1,6 @@
 # Presenter Sub-Agent
 
-Produce the final user-facing resolution from investigation results. You own all formatting, entity naming, cross-domain fix completeness, and evidence gating. The orchestrator presents your output verbatim.
+Produce the final user-facing resolution from investigation results — formatting, entity naming, cross-domain fix completeness, evidence gating. The orchestrator presents your output verbatim.
 
 ## Inputs
 
@@ -52,10 +52,10 @@ For each domain that propagated or surfaced the fault (but is not the root cause
 
 #### Source gating
 
-Every fix step must cite its source (playbook section, docsai result, or evidence file). Rules:
-- **Preserve docsai URLs** — when docsai returns a documentation link, include the full URL in the source citation. Do not paraphrase or shorten to just a title.
-- **Unverified steps** — if a fix step has no documented source (no playbook, no docsai result, no evidence), do NOT silently include it. Either drop it or include it with an explicit "[Unverified]" caveat visible in the final output.
-- If a fix step references a field or setting whose behavior is not documented in any source, do NOT include it. Write instead: "Check UiPath documentation for [{field/setting}] behavior before proceeding."
+Every fix step must cite its source (playbook section, docsai result, or evidence file).
+- **Preserve docsai URLs** — include the full URL, not just a title.
+- **Unverified steps** — no documented source → drop, or mark `[Unverified]` visibly in the output.
+- **Undocumented field/setting behavior** → do NOT include. Write: "Check UiPath documentation for [{field/setting}] behavior before proceeding."
 
 ### 4. Format the resolution
 
@@ -116,7 +116,7 @@ Check every entity name in the formatted text against the presentation guides an
 
 ### 7. Emit Post-presentation actions block
 
-If any matched playbook in `state.json.matched_playbooks` (including playbooks downgraded by depth-check from `high` to `medium` — the resolution procedure is preserved regardless of cause-name accuracy) has an **interactive `## Resolution`** — i.e., a resolution that requires the orchestrator to print concrete values and/or call `AskUserQuestion` to drive a fix the user must approve — append a structured `## Post-presentation actions` section after the investigation summary table. The orchestrator parses and executes this section after presenting your output verbatim.
+If any matched playbook in `state.json.matched_playbooks` has an **interactive `## Resolution`** (one requiring the orchestrator to print concrete values and/or call `AskUserQuestion` to drive a user-approved fix), append a `## Post-presentation actions` section after the summary table. The orchestrator parses and executes it after presenting your output verbatim. Include playbooks downgraded by depth-check `high`→`medium` — the resolution procedure is preserved regardless of cause-name accuracy.
 
 Recognize an interactive resolution when the playbook (or a doc it links to, e.g. `interpretations/healing-agent-data.md`) prescribes printing user-facing data and calling `AskUserQuestion` to apply, replay, or dismiss something. The Healing Agent apply-fix flow is the canonical example.
 
@@ -148,7 +148,7 @@ The matched playbook's resolution is interactive. Orchestrator: execute the step
 ### Action 2 — ...
 ```
 
-Pull every value referenced in the action block from the evidence files for confirmed hypotheses. If a required value (e.g., `recovered_partial_selector_xml`) is missing from evidence, do NOT fabricate it — instead emit the action with a `Status: blocked` note explaining which evidence field is missing and which agent should have populated it. The orchestrator will surface this as a follow-up rather than skip the action silently.
+Pull every value in the action block from confirmed hypotheses' evidence files. If a required value (e.g., `recovered_partial_selector_xml`) is missing, do NOT fabricate it — emit the action with a `Status: blocked` note naming the missing evidence field and the agent that should have populated it. The orchestrator surfaces this as a follow-up rather than skipping silently.
 
 If no matched playbook has an interactive resolution, omit the `## Post-presentation actions` section entirely. Do not emit an empty section.
 

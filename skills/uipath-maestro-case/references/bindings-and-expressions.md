@@ -36,6 +36,8 @@ When using the literal/expression mode, the `--value` string can start with one 
 
 > The prefix tells you WHAT the value refers to. The **sink** tells you HOW to wrap it — see [§ Canonical form per sink](#canonical-form-per-sink) below.
 
+> **Variable / binding ids are always letter-leading.** Formal-arg slots use a `v` prefix, bindings use `b`, and companion ids inherit the (letter-leading) variable name — so `<id>` in `=vars.<id>` / `=bindings.<id>` is always a valid C# identifier. Dot notation is always safe; bracket notation (`vars["…"]`) is never needed. A digit-leading id would fail the case BPMN with `illegal ID` — see [global-vars § Formal-arg slot ID format](plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format).
+
 ## Canonical form per sink
 
 Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime evaluators based on the sink it lands in. **The wrap form must match the sink** — wrong wrap is a silent runtime fault (the literal string arrives at the consumer instead of the resolved value).

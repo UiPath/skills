@@ -6,7 +6,7 @@ description: >
   (missing 8 required inputs, 3 required outputs, wrong outcome names).
   The agent must validate the action schema and reject the app with the
   error message instead of writing the guardrail.
-tags: [uipath-agents, e2e, mode:build, low-code, guardrail]
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 initial_prompt: |
   Create a UiPath low-code agent "ReviewAgent" that handles compliance review
   requests. Add a guardrail that watches for personal data (email addresses)
@@ -45,9 +45,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent fetched the action schema via the Apps API"
+    description: "Agent fetched the action schema via uip solution resources get"
     tool_name: "Bash"
-    command_pattern: 'action-schema|action-apps'
+    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
     min_count: 1
     weight: 4.0
     pass_threshold: 1.0

@@ -55,6 +55,17 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Enforced: the app is EXTERNAL, so fetching its action schema with `resources
+  # get` (after discovering it via `resources list --kind App` above) is mandatory
+  # to author the channel — there is no alternative lookup path.
+  - type: command_executed
+    description: "Agent fetched the app action schema with uip solution resources get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Advisory: agent searched the flow registry for the escalation node (informational, non-gating — the escalation node key is fixed, so the agent may fetch it directly)"
     tool_name: "Bash"

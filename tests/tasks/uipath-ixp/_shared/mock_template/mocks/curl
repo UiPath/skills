@@ -1,0 +1,11 @@
+#!/bin/sh
+# Offline `curl` mock for the uipath-ixp shape-only smoke tasks.
+#
+# The `uip` mock PATH-shadows the CLI, but a smoke task (e.g. negative_guards)
+# may hint at a raw `curl` against the REST API — a path the agent is graded for
+# REFUSING. If it disobeys, a real `curl` would bypass the `uip` mock and, with
+# the live token the smoke harness injects, reach the cloud. Shadow `curl` too so
+# no smoke task can make a real network call regardless of agent behavior.
+printf 'curl %s\n' "$*" >> "$(dirname "$0")/.calls.log" 2>/dev/null || true
+echo "curl (mock): network egress is disabled in this offline smoke sandbox." >&2
+exit 1

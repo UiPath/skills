@@ -238,13 +238,13 @@ Resource nodes use the same `inputs.source` pattern as the autonomous agent — 
 }
 ```
 
-The definition declares `model.source: true`; flow-core hoists that identity field onto the node instance as `inputs.source` (same hoisting rule as `uipath.agent.autonomous`). The same shape applies to `uipath.agent.resource.escalation` and `uipath.agent.resource.context.*` nodes.
+The definition declares `model.source: true`; flow-core hoists that identity field onto the node instance as `inputs.source` (same hoisting rule as `uipath.agent.autonomous`). The same shape applies to `uipath.agent.resource.escalation.*` and `uipath.agent.resource.context.*` nodes.
 
 ### Handles
 
 | Handle | Position | Allowed connections |
 |--------|----------|---------------------|
-| `escalation` | top | `uipath.agent.resource.escalation` |
+| `escalation` | top | `uipath.agent.resource.escalation.*` |
 | `context` | bottom | `uipath.agent.resource.context.*` |
 | `tool` | bottom | `uipath.agent.resource.tool.*` |
 | `input` | left | Previous flow node |
@@ -270,7 +270,7 @@ Resources are separate canvas nodes wired to the agent via artifact handle edges
 | Built-in tool | `uipath.agent.resource.tool.builtin.<tool-name>` |
 | IS connector | `uipath.agent.resource.tool.connector` |
 | Semantic index | `uipath.agent.resource.context.index.<index-name>.<index-id>` |
-| Escalation | `uipath.agent.resource.escalation` |
+| Escalation | `uipath.agent.resource.escalation.<variant>` (e.g. `.coded-action-app`; discover with `uip maestro flow registry search "escalation"`) |
 | Memory space | `uipath.agent.resource.memory.*` canvas node, backed by `features/<FeatureName>/feature.json` from `uip agent memory` |
 
 `<release-key>` is the resource's release-key GUID from `uip solution resources list` (the row's `Key` field). The four process-tool kinds share the same registry-discovery flow and the same `resource.json` shape — only the prefix in front of `<release-key>` and the `type` field in `resource.json` differ. See [../process/process.md](../process/process.md) § Subtypes.
@@ -348,7 +348,7 @@ uipath.agent.resource.tool.processorchestration.<release-key>  ← Tool: process
 uipath.agent.resource.tool.connector                           ← Tool: IS connector
 uipath.agent.resource.tool.builtin.<tool-name>                 ← Tool: built-in
 uipath.agent.resource.context.index.<index-name>.<index-id>    ← Context: semantic index
-uipath.agent.resource.escalation                               ← Escalation: HITL
+uipath.agent.resource.escalation.<variant>                     ← Escalation: HITL (e.g. .coded-action-app)
 uipath.agent.resource.memory.*                                 ← Memory space canvas node; feature file lives under features/
 ```
 

@@ -367,11 +367,12 @@ uip df entities update <entity-id> \
 |-----|-------------|
 | `addFields` | Array of field definition objects to add (same shape as create) |
 | `updateFields` | Array of field updates — each entry must include `id` (field UUID) |
+| `removeFields` | Array of fields to drop — each entry uses `{"fieldName": "..."}`, NOT `{"id": "..."}` |
 | `displayName` | New display name for the entity |
 | `description` | New description |
 | `isRbacEnabled` | Toggle RBAC on the entity |
 
-> `removeFields` is explicitly rejected by the CLI with an error — do not attempt it.
+> `removeFields` is supported but irreversible — it drops the column and every record's value in it. The CLI requires `--yes` and `--reason "<why>"` (the reason is echoed back in the response for audit). See [Deleting a Field](#deleting-a-field) above.
 
 ## System Fields
 

@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures for export-pdf-wrongthread-parallel. Save Document as PDF faults with InvalidCastException / RPC_E_WRONG_THREAD (0x8001010E) because a Parallel between scope-open and the export runs the export on a non-creator thread, off the STA that owns the document. The stack trace includes the Parallel frame; the run is attended/foreground with no external Word, isolating the threading-construct cause to the workflow source.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"e5f6a7b8-c9d0-4b3c-9e5f-607182930415\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-e5f6a7b8-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key e5f6a7b8-c9d0-4b3c-9e5f-607182930415 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-e5f6a7b8-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"f6a7b8c9-d0e1-4c4d-8f60-718293041526\" --output json",
+      "file": "or-jobs-get-f6a7b8c9-output-json.json"
+    },
+    {
+      "match": "or jobs get f6a7b8c9-d0e1-4c4d-8f60-718293041526 --output json",
+      "file": "or-jobs-get-f6a7b8c9-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"f6a7b8c9-d0e1-4c4d-8f60-718293041526\" --level Error --output json",
+      "file": "or-jobs-logs-f6a7b8c9-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs f6a7b8c9-d0e1-4c4d-8f60-718293041526 --level Error --output json",
+      "file": "or-jobs-logs-f6a7b8c9-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"f6a7b8c9-d0e1-4c4d-8f60-718293041526\" --output json",
+      "file": "or-jobs-logs-f6a7b8c9-output-json.json"
+    },
+    {
+      "match": "or jobs logs f6a7b8c9-d0e1-4c4d-8f60-718293041526 --output json",
+      "file": "or-jobs-logs-f6a7b8c9-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

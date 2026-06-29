@@ -42,6 +42,27 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # Enforced discovery criteria: the app is EXTERNAL (deployed in Orchestrator,
+  # not in this solution and not in any fixture), so discovering its identity and
+  # action schema via the CLI is mandatory — there is no alternative lookup path.
+  # `resources list --kind App` yields the resourceKey/appName/folder; `resources
+  # get` yields the action schema needed to author the channel.
+  - type: command_executed
+    description: "Agent discovered the FraudEscalation app via uip solution resources list --kind App"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+App'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent fetched the app action schema with uip solution resources get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
   # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
   # `uip solution project add` both populate Projects[] in the .uipx).
   - type: json_check
@@ -84,15 +105,8 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "FraudEscalation external escalation resource.json was created"
-    path: "FraudSol/FraudTriageAgent/resources/FraudEscalation/resource.json"
-    weight: 2.5
-    pass_threshold: 1.0
-
-
   - type: run_command
-    description: "External escalation resource shape (ActionCenter channel, external target)"
+    description: "External escalation resource shape (escalation resource located by content + ActionCenter channel bound to the FraudEscalation app; folder name agnostic)"
     command: "python3 $TASK_DIR/check_external_escalation.py"
     timeout: 30
     expected_exit_code: 0

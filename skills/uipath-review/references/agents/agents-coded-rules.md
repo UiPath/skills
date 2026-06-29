@@ -92,6 +92,13 @@ LLM-judge-only is acceptable when the agent has no tools, no classification outp
 
 ## GuardrailsChecker
 
+> **Agent-builder coded layout** (`agent.json` + `main.py`): the low-code semantic guardrail rules
+> (`LC_GUARDRAIL_RECOMMENDED` / `LC_GUARDRAIL_ACTION_INEFFECTIVE` / `LC_GUARDRAIL_MISAPPLIED`) apply against
+> `agent.json`'s `guardrails[]` via the low-code catalog + [`guardrails/guardrails-review.md`](guardrails/guardrails-review.md)
+> (this layout loads all three catalogs — see the detection table). Guardrail effectiveness/recommendation for
+> **pure-coded** agents (SDK decorators/middleware in `main.py`, no `agent.json`) is future work; use the bucket
+> below for any coded guardrail/policy observation a specific rule doesn't cover.
+
 | rule_id | severity | category | trigger | detection_method | suggested_fix |
 |---|---|---|---|---|---|
 | `CODED_GUARDRAILS_ISSUE` | warning | guardrails | Guardrails / safety / PII observation that no specific rule fits | Use ONLY when no specific rule fits. Coded agents have most safety concerns covered under `## SecurityChecker` (`CODED_PROMPT_USER_INPUT_UNSANITIZED`, `CODED_PII_IN_TRACES`) and the deterministic secret/`.env` checks in the review CLI. Reach here only for guardrail / policy observations none of those cover. | (Defined per finding.) |

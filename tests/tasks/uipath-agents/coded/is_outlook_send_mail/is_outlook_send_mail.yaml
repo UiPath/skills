@@ -6,7 +6,7 @@ description: >
   `multipart_params` for Outlook's `send-mail-v2`, build the correct
   `ActivityMetadata(content_type="multipart/form-data",
   json_body_section="body", multipart_params=[...])` literal, wire
-  bindings + 2-field resourceOverwrites, and send a real email from
+  bindings, and send a real email from
   the test connection. The tenant check polls the destination inbox
   via the same Outlook connection to confirm delivery.
 
@@ -84,7 +84,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Project shape: multipart ActivityMetadata literal, bindings, 2-field resourceOverwrites (connectionId + folderKey, no elementInstanceId)"
+    description: "Project shape: multipart ActivityMetadata literal, bindings connection entry"
     command: "python3 $TASK_DIR/check_is_outlook_send_mail.py shape"
     timeout: 30
     expected_exit_code: 0

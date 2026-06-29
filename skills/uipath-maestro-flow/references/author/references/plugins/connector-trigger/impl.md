@@ -42,7 +42,7 @@ Save the response. It carries three pieces per event object that drive later ste
 |------|--------|---------|
 | `byoaConnection` | Step 1c | If `true`, only BYOA connections are valid for this event |
 | `isWebhookUrlVisible` | Step 6b | If `true`, retrieve and present the webhook URL |
-| **`parameters[]`** | Steps 3 & 4 | **Canonical** list of event-parameter input fields. Use exclusively; ignore `eventParameters.fields` from `flow registry get` (Step 2). |
+| **`parameters[]`** | Steps 3 & 4 | Object-, query-, and path-scoped input parameters (e.g. shared mailbox, repo, owner). **NOT the complete event-parameter set** — merge with `EventParameters` from `triggers describe` (Step 1b-2). The full input set is the **union** of both; a field is required if either source marks it `required`. |
 
 It may also include `design.textBlocks` with connector-specific user-facing instructions (e.g., "Add this URL to your Slack app's Event Subscriptions"). Surface that text verbatim when applicable — do not invent service-specific guidance.
 
@@ -63,7 +63,7 @@ Each entry is one input field the user supplies when configuring the trigger (e.
 | `design.position` | `"primary"` indicates a top-level input field; other positions are layout hints — safe to ignore for configure |
 | `type` | Bucket selector in Step 6's `--detail`: `"query"` → `queryParameters`, `"path"` → `pathParameters`, else → `eventParameters` |
 
-> **Source of truth:** `parameters[]` is populated for every connector. `flow registry get`'s `eventParameters.fields` derives from `triggers describe`'s `events.<operation>.required`/`.optional`, which several connectors do not emit. Full field semantics: [/uipath:uipath-platform — triggers.md — `parameters[]`](../../../../../../uipath-platform/references/integration-service/triggers.md#parameters--canonical-event-parameter-input-fields).
+> **Source of truth — the UNION of two calls, never one alone.** The complete event-input set = `triggers objects → parameters[]` (object/query/path scope) **∪** `triggers describe → EventParameters` (event-config scope). Configure every field that **either** marks `required: true`. `triggers describe → FilterFields` feeds the `filter` tree; `OutputFields` / `outputResponseDefinition` feed downstream `$vars`. `flow registry get`'s `eventParameters.fields` mirrors `describe` and is the offline fallback. A required field can appear in `describe → EventParameters` while absent from `parameters[]`, so **both calls are mandatory and you must merge them**. Full field semantics: [/uipath:uipath-platform — triggers.md — `parameters[]`](../../../../../../uipath-platform/references/integration-service/triggers.md#parameters--event-parameter-input-fields).
 
 **1b-2. Resolve the object name and fetch field metadata** — **mandatory** for every trigger node.
 
@@ -77,7 +77,7 @@ uip is triggers describe "<connector-key>" "<OPERATION>" "<objectName>" \
   --connection-id "<id>" --output json
 ```
 
-> **Source of truth for node configuration:** event-parameter inputs come from `triggers objects` → `parameters[]` (Step 1b); field metadata comes from `triggers describe` (this step). Follow these two responses exclusively — do not invent parameters or fields.
+> **Source of truth for node configuration — merge both responses.** Event-parameter inputs = the **union** of `triggers objects → parameters[]` (Step 1b) and `triggers describe → EventParameters` (this step). `triggers describe` also returns `FilterFields` (→ `filter` tree) and `OutputFields` (→ downstream `$vars`). Never treat `triggers describe` as "only field metadata" — its `EventParameters` are first-class event parameters and frequently carry required fields that `parameters[]` omits. Do NOT skip this call, and do NOT invent parameters or fields.
 
 ### Step 1c — Select the final connection
 
@@ -154,7 +154,7 @@ These live in the **definition**, not on the node instance. The instance carries
 
 ### Step 3 — Resolve reference fields in event parameters
 
-Iterate `parameters[]` (Step 1b). For each entry with a `reference` key, run an ID lookup — same mechanism as IS activity nodes.
+Iterate the **union** of `parameters[]` (Step 1b) and `EventParameters` (Step 1b-2). For each entry with a `reference` key, run an ID lookup — same mechanism as IS activity nodes. A referenced field can live in `describe → EventParameters` while absent from `parameters[]` — resolving only `parameters[]` misses it.
 
 > **Resolve every reference field freshly, against the current `--connection-id`, immediately before `node configure` (Step 6)** — even if you think you already know the ID from a previous flow. Reference IDs are connection-scoped and reused values fault silently at runtime. See [Reference IDs Are Connection-Scoped (CRITICAL)](../../../../../../uipath-platform/references/integration-service/reference-resolution.md#reference-ids-are-connection-scoped-critical) for the full mechanism and failure mode, and the top-level Anti-Patterns in [SKILL.md](../../../../../SKILL.md).
 
@@ -172,9 +172,9 @@ The `<id>` in `--connection-id "<id>"` MUST be the connection bound to **this** 
 
 ### Step 4 — Validate required event parameters
 
-Check every entry in `parameters[]` (Step 1b) where `required: true`. All required event parameters must have values before building the flow.
+Check every entry in the **union** of `parameters[]` (Step 1b) and `EventParameters` (Step 1b-2). Treat a field as required if **either** source marks `required: true`. All required event parameters must have values before building the flow.
 
-1. Collect all required entries from `parameters[]`
+1. Collect all required entries from `parameters[]` **and** `describe → EventParameters` (dedupe by `name`); required = required in either
 2. For each, check if the user's prompt provides a value
 3. If any required field is missing, **ask the user** — list the missing fields with their `displayName` (and `description` if useful). Free-form input is appropriate when the value space is open-ended; when a finite set of sensible values exists, present them as options per the dropdown question rule in [SKILL.md](../../../../../SKILL.md).
 4. Only proceed after all required event parameters are resolved
@@ -489,7 +489,7 @@ uip maestro flow debug . --output json
 | `Trigger nodes require --connection-id` | Ran `registry get` without `--connection-id` | Re-run with `--connection-id <id>` — required for all trigger nodes |
 | No trigger nodes in registry | Not authenticated or registry not pulled | Run `uip login` then `uip maestro flow registry pull --force` |
 | Connection not found in bindings | `node configure` not run or connection expired | Re-run `node configure` with valid `connectionId` and `folderKey` |
-| Event parameter missing at runtime | Required event parameter not configured | Re-run `uip is triggers objects` (Step 1b). For each `parameters[]` entry with `required: true`, include under `eventParameters` in `--detail`. |
+| Event parameter missing at runtime | Required event parameter not configured (commonly one returned by `triggers describe` but absent from `triggers objects → parameters[]`) | Re-run **both** `uip is triggers objects` (Step 1b) **and** `uip is triggers describe` (Step 1b-2). Configure every field marked `required` in **either** `parameters[]` or `EventParameters` (resolving references) under the correct `--detail` bucket. |
 | `filterExpression is derived from the filter tree and cannot be provided directly` | Passed `filterExpression` string instead of a `filter` tree | Build a structured `filter` tree — see [Filter Trees](#filter-trees) |
 | `Filter references field '<name>' which is not present in trigger metadata` | Leaf `id` does not match any `filterFields.fields[].name` | Re-run `registry get` and use a valid field name |
 | Trigger not firing | Event parameters point to wrong resource (e.g., wrong folder ID) | Re-resolve reference fields with `uip is resources run list` |

@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-10T19:32:28.579Z",
+      "Message": "New Email Received via dead connection (expect ConnectionHttpException): Service Unavailable\r\nin O365_TriggerConnFailure.xaml\r\n    at NewEmailReceived \"New Email Received via dead connection (expect ConnectionHttpException)\"\r\n    at Sequence \"O365 email trigger connection failure repro\"\r\n    at O365_TriggerConnFailure \"O365_TriggerConnFailure\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.MicrosoftOffice365.Office365Exception\r\n   at UiPath.MicrosoftOffice365.Activities.BaseLeafConnectionServiceActivityWithoutBindings.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.ContinuableAsyncCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.MicrosoftOffice365.Activities.Office365BaseClientActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

@@ -15,13 +15,13 @@ import json
 import sys
 
 
-def dataset(path):
+def load_dataset(path):
     d = json.load(open(path))
     d = d.get("Data", d)        # full response -> Data; else unchanged
     return d.get("dataset", d)  # Data -> dataset; else already the dataset
 
 
-def structure(ds):
+def extract_structure(ds):
     groups = []
     for group in ds.get("label_groups", []):
         for ld in group.get("label_defs", []):
@@ -33,8 +33,8 @@ def structure(ds):
     return sorted(groups)
 
 
-initial = structure(dataset("taxonomy_initial.json"))
-final = structure(dataset("taxonomy_final.json"))
+initial = extract_structure(load_dataset("taxonomy_initial.json"))
+final = extract_structure(load_dataset("taxonomy_final.json"))
 
 if initial == final:
     print("PASS - taxonomy round-trip: final matches the initial auto-suggested taxonomy")

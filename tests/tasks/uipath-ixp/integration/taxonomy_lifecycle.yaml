@@ -15,7 +15,9 @@ run_limits:
   turn_timeout: 600
 
 sandbox:
-  driver: tempdir
+  # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
+  # ixp-tool, not the BYOS host's stale pre-migration plugin.
+  driver: docker
   python: {}
   template_sources:
     - type: template_dir
@@ -26,7 +28,8 @@ initial_prompt: |
   Use the tenant I'm already signed into (check I'm logged in; don't re-authenticate).
   Create the project from the invoices in `./fixtures/` and let IXP auto-suggest the
   taxonomy — I only care about the taxonomy structure here, so don't label or train.
-  Save the suggested taxonomy to `taxonomy_initial.json`.
+  Use a unique project title `ixp-it-taxonomy-<random-suffix>` so concurrent runs
+  don't collide. Save the suggested taxonomy to `taxonomy_initial.json`.
 
   Then make these exact edits, checking after each that it took:
   - Add a new field group "Charges" with two fields: "Discount", a plain text field,
@@ -40,8 +43,7 @@ initial_prompt: |
   - Delete the "Surcharge" field.
   - Save the taxonomy to `taxonomy_before_delete.json`, then delete the
     "Adjustments" group.
-  - Save the taxonomy again to `taxonomy_final.json` — it should now match the
-    taxonomy you started with.
+  - Save the taxonomy again to `taxonomy_final.json`.
 
   When you're done, delete the project.
 
@@ -157,6 +159,12 @@ success_criteria:
   - type: file_exists
     description: "Captured the initial auto-suggested taxonomy"
     path: "taxonomy_initial.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Captured the final taxonomy"
+    path: "taxonomy_final.json"
     weight: 1.0
     pass_threshold: 1.0
 

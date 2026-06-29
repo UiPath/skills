@@ -44,6 +44,15 @@ What to look for:
 
 4. **Cross-reference workflow binding** — if the workflow source is available, confirm the connection ID in the activity (`ConnectionId`/`ConnectionKey` attributes in XAML, or equivalent in coded workflows) matches `resource.key` from step 1. A mismatch means the runtime error connection ID is hard-bound elsewhere.
 
+5. **Disambiguate the 404 — "deleted" vs "cross-workspace."** A `ping` 404 means the connection is *not resolvable from the runner's context*, NOT necessarily *deleted*. Decide using the step-1 resource-file evidence, not the 404 alone:
+
+   | `ping` result | resource file `resource.name` / `resource.folders` | Cause |
+   |---------------|-----------------------------------------------------|-------|
+   | 404 | runner's own identity / job folder, OR no resource file and connection absent everywhere | Connection deleted or renamed after publish |
+   | 404 | a **different** user (email) or a workspace **other than** the runner's | Connection lives in another user's personal workspace — cross-workspace, **not** deleted |
+
+   Do NOT report "connection deleted" on a 404 alone. If the resource file's owner (`resource.name`) is a different user than the runner — e.g. the connection is owned by `original_email@…` but the job runs as `replacement_email@…` — the connection exists and is owned elsewhere: classify it as cross-workspace ownership, not deletion. Reporting the wrong mechanism (deleted vs cross-workspace) is a root-cause miss even when the recommended fix happens to coincide.
+
 ## Resolution
 
 - **If connection not found in folder:** tell the user to create a new connection using the exact `connectorName` from step 1 (e.g., "Create a new **Microsoft OneDrive & SharePoint** connection"). If `authenticationType` is "AuthenticateAfterDeployment", tell the user they will need to authenticate the connection after creating it.

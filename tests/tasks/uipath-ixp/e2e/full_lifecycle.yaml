@@ -13,8 +13,14 @@ run_limits:
   task_timeout: 2400
   turn_timeout: 1800
 
+# driver: docker (NOT tempdir) is required. `uip ixp` ships as the separate
+# @uipath/ixp-tool plugin, pre-baked only into skills-image:latest (see
+# tests/docker/Dockerfile). tempdir runs the agent on the base coder-eval image,
+# which has no ixp plugin → every `uip ixp` is "unknown command", zero API calls,
+# and the run thrashes to MAX_TURNS. docker inherits the image + UIPATH_CLI_* auth
+# passthrough + ~/.uipath mount from the experiment default.
 sandbox:
-  driver: tempdir
+  driver: docker
   python: {}
   template_sources:
     - type: template_dir

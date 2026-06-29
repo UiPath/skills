@@ -11,19 +11,16 @@ run_limits:
   expected_turns: 33
 
 initial_prompt: |
-  1. Create a 'test.txt' file at cwd with 'This is the file content' as content.
-  2. Build a UiPath coded agent named `attachment-agent` that accepts it as input and outputs its name and content.
+  I want a UiPath coded agent named `attachment-agent` that takes a file
+  attachment as its input and returns the file's name and its contents.
 
-  Use the coded function shape with Pydantic models. In `main.py`, define
-  `class Input(BaseModel)` with an `attachment: Attachment` field imported
-  from `uipath.platform.attachments`. Do not use dataclasses for the Input
-  model: `uip codedagent init` must recognize the `Attachment` type and emit
-  `x-uipath-resource-kind: JobAttachment` in `entry-points.json`.
+  First drop a `test.txt` file in the current directory containing
+  `This is the file content`, so there's something to feed it. Then
+  build the agent and run it locally against that file to confirm it
+  reads the name and content back.
 
-  For local testing, branch on `UiPathConfig.job_key`; when it is `None`, read
-  bytes from the `UIPATH_LOCAL_ATTACHMENT` file path and pass a placeholder
-  attachment object to `uip codedagent run`.
-  Then run it locally.
+  All local — nothing to publish or deploy. Go straight through in one
+  pass.
 
 success_criteria:
   - type: command_executed

@@ -5,7 +5,7 @@ description: >
   Use the skill to add a PII detection middleware guardrail at Agent and Tool scope
   that logs Email and PhoneNumber entities. Verifies that the guardrails list was
   the correct middleware class is imported and spread into create_agent().
-tags: [uipath-agents, e2e, coded, mode:build, guardrail]
+tags: [uipath-agents, e2e, coded, mode:build, lifecycle:generate, guardrail]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]

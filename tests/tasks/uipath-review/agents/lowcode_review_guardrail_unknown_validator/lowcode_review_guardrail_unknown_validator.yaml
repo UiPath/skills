@@ -61,14 +61,24 @@ success_criteria:
     command_pattern: '"file_path":\s*"[^"]*ReviewSol'
     weight: 3.0
 
-  # The rule_id is emitted by `uip agent review` (Step 2.5a) after it fetches
-  # the live catalog, so the run_command check below already proves the review
-  # CLI ran and produced the finding. We deliberately omit separate
-  # "validate/review/catalog-read" command_executed criteria — they add
-  # non-deterministic failure modes without adding signal for a CLI-emitted
-  # format finding. Keeps the smoke gate robust.
+  # The unknown-validator finding can ONLY come from `uip agent review` fetching
+  # the live catalog — you can't tell a validator is unknown by eye. This
+  # command_executed criterion is the honesty gate: it proves the catalog-backed
+  # CLI ran, which lets the run_command check below accept either the verbatim
+  # rule_id OR a summarized "validator is not in the catalog" finding without
+  # letting an eyeballed guess pass. (Previously the check required the rule_id
+  # transcribed verbatim into the saved report, which flaked on Bedrock when the
+  # agent ran the review but summarized the finding instead of copying the id.)
+  - type: command_executed
+    description: "Ran the catalog-backed review CLI (Step 2.5a) — the only source of the unknown-validator finding"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+review'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: run_command
-    description: "Review report carries the CLI finding: cites GUARDRAIL_UNKNOWN_VALIDATOR"
+    description: "Review report surfaces the CLI finding (GUARDRAIL_UNKNOWN_VALIDATOR, or names totally_made_up_validator as uncataloged)"
     command: "python3 $TASK_DIR/check_lowcode_review_guardrail_unknown_validator.py"
     timeout: 30
     expected_exit_code: 0

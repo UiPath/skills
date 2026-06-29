@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-10T18:15:37.524Z",
+      "Message": "Send Mail with missing attachment (expect File does not exist): File does not exist: C:\\Temp\\missing-attachment-repro.pdf\r\nin O365_SendMailRejected.xaml\r\n    at SendMail \"Send Mail with missing attachment (expect File does not exist)\"\r\n    at Sequence \"Do\"\r\n    at Office365ApplicationScope \"Microsoft 365 Scope\"\r\n    at Sequence \"O365 Send Mail rejected repro (missing attachment)\"\r\n    at O365_SendMailRejected \"O365_SendMailRejected\"\r\n\r\n--- .NET stack trace ---\r\nSystem.IO.FileNotFoundException\r\n   at UiPath.MicrosoftOffice365.Activities.AttachmentsHelpers.EnsureFileExists(String path)\r\n   at UiPath.MicrosoftOffice365.Activities.AttachmentsHelpers.GetAttachments(AsyncCodeActivityContext context, IEnumerable`1 attachmentsCollection, List`1 attachments)\r\n   at UiPath.MicrosoftOffice365.Activities.Mail.SendMail.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.ContinuableAsyncCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.MicrosoftOffice365.Activities.Office365BaseClientActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.MicrosoftOffice365.Activities.Office365ClientActivity`2.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

@@ -36,10 +36,24 @@ on:
         description: 'coder_eval version to test (blank = pinned).'
         type: string
         default: ''
+      # Decouples the GHCR agent image from the wheel version, so an ad-hoc /
+      # unreleased image (e.g. a codex-baked `sha-<commit>` build) can be tested
+      # while the host CLI installs a matching dev wheel via coder_eval_version.
+      coder_eval_image_tag:
+        description: 'Agent image tag (blank = coder_eval_version).'
+        type: string
+        default: ''
       cli_version:
         description: '@uipath/cli version.'
         type: string
         default: alpha
+      agent:
+        description: 'Agent (codex = gpt-5.4).'
+        type: choice
+        options:
+          - claude
+          - codex
+        default: claude
 
 concurrency:
   group: run-coder-eval-${{ github.ref }}
@@ -55,6 +69,7 @@ jobs:
       linux_count:    ${{ steps.split.outputs.linux_count }}
       windows_count:  ${{ steps.split.outputs.windows_count }}
       coder_eval_version: ${{ steps.ceref.outputs.version }}
+      coder_eval_image_tag: ${{ steps.ceref.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -66,12 +81,17 @@ jobs:
         id: ceref
         env:
           CE_VERSION_INPUT: ${{ inputs.coder_eval_version }}
+          CE_IMAGE_TAG_INPUT: ${{ inputs.coder_eval_image_tag }}
         run: |
           if [ -n "$CE_VERSION_INPUT" ]; then
-            echo "version=$CE_VERSION_INPUT" >> "$GITHUB_OUTPUT"
+            version="$CE_VERSION_INPUT"
           else
-            echo "version=$(tr -d '[:space:]' < tests/.coder-eval-version)" >> "$GITHUB_OUTPUT"
+            version="$(tr -d '[:space:]' < tests/.coder-eval-version)"
           fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # Agent image tag defaults to the wheel version; a non-blank input
+          # decouples them (ad-hoc / unreleased image vs. dev-wheel host CLI).
+          echo "image_tag=${CE_IMAGE_TAG_INPUT:-$version}" >> "$GITHUB_OUTPUT"
 
       - name: Resolve globs, split by tag, enforce large-run gate
         id: split
@@ -149,24 +169,29 @@ jobs:
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). No source checkout.
+      # codex is NOT installed on the host here: under the docker driver the
+      # agent runs inside skills-image, so the codex SDK belongs in that image
+      # (separate TODO), not on the host CLI.
       - name: Install coder-eval
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
         run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
 
-      # Pull the pinned agent image from GHCR (never built from source); the
-      # skills image extends it below. GH_PAT needs read:packages.
-      - name: Pull pinned coder-eval-agent image
+      # Pull the agent image from GHCR (never built from source); the skills
+      # image extends it below. Tag defaults to the wheel version but can be
+      # overridden (coder_eval_image_tag) for ad-hoc / unreleased images.
+      # GH_PAT needs read:packages.
+      - name: Pull coder-eval-agent image
         run: |
           echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker pull ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_version }}
+          docker pull ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }}
 
       # Build the skills extension image (`@uipath/cli` + `@uipath/admin-tool`
       # on top of coder-eval-agent). Matches smoke-skills.yml + daily.sh.
       - name: Build skills Docker image
         run: |
           docker build \
-            --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_version }} \
+            --build-arg CODER_EVAL_IMAGE=ghcr.io/uipath/coder-eval-agent:${{ needs.partition.outputs.coder_eval_image_tag }} \
             --build-arg NPM_AUTH_TOKEN="${{ secrets.GH_PAT }}" \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
             -t skills-image:latest \
@@ -207,15 +232,26 @@ jobs:
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
           TASK_COUNT:               ${{ needs.partition.outputs.linux_count }}
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
+          AGENT:                    ${{ inputs.agent }}
+          CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
+          CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
         working-directory: tests
         id: eval
         run: |
           # Guard the empty case (e.g. a future non-dispatch trigger): the
           # `parallelism` input default (4) only applies on workflow_dispatch.
           j="${TASK_PARALLELISM:-4}"
-          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml -j $j ($TASK_COUNT task files)"
+          # Agent selection. claude (default) takes the experiment YAML's
+          # claude-code/sonnet config; codex overrides to gpt-5.4 and authenticates
+          # via CODEX_API_KEY/CODEX_BASE_URL. Driver is unchanged (docker here).
+          agent_flags=""
+          if [ "$AGENT" = "codex" ]; then
+            agent_flags="--type codex --model gpt-5.4"
+          fi
+          echo "Running: coder-eval run $TASK_GLOBS -e experiments/nightly.yaml $agent_flags -j $j ($TASK_COUNT task files)"
           coder-eval run $TASK_GLOBS \
             -e experiments/nightly.yaml \
+            $agent_flags \
             -j "$j" -v \
             --run-dir /tmp/runs
 
@@ -308,7 +344,19 @@ jobs:
         shell: bash
         env:
           UV_EXTRA_INDEX_URL: "https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@pkgs.dev.azure.com/uipath/ML%20Platform/_packaging/coder_eval/pypi/simple/ https://${{ secrets.UV_INDEX_UIPATH_USERNAME }}:${{ secrets.UV_INDEX_UIPATH_PASSWORD }}@uipath.pkgs.visualstudio.com/_packaging/ml-packages/pypi/simple/"
-        run: uv pip install --system "coder-eval==${{ needs.partition.outputs.coder_eval_version }}"
+          CE_VERSION: ${{ needs.partition.outputs.coder_eval_version }}
+          AGENT: ${{ inputs.agent }}
+        run: |
+          uv pip install --system "coder-eval==${CE_VERSION}"
+          # Windows runs the tempdir driver (agent on host), so the codex SDK
+          # installed here is what the codex agent actually uses. openai-codex
+          # 0.1.0b3 (verified against coder-eval 0.6.2) pulls a pre-release
+          # cli-bin that spans both internal feeds, so allow pre-releases and
+          # best-match across indexes.
+          if [ "$AGENT" = "codex" ]; then
+            uv pip install --system --prerelease=allow --index-strategy unsafe-best-match \
+              "openai-codex==0.1.0b3"
+          fi
 
       - name: Configure NuGet feed for Helm packages
         shell: bash
@@ -431,6 +479,9 @@ jobs:
           BEDROCK_MODEL:            ${{ secrets.BEDROCK_MODEL }}
           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
+          AGENT:                    ${{ inputs.agent }}
+          CODEX_API_KEY:            ${{ secrets.CODEX_API_KEY }}
+          CODEX_BASE_URL:           ${{ secrets.CODEX_BASE_URL }}
           # Redirect the temp root off the default %TEMP%. On the GH-hosted
           # Windows runner %TEMP% resolves to its 8.3 short form
           # (C:\Users\RUNNER~1\AppData\Local\Temp). coder-eval creates each
@@ -449,6 +500,13 @@ jobs:
           shopt -s globstar nullglob
           # Create the tilde-free temp root pinned via TMP/TEMP above.
           mkdir -p /c/cetmp
+          # Agent selection. claude (default) takes the experiment YAML config;
+          # codex overrides to gpt-5.4 (auth via CODEX_API_KEY/CODEX_BASE_URL).
+          # Driver is unchanged (tempdir here).
+          agent_flags=""
+          if [ "$AGENT" = "codex" ]; then
+            agent_flags="--type codex --model gpt-5.4"
+          fi
           overall_exit=0
           for task in $TASK_GLOBS; do
             echo "--- Killing leftover Helm/Studio processes ---"
@@ -457,7 +515,7 @@ jobs:
             for attempt in 1 2 3; do
               echo "--- $task attempt $attempt ---"
               if coder-eval run "$task" \
-                  -e experiments/smoke-windows.yaml -j 1 -v; then
+                  -e experiments/smoke-windows.yaml $agent_flags -j 1 -v; then
                 break
               fi
               # Only retry on Bedrock content-filter ERRORs. Real task
