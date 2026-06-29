@@ -24,6 +24,12 @@ initial_prompt: |
 
   Save the SDD as `invoice-data-entry-sdd.md` in the current directory.
 
+  Important:
+  - Before starting, load the uipath-planner skill. Read and follow its
+    workflow steps and RPA SDD template exactly — do not free-form the SDD.
+  - Do NOT attempt to create a UiPath project or run any `uip` commands.
+  - Your only deliverable is the SDD markdown file.
+
   --- BEGIN PDD ---
 
   # Process Design Document: Invoice Data Entry
