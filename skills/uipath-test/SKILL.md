@@ -147,7 +147,8 @@ Common `uip tm` commands organized by resource type.
 
 | Command | Purpose |
 |---|---|
-| `uip tm attachment download --execution-id <EXECUTION_ID>` | Download attachments for test cases in an execution. Optional `--project-key`, `--test-set-key`, `--test-case-name`, `--only-failed`, `--result-path <DIR>`. |
+| `uip tm attachment download --execution-id <EXECUTION_ID>` | Download attachments for test cases in an execution. |
+| `uip tm attachment upload --object-id <UUID> --object-type <type> --file <path>` | Upload a file as an attachment to a Test Manager object (e.g. `--object-type testCaseLog`). |
 
 ### Result Commands
 

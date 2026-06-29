@@ -162,7 +162,7 @@ Build coverage is almost always the strong mode; `operate` and `diagnose` are wh
 | D11 | **Read-only discovery for triage** | `login status`, `list --state Faulted`, `get` before mutating — inspecting state to scope a fault |
 
 **Two recurring meta-findings to always check (emit as gaps when present):**
-- **Tag-drift on operate/diagnose:** a skill's only operate/diagnose tests are tagged `mode:build` (or carry no `mode:*` at all) — fires the Phase 4f-mode tag cross-check. Common on catalog skills (`uipath-tasks`, `uipath-data-fabric`, `uipath-ixp`) where every task inherited `mode:build`.
+- **Tag-drift on operate/diagnose:** a skill's only operate/diagnose tests are tagged `mode:build` (or carry no `mode:*` at all) — fires the Phase 4f-mode tag cross-check. Common on catalog skills (`uipath-tasks`, `uipath-platform/data-fabric`, `uipath-ixp`) where every task inherited `mode:build`.
 - **Surface-without-test:** SKILL.md/references document an operate/diagnose command (e.g. `maestro case instance`, `rpa debug start`, `solution deploy activate`) that has zero covering tests — the most common source of `operate`/`diagnose` `None`s.
 
 ## Phase 3 — Extract test coverage
@@ -288,7 +288,7 @@ Weights reflect what tests actually catch:
 |---|---|---|
 | Workflow-heavy, multi-path (e.g. `uipath-rpa`, `uipath-agents`, `uipath-maestro-flow`) | — | Comp 45% / Steps 25% / Rules 15% / Path 15% |
 | Workflow-heavy, single-path (e.g. `uipath-maestro-case`, `uipath-human-in-the-loop`) | Path | Comp 55% / Steps 30% / Rules 15% |
-| Command-catalog skills (e.g. `uipath-platform`, `uipath-servo`, `uipath-test`, `uipath-feedback`, `uipath-data-fabric`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
+| Command-catalog skills (e.g. `uipath-platform` (incl. its `data-fabric` sub-area), `uipath-servo`, `uipath-test`, `uipath-feedback`) | Rules, Path, Steps (often) | Comp 100% (or Comp 65% / Steps 35% if the skill has explicit workflow steps) |
 | Planning skills (e.g. `uipath-planner`) | Components (often), Rules (sometimes), Path | Steps 70% / Rules 30% (or Steps 100% if no rules section) |
 | Agent-orchestration skills (e.g. `uipath-troubleshoot`) | Path, sometimes Components | Components 55% (sub-agents + phases) / Steps 30% / Rules 15% |
 | Cross-cutting capability (e.g. `uipath-context-grounding`) | Path, Steps (usually) | Comp 70% (modes×surfaces) / Rules 30% (invariants) |
@@ -767,7 +767,7 @@ The table also surfaces the **tier gap** signal from Phase 4i: a skill with test
 |-------|-------|-------------|-----|--------|
 | uipath-maestro-flow | 2 | 5 | 8 | Meets minimum |
 | uipath-rpa | 0 | 0 | 0 | Below minimum (missing smoke + e2e) |
-| uipath-data-fabric | 2 | 0 | 1 | Tier gap (no integration tier) |
+| uipath-platform/data-fabric | 2 | 0 | 1 | Tier gap (no integration tier) |
 
 ## Top 10 Recommended Tests
 

@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "a1b2c3d4-e5f6-4204-9708-2b3c4d5e6f70",
+      "State": "Successful",
+      "ProcessName": "BulkOfferLetters",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-07",
+      "MachineKey": "",
+      "StartTime": "2026-06-15T08:10:01.620Z",
+      "EndTime": "2026-06-15T08:10:12.480Z",
+      "CreationTime": "2026-06-15T08:10:01.400Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

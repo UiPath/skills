@@ -12,18 +12,17 @@ run_limits:
   max_turns: 60
 
 initial_prompt: |
-  Build a UiPath coded agent named `greeter` using `uip codedagent new`.
-  The agent takes a name and returns "Hello, <name>!". No LLM — purely
-  deterministic Python.
+  I want a small UiPath coded agent called `greeter` — give it a name
+  and it returns "Hello, <name>!". Pure deterministic Python, no LLM.
 
-  Once the agent runs locally, scaffold a custom evaluator using
-  `uip codedagent add evaluator` that checks the agent execution time is
-  under 500ms. Register it with `uip codedagent register evaluator`, wire
-  it into an eval set with at least 2 test cases, and run it with
-  `uip codedagent eval main <eval-set> --no-report --output-file eval-results.json`.
+  Once it's running locally, I want a custom evaluator for it that flags
+  whether the agent responds quickly enough — say, under about half a
+  second. Hook that evaluator up to an eval set with a couple of test
+  cases and run it locally — no cloud reporting — and write the results
+  out so I can review them.
 
-  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Complete
-  the entire task end-to-end in a single pass.
+  It's all local — no sign-in, nothing to publish or deploy. Work
+  straight through in one pass.
 
 success_criteria:
   - type: command_executed

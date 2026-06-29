@@ -1,0 +1,104 @@
+task_id: skill-troubleshoot-lookup-formula-cells
+description: >
+  UiPath troubleshooting agent must diagnose a classic Lookup Range silent miss
+  caused by the target cell being the computed result of an Excel formula: the
+  PublishedPrices sheet's SKU column is built from a VLOOKUP against an upstream
+  SourceFeed sheet, so the unattended robot's Excel session reads a stale/null
+  cached value via Interop and Lookup Range returns empty even though the cell
+  visibly displays the SKU when the file is opened by hand. Main.xaml has no
+  filter (the active-filters cause is ruled out), and the formula nature of the
+  cell is discoverable by asking the user. Success = agent matches the
+  lookup-range-formula-cells playbook AND identifies the formula/cache cause AND
+  recommends converting formulas to static values (Paste Special > Values) OR
+  migrating to the Workbook Read Range + Lookup Data Table path.
+tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, mode:diagnose]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../../../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: fixtures
+  mock_path_dirs:
+  - mocks
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My DailyPriceSync process is faulting every afternoon in Orchestrator. It
+  throws "Today's published price for SKU-7392 not found in PublishedPrices
+  sheet", but SKU-7392 is right there in the PublishedPrices sheet when I
+  open the workbook - I can see today's price next to it. The folder is
+  "RPA Production".
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing DailyPriceSync process.
+    You are certain SKU-7392 is in the PublishedPrices sheet because you can
+    see the row when you open the file. You only have the information in
+    your initial report PLUS this one fact you only reveal when asked: the
+    SKU column in the PublishedPrices sheet is built by a VLOOKUP against
+    a separate SourceFeed sheet -- you do not consider this relevant to the
+    failure and only mention it if the agent specifically asks about how
+    the SKU values get into the PublishedPrices sheet, where the SKU column
+    comes from, whether the cell is a formula, or how the column is
+    populated/calculated.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, excel-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks whether SKU-7392 is really in the file, confirm yes - you can see the row when you open it manually and today's price is next to it."
+    - "If the agent asks how the SKU column in PublishedPrices is populated, where the SKUs come from, whether the cell is a formula, or anything that points at the cell content's source, confirm it is a VLOOKUP that pulls from a separate SourceFeed sheet maintained by an upstream job."
+    - "If the agent asks about filters, AutoFilters, hidden rows, or row visibility, say there are no filters applied that you are aware of."
+    - "If the agent asks about the SKU value itself (whitespace, type, casing), say it is a plain SKU string with no extra characters."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent factual data beyond what is stated in the persona and these constraints."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

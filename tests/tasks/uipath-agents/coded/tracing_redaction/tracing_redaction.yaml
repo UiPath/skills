@@ -13,20 +13,18 @@ run_limits:
   max_turns: 40
 
 initial_prompt: |
-  Build a Simple Function UiPath coded agent named
-  `credential-validator` that validates a username + password and
-  returns an auth token. Input: `username` (string), `password`
-  (string). Output: `token` (string), `username` (string). Treat
-  any non-empty password as valid and return
-  `{"token": f"tok-{username}", "username": username}`.
+  Build a UiPath coded agent named `credential-validator` that takes a
+  username and password and hands back an auth token. Treat any
+  non-empty password as valid — this is a stub, so just mint a token
+  from the username; there's no real auth backend.
 
-  Add tracing to `main` with redaction so the trace store never
-  captures the raw password or raw token — other fields are fine
-  to record. Make sure each span is identifiable in trace search.
+  The important part: add tracing to the entrypoint, but redact the
+  sensitive values so the trace store never captures the raw password
+  or the raw token. Other fields are fine to record, and each span
+  should still be easy to find in trace search.
 
-  Take the agent through scaffold → init. Do NOT run, publish,
-  upload, or deploy. Do NOT pause between planning and
-  implementation. Complete end-to-end in a single pass.
+  I just want it built and traced — no need to actually run it, deploy
+  it, or sign in anywhere. Go straight through in one pass.
 
 success_criteria:
   - type: command_executed

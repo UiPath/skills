@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304",
+      "State": "Faulted",
+      "ProcessName": "NightlyReportPdf",
+      "ReleaseKey": "",
+      "Source": "Schedule",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-19T02:00:04.110Z",
+      "EndTime": "2026-06-19T02:00:10.530Z",
+      "CreationTime": "2026-06-19T02:00:03.900Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

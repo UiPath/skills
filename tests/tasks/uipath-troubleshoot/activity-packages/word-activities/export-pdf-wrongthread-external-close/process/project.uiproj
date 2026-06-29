@@ -1,0 +1,6 @@
+{
+  "Name": "ContractPdfExport",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Save Document as PDF COM wrong-thread fault where Word Application Scope attaches to an already-open external WINWORD.EXE that closes mid-run before the export.",
+  "MainFile": "Main.xaml"
+}

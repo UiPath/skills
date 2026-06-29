@@ -1,0 +1,6 @@
+{
+  "Name": "WordTemplateFill",
+  "ProjectType": "Process",
+  "Description": "Repro: Word Add Picture process configured InsertRelativeTo=Bookmark with BookmarkName=LogoAnchor inside Use Word File, but the opened runtime document instance lacks that bookmark. The activity faults with UiPath.Word.BusinessException: The bookmark 'LogoAnchor' was not found in the document. Exercises the insertion-target / bookmark-not-found branch (C3) of the add-picture-failures playbook.",
+  "MainFile": "Main.xaml"
+}

@@ -1,0 +1,61 @@
+task_id: skill-gov-aops-policy-diagnose-not-applied-smoke
+description: >
+  Skill-guided evaluation: agent uses the uipath-governance skill to
+  diagnose why a deployed AOps policy isn't being enforced for a group.
+  Tests the diagnostic workflow: query effective deployed policy via
+  `deployed-policy get` or `deployed-policy list`, then check the
+  group-level deployment via `deployment group get`. Verifies the agent
+  uses `--output json` throughout.
+
+  Platform note: the smoke test runs without an authenticated tenant, so
+  `uip gov aops-policy` commands that hit the service will fail with an
+  auth error. That is acceptable — what matters is that the agent invokes
+  the correct commands with the correct flags.
+tags: [uipath-governance, smoke, mode:diagnose, aops-policy, deployed-policy, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  An AI Trust Layer policy we deployed to the Finance team isn't being enforced.
+  Investigate what policy is actually deployed for that group and the
+  AITrustLayer product. Save every command's stdout+stderr to
+  ./output.txt (use `> output.txt 2>&1` for the first command and
+  `>> output.txt 2>&1` for subsequent ones).
+
+  Details:
+  - Group ID: `00000000-0000-0000-0000-0000000000f1`
+  - Product name: `AITrustLayer`
+  - License type: `NoLicense`
+  - Tenant ID: `00000000-0000-0000-0000-000000000099`
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live governance
+    tenant in this environment. Commands WILL fail with auth errors —
+    that is expected. Run each command exactly once, capture stdout+stderr
+    to ./output.txt, and move on. Do NOT retry or attempt to login.
+  - Use --output json on every uip gov aops-policy command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked `deployed-policy get` or `deployed-policy list` with --output json to check effective policy"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+(get|list)\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked `deployment group get` or `deployment group list` with --output json to check group-level deployment"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+group\s+(get|list)\s+.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

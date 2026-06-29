@@ -12,34 +12,22 @@ tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framew
 max_iterations: 1
 
 initial_prompt: |
-  Build a UiPath agent named `refund-gate`. When asked to issue a
-  refund over $500, the agent must pause and file a structured
-  request for a reviewer on the Compliance team in their
-  `RefundReview` Action Center app (folder `Compliance`); the
-  reviewer needs the customer, amount, and stated reason. Once
-  the reviewer replies, the agent continues and produces a final
-  outcome stating whether to issue the refund and the reviewer's
-  note. Refunds at or below $500 go through without review.
+  Build a UiPath coded agent (LangGraph) named `refund-gate`. When it's
+  asked to issue a
+  refund over $500, it must pause and file a structured request for a
+  reviewer on the Compliance team in their `RefundReview` Action Center
+  app (folder `Compliance`) — the reviewer needs the customer, the
+  amount, and the stated reason. Once the reviewer replies, the agent
+  continues and produces a final outcome: whether to issue the refund
+  and the reviewer's note. Refunds of $500 or less go through without
+  review.
 
-  Make sure the Compliance app is wired up as a resource for this
-  agent — without that the request can't be filed.
+  Make sure the RefundReview app is hooked up for the agent — without it
+  the request can't be filed. Put the project in a `refund-gate/`
+  directory at the working-directory root.
 
-  Inputs:
-    - `customer` (string)
-    - `amount` (number)
-    - `reason` (string)
-
-  Outputs:
-    - `issue_refund` (bool)
-    - `reviewer_note` (string|null)
-
-  Scaffold the agent project inside a `refund-gate/` directory at
-  the working-directory root.
-
-  Take the agent through scaffold → schema sync. Do NOT run,
-  publish, upload, or deploy. Do NOT call `uip login`. Do NOT pause
-  between planning and implementation. Complete end-to-end in a
-  single pass.
+  I just need it built — no need to run it, sign in, or deploy. Work
+  through it in one pass.
 
 success_criteria:
   - type: command_executed

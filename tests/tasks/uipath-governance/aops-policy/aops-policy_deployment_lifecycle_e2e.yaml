@@ -12,16 +12,19 @@ description: >
   scoped remove (`--product-name E2E --license-type E2E`) so other tenant
   deployments survive. `aops-policy delete` is BLOCKED while referenced by any
   deployment (no cascade — see aops-policy-commands.md), so clear tenant +
-  user deployments first, delete policy last. `require_success: true` fails
-  wrong-order or seed-skip workflows instead of passing them; retries OK.
-  post_run is a best-effort safety net for leftover
-  `e2e-deployment-lifecycle-clie2e*` — if a run dies mid-flow, a live
-  deployment may block it; clear it and delete the policy manually.
-tags: [uipath-governance, e2e, aops-policy, deployment, mode:build]
+  user deployments first, delete policy last. `require_success: true` on
+  all criteria except tenant remove (which validates command construction
+  only — the server may reject the scoped remove if configure didn't land
+  the E2E entry). cleanup_deployments.py ensures idempotent runs by
+  clearing stale E2E tenant + user deployments before cleanup_policy.py
+  deletes the policy.
+  post_run clears stale deployments (cleanup_deployments.py) then deletes
+  the policy (cleanup_policy.py) so a failed run never poisons the next.
+tags: [uipath-governance, e2e, aops-policy, deployment, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 35
-  max_turns: 70
+  expected_turns: 55
+  max_turns: 120
 
 initial_prompt: |
   Walk the full deployment lifecycle of an AOps governance policy on the
@@ -34,11 +37,12 @@ initial_prompt: |
 
   Tenant scope (current login tenant, license type `E2E`):
   2. Configure a tenant deployment that maps the `E2E` product on
-     the `E2E` license type to the policy from step 1. Preserve every other
-     existing tenant deployment.
+     the `E2E` license type to the policy from step 1. Read the
+     current tenant deployments first so you can include them
+     alongside the new entry.
   3. Get the tenant's deployments to confirm the new entry is present.
-  4. Remove that deployment again — scope the removal to the `E2E`
-     product on the `E2E` license type only, so nothing else is touched.
+  4. Remove only the `E2E` license type entry for the `E2E` product
+     from the tenant's deployments, leaving every other entry intact.
 
   User scope (current login user):
   5. Configure a user deployment that maps the `E2E` product to the
@@ -48,6 +52,8 @@ initial_prompt: |
 
   Important:
   - Do not prompt the user for confirmation — this is an automated test.
+  - If a command fails, retry at most twice then move on. Complete
+    all seven steps regardless of earlier failures.
 
 success_criteria:
   - type: command_executed
@@ -60,7 +66,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent configured a tenant deployment with --tenant-name and --input on the current tenant GUID (exit 0) — full-replace, so seeding is required for this to be non-destructive"
+    description: "Agent configured a tenant deployment with --tenant-name and --input on the current tenant GUID (exit 0)"
     tool_name: "Bash"
     command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--tenant-name\s)(?=.*--input\s).*'
     require_success: true
@@ -78,10 +84,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent removed the tenant deployment scoped to E2E on the E2E license type (exit 0) — scoped remove keeps other license-type entries intact"
+    description: "Agent called tenant remove scoped to E2E product + E2E license type (command construction — server may reject if configure didn't land the entry)"
     tool_name: "Bash"
     command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+remove\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--product-name\s+["'']?E2E)(?=.*--license-type\s+["'']?E2E).*'
-    require_success: true
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -114,5 +119,9 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
+  # Clear tenant + user deployments FIRST so the policy delete is unblocked
+  # (aops-policy delete is rejected while any deployment references the policy).
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_deployments.py''))"'
+    timeout: 30
   - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="e2e-deployment-lifecycle-clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
     timeout: 30

@@ -26,6 +26,8 @@ defaults:
         - TRACES_SMOKE_PROCESS_KEY
         - E2E_PROCESS_KEY
         - E2E_LONG_PROCESS_KEY
+        - CODEX_API_KEY
+        - CODEX_BASE_URL
       extra_mounts:
         - ~/.uipath:/.uipath:rw
 

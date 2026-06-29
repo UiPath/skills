@@ -1,11 +1,11 @@
 task_id: skill-agent-coded-simple-echo
 description: >
-  Simple Function coded agent zero-to-running. Verifies the agent
-  scaffolds via `uip codedagent new`, registers the function
-  entrypoint in `uipath.json`, runs `uip codedagent init` to emit
-  `entry-points.json` with Pydantic-derived schemas, then runs
-  `uip codedagent run main` to execute deterministically (no LLM,
-  no cloud auth needed).
+  Simple Function coded agent zero-to-running. The skill must guide the
+  agent through scaffold (`uip codedagent new`), entrypoint registration
+  in `uipath.json`, `uip codedagent init` (emitting `entry-points.json`),
+  and a local `uip codedagent run` (deterministic, no LLM, no cloud
+  auth). The check re-runs the agent itself to confirm the echo output
+  is correct.
 tags: [uipath-agents, smoke, coded, lifecycle:generate, lifecycle:execute, feature:framework-simple]
   # Default smoke max_turns is 20, but the full scaffold -> init -> run
   # loop (uv venv, uv sync, uip codedagent setup, uip codedagent new,
@@ -18,23 +18,19 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a Simple Function UiPath coded agent named `echo-agent` whose
-  `main(input)` echoes `input.message` repeated `input.repeat` times
-  and reports the resulting length. No LLM calls — purely
-  deterministic Python.
+  I need a tiny UiPath coded agent — call it `echo-agent` — that just
+  echoes text back to me.
 
-  Input fields: `message: str`, `repeat: int` (default 1).
-  Output fields: `echoed: str`, `length: int`.
+  Give it a `message` to echo and a `repeat` count that defaults to
+  once when I leave it out. It should return the message repeated that
+  many times as `echoed`, plus the character `length` of that result.
+  Keep it pure, deterministic Python — no LLM, no network, no cloud
+  calls.
 
-  Take the agent end-to-end through scaffold → init → run. After
-  `uip codedagent run main '{"message": "hi ", "repeat": 3}'`
-  succeeds, write `RAN_OK` to a file `run_marker.txt` in the project
-  root so the test harness can verify the run completed cleanly.
-
-  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
-  ask for approval, confirmation, or feedback. Do NOT pause between
-  planning and implementation. Complete the entire task end-to-end in
-  a single pass.
+  Build it as a Coded Function agent and make sure it actually runs
+  cleanly on my machine before you call it done. It's all local — no
+  UiPath Cloud sign-in, and nothing to publish or deploy. Just take it
+  end-to-end in one pass without checking in with me.
 
 success_criteria:
   - type: command_executed
@@ -62,9 +58,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Project shape, lazy-init, schema sync, and pyproject hygiene"
+    description: "Project shape, lazy-init, schema sync, pyproject hygiene, and a live echo run"
     command: "python3 $TASK_DIR/check_simple_echo.py"
-    timeout: 30
+    timeout: 150
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0

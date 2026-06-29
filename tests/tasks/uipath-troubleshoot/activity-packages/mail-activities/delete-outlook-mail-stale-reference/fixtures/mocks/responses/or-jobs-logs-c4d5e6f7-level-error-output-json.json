@@ -1,0 +1,16 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T11:00:08.150Z",
+      "Message": "[Delete Outlook Mail Message] The operation failed. An object could not be found."
+    },
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-04T11:00:08.198Z",
+      "Message": "The operation failed. An object could not be found.\r\nin Main.xaml\r\n    at DeleteOutlookMailMessage \"Delete Outlook Mail Message\"\r\n    at Sequence \"Main Sequence\"\r\n    at Main \"Main\"\r\n"
+    }
+  ]
+}

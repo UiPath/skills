@@ -13,29 +13,23 @@ max_iterations: 1
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/existing_project_resume/_fixtures/mood-meter ."
     timeout: 10
+  - command: "bash -c 'cd mood-meter && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 180
 
 initial_prompt: |
-  There's a half-finished LangGraph coded agent project on disk
-  under `mood-meter/`. Pick it up from this state and add one
-  small feature.
+  I've got a half-built UiPath coded agent under `mood-meter/` that
+  I started a while ago. Can you pick it up where I left off and
+  add one thing: besides the `mood` it already returns, I want a
+  `confidence` score between 0.0 and 1.0 saying how sure it is.
+  Nothing fancy for the scoring is fine.
 
-  The project is mid-scaffold: it has `pyproject.toml`, `main.py`,
-  and `langgraph.json`, but there is NO `.venv/` and NO
-  `entry-points.json` yet — that is the starting state, not a
-  mistake. Do not run `uip codedagent new` over it; that would
-  clobber the existing project.
+  Once it's working, run it locally on `{"text": "I really love how
+  great this is"}` and drop the output in `mood-meter/run_result.json`
+  so I can sanity-check it.
 
-  The feature to add: alongside the existing `mood`, the output
-  must also include a `confidence` field — a float between `0.0`
-  and `1.0` indicating how sure the agent is about the mood label.
-  A simple heuristic (e.g. number of matching keywords / something
-  bounded) is fine. After the change, run the agent locally with
-  `{"text": "I really love how great this is"}` and write the
-  result to `mood-meter/run_result.json`.
-
-  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do
-  NOT pause between planning and implementation. Complete
-  end-to-end in a single pass.
+  Just keep my existing project as-is — don't start it over from
+  scratch. No need to publish or deploy. Please take it all the way
+  through in one go.
 
 success_criteria:
   - type: command_executed

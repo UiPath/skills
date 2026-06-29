@@ -16,18 +16,13 @@ pre_run:
     timeout: 10
 
 initial_prompt: |
-  I just ported an existing LangGraph agent into UiPath. The project
-  is on disk under `legacy-classifier/` (pyproject.toml, main.py,
-  langgraph.json).
+  I just ported a LangGraph agent into UiPath — it's on disk under
+  `legacy-classifier/`. It
+  runs, but I don't think it follows UiPath's conventions for coded
+  agents. Review it and fix whatever isn't right, in place. The graph
+  should still compile and stay exported as `graph`.
 
-  It has a UiPath coded-agent anti-pattern: `main.py` constructs the
-  LLM client at module level (`llm = UiPathChat(...)` at column zero).
-  Review the project and fix that in place — move the LLM client
-  construction inside the node body so it isn't instantiated at import
-  time. The graph must still compile and `graph` must remain exported.
-
-  Do NOT publish, upload, or deploy. Do NOT pause between planning
-  and implementation. Complete end-to-end in a single pass.
+  All local — nothing to publish or deploy. Just fix it in one pass.
 
 success_criteria:
   - type: file_exists

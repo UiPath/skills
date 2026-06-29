@@ -12,27 +12,21 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a Python UiPath coded agent (LangGraph)
-  named `expense-approver`. It handles expense-reimbursement
-  requests: requests at or below `$1000` are auto-approved, but
-  anything above that limit is an exception that must be escalated
-  to a manager for sign-off before it can be approved.
+  Build a Python UiPath coded agent (LangGraph) named `expense-approver`
+  that handles expense-reimbursement requests. Requests of $1000 or less
+  are auto-approved; anything above that has to be escalated to a manager
+  for sign-off before it can be approved.
 
-  When an amount breaches the limit, escalate the request to a
-  reviewer through an Action Center app named `ExpenseReview` in
-  folder `Finance`, passing the full request payload. The agent
-  must pause while the escalation is outstanding and resume once the
-  reviewer's decision comes back.
+  When a request goes over the limit, escalate it to a reviewer through
+  an Action Center app called `ExpenseReview` in the `Finance` folder,
+  passing along the full request. The agent should pause while the
+  escalation is outstanding and pick back up once the reviewer's
+  decision comes in, then report whether it was approved and what the
+  reviewer decided.
 
-  Input: `amount` (number), `description` (string), `submitter`
-  (string).
-  Output: `approved` (bool), `reviewer_decision` (string|null).
-
-  Sync `bindings.json` so the Action Center resource is declared.
-
-  Take the agent through scaffold → init. Do NOT run, publish,
-  upload, or deploy. Do NOT call `uip login`. Do NOT pause between
-  planning and implementation. Complete end-to-end in a single pass.
+  I just need it built with the ExpenseReview app hooked up so it can
+  actually escalate — no need to run it, sign in, or deploy. Take it
+  through in one pass.
 
 success_criteria:
   - type: command_executed

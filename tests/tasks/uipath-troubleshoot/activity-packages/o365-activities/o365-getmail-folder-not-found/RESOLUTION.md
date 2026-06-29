@@ -1,0 +1,9 @@
+**Root Cause:** The mail folder **'NoSuchFolder-Repro-123' does not exist in the connected mailbox**, so the Get Mail activity could not resolve it and the job faulted.
+
+**What went wrong:** The last job in folder Shared — process **ERN_O365_MailFolderNotFound** (job e893a4d4-e061-4cba-a799-6ed4de6ee4e2, started 2026-06-11 08:01 UTC, machine MOCK-HOST) — faulted after ~8 seconds in the activity "Get Mail from nonexistent folder".
+
+**Why:** The legacy **Get Mail** (`UiPath.MicrosoftOffice365.Activities.Mail.GetMail`) activity inside the Microsoft 365 Scope was configured with `MailFolder = "NoSuchFolder-Repro-123"`. At run time it enumerated the folders of the mailbox resolved by the scope (interactive-token auth, no shared-mailbox/account override — the authenticated user's own mailbox) and found no folder with that name (case-insensitive). The Graph layer surfaced this as `System.ArgumentNullException: Value cannot be null. (Parameter 'Folder named 'NoSuchFolder-Repro-123' could not be found on this account.')` — the unwrapped form of the "Mail — Folder Not Found" signature; match on the inner sentence. Faulting frame: `GraphServiceClientExtensions.GetMailFolder(...)` during folder resolution, before any message retrieval. Ruled out: auth scopes valid (`AuthScopesInvalid = False`), lookup by name (not a stale folder ID), no path separators or stray whitespace.
+
+**Immediate fix:** Confirm whether a folder with that exact display name exists in the target mailbox; fix the `MailFolder` argument to an existing folder (use `Inbox/Subfolder` path form for nested folders); confirm the resolved mailbox is the one expected to own the folder. Source: `references/activity-packages/o365-activities/playbooks/mail-folder-not-found.md` § Resolution steps 1–3.
+
+**Preventive fix:** Validate configured `MailFolder` arguments whenever a workflow is repointed at a different account or mailbox folders are reorganized — the failure class is deterministic.

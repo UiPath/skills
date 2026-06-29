@@ -17,16 +17,14 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a UiPath solution "GreeterSol" containing a Flow project
-  "GreeterFlow" and a sibling LangGraph coded agent "InputProcessor"
-  (Python, gateway model `gpt-4o-mini-2024-07-18`, `temperature=0`).
-  The agent takes `userInput` and returns `summary`. Wire the agent
-  into the Flow, register it in the solution, and validate the
-  result. Keep LLM construction inside node bodies.
+  I'm building a UiPath flow that hands work off to a coded agent. Set it
+  up as a solution called `GreeterSol`: a flow `GreeterFlow` that runs a
+  LangGraph coded agent `InputProcessor` — the agent takes some user
+  input and returns a short summary of it. Make sure the finished flow
+  validates.
 
-  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
-  ask for approval, confirmation, or feedback. Complete in a single
-  pass.
+  All local — nothing to publish or deploy. Work straight through in a
+  single pass.
 
 success_criteria:
   - type: command_executed

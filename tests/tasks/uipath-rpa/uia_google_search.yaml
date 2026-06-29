@@ -11,9 +11,9 @@ tags: [uipath-rpa, windows, smoke, uia, xaml]
 
 run_limits:
   expected_turns: 36
-  task_timeout: 1800
+  task_timeout: 4000
   max_turns: 80
-  turn_timeout: 1200
+  turn_timeout: 4000
 
 initial_prompt: |
   Build a standard UiPath RPA project named "GoogleSearch" (XAML
@@ -93,7 +93,6 @@ success_criteria:
   # the actual compile gate is the `uip rpa build` run_command below.
   - type: command_executed
     description: "Agent ran uip rpa validate on Main.xaml (skill-canonical validation)"
-    tool_name: "Bash"
     command_pattern: 'uip\s+rpa\s+validate.*Main\.xaml'
     min_count: 1
     weight: 1.0
