@@ -108,7 +108,11 @@ Flow node (excerpt):
       { "id": "emailReceived1__output__subject", "type": "string", "binding": "=$vars.emailReceived1.output.subject", "description": "Bound from $vars.emailReceived1.output.subject" },
       { "id": "emailReceived1__output__body", "type": "string", "binding": "=$vars.emailReceived1.output.body", "description": "Bound from $vars.emailReceived1.output.body" }
     ],
-    "agentOutputVariables": [{ "id": "content", "type": "string" }]
+    "agentOutputVariables": [
+      { "id": "category",   "type": "string" },
+      { "id": "priority",   "type": "string" },
+      { "id": "needsHuman", "type": "boolean" }
+    ]
   }
 }
 ```
@@ -414,14 +418,27 @@ Notes:
 
 ## Accessing Output
 
-```javascript
-// In a Script node after the agent
-const response = $vars.autonomousAgent1.output.content;
-return { classification: response };
-```
+How agent output surfaces depends on `agent.json` `outputSchema`:
 
-- `$vars.{nodeId}.output.content` — the agent's text response
-- `$vars.{nodeId}.error` — error details if the agent fails
+- **Typed `outputSchema`** (the required form — step 5) — each property surfaces **flat** at `$vars.<nodeId>.output.<field>`. For `outputSchema.properties` `{ subject, body }`: read `$vars.<nodeId>.output.subject` and `$vars.<nodeId>.output.body`. **There is no `.content.` wrapper** — `$vars.<nodeId>.output.content.subject` resolves to undefined and silently yields a null flow output.
+- **Untyped (single string)** — only when no typed schema is declared: `$vars.<nodeId>.output.content` holds the agent's text response.
+- `$vars.<nodeId>.error` — error details if the agent fails.
+
+To expose a typed field as a flow output, see § Wiring Agent Output Into Flow Outputs below.
+
+## Wiring Agent Output Into Flow Outputs
+
+Symmetric to input wiring — **three aligned pieces**, none CLI-derived:
+
+| Where | What | Example |
+| --- | --- | --- |
+| `agent.json` `outputSchema.properties` | One typed key per field the agent returns. | `"subject": { "type": "string" }`, `"body": { "type": "string" }` |
+| Flow node `inputs.agentOutputVariables[]` | **One entry per field** — NOT a single `content` object. | `[{ "id": "subject", "type": "string" }, { "id": "body", "type": "string" }]` |
+| End node `outputs.<global>` | Maps each `out` global to the flat field path. | `"emailBody": { "source": "=js:$vars.<agentNodeId>.output.body" }` |
+
+Plus: declare each flow output as a `direction: "out"` global in `variables.globals[]`, and map it on **every reachable End node**.
+
+**Anti-pattern:** `agentOutputVariables: [{ "id": "content", "type": "object" }]` paired with End `=js:$vars.<node>.output.content.<field>`. The typed agent delivers fields flat at `output.<field>`; the `.content.` path resolves to undefined → `flow validate` passes, debug Completes, but the flow output is **null**.
 
 ## Refresh and Validate
 
@@ -460,6 +477,7 @@ uip maestro flow validate <FlowName>.flow --output json
 | Inline agent rejected by `uip agent validate` | `entry-points.json` or `project.uiproj` present inside the inline agent dir | Delete those files — they belong only to standalone agent projects |
 | Folder name is human-readable instead of UUID | Folder renamed after scaffolding | Rename to the original `projectId` UUID — the folder name must match `inputs.source` and the `projectId` field inside `agent.json` |
 | Agent runs but returns empty `output.content` | Missing or malformed `contentTokens` in `agent.json` | Rebuild `messages[].contentTokens` using `{ "type": "simpleText", "rawString": "..." }` entries; see `uipath-agents` for detail |
+| `flow validate` passes, debug Completes, but the `out` global (e.g. `emailBody`) is null | Typed agent output read with a `.content.` wrapper — `agentOutputVariables:[{content}]` + End `=js:$vars.<node>.output.content.<field>` — but typed fields surface flat at `output.<field>` | List each field in `agentOutputVariables[]` (`{id:"subject"},{id:"body"}`) and map End to `=js:$vars.<node>.output.<field>` (no `.content.`). See § Wiring Agent Output Into Flow Outputs. |
 | `agent refresh` fails with `Expected type "simpleText" but got "text"` | Text `contentToken` written with `type: "text"` | Use `type: "simpleText"` for literal-text tokens. See § The `content` ↔ `contentTokens` mirror invariant. |
 | `agent refresh` fails with `Expected "input.X" but got "{{input.X}}"` | `{{ }}` braces (or extra spaces) placed inside a `variable` token `rawString` | `rawString` is exactly the text between the braces — `input.X`, brace-free. Braces stay only in `content`. Do **not** then remove them from `content` — that triggers the next row. |
 | `agent refresh` fails with `contentTokens has N entries but content requires M. Rebuild contentTokens to match content.` | `{{input.X}}` placeholders were stripped out of `content`, so it no longer segments into the same number of tokens | Restore the `{{input.X}}` references in `content`. Keep braces in `content` and brace-free `rawString` in the variable tokens — both at once. See § The `content` ↔ `contentTokens` mirror invariant. |
