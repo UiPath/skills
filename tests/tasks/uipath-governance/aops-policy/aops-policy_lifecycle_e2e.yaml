@@ -22,6 +22,10 @@ run_limits:
   expected_turns: 18
   max_turns: 40
 
+pre_run:
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="aitl-crud-lifecycle-clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 30
+
 initial_prompt: |
   Walk the full lifecycle of an AOps governance policy on the current
   login tenant. Use the product `AITrustLayer`.

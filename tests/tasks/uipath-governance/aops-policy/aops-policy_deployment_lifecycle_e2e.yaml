@@ -26,6 +26,12 @@ run_limits:
   expected_turns: 35
   max_turns: 70
 
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_deployments.py''))"'
+    timeout: 30
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="e2e-deployment-lifecycle-clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 30
+
 initial_prompt: |
   Walk the full deployment lifecycle of an AOps governance policy on the
   current login tenant, exercising both the tenant scope and the user scope.
