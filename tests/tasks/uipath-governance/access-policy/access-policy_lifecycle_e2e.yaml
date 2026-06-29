@@ -51,7 +51,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the test policy AND the server accepted it (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+create\s+(?=.*--file\s+).*'
+    command_pattern: 'uip\s+gov\s+access-policy\s+create\s+(?=[\s\S]*--file\s+).*'
     require_success: true
     min_count: 1
     weight: 2.5
@@ -69,7 +69,7 @@ success_criteria:
   - type: command_executed
     description: "Agent updated the policy AND the server accepted it (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+update\s+(?=.*--file\s+).*'
+    command_pattern: 'uip\s+gov\s+access-policy\s+update\s+(?=[\s\S]*--file\s+).*'
     require_success: true
     min_count: 1
     weight: 2.5

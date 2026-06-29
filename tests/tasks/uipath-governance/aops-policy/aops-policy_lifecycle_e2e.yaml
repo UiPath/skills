@@ -42,7 +42,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the test policy named `aitl-crud-lifecycle-clie2e` AND the server accepted it (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+(?=.*--name\s+["'']?aitl-crud-lifecycle-clie2e["'']?\s).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+(?=[\s\S]*--name\s+["'']?aitl-crud-lifecycle-clie2e["'']?\s).*'
     require_success: true
     min_count: 1
     weight: 2.5
@@ -60,7 +60,7 @@ success_criteria:
   - type: command_executed
     description: "Agent updated the policy description to `Updated by CRUD lifecycle e2e test` AND the server accepted it (exit 0) — full-replace update, dropping a required field (e.g. --name) or a server-side rejection would fail this"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+update\s+(?=.*--identifier\s+["'']?(?:\$\w+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))(?=.*--description\s+["'']?Updated by CRUD lifecycle e2e test).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+update\s+(?=[\s\S]*--identifier\s+["'']?(?:\$\w+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))(?=[\s\S]*--description\s+["'']?Updated by CRUD lifecycle e2e test).*'
     require_success: true
     min_count: 1
     weight: 2.5
