@@ -28,6 +28,8 @@ initial_prompt: |
   `ixp-it-publish-<random-suffix>` so concurrent runs don't collide) — import the taxonomy, upload one of the invoices —
   and let it train. I want two trained versions to tag, so once the first has
   trained, tweak the "Total Amount" field's instruction to retrain a second.
+  Work only on the project you create; other runs share this tenant, so never
+  list, read, or modify any other project.
 
   Then, saving the model list after each step so I can see the state move:
   - Put the first trained version on staging and the second on live → save to
@@ -36,7 +38,8 @@ initial_prompt: |
   - Take the tags off the first version → save to `models_after_untag.json`.
   - Unpublish the second version → save to `models_after_unpublish.json`.
 
-  Delete the project when you're done.
+  Delete the project once everything above succeeded. If a step failed, leave
+  the project in place for debugging.
 
 success_criteria:
   - type: command_executed

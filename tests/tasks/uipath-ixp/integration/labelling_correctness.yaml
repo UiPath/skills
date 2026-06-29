@@ -26,7 +26,8 @@ initial_prompt: |
   Set up a trained invoice project. Use the tenant I'm already signed into
   (check I'm logged in; don't re-authenticate): create a blank project (give it a unique title
   `ixp-it-labelling-<random-suffix>` so concurrent runs don't collide) and upload
-  `./fixtures/csi_tower_invoice.png`. Then set up the taxonomy yourself — add a
+  `./fixtures/csi_tower_invoice.png`. Work only on the project you create; other
+  runs share this tenant, so never list, read, or modify any other project. Then set up the taxonomy yourself — add a
   "Line Items" field group with three fields: "Description" (text), "Amount"
   (monetary), and "Tax" (monetary). Give it time to train, then look at the
   predictions.
@@ -41,7 +42,8 @@ initial_prompt: |
   - These line items have no tax column, so "Tax" doesn't apply here — mark it
     missing, and save that response to `mark_missing_result.json`.
 
-  Clean up by deleting the project when you're done.
+  Clean up by deleting the project once everything above succeeded. If a step
+  failed, leave the project in place for debugging.
 
 success_criteria:
   - type: command_executed
