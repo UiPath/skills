@@ -1,0 +1,41 @@
+{
+  "_doc": "UI Automation subtree — investigates UIA faults dispatched from ANY caller (a top-level UIA prompt, OR a cross-system traversal like maestro handing off a child NodeNotFoundException). Receives child_exception (and job_key) in the carried context. Self-contained UIA investigation -> leaf with resolution_ref into the UIA playbook.",
+  "entry": "uia_classify",
+  "nodes": {
+    "uia_classify": {
+      "kind": "branch",
+      "on": "child_exception",
+      "domain": "ui-automation",
+      "children": [
+        { "when": { "op": "matches", "value": "NodeNotFoundException" }, "evaluator": "exact", "goto": "uia_selector_gather" },
+        { "when": { "op": "matches", "value": "ElementOperationException|UiPath\\.UIAutomationNext.*TimeoutException" }, "evaluator": "exact", "goto": "uia_leaf_timing" }
+      ],
+      "default": "llm_uia_other"
+    },
+    "uia_selector_gather": {
+      "kind": "gather",
+      "cmd": "traces spans get --job-key {job_key}",
+      "bind": { "failing_selector": { "regex": "aaname='[^']*'" } },
+      "on_missing": "uia_leaf_selector",
+      "next": "uia_leaf_selector"
+    },
+    "uia_leaf_selector": {
+      "kind": "leaf",
+      "cause": "UI Automation strict-selector mismatch (NodeNotFoundException): the target activity's selector did not match the live element.",
+      "playbook": "references/activity-packages/ui-automation/playbooks/ (selector mismatch / NodeNotFoundException)",
+      "last_mile_llm": "The EXACT selector correction (which attribute/value differs from the live element, e.g. aaname) requires reading the activity .xaml against the recorded element — LLM/source step, not a deterministic branch.",
+      "confidence": "high"
+    },
+    "uia_leaf_timing": {
+      "kind": "leaf",
+      "cause": "UI element found but not ready/interactable in time (timing/readiness), not a selector mismatch.",
+      "playbook": "references/activity-packages/ui-automation/playbooks/ (element readiness / timing)",
+      "confidence": "medium"
+    },
+    "llm_uia_other": {
+      "kind": "llm",
+      "mode": "continue",
+      "reason": "UIA exception is not a selector/timing class — hand to the LLM with the trace + the ui-automation summary to classify."
+    }
+  }
+}

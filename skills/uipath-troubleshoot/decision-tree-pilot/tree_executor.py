@@ -84,17 +84,30 @@ def predicate(op, value, observed):
 
 # ---- executor --------------------------------------------------------------
 
-def walk(tree, manifest, resp_dir, ctx):
-    nodes = tree["nodes"]
+def _norm_nodes(t):
+    ns = t["nodes"]
+    return ns if isinstance(ns, dict) else {n["id"]: n for n in ns}
+
+def walk(tree, manifest, resp_dir, ctx, trees_dir):
+    nodes = _norm_nodes(tree)
     nid = tree["entry"]
+    current = "(entry)"
     raw_all = []
     trace = []
     propagation = []   # domains/playbooks the path passed THROUGH (cross-system propagation)
     visited = set()
     while True:
-        if nid in visited:
-            trace.append(("CYCLE", nid)); return {"outcome": "cycle", "node": nid}, trace
-        visited.add(nid)
+        # cross-file dispatch: a goto/route ending in .json loads another tree and continues (carrying ctx)
+        if isinstance(nid, str) and nid.endswith(".json"):
+            tpath = os.path.join(trees_dir, nid)
+            if not os.path.exists(tpath):
+                trace.append(("dispatch->MISSING", nid)); return {"outcome": "dispatch_unbuilt", "tree": nid, "propagation_domains": propagation}, trace
+            t = json.load(open(tpath, encoding="utf-8"))
+            trace.append(("dispatch->tree", nid))
+            current = nid; nodes = _norm_nodes(t); nid = t["entry"]
+        if (current, nid) in visited:
+            trace.append(("CYCLE", current, nid)); return {"outcome": "cycle", "node": nid}, trace
+        visited.add((current, nid))
         node = nodes[nid]
         kind = node["kind"]
         if kind == "gather":
@@ -121,16 +134,19 @@ def walk(tree, manifest, resp_dir, ctx):
                 nid = node["on_missing"]; continue
             nid = node["next"]
         elif kind == "branch":
-            observed = ctx.get(node["on"])
             if node.get("propagation_ref"):
                 propagation.append({"domain": node.get("domain"), "ref": node["propagation_ref"]})
                 trace.append(("propagation", nid, node.get("domain"), node["propagation_ref"]))
-            trace.append(("branch", nid, node["on"], observed))
+            # support both schema formats: "children" (field-based) and "cases" (node.on-based)
+            children = node.get("children") or node.get("cases") or []
             goto = node.get("default")
-            for case in node.get("cases", []):
+            for case in children:
                 w = case["when"]
+                field = w.get("field", node.get("on"))
+                observed = ctx.get(field)
                 if predicate(w["op"], w["value"], observed):
-                    goto = case["goto"]; break
+                    goto = case.get("goto"); break
+            trace.append(("branch", nid, node.get("on"), ctx.get(node.get("on"))))
             nid = goto
         elif kind == "leaf":
             trace.append(("leaf", nid))
@@ -158,7 +174,8 @@ def main():
     ctx = {"folder_name": a.folder_name, "state": a.state}
     if a.job_key:
         ctx["job_key"] = a.job_key
-    result, trace = walk(tree, manifest, resp_dir, ctx)
+    trees_dir = os.path.dirname(os.path.abspath(a.tree))
+    result, trace = walk(tree, manifest, resp_dir, ctx, trees_dir)
     print("=== TRACE (zero LLM) ===")
     for t in trace:
         print("  " + " | ".join(str(x) for x in t))

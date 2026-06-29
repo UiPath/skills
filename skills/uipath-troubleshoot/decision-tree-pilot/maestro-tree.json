@@ -50,10 +50,11 @@
       "kind": "branch",
       "_note": "cross-domain dispatch on the child exception FQN package - same mechanism a top-level prompt uses to route to a domain subtree",
       "on": "child_exception",
+      "_note": "cross-file dispatch: route the child fault INTO the owning domain's subtree for the real investigation/resolution (not a hardcoded leaf here)",
       "cases": [
-        { "when": { "op": "matches", "value": "UIAutomationNext" }, "goto": "leaf_uia_selector" },
-        { "when": { "op": "matches", "value": "IntegrationService" }, "goto": "leaf_is_handoff" },
-        { "when": { "op": "matches", "value": "Excel" }, "goto": "leaf_excel_handoff" }
+        { "when": { "op": "matches", "value": "UIAutomationNext" }, "evaluator": "exact", "goto": "uia-selector.tree.json" },
+        { "when": { "op": "matches", "value": "IntegrationService" }, "evaluator": "exact", "goto": "is-dispatch.json" },
+        { "when": { "op": "matches", "value": "Excel" }, "evaluator": "exact", "goto": "excel-dispatch.json" }
       ],
       "default": "llm_signature"
     },
