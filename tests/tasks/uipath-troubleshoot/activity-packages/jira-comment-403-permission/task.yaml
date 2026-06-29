@@ -1,0 +1,101 @@
+task_id: skill-troubleshoot-jira-comment-403
+description: >
+  UiPath troubleshooting agent must diagnose an Add Comment activity that faults
+  with HTTP 403 "You do not have permission to comment on this issue". The Jira
+  Scope authenticated successfully (the account rpa-bot@company.com is valid) and
+  the IssueKey (OPS-1502) is well-formed, so this is authorization, not
+  authentication: the bot account lacks the Add Comments permission in that
+  project's permission scheme. Success = agent matches the
+  jira-add-comment-failures playbook (sub-case C3), identifies the missing
+  Add Comments project permission for the service account - NOT an invalid
+  credential, a bad IssueKey (C2), or a visibility issue (C4) - AND recommends
+  having a Jira administrator grant the account the Add Comments permission
+  (verifiable by commenting manually as the service account), without fabricating
+  host actions.
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  task_timeout: 5400
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  template_sources:
+  - type: template_dir
+    path: ../../_shared/mock_template
+  - type: template_dir
+    path: process
+  - type: template_dir
+    path: data
+  mock_path_dirs:
+  - m
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My JiraCommentSync process faults in Orchestrator on every run. The folder is
+  "Issue Sync". It connects to Jira and finds the ticket, but the Add Comment
+  step dies with a 403. The API token is valid and the bot can read issues
+  fine - it just can't comment.
+
+  I'm not on the Robot host right now and have no shell access to MOCK-ROBOT,
+  only Orchestrator. Diagnose what you can from Orchestrator and the project
+  source. If the answer needs something only I can check (Jira project settings,
+  an admin action), give me the exact things to verify and I'll come back with
+  the result. Do not stall waiting on me - hand me the list and stop.
+
+  The project source for the failing process is in the current working
+  directory.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing JiraCommentSync process. The
+    automation uses a dedicated Jira bot account. You are away from the robot
+    host and only have Orchestrator access; you are not a Jira administrator. You
+    trust the agent and want a diagnosis or a check list.
+  goal: |
+    Let the agent complete its troubleshooting flow without imposing
+    constraints. Approve every scope expansion or clarification the agent
+    requests so the investigation reaches the final resolution.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, jira-activities, activity-packages), always answer Yes - pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings and to hand you the check list at the end."
+    - "If asked whether the bot account can read the issue, say yes, reading works - only commenting fails."
+    - "If asked whether you can change Jira project permissions, say no, you are not a Jira admin but you can ask one."
+    - "Never invent or provide new factual data beyond your initial report."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6
