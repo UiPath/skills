@@ -173,7 +173,7 @@ uip df entities update <entity-id> \
 
 - `referenceEntityId` — UUID of the target entity. Get it from `entities list --native-only` (the `Id` column). Target must exist and be native (no federated targets).
 - `referenceFieldId` — UUID of the **display field** on the target entity. This is a user-visible product decision — it controls which target field renders in pickers, lists, and the Data Fabric UI when the relationship is shown. **Always confirm with the user** which field to display (`Name`, `Email`, `Title`, etc.) — do NOT silently default to the target's `Id` UUID just because it exists. List the target's candidate display fields from `entities get <target-entity-id>` (`Fields[].Name`/`DisplayName` for human-readable scalar fields) and raise an `AskUserQuestion` dropdown if more than one fits. The stored record value is **always the target record's UUID `Id`** regardless of which field is bound here — `referenceFieldId` is purely the join-and-render hint. Auto Mode does NOT waive this confirmation: rendering choices are user-domain, not technical defaults.
-- `referenceFolderKey` — required **whenever the target is folder-scoped**, including when the target lives in the **same folder** as the parent. The platform uses this key to resolve the target's scope; without it, a folder-scoped parent referencing a folder-scoped target fails with *"Cannot create relationship field from folder-level entity ('<parent>') to tenant-level entity ('')"* — a misleading error caused by the missing per-field scope hint. Omit `referenceFolderKey` only when (a) both parent and target are tenant-level, or (b) the target is a tenant-level system entity (e.g. `EntityAttachment` for FILE, `User` for `CreatedBy`/`UpdatedBy`). **Folder-scoped parent fields cannot reference tenant-level user-authored targets** — and vice versa. See [Cross-folder references](#cross-folder-references) for the full matrix and lookup flow.
+- `referenceFolderKey` — applies to **`RELATIONSHIP` and `FILE` fields only**. Required whenever the target is folder-scoped, including when the target lives in the **same folder** as the parent. Without it, a folder-scoped parent referencing a folder-scoped target fails with *"Cannot create relationship field from folder-level entity ('<parent>') to tenant-level entity ('')"* — a misleading error caused by the missing per-field scope hint. Omit only when (a) both parent and target are tenant-level, or (b) the target is a tenant-level system entity (e.g. `EntityAttachment` for FILE, `User` for `CreatedBy`/`UpdatedBy`). **`CHOICE_SET_*` fields do NOT need `referenceFolderKey`** — the backend resolves the choice-set's folder server-side from `choiceSetId` alone. **Folder-scoped parent fields cannot reference tenant-level user-authored targets** — and vice versa. See [Cross-folder references](#cross-folder-references) for the full matrix.
 - The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
 - Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
 - Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required (and `referenceFolderKey` for cross-folder targets).
@@ -194,18 +194,23 @@ uip df records insert <child-entity-id> --body '{"customerId":"<resolved-uuid>",
 
 ### Cross-folder references
 
-`RELATIONSHIP`, `FILE`, and `CHOICE_SET_*` field bindings require the parent and the target to share **scope class** (both tenant, or both folder — possibly different folders). **Crossing the tenant ↔ folder boundary is not allowed.** A folder-scoped entity cannot bind a tenant-level user-authored choice set / target entity; a tenant-level entity cannot bind a folder-scoped target. Folder ↔ folder works (same or different) — but you MUST pass per-field `referenceFolderKey` set to the target's folder GUID, **even when the parent and target live in the same folder**.
+`RELATIONSHIP`, `FILE`, and `CHOICE_SET_*` field bindings require the parent and the target to share **scope class** (both tenant, or both folder — possibly different folders). **Crossing the tenant ↔ folder boundary is not allowed.** A folder-scoped entity cannot bind a tenant-level user-authored choice set / target entity; a tenant-level entity cannot bind a folder-scoped target. Folder ↔ folder works (same or different).
 
-| Parent scope | Target scope | Allowed? | Per-field key |
-|---|---|---|---|
-| Tenant | Tenant | ✅ | Omit `referenceFolderKey` |
-| Folder A | Folder A (same folder) | ✅ | `"referenceFolderKey": "<folder-A-guid>"` — required, even for same-folder bindings |
-| Folder A | Folder B (different folder) | ✅ | `"referenceFolderKey": "<folder-B-guid>"` |
-| Folder | Tenant user-authored entity / choice set | ❌ | Not supported — move the target into a folder, or move the parent to tenant |
-| Folder | Tenant **system** entity (e.g. `EntityAttachment` for FILE; `User` referenced by every entity's `CreatedBy` / `UpdatedBy`) | ✅ | Omit `referenceFolderKey` — system entities are platform-managed and bindable from any scope |
-| Tenant | Folder | ❌ | Not supported — move the target to tenant, or move the parent into a folder |
+**Per-field `referenceFolderKey` differs by field type:**
 
-> **Same-folder gotcha** — even though both entities live in the same folder, omitting `referenceFolderKey` makes the server unable to resolve the target's scope and the create errors out with *"Cannot create relationship field from folder-level entity ('<parent>') to tenant-level entity ('')"*. The error names "tenant-level" because the absence of `referenceFolderKey` is interpreted as "target is at tenant", which then trips the folder ↔ tenant block. Always pass `referenceFolderKey` for any folder-to-folder binding.
+- **`RELATIONSHIP` / `FILE`** — pass `referenceFolderKey` whenever the target is folder-scoped, **including same-folder bindings**. The server uses it to resolve the target's scope; omitting it on a folder→folder binding produces the misleading *"Cannot create relationship field from folder-level entity ('<parent>') to tenant-level entity ('')"* error (the absence is interpreted as "target is tenant" → trips the cross-scope block).
+- **`CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE`** — do **NOT** pass `referenceFolderKey` at the API level. The backend resolves the choice-set's folder server-side from `choiceSetId` alone. Passing it is unnecessary and may be rejected.
+
+| Parent scope | Target scope | Allowed? | `referenceFolderKey` for `RELATIONSHIP` / `FILE` | `referenceFolderKey` for `CHOICE_SET_*` |
+|---|---|---|---|---|
+| Tenant | Tenant | ✅ | Omit | Omit |
+| Folder A | Folder A (same folder) | ✅ | `<folder-A-guid>` — required, even same-folder | Omit (server resolves from `choiceSetId`) |
+| Folder A | Folder B (different folder) | ✅ | `<folder-B-guid>` | Omit (server resolves from `choiceSetId`) |
+| Folder | Tenant user-authored entity / choice set | ❌ | n/a — not supported | n/a — not supported |
+| Folder | Tenant **system** entity (`EntityAttachment`, `User`) | ✅ | Omit — platform-managed | n/a — no system choice sets |
+| Tenant | Folder | ❌ | n/a — not supported | n/a — not supported |
+
+> **Same-folder gotcha for `RELATIONSHIP` / `FILE` only** — even though both entities live in the same folder, omitting `referenceFolderKey` makes the server unable to resolve the target's scope and the create errors out with *"Cannot create relationship field from folder-level entity ('<parent>') to tenant-level entity ('')"*. The error names "tenant-level" because the absence is interpreted as "target is at tenant", which then trips the folder ↔ tenant block. Always pass `referenceFolderKey` for any folder-to-folder `RELATIONSHIP` / `FILE` binding. `CHOICE_SET_*` is not affected — the server resolves from `choiceSetId`.
 
 System entities live at tenant level but are exempt from the folder ↔ tenant block — that's how FILE fields work on folder-scoped entities (they point at the tenant-level `EntityAttachment` system entity). The exemption is specific to system entities; ordinary tenant entities and choice sets stay blocked.
 
@@ -232,7 +237,7 @@ uip df entities create OrderLine \
   }' --output json
 ```
 
-Same shape applies to `addFields` inside `entities update`. For `CHOICE_SET_*` fields whose choice set is folder-scoped in another folder, set `referenceFolderKey` to the choice set's folder key (look it up via `choice-sets list --include-folders`).
+Same shape applies to `addFields` inside `entities update`. For `CHOICE_SET_*` fields, do **NOT** include `referenceFolderKey` — the server resolves the choice-set's folder from `choiceSetId` alone, even when the choice set lives in a different folder from the parent entity.
 
 ### FILE Fields
 

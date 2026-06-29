@@ -31,7 +31,7 @@ Choice sets live at the tenant level or inside a folder. The flag matrix mirrors
 | Create/update/delete a folder-scoped set or value | `--folder-key <folder-guid>` (required) |
 | Read or operate on a tenant-scoped set | `--folder-key` is harmless when passed; the server resolves by UUID |
 
-Bind a folder-scoped choice set to an entity in a **different** folder via per-field `referenceFolderKey` — see [`entity-schema.md` → Cross-folder references](entity-schema.md#cross-folder-references).
+Bind a folder-scoped choice set to an entity in a different folder by passing only `choiceSetId` — the server resolves the choice-set's folder from that UUID. Do NOT pass `referenceFolderKey` on `CHOICE_SET_*` fields. The tenant ↔ folder boundary still applies (folder parent cannot bind a tenant-level choice set, and vice versa). See [`entity-schema.md` → Cross-folder references](entity-schema.md#cross-folder-references).
 
 ## Use the IDs
 
