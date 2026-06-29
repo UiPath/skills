@@ -11,7 +11,7 @@ tags: [uipath-ixp, integration, mode:operate]
 run_limits:
   max_turns: 68
   task_timeout: 2400
-  turn_timeout: 900
+  turn_timeout: 1800
 
 sandbox:
   # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
@@ -28,8 +28,13 @@ initial_prompt: |
   `ixp-it-labelling-<random-suffix>` so concurrent runs don't collide) and upload
   `./fixtures/csi_tower_invoice.png`. Then set up the taxonomy yourself — add a
   "Line Items" field group with three fields: "Description" (text), "Amount"
-  (monetary), and "Tax" (monetary). Give it time to train, then look at the
-  predictions.
+  (monetary), and "Tax" (monetary).
+
+  Training takes a few minutes. Poll the project's training status on a fixed
+  interval — wait 60s between checks, up to 20 checks. Do NOT use a single
+  long sleep or escalating waits. Read predictions only once training has
+  completed; if it's still training after 20 checks, stop and report rather
+  than waiting longer.
 
   Then, on that invoice's line items:
   - Confirm only the first line item — the other rows look wrong, leave them.
