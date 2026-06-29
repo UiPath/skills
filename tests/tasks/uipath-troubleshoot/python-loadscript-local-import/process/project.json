@@ -1,7 +1,7 @@
 {
   "name": "PyLedgerSync",
   "projectId": "aa03b2c3-d4e5-4f60-8a03-000000000003",
-  "description": "Reproduces a Load Python Script failure where a sibling local import (ledger_utils) is not found because WorkingFolder does not point at the script's folder.",
+  "description": "PyLedgerSync automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Python.Activities": "[1.10.0]",

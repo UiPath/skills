@@ -1,7 +1,7 @@
 {
   "name": "PyForecast",
   "projectId": "aa04b2c3-d4e5-4f60-8a04-000000000004",
-  "description": "Reproduces a Load Python Script engine-init failure where the installed Python (3.13) is newer than the pinned UiPath.Python.Activities 1.8.1 package supports.",
+  "description": "PyForecast automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Python.Activities": "[1.8.1]",

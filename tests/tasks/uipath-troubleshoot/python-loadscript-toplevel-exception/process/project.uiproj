@@ -1,6 +1,6 @@
 {
   "Name": "PyOrderImport",
   "ProjectType": "Process",
-  "Description": "Reproduces a Load Python Script failure caused by module-level (top-level) code that raises at import time (ZeroDivisionError), faulting the load with 'Error loading the python script'.",
+  "Description": "PyOrderImport automation project.",
   "MainFile": "Main.xaml"
 }

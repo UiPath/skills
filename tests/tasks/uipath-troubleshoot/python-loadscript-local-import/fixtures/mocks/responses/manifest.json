@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Synthetic fixtures hand-authored from the load-script-failures playbook local-import / WorkingFolder (L2c) signature.",
+  "_doc": "Synthetic fixtures hand-authored from the documented error signature.",
   "rules": [
     {
       "match": "or folders list --output json",

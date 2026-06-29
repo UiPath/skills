@@ -1,7 +1,7 @@
 {
   "name": "PyBatchAggregate",
   "projectId": "aa02b2c3-d4e5-4f60-8a02-000000000002",
-  "description": "Reproduces a Load Python Script hang: module-level code floods stdout at import, saturating the engine pipe so the scope never returns within Timeout.",
+  "description": "PyBatchAggregate automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Python.Activities": "[1.10.0]",

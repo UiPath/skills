@@ -1,7 +1,7 @@
 {
   "name": "PyOrderImport",
   "projectId": "aa01b2c3-d4e5-4f60-8a01-000000000001",
-  "description": "Reproduces a Load Python Script failure caused by module-level (top-level) code that raises at import time (ZeroDivisionError), faulting the load with 'Error loading the python script'.",
+  "description": "PyOrderImport automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Python.Activities": "[1.10.0]",

@@ -1,6 +1,6 @@
 {
   "Name": "PyLedgerSync",
   "ProjectType": "Process",
-  "Description": "Reproduces a Load Python Script failure where a sibling local import (ledger_utils) is not found because WorkingFolder does not point at the script's folder.",
+  "Description": "PyLedgerSync automation project.",
   "MainFile": "Main.xaml"
 }
