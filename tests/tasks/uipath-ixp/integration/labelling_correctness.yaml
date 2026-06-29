@@ -11,7 +11,7 @@ tags: [uipath-ixp, integration, mode:operate]
 run_limits:
   max_turns: 68
   task_timeout: 2400
-  turn_timeout: 1800
+  turn_timeout: 1200
 
 sandbox:
   # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
