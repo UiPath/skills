@@ -48,8 +48,7 @@ initial_prompt: |
   - These line items have no tax column, so "Tax" doesn't apply here — mark it
     missing, and save that response to `mark_missing_result.json`.
 
-  Clean up by deleting the project once everything above succeeded. If a step
-  failed, leave the project in place for debugging.
+  Clean up by deleting the project when you're done — even if a step above failed.
 
 success_criteria:
   - type: command_executed

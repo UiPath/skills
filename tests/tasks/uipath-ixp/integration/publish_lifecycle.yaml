@@ -44,8 +44,7 @@ initial_prompt: |
   - Take the tags off the first version → save to `models_after_untag.json`.
   - Unpublish the second version → save to `models_after_unpublish.json`.
 
-  Delete the project once everything above succeeded. If a step failed, leave
-  the project in place for debugging.
+  Delete the project when you're done — even if a step above failed.
 
 success_criteria:
   - type: command_executed

@@ -48,8 +48,7 @@ initial_prompt: |
   instruction so it only captures the grand total payable. Once it has retrained,
   pull the new version's metrics the same way into `metrics_v2.json`.
 
-  Delete the project once everything above succeeded. If a step failed, leave
-  the project in place for debugging.
+  Delete the project when you're done — even if a step above failed.
 
 success_criteria:
   - type: command_executed
