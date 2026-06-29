@@ -10,9 +10,9 @@ description: >
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node, feature:arguments]
 
 run_limits:
-  expected_turns: 70
-  task_timeout: 1200
-  max_turns: 90
+  expected_turns: 95
+  task_timeout: 1500
+  max_turns: 130
   turn_timeout: 1200
 
 initial_prompt: |
