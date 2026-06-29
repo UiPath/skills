@@ -33,9 +33,9 @@ initial_prompt: |
   list, read, or modify any other project.
 
   Training takes a few minutes (you'll wait through it twice). Each time, poll
-  the project's training status on a fixed interval — wait 60s between checks,
-  up to 20 checks. Do NOT use a single long sleep or escalating waits. Move on
-  only once training has completed; if it's still training after 20 checks, stop
+  the project's training status on a fixed interval — wait 2 min between checks,
+  up to 5 checks. Do NOT use a single long sleep or escalating waits. Move on
+  only once training has completed; if it's still training after 5 checks, stop
   and report rather than waiting longer.
 
   Once it's trained, confirm the predictions on the document so there's some
