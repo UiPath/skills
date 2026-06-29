@@ -69,7 +69,6 @@ IS auto-retries before surfacing a failure. Knowing this disambiguates transient
 | `DAP-RT-1002` | ConnectionIdNull | No connection bound to the activity | [connection-not-resolved.md](./playbooks/connection-not-resolved.md) |
 | `DAP-RT-1003` | ArgumentIsRequired | A required input argument is missing | [missing-required-input.md](./playbooks/missing-required-input.md) |
 | `DAP-RT-1007` | PropertyIsRequired | A required property is empty | [missing-required-input.md](./playbooks/missing-required-input.md) |
-| `DAP-RT-1053` | TriggerInvalidConfiguration | Trigger misconfigured (filters/parameters) | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
 | `DAP-RT-1101` _(4xx)_ | RequestFailed — auth/input subset | Provider `401`/`403` (creds/scope), `404` (not found), `400`/`422` (bad payload) | [request-failed.md](./playbooks/request-failed.md) |
 
 ### 🛠 Bucket B1 — IS platform / connector defect (escalate to owner team)
@@ -82,6 +81,7 @@ Bugs in the activity pack or connector metadata; the customer cannot work around
 | `DAP-RT-1004` | InvalidConfigurationVersion | Config schema version not understood by runtime | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
 | `DAP-RT-1008` | InvalidActivityConfiguration | Activity configuration is malformed | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
 | `DAP-RT-1100` | HttpMethodMissing | Generated activity has no HTTP method — incomplete connector metadata | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
+| `DAP-RT-1053` | TriggerInvalidConfiguration | Trigger object name or operation null/empty — set by connector configuration, not customer-settable | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
 | `DAP-RT-1001` | ServiceProviderNull | Runtime DI/service provider unavailable — internal error | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
 | `DAP-GE-3004` | FailedToGetAccessToken | IS could not obtain a **first-party UiPath service** token (Orchestrator, Feature Flag service) — NOT a connection credential; often transient | [token-refresh-failed.md](./playbooks/token-refresh-failed.md) |
 | `DAP-GE-3001` | InvalidMigration | Activity failed to migrate to a newer schema version | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
@@ -99,7 +99,7 @@ Bugs in the activity pack or connector metadata; the customer cannot work around
 | `DAP-RT-1051` | TriggerExecutionFailed | Trigger evaluation call failed/empty — connector trigger endpoint issue | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
 | `DAP-RT-1050` | TriggerDataMissing | Event payload missing expected event ID — malformed webhook/poll payload | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
 
-> **Not an error:** `DAP-RT-1052` (TriggerNoMatches) — the trigger filter matched zero events. Usually expected behavior. Do not flag unless the customer expected matches. See [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md).
+> **Debug-only, never at runtime:** `DAP-RT-1052` (TriggerNoMatches) — emitted only when a project is executed in **debug mode** (the trigger filter matched zero events). It does **not** appear in runtime execution telemetry, so it is out of scope for runtime triage. See [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md).
 
 ### Design-time (DT) — out of scope
 

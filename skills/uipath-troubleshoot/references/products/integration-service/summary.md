@@ -19,7 +19,7 @@ Keyed on the IS-native `DAP-RT`/`DAP-GE` code emitted in execution telemetry (an
 | `DAP-GE-3000` `DAP-GE-3005` `DAP-RT-1002` | 👤 A | High | Connection not resolved — deleted/cross-workspace, disabled, or no connection bound | [connection-not-resolved.md](./playbooks/connection-not-resolved.md) |
 | `DAP-RT-1003` `DAP-RT-1007` | 👤 A | High | Missing required input argument or property | [missing-required-input.md](./playbooks/missing-required-input.md) |
 | `DAP-RT-1103` | 🛠 B2 | High | HttpClientException — network-level failure, target host unreachable (DNS/firewall/TLS) | [http-client-exception.md](./playbooks/http-client-exception.md) |
-| `DAP-RT-1050` `DAP-RT-1051` `DAP-RT-1052` `DAP-RT-1053` | 🛠 B2 / 👤 A | Medium | Trigger eval failed or payload missing (B2); zero matches (often expected); `1053` misconfig → A | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
+| `DAP-RT-1050` `DAP-RT-1051` `DAP-RT-1053` | 🛠 B2 / 🛠 B1 | Medium | Trigger eval failed or payload missing → B2; `1053` null/empty object/operation (connector config) → B1 escalate. (`DAP-RT-1052` is debug-only — never at runtime) | [trigger-execution-failed.md](./playbooks/trigger-execution-failed.md) |
 | `DAP-RT-1005` `DAP-RT-1155` `DAP-RT-1156` | 🛠 B1 | Medium | Response could not be mapped to the activity output type — connector schema drift | [response-mapping-mismatch.md](./playbooks/response-mapping-mismatch.md) |
 | `DAP-RT-1000` `DAP-RT-1001` `DAP-RT-1004` `DAP-RT-1008` `DAP-RT-1100` `DAP-GE-3001` | 🛠 B1 | Medium | Activity config null/malformed/unversioned or failed migration — corrupt config blob | [activity-configuration-corrupt.md](./playbooks/activity-configuration-corrupt.md) |
 
