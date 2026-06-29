@@ -31,6 +31,10 @@ initial_prompt: |
   index, which is already set up in our tenant, instead of answering
   from general knowledge. The solution should be named "SupportSol".
 
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
 success_criteria:
   - type: command_executed
     description: "Agent created the solution with uip solution new/init"
