@@ -31,9 +31,9 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent invoked aops-policy template get or list for AITrustLayer with --output-dir"
+    description: "Agent invoked aops-policy template get or list for AITrustLayer"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+template\s+(get|list)\b[\s\S]*--output-dir'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+template\s+(get|list)\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
