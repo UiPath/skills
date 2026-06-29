@@ -41,7 +41,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked `deployed-policy get` or `deployed-policy list` with --output json to check effective policy"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+(get|list)\s+.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+(get|list)\s+[\s\S]*--output\s+json'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked `deployment group get` or `deployment group list` with --output json to check group-level deployment"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+group\s+(get|list)\s+.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+group\s+(get|list)\s+[\s\S]*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
