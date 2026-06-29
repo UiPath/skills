@@ -1,0 +1,69 @@
+task_id: skill-coded-apps-action-sdk-construction-smoke
+description: >
+  Smoke test: agent uses the uipath-coded-apps skill to scaffold the SDK
+  construction file for a Coded Action App. Verifies Rule #17 (no
+  `sdk.initialize()` — Action apps run inside Action Center's iframe with
+  a host-injected session) and Rule #6 (publish requires `--type Action`).
+tags: [uipath-coded-apps, smoke, mode:build]
+
+run_limits:
+  expected_turns: 4
+
+initial_prompt: |
+  Scaffold the SDK wiring for a UiPath Coded Action App (rendered inside
+  Action Center human task reviews — NOT a customer-facing Web App).
+  Create two files under the sandbox root:
+
+  1. `src/uipath.ts` — construct the `@uipath/uipath-typescript` SDK in
+     the way that is correct for Action apps, and export it so the form
+     code can import it.
+  2. `deploy.sh` — a single shell command that publishes this app to
+     UiPath via the `uip codedapp` CLI.
+
+  Do NOT run `uip` or `npm` commands — this environment is not authenticated.
+
+success_criteria:
+  - type: file_exists
+    description: "SDK construction file was created"
+    path: "src/uipath.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Publish script was created"
+    path: "deploy.sh"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/uipath.ts imports the SDK and constructs with new UiPath() (Rule #17 — Action apps use host-injected session, no args)"
+    path: "src/uipath.ts"
+    includes:
+      - "@uipath/uipath-typescript"
+      - "new UiPath()"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/uipath.ts does NOT call .initialize() in executable code (Rule #17 — Action apps must not start a PKCE OAuth redirect; comments referencing the rule are allowed)"
+    command: "sed 's|//.*||' src/uipath.ts | grep -F '.initialize('"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "deploy.sh invokes uip codedapp publish (Rule #4 — publish step)"
+    path: "deploy.sh"
+    includes:
+      - "uip codedapp publish"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "deploy.sh passes --type Action (or -t Action) on publish (Rule #6 — without the flag, the app registers as Web and never binds to Action Center)"
+    command: "grep -E '(-t[[:space:]]+Action|--type[[:space:]]+Action)' deploy.sh"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

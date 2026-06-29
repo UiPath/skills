@@ -1,0 +1,119 @@
+task_id: skill-coded-apps-integration-action-schema-validate-fix
+description: >
+  Integration test (mode:diagnose): agent reads a deliberately-broken
+  action-schema.json, runs the skill's validator
+  (scripts/validate-action-schema.js — the source of truth for what the CLI
+  accepts), parses structured errors, fixes the schema, and re-runs the
+  validator until it passes. Tests the validate → read-errors → fix loop
+  (Phase 2f-i archetype D1) and exercises Rule #3 of the Action-app workflow
+  ("Never propose or write an action-schema.json that has not passed the
+  validator").
+tags: [uipath-coded-apps, integration, mode:diagnose, feature:action-schema]
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  A teammate handed me a draft `action-schema.json` for a UiPath Coded
+  Action App. The form is supposed to review a leave request: read the
+  request id and number of days off (read-only inputs), let the reviewer
+  pick a decision and add a comment, and submit with Approve or Reject.
+
+  Write the draft they gave me to `action-schema.json` at the sandbox root,
+  EXACTLY as shown — do not pre-fix it:
+
+  ```
+  {
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "requestId": { "type": "string" },
+        "days": { "type": "number", "format": "email" }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "properties": {
+        "decision": { "type": "string" },
+        "comment": { "type": "string" }
+      }
+    },
+    "outcomes": {
+      "type": "object",
+      "properties": {
+        "approve": { "type": "string" }
+      }
+    }
+  }
+  ```
+
+  Then validate it using the skill's validator script and fix EVERY problem
+  until two conditions both hold:
+
+  (a) the validator exits 0, AND
+  (b) the schema actually matches the business requirements above — re-read
+      the requirements and compare each line against the schema. The draft
+      is incomplete; not every gap will be flagged by the validator (the
+      validator checks shape, not whether the schema satisfies the prompt).
+
+  Run the validator exactly as the skill documents it. Do not propose the
+  schema as final until both (a) and (b) hold.
+
+  Do NOT run `uip` commands — this test is offline. Only run the schema
+  validator and write files.
+
+success_criteria:
+  - type: file_exists
+    description: "action-schema.json was created"
+    path: "action-schema.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the skill's action-schema validator script (Rule #3 — never propose schema without validating)"
+    tool_name: "Bash"
+    command_pattern: 'node\s+\S*validate-action-schema\.js'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent re-ran the validator after fixing (confirming the validate → read → fix loop, not a single one-shot pass)"
+    tool_name: "Bash"
+    command_pattern: 'node\s+\S*validate-action-schema\.js'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final action-schema.json passes the validator (exit 0)"
+    command: "node $SKILLS_REPO_PATH/skills/uipath-coded-apps/scripts/validate-action-schema.js action-schema.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final inOuts section is present (required by validator — all four sections must exist)"
+    command: "python3 -c \"import json,sys; d=json.load(open('action-schema.json')); sys.exit(0 if 'inOuts' in d else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "outcomes.properties contains both an approve-style and a reject-style outcome (the prompt specified both)"
+    command: "python3 -c \"import json,sys; o=json.load(open('action-schema.json'))['outcomes']['properties']; n=[k.lower() for k in o.keys()]; sys.exit(0 if any('approv' in x for x in n) and any('reject' in x for x in n) else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Invalid `format: email` on the numeric `days` field was removed (validator rejects `format` on non-string types)"
+    command: "python3 -c \"import json,sys; d=json.load(open('action-schema.json'))['inputs']['properties']['days']; sys.exit(0 if d.get('format') != 'email' else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

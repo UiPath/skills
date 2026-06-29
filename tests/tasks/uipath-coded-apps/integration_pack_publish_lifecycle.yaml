@@ -1,0 +1,130 @@
+task_id: skill-coded-apps-integration-pack-publish-lifecycle
+description: >
+  Integration test (mode:build, cloud auth required): full build → pack →
+  publish lifecycle for a Coded Web App against a live tenant. Agent
+  scaffolds a minimal Vite+React app, runs `npm install` + `npm run build`,
+  packs the dist/ via `uip codedapp pack`, then publishes to the tenant via
+  `uip codedapp publish`. Verifies the three artifacts each stage produces
+  (`dist/`, `.uipath/<name>.<version>.nupkg`, `.uipath/app.config.json`
+  with a `deploymentId`). Mirrors the Data Fabric `integration_full_lifecycle`
+  Discover → Act → Verify pattern, scoped to the build path (deploy is left
+  to a separate e2e test since it also needs folder-key resolution).
+tags: [uipath-coded-apps, integration, mode:build, feature:pack-publish]
+
+run_limits:
+  expected_turns: 25
+  turn_timeout: 600
+
+initial_prompt: |
+  Run a full Coded Web App build → pack → publish cycle against the
+  currently-active UiPath tenant.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login —
+     use whatever tenant is currently active.
+
+  2. Scaffold a minimal Vite + React + TypeScript Coded Web App at the
+     sandbox root (use the skill's Web App scaffold conventions). App name:
+     `IntegrationLifecycleApp`. Use a fresh `0.1.0` version.
+
+  3. Run `npm install` (the @uipath registry override may be required —
+     follow the skill's debug guide if `npm install` returns 401).
+
+  4. Run `npm run build`. Confirm `dist/` exists with `index.html`.
+
+  5. Pack: `uip codedapp pack dist -n IntegrationLifecycleApp --version 0.1.0`.
+     If the version already exists from a prior run, bump to `0.1.0-<random
+     6-char suffix>` rather than reusing.
+
+  6. Publish (Web type, the default): `uip codedapp publish`. Confirm
+     `.uipath/app.config.json` exists and contains `deploymentId` and
+     `appUrl`.
+
+  Use `--output json` on every `uip` command. Do NOT attempt `uip codedapp
+  deploy` — that needs a folder key and is covered by a separate e2e test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before cloud commands (Rule #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran npm run build (Rule #3 — never skip the build step)"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+run\s+build'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pack` with --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+pack\b.*--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp publish` with --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+publish\b.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT attempt `uip codedapp deploy` (out of scope — would block on folder key resolution)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT publish with `-t Action` (this is a Web App test, Rule #6 applies the other way)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish\b.*(-t|--type)\s+Action'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "dist/index.html was produced by npm run build (anywhere in the project tree — Rule #3)"
+    command: "find . -path '*/dist/index.html' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A .nupkg was produced under .uipath/ (pack artifact, anywhere in the project tree)"
+    command: "find . -path '*/.uipath/*.nupkg' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".uipath/app.config.json was written by publish (anywhere in the project tree)"
+    command: "find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json contains a non-empty systemName (the tenant-assigned ID set by publish — proves publish reached the tenant; deploymentId is set by deploy which this test deliberately skips)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if d.get('systemName') else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json appType is Web (the default — confirms agent did not accidentally publish with --type Action)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if d.get('appType','Web').lower() == 'web' else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

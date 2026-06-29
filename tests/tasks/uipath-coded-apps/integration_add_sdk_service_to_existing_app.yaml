@@ -1,0 +1,164 @@
+task_id: skill-coded-apps-integration-add-sdk-service-to-existing-app
+description: >
+  Integration test (mode:build, brownfield, offline): agent receives an
+  existing minimal Coded Web App (seed files in the prompt) and must add
+  Action Center Tasks SDK support WITHOUT breaking the existing Assets +
+  Queues setup. Tests the brownfield modification workflow that represents
+  90% of real coded-apps work. Closes the brownfield-coverage gap
+  identified in tests/reports/uipath-coded-apps.md.
+tags: [uipath-coded-apps, integration, mode:build, feature:brownfield]
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  You're handed an existing UiPath Coded Web App that currently shows
+  Orchestrator Assets and Queues. The team wants to extend it to also list
+  pending Action Center Tasks.
+
+  **Step 1 — Reproduce the current state of the app.** Write these three
+  files to the sandbox root EXACTLY as shown. Do NOT modify them in this
+  step:
+
+  `package.json`:
+  ```
+  {
+    "name": "ops-dashboard",
+    "version": "0.1.0",
+    "type": "module",
+    "dependencies": {
+      "@uipath/uipath-typescript": "^1.5.0",
+      "react": "^19.2.7",
+      "react-dom": "^19.2.7"
+    }
+  }
+  ```
+
+  `src/api.ts`:
+  ```
+  import { UiPath } from '@uipath/uipath-typescript';
+  import { Assets } from '@uipath/uipath-typescript/assets';
+  import { Queues } from '@uipath/uipath-typescript/queues';
+
+  const sdk = new UiPath();
+
+  export async function getAssetByName(name: string) {
+    const assets = new Assets(sdk);
+    return assets.getByName(name);
+  }
+
+  export async function listQueues() {
+    const queues = new Queues(sdk);
+    return queues.getAll({ pageSize: 50 });
+  }
+  ```
+
+  `.env.example`:
+  ```
+  VITE_UIPATH_CLIENT_ID=<your-client-id>
+  VITE_UIPATH_SCOPE=OR.Assets.Read OR.Queues.Read
+  VITE_UIPATH_ORG_NAME=<your-org>
+  VITE_UIPATH_TENANT_NAME=<your-tenant>
+  VITE_UIPATH_BASE_URL=https://api.uipath.com
+  ```
+
+  **Step 2 — Extend the app.** Add Action Center Tasks support:
+
+    1. In `src/api.ts`, add a new exported function `listPendingTasks()`
+       that uses the Tasks service to list pending tasks for the current
+       user. Follow the same subpath-import + constructor-DI patterns the
+       existing code uses.
+
+    2. Update `.env.example` so `VITE_UIPATH_SCOPE` ALSO covers the Tasks
+       methods you call (Rule #16). Keep the existing Assets + Queues
+       scopes.
+
+  **Important — do NOT modify the existing `getAssetByName` or `listQueues`
+  functions** in any way. They must remain byte-identical except for any
+  necessary additions to the import block. The grader checks that the
+  existing surface is preserved.
+
+  Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "package.json was created"
+    path: "package.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "src/api.ts was created"
+    path: "src/api.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: ".env.example was created"
+    path: ".env.example"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/api.ts has the NEW listPendingTasks function with subpath import + constructor DI for Tasks"
+    path: "src/api.ts"
+    includes:
+      - "listPendingTasks"
+      - "@uipath/uipath-typescript/tasks"
+      - "new Tasks("
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/api.ts PRESERVES the existing Assets and Queues code (brownfield preservation)"
+    path: "src/api.ts"
+    includes:
+      - "getAssetByName"
+      - "listQueues"
+      - "@uipath/uipath-typescript/assets"
+      - "@uipath/uipath-typescript/queues"
+      - "new Assets("
+      - "new Queues("
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".env.example VITE_UIPATH_SCOPE now covers OR.Tasks (Rule #16 — added scope for new service)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Tasks' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".env.example VITE_UIPATH_SCOPE STILL covers OR.Assets (brownfield preservation — pre-existing scope kept)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Assets' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".env.example VITE_UIPATH_SCOPE STILL covers OR.Queues (brownfield preservation)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Queues' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/api.ts has NO package-root SDK imports introduced (Anti-pattern #1 not regressed)"
+    command: "sed 's|//.*||' src/api.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\" | grep -vE '\\{\\s*UiPath\\s*\\}'"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_BASE_URL still on API subdomain (Rule #8 — preserved from seed)"
+    command: "grep -E '^VITE_UIPATH_BASE_URL=https://(\\w+\\.)?api\\.uipath\\.com' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

@@ -1,0 +1,133 @@
+task_id: skill-coded-apps-integration-error-paths
+description: >
+  Integration test (mode:diagnose, mostly offline): catalog of deliberate
+  error scenarios the agent must trigger and report on without retrying.
+  Mirrors Data Fabric `integration_error_paths` for the coded-apps surface.
+  Each scenario corresponds to a failure mode documented in the skill's
+  Troubleshooting table (debug.md) or Critical Rules — the agent must run
+  the wrong command, capture stderr+stdout, and move on. Verifies that the
+  agent recognizes the failure-mode taxonomy without trying to "fix" each
+  case by retrying.
+tags: [uipath-coded-apps, integration, mode:diagnose, feature:error-paths]
+
+run_limits:
+  expected_turns: 12
+  turn_timeout: 600
+
+initial_prompt: |
+  Run a sequence of deliberately-broken `uip codedapp` operations and
+  record the error each one produces. This is a NEGATIVE test — every
+  command below is expected to FAIL. Run each command exactly once,
+  capture stdout+stderr to the path noted, and move on. Do NOT retry, do
+  NOT attempt to fix, and do NOT prompt the user.
+
+  Use `> err_<n>.txt 2>&1` (or `>> errors.json`) to capture each error.
+  Use `--output json` on every `uip codedapp` invocation.
+
+  Scenarios:
+
+  1. **Pack without `dist/`** — at the sandbox root with no `dist/`
+     directory created, run `uip codedapp pack dist -n ErrPathsApp --version
+     0.1.0`. Save the error to `err_1_no_dist.txt`.
+
+  2. **Pack against a missing path** — run `uip codedapp pack
+     does-not-exist-dir -n ErrPathsApp --version 0.1.0`. Save to
+     `err_2_missing_path.txt`.
+
+  3. **Deploy without `--folder-key`** — assuming no `app.config.json`
+     exists yet, run `uip codedapp deploy -n ErrPathsApp`. Save to
+     `err_3_no_folder_key.txt`. (This will fail because the publish step
+     wasn't run; that's fine — the failure mode is still recorded.)
+
+  4. **Pack with both `-n` flag forms conflicting** — run `uip codedapp pack
+     dist -n ErrPathsApp --name OtherName --version 0.1.0`. Save to
+     `err_4_conflicting_name.txt`.
+
+  After all four scenarios, write `report.json` at the sandbox root
+  summarizing the runs:
+
+  ```
+  {
+    "scenarios": [
+      { "id": 1, "name": "pack_without_dist", "exit_code": <n>, "log": "err_1_no_dist.txt" },
+      { "id": 2, "name": "pack_missing_path", "exit_code": <n>, "log": "err_2_missing_path.txt" },
+      { "id": 3, "name": "deploy_no_folder_key", "exit_code": <n>, "log": "err_3_no_folder_key.txt" },
+      { "id": 4, "name": "pack_conflicting_name", "exit_code": <n>, "log": "err_4_conflicting_name.txt" }
+    ],
+    "all_failed_as_expected": true
+  }
+  ```
+
+  No cloud auth is required for this test — every command should fail
+  locally before reaching the tenant. Do NOT run `uip login` and do NOT
+  retry any failing command.
+
+success_criteria:
+  - type: file_exists
+    description: "err_1_no_dist.txt was captured"
+    path: "err_1_no_dist.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "err_2_missing_path.txt was captured"
+    path: "err_2_missing_path.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "err_3_no_folder_key.txt was captured"
+    path: "err_3_no_folder_key.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "err_4_conflicting_name.txt was captured"
+    path: "err_4_conflicting_name.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pack` (scenarios 1, 2, 4 — three pack attempts; min 2 to allow some flexibility in scenario 4 syntax)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack\b'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp deploy` (scenario 3 — should error on missing folder key)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT attempt `uip login` (the prompt forbade it — these errors should surface without authenticating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+status)\b'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json summarizing the four scenarios was created"
+    path: "report.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json declares all four scenarios failed as expected"
+    command: "python3 -c \"import json,sys; r=json.load(open('report.json')); sys.exit(0 if r.get('all_failed_as_expected') is True and len(r.get('scenarios',[])) >= 4 else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Each captured error log is non-empty (the agent didn't silently swallow stderr — Rule #7 of writing tests: prove the error surfaced)"
+    command: "for f in err_1_no_dist.txt err_2_missing_path.txt err_3_no_folder_key.txt err_4_conflicting_name.txt; do test -s \"$f\" || { echo \"empty: $f\"; exit 1; }; done"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

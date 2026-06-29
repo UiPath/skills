@@ -1,0 +1,37 @@
+task_id: skill-coded-apps-wrong-skill-rejection-smoke
+description: >
+  Negative smoke test (structural pattern, mirrors uipath-data-fabric
+  `smoke_negative_guards`): user asks for a Python LangGraph agent — a
+  uipath-agents task, not a coded-apps task. Verifies the agent does NOT
+  scaffold a Coded Web/Action App in response. Tests skill activation
+  discipline at the SKILL.md description boundary ("For .cs/XAML→uipath-rpa,
+  Python→uipath-agents").
+tags: [uipath-coded-apps, smoke, mode:build]
+
+run_limits:
+  expected_turns: 3
+
+max_turns: 6
+turn_timeout: 180
+
+initial_prompt: |
+  How do I deploy a Python LangGraph agent to UiPath? I already have the
+  `.py` file written — I just need the deploy command and to know where it
+  fits in my project.
+
+success_criteria:
+  - type: run_command
+    description: "No coded-app artifacts were scaffolded (app.config.json / action-schema.json / vite.config.ts) — this is a uipath-agents request, not a uipath-coded-apps request"
+    command: "find . -maxdepth 4 \\( -name 'app.config.json' -o -name 'action-schema.json' -o -name 'vite.config.ts' \\) -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No Web/Action coded-app SDK dependency was added to any package.json (would indicate the agent started building a coded app)"
+    command: "find . -maxdepth 4 -name 'package.json' -exec grep -l '@uipath/uipath-typescript' {} + 2>/dev/null | grep -q ."
+    timeout: 10
+    expected_exit_code: 1
+    weight: 1.5
+    pass_threshold: 1.0

@@ -1,0 +1,43 @@
+task_id: skill-coded-apps-getappbase-usage-smoke
+description: >
+  Smoke test: agent uses the uipath-coded-apps skill to construct a runtime
+  asset URL via `getAppBase()` from `@uipath/uipath-typescript` instead of a
+  hard-coded `/`-rooted path. Verifies Rule #10 — Vite's `base: './'` only
+  fixes import-time references; runtime-built absolute URLs need
+  `getAppBase()` or they 404 after deploy.
+tags: [uipath-coded-apps, smoke, mode:build]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, write `src/Logo.tsx` at the sandbox root — a
+  React component that renders an `<img>` whose `src` points to a logo asset
+  bundled with the app under `assets/logo.png`. The path must resolve both
+  locally and once deployed at a non-root prefix in UiPath Cloud.
+
+  Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "Component file was created"
+    path: "src/Logo.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/Logo.tsx imports getAppBase from the SDK (Rule #10)"
+    path: "src/Logo.tsx"
+    includes:
+      - "getAppBase"
+      - "@uipath/uipath-typescript"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/Logo.tsx has NO hard-coded /-rooted asset path in executable code (Rule #10 — these 404 after deploy; comments are allowed)"
+    command: "sed 's|//.*||' src/Logo.tsx | grep -E \"src=['\\\"]/[a-zA-Z]\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0

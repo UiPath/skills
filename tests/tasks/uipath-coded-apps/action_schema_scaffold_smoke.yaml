@@ -1,0 +1,65 @@
+task_id: skill-coded-apps-action-schema-scaffold-smoke
+description: >
+  Smoke test: agent uses the uipath-coded-apps skill to author
+  `action-schema.json` — the data contract for a Coded Action App. Covers
+  Workflow Step #2 (Action-app scaffolding) and complements
+  `action_sdk_construction_smoke` (which covers SDK wiring). Verifies the
+  JSON Schema shape with all four sections and the canonical Approve/Reject
+  outcomes structure.
+tags: [uipath-coded-apps, smoke, mode:build]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Author `action-schema.json` at the sandbox root for a UiPath Coded Action
+  App. The app reviews purchase orders: the form receives a PO number and a
+  supplier name as read-only context, lets the reviewer enter an approval
+  comment, and submits with one of two outcomes — Approve or Reject. The
+  app name is `po-review`.
+
+  This is an automated test — do not pause for clarifying questions, write
+  the schema directly. Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "action-schema.json was created"
+    path: "action-schema.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json is valid JSON"
+    command: "python3 -c \"import json; json.load(open('action-schema.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "All four required top-level sections present (inputs, outputs, inOuts, outcomes) plus the PO context fields"
+    path: "action-schema.json"
+    includes:
+      - "\"inputs\""
+      - "\"outputs\""
+      - "\"inOuts\""
+      - "\"outcomes\""
+      - "\"properties\""
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "outcomes.properties contains both an approve-style and a reject-style outcome (the two submission buttons the prompt specified)"
+    command: "python3 -c \"import json,sys; o=json.load(open('action-schema.json'))['outcomes']['properties']; names=[k.lower() for k in o.keys()]; sys.exit(0 if any('approv' in n for n in names) and any('reject' in n for n in names) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "inputs.properties contains at least one field (the read-only PO context the prompt specified)"
+    command: "python3 -c \"import json,sys; p=json.load(open('action-schema.json'))['inputs']['properties']; sys.exit(0 if len(p) >= 1 else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

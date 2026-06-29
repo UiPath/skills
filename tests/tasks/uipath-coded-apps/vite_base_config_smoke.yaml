@@ -1,0 +1,49 @@
+task_id: skill-coded-apps-vite-base-config-smoke
+description: >
+  Smoke test: agent uses the uipath-coded-apps skill to scaffold
+  `vite.config.ts` for a Coded Web App. Verifies Rule #9 — `base: './'`
+  is required (the platform handles URL routing; absolute root paths
+  cause 404 after deploy).
+tags: [uipath-coded-apps, smoke, mode:build]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  Scaffold `vite.config.ts` at the sandbox root for a UiPath Coded Web App.
+  The app will be deployed to UiPath Cloud where the platform handles URL
+  routing.
+
+  Do NOT run `uip` or `npm` commands — this environment is not authenticated.
+
+success_criteria:
+  - type: file_exists
+    description: "Vite config file was created"
+    path: "vite.config.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "vite.config.ts uses defineConfig and sets base"
+    path: "vite.config.ts"
+    includes:
+      - "defineConfig"
+      - "base:"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "vite.config.ts sets base to relative './' (Rule #9 — required for deployed asset paths)"
+    command: "grep -E \"base:[[:space:]]*['\\\"]\\./['\\\"]\" vite.config.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "vite.config.ts does NOT use an absolute root base like '/myapp/' (Rule #9 — only './' is correct)"
+    command: "sed 's|//.*||' vite.config.ts | grep -E \"base:[[:space:]]*['\\\"]/[a-zA-Z]\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 1.5
+    pass_threshold: 1.0

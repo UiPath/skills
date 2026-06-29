@@ -1,0 +1,209 @@
+task_id: skill-coded-apps-e2e-orchestrator-dashboard-web-app
+description: >
+  E2E scenario (cloud auth required): agent builds a complete Coded Web
+  App dashboard that surfaces live Orchestrator state, from scratch. Given
+  only a business goal, the agent must scaffold Vite + React, wire the
+  `@uipath/uipath-typescript` SDK with subpath imports and constructor DI,
+  configure `VITE_UIPATH_SCOPE` to cover Jobs + Queues, configure
+  `vite.config.ts` correctly (Rule #9), use `getAppBase()` for any runtime
+  asset URLs (Rule #10), build, pack, publish (default Web type), and
+  deploy to the Shared folder. Tests the Web-app lifecycle with deep SDK
+  integration that no smoke or integration test covers.
+tags: [uipath-coded-apps, e2e, mode:build, feature:web-app, feature:sdk-integration]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 65
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a UiPath Coded Web App that gives operations engineers a live
+  dashboard of Orchestrator state.
+
+  Business requirements:
+
+  - Two panels:
+    1. **Jobs** — list the currently-running jobs in the active folder
+       (use the SDK's Jobs service). Show one row per job with the
+       process name, started-at timestamp, and status.
+    2. **Queues** — list every queue in the active folder (use the SDK's
+       Queues service). Show one row per queue with the queue name and
+       the number of new + in-progress items.
+  - Both panels use the `@uipath/uipath-typescript` SDK from a Web App
+    (the SDK is initialized at app startup via OAuth — this is a Web app,
+    not an Action app).
+  - The app must be deployable to UiPath Cloud and load correctly from a
+    non-root URL prefix.
+
+  Use the app name `OrchestratorDashboard_<EPOCH>` (Unix epoch seconds
+  suffix) with version `0.1.0`. Deploy to the Orchestrator folder named
+  `Shared` (resolve the folder name to a key via the documented mechanism
+  — do NOT let the deploy command go interactive).
+
+  When you finish, write `report.json` at the sandbox root with:
+    {
+      "app_name": "<the exact app name you used>",
+      "deployment_id": "<the deploymentId from .uipath/app.config.json>",
+      "app_url": "<the appUrl from .uipath/app.config.json>"
+    }
+
+  Use `--output json` on every `uip` command. Do not prompt for
+  confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before cloud commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent resolved the folder name to a folder key via `uip or folders list`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `npm run build` (Rule #3)"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+run\s+build'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pack`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp publish` (Web type — the default; --type Action would be wrong here)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT publish with -t Action / --type Action (this is a Web App)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+publish\b.*(?:-t\s+Action|--type\s+Action)'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp deploy` with --folder-key"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+deploy\b.*--folder-key'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "publish wrote a .uipath/app.config.json somewhere in the project tree"
+    command: "find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json.appType is Web (default; confirms Action wasn't accidentally used)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if d.get('appType','Web').lower() == 'web' else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json contains a non-empty deploymentId (publish reached the tenant)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if d.get('deploymentId') else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "vite.config.{ts,js} was created (anywhere in the project tree)"
+    command: "find . \\( -name 'vite.config.ts' -o -name 'vite.config.js' \\) -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "vite.config sets base: './' (Rule #9)"
+    command: "F=$(find . \\( -name 'vite.config.ts' -o -name 'vite.config.js' \\) -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && grep -E \"base:[[:space:]]*['\\\"]\\./['\\\"]\" \"$F\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Source files use SDK subpath imports for Jobs AND Queues (Anti-pattern #1 — no package-root imports)"
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE \"from\\s+['\\\"]@uipath/uipath-typescript/(jobs|queues)['\\\"]\" {} + 2>/dev/null | xargs -r grep -hE \"from\\s+['\\\"]@uipath/uipath-typescript/(jobs|queues)['\\\"]\" | sort -u | wc -l | awk '{ exit ($1 >= 2 ? 0 : 1) }'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Source files use constructor DI (`new Jobs(sdk)` / `new Queues(sdk)`) — Anti-pattern #2"
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE \"new\\s+(Jobs|Queues)\\(\" {} + | grep -q ."
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No source file imports service classes from the package root (Anti-pattern #1)"
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec sed 's|//.*||' {} \\; | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\""
+    timeout: 15
+    expected_exit_code: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".env or .env.example was created with VITE_UIPATH_* config (anywhere in the project tree)"
+    command: "find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -lE '^VITE_UIPATH_' {} + | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE covers BOTH Jobs and Queues (Rule #16 — mismatched scopes fail silently with 401/403)"
+    command: "find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -hE \"^VITE_UIPATH_SCOPE=.*OR\\.Jobs.*OR\\.Queues|^VITE_UIPATH_SCOPE=.*OR\\.Queues.*OR\\.Jobs\" {} + 2>/dev/null | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_BASE_URL uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com)"
+    command: "find . \\( -name '.env.example' -o -name '.env' -o -name '.env.local' \\) -not -path '*/node_modules/*' -exec grep -hE \"^VITE_UIPATH_BASE_URL=https://(\\w+\\.)?api\\.uipath\\.com\" {} + 2>/dev/null | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written at the sandbox root so post-run cleanup can find the deployed app"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json contains app_name + deployment_id (app_url may be null until the app is activated)"
+    command: "python3 -c \"import json,sys; r=json.load(open('report.json')); sys.exit(0 if r.get('app_name') and r.get('deployment_id') else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

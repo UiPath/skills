@@ -1,0 +1,114 @@
+task_id: skill-coded-apps-integration-sdk-imports-scopes
+description: >
+  Integration test (mode:build): agent writes a multi-service SDK module
+  for a Coded Web App and the matching `.env.example`. Verifies three
+  intersecting rules in one test:
+  (1) Anti-pattern #1 — subpath imports only (`@uipath/uipath-typescript/<service>`),
+  never the package root.
+  (2) Anti-pattern #2 — constructor DI (`new Assets(sdk)`), never the deprecated
+  dot-chain (`sdk.assets.getAll()`).
+  (3) Rule #16 — `VITE_UIPATH_SCOPE` covers every SDK method the agent calls;
+  drift causes silent 401/403 on first invocation.
+tags: [uipath-coded-apps, integration, mode:build, feature:sdk-imports]
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, build `src/api.ts` and `.env.example`.
+
+  The app needs to call THREE SDK services at runtime:
+    - Orchestrator Assets — read a single asset by name
+    - Orchestrator Queues — list queues in the current folder
+    - Action Center Tasks — list pending tasks assigned to the current user
+
+  Write:
+
+  1. `src/api.ts` — construct the `@uipath/uipath-typescript` SDK once and
+     export three functions (`getAssetByName`, `listQueues`,
+     `listPendingTasks`) that call the appropriate service classes.
+     Follow the skill's documented import patterns and SDK construction
+     conventions.
+
+  2. `.env.example` — include every `VITE_UIPATH_*` env var the app needs,
+     with placeholder values. The `VITE_UIPATH_SCOPE` value must cover all
+     three services above (read-level is fine for assets/queues; tasks
+     needs whatever scope the skill documents for listing).
+
+  Do NOT run `uip` or `npm` commands — this environment is not authenticated.
+
+success_criteria:
+  - type: file_exists
+    description: "src/api.ts was created"
+    path: "src/api.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: ".env.example was created"
+    path: ".env.example"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/api.ts uses subpath imports for each service class (Anti-pattern #1 — never import service classes from the package root)"
+    path: "src/api.ts"
+    includes:
+      - "@uipath/uipath-typescript/assets"
+      - "@uipath/uipath-typescript/queues"
+      - "@uipath/uipath-typescript/tasks"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/api.ts does NOT import service classes from the package root (Anti-pattern #1: `from '@uipath/uipath-typescript'` with no subpath)"
+    command: "sed 's|//.*||' src/api.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/api.ts uses constructor DI: `new Assets(sdk)` rather than the deprecated dot-chain (Anti-pattern #2)"
+    command: "grep -E \"new\\s+(Assets|Queues|Tasks)\\(\" src/api.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/api.ts does NOT use the deprecated dot-chain `sdk.assets.<method>()` form (Anti-pattern #2)"
+    command: "sed 's|//.*||' src/api.ts | grep -E \"\\bsdk\\.(assets|queues|tasks)\\.\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: ".env.example declares the five core VITE_UIPATH_* env vars"
+    path: ".env.example"
+    includes:
+      - "VITE_UIPATH_CLIENT_ID"
+      - "VITE_UIPATH_SCOPE"
+      - "VITE_UIPATH_ORG_NAME"
+      - "VITE_UIPATH_TENANT_NAME"
+      - "VITE_UIPATH_BASE_URL"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE covers Assets, Queues, AND Tasks (Rule #16 — missing scopes fail silently with 401/403)"
+    command: "grep -E \"^VITE_UIPATH_SCOPE=.*OR\\.Assets.*OR\\.Queues.*OR\\.Tasks|^VITE_UIPATH_SCOPE=.*OR\\.Assets.*OR\\.Tasks.*OR\\.Queues|^VITE_UIPATH_SCOPE=.*OR\\.Queues.*OR\\.Assets.*OR\\.Tasks|^VITE_UIPATH_SCOPE=.*OR\\.Queues.*OR\\.Tasks.*OR\\.Assets|^VITE_UIPATH_SCOPE=.*OR\\.Tasks.*OR\\.Assets.*OR\\.Queues|^VITE_UIPATH_SCOPE=.*OR\\.Tasks.*OR\\.Queues.*OR\\.Assets\" .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_BASE_URL uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com)"
+    command: "grep -E \"^VITE_UIPATH_BASE_URL=https://(\\w+\\.)?api\\.uipath\\.com\" .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

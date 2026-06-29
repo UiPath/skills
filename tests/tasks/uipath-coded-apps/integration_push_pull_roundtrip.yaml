@@ -1,0 +1,129 @@
+task_id: skill-coded-apps-integration-push-pull-roundtrip
+description: >
+  Integration test (mode:operate, cloud auth required): Studio Web file
+  sync roundtrip via `uip codedapp push` and `uip codedapp pull`. Agent
+  scaffolds a minimal app, pushes it to Studio Web (`push` auto-creates
+  the project on first run and saves `UIPATH_PROJECT_ID`), corrupts a
+  local source file, then pulls back from Studio Web to confirm the
+  remote-of-record overwrites the local modification. Verifies the
+  `O3 push / pull roundtrip` operate archetype documented in the
+  skill's file-sync reference.
+tags: [uipath-coded-apps, integration, mode:operate, feature:push-pull]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 40
+  turn_timeout: 900
+  task_timeout: 900
+
+initial_prompt: |
+  Run a Studio Web push / pull roundtrip against the currently-active
+  UiPath tenant. This test focuses ONLY on the push/pull operation — do
+  NOT scaffold a full Vite app, do NOT run `npm install`, do NOT run
+  `npm run build`. Just write the minimal source files needed, then push
+  and pull.
+
+  1. Check login: `uip login status --output json`. Do NOT re-login.
+
+  2. Write these two files at the sandbox root EXACTLY as shown:
+
+     `package.json`:
+     ```
+     {
+       "name": "integration-roundtrip-app",
+       "version": "0.1.0",
+       "type": "module"
+     }
+     ```
+
+     `src/App.tsx`:
+     ```
+     // roundtrip-marker:v1
+     export default function App() {
+       return null;
+     }
+     ```
+
+  3. Push to Studio Web: `uip codedapp push --output json`. This auto-creates
+     a Studio Web project on first run and persists `UIPATH_PROJECT_ID` to
+     `.env`. Run push as a SINGLE Bash invocation, not chained with other
+     commands.
+
+  4. Locally corrupt `src/App.tsx` by replacing the marker line with
+     `// roundtrip-marker:LOCAL-CORRUPTED`. Keep the rest of the file
+     identical. Save it.
+
+  5. Pull from Studio Web: `uip codedapp pull --overwrite --output json`.
+     The `--overwrite` flag is REQUIRED — without it, pull will refuse to
+     replace the locally-modified `src/App.tsx`. This downloads the
+     version-of-record from Studio Web; after pull, `src/App.tsx` must
+     contain the original `:v1` marker again. Run pull as a SINGLE Bash
+     invocation in the project root (NOT in a subdirectory and NOT with
+     `--target-dir`).
+
+  Run each command as a separate Bash invocation. Do NOT chain them with
+  `&&`. Do NOT run `npm install`, `npm run build`, `uip codedapp pack`,
+  `publish`, or `deploy` — those are tested by other tests. Do NOT
+  experiment with `--target-dir` or pulling into subdirectories.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before cloud commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp push` with --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+push\b.*--output\s+json'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pull` (the outcome — file restored to v1 — is graded separately by the marker assertions below)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pull\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT pack/publish/deploy (out of scope for push/pull test)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "src/App.tsx exists after roundtrip"
+    path: "src/App.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/App.tsx still contains the v1 marker — pull restored the Studio Web version of record over the local corruption"
+    command: "grep -F 'roundtrip-marker:v1' src/App.tsx"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/App.tsx does NOT contain the LOCAL-CORRUPTED marker — confirms the corruption was overwritten, not preserved"
+    command: "grep -F 'LOCAL-CORRUPTED' src/App.tsx"
+    timeout: 5
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "UIPATH_PROJECT_ID was persisted somewhere (push records it for subsequent pulls; usually .env)"
+    command: "grep -shE 'UIPATH_PROJECT_ID\\s*=' .env .env.local 2>/dev/null | grep -q ."
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

@@ -1,0 +1,124 @@
+task_id: skill-coded-apps-integration-debug-catalog-classification
+description: >
+  Integration test (mode:diagnose, offline): agent reads three deployment
+  fault descriptions, consults the skill's `references/debug.md` catalog,
+  and writes a structured diagnosis (root cause + fix) for each to
+  `diagnosis.json`. Tests the D8 failure-mode classification archetype.
+  Closes the diagnose-mode coverage gap identified in
+  tests/reports/uipath-coded-apps.md (only S2 validate→fix loop was
+  diagnose-covered before this test).
+tags: [uipath-coded-apps, integration, mode:diagnose, feature:debug-catalog]
+
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  A user reports three separate problems with their deployed UiPath Coded
+  Web App. Consult the skill's `references/debug.md` Troubleshooting
+  catalog and classify each fault.
+
+  **Fault A:**
+    "After publishing my Web App I open the URL but get a CORS error in
+    the browser console: 'No Access-Control-Allow-Origin'. Every Orchestrator
+    SDK call fails with this same error. Everything worked locally."
+
+  **Fault B:**
+    "I just added a new Tasks service call to my dashboard alongside the
+    existing Assets and Queues calls. The Tasks call returns 401
+    Unauthorized on first invocation. Assets and Queues still work fine."
+
+  **Fault C:**
+    "I deployed my Web App but loading it shows a blank page. Browser
+    console shows 'Failed to load resource: 404' for several files
+    in `/assets/...`."
+
+  Write `diagnosis.json` at the sandbox root with EXACTLY this structure
+  (one entry per fault; each fault has a `root_cause` and `fix` field):
+
+  ```
+  {
+    "faultA": {
+      "root_cause": "<one-sentence root cause>",
+      "fix": "<the canonical fix from debug.md — name the env var / file / rule that needs to change>"
+    },
+    "faultB": { "root_cause": "...", "fix": "..." },
+    "faultC": { "root_cause": "...", "fix": "..." }
+  }
+  ```
+
+  Each `fix` field must reference the specific config or file the skill's
+  debug.md tells you to change for that fault.
+
+  Do NOT run `uip` or `npm` commands and do NOT attempt to reproduce the
+  faults — this test grades classification accuracy, not reproduction.
+
+success_criteria:
+  - type: file_exists
+    description: "diagnosis.json was created"
+    path: "diagnosis.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "diagnosis.json is valid JSON"
+    command: "python3 -c \"import json; json.load(open('diagnosis.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Fault A — root cause names the wrong base URL / API subdomain issue (debug.md: 'API calls fail with 401/CORS — Wrong base URL — Use https://api.uipath.com not cloud.uipath.com')"
+    path: "diagnosis.json"
+    assertions:
+      - expression: "faultA.fix"
+        operator: regex
+        expected: "(?i)(api\\.uipath\\.com|VITE_UIPATH_BASE_URL|api[\\s_-]*subdomain|cloud\\.uipath\\.com)"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Fault B — root cause names a scope-coverage mismatch (debug.md: 'Mismatched scopes fail silently with 401/403' — Rule #16)"
+    path: "diagnosis.json"
+    assertions:
+      - expression: "faultB.fix"
+        operator: regex
+        expected: "(?i)(VITE_UIPATH_SCOPE|OR\\.Tasks|scope)"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Fault C — root cause names Vite `base: './'` and/or `getAppBase()` runtime URL issue (debug.md: '404 after deploy — Vite base not relative or hardcoded router basename')"
+    path: "diagnosis.json"
+    assertions:
+      - expression: "faultC.fix"
+        operator: regex
+        expected: "(?i)(base:\\s*['\\\"]?\\./|getAppBase|vite\\.config|relative\\s+base)"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Each fault has both a root_cause and a fix (the structure required by the prompt)"
+    path: "diagnosis.json"
+    assertions:
+      - expression: "faultA.root_cause"
+        operator: regex
+        expected: ".+"
+      - expression: "faultA.fix"
+        operator: regex
+        expected: ".+"
+      - expression: "faultB.root_cause"
+        operator: regex
+        expected: ".+"
+      - expression: "faultB.fix"
+        operator: regex
+        expected: ".+"
+      - expression: "faultC.root_cause"
+        operator: regex
+        expected: ".+"
+      - expression: "faultC.fix"
+        operator: regex
+        expected: ".+"
+    weight: 1.5
+    pass_threshold: 1.0

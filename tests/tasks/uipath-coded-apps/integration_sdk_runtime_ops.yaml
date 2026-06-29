@@ -1,0 +1,142 @@
+task_id: skill-coded-apps-integration-sdk-runtime-ops
+description: >
+  Integration test (mode:operate, offline): agent authors a service module
+  that performs runtime operations on deployed UiPath artifacts via the
+  `@uipath/uipath-typescript` SDK — `Jobs.stop`, `Tasks.complete`,
+  `ProcessInstances.cancel`. Tests the operate-mode authoring surface that
+  the skill teaches but no other test exercises. Closes the operate-mode
+  coverage gap identified in tests/reports/uipath-coded-apps.md.
+tags: [uipath-coded-apps, integration, mode:operate, feature:sdk-runtime]
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, write `src/ops.ts` at the sandbox root —
+  a TypeScript module exporting three functions that perform runtime
+  operations on deployed UiPath artifacts via the
+  `@uipath/uipath-typescript` SDK.
+
+  Functions to export:
+
+    1. `stopJob(jobId: string): Promise<void>` — stops a running
+       Orchestrator Job by ID using the SDK's Jobs service.
+
+    2. `completeApprovalTask(taskId: string, decision: 'Approved' | 'Rejected', comment: string): Promise<void>`
+       — completes an Action Center approval task using the SDK's Tasks
+       service. Pass the decision + comment as the task output.
+
+    3. `cancelProcessInstance(instanceId: string): Promise<void>` —
+       cancels a running Maestro process instance using the SDK's
+       ProcessInstances service.
+
+  Also write `.env.example` at the sandbox root with the standard
+  `VITE_UIPATH_*` variables. The `VITE_UIPATH_SCOPE` must cover the SDK
+  methods these three functions call — look up the required scope for
+  each in the skill's scope reference.
+
+  Construct the SDK once per service class via the constructor-DI pattern
+  the skill teaches. Use subpath imports for every service class. Do NOT
+  call `sdk.initialize()` in this file (it belongs in the app entry
+  point, not in a service module).
+
+  Do NOT run `uip` or `npm` commands — this environment is not
+  authenticated; the test grades the code shape, not runtime execution.
+
+success_criteria:
+  - type: file_exists
+    description: "src/ops.ts was created"
+    path: "src/ops.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: ".env.example was created"
+    path: ".env.example"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/ops.ts uses subpath imports for Jobs, Tasks, and Maestro process instances (Anti-pattern #1 — no package-root imports)"
+    path: "src/ops.ts"
+    includes:
+      - "@uipath/uipath-typescript/jobs"
+      - "@uipath/uipath-typescript/tasks"
+      - "@uipath/uipath-typescript/maestro-processes"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/ops.ts uses constructor DI for Jobs, Tasks, ProcessInstances (Anti-pattern #2 — no dot-chain)"
+    command: "grep -cE 'new\\s+(Jobs|Tasks|ProcessInstances)\\(' src/ops.ts | awk '{ exit ($1 >= 3 ? 0 : 1) }'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "stopJob calls a stop method on Jobs (Jobs.stop runtime op)"
+    command: "grep -E 'stopJob\\b' src/ops.ts && grep -E '\\.stop\\(' src/ops.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "completeApprovalTask calls a complete method on Tasks (Tasks.complete runtime op)"
+    command: "grep -E 'completeApprovalTask\\b' src/ops.ts && grep -E '\\.complete\\(' src/ops.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "cancelProcessInstance calls a cancel method on ProcessInstances (ProcessInstances.cancel runtime op)"
+    command: "grep -E 'cancelProcessInstance\\b' src/ops.ts && grep -E '\\.cancel\\(' src/ops.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/ops.ts does NOT import service classes from the package root (Anti-pattern #1)"
+    command: "sed 's|//.*||' src/ops.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/ops.ts does NOT call .initialize() (belongs in app entry point, not service module)"
+    command: "sed 's|//.*||' src/ops.ts | grep -F '.initialize('"
+    timeout: 10
+    expected_exit_code: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: ".env.example declares the core VITE_UIPATH_* env vars"
+    path: ".env.example"
+    includes:
+      - "VITE_UIPATH_CLIENT_ID"
+      - "VITE_UIPATH_SCOPE"
+      - "VITE_UIPATH_BASE_URL"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references the Jobs scope (Rule #16 — scope coverage)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Jobs' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references the Tasks scope (Rule #16)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Tasks' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
