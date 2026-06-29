@@ -78,7 +78,7 @@ Read [references/implementation.md](references/implementation.md) + [references/
 
 1. Solution + project + root case (Step 6)
 2. Triggers — manual / timer / event, including placeholder event triggers per Rule 8 (Step 6.1)
-3. Global variables + arguments (Step 6.2) — including In arguments whose `elementId` references a `TriggerId` captured in Step 6.1
+3. Global variables + arguments (Step 6.2) — including In arguments whose `elementId` references the `TriggerId` (captured in Step 6.1) of the trigger named by the row's `sourceTriggers`, or the primary trigger when blank
 4. Stages (Step 7)
 5. Tasks — shape only (Step 9): non-connector with full `data.inputs[]` schema + empty values; connector with `typeId` + `connectionId` only (no `case spec`); unresolved as placeholders per Rule 8
 6. Informational validate (Step 9.5.1) — do NOT halt on errors/warnings

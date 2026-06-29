@@ -95,7 +95,7 @@ For each trigger T-entry in `tasks.md §4.3`, open the matching plugin's `impl-j
 - Manual / Timer / Event (resolved) → `plugins/triggers/<type>/impl-json.md` §3
 - Event (UNRESOLVED) → [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md) — node still written; case stays reachable
 
-Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to `entry-points.json.entryPoints[]` atomically. Capture every `TriggerId` for Step 6.2 (In-arg `elementId`).
+Each plugin writes one node to `caseplan.json.nodes[]` and appends one entry to `entry-points.json.entryPoints[]` atomically. Capture every `TriggerId` for Step 6.2 — an In-arg's `elementId` resolves to `id-map[<sourceTriggers T-number>].id`, or the primary trigger (T02) when its `sourceTriggers` is blank.
 
 ## Step 6.2 — Declare global variables and arguments
 
