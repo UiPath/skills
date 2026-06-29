@@ -1,0 +1,43 @@
+task_id: skill-planner-smoke-lane-b-activation
+description: >
+  Positive activation / boundary coverage: a doc-less request that genuinely
+  spans multiple separately-built projects must ENGAGE the uipath-planner skill
+  and route to the Non-PDD lane (Lane B). The whole non-PDD path was previously
+  0% covered. Complements single_project_deferral (which checks planner does
+  NOT trigger on single-project work).
+tags: [uipath-planner, smoke, mode:build, lifecycle:discover]
+
+initial_prompt: |
+  I want to build a UiPath solution from scratch — I have NO design document.
+  It is one Maestro Flow that coordinates two brand-new RPA bots I still have to
+  build plus a new agent. These are separate, independently-built automations.
+
+  Load the appropriate UiPath skill to decide how to approach this. Do NOT
+  build anything and do NOT author an SDD or task list.
+
+  After loading the skill, write to `lane.txt` the exact name of the entry-guard
+  lane this request routes to — use the name exactly as it appears in the skill
+  body.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent engaged the uipath-planner skill (rather than a single specialist)"
+    tool_name: "Skill"
+    command_pattern: "uipath-planner"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent produced lane.txt"
+    path: "lane.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Routed to the Non-PDD lane (Lane B), verbatim from SKILL.md"
+    path: "lane.txt"
+    includes:
+      - "Lane B"
+    weight: 3.0
+    pass_threshold: 1.0

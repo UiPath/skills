@@ -1,0 +1,17 @@
+{
+  "name": "InvoiceEntry",
+  "description": "Reads invoices from a folder and enters them into SAP.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.System.Activities": "[24.10.0]",
+    "UiPath.UIAutomation.Activities": "[24.10.0]"
+  },
+  "schemaVersion": "4.0",
+  "studioVersion": "24.10.0.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {},
+  "designOptions": {},
+  "expressionLanguage": "VisualBasic",
+  "entryPoints": [],
+  "targetFramework": "Windows"
+}
