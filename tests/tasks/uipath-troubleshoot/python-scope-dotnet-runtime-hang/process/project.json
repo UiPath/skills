@@ -1,7 +1,7 @@
 {
   "name": "PyScoreModel",
   "projectId": "cc01a2b3-d4e5-4f60-8c01-000000000001",
-  "description": "Reproduces a Python Scope hang: a Windows-target project on UiPath.Python.Activities 1.10.0 whose robot host is missing the .NET Desktop Runtime, so the Python host process never starts and the scope hangs with no error.",
+  "description": "PyScoreModel automation project.",
   "main": "Main.xaml",
   "dependencies": {
     "UiPath.Python.Activities": "[1.10.0]",

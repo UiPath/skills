@@ -1,8 +1,7 @@
 """Scoring helpers for the PyScoreModel process.
 
 score() is defined at module level so Load Python Script can bind it and Invoke
-Python Method can call it. No top-level executable code, no heavy work, no
-third-party imports - the script is not the cause of the hang.
+Python Method can call it.
 """
 
 
