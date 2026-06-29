@@ -23,8 +23,8 @@ description: >
 tags: [uipath-governance, e2e, aops-policy, deployment, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 55
-  max_turns: 120
+  expected_turns: 35
+  max_turns: 70
 
 initial_prompt: |
   Walk the full deployment lifecycle of an AOps governance policy on the
@@ -44,9 +44,9 @@ initial_prompt: |
   4. Remove only the `E2E` license type entry for the `E2E` product
      from the tenant's deployments, leaving every other entry intact.
 
-  User scope (current login user):
+  User scope (use the first user returned by `uip admin users list --output json`):
   5. Configure a user deployment that maps the `E2E` product to the
-     policy from step 1.
+     policy from step 1. Resolve the user ID from `uip admin users list`.
   6. Get the user's deployments to confirm the new entry is present.
   7. Remove all of that user's deployments.
 
