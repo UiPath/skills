@@ -2,6 +2,19 @@
 
 Always apply these rules. If a product-specific `investigation_guide.md` exists, apply it **in addition** to these.
 
+## Investigation Flow (canonical order)
+
+Every investigation follows this sequence. The per-system `investigation_guide.md` supplies the system-specific commands for each step; this skeleton defines the order. Follow it deterministically — do NOT freelance the matching by reading every playbook when the table already routes the signature.
+
+1. **Classify the system** from the user's prompt (and clarifying questions if ambiguous). This selects which system `investigation_guide.md` to load.
+2. **Resolve identity.** Pin the specific entity (folder / job / instance / connection / …) per the system guide's Data Correlation rules BEFORE fetching anything. If identity is ambiguous, ask the user — do NOT enumerate.
+3. **Gather the core evidence bundle.** Fetch the minimal evidence that surfaces the failure signature: entity info, the exception / error, and error-level logs (per the system guide's data-bundle commands). Extract discrete signals — error codes, exception FQNs, HRESULTs, verbatim messages — into the signal inventory.
+4. **Match the signature against `references/exception-table.md`** (the matching layer):
+   - A `fast_path: yes` row that is the unambiguous top match → confirm it inline (the playbook's one minimal confirm) → resolve fast.
+   - Any other match → use as the playbook routing index (seed matched playbooks). A `fast_path: no` row (wrapper / opaque class / downstream symptom) MUST run the full loop.
+   - No match → fall back to scanning the in-scope domain summaries.
+5. **Branch.** Fast-path resolved → depth-check → resolution. Otherwise → the full hypothesis loop (generate → test → evaluate → deepen), expanding scope across domains and **traversing into child jobs / downstream entities before concluding** — a stuck / hung / cancelled parent is a symptom, never a root cause until the child fault is examined.
+
 ## Data Correlation
 
 Before using any fetched data, verify it matches the user's reported problem:

@@ -48,7 +48,7 @@ Reasoning + Read step. Record the resolved guide paths to `state.json.investigat
 - Always include `references/investigation_guide.md`.
 - If the matched system has an `investigation_guide.md`, include it.
 
-Read the resolved guides and apply their Data Correlation rules to the steps that follow.
+Read the resolved guides and **follow the generic guide's § Investigation Flow (canonical order)**, specialized by the system guide's own Investigation Flow + Data Correlation rules. That flow is the sequence the steps below execute: resolve identity → gather the core evidence bundle → match the signature against `references/exception-table.md` → branch (fast-path or full loop). Do not freelance the matching when the table routes the signature.
 
 ### B.5 Signal extraction — running throughout C, D, E
 
@@ -98,6 +98,15 @@ For every signal observed, look up the owning domain in `references/summary.md` 
 This is a classification correction, not a data-gathering loop — do NOT append fetches against the new domains here. The matching step (E) and Pass 2 (E.2) handle that.
 
 ### E. Match playbooks
+
+**Signature lookup FIRST (exception table).** Before scanning domain summaries, grep `references/exception-table.md` for every exact signature in the `signals` inventory — error codes, exception FQNs, HRESULTs, verbatim message fragments. Use the matched rows two ways:
+
+1. **Routing index** — each hit is a direct signature→playbook→domain mapping; seed `matched_playbooks` from it instead of opening every domain's playbooks blind.
+2. **Fast-path check** — if a row with `fast_path: yes` is the **unambiguous top match** (most specific `kind` per the table's Match precedence; no co-equal match from another domain), it is a cause-naming single-cause originating signature. Run its `confirm` step inline — the playbook's one minimal confirming command from that playbook's `## Investigation`, with Data Correlation applied. Then:
+   - **Confirm holds** → write the matched playbook to `state.json.matched_playbooks` and a confirmed `H1` to `hypotheses.json` (`status: confirmed`, `source: playbook`, `is_root_cause: true`, the playbook's resolution branch in `evidence_summary`, `signals_supporting`). Set `state.json.fast_path = {"eligible": true, "resolved": true, "playbook": "<path>", "signature": "<sig>"}`. Mark the Pass 2 step `status: skipped` (`purpose: "fast-path: <sig> confirmed inline"`). Go to step F and return — the orchestrator runs depth-check → resolution (the symptom≠cause gate is NOT skipped).
+   - **Confirm fails / ambiguous / co-equal cross-domain match** → set `state.json.fast_path = {"eligible": false}`, do NOT write H1, and continue with normal matching below + Pass 2.
+
+**Never fast-path a `fast_path: no` row.** Wrappers (`AggregateException`), opaque classes (`NullReferenceException`), and downstream symptoms (a stuck/cancelled parent job, a Maestro incident raised by a child fault) are marked `no` precisely because the originating fault is elsewhere — they run the FULL loop, which must traverse into child jobs / downstream domains before concluding. If no signature matches the table, proceed with normal matching below; the table only accelerates known signatures, it never blocks discovery.
 
 Reasoning + Read step. Read the product/package summary for every domain in `state.json.scope.domain` (which may have just expanded in step D). Iterate the `signals` array in `evidence/triage-initial.json` (populated by step B.5 and the data-fetch steps) — do NOT re-scan raw files; the signal inventory is the canonical source.
 

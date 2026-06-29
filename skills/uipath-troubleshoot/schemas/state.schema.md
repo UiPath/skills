@@ -53,6 +53,12 @@ Updated by: Orchestrator (phase transitions)
     "folder_id": 2157426,
     "source_code_path": "/path/to/project"
   },
+  "fast_path": {
+    "eligible": true,
+    "resolved": true,
+    "playbook": "references/products/<product>/playbooks/<playbook>.md",
+    "signature": "the exact exception-table signature that matched (code / FQN / HRESULT / message)"
+  },
   "plan": [
     {
       "n": 1,
@@ -135,6 +141,10 @@ Generic key-value store for data gathered during the investigation. Any agent ca
 
 - Keys are freeform — use descriptive names (e.g., `folder_id`, `source_code_path`, `queue_name`)
 - Values are whatever was collected (string, number, etc.)
+
+## Fast Path
+
+Written by triage when it matches an exact cause-naming single-cause signature in `references/exception-table.md` (a `fast_path: yes` row) and confirms it inline. Fields: `eligible` (the signature qualified), `resolved` (the inline confirm held and `H1` was written), `playbook` (the matched playbook), `signature` (the exact token that matched). When `resolved == true`, the orchestrator runs depth-check on `H1` then resolution, skipping generate/test (see `SKILL.md` § FAST PATH). Absent or `resolved != true` → the full generic loop runs. Opaque/wrapper/symptom signatures (`fast_path: no`) never set this.
 
 ## Rules
 

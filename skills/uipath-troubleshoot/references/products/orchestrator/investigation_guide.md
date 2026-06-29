@@ -1,5 +1,14 @@
 # Orchestrator Investigation Guide
 
+## Investigation Flow (follow in order)
+
+This is the deterministic Orchestrator sequence (the generic guide's canonical flow, specialized). Detail for each step is in the sections below.
+
+1. **Resolve identity** — pin the **folder** (GUID), then the specific **job** (see § Data Correlation; STOP and ask the user if the folder is unnamed — never enumerate folders to "find" the job).
+2. **Core evidence bundle** — fetch the minimal signature-surfacing set (see § Job Data Bundle): `uip or jobs get <key>` (State / Info / JobError / PendingReasons) and `uip or jobs logs <key> --level Error`. Extract discrete signals — error codes, `PendingReasons.Errors`, exception FQNs, HRESULTs, verbatim messages — into the signal inventory. (Add `jobs history` / `jobs traces` only when the bundle so far doesn't carry the signature.)
+3. **Match the signature against `references/exception-table.md`** — a `fast_path: yes` Orchestrator row (e.g. `RobotNoMatchingUsernames`, `TemplateNoLicense`, the no-host message) that is the unambiguous top match → confirm inline → resolve fast. Otherwise seed matched playbooks from the table and continue.
+4. **Branch** — fast-path resolved → depth-check → resolution. Otherwise → full hypothesis loop. **A job "stuck / Running / cancelled" is a `fast_path: no` symptom** (table) — before concluding, traverse to any **child job** it launched (see § Finding Related Jobs) and expand scope to the child's domain; the child's failure is usually the real root cause.
+
 ## Output Capture Pattern
 
 Every `uip` data-gathering command below assumes two patterns to keep the agent's context lean AND preserve an audit trail:

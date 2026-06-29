@@ -59,7 +59,13 @@ Update `state.json.phase` at each transition:
 3. **Scope check.** Spawn scope-checker (`agents/scope-checker.md`); read its `scope-check.json`. Missing domains (`missing_domains`) → `AskUserQuestion` whether to expand; if approved, re-spawn triage with them. Unnecessary domains (`unnecessary_domains`) → remove from `state.json.scope.domain`.
 4. **User input.** If triage returned `needs_user_input: true`, ask via `AskUserQuestion`, then **continue the existing triage agent** via `SendMessage` — do NOT spawn a fresh one (a fresh spawn re-discovers everything from scratch). Re-spawn only if the answer fundamentally changes scope (different product/entity type).
 
-**Never skip the hypothesis loop.** Even conclusive-looking triage evidence proceeds through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root cause; a non-obvious cause surfaces only in the test cycle.
+**Never skip the hypothesis loop — with ONE narrow exception.** Triage classifies and gathers data; it does not determine root cause. Unless triage confirmed a fast-path signature inline (`state.json.fast_path.resolved == true` — see FAST PATH below), the investigation MUST run the full GENERATE → TEST → EVALUATE loop, including deepening. Even conclusive-looking triage evidence is not a root cause until tested — a non-obvious cause surfaces only in the test cycle.
+
+**Multi-system / cross-domain (critical).** A stuck, hung, or cancelled parent entity (a Maestro instance, an Orchestrator job) is almost always a *symptom* — the originating fault usually lives in a **child job or downstream domain** (e.g. a UI Automation selector failure in the child automation, an Integration Service connection fault). Before confirming any "stuck / cancelled / hung" cause, the loop MUST traverse into the referenced child / sub-execution, fetch its logs and traces, expand `scope.domain` to the child's domain, and test the child fault as the upstream cause. These symptoms are marked `fast_path: no` in `references/exception-table.md` for exactly this reason — they never fast-path.
+
+### FAST PATH (exception-table signature confirmed inline)
+
+If triage set `state.json.fast_path.resolved == true`, it matched an exact cause-naming single-cause signature in `references/exception-table.md` and confirmed it inline (`H1` written). Spawn the **depth-verifier** on `H1` — the symptom≠cause gate is NEVER skipped. On `verdict: verified` → go to Resolution. On `verdict: shallow` → fall into the generic loop (GENERATE → TEST). Do NOT spawn the generator/tester when the fast path resolved and depth-check verifies. Otherwise (`fast_path` absent or `resolved != true`) → proceed to GENERATE HYPOTHESES (full loop).
 
 ### GENERATE HYPOTHESES
 
