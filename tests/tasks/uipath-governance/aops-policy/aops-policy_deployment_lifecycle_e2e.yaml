@@ -44,9 +44,10 @@ initial_prompt: |
   4. Remove only the `E2E` license type entry for the `E2E` product
      from the tenant's deployments, leaving every other entry intact.
 
-  User scope (use the first user returned by `uip admin users list --output json`):
+  User scope (first user in the organization):
   5. Configure a user deployment that maps the `E2E` product to the
-     policy from step 1. Resolve the user ID from `uip admin users list`.
+     policy from step 1. Look up the first user in the org to get
+     their user ID.
   6. Get the user's deployments to confirm the new entry is present.
   7. Remove all of that user's deployments.
 
