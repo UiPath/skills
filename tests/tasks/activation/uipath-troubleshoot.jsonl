@@ -48,3 +48,10 @@
 {"id": "uipath-troubleshoot-048", "prompt": "Help me figure out what's wrong \u2014 the agent runs, loops, but the second tool call always returns an empty result", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-049", "prompt": "Process keeps faulting on Type Into with \"Cannot find UI element corresponding to this selector\" \u2014 was working last week. Why?", "expected_skill": "uipath-troubleshoot"}
 {"id": "uipath-troubleshoot-050", "prompt": "Why did the trigger fire but no job got created? Logs show the trigger but Orchestrator has no record of any job.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-051", "prompt": "Why did my last job from folder Shared fail?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-052", "prompt": "My last job in the Shared folder just failed — can you find out why?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-053", "prompt": "Why did my last Office 365 job from the Shared folder fail?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-054", "prompt": "The Send Mail (Office 365) step faulted on my last run in folder Shared. Why?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-055", "prompt": "Why did my last job using the Google Workspace connector fail?", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-056", "prompt": "My last Integration Service connector job in folder Shared faulted — figure out what went wrong.", "expected_skill": "uipath-troubleshoot"}
+{"id": "uipath-troubleshoot-057", "prompt": "My last run from the Shared folder ended in Faulted. What caused it?", "expected_skill": "uipath-troubleshoot"}

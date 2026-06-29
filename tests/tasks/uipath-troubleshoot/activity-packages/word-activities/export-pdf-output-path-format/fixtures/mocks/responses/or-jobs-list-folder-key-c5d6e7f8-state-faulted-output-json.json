@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d6e7f8a9-b0c1-4204-cd3e-4f5061728394",
+      "State": "Faulted",
+      "ProcessName": "ReportPdfGen",
+      "ReleaseKey": "",
+      "Source": "Queue",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT-14",
+      "MachineKey": "",
+      "StartTime": "2026-06-17T09:40:02.220Z",
+      "EndTime": "2026-06-17T09:40:06.700Z",
+      "CreationTime": "2026-06-17T09:40:01.990Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

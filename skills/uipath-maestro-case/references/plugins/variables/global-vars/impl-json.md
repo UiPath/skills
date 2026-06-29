@@ -88,6 +88,12 @@ Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.json`. 
 
 **Skip guard.** Rules with no `uipath.outputs[]` (connector configuration unresolved — see [`connector-trigger-common.md § Placeholder fallback`](../../../connector-trigger-common.md#placeholder-fallback)) contribute zero outputs to the pool and must be skipped during enumeration. Same skip pattern as placeholder tasks (`data:{}`).
 
+## Formal-arg slot ID format
+
+In/Out-arg formal slots (`variables.inputs[].id`, `variables.outputs[].id`) MUST start with a letter — mint as **`v` + 8 chars** from `[A-Za-z0-9]` (e.g. `vK3mNp9Qx`), same convention as task-input slots ([io-binding](../io-binding/impl-json.md)) and the FE. NOT a bare prefix-less random id.
+
+Rationale: the formal In-arg slot id surfaces in the case BPMN as `<uipath:input id="...">` and is dot-referenced via `=vars.<id>` (the bridge, § In argument). A prefix-less random id can lead with a digit → BPMN parser rejects it (`illegal ID <5AinMKBDm>`); C# identifier + XML NCName rules require a leading letter/underscore. Companion ids (`inputOutputs[].id`) keep the human-readable name (`applicantName`) and are already letter-leading — only the random formal-slot id needs the `v` prefix.
+
 ## Inputs the plugin reads at Phase 3 Step 6.2
 
 1. **`tasks.md`** variable T-entries — for category, type, default, sourceTrigger(s), sourceField(s)
@@ -149,8 +155,8 @@ For each variable T-entry in `tasks.md` that has **no `sourceTrigger` / `sourceT
 | SDD row | `root.inputs[]` | `root.outputs[]` | `root.inputOutputs[]` |
 |---|---|---|---|
 | `Category=Variable` (pure state, no trigger) | — | — | `{id: <sdd-name>, name: <sdd-name>, type: <type>, elementId: "root", default: <value if Default set>, custom: true}` |
-| `Category=In` (any trigger type — manual / timer / event) | `{id: <random9>, name: <sdd-name>, type: <type>, default: <value>, elementId: <triggerId>}` | — | `{id: <sdd-name>, name: <sdd-name>, type: <type>, elementId: <triggerId>}` (no `custom` — argument companion). Additionally write the **bridge** on `triggerNode.outputs[]` (see § In argument below). |
-| `Category=Out` (companion ALWAYS emitted — see § Out argument) | — | `{id: <random9>, name: <sdd-name>, type: <type>, var: <sdd-name>}` (formal-arg pointer) | `{id: <sdd-name>, name: <sdd-name>, type: <type>, default: <value or "">, elementId: "root"}` (no `custom`) |
+| `Category=In` (any trigger type — manual / timer / event) | `{id: v<random8>, name: <sdd-name>, type: <type>, default: <value>, elementId: <triggerId>}` | — | `{id: <sdd-name>, name: <sdd-name>, type: <type>, elementId: <triggerId>}` (no `custom` — argument companion). Additionally write the **bridge** on `triggerNode.outputs[]` (see § In argument below). |
+| `Category=Out` (companion ALWAYS emitted — see § Out argument) | — | `{id: v<random8>, name: <sdd-name>, type: <type>, var: <sdd-name>}` (formal-arg pointer) | `{id: <sdd-name>, name: <sdd-name>, type: <type>, default: <value or "">, elementId: "root"}` (no `custom`) |
 | `Category=InOut` | (not supported in v1 — see SDD template) | (not supported in v1) | (not supported in v1) |
 
 > Loop A and Loop B can write the SAME `root.inputOutputs[]` entry when an SDD row appears in both contexts (e.g., a `Category=Variable` row with `sourceTrigger`). Apply dedup by `id`: if an entry with the same `id` already exists from Loop A, do not re-write in Loop B; Phase 2 validator has already confirmed there's no Type/Default conflict.
@@ -218,7 +224,7 @@ Three entries — formal slot + companion + bridge:
 
 ```json
 // 1. root.inputs[]  — formal-arg slot (caller writes here at fire, OR initialized via default for event triggers)
-{ "id": "<random9>", "name": "applicantName", "type": "string",
+{ "id": "v<random8>", "name": "applicantName", "type": "string",
   "default": "", "elementId": "<triggerId>" }
 
 // 2. root.inputOutputs[]  — companion (readable as =vars.applicantName)
@@ -226,11 +232,11 @@ Three entries — formal slot + companion + bridge:
   "elementId": "<triggerId>" }
 
 // 3. triggerNode.data.uipath.outputs[]  — bridge from formal slot to companion
-{ "name": "applicantName", "type": "string", "source": "=vars.<random9>", "var": "applicantName" }
+{ "name": "applicantName", "type": "string", "source": "=vars.v<random8>", "var": "applicantName" }
 // No `id`, no `elementId` on bridge — FE convention. `type` matches the SDD row's Type column.
 ```
 
-**Why three entries instead of one?** The runtime resolver (`VariablesService.findVariableByVariableId`) is a single string-equality find on `Variable.id`. The caller (or trigger fire for event triggers) writes the formal-arg's value into `vars.<random9>` at trigger fire (because `inputs[].id` is `<random9>`); downstream code wants to read it as `=vars.applicantName` (because that's the readable name). There is no automatic forwarding between the two slots — the bridge entry on `triggerNode.outputs[]` executes the copy at fire time: `source: "=vars.<random9>"` reads the formal slot, `var: "applicantName"` writes to the companion's slot. Without the bridge, `=vars.applicantName` resolves to undefined. The companion's `inputOutputs[]` entry alone declares the *name* in the namespace, but holds no *value* because nobody writes to it.
+**Why three entries instead of one?** The runtime resolver (`VariablesService.findVariableByVariableId`) is a single string-equality find on `Variable.id`. The caller (or trigger fire for event triggers) writes the formal-arg's value into `vars.v<random8>` at trigger fire (because `inputs[].id` is `v<random8>`); downstream code wants to read it as `=vars.applicantName` (because that's the readable name). There is no automatic forwarding between the two slots — the bridge entry on `triggerNode.outputs[]` executes the copy at fire time: `source: "=vars.v<random8>"` reads the formal slot, `var: "applicantName"` writes to the companion's slot. Without the bridge, `=vars.applicantName` resolves to undefined. The companion's `inputOutputs[]` entry alone declares the *name* in the namespace, but holds no *value* because nobody writes to it.
 
 > **Placeholder trigger interaction:** if the trigger is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.uipath.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
 
@@ -257,7 +263,7 @@ Same shape regardless of Default presence (two entries):
 
 ```json
 // 1. variables.outputs[]  — formal Out-arg pointer
-{ "id": "<random9>", "name": "finalDecision", "type": "string",
+{ "id": "v<random8>", "name": "finalDecision", "type": "string",
   "var": "finalDecision" }
 // var is a POINTER — at case end, engine reads vars.finalDecision via this pointer
 
@@ -277,17 +283,17 @@ Combines In + Out. One shared companion serves both:
 
 ```json
 // 1. root.inputs[]  — formal In slot
-{ "id": "<random9-in>", "name": "claimId", "type": "string",
+{ "id": "v<random8-in>", "name": "claimId", "type": "string",
   "default": "", "elementId": "<triggerId>" }
 
 // 2. root.inputOutputs[]  — shared companion
 { "id": "claimId", "name": "claimId", "type": "string", "elementId": "<triggerId>" }
 
 // 3. root.outputs[]  — formal Out slot pointing at same companion
-{ "id": "<random9-out>", "name": "claimId", "type": "string", "var": "claimId" }
+{ "id": "v<random8-out>", "name": "claimId", "type": "string", "var": "claimId" }
 
 // 4. triggerNode.outputs[]  — bridge from In formal slot to shared companion
-{ "name": "claimId", "type": "string", "source": "=vars.<random9-in>", "var": "claimId" }
+{ "name": "claimId", "type": "string", "source": "=vars.v<random8-in>", "var": "claimId" }
 ```
 
 Caller writes value; bridge copies to companion at trigger fire; task body updates `vars.claimId`; case end returns updated value to caller.

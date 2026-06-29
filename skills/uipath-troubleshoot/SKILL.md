@@ -6,16 +6,16 @@ when_to_use: "User asks why something failed, broke, stopped, hung, was stuck, r
 
 # UiPath Troubleshooting Agent
 
-You orchestrate a hypothesis-driven troubleshooting investigation. You manage the loop, delegate to sub-agents, and present findings to the user.
+Orchestrate a hypothesis-driven troubleshooting investigation: manage the phase loop, delegate to sub-agents, present findings.
 
-All agents (including you) follow the invariants and confidence-level behavior defined in `agents/shared.md`.
+All agents (including you) follow the invariants and confidence-level behavior defined in `agents/shared.md` (§ Invariants, § Confidence-Level Behavior).
 
 ## 1. Critical Rules
 
 1. **You NEVER run uip commands, query endpoints, or read reference docs.** Sub-agents do everything else.
 2. **You NEVER confirm/eliminate hypotheses yourself.** Always spawn a tester.
 3. **You own all decisions:** phase transitions, root cause vs. symptom classification, when to present resolution.
-4. **You present the presenter's output verbatim.** The presenter agent formats all findings — you do not rewrite or reformat them.
+4. **You present the presenter's output verbatim.** The presenter agent formats all findings — you do not rewrite or reformat them. The one exception: you parse and act on the `## Post-presentation actions` block (see §6).
 5. **Test hypotheses one at a time, sequentially.** Never spawn parallel testers.
 6. **When you need user input, use `AskUserQuestion`.** Do not proceed until the user responds.
 
@@ -31,6 +31,7 @@ All state lives in `.local/investigations/` (relative to working directory). Sch
 | `raw/*.json` | Full raw CLI/API responses | triage, tester |
 | `scope-check.json` | Domain expansion verdict | scope-checker |
 | `depth-check.json` | Depth-gate verdict on confirmed root causes | depth-verifier |
+| `needs_input.json` | User-input request (sub-agent halts; orchestrator reads it, asks via `AskUserQuestion`) | triage, generator, tester |
 
 Sub-agents write raw responses to `raw/` immediately and don't keep them in context. You read evidence summaries, not raw files.
 
@@ -45,7 +46,7 @@ Update `state.json.phase` at each transition:
 | `test` | Hypotheses ready, testing next in confidence order | `evaluate` |
 | `evaluate` | Tester returns verdict | `deepen`, `test`, or `depth_check` |
 | `deepen` | Confirmed symptom needs sub-hypotheses | `hypotheses` (re-invoke generator) |
-| `depth_check` | Hypothesis confirmed as root cause | `resolution` (verified), `test` (one re-round), or `needs_input` |
+| `depth_check` | Hypothesis confirmed as root cause | `resolution` (verified), `test` (one re-round), or halt (write `needs_input.json`) |
 | `resolution` | Depth check verified, or all hypotheses exhausted | `complete` |
 | `complete` | Findings presented to user | — |
 
@@ -53,15 +54,12 @@ Update `state.json.phase` at each transition:
 
 ### TRIAGE
 
-Spawn triage sub-agent (`agents/triage.md`). Pass the user's problem description **as-is** — do NOT pre-classify or constrain scope.
+1. **Spawn triage** (`agents/triage.md`). Pass the user's problem **as-is** — do NOT pre-classify or constrain scope.
+2. **Sanity gate.** Verify triage evidence relates to the reported problem (process/entity/time window). If it's about a different entity: discard, inform the user, re-spawn or ask for clarification.
+3. **Scope check.** Spawn scope-checker (`agents/scope-checker.md`); read its `scope-check.json`. Missing domains (`missing_domains`) → `AskUserQuestion` whether to expand; if approved, re-spawn triage with them. Unnecessary domains (`unnecessary_domains`) → remove from `state.json.scope.domain`.
+4. **User input.** If triage returned `needs_user_input: true`, ask via `AskUserQuestion`, then **continue the existing triage agent** via `SendMessage` — do NOT spawn a fresh one (a fresh spawn re-discovers everything from scratch). Re-spawn only if the answer fundamentally changes scope (different product/entity type).
 
-**Triage sanity gate:** Read triage evidence and verify it relates to the user's reported problem. If it's about a different process/queue/entity: discard, inform the user, re-spawn or ask for clarification.
-
-**Scope check:** Spawn scope-checker (`agents/scope-checker.md`). If missing domains found, use `AskUserQuestion` to ask the user whether to expand. If approved, re-spawn triage with the missing domains. If unnecessary domains found, remove them from `state.json.scope.domain`.
-
-**User input:** If triage returned `needs_user_input: true`, present the question via `AskUserQuestion`. When the user responds, **continue the existing triage agent** via `SendMessage` (the agent result includes the agent ID) — do NOT spawn a fresh triage agent. A fresh spawn re-reads all instructions and re-discovers everything from scratch. Only re-spawn triage if the user's answer fundamentally changes scope (different product, different entity type).
-
-**Never skip the hypothesis loop.** Even if the triage evidence looks conclusive, always proceed through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root causes. A "clear" error message may have a non-obvious underlying cause that only the hypothesis-test cycle would surface.
+**Never skip the hypothesis loop.** Even conclusive-looking triage evidence proceeds through GENERATE → TEST → EVALUATE. Triage classifies and gathers data — it does not determine root cause; a non-obvious cause surfaces only in the test cycle.
 
 ### GENERATE HYPOTHESES
 
@@ -75,7 +73,7 @@ Test every hypothesis sequentially (highest confidence first). For each, spawn h
 
 **Validate:** Reject and re-spawn if `elimination_checks` are missing/incomplete. For medium/low, also reject if `execution_path_traced` has unverified downstream entities.
 
-**Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, spawn scope-checker. Otherwise skip.
+**Reactive scope check:** If evidence references entities/errors from an out-of-scope domain, spawn scope-checker and act on its `scope-check.json` (`missing_domains` / `unnecessary_domains`). Otherwise skip.
 
 **Classify and act:**
 
@@ -86,7 +84,7 @@ Before classifying as **explains-WHY**, apply the upstream-cause gate. The mecha
 - **Eliminated / Inconclusive** → record, test next hypothesis
 - **Confirmed — explains WHY** (and passes upstream-cause gate) → root cause. Go to DEPTH CHECK (do **not** jump straight to Resolution). Multiple confirmed root causes: depth-check each before skipping the rest.
 - **Confirmed — describes WHAT only** → symptom. Re-invoke generator with `trigger: "deepening"` and `parent_hypothesis`.
-- **All high-confidence eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from medium/low + docsai.
+- **All playbook hypotheses eliminated** → re-invoke generator with `trigger: "scope_adjustment"` and eliminated IDs to produce from docsai (every matched playbook — all confidence levels — was already drafted in the single round).
 
 **Co-equal-roots guard.** Before applying any "skip remaining" exit after a confirmed+verified root cause, check `state.json.matched_playbooks`. If two or more playbooks are present at the same highest confidence level AND they correspond to **distinct, independent** error signatures (different activities, different error codes, neither upstream of the other), every pending hypothesis sourced from those playbooks MUST be tested before stopping. Do not exit on the first confirmed root cause when triage found multiple co-equal roots — you will under-report and miss fixes the user has to make. Only after each co-equal hypothesis is tested (confirmed, eliminated, or inconclusive) and depth-checked when confirmed do you proceed to Resolution.
 
@@ -94,8 +92,9 @@ Before classifying as **explains-WHY**, apply the upstream-cause gate. The mecha
 
 Spawn the depth-verifier sub-agent (`agents/depth-verifier.md`). Pass it the
 confirmed hypothesis ID(s), `state.json` path, and the matched playbook path.
-The verifier reads `hypotheses.json`, the playbook's `## Causes` and
-`## Resolution` sections, and the evidence files, then writes
+The verifier reads `hypotheses.json`, the playbook's `## Context` cause
+list ("What can cause it") and `## Resolution` section, and the evidence
+files, then writes
 `.local/investigations/depth-check.json` with one of:
 
 - `verdict: "verified"` — the confirmed hypothesis names a specific cause
@@ -118,10 +117,7 @@ The verifier reads `hypotheses.json`, the playbook's `## Causes` and
     Surface the textual gaps in the presenter's output so the user
     sees them.
 
-**Symptom ≠ cause** (shared.md invariant #9). A symptom-level match (the
-right error string, the expected non-zero exit code) confirms the playbook
-*match*, not the *cause*. The depth-verifier enforces this gate — do not
-skip it.
+**Symptom ≠ cause** (shared.md invariant #9): a symptom-level match confirms the playbook *match*, not the *cause*. The depth-verifier enforces this gate — do not skip it.
 
 ### NEW DATA FROM USER
 
@@ -148,14 +144,14 @@ The presenter:
 
 Present the presenter's output verbatim to the user. After presenting:
 
-**Execute Post-presentation actions FIRST.** If the presenter's output contains a `## Post-presentation actions` section, you MUST run every action in that section in order before offering any generic follow-up. For each action:
+**Execute Post-presentation actions FIRST.** If the presenter's output has a `## Post-presentation actions` section, run every action in order before any generic follow-up. For each action:
 
-1. Print the "Print as plain text" block exactly as written (raw selectors and other XML/HTML render poorly inside `AskUserQuestion` options or previews — always print as plain text first, separate from the question).
+1. Print the "Print as plain text" block exactly as written, separate from the question (raw XML/selectors render poorly inside `AskUserQuestion` options/previews).
 2. Print the warning string verbatim if non-empty.
-3. Call `AskUserQuestion` with the question and options the action specifies. Ask the project path (or any other missing input the action declares) in the same `AskUserQuestion` call when needed.
-4. If the user accepts, execute the "On user accept" procedure exactly as written — this is the documented resolution path. Do not improvise an alternative. If the procedure references a sub-skill (e.g., `uia-improve-selector`), check for it and follow its USAGE.md. Otherwise apply the documented direct-edit path and run any validation command listed.
-5. If the user declines, stop the action; do not modify files. Move to the next action.
-6. If the action's `Status` is `blocked` (the presenter could not assemble it because evidence was missing), surface the block to the user as a follow-up instead of asking them to approve an incomplete fix — name the missing evidence field and the agent that should have populated it.
+3. Call `AskUserQuestion` with the action's question and options. Ask the project path (or other missing input the action declares) in the same call.
+4. If the user accepts, execute the "On user accept" procedure exactly as written — do not improvise. If it references a sub-skill (e.g., `uia-improve-selector`), follow its USAGE.md; otherwise apply the documented direct-edit path and run any validation command listed.
+5. If the user declines, stop the action; do not modify files. Move to the next.
+6. If the action's `Status` is `blocked` (missing evidence), surface it as a follow-up instead of asking the user to approve an incomplete fix — name the missing evidence field and the agent that should have populated it.
 
 Do NOT skip the Post-presentation actions block when:
 - The matched playbook was downgraded from `high` to `medium` by depth-check (the resolution procedure is preserved across confidence downgrades — see `agents/depth-verifier.md` on textual gaps).
@@ -171,6 +167,8 @@ Only after all actions are complete (accepted, declined, or surfaced as blocked)
 ## 7. Operational Details
 
 **Spawning:** Read agent files just-in-time — only `agents/shared.md` + the specific agent file when you're about to spawn. Include full instructions and context in the prompt.
+
+**Reasoning effort:** Where the spawn tool exposes a reasoning-effort parameter, set it per role. `low` for the mechanical step-followers — triage, hypothesis-tester, presenter — they execute documented playbook/investigation steps and do not need deep reasoning. `high` for the judgment roles — hypothesis-generator, scope-checker, depth-verifier.
 
 **Progress:** Use `TaskCreate`/`TaskUpdate` for each phase. Tailor subjects to the user's problem.
 

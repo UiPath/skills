@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "d3b8a4f2-9e5a-4c7d-b2e3-8f1c6d4a0b59",
+      "State": "Faulted",
+      "StartTime": "2026-06-20T11:08:55.330Z",
+      "EndTime": "2026-06-20T11:08:58.612Z",
+      "ReleaseName": "LeadSync",
+      "Source": "Agent",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 5052240
+    }
+  ]
+}

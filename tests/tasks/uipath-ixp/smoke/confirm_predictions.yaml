@@ -12,6 +12,12 @@ tags: [uipath-ixp, smoke, lifecycle:execute]
 run_limits:
   expected_turns: 6
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   Review the IXP model's predictions for document `doc-abc-123` on
   project `my_invoices-f1afa9ef-ixp` and record your verdict in the

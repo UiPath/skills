@@ -14,18 +14,15 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a LlamaIndex UiPath coded agent named `qna-workflow` that
-  takes a user question, generates a brief answer using the platform
-  LLM gateway, and reports both the answer and its word count.
+  Build a LlamaIndex UiPath coded agent named `qna-workflow` that takes
+  a question, produces a brief answer using the platform LLM gateway,
+  and also reports how many words the answer came out to.
 
-  Input: `question` (str). Output: `answer` (str), `word_count`
-  (int).
+  Build it end-to-end and give it a quick local run on a sample question
+  to confirm it answers and counts the words.
 
-  Take the agent end-to-end through scaffold → init → run. Run
-  against `'{"question": "What is Python in one sentence?"}'`.
-
-  Do NOT publish, upload, or deploy. Do NOT pause between planning
-  and implementation. Complete end-to-end in a single pass.
+  All local — nothing to publish or deploy. Work straight through in a
+  single pass.
 
 success_criteria:
   - type: command_executed

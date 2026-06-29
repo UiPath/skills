@@ -16,7 +16,7 @@ Write: `.local/investigations/scope-check.json`
 
 ```json
 {
-  "checked_after": "triage | hypotheses | test",
+  "checked_after": "triage | test",
   "current_domains": ["orchestrator"],
   "missing_domains": [],
   "unnecessary_domains": [],
@@ -29,11 +29,8 @@ Write: `.local/investigations/scope-check.json`
 1. **Read `references/summary.md`** — understand what product domains exist and what types of issues each covers. Follow links to product summaries, overviews, playbooks, and investigation guides as needed to understand domain boundaries.
 2. **Read `state.json`** — note the current `scope.domain` array.
 3. **Read all evidence files** in `.local/investigations/evidence/` and `hypotheses.json` if it exists.
-4. **Check for missing domains** — compare the investigation data against each product domain described in `references/summary.md`:
-   - Do any job properties, error codes, entity types, error messages, or behavioral patterns in the evidence match a product domain not currently in `state.json.scope.domain`?
-   - Do any hypotheses, playbook references, or CLI commands reference capabilities or concepts described under a different product domain?
-   - Does the product description in `references/summary.md` describe the type of issue being investigated, even if the current domain also partially covers it?
-5. **Check for narrowing** — determine if any currently scoped domain is only the reporting layer (e.g., Orchestrator reported a faulted job, but the actual error is entirely within Integration Service or Maestro). A domain that only reported the symptom but has no playbooks relevant to the root cause should be listed in `unnecessary_domains`. This prevents irrelevant playbook matches and hypothesis generation.
+4. **Check missing** — against each domain in `references/summary.md`: does any evidence signal (job property, error code, entity type, message, behavioral pattern), hypothesis, playbook reference, or CLI command belong to a domain not in `state.json.scope.domain`? List it in `missing_domains`.
+5. **Check narrowing** — is any scoped domain only the reporting layer (e.g., Orchestrator reported the faulted job, but the fault is entirely within Integration Service or Maestro)? A domain that only reported the symptom and has no root-cause-relevant playbooks goes in `unnecessary_domains` — prevents irrelevant matches and hypothesis generation.
 6. **Write `scope-check.json`** with your findings. If both `missing_domains` and `unnecessary_domains` are empty, the current scope is correct.
 
 ## Boundaries

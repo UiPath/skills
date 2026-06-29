@@ -27,6 +27,7 @@ A new scenario needs four sources. Three are mandatory; the fourth is optional.
 | `--transcript <path>` | yes | A `.jsonl` file or a directory. Directory mode walks `*.jsonl` recursively and treats files under `subagents/` as sub-agent transcripts (their `uip` calls count, their final text is ignored). Source of truth for `uip` calls + presenter output. |
 | `--resolution <file>` | no | Pre-written `RESOLUTION.md`. If omitted, the generator extracts the presenter's final assistant message from the transcript. |
 | `--scenario-name <name>` | no | Folder name for the new scenario. If omitted, inferred from project name + failing job key. |
+| `--group <group>` | yes | Group folder mirroring the playbook tree — e.g. `activity-packages/word-activities`, `products/orchestrator`, `runtime-exceptions`, `cross-system`. Sets placement, the depth-correct `_shared` path, and the default domain tag. See [Scenario grouping](#scenario-grouping). |
 
 ## Workflow — ask before writing
 
@@ -41,8 +42,11 @@ python tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py \
   --transcript <path> \
   [--resolution <path>] \
   [--scenario-name <name>] \
+  --group <group> \
   --dry-run
 ```
+
+`--group` is the group folder the scenario belongs to (see [Scenario grouping](#scenario-grouping)). It sets three things at once: where the scenario folder is written, the depth-correct `_shared` path inside `task.yaml`, and the default product/domain tag. Pass it for every new scenario — omitting it falls back to flat placement at the suite root (deprecated).
 
 Output: a plan describing every file that would be written (paths + sizes + first lines), the inferred scenario name, the manifest rules extracted, and any scrub substitutions that would be applied.
 
@@ -74,7 +78,7 @@ After write:
 1. Run the smoke test pattern to confirm the mock dispatcher resolves:
    ```bash
    cd tests
-   .venv/bin/coder-eval run tasks/uipath-troubleshoot/<scenario>/task.yaml -e experiments/default.yaml -v
+   .venv/bin/coder-eval run tasks/uipath-troubleshoot/<group>/<scenario>/task.yaml -e experiments/default.yaml -v
    ```
 2. The first run should score 1.0 — the test was generated from a known-good resolution.
 3. Open `mocks/.calls.jsonl` from the run artifact to confirm every expected call was hit.
@@ -95,10 +99,47 @@ Scrub applies to: every fixture JSON, every Markdown body, every YAML field, eve
 
 The generator MUST surface its scrub-substitution table during the dry-run preview so the user can verify mappings before write.
 
-## Scenario folder layout
+## Scenario grouping
+
+Scenarios are **grouped into folders mirroring the playbook tree** (`skills/uipath-troubleshoot/references/`). Do NOT add a scenario at the flat suite root — pick its group folder. Tests within a group are NOT sub-grouped further; they sit flat inside the group.
 
 ```
-tests/tasks/uipath-troubleshoot/<scenario-name>/
+tests/tasks/uipath-troubleshoot/
+├── _shared/                     # shared mock dispatcher + scripts (never a scenario)
+├── smoke-manifest-commands/     # the sole smoke task (stays at root)
+├── activity-packages/
+│   ├── word-activities/         <scenario>/ …
+│   ├── excel-activities/        <scenario>/ …
+│   ├── database-activities/  python-activities/  mail-activities/
+│   ├── o365-activities/  gsuite-activities/  web-activities/  cv-activities/
+│   ├── system-activities/  ui-automation/  classic-activities/
+├── products/
+│   ├── orchestrator/            <scenario>/ …
+│   ├── integration-service/     <scenario>/ …
+│   └── maestro/                 <scenario>/ …
+├── runtime-exceptions/          <scenario>/ …
+└── cross-system/                <scenario>/ …   # root cause spans ≥2 systems
+```
+
+**Pick the group by where the failure's playbook lives:**
+
+| Failure surface | Group |
+|---|---|
+| An activity package (Word, Excel, Python, Mail/Outlook, O365, GSuite, Web, CV, System, UI Automation, Classic, Database) | `activity-packages/<package>` |
+| Orchestrator-only (job/robot/queue/licensing/logon state, no single activity) | `products/orchestrator` |
+| Integration Service connectors / connections | `products/integration-service` |
+| Maestro / BPMN instances | `products/maestro` |
+| Generic .NET workflow exception (null-ref, argument-null) not tied to a package | `runtime-exceptions` |
+| Root cause genuinely spans ≥2 systems (e.g. an Excel activity failing on an IS connection) | `cross-system` |
+
+The `--group` flag wires all of this up — placement, the depth-correct `_shared` path, and the default tag. The `_shared` path depth follows the nesting: `activity-packages/<pkg>/` and `products/<product>/` scenarios use `../../../_shared/mock_template`; `runtime-exceptions/` and `cross-system/` use `../../_shared/mock_template`.
+
+## Scenario folder layout
+
+A single scenario (leaf) under its group folder:
+
+```
+tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 ├── task.yaml                    # tags, mock_path_dirs, llm_judge criteria
 ├── README.md                    # what the original session uncovered
 ├── RESOLUTION.md                # ground truth for the LLM judge
@@ -166,6 +207,24 @@ Must include `uipath-troubleshoot` AND at least one product/domain tag from this
 | `api-workflow` | API workflow artifacts |
 | `orchestrator` | Orchestrator-only failures with no workflow execution involved (e.g., licensing, machine state, asset/queue admin) |
 
+**Tag ↔ group agreement.** The domain tag MUST match the [group folder](#scenario-grouping): every `activity-packages/*` scenario carries `rpa`; `products/orchestrator` → `orchestrator`; `products/integration-service` → `integration-service`; `products/maestro` → `maestro`. `--group` adds the matching tag automatically.
+
+**Multiple tags are encouraged.** A scenario that touches more than one domain carries a tag for each — this is required for `cross-system/` scenarios (e.g. an Excel activity faulting on an IS connection gets `rpa` AND `integration-service`). Add the extra tags by hand after generation; `--group` only seeds the primary one.
+
+### Tier tag: scenarios are `e2e`, NEVER `smoke`
+
+Every faithful-replay scenario is an end-to-end investigation — tag it **`e2e`**, never `smoke`.
+
+The PR smoke gate (`.github/workflows/smoke-skills.yml`) treats **any** change under `skills/uipath-troubleshoot/` as a skill-source change and runs that skill's **entire `smoke`-tagged set**. A `smoke`-tagged scenario therefore runs on every docs/playbook PR — each scenario is a multi-minute agent run, so the gate becomes slow, expensive, and exposes unrelated PRs to scenario flakiness and CI-infra blips (image-pull, judge variance). That is the wrong signal for a fast PR gate.
+
+**The ONLY troubleshoot task tagged `smoke` is [`smoke-manifest-commands`](./smoke-manifest-commands/task.yaml)** — a fast, deterministic fixture/manifest-command validation (no agent investigation). It is the sole troubleshoot smoke-gate check by design.
+
+Rules:
+
+1. New scenarios get `e2e` (+ product/domain tags) — **do NOT add `smoke`**.
+2. Do not add `smoke` to any scenario to "make it run in CI"; the e2e suite (`tests/experiments/e2e.yaml`) covers scenarios.
+3. The only file that may carry `smoke` is `smoke-manifest-commands/task.yaml`.
+
 ### Investigation output location
 
 The skill writes investigation artifacts to `.local/investigations/` — NOT `.investigations/`. Every `file_exists` criterion path and every post-run script path MUST use `.local/investigations/...`.
@@ -183,39 +242,67 @@ Any rule matching `uip docsai ask ...` in `manifest.json` MUST be `passthrough: 
 
 ### `success_criteria`
 
-Every scenario MUST include exactly TWO required criteria:
+Every scenario MUST include exactly TWO criteria, and ONLY these two:
 
 1. **`skill_triggered`** — verify `uipath-troubleshoot` activated. Without this, the agent can fake an answer by reading fixture files directly and bypassing the skill entirely (we have seen this happen).
 2. **`llm_judge`** — grade whether the agent reached the correct conclusion against `RESOLUTION.md`.
 
-Do NOT add `file_exists` or `command_executed` criteria as standard practice — they encode one specific path through the investigation and turn legitimate alternative solutions into false failures.
+**Do NOT add any other criterion type.** Specifically forbidden across the whole troubleshoot suite:
 
-Concrete failure mode this rule prevents: an agent that reaches the correct root cause via `jobs logs` (skipping `jobs get`) is graded `FAILURE` solely because a `command_executed` rule required `jobs get d5fed611`. The conclusion was right; the path was different. Brittle.
+- ❌ `file_exists` — testing whether `.local/investigations/state.json` (or any internal file) was written grades bookkeeping, not the deliverable. `skill_triggered` already verifies the skill ran.
+- ❌ `file_contains` — grading the shape of `state.json` / `hypotheses.json` punishes correct skill behavior (multiple playbooks legitimately match; hypotheses legitimately stay `pending` after early-stop).
+- ❌ `command_executed` — encodes one investigation path; an agent reaching the right answer via a different (still valid) CLI route gets false-failed.
 
-#### Judge prompts grade on PRESENTATION, not internal state
+Concrete failure mode this rule prevents: an agent that reaches the correct root cause via `jobs logs` (skipping `jobs get`) is graded FAILURE solely because a `command_executed` rule required `jobs get d5fed611`. The conclusion was right; the path was different. Brittle.
 
-The `llm_judge` prompt MUST grade only:
+Anything task-specific the test needs to verify goes in `RESOLUTION.md`. The judge reads it via `include_reference` and compares.
 
-- The agent's **final response** to the user.
-- The agent's **conclusion vs. `RESOLUTION.md`** (correct root cause, fix, evidence-citation).
-- Optionally: whether the agent **avoided fabrication** (no invented assets/configs/policies).
+#### Judge configuration — single canonical shape for every task
 
-The judge MUST NOT grade on internal-state fields in `.local/investigations/`:
+Every `llm_judge` criterion across all troubleshoot tasks uses the **same** prompt, the same flags, and the same description. Per-task customization lives in `RESOLUTION.md`, never in `task.yaml`.
 
-- ❌ Require a specific path in `state.json.matched_playbooks`.
-- ❌ Require `hypotheses.json` entries to carry a particular `status` (`eliminated`, `confirmed`) or `is_root_cause` value.
-- ❌ Require a specific `evidence_refs` or `evidence_summary` shape.
+**Canonical `llm_judge` block** (copy verbatim into every new scenario):
 
-Reason: `hypotheses.json` legitimately contains `pending` hypotheses after early-stop. The orchestrator stops testing as soon as a high-confidence root cause is confirmed (see `SKILL.md` "When to stop testing"); remaining hypotheses correctly stay `pending` so the user can choose to investigate them later. Grading on those internal fields punishes correct skill behavior.
+```yaml
+- type: llm_judge
+  description: "Agent's diagnosis matches RESOLUTION.md"
+  weight: 3.0
+  pass_threshold: 0.7
+  include_reference: true
+  include_agent_output: true
+  prompt: |
+    Grade the agent's final answer against the attached RESOLUTION.md.
 
-What the agent presents IS the contract. What it writes into `.local/investigations/` is bookkeeping for the next conversation, not a deliverable.
+    Score on whether the agent identifies the same root cause and
+    recommends the same fix as RESOLUTION.md:
 
-Permissible exceptions — add a non-required criterion ONLY when:
+      1.0  Same root cause AND same fix (or equivalent).
+      0.8  Same root cause; fix is right area but vague.
+      0.5  Adjacent cause, missing a key specific.
+      0.2  Wrong direction; recognized surface only.
+      0.0  Misdiagnosed or blocked.
 
-- **`file_exists`** — only when the scenario specifically tests artifact production (e.g., a deliverable file the skill is contracted to write). Do not use it to verify intermediate investigation state — the judge reads the agent's output directly.
-- **`command_executed`** — only when the scenario specifically tests that a particular dangerous/required action ran (e.g., a destructive cleanup that MUST be invoked). Never use it to enforce investigation paths.
+    Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+```
 
-Lean default for a new scenario:
+**What the judge sees** (both flags MUST be `true`):
+
+- `include_reference: true` — passes `RESOLUTION.md` (the file named under `reference:` at the task root)
+- `include_agent_output: true` — passes the agent's final user-facing response
+
+That is **all** the context the judge gets. The contract: agent's final answer vs. RESOLUTION.md → score. Tool calls are deliberately excluded — the judge grades the presented diagnosis, not how it was reached.
+
+**Forbidden on `llm_judge`:**
+
+- ❌ `files:` array (passing `state.json`, `hypotheses.json`, or any internal artifact). The judge grades presentation, not bookkeeping.
+- ❌ Custom prompt language per task — no `DIMENSION A / DIMENSION B`, no `SCORING RUBRIC` clauses citing specific playbook names, no "Evidence sources" enumerations referencing `matched_playbooks` / `is_root_cause` / etc.
+- ❌ Per-task hedging notes ("Be substance-focused", "multiple playbooks may match", etc.). The lean rubric already encodes this.
+
+**Why:** the skill's internal state (`state.json`, `hypotheses.json`) is bookkeeping for the next conversation, not a deliverable. Multiple playbooks may legitimately appear in `matched_playbooks`; hypotheses legitimately stay `pending` after early-stop (see SKILL.md "When to stop testing"). Grading on internal-state shape punishes correct skill behavior. What the agent **presents** is the contract.
+
+**Where task-specific guidance lives:** `RESOLUTION.md`. If the judge needs to know that a specific fix must name "AlterIfDisabled = True" or that "Test Heals pool" is wrong — that goes in `RESOLUTION.md` as the authoritative root cause + fix. The judge reads it via `include_reference` and grades against it.
+
+**Lean default for every new scenario:**
 
 ```yaml
 success_criteria:
@@ -226,23 +313,35 @@ success_criteria:
     weight: 1.0
 
   - type: llm_judge
-    description: "Agent reached the same root cause as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
     prompt: |
-      ...grading rubric tied to RESOLUTION.md...
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
 ```
 
 ## Anti-patterns
 
+- **Do not** add `command_executed` criteria. The lean contract is `skill_triggered + llm_judge` only — no `command_executed`, no `file_exists`, no `file_contains`. Asserting a specific CLI command was run encodes one investigation path and false-fails agents that reach the correct conclusion via a different (still valid) route. If a test needs to verify a specific CLI fact, put the fact in `RESOLUTION.md` and let the judge grade it. See the `success_criteria` section above for the full forbidden list.
 - **Do not** hand-edit a generated scenario's `manifest.json` to "make tests pass." If the agent calls a command not in the manifest, that's a coverage gap — add a rule with the verbatim recorded response.
 - **Do not** include the original `.local/investigations/` outputs in the committed scenario. The fresh run produces its own.
 - **Do not** ship real email addresses, real personal Windows paths, or real machine hostnames. The scrub pass is mandatory.
-- **Do not** use `git add -A` after generation — the generator drops scratch files in `_tmp/`. Stage explicitly: `git add tests/tasks/uipath-troubleshoot/<scenario>/`.
+- **Do not** use `git add -A` after generation — the generator drops scratch files in `_tmp/`. Stage explicitly: `git add tests/tasks/uipath-troubleshoot/<group>/<scenario>/`.
 - **Do not** create a scenario without a verified resolution. The LLM judge needs an authoritative ground truth; a half-baked `RESOLUTION.md` produces flaky scores.
+- **Do not** tag a scenario `smoke` — scenarios are `e2e`. The only troubleshoot task allowed the `smoke` tag is `smoke-manifest-commands` (see [Tier tag](#tier-tag-scenarios-are-e2e-never-smoke)).
 
 ## Scripts
 
@@ -261,5 +360,6 @@ If a user says "save this as a regression test" mid-session and provides no flag
 - `--transcript` → most-recent JSONL under `~/.claude/projects/<slug>/sessions/`
 - `--resolution` → omit, extract from transcript
 - `--scenario-name` → infer from the failing job's `ReleaseName` + a short slug
+- `--group` → infer from the faulted activity's package / the investigated product, using the [Scenario grouping](#scenario-grouping) table (e.g. a `UiPath.Word.Activities` fault → `activity-packages/word-activities`; an Orchestrator-only job/robot issue → `products/orchestrator`; a root cause spanning ≥2 systems → `cross-system`)
 
 Then run `--dry-run`, show the plan, confirm.

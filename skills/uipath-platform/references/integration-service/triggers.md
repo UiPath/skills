@@ -10,7 +10,7 @@ Triggers are event-based activities that fire when something happens in an exter
 - [Trigger Discovery Flow](#trigger-discovery-flow)
 - [List Trigger Activities](#list-trigger-activities)
 - [Trigger Objects](#trigger-objects)
-  - [`parameters[]` — canonical event-parameter input fields](#parameters--canonical-event-parameter-input-fields)
+  - [`parameters[]` — event-parameter input fields](#parameters--event-parameter-input-fields)
 - [Object Name Resolution](#object-name-resolution)
 - [Trigger Metadata (Describe)](#trigger-metadata-describe)
 - [CRUD vs Non-CRUD Triggers](#crud-vs-non-crud-triggers)
@@ -31,7 +31,7 @@ Triggers are event-based activities that fire when something happens in an exter
 
 **Decision point at step 2**: CREATED, UPDATED, and DELETED operations require an intermediate "objects" step. For other trigger operations, skip to step 3 using the activity's **ObjectName**.
 
-> **Source of truth:** Event-parameter inputs come from `triggers objects` → `parameters[]`. Field metadata comes from `triggers describe`. Configure trigger nodes exclusively from these two responses — do not invent parameters or fields, and do not substitute metadata from other commands.
+> **Source of truth — UNION of both calls.** Event-parameter inputs = `triggers objects → parameters[]` **∪** `triggers describe → EventParameters`. A required field can appear in `describe → EventParameters` while absent from `parameters[]`, so configure every field either source marks `required` — never read inputs from one call alone. `triggers describe` also supplies `FilterFields` (filter tree) and `OutputFields` (downstream `$vars`). Run **both** calls; do not invent parameters or fields, and do not substitute metadata from other commands.
 
 ---
 
@@ -124,11 +124,11 @@ Array of objects — each has a **name** to use in the describe command. Also in
 | `byoaConnection` | `true` if this event requires a BYOA connection |
 | `isWebhookUrlVisible` | `true` if the webhook URL should be shown to the user |
 | `eventMode` | `"webhooks"` or `"polling"` — how the trigger receives events |
-| **`parameters[]`** | **Canonical** event-parameter input fields for this trigger — see below |
+| **`parameters[]`** | Object/query/path-scoped input fields for this trigger — see below. **Merge with `triggers describe → EventParameters`** for the complete set. |
 
-#### `parameters[]` — canonical event-parameter input fields
+#### `parameters[]` — event-parameter input fields
 
-One entry per configure-time input field (repo, mailbox folder, channel). Canonical across all connectors. `triggers describe` exposes the same set under `events.<operation>.required`/`.optional`, but that block is empty for several connectors — always read `parameters[]` here.
+One entry per configure-time input field (repo, channel, shared mailbox). **Not complete on its own** — `triggers objects → parameters[]` carries object/query/path-scoped inputs, while event-config inputs come from `triggers describe → EventParameters`. The full input set is the **union**; a field is required if either source marks it `required`. Never read inputs from `parameters[]` alone.
 
 | Field | Description |
 |---|---|
@@ -143,17 +143,18 @@ One entry per configure-time input field (repo, mailbox folder, channel). Canoni
 
 ### Trigger Metadata (from `triggers describe`)
 
-Object with field definitions. Structure varies by connector but typically includes field names, types, display names, and descriptions.
-
-Additional fields:
+Object with field definitions. Structure varies by connector but typically returns three arrays plus mode flags:
 
 | Field | Description |
 |---|---|
+| `EventParameters` | Event-config input fields. **First-class event parameters** — merge with `triggers objects → parameters[]`; configure every entry marked `required`. Resolve `reference` fields via `uip is resources run list` before configure. |
+| `FilterFields` | Fields usable in the optional `filter` tree |
+| `OutputFields` | Event payload schema — field names for downstream `$vars.{triggerId}.output.*` |
 | `eventMode` | `"webhooks"` or `"polling"` |
 | `byoaConnection` | `true` if this trigger requires a BYOA connection |
 | `isWebhookUrlVisible` | `true` if the webhook URL should be shown |
 
-> **`events.<operation>.required` from `triggers describe` is connector-dependent and often empty.** Downstream commands that derive `eventParameters.fields` from it inherit the gap. Read input fields from [`parameters[]`](#parameters--canonical-event-parameter-input-fields) instead. `triggers describe` remains the source for **output** field metadata.
+> **`triggers describe → EventParameters` is NOT "output-only" metadata.** It carries required *input* parameters that `triggers objects → parameters[]` frequently omits. Always merge both responses and configure the union — see the Source-of-truth note above. `flow registry get`'s `eventParameters.fields` mirrors `describe` and is the offline fallback.
 
 ---
 

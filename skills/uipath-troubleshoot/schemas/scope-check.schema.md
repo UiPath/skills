@@ -9,7 +9,7 @@ Read by: Orchestrator
 
 ```json
 {
-  "checked_after": "triage | hypotheses | test",
+  "checked_after": "triage | test",
   "current_domains": ["orchestrator"],
   "missing_domains": [],
   "unnecessary_domains": [],

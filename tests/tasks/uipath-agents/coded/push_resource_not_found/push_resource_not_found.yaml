@@ -1,0 +1,65 @@
+task_id: skill-agent-coded-push-resource-not-found
+description: >
+  Diagnose-mode coverage for PRODEV-760. On `uip codedagent push`, a
+  non-virtual binding (here a `connection`) that is not found is
+  warned-and-skipped (push still exits 0). The seed's bindings.json
+  carries a stale `ConnectionId` (push resolves a connection by id via
+  `GET /Connections/<id>`), so push warns the connection was not found.
+  The code's `retrieve("slack-triage")` (the binding-key alias) is
+  correct and must stay. The skill must drive the agent to NOT dismiss
+  the warning, diagnose the stale id via `uip is connections list`,
+  correct `ConnectionId` in bindings.json, and re-push so the connection
+  actually imports. CLI is mocked — tests behavior, not cloud
+  connectivity.
+tags: [uipath-agents, integration, coded, mode:diagnose, feature:file-sync]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 45
+  turn_timeout: 600
+  task_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: mocks
+      mount_point: mocks
+  mock_path_dirs:
+    - mocks
+
+pre_run:
+  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/push_resource_not_found/_fixtures/slack-triage ."
+    timeout: 10
+  - command: "printf 'UIPATH_PROJECT_ID=89852b5d-8559-4c57-b752-0e2b500902fc\\n' > slack-triage/.env"
+    timeout: 10
+
+initial_prompt: |
+  Push my `slack-triage` coded agent up to Studio Web for me.
+
+  Complete the task to the end. Only stop if there is a critical
+  blocker you cannot resolve.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran uip codedagent push (did not stop at the first warning)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedagent\s+push(?!\s+--help)'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent diagnosed the mismatch by listing IS connections"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+connections\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Connection binding ConnectionId corrected to the real connection"
+    command: "python3 $TASK_DIR/check_push_resource_not_found.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

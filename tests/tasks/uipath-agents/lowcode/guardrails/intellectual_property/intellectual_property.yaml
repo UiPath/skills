@@ -1,0 +1,91 @@
+task_id: skill-agent-guardrail-intellectual-property
+description: >
+  Intellectual property guardrail (low-code, builtInValidator). End-to-end
+  test: scaffold a standalone low-code agent and add a builtInValidator
+  guardrail for intellectual_property that blocks copyrighted text and
+  licensed code in the LLM output. Verifies the agent uses the enum-list
+  ipEntities parameter with PascalCase values (Text, Code), restricts scopes
+  to Llm/Agent (NOT Tool — anti-pattern 4), and a block action.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+initial_prompt: |
+  Create a UiPath low-code agent "IPAgent" that drafts content for users. Add a
+  guardrail that detects copyrighted text and licensed source code in the
+  agent's LLM output and blocks it with the message "Protected material
+  detected." The solution should be named "IPSol".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "IPSol/IPSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: agent used --output json on uip commands (informational, non-gating)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: file_exists
+    description: "IPAgent/agent.json was created"
+    path: "IPSol/IPAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+
+  - type: run_command
+    description: "IP guardrail shape (ipEntities enum-list, Llm/Agent scope not Tool, block action)"
+    command: "python3 $TASK_DIR/check_intellectual_property.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 15
+  max_turns: 30
+  turn_timeout: 1200

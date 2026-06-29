@@ -12,22 +12,18 @@ tags: [uipath-agents, e2e, coded, mode:build, feature:deploy]
 max_iterations: 1
 
 initial_prompt: |
-  Build a Simple Function UiPath coded agent named `tenant-echo`
-  that takes a `message` (string) and returns
-  `{"echoed": message}`. No LLM, no SDK calls.
+  I need a small UiPath coded agent named `tenant-echo`, set up in a
+  `tenant-echo/` folder here, that takes a `message` and echoes it
+  straight back. No LLM, no SDK calls — just a Simple Function.
 
-  Alongside the source, the project includes a `data/` directory
-  with fixture JSON used during local development only — create it
-  as `tenant-echo/data/fixtures.json` containing
-  `{"sample": "value"}`. The `data/` directory must NOT end up in
-  the published package.
+  It also has a `data/` folder with a little fixture JSON I use only
+  during local development — that folder should stay out of the
+  published package.
 
-  Take the agent through scaffold → init → run locally, then ship
-  it to the tenant feed. The host has UiPath auth pre-configured
-  with permission to publish to the tenant feed.
-
-  Do NOT publish to the personal workspace or to a folder feed.
-  Complete it in a single pass.
+  Once it builds and runs locally, publish it to our tenant feed (the
+  host is already signed in with permission to publish there). Don't
+  push it to my personal workspace or a folder feed — it goes to the
+  tenant feed. Work through it in a single pass.
 
 success_criteria:
   - type: command_executed

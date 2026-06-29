@@ -242,7 +242,7 @@ From the SDK docs and the catalog, look up the validator class referenced in the
 2. Confirm the in-code scope is permitted:
    - Middleware — every `GuardrailScope` in the `scopes=[...]` argument is in `allowed_scopes`.
    - Decorator — the function the `@guardrail` decorates matches the implied scope: `@tool` for Tool scope, LLM factory for LLM scope, agent factory for Agent scope.
-3. Confirm the stage is permitted: `GuardrailExecutionStage.PRE` only where catalog allows pre-execution; `POST` only where catalog allows post-execution.
+3. Confirm the stage is permitted. **Middleware takes no `stage=` argument** — the validator fixes its stage (e.g. `intellectual_property` POST, `user_prompt_attacks` PRE), so do not flag a missing stage. The stage check applies only to the **decorator** `stage=`: `GuardrailExecutionStage.PRE` only where catalog allows pre-execution; `POST` only where catalog allows post-execution.
 4. For Tool-scoped middleware: `tools=[...]` must contain the actual `@tool` Python objects discovered in Step 1 — not strings, not undefined names.
 5. For decorator-style LLM/Agent scope: the decorated function must actually return a `UiPathChat(...)` / `create_agent(...)` — decorating an unrelated function silently no-ops.
 

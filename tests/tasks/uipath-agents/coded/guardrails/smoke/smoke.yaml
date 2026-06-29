@@ -4,7 +4,7 @@ description: >
   guardrail to a coded LangGraph agent. Uses a deterministic (custom rule)
   guardrail as the simplest scenario — no ML backend required. Verifies
   key structural elements are present without requiring backend connectivity.
-tags: [uipath-agents, smoke, coded, mode:build, guardrail]
+tags: [uipath-agents, smoke, coded, mode:build, lifecycle:generate, guardrail]
 
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"]
