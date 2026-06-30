@@ -67,7 +67,7 @@ Read [references/planning.md](references/planning.md). Produces:
 
 - `tasks/tasks.md` — T-numbered entries (stages → tasks → conditions → SLA)
 - `tasks/registry-resolved.json` — audit trail
-- When the user picks **Create** at the Rule 17 gate, Phase 1 also builds the selected agent(s) as in-solution siblings (one sub-agent per agent invoking `uipath-agents`), registers them (`uip solution project add` + `resources refresh`), and binds them as resolved tasks. See [references/registry-discovery.md § Create-on-Missing](references/registry-discovery.md#create-on-missing-build-and-rediscovery).
+- When the user picks **Create** at the Rule 17 gate, Phase 1 also builds the selected agent(s) as in-solution siblings (one sub-agent per agent invoking `uipath-agents`), registers them (`uip solution project add` + `resources refresh`), and binds them as resolved tasks. Registration and `--local` rediscovery need an enclosing solution `.uipx`, so the Create flow **first ensures the solution exists** (`uip solution init` if absent — Phase 2 Step 6.0 then skips its own `init`). See [references/registry-discovery.md § Create-on-Missing](references/registry-discovery.md#create-on-missing-build-and-rediscovery).
 
 > **`tasks/` is created at the working root, adjacent to `sdd.md` — NEVER inside the solution/project folder (`<Solution>/`).** This holds regardless of where the case file lives: `caseplan.json` sits at `<Solution>/<Project>/caseplan.json`, but the planning artifacts (`tasks.md`, `registry-resolved.json`) stay next to `sdd.md` at the root.
 

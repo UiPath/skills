@@ -43,6 +43,8 @@ After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`.
 }
 ```
 
+> **Inline-built agent sibling exception — the one resource where the shape's `<folderPath binding default>` placeholder does NOT take the caseplan default.** `value.folderPath.defaultValue` is **`"solution_folder"`** (resource identity), NOT the caseplan `folderPath` binding `default` (which is `""` for an inline sibling). `bindings_v2.json` keeps the `solution_folder` sentinel while the caseplan runtime `folderPath` stays `""` — they are intentionally decoupled. `value.name.defaultValue` and `metadata.subType` (`"Agent"`) follow the caseplan binding as usual. Full rationale: the inline-built-sibling decoupling blockquote later in this file.
+
 ### Connector resource entry
 
 ```json
