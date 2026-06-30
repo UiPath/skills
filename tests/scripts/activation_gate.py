@@ -45,6 +45,10 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-agents": 90,
     "uipath-maestro-case": 90,
     "uipath-api-workflow": 90,
+    # Provisional: new skill (PR #1144). Set low so the gate measures and
+    # reports recall.yes on Bedrock without a spurious red; recalibrate to the
+    # measured value (nearest 5%) once the CI gate prints it.
+    "uipath-functions": 70,
 }
 
 DROP_PP = 10
