@@ -3,10 +3,12 @@ description: >
   Build a Case Management definition whose manual trigger declares In/Out
   arguments of several types, and assert the generated entry-points.json
   has its input/output JSON-Schemas back-filled from those arguments
-  (Step 6.3 refresh). Covers the type->format mapping (string, datetime,
-  float), the file->$ref + job-attachment definitions block, the
-  companion-sourced Out-arg default, and that input.required is a present
-  empty array. Integration tier — builds + validates, no debug run.
+  (Step 6.3 refresh). Covers the input type->format mapping (string,
+  datetime, float), the file->$ref + job-attachment definitions block, and
+  — on the OUTPUT side — Out-args of several types (string, double, datetime)
+  projected into output.properties with companion-sourced defaults, plus
+  that input.required is a present empty array. Integration tier — builds +
+  validates, no debug run.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node, feature:arguments]
 
 run_limits:
@@ -52,7 +54,9 @@ initial_prompt: |
   | submittedAt | In | datetime | | | | Submission timestamp supplied by the caller. |
   | riskScore | In | float | | | 1.5 | Pre-seeded risk score. |
   | evidenceDoc | In | file | | | | Uploaded evidence attachment. |
-  | decision | Out | string | | | Pending | Final decision returned to the caller. |
+  | decision | Out | string | | | Pending | Final decision returned to the caller (string Out, default). |
+  | finalScore | Out | double | | | 1.5 | Numeric score returned to the caller (double Out, default — exercises output format mapping). |
+  | closedAt | Out | datetime | | | 2026-03-01T00:00:00Z | Closure timestamp returned (datetime Out, default — exercises output format mapping). |
 
   ## Section 2: Stages & Tasks
 

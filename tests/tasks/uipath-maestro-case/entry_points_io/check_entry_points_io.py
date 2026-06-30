@@ -91,15 +91,25 @@ def main():
     if not isinstance(inp.get("required"), list):
         fail(f"input.required must be a present array, got {inp.get('required')!r}")
 
-    # Out-arg projected with its companion-sourced default
+    # Out-args projected with companion-sourced defaults — output side exercises the type/format mapping too.
     oprops = out.get("properties") or {}
     dec = oprops.get("decision")
     if not dec or dec.get("type") != "string":
         fail(f"output decision should be {{type:string}}, got {dec}")
     if dec.get("default") != "Pending":
         fail(f"output decision default should be 'Pending' (from the inputOutputs companion), got {dec.get('default')!r}")
+    # double Out -> {number, format:double}
+    fs = oprops.get("finalScore")
+    if not fs or fs.get("type") != "number" or fs.get("format") != "double":
+        fail(f"output finalScore should be {{type:number, format:double}}, got {fs}")
+    if fs.get("default") != "1.5":
+        fail(f"output finalScore default should be '1.5', got {fs.get('default')!r}")
+    # datetime Out -> {string, format:date-time}
+    ca = oprops.get("closedAt")
+    if not ca or ca.get("type") != "string" or ca.get("format") != "date-time":
+        fail(f"output closedAt should be {{type:string, format:date-time}}, got {ca}")
 
-    print(f"PASS: {path} input/output projected from In/Out args (5 props, file $ref + definitions, Out default).")
+    print(f"PASS: {path} input/output projected from In/Out args (input 5 props incl. file $ref + definitions; output string/double/datetime Out-args).")
 
 
 if __name__ == "__main__":
