@@ -10,7 +10,7 @@ confidence: high
 
 What this looks like:
 
-- `No OCR Engine assigned.` (`System.ArgumentException`, resource `OCREngineException`) — the activity has no OCR engine activity inside it. The dominant `ReadPDFWithOCR` configuration failure.
+- `No OCR Engine assigned.` (`System.ArgumentException`, resource `OCREngineException`) — the activity has no OCR engine activity inside it. **This fires at activity validation (CacheMetadata) — i.e. at design / `validate` / `build` / publish time, not as a runtime job fault.** It is normally caught in Studio or at publish, so it rarely reaches a *faulted Orchestrator job*; if you see it, the failure is at build/validation, not execution. The runtime job-fault for OCR is `Digitization failed ...` below.
 - `Digitization failed with status <status> and error <code>: <detail>.` (resource `DigitizationFailedError`) — an OCR engine is present but digitization failed (engine error, unreachable OCR endpoint, unsupported/oversized input).
 - `Invalid image dpi <value>` (`System.ArgumentException`, resource `InvalidImageDpiException`) — the `Image DPI` used for OCR is invalid (≤ 0 or non-numeric).
 
