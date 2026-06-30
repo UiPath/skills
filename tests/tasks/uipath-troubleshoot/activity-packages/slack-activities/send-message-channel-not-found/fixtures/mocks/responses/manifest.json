@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: UiPath.Slack.IntegrationService.Activities.SendMessage faults AFTER the connection resolved, with UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException carrying the Slack Web API error (ProviderMessage {\"ok\":false,\"error\":\"channel_not_found\"}). The agent must read the Slack error code, not stop at the HTTP 400. Captured from a real Orchestrator job; PII scrubbed. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e --state Faulted",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs get f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "file": "or-jobs-get.json"
+    },
+    {
+      "match": "or jobs logs f0c8117e-38f1-474a-8c14-81f94c86816c --level Error",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs logs f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs traces f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "file": "or-jobs-traces.json"
+    },
+    {
+      "match": "traces spans get --job-key f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "file": "or-traces-spans.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get f0c8117e-38f1-474a-8c14-81f94c86816c",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the BusinessActivityExecutionException and the Slack ProviderMessage error code (channel_not_found)."
+    }
+  ]
+}

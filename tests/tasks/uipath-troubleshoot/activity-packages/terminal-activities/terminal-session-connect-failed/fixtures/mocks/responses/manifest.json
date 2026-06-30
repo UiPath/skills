@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: TerminalSession faults at connection open with System.AggregateException wrapping an inner TerminalConnectionException ('There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected'). Host unreachable. Captured from a real Orchestrator job; PII scrubbed. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list --folder-key 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d --state Faulted",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list --folder-key 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs get caf901ab-28a3-4621-bcfa-68a0447e49c8",
+      "file": "or-jobs-get.json"
+    },
+    {
+      "match": "or jobs logs caf901ab-28a3-4621-bcfa-68a0447e49c8 --level Error",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs logs caf901ab-28a3-4621-bcfa-68a0447e49c8",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs traces caf901ab-28a3-4621-bcfa-68a0447e49c8",
+      "file": "or-jobs-traces.json"
+    },
+    {
+      "match": "traces spans get --job-key caf901ab-28a3-4621-bcfa-68a0447e49c8",
+      "file": "or-traces-spans.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get caf901ab-28a3-4621-bcfa-68a0447e49c8",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the AggregateException and its inner TerminalConnectionException (connect failure)."
+    }
+  ]
+}

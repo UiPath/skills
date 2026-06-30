@@ -1,0 +1,23 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  },
+  "Data": [
+    {
+      "Key": "caf901ab-28a3-4621-bcfa-68a0447e49c8",
+      "State": "Faulted",
+      "StartTime": "2026-06-20T11:08:05.463Z",
+      "EndTime": "2026-06-20T11:08:17.150Z",
+      "ReleaseName": "TerminalRepro",
+      "Source": "Manual",
+      "HostMachineName": "MOCK-HOST",
+      "ErrorCode": "Robot",
+      "Id": 50596528
+    }
+  ]
+}
