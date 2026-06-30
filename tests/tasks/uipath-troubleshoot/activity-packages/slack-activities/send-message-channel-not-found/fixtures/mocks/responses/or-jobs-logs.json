@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T11:08:44.768Z",
+      "Message": "Send Message to Channel: BusinessActivityExecutionException:\nError Code: [400]\nMessage: Bad Request - Often due to a missing request parameter\nRequestId: 6a43a3bce4b0cb1e6eda4378\nProviderMessage: {\"ok\":false,\"error\":\"channel_not_found\",\"warning\":\"missing_charset\",\"response_metadata\":{\"warnings\":[\"missing_charset\"]}}\n\r\nin SlackMsg.xaml\r\n    at SendMessage \"Send Message to Channel\"\r\n    at Sequence \"SlackMsg\"\r\n    at SlackMsg \"SlackMsg\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException\r\n   at UiPath.BAF.Activities.BAFAsyncCodeActivity`1.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}
