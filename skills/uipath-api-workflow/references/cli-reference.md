@@ -483,9 +483,6 @@ Activate / configure / inspect a published solution. Subcommands: `deploy run`, 
 ## End-to-End Example
 
 ```bash
-# Absolute path so it survives the cd below.
-SKILL="$(cd ./.claude/plugins/uipath/skills/uipath-api-workflow && pwd)"
-
 # 0. (once) create the solution if you don't have one
 uip solution init MySolution --output json
 
@@ -504,16 +501,13 @@ uip login
 # 4. Authenticated run
 uip api-workflow run ./MyApiProject/Workflow.json --output json
 
-# 5. Pre-pack gate — verify the Studio Web shape (rule 19b)
-node "$SKILL/scripts/verify-studio-web-shape.mjs" .
-
-# 6. Pack the solution
+# 5. Pack the solution
 uip solution pack . ./build \
   --name MyApiSolution \
   --version 1.0.0 \
   --output json
 
-# 7. Publish
+# 6. Publish
 uip solution publish ./build/MyApiSolution.zip \
   --tenant MyTenant \
   --output json

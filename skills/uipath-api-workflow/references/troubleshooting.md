@@ -588,7 +588,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   - Rename the main workflow to `Workflow.json` at the project root.
   - Edit the `.uipx` `ProjectRelativePath` from `<folder>/project.json` → `<folder>/project.uiproj`, **preserving the project `Id` and `Type`**. Do NOT use `uip solution project remove`+`add` — it mints a new `Id`.
   - Remove the stray `project.json` / `workflows/` (a mismatched `project.json` triggers `ProjectMetadataMismatchError`).
-  - Re-pack only after `node "$SKILL/scripts/verify-studio-web-shape.mjs" <solutionDir>` exits 0 (`SKILL` = this skill's folder; SKILL.md rule 19b).
+  - Re-pack, then confirm the project opens in Studio Web (runtime/pack success alone does not prove it).
 
 ---
 
