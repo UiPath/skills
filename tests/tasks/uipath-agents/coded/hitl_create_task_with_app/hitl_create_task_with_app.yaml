@@ -12,16 +12,18 @@ tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framew
 max_iterations: 1
 
 initial_prompt: |
-  Build me a uipath coded agent (LangGraph) called `refund-gate` in a
-  `refund-gate/` folder. Refunds over $500 should pause for a reviewer on
-  the Compliance team via their `RefundReview` Action Center app (folder
-  `Compliance`) - they need the customer, amount, and reason - then
-  continue with the reviewer's decision and note. $500 or under goes
-  through automatically. Wire the RefundReview app up so the request can
-  be filed.
+  Can you build me a uipath coded agent in LangGraph for handling refunds?
+  Call it refund-gate, put it in a refund-gate folder. The idea: anything
+  over $500 needs a human to sign off first. Someone on the Compliance team
+  reviews it in their RefundReview app (that's in the Compliance folder) -
+  show them the customer, the amount, and why the refund's being asked for.
+  Once they decide, carry on with their call and whatever note they left.
+  Anything $500 or under just goes through. And please make sure the
+  RefundReview app is actually hooked up, otherwise it can't send them the
+  request.
 
-  Just build it, no run or deploy. Complete the task end-to-end. Only stop
-  if there is a critical blocker you cannot resolve.
+  No need to run or deploy it, just build it. Run it all the way through
+  and only stop if you hit something you genuinely can't get past.
 
 success_criteria:
   - type: skill_triggered
