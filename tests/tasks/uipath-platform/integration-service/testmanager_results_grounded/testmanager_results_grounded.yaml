@@ -18,7 +18,7 @@ description: >
   the fixture's expected minimum — i.e. it fetched real results, not just called
   the activity. Reusable pattern for the read/results activities (assertions,
   robot logs, test steps, test case logs).
-tags: [uipath-platform, integration, integration-service, resources, execute]
+tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
 skip: true
 
 sandbox:

@@ -6,7 +6,7 @@ description: >
   read a test case log, robot logs, assertions, download an assertion, and read
   test steps and step logs. Offline (command-shape) grading; runs in CI without a
   live connection.
-tags: [uipath-platform, integration, integration-service, resources, execute]
+tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
 
 run_limits:
   expected_turns: 40

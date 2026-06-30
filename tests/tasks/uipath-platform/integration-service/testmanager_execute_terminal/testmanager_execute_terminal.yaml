@@ -12,7 +12,7 @@ description: >
   Graded on invoking Execute + Get AND on the execution actually reaching terminal
   (Finished/Passed/Failed/…), i.e. a real run happened — not just that Execute was
   called.
-tags: [uipath-platform, integration, integration-service, resources, execute]
+tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
 
 sandbox:
   driver: tempdir
