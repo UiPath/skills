@@ -73,8 +73,8 @@ Generate a unique UUID (e.g., `5029c8a8-799b-426a-803f-c4ec75255439`). Create a 
 
 Same schema as a standalone agent (see [../../agent-definition.md](../../agent-definition.md)), with these conventions:
 - `projectId` matches the folder name UUID
-- `inputSchema.properties` stays empty `{}` for prompt-only flow-data references. Prompts reference upstream flow nodes directly via `{{ $vars.<flowNodeId>.output[.<field>] }}` in `messages[].content`, mirrored in `contentTokens[]` as `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }` (leading and trailing space inside `rawString`). See the `uipath-maestro-flow` skill's [inline-agent prompt-wiring guide](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
-- `messages` have empty `content` and `contentTokens` initially. Set prompts in `messages[].content`, then build `messages[].contentTokens[]` as a parallel list: one `{ "type": "simpleText", "rawString": "..." }` per literal text segment, one `{ "type": "variable", "rawString": " $vars.<flowNodeId>.output[.<field>] " }` per `{{ ... }}` reference.
+- `inputSchema.properties`: one `<triggerNodeId>__output__<global>` key per flow input — **mandatory**. See [§ Wiring Flow Inputs Into an Inline Agent](#wiring-flow-inputs-into-an-inline-agent-required).
+- `messages[].content`: reference inputs as `{{input.<triggerNodeId>__output__<global>}}` (the `input.` form). Then run `uip agent refresh` to regenerate `contentTokens` from `content` — don't hand-author them. See [§ Wiring Flow Inputs Into an Inline Agent](#wiring-flow-inputs-into-an-inline-agent-required).
 - `guardrails: []` at root level — can be populated with guardrail objects. See [../guardrails/guardrails.md](../guardrails/guardrails.md)
 - No `metadata.targetRuntime` field
 
@@ -126,6 +126,24 @@ features/
 resources/
 ```
 
+## Wiring Flow Inputs Into an Inline Agent (required)
+
+**The CLI does not derive the input wiring** — you author it; `refresh` only regenerates `contentTokens` from `content` (it does not fill `inputSchema` or `agentInputVariables`). `flow validate` *does* catch a prompt↔schema mismatch (a `{{input.K}}` that's malformed or names a key not in `inputSchema`), but **not** a missing/wrong node `agentInputVariables` binding — that delivery gap surfaces only at `flow debug`.
+
+This skill authors the **`agent.json` side** (flatten rule: `$vars.<trigger>.output.<var>` → `<trigger>__output__<var>`):
+- `inputSchema.properties` — one `<trigger>__output__<var>` key per input (mandatory; binds the delivered `JobArguments` into the agent's `input`). Empty schema → the agent sees the literal `input.<key>` token even when the value arrived.
+- `messages[].content` — reference each input as `{{input.<trigger>__output__<var>}}` (the `input.` form, **not** `$vars`), plus a real system prompt. `content` is the source of truth; run `uip agent refresh` to generate the matching `contentTokens` from it (don't hand-author them).
+
+```json
+"inputSchema": { "properties": {
+  "start__output__disputeSummary": { "type": "string", "description": "Bound from $vars.start.output.disputeSummary" }
+} },
+"messages": [{ "role": "user",
+  "content": "Write a billing resolution email for this dispute:\n{{input.start__output__disputeSummary}}" }]
+```
+
+The **flow side** — the trigger global and the node `agentInputVariables[]` binding (the only thing the converter turns into `JobArguments`) — is authored through the `uipath-maestro-flow` skill (Critical Rule 15). The full four-piece contract, the converter behavior, and the `content`↔`contentTokens` invariant + validator errors all live there: [inline-agent prompt-wiring guide § Wiring Flow Variables into Agent Prompts](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
+
 ## Refresh and Validate Inline Agent
 
 ```bash
@@ -133,7 +151,9 @@ uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 ```
 
-`--inline-in-flow` skips `entry-points.json` and `project.uiproj` checks. Refresh regenerates `entry-points.json` and `bindings_v2.json`; validate is read-only.
+`--inline-in-flow` skips the `entry-points.json` / `project.uiproj` checks. In inline mode `refresh` regenerates `messages[].contentTokens` (from `content`) and `bindings_v2.json` — **not** `entry-points.json` (standalone only). `validate` is read-only (it flags `contentTokens` drift but doesn't repair it — fix by re-running `refresh`).
+
+**Verify at `flow debug`, not after refresh:** `refresh` never fills `inputSchema` — it is non-empty only because you authored it (`DerivedFiles: 0` is normal and does **not** mean input is missing). The end-to-end check (run `uip maestro flow debug` and confirm the agent resolves the input rather than echoing the literal `input.<key>` token) is owned by the `uipath-maestro-flow` skill — see its [inline-agent guide § Debug](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#debug).
 
 For inline agents with external capabilities (tools, contexts, memory spaces, or escalations), pass `--bindings-target` to **`refresh`** after all flow graph edits:
 
