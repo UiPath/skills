@@ -59,7 +59,7 @@ The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (
 | `agent.json` `messages[].content` | `{{input.<trigger>__output__<var>}}` (the `input.` form — never `$vars`). | `"Invoice: {{input.start__output__invoiceNumber}}"` |
 | `agent.json` `messages[].contentTokens[]` | One `{ "type": "variable", "rawString": "input.<trigger>__output__<var>" }` per `{{ ... }}` token in `content` (brace-free `rawString`). | `{ "type": "variable", "rawString": "input.start__output__invoiceNumber" }` |
 
-`<flowNodeId>` must exactly match a node `id` in the `.flow` file, with an edge path reaching the inline-agent node. See [../../../../shared/node-output-wiring.md](../../../../shared/node-output-wiring.md) for the full expression contract.
+Each binding's source `$vars.<node>.output.<field>` must reference a real node `id` in the `.flow` file, with an edge path reaching the inline-agent node. See [../../../../shared/node-output-wiring.md](../../../../shared/node-output-wiring.md) for the full expression contract.
 
 ### The `content` ↔ `contentTokens` mirror invariant
 
@@ -174,7 +174,7 @@ Use `Edit` to add a node instance to `nodes[]`. The instance carries only per-in
     "source": "<projectId-uuid>",
     "agentInputVariables": [],
     "agentOutputVariables": [
-      { "id": "content", "type": "string" }
+      { "id": "content", "type": "string" }   // untyped single-string default; a typed agent lists one entry per output field, never a single `content` object — see § Wiring Agent Output Into Flow Outputs
     ]
   },
   "outputs": {
@@ -348,7 +348,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     "source": "<projectId-uuid>",
     "agentInputVariables": [],
     "agentOutputVariables": [
-      { "id": "content", "type": "string" }
+      { "id": "content", "type": "string" }   // untyped single-string default; a typed agent lists one entry per output field, never a single `content` object — see § Wiring Agent Output Into Flow Outputs
     ]
   },
   "outputs": {
