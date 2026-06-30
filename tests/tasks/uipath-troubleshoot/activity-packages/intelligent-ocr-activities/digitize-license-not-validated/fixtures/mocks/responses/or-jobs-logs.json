@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-20T13:47:26.500Z",
+      "Message": "Digitize Document: Your license could not be validated. Please make sure that the API key parameter is correctly configured.\r\nException Type: UiPath.SmartData.Utils.DocumentUnderstandingClient.DUApiException\r\nin Main.xaml\r\n    at DigitizeDocument \"Digitize Document\"\r\n    at Sequence \"Do\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.SmartData.Utils.DocumentUnderstandingClient.DUApiException: Your license could not be validated. Please make sure that the API key parameter is correctly configured.\r\n   at UiPath.SmartData.Utils.DocumentUnderstandingClient.DUServerCaller.SendRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)\r\n   at UiPath.Vision.OCR.UiPathDocumentOCR.PerformOcr(Image image, String predictionId)\r\n   at UiPath.IntelligentOCR.Activities.Digitization.DigitizeDocument.ExecuteAsync(CodeActivityContext context, CancellationToken cancellationToken)"
+    }
+  ]
+}
