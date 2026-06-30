@@ -158,7 +158,7 @@ Use `Edit` to add a node instance to `nodes[]`. The instance carries only per-in
     "source": "<projectId-uuid>",
     "agentInputVariables": [],
     "agentOutputVariables": [
-      { "id": "content", "type": "string" }   // untyped single-string default; a typed agent lists one entry per output field, never a single `content` object — see § Wiring Agent Output Into Flow Outputs
+      { "id": "content", "type": "string" }
     ]
   },
   "outputs": {
@@ -332,7 +332,7 @@ The instance carries only per-instance data (`inputs`, `outputs`, `display`). BP
     "source": "<projectId-uuid>",
     "agentInputVariables": [],
     "agentOutputVariables": [
-      { "id": "content", "type": "string" }   // untyped single-string default; a typed agent lists one entry per output field, never a single `content` object — see § Wiring Agent Output Into Flow Outputs
+      { "id": "content", "type": "string" }
     ]
   },
   "outputs": {

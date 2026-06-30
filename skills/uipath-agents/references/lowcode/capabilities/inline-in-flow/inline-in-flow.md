@@ -218,7 +218,7 @@ Resource body shape is identical to the standalone-agent docs — only the folde
     "source": "<projectId-uuid>",        // UUID linking to the inline agent directory
     "agentInputVariables": [],
     "agentOutputVariables": [
-      { "id": "content", "type": "string" }   // untyped single-string default; a typed agent lists one entry per output field — see the uipath-maestro-flow inline-agent guide § Wiring Agent Output Into Flow Outputs
+      { "id": "content", "type": "string" }   // untyped default; typed output = one entry per field (see uipath-maestro-flow inline-agent guide)
     ]
   },
   "outputs": {
