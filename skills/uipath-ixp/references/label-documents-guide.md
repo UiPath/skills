@@ -156,7 +156,7 @@ Repeat steps 2a–2d for all documents in the list.
 
 ### Detecting off-template documents
 
-IXP gives no explicit "off-template" signal. The cue is your own review verdict: **if you'd mark *every* field MISSING** — IXP predicted nothing for any field AND none of them are actually present in the document — the document is off-template. Remove it with `documents delete` (see *Removing a document from the project*) instead of recording an all-missing document, which would train the model on a document that doesn't belong. (Empty predictions where the fields *are* present is a recall miss, not off-template — leave NOT CONFIRMED / fix the prompt, Rule 11.)
+IXP gives no explicit "off-template" signal. The cue is your own review verdict: **if you'd mark *every* field MISSING** — IXP predicted nothing for any field AND none of them are actually present in the document — the document is off-template — it isn't the project's document type. Remove it with `documents delete` (see *Removing a document from the project*) rather than recording it as an all-missing document. (Empty predictions where the fields *are* present is a recall miss, not off-template — leave NOT CONFIRMED / fix the prompt, Rule 11.)
 
 ### Removing a document from the project
 
