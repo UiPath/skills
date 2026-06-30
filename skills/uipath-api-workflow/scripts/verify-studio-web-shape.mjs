@@ -12,7 +12,12 @@ const errors = [];
 const warnings = [];
 
 function readJson(p) {
-  return JSON.parse(readFileSync(p, "utf8"));
+  try {
+    return JSON.parse(readFileSync(p, "utf8"));
+  } catch (e) {
+    console.error(`FAIL  Could not read/parse ${p}: ${e.message}`);
+    process.exit(1);
+  }
 }
 
 // Locate the .uipx

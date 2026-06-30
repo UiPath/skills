@@ -296,8 +296,6 @@ The mistakes an agent makes most often (each maps to a Critical Rule above — s
 - **Do NOT** hand-assemble a project (`project.json` + `main.json`/`workflows/WF_*.json`). Scaffold with `uip api-workflow init <name>` — it writes the correct `project.uiproj` shape and registers it in the `.uipx`. The legacy `project.json`-only shape runs and packs but Studio Web rejects it (`invalid_project_folder`) and never shows it. See rules 19–19a.
 - **Do NOT** wire a project into the solution with `uip solution project add/remove` — it errors on an already-registered name, and `remove`+`add` destroys the project `Id`. `init` registers it; for an already-built project, edit the `.uipx` `ProjectRelativePath` in place. See rule 19a.
 - **Do NOT** trust "it packed / published / ran" as proof a project opens in Studio Web — every runtime gate passes on the wrong shape. `init` prevents it; `verify-studio-web-shape.mjs` (rule 19b) catches legacy/converted drift.
-- **Do NOT** ship an API project as `project.json` + `workflows/WF_*.json` when it must open in Studio Web — it runs and packs, but Studio Web rejects it (`invalid_project_folder`) and never shows it. Use `project.uiproj` + `Workflow.json` + `entry-points.json`, and run the pre-pack gate. See rules 19a–19b.
-- **Do NOT** trust "it packed / published / ran" as proof a project opens in Studio Web — every runtime gate passes on the wrong shape. Only `verify-studio-web-shape.mjs` (rule 19b) catches it.
 
 ## Infinite Loop Prevention
 
