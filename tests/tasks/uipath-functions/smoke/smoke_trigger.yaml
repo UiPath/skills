@@ -28,10 +28,11 @@ dataset:
         files yet.
     - id: api-custom-auth
       prompt: |
-        I need to call a third-party REST API with a custom HMAC auth header
-        and map the response into typed fields — pure code, no agent or LLM.
-        It has to be packageable and invocable from UiPath. Which skill do I
-        use and what files does the project need? Just outline it, don't build.
+        I want a deterministic Python function with typed Input/Output models
+        (no LLM, no agent) that I can package and run as a UiPath job. Inside
+        it, I'll call a third-party REST API with a custom HMAC auth header and
+        map the response into the typed output fields. Which UiPath skill should
+        I use and what's the project layout? Just outline it, don't build.
 
 initial_prompt: "${row.prompt}"
 
