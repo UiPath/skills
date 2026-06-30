@@ -51,12 +51,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added an evaluator with the eval CLI (semantic-similarity or trajectory)"
+    description: "Advisory: agent used eval CLI evaluator add (non-gating — uip agent init already ships a default semantic-similarity evaluator, so reusing it is valid)"
     tool_name: "Bash"
     command_pattern: 'uip\s+agent\s+eval\s+evaluator\s+add\s+.*--type\s+(semantic-similarity|trajectory)'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent added test cases with uip agent eval add"
