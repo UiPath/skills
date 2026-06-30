@@ -18,6 +18,8 @@ jobs:
       (startsWith(github.event.comment.body, '/cherrypick') ||
        startsWith(github.event.comment.body, '/cherry-pick'))
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     outputs:
       branch: ${{ steps.set-branch.outputs.branch }}
       jira_issue_id: ${{ steps.set-branch.outputs.jira_issue_id }}
@@ -248,6 +250,8 @@ jobs:
        startsWith(github.event.comment.body, '/cherry-pick'))
     needs: [run-cherry-pick, cherry-pick-init]
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Message success (clean)
         if: ${{ !contains(join(needs.*.result, ','), 'failure') && needs.run-cherry-pick.outputs.had_conflicts != 'true' }}
