@@ -39,13 +39,13 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 **If the file does NOT exist** → run the discovery flow below.
 
 **Discovery flow** (used for both missing and stale context):
-1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md).
-   - **Claude Code:** trigger the registered `uipath-project-discovery-agent` agent (registered via the plugin manifest).
-   - **UiPath Autopilot:** spawn a predefined read-only subagent and pass it `agents/uipath-project-discovery-agent.md` (relative to this skill) as its custom skill.
+1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
+   - **Host registers plugin agents by name** (e.g., Claude Code) → trigger the registered `uipath-project-discovery-agent` agent.
+   - **Host only spawns its own predefined subagents** (e.g., UiPath Autopilot) → spawn a read-only subagent and pass it that file (relative to this skill) as its instructions / custom skill.
 2. The agent returns the generated context document as its response
 3. Write the returned content to **both**:
    - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
-   - `AGENTS.md` at project root — read by UiPath Autopilot in Studio Desktop. If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
+   - `AGENTS.md` at project root — the shared cross-agent context convention (read by UiPath Autopilot in Studio Desktop and other AGENTS.md-aware hosts). If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
 4. Then proceed with the skill workflow
 
 ## Step 0: Resolve PROJECT_DIR
