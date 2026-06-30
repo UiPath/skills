@@ -8,22 +8,15 @@ description: >
 tags: [uipath-functions, smoke, mode:build, lifecycle:generate, feature:framework-simple]
 
 run_limits:
-  expected_turns: 33
+  expected_turns: 12
 
 initial_prompt: |
-  1. Create a 'test.txt' file at cwd with 'This is the file content' as content.
-  2. Build a UiPath Coded Function named `attachment-agent` that accepts it as input and outputs its name and content.
+  Build a UiPath Coded Function named `attachment-agent` that accepts a file
+  attachment as input and outputs its name and content.
 
-  Use the coded function shape with Pydantic models. In `main.py`, define
-  `class Input(BaseModel)` with an `attachment: Attachment` field imported
-  from `uipath.platform.attachments`. Do not use dataclasses for the Input
-  model: `uip functions init` must recognize the `Attachment` type and emit
-  `x-uipath-resource-kind: JobAttachment` in `entry-points.json`.
-
-  For local testing, branch on `UiPathConfig.job_key`; when it is `None`, read
-  bytes from the `UIPATH_LOCAL_ATTACHMENT` file path and pass a placeholder
-  attachment object to `uip functions run`.
-  Then run it locally.
+  Not complete until `uip functions init` has generated `entry-points.json`
+  carrying the `x-uipath-resource-kind: JobAttachment` schema for the
+  attachment field.
 
 success_criteria:
   - type: command_executed
@@ -40,14 +33,6 @@ success_criteria:
     command_pattern: 'uip\s+functions\s+init'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent ran the agent locally with uip functions run"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+functions\s+run'
-    min_count: 1
-    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command

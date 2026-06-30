@@ -214,6 +214,20 @@ result = sdk().connections.invoke_activity(
 )
 ```
 
+### File attachment inputs
+
+To accept a runtime file, type an `Input` field as `Attachment` (pydantic model, not a dataclass):
+
+```python
+from pydantic import BaseModel
+from uipath.platform.attachments import Attachment
+
+class Input(BaseModel):
+    attachment: Attachment
+```
+
+`uip functions init` recognizes the `Attachment` type and emits `x-uipath-resource-kind: JobAttachment` in `entry-points.json` — the schema Studio Web and Orchestrator read to render a file picker for that field. Access fields snake_case: `attachment.full_name`, `attachment.content`.
+
 ### Step 8: Pack and Publish
 
 ```bash
