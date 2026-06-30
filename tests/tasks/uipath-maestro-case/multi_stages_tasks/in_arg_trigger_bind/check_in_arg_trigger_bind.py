@@ -85,9 +85,11 @@ def main():
         return next((v for v in in_vars if v.get("name") == arg), None)
 
     def _companion(arg: str) -> dict | None:
-        return next(
-            (v for v in io_vars if v.get("name") == arg or v.get("id") == arg), None
-        )
+        # Runtime resolves =vars.<arg> by the companion's `id` (the resolver
+        # matches Variable.id — see io-binding/impl-json.md). Match STRICTLY by
+        # id; `name` is asserted separately below so a {name:<arg>, id:<wrong>}
+        # companion (which would leave =vars.<arg> unresolvable) fails, not passes.
+        return next((v for v in io_vars if v.get("id") == arg), None)
 
     # (arg, bound node + id, the OTHER node + id, human label)
     expectations = [
@@ -116,9 +118,15 @@ def main():
 
         comp = _companion(arg)
         if not comp:
-            names = [(v.get("name"), v.get("id")) for v in io_vars]
+            entries = [(v.get("name"), v.get("id")) for v in io_vars]
             sys.exit(
-                f"FAIL: In-arg {arg!r} missing its inputOutputs companion; got {names}"
+                f"FAIL: In-arg {arg!r} has no inputOutputs companion with id=={arg!r} "
+                f"(=vars.{arg} resolves by companion id at runtime); got {entries}"
+            )
+        if comp.get("name") != arg:
+            sys.exit(
+                f"FAIL: In-arg {arg!r} companion (id={arg!r}) has name "
+                f"{comp.get('name')!r}, expected {arg!r}"
             )
         if comp.get("elementId") != want_id:
             sys.exit(

@@ -10,7 +10,7 @@ description: >
   elementId AND its trigger-output bridge must land on the trigger named by its
   sourceTriggers (blank → primary), NOT default every In-arg to one trigger.
   Structural-only — the binding is fully determined in caseplan.json; no debug.
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:trigger, feature:multi-trigger, feature:timer, feature:arguments, feature:variables]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:trigger]
 
 run_limits:
   task_timeout: 900
