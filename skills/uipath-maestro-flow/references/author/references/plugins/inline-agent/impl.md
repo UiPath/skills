@@ -91,85 +91,44 @@ These validator failures all come from breaking this invariant — chasing one w
 - `Expected "input.X" but got "{{input.X}}"` → you put the braces (or extra spaces) in the `variable` `rawString`; it must be exactly the text between the braces (braces stay only in `content`).
 - `contentTokens has N entries but content requires M. Rebuild contentTokens to match content.` → the reverse over-correction: you stripped the `{{ }}` out of `content` too, so `content` no longer segments into the same number of tokens. Keep `{{input.X}}` in `content`; only the token `rawString` is brace-free.
 
-### Worked example — wire an email-trigger payload into the agent prompt
+### Worked example — end to end (repeat the triple per input)
 
-Flow node (excerpt):
-
-```json
-{
-  "id": "autonomousAgent1",
-  "type": "uipath.agent.autonomous",
-  "inputs": {
-    "systemPrompt": "Triage the inbound email.",
-    "userPrompt": "Process the inbound email payload.",
-    "source": "<projectId-uuid>",
-    "agentInputVariables": [
-      { "id": "emailReceived1__output__from", "type": "string", "binding": "=$vars.emailReceived1.output.from", "description": "Bound from $vars.emailReceived1.output.from" },
-      { "id": "emailReceived1__output__subject", "type": "string", "binding": "=$vars.emailReceived1.output.subject", "description": "Bound from $vars.emailReceived1.output.subject" },
-      { "id": "emailReceived1__output__body", "type": "string", "binding": "=$vars.emailReceived1.output.body", "description": "Bound from $vars.emailReceived1.output.body" }
-    ],
-    "agentOutputVariables": [
-      { "id": "category",   "type": "string" },
-      { "id": "priority",   "type": "string" },
-      { "id": "needsHuman", "type": "boolean" }
-    ]
-  }
-}
-```
-
-Matching `agent.json` (excerpt) — `inputSchema` keys mirror the node bindings; the prompt uses the `input.` form:
+Flow node (excerpt) — `binding` per input, typed `agentOutputVariables`:
 
 ```json
-{
-  "settings": { "model": "anthropic.claude-sonnet-4-6", "temperature": 0, "maxTokens": 4096, "maxIterations": 10 },
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "emailReceived1__output__from":    { "type": "string", "description": "Bound from $vars.emailReceived1.output.from" },
-      "emailReceived1__output__subject": { "type": "string", "description": "Bound from $vars.emailReceived1.output.subject" },
-      "emailReceived1__output__body":    { "type": "string", "description": "Bound from $vars.emailReceived1.output.body" }
-    }
-  },
-  "outputSchema": {
-    "type": "object",
-    "properties": {
-      "category":  { "type": "string",  "description": "billing | technical | sales | other" },
-      "priority":  { "type": "string",  "description": "low | medium | high | urgent" },
-      "needsHuman":{ "type": "boolean", "description": "true if the email requires human review" }
-    },
-    "required": ["category", "priority", "needsHuman"]
-  },
-  "messages": [
-    {
-      "role": "system",
-      "content": "You are a support-email triage classifier for a SaaS product. Classify each inbound email; do not reply to the customer. category MUST be one of billing, technical, sales, other. Set needsHuman=true for legal threats, churn risk, or anything outside those categories. Never invent customer details not present in the email. If the email is empty or unintelligible, set category=\"other\" and needsHuman=true.",
-      "contentTokens": [{ "type": "simpleText", "rawString": "You are a support-email triage classifier for a SaaS product. Classify each inbound email; do not reply to the customer. category MUST be one of billing, technical, sales, other. Set needsHuman=true for legal threats, churn risk, or anything outside those categories. Never invent customer details not present in the email. If the email is empty or unintelligible, set category=\"other\" and needsHuman=true." }]
-    },
-    {
-      "role": "user",
-      "content": "From {{input.emailReceived1__output__from}}\nSubject: {{input.emailReceived1__output__subject}}\n\n{{input.emailReceived1__output__body}}",
-      "contentTokens": [
-        { "type": "simpleText", "rawString": "From " },
-        { "type": "variable",   "rawString": "input.emailReceived1__output__from" },
-        { "type": "simpleText", "rawString": "\nSubject: " },
-        { "type": "variable",   "rawString": "input.emailReceived1__output__subject" },
-        { "type": "simpleText", "rawString": "\n\n" },
-        { "type": "variable",   "rawString": "input.emailReceived1__output__body" }
-      ]
-    }
-  ]
-}
+"agentInputVariables": [
+  { "id": "emailReceived1__output__subject", "type": "string", "binding": "=$vars.emailReceived1.output.subject" },
+  { "id": "emailReceived1__output__body",    "type": "string", "binding": "=$vars.emailReceived1.output.body" }
+],
+"agentOutputVariables": [{ "id": "category", "type": "string" }]
 ```
 
-The system prompt here is a real one (bounded role, output contract, grounding, uncertainty rule — structured per `agent-prompting-guide.md`) and `outputSchema` carries typed fields — not a bare `content` blob. The flow-node `inputs.systemPrompt` / `inputs.userPrompt` are short, generic validator placeholders — **do not put the templated prompt here**; the canonical prompt lives in `agent.json messages[]`. The contract: each input appears in **all three** places — the node's `agentInputVariables[]` (binding `=$vars.<node>.output.<field>`), the `agent.json` `inputSchema.properties` (key `<node>__output__<field>`), and the `agent.json` `messages[].content` as `{{input.<node>__output__<field>}}` with a matching brace-free `contentTokens[]` `variable` entry.
+Matching `agent.json` — `inputSchema` keys mirror the bindings; the prompt uses the `input.` form, and `contentTokens` decompose `content` left-to-right (literals → `simpleText` verbatim incl. `\n`; each `{{ … }}` → brace-free `variable`):
+
+```json
+"inputSchema":  { "type": "object", "properties": {
+  "emailReceived1__output__subject": { "type": "string" },
+  "emailReceived1__output__body":    { "type": "string" }
+} },
+"outputSchema": { "type": "object", "properties": { "category": { "type": "string" } }, "required": ["category"] },
+"messages": [
+  { "role": "system", "content": "Triage the email.", "contentTokens": [{ "type": "simpleText", "rawString": "Triage the email." }] },
+  { "role": "user",
+    "content": "Subject: {{input.emailReceived1__output__subject}}\n\n{{input.emailReceived1__output__body}}",
+    "contentTokens": [
+      { "type": "simpleText", "rawString": "Subject: " },
+      { "type": "variable",   "rawString": "input.emailReceived1__output__subject" },
+      { "type": "simpleText", "rawString": "\n\n" },
+      { "type": "variable",   "rawString": "input.emailReceived1__output__body" }
+    ] }
+]
+```
+
+Keep the flow-node `systemPrompt` / `userPrompt` as short generic placeholders — the canonical prompt lives in `agent.json messages[]`, and that system prompt should be a real structured one (see `agent-prompting-guide.md`), not a bare blob.
 
 ### When the source field name is unknown at authoring time
 
-Some upstream nodes (notably connector triggers like email-received) only expose their full output shape after a real run — `subject`, `from`, `body` are not knowable from the registry definition alone. In that case:
-
-1. Write the prompt against your **best guess** of the upstream node's output paths based on the connector's documented output schema (e.g., `{{input.emailReceived1__output__subject}}`, with a matching `agentInputVariables[]` binding `=$vars.emailReceived1.output.subject` and `inputSchema` key).
-2. Surface the assumption by asking the user — list the referenced paths and ask them to correct any wrong fields before they run or upload the flow. Do not invent field names silently.
-3. After the first real run, the author can verify the actual output paths and update the prompt tokens (and matching `contentTokens[].rawString` mirrors).
+Connector-trigger output fields (e.g. email `subject`/`from`/`body`) aren't in the registry — only knowable after a real run. Author best-guess `{{input.<node>__output__<field>}}` paths with the matching `binding`/`inputSchema` key, **ask the user to confirm before upload** (don't invent field names silently), and correct the tokens + `contentTokens` mirrors after the first run.
 
 ### Anti-patterns
 

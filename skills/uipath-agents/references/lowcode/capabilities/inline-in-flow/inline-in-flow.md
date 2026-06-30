@@ -73,8 +73,8 @@ Generate a unique UUID (e.g., `5029c8a8-799b-426a-803f-c4ec75255439`). Create a 
 
 Same schema as a standalone agent (see [../../agent-definition.md](../../agent-definition.md)), with these conventions:
 - `projectId` matches the folder name UUID
-- `inputSchema.properties`: author one `<triggerNodeId>__output__<global>` key per flow input — **mandatory**; the CLI never derives it, and an empty schema makes the agent receive the literal `input.<key>` token at runtime even when the value is delivered. See [§ Wiring Flow Inputs Into an Inline Agent](#wiring-flow-inputs-into-an-inline-agent-required).
-- `messages` have empty `content` and `contentTokens` initially. Set prompts in `messages[].content` using `{{input.<triggerNodeId>__output__<global>}}` (the `input.` form — **not** `$vars`), then build a parallel `contentTokens[]`. **`uip agent refresh` requires `content` and `contentTokens` to reconstruct byte-for-byte** — construct both from the rule, never guess one against the other. Full construction rule + the validator error strings: the `uipath-maestro-flow` skill's [inline-agent prompt-wiring guide § The content ↔ contentTokens mirror invariant](../../../../../uipath-maestro-flow/references/author/references/plugins/inline-agent/impl.md#the-content--contenttokens-mirror-invariant).
+- `inputSchema.properties`: one `<triggerNodeId>__output__<global>` key per flow input — **mandatory**. See [§ Wiring Flow Inputs Into an Inline Agent](#wiring-flow-inputs-into-an-inline-agent-required).
+- `messages[].content`: reference inputs as `{{input.<triggerNodeId>__output__<global>}}` (the `input.` form) and build a parallel byte-exact `contentTokens[]`. See [§ Wiring Flow Inputs Into an Inline Agent](#wiring-flow-inputs-into-an-inline-agent-required).
 - `guardrails: []` at root level — can be populated with guardrail objects. See [../guardrails/guardrails.md](../guardrails/guardrails.md)
 - No `metadata.targetRuntime` field
 
@@ -128,9 +128,9 @@ resources/
 
 ## Wiring Flow Inputs Into an Inline Agent (required)
 
-An inline agent receives flow data only when the flow globals, the flow node, and `agent.json` are all authored and aligned. **Nothing in the CLI derives or fills any of it** — `refresh` passes `agent.json` through unchanged and packaging ships it as-authored, so build / refresh / validate all pass even when input is missing; the gap surfaces only at `flow debug`. Flatten rule: `$vars.<trigger>.output.<var>` → `<trigger>__output__<var>`.
+**The CLI fills none of this** — `refresh` ships `agent.json` as-authored, so build / refresh / validate all pass even when input is missing; the gap surfaces only at `flow debug`.
 
-This skill authors the **`agent.json` side**:
+This skill authors the **`agent.json` side** (flatten rule: `$vars.<trigger>.output.<var>` → `<trigger>__output__<var>`):
 - `inputSchema.properties` — one `<trigger>__output__<var>` key per input (mandatory; binds the delivered `JobArguments` into the agent's `input`). Empty schema → the agent sees the literal `input.<key>` token even when the value arrived.
 - `messages[].content` — reference each input as `{{input.<trigger>__output__<var>}}` (the `input.` form, **not** `$vars`), with a matching brace-free `contentTokens[]` `variable` entry, plus a real system prompt.
 
