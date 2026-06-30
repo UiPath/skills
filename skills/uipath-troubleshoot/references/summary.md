@@ -246,6 +246,33 @@ Namespaces: `UiPath.Terminal.Activities`
 - [activity-packages/terminal-activities/overview.md](./activity-packages/terminal-activities/overview.md) — Package overview, session connection model, and common failure patterns
 - [activity-packages/terminal-activities/summary.md](./activity-packages/terminal-activities/summary.md) — All playbooks for Terminal Activities issues
 
+## PDF Activities
+
+Activities for reading and manipulating PDF files on the robot's local filesystem — `Read PDF Text`, `Read PDF With OCR`, `Extract PDF Page Range`, `Extract Images/Attachments From PDF`, `Export PDF Page As Image`, `Merge PDF Files` / `Join PDFs`, `Create PDF From Images`, `Manage PDF Password`. These are local file operations (no Orchestrator/network call except `Read PDF With OCR`, which calls an OCR engine). Issues here are almost always the input file (missing, not a PDF, encrypted, corrupt) or the arguments (page range, password fields, image list): activity-level validation throws `System.ArgumentException`/`ArgumentNullException` with a fixed resource string; reader-level failures surface as `UiPath.PDF.PdfException` (wrong/missing password, `Invalid input stream`) or `UiPath.PDF.ImageToPdfException` (image input).
+
+Namespaces: `UiPath.PDF.Activities` (exceptions: `UiPath.PDF`)
+
+- [activity-packages/pdf-activities/overview.md](./activity-packages/pdf-activities/overview.md) — Package overview, validation-vs-reader exception shapes, and common failure patterns
+- [activity-packages/pdf-activities/summary.md](./activity-packages/pdf-activities/summary.md) — All playbooks for PDF Activities issues
+
+## SAP BAPI Activities
+
+Activities for calling SAP BAPIs / RFC function modules directly over the SAP .NET Connector (RFC protocol, no SAP GUI) — `SAP Application Scope`, `Invoke BAPI`, `Open`/`Close SAP Connection`. Work opens an RFC connection from connection parameters, looks up the BAPI's interface, then invokes it. Issues here are connection/logon failures (`Connection could not be created.`, `Cannot create sap connection, connection info params are not set`, `Missing mandatory field: <field> for connection`, `Advanced Parameters has invalid parameter <param>...`, `System.TimeoutException`), BAPI lookup/naming (`Function: <name> could not be created`, `BAPI name is null or empty`), and the activity's capability limit (`Unsupported BAPI. Contains nested complex types.`). Cannot be reproduced without a live SAP system.
+
+Namespaces: `UiPath.SAP.BAPI.Activities` (exceptions: `UiPath.SAP.BAPI.Utilities.SapActivityException`, `UiPath.SAP.BAPI.SapBapiExceptions.UnSupportedBapiException`)
+
+- [activity-packages/sap-bapi-activities/overview.md](./activity-packages/sap-bapi-activities/overview.md) — Package overview, connection-vs-invoke phases, exception types, and common failure patterns
+- [activity-packages/sap-bapi-activities/summary.md](./activity-packages/sap-bapi-activities/summary.md) — All playbooks for SAP BAPI Activities issues
+
+## Intelligent OCR / Document Understanding (Classic) Activities
+
+The classic Document Understanding framework from `UiPath.IntelligentOCR.Activities` — `Digitize Document`, `Classify Document Scope`, `Data Extraction Scope`, `Present Validation Station`, `Export Extraction Results`, and the Train scopes. The digitize → classify → extract → validate → export pipeline combines local taxonomy/extractor config with calls to a DU server/endpoint (authenticated with an API key/license) and Orchestrator storage. Issues here are license/endpoint rejections (`DUApiException` with HTTP status — license, page units, request size, wrong endpoint), tenant not enabled (`Failed to fetch Document Understanding projects list...`, `Couldn't retrieve a tenant key.`), missing storage bucket/taxonomy/folder, and human document rejection at Validation Station (`DocumentRejectedByUserException`). For modern DU / IXP, see the IXP surface. Generally not reproducible without a licensed DU endpoint + OCR + trained models.
+
+Namespaces: `UiPath.IntelligentOCR.Activities` (exceptions: `UiPath.SmartData.Utils.DocumentUnderstandingClient.DUApiException`, `UiPath.IntelligentOCR.Exceptions.DocumentRejectedByUserException`)
+
+- [activity-packages/intelligent-ocr-activities/overview.md](./activity-packages/intelligent-ocr-activities/overview.md) — Package overview, pipeline phases, exception types, and common failure patterns
+- [activity-packages/intelligent-ocr-activities/summary.md](./activity-packages/intelligent-ocr-activities/summary.md) — All playbooks for Intelligent OCR / Document Understanding Activities issues
+
 
 ## Playbooks
 
