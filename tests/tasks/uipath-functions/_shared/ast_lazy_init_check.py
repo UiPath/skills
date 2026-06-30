@@ -6,7 +6,7 @@
   > module level.
   > NEVER instantiate `UiPathAzureChatOpenAI`, `UiPathChat`,
   > `UiPathChatOpenAI`, or any LLM client at module level — `uip
-  > codedagent init` imports the file and module-level LLM clients
+  > functions init` imports the file and module-level LLM clients
   > will fail because auth hasn't happened yet.
 
 This module finds module-level *call expressions* that look like LLM

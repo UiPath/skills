@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures for export-pdf-wrongthread-session0. Save Document as PDF faults with InvalidCastException / RPC_E_WRONG_THREAD (0x8001010E) because the job runs unattended in Session 0 (non-interactive), where Word interop has no interactive STA to own the document. No external Word is involved; the run surface is the cause. The workflow is structurally correct.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"c3d4e5f6-a7b8-491a-9c3d-4e5f60718293\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-c3d4e5f6-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key c3d4e5f6-a7b8-491a-9c3d-4e5f60718293 --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-c3d4e5f6-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304\" --output json",
+      "file": "or-jobs-get-d4e5f6a7-output-json.json"
+    },
+    {
+      "match": "or jobs get d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304 --output json",
+      "file": "or-jobs-get-d4e5f6a7-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304\" --level Error --output json",
+      "file": "or-jobs-logs-d4e5f6a7-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304 --level Error --output json",
+      "file": "or-jobs-logs-d4e5f6a7-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304\" --output json",
+      "file": "or-jobs-logs-d4e5f6a7-output-json.json"
+    },
+    {
+      "match": "or jobs logs d4e5f6a7-b8c9-4a2b-8d4e-5f6071829304 --output json",
+      "file": "or-jobs-logs-d4e5f6a7-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

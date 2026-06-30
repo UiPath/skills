@@ -1,0 +1,86 @@
+task_id: skill-troubleshoot-rpa-job-killed-by-operator-ui
+description: >
+  UiPath diagnostic agent must diagnose a faulted LongRunningProcess job that
+  ended with System.Exception: "Job stopped with an unexpected exit code:
+  0x40010004". The job was force-killed from the Orchestrator UI by a named
+  human operator. The agent must match the orchestrator/job-stopped-exit-code-0x40010004
+  playbook, query the audit log to identify the actor, and recommend the
+  Operator-Initiated-Kill resolution path.
+
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose, faulted-jobs, job-killed, exit-code-0x40010004]
+
+agent:
+  type: claude-code
+  allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "AskUserQuestion", "TodoWrite"]
+
+run_limits:
+  expected_turns: 300
+  task_timeout: 4500
+  max_turns: 60
+  turn_timeout: 3600
+
+sandbox:
+  driver: tempdir
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: ../../../_shared/mock_template
+    - type: template_dir
+      path: process
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs: ["mocks"]
+
+reference:
+  file: RESOLUTION.md
+
+initial_prompt: |
+  My LongRunningProcess job in Orchestrator just ended Faulted with
+  "Job stopped with an unexpected exit code: 0x40010004". I didn't
+  touch it — what killed it and who did it? Tell me the root cause
+  and stop there.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-troubleshoot skill"
+    skill_name: "uipath-troubleshoot"
+    expected_skill: "uipath-troubleshoot"
+    weight: 1.0
+
+  - type: llm_judge
+    description: "Agent's diagnosis matches RESOLUTION.md"
+    weight: 3.0
+    pass_threshold: 0.7
+    include_reference: true
+    include_agent_output: true
+    prompt: |
+      Grade the agent's final answer against the attached RESOLUTION.md.
+
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
+
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
+
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+
+simulation:
+  enabled: true
+  persona: |
+    You are the UiPath user who reported the failing job. You did NOT
+    kill it yourself — you are surprised to see it Faulted. You only
+    have the information you wrote in your initial report.
+  goal: |
+    Let the agent complete its diagnostic flow without imposing
+    constraints. Approve every scope expansion the agent requests so
+    the investigation reaches the audit log and identifies the actor.
+  constraints:
+    - "If the agent asks whether to expand investigation scope (any new product domain such as orchestrator, audit, system-activities), always answer Yes — pick the recommended / first / affirmative option."
+    - "If the agent asks how to proceed when data is missing, tell it to proceed with best-effort findings using the evidence already gathered."
+    - "Never invent or provide new factual data — you don't know who killed the job."
+    - "Keep replies short (one sentence or pick a numbered option)."
+    - "Never instruct the agent to stop, abort, or skip phases."
+  max_turns: 6

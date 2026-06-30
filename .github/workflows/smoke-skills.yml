@@ -31,10 +31,58 @@ jobs:
         id: detect
         env:
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ' ') }}
+          MAX_SMOKE_TASKS: ${{ vars.SMOKE_MAX_TASKS || '40' }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
           BASE_REF="${{ github.base_ref }}"
           BASE_REF="${BASE_REF:-main}"
           CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD")
+
+          # Per-PR smoke-task cap. No single PR runs more than MAX_SMOKE_TASKS
+          # smoke tasks: a `tests/_shared/` or smoke.yaml edit otherwise fans
+          # out to the whole tree (~250 tasks), which is too costly to pay on
+          # every PR. Over the cap we keep a deterministic pseudo-random sample
+          # seeded by the PR number (commit SHA on workflow_dispatch) so a
+          # re-run of the same commit selects the same set — a required check
+          # must not be a coin flip. Flat sample, NOT stratified by skill. The
+          # nightly full suite remains the coverage backstop for what's dropped.
+          SEED="$PR_NUMBER"
+          [ -z "$SEED" ] && SEED="$HEAD_SHA"
+
+          # apply_cap <space-separated glob/file tokens, relative to tests/>
+          # Echoes the token list unchanged when the eligible smoke-task count
+          # is at or under MAX_SMOKE_TASKS (preserves today's glob behavior).
+          # Over the cap, expands to smoke-tagged files, deterministically
+          # samples MAX_SMOKE_TASKS of them, and echoes explicit file paths
+          # (still relative to tests/). Smoke detection mirrors the repo's
+          # `^tags:` grep convention used elsewhere in this workflow.
+          apply_cap() {
+            shopt -s globstar nullglob
+            local tokens="$1" t f
+            local files=()
+            for t in $tokens; do
+              for f in tests/$t; do
+                [ -f "$f" ] || continue
+                grep -qE '^tags:.*\bsmoke\b' "$f" || continue
+                files+=("$f")
+              done
+            done
+            local uniq n
+            uniq=$(printf '%s\n' "${files[@]:-}" | grep -v '^$' | sort -u)
+            n=$(printf '%s\n' "$uniq" | grep -c . || true)
+            if [ "$n" -le "$MAX_SMOKE_TASKS" ]; then
+              echo "$tokens"
+              return
+            fi
+            echo "::notice::Smoke selection capped: $n eligible smoke task(s) -> $MAX_SMOKE_TASKS (seed=$SEED)" >&2
+            printf '%s\n' "$uniq" \
+              | while IFS= read -r p; do
+                  printf '%s %s\n' "$(printf '%s%s' "$SEED" "$p" | sha1sum | cut -c1-16)" "$p"
+                done \
+              | sort | head -n "$MAX_SMOKE_TASKS" | cut -d' ' -f2- \
+              | sed 's|^tests/||' | xargs
+          }
 
           # Windows-tagged tasks run on the Windows workflow
           # (smoke-rpa-skills.yml). Helm/Studio only exists there, and
@@ -87,12 +135,13 @@ jobs:
               GLOBS="$GLOBS ${f#tests/}"
             done
             GLOBS=$(echo "$GLOBS" | xargs)
+            GLOBS=$(apply_cap "$GLOBS")
             if [ -z "$GLOBS" ]; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
               echo "No non-Windows smoke tasks to run."
             else
               echo "task_globs=$GLOBS" >> "$GITHUB_OUTPUT"
-              echo "Running all non-Windows smoke tests (test infrastructure changed)"
+              echo "Running non-Windows smoke tests (test infrastructure changed; capped at $MAX_SMOKE_TASKS)"
             fi
             exit 0
           fi
@@ -190,6 +239,7 @@ jobs:
           done
 
           GLOBS=$(echo "$GLOBS" | xargs)
+          GLOBS=$(apply_cap "$GLOBS")
 
           if [ -n "$UNTESTED" ]; then
             echo "untested_skills=$UNTESTED" >> "$GITHUB_OUTPUT"

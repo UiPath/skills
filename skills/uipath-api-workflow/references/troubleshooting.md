@@ -437,7 +437,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   Also check that `bindings_v2.json`'s `"key"` matches `Workflow.json`'s `connectionId` matches the missing resource file's intended `"key"` — same UUID across all three.
 - **Fix (preferred — two CLI commands):**
   ```bash
-  # 1. Generate bindings_v2.json from Workflow.json (pure local; no auth needed):
+  # 1. Generate bindings_v2.json from Workflow.json (local for connections; queries IS for resource picker fields):
   uip api-workflow bindings sync --workflow <path-to-Workflow.json> --output json
 
   # 2. Sync catalogue + debug overwrites via @uipath/resource-builder-sdk (requires uip login):

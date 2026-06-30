@@ -20,17 +20,21 @@ sandbox:
       path: ../_fixtures/MisplacedPromptAttacksAgent
 
 initial_prompt: |
-  I have a coded UiPath LangGraph customer-support agent in graph.py. I added a
-  guardrail to block prompt-injection / adversarial user inputs, but I'm not
-  confident I attached it in the right place. Can you check whether it's
-  configured correctly and fix it if it isn't? Make sure graph.py still parses
-  when you're done.
+  I have a uipath coded agent in graph.py. I added a guardrail recently but
+  I'm not sure I put it in the right place. Can you make sure it's configured
+  correctly and fix it if it isn't?
 
-  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation, or
-  feedback. Do NOT pause between planning and implementation. Complete the
-  entire task end-to-end in a single pass.
+  Do NOT publish, upload, or deploy. Complete the task end-to-end. Only stop
+  if there is a critical blocker you cannot resolve.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent fetched the guardrail catalog"
     tool_name: "Bash"

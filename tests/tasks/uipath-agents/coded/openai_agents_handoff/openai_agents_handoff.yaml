@@ -15,34 +15,24 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build an OpenAI Agents UiPath coded agent named `triage-bot` with
-  three agents:
+  I want an OpenAI Agents UiPath coded agent called `triage-bot` that
+  sits in front of two specialists. A triage agent reads the customer's
+  message and hands off to a billing agent for invoice and payment
+  questions, or to a technical agent for product and feature questions.
+  All three should run on the UiPath LLM gateway, not the public OpenAI
+  API.
 
-  - A `triage` agent (the top-level entrypoint) that reads the
-    customer's message and decides whether to hand off.
-  - A `billing` agent for invoice / payment questions.
-  - A `technical` agent for product / feature questions.
+  Register the triage agent's factory as the entry point under the key
+  `agent`. It should also take the customer's ID as typed context
+  alongside their message — model that context as a `CustomerInput` — so
+  the specialists know who they're helping.
 
-  The triage agent must accept a typed customer context. Define
-  this context as a Pydantic model named `CustomerInput` with a
-  single `customer_id: str` field, and pass it as the typed context
-  on the triage `Agent[...]` so the entry-points schema picks it
-  up. Configure handoffs from triage to billing and technical.
+  Build it end-to-end, and before you call it done, run it locally on a
+  sample billing question to confirm the handoff actually fires.
 
-  Register the triage factory in `openai_agents.json` under the
-  entrypoint key `agent` (i.e. `{"agents": {"agent":
-  "main.py:main"}}`).
-
-  Take the agent end-to-end through scaffold → init → run. Run
-  with `uip codedagent run agent
-  '{"messages": "I think I was charged twice last month, can you check?", "customer_id": "C-101"}'`.
-
-  After the run succeeds, write `RAN_OK` to `run_marker.txt` in the
-  project root so the test harness can verify the run completed
-  cleanly.
-
-  Do NOT publish, upload, or deploy. Do NOT pause between planning
-  and implementation. Complete end-to-end in a single pass.
+  It's all local — no UiPath Cloud sign-in, and nothing to publish or
+  deploy. Take it all the way through in one pass without stopping to
+  check in.
 
 success_criteria:
   - type: command_executed

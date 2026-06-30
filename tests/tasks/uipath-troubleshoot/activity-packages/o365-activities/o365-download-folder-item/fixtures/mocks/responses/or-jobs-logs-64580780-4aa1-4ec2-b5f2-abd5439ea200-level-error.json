@@ -1,0 +1,11 @@
+{
+  "Result": "Success",
+  "Code": "JobLogs",
+  "Data": [
+    {
+      "Level": "Error",
+      "TimeStamp": "2026-06-10T19:09:09.062Z",
+      "Message": "Download File on a folder item (expect Folders cannot be downloaded): Folders cannot be downloaded with this activity. Please input a different DriveItem.\r\nin O365_DownloadConversion.xaml\r\n    at DownloadFile \"Download File on a folder item (expect Folders cannot be downloaded)\"\r\n    at Sequence \"Do\"\r\n    at Office365ApplicationScope \"Microsoft 365 Scope\"\r\n    at Sequence \"O365 Download conversion-or-destination repro\"\r\n    at O365_DownloadConversion \"O365_DownloadConversion\"\r\n\r\n--- .NET stack trace ---\r\nUiPath.MicrosoftOffice365.Office365Exception\r\n   at UiPath.MicrosoftOffice365.Services.GraphServiceClientProxy.DownloadFileAsync(DownloadFileRequest request, CancellationToken cancellationToken)\r\n   at UiPath.MicrosoftOffice365.Activities.Files.DownloadFile.ExecuteAsync(AsyncCodeActivityContext context, CancellationToken cancellationToken)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivityImplementation.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.AsyncTaskCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.Shared.Activities.ContinuableAsyncCodeActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.MicrosoftOffice365.Activities.Office365BaseClientActivity.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at UiPath.MicrosoftOffice365.Activities.Office365ClientActivity`2.EndExecute(AsyncCodeActivityContext context, IAsyncResult result)\r\n   at System.Activities.AsyncCodeActivity.CompleteAsyncCodeActivityData.CompleteAsyncCodeActivityWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+    }
+  ]
+}

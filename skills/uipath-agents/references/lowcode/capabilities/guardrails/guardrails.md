@@ -286,29 +286,18 @@ Example entry:
 
 A guardrail escalation app must expose a specific action-schema contract. If verification fails, stop and report to the user: `<APP_NAME> does not have the required action schema configuration for tool guardrails.` (replace `<APP_NAME>` with the app's `Name` from Step 1). Do NOT write the guardrail.
 
-> **SECURITY:** Never read the auth file into Claude's context. The verifier sources it and makes the API calls inside one shell invocation, so Claude sees only the verdict.
-
-One verifier does the whole check — looks up `systemName`/`deployVersion` from `action-apps`, fetches `action-schema`, and confirms every required argument name. This replaces hand-rolled multi-step curl + JSON parsing, which is slow and error-prone. Auth lives at `$HOME/.uipath/.auth` in normal environments; the verifier falls back to `/.uipath/.auth` (some sandboxes write it at the filesystem root). Run both commands as one invocation:
+`uip solution resources get` returns the app's action schema in one CLI-native call — no auth handling, no Apps API endpoints. Pipe its output into a verifier that confirms every required argument name. The CLI handles authentication, so Claude never touches the auth file or the token.
 
 ```bash
 cat > /tmp/verify_escalation_app.py <<'PY'
-import os, sys, json, urllib.request, urllib.error
-key = sys.argv[1]
-base = f"{os.environ['UIPATH_URL']}/{os.environ['UIPATH_ORGANIZATION_ID']}/apps_/default/api/v1/default"
-hdr = {"Authorization": "Bearer " + os.environ["UIPATH_ACCESS_TOKEN"],
-       "X-Uipath-Tenantid": os.environ["UIPATH_TENANT_ID"], "Accept": "application/json",
-       # The Apps API gateway rejects the default "Python-urllib/x.y" User-Agent with 403.
-       # Send an explicit UA so this call doesn't false-fail (curl works because it sets one).
-       "User-Agent": "uipath-guardrail-verify"}
-def get(u):
-    try:
-        return json.load(urllib.request.urlopen(urllib.request.Request(u, headers=hdr)))
-    except urllib.error.HTTPError as e:
-        sys.exit(f"API_ERROR {e.code}: Apps API call failed (HTTP {e.code}) — could not verify action schema.")
-apps = get(base + "/action-apps?state=deployed&pageNumber=0&limit=100").get("deployed", [])
-app = next((a for a in apps if a.get("id") == key), None)
-if not app: sys.exit("NO_APP: no deployed app with id " + key)
-sch = get(base + f"/action-schema?appSystemName={app['systemName']}&version={app['deployVersion']}")
+import sys, json
+data = json.load(sys.stdin)
+if data.get("Result") != "Success":
+    sys.exit("GET_ERROR: uip solution resources get failed: " + str(data.get("Message", "unknown error")))
+raw = data.get("Data", {}).get("Spec", {}).get("ActionSchema")
+if not raw:
+    sys.exit("NO_SCHEMA: app spec has no ActionSchema — not a deployed Workflow Action app")
+sch = json.loads(raw)
 need = {"inputs": {"GuardrailName", "GuardrailDescription", "TenantName", "AgentTrace", "Tool", "ExecutionStage", "ToolInputs", "ToolOutputs"},
         "outputs": {"ReviewedInputs", "ReviewedOutputs", "Reason"},
         "outcomes": {"Approve", "Reject"}}
@@ -316,7 +305,7 @@ miss = {k: sorted(v - {x["name"] for x in sch.get(k, [])}) for k, v in need.item
 print("OK" if not miss else "MISSING: " + json.dumps(miss))
 sys.exit(0 if not miss else 1)
 PY
-bash -c 'A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a; python3 /tmp/verify_escalation_app.py "<Key from Step 1>"'
+uip solution resources get "<Key from Step 1>" --output json | python3 /tmp/verify_escalation_app.py
 ```
 
 Decision rule — the verifier exits 0 (`OK`) or 1 (with a tagged reason). All exit-1 cases mean **do NOT write the guardrail**:
@@ -325,8 +314,8 @@ Decision rule — the verifier exits 0 (`OK`) or 1 (with a tagged reason). All e
 |-----------------|---------|--------|
 | exit 0, `OK` | Contract satisfied | Proceed to Step 3 |
 | exit 1, `MISSING: {...}` | App exists but its action schema is missing required argument names | Stop. Report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` |
-| exit 1, `NO_APP: ...` | No deployed app matches the `Key` from Step 1 | Stop. Report the app was not found among deployed action apps |
-| exit 1, `API_ERROR <code>` | Apps API unreachable or token lacks Apps permission | Stop. Report `<APP_NAME> could not be verified for the required action schema configuration.` **Do NOT re-authenticate, source the auth file manually, or try alternate endpoints** — a single failed verifier call is terminal for this run |
+| exit 1, `NO_SCHEMA: ...` | The resource has no action schema — not a deployed Workflow Action app | Stop. Report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` |
+| exit 1, `GET_ERROR: ...` | `uip solution resources get` failed (app not found, no access, or CLI error) | Stop. Report `<APP_NAME> could not be verified for the required action schema configuration.` **Do NOT re-authenticate or try alternate endpoints** — a single failed verifier call is terminal for this run |
 
 The check is **name-only** (types, `required` flags, `isList` are not checked); the app may carry extra arguments beyond these:
 
@@ -998,15 +987,14 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 10. **Do not use Action Center apps with `Type: "VB Action"` or `Type: "Coded"` as escalation targets** — only entries with `Type: "Workflow Action"` can back a guardrail escalation. Always filter `uip solution resources list --kind App` results by this type.
 11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
 12. **Do not put `"solution_folder"` into `app.folderName`** — set it to the literal `Folder` from `uip solution resources list --kind App` (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Omit `app.folderId`. `FolderKey` from `resource list` is NOT used in any `app.*` field — it IS correct in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
-13. **Do not hardcode the auth-file path for Apps API calls in guardrail setup.** `source <(grep = ...)` fails to export variables to the surrounding shell in some environments, and `~/.uipath/.auth` is wrong when the sandbox writes auth at the filesystem root. Use the HOME-robust prelude: `A="$HOME/.uipath/.auth"; [ -f "$A" ] || A="/.uipath/.auth"; set -a; source "$A"; set +a`.
-14. **Do not add a Tool-scoped guardrail before the tool is added to the agent** — every name in `selector.matchNames` must match an existing tool resource under `<AGENT_NAME>/resources/<ToolName>/resource.json`. A guardrail referencing a non-existent tool will be caught by `uip agent validate` and fail with an error. Always run `uip agent tool list` first (Step 2) and confirm target tools are present.
-15. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).
-16. **Do not use `Agent` or `Llm` scopes on custom guardrails** — custom guardrails (`$guardrailType: "custom"`) only support `"Tool"` scope with exactly one tool in `matchNames`. Custom rules depend on the tool's input/output schema, so they cannot target multiple tools. Create a separate custom guardrail per tool.
-17. **Do not auto-generate a custom guardrail as fallback** — when a built-in validator is unavailable, unsupported for the requested scope, or unauthorized, inform the user and stop. Do not silently generate a custom guardrail as a workaround. You may suggest a custom guardrail alternative (for `Tool` scope only), but only generate it after explicit user confirmation.
-18. **Do not create separate guardrails per scope** — when a guardrail applies to multiple scopes (e.g., `Agent` and `Tool`), combine them into a single guardrail with `"scopes": ["Agent", "Tool"]`. Do not create two separate guardrail objects with identical configuration differing only in scope.
-19. **Do not attempt OR logic within a single guardrail** — all rules and all fields within a guardrail are combined with AND. OR is not supported. To achieve OR behavior, create separate guardrails — one per condition branch.
-20. **Do not generate guardrails targeting unsupported tool types** — `matchNames` can only reference tools of supported types: agent, process, activity, builtInTool, ixpTool, or Integration Service connector. Do not generate guardrails with `matchNames` targeting other tool types.
-21. **Do not omit `matchNames` to target "all tools"** — always explicitly list every tool resource name in `matchNames`. Read the agent's `resources/` directory first. If the agent has no tool resources, do not add the guardrail.
+13. **Do not add a Tool-scoped guardrail before the tool is added to the agent** — every name in `selector.matchNames` must match an existing tool resource under `<AGENT_NAME>/resources/<ToolName>/resource.json`. A guardrail referencing a non-existent tool will be caught by `uip agent validate` and fail with an error. Always run `uip agent tool list` first (Step 2) and confirm target tools are present.
+14. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).
+15. **Do not use `Agent` or `Llm` scopes on custom guardrails** — custom guardrails (`$guardrailType: "custom"`) only support `"Tool"` scope with exactly one tool in `matchNames`. Custom rules depend on the tool's input/output schema, so they cannot target multiple tools. Create a separate custom guardrail per tool.
+16. **Do not auto-generate a custom guardrail as fallback** — when a built-in validator is unavailable, unsupported for the requested scope, or unauthorized, inform the user and stop. Do not silently generate a custom guardrail as a workaround. You may suggest a custom guardrail alternative (for `Tool` scope only), but only generate it after explicit user confirmation.
+17. **Do not create separate guardrails per scope** — when a guardrail applies to multiple scopes (e.g., `Agent` and `Tool`), combine them into a single guardrail with `"scopes": ["Agent", "Tool"]`. Do not create two separate guardrail objects with identical configuration differing only in scope.
+18. **Do not attempt OR logic within a single guardrail** — all rules and all fields within a guardrail are combined with AND. OR is not supported. To achieve OR behavior, create separate guardrails — one per condition branch.
+19. **Do not generate guardrails targeting unsupported tool types** — `matchNames` can only reference tools of supported types: agent, process, activity, builtInTool, ixpTool, or Integration Service connector. Do not generate guardrails with `matchNames` targeting other tool types.
+20. **Do not omit `matchNames` to target "all tools"** — always explicitly list every tool resource name in `matchNames`. Read the agent's `resources/` directory first. If the agent has no tool resources, do not add the guardrail.
 
 ## Walkthrough
 

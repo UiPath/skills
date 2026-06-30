@@ -11,11 +11,26 @@ description: >
   (create then update), tags HEALTH:11 with Label values, and reads the
   label rows back. Assertions validate the complete command shape with the
   exact field names and the case-sensitive `--object-type TestCase`.
+  The "Eval Reviewer"/"Eval Risk" field definitions are deleted in `pre_run`
+  (clean slate so the `customfield create` step always runs) and again in
+  `post_run` (leaves no state), keeping the task deterministic on the shared
+  HEALTH project across runs.
 tags: [uipath-test, integration, mode:operate, lifecycle:manage, feature:customfield]
 
 run_limits:
   expected_turns: 22
   max_turns: 55
+
+# Delete the field definitions this task creates BEFORE the run so the agent
+# always starts from a clean slate and must re-create them. Without this, a
+# prior passing run leaves the fields behind, the agent (correctly) skips
+# `customfield create`, and the create criterion fails (0/2). `|| true` keeps
+# the run green when the fields are already absent.
+pre_run:
+  - command: |
+      uip tm customfield delete --project-key HEALTH --name "Eval Reviewer" --object-type TestCase --yes --output json || true
+      uip tm customfield delete --project-key HEALTH --name "Eval Risk" --object-type TestCase --yes --output json || true
+    timeout: 60
 
 initial_prompt: |
   I'm working in the HEALTH project in Test Manager. I'd like to add some
@@ -31,6 +46,14 @@ initial_prompt: |
   "qa-team-lead" (create the value entry for that field on the test case),
   and tag it under Eval Risk with "high" and "regression". When that's
   done, show me the Eval Risk tags on it so I can confirm they stuck.
+
+# Safety net: delete the field definitions again after the run so this task
+# never leaves persistent state on the shared HEALTH project.
+post_run:
+  - command: |
+      uip tm customfield delete --project-key HEALTH --name "Eval Reviewer" --object-type TestCase --yes --output json || true
+      uip tm customfield delete --project-key HEALTH --name "Eval Risk" --object-type TestCase --yes --output json || true
+    timeout: 60
 
 success_criteria:
   - type: command_executed

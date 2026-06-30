@@ -21,6 +21,8 @@ sandbox:
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/push_pull_roundtrip/_fixtures/roundtrip-agent ."
     timeout: 10
+  - command: "bash -c 'cd roundtrip-agent && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 180
 
 initial_prompt: |
   I've been working on my `roundtrip-agent` project and need to sync

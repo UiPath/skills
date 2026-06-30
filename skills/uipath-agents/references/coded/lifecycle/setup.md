@@ -44,6 +44,8 @@ uip codedagent init
 
 `uipath-dev` is added to the dev dependency group during scaffold so `uip codedagent dev` works later without a second install pass. Skipping it causes `uip codedagent dev` to fail with *"The 'uipath-dev' package is required to use the dev command"*.
 
+**What `uip codedagent setup` does:** locates a Python that has `uipath` installed and caches its path, so later commands (`init`/`run`/`eval`/`pack`) can invoke the Python SDK. It searches PATH (`python3.x`, `python3`, `python`) and uses your `.venv` only when activated. So when using uv, always `uv sync` then activate the venv before the `setup` command.
+
 ## Coded Function Agents
 
 `uipath.json` carries the entrypoint mapping:
@@ -92,7 +94,7 @@ Edit the scaffolded `main.py`'s `Input` / `Output` models and `async def main` t
 ```
 
 **Key fields:**
-- **`runtimeOptions.isConversational`** - Set `true` for conversational/chat agents
+- **`runtimeOptions.isConversational`** - scaffold defaults to `false` (single-shot). Building a chat/conversational agent? Flip to `true` BEFORE `uip codedagent init` so `entry-points.json` gets the chat shape. See [conversational-agents](../capabilities/conversational-agents.md).
 - **`packOptions`** - Control which files are included when packaging for deployment
 - **`functions`** - Entrypoint mappings (format: `"file_path:function_name"`)
 

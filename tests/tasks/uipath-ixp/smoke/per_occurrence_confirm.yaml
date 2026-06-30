@@ -15,6 +15,12 @@ tags: [uipath-ixp, smoke, lifecycle:execute]
 run_limits:
   expected_turns: 6
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   Review the IXP model's `Line Items` predictions for document
   `doc-freight-7` on project `freight_docs-df33115f-ixp` and confirm only

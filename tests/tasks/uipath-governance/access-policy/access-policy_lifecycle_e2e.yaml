@@ -28,6 +28,10 @@ run_limits:
   expected_turns: 21
   max_turns: 40
 
+pre_run:
+  - command: 'CLEANUP_POLICY_KIND="access-policy" CLEANUP_POLICY_NAME="lifecycle-test-access-policy" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 30
+
 initial_prompt: |
   Walk the full lifecycle of a minimal Simulated Access ToolUsePolicy on
   the current login tenant.
@@ -51,7 +55,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the test policy AND the server accepted it (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+create\s+(?=.*--file\s+).*'
+    command_pattern: 'uip\s+gov\s+access-policy\s+create\s+(?=[\s\S]*--file\s+).*'
     require_success: true
     min_count: 1
     weight: 2.5
@@ -69,7 +73,7 @@ success_criteria:
   - type: command_executed
     description: "Agent updated the policy AND the server accepted it (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+update\s+(?=.*--file\s+).*'
+    command_pattern: 'uip\s+gov\s+access-policy\s+update\s+(?=[\s\S]*--file\s+).*'
     require_success: true
     min_count: 1
     weight: 2.5
@@ -87,7 +91,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json on at least 3 access-policy commands (skill convention)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+access-policy\s+.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+access-policy\s+[\s\S]*--output\s+json'
     min_count: 3
     weight: 1.0
     pass_threshold: 1.0

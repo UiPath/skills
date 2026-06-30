@@ -33,7 +33,7 @@ Example:
 - `value` is always a JSON **string** (`"18"`, `"true"`, ISO-8601 dates) — the server parses it.
 - `in` / `not in` use `valueList`; everything else uses `value`.
 - `null` value = is-empty (`=`) / is-not-empty (`!=`).
-- Response: `{ TotalCount, Records, HasNextPage, NextCursor? }`. Page with `--limit` / `--cursor` flags, never body keys.
+- Response: `{ Items, TotalCount, HasNextPage, NextCursor? }` (the rows are under `Items`, not `Records`). Page with `--limit` / `--cursor` flags, never body keys.
 
 ## Operator support by field type
 

@@ -2,21 +2,23 @@
 """Verify that every CLI command mocked in a troubleshoot scenario's manifest is
 shaped correctly against the locally installed `uip` CLI.
 
-Shape-aggregated: distinct match strings that share the same (path, flag-set,
-positional-count) collapse into one shape and validate once. Twenty
-`or jobs get <uuid> --output json` rules across 12 scenarios produce a single
-[OK] line instead of 20 redundant ones; the affected manifests are listed
-under each shape.
+Command-aggregated: every manifest rule for the same command path collapses
+into ONE check. Validity is a property of the command — not of each flag
+subset a scenario passed — so all rules for `or jobs list` (`[--folder-key]`,
+`[--folder-key --output --state]`, …) produce a single
+`or jobs list [--folder-key --output --state …]` [OK] line that validates the
+UNION of every flag seen and the MAX positional count; the affected manifests
+are listed under each command.
 
-Three checks per shape:
+Three checks per command:
 
   1. Path     — every subcommand token must appear in its parent's Subcommands
                 list (walks the tree level-by-level via `uip <prefix> --help`,
                 with KNOWN_ASPECT_ROUTERS as a fallback for aspect-router
                 hosts whose JSON help hides routed subcommands).
-  2. Flags    — every `--flag` from the shape must exist in the leaf command's
-                Options list (or be a CLI-wide global flag).
-  3. Arguments — positional count must not exceed the leaf's declared
+  2. Flags    — every `--flag` in the command's union-of-flags must exist in the
+                leaf command's Options list (or be a CLI-wide global flag).
+  3. Arguments — the max positional count must not exceed the leaf's declared
                  Arguments count.
 
 Tree-walk avoids two CLI quirks that broke a flat `--output json --help` probe:
@@ -42,12 +44,15 @@ import re
 import shlex
 import subprocess
 import sys
-from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
 
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+# Dashless 32-char hex IDs (e.g. trace IDs) are positionals, same as dashed
+# UUIDs. Without this, an all-[a-f] hex ID that starts with a letter parses
+# as a kebab-case subcommand token and the shape walk reports a false BAD.
+HEX32_RE = re.compile(r"^[0-9a-fA-F]{32}$")
 HELP_TIMEOUT_S = 30
 
 
@@ -87,7 +92,7 @@ def tokenize_match(match: str) -> tuple[list[str], list[str], list[str]]:
             flags.append(t)
             if i + 1 < len(toks) and not toks[i + 1].startswith("-"):
                 i += 1
-        elif not in_args and UUID_RE.match(t):
+        elif not in_args and (UUID_RE.match(t) or HEX32_RE.match(t)):
             in_args = True
             positionals.append(t)
         elif not in_args and re.fullmatch(r"[a-z][a-z0-9-]*", t):
@@ -295,7 +300,7 @@ def shape_repr(path: tuple[str, ...], flags: frozenset[str], positional_count: i
 
 def walk_manifests(root: Path) -> Iterable[dict]:
     """Yield one entry per rule.match across every troubleshoot manifest."""
-    for manifest_path in sorted(root.glob("*/fixtures/mocks/responses/manifest.json")):
+    for manifest_path in sorted(root.glob("**/fixtures/mocks/responses/manifest.json")):
         scenario = manifest_path.parents[3].name
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -327,13 +332,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: root {args.root} does not exist", file=sys.stderr)
         return 2
 
-    # Aggregate manifest rules into distinct shapes. A shape is the
-    # validation-relevant fingerprint: (path tuple, flag set, positional
-    # count). Different UUIDs / quoted values collapse into the same shape
-    # because they're positionals — so we validate each shape once instead
-    # of every match string separately, and report one [OK]/[BAD] per shape
-    # with the list of manifest rules it covers underneath.
-    shapes: dict[tuple[tuple[str, ...], frozenset[str], int], list[dict]] = defaultdict(list)
+    # Aggregate manifest rules by COMMAND PATH. Whether a command is valid is
+    # a property of the command itself — does the leaf exist, does it accept
+    # each flag, does it accept the positional arity — NOT of each individual
+    # flag-subset a scenario happened to pass. So every rule for a command
+    # collapses into ONE check that validates the UNION of all flags seen and
+    # the MAX positional count across its rules. `or jobs list [--folder-key]`,
+    # `[--folder-key --output --state]`, etc. become a single
+    # `or jobs list [--folder-key --output --state ...]` check.
+    commands: dict[tuple[str, ...], dict] = {}
     parse_errors: list[dict] = []
     total_rules = 0
     for entry in walk_manifests(args.root):
@@ -344,27 +351,33 @@ def main(argv: list[str] | None = None) -> int:
             continue
         total_rules += 1
         path, flags, positionals = tokenize_match(entry["match"])
-        sig = (tuple(path), frozenset(flags), len(positionals))
-        shapes[sig].append(entry)
+        agg = commands.setdefault(
+            tuple(path), {"flags": set(), "max_pos": 0, "entries": []}
+        )
+        agg["flags"].update(flags)
+        agg["max_pos"] = max(agg["max_pos"], len(positionals))
+        agg["entries"].append(entry)
 
-    shape_keys = sorted(shapes.keys())
+    command_keys = sorted(commands.keys())
     print(f"Manifests scanned under: {args.root}")
     print(f"Manifest parse errors:   {len(parse_errors)}")
     print(f"Rules across manifests:  {total_rules}")
-    print(f"Distinct rule shapes:    {len(shape_keys)}")
+    print(f"Distinct commands:       {len(command_keys)}")
     print()
 
-    bad_shapes: list[tuple[tuple, str]] = []
+    bad_commands: list[tuple[tuple[str, ...], frozenset[str], int, str]] = []
     oks = warns = 0
-    for sig in shape_keys:
-        path, flags, positional_count = sig
+    for path in command_keys:
+        agg = commands[path]
+        flags = frozenset(agg["flags"])
+        positional_count = agg["max_pos"]
         ok, msg = validate_shape(args.uip, path, flags, positional_count)
         is_warn = ok and msg.startswith("WARN:")
         marker = "WARN" if is_warn else ("OK  " if ok else "BAD ")
-        repr_ = shape_repr(*sig)
+        repr_ = shape_repr(path, flags, positional_count)
         suffix = f"  -- {msg}" if msg else ""
-        rule_count = len(shapes[sig])
-        scenario_count = len({e["scenario"] for e in shapes[sig]})
+        rule_count = len(agg["entries"])
+        scenario_count = len({e["scenario"] for e in agg["entries"]})
         s_rule = "rule" if rule_count == 1 else "rules"
         s_scen = "scenario" if scenario_count == 1 else "scenarios"
         print(f"  [{marker}] {repr_}{suffix}")
@@ -375,13 +388,13 @@ def main(argv: list[str] | None = None) -> int:
         elif ok:
             oks += 1
         else:
-            bad_shapes.append((sig, msg))
+            bad_commands.append((path, flags, positional_count, msg))
 
-    invalid = len(bad_shapes)
+    invalid = len(bad_commands)
 
     print()
-    print(f"Valid shapes:   {oks} / {len(shape_keys)}  ({warns} warn)")
-    print(f"Invalid shapes: {invalid} / {len(shape_keys)}")
+    print(f"Valid commands:   {oks} / {len(command_keys)}  ({warns} warn)")
+    print(f"Invalid commands: {invalid} / {len(command_keys)}")
 
     if parse_errors:
         print()
@@ -389,17 +402,17 @@ def main(argv: list[str] | None = None) -> int:
         for e in parse_errors:
             print(f"  [{e['scenario']}] {e['manifest']}: {e['parse_error']}")
 
-    if bad_shapes:
+    if bad_commands:
         print()
-        print("Invalid shapes — affected manifest rules:")
-        for sig, msg in bad_shapes:
-            print(f"  {shape_repr(*sig)}  ({msg})")
-            for entry in shapes[sig]:
+        print("Invalid commands — affected manifest rules:")
+        for path, flags, positional_count, msg in bad_commands:
+            print(f"  {shape_repr(path, flags, positional_count)}  ({msg})")
+            for entry in commands[path]["entries"]:
                 print(f"    {entry['scenario']}: rule {entry['rule_index']}")
         return 1
 
     print()
-    print("OK — every mocked command, flag, and positional shape is valid against the installed uip CLI.")
+    print("OK — every mocked command, with the union of its flags and max positional arity, is valid against the installed uip CLI.")
     return 0
 
 

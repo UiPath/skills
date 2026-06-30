@@ -130,7 +130,7 @@ Skip a dimension's prompt only when Listen already captured it verbatim at high 
 | 5 | Decisions / gates | `Where does someone approve / decline / escalate?` Each gate → an `action` task with buttons, or a routing exit. | task buttons, exits |
 | 6 | Data per stage | `What information is collected or produced at each step?` | §1.5 variables |
 | 7 | Trigger & exit | `What kicks this off, and what does 'done' look like?` Trigger type is Always-Ask the moment a portal / form / schedule / event is named. | §1.3, §1.4 |
-| 8 | Exceptions / escalations | `What goes wrong, and how is it handled?` Each handler → a secondary (exception) stage — see [sdd-generation-rules.md § Mental model](sdd-generation-rules.md#mental-model-stages-secondary-stages-tasks). | exception stages |
+| 8 | Exceptions / escalations | `What goes wrong, and how is it handled?` Each handler → a secondary (exception) stage — see [sdd-generation-rules.md § Mental model](sdd-generation-rules.md#mental-model-stages-secondary-stages-tasks). | secondary stages |
 | 9 | SLA / timing | Only when the user mentioned timing. `How long should <stage / case> take?` | §1.2, stage SLA |
 
 Each row is a single-question prompt by default. Collapse only the safe-to-default rows (4 persona descriptions, 9 SLA when timing was never raised) into the one allowed §Batched prompt. Trigger type (7), task type on ambiguous verbs (3), and case exit (7) stay single-question — they are Always-Ask.
@@ -167,7 +167,7 @@ One AskUserQuestion with up to 4 `multiSelect: true` rows for fields whose value
 |---|---|
 | Case-level description (Section 1.1) | `—` (Phase 1 leaves blank) |
 | Persona descriptions (Section 3) | `—` |
-| Exception-stage descriptions | `—` |
+| Secondary-stage descriptions | `—` |
 | Optional `conditionExpression` cells in Entry / Exit rows | `—` (no IF filter) |
 | Optional `Business Calendar` cell on timers | `—` (use 24×7) |
 | Optional task SLA on `action` tasks | `—` (inherits case SLA) |
@@ -242,7 +242,7 @@ Classification of each reply:
 After Sketch + Ask close out, count from `sdd.draft.md`:
 
 - Stages, Tasks total, Distinct integrations, Distinct personas, `case-management` tasks (child cases).
-- Exception stages — counted but never triggers redirect.
+- Secondary stages — counted but never triggers redirect.
 
 Breach any quantitative cap → §Soft redirect.
 
@@ -461,7 +461,7 @@ Hard quantitative caps. Breach triggers §Soft redirect (not hard refuse).
 | Distinct personas | > 3 |
 | Child cases (`case-management` tasks) | ≥ 1 |
 
-**Exception stages are NOT a threshold.** They may appear freely.
+**Secondary stages are NOT a threshold.** They may appear freely.
 
 ## Soft redirect
 

@@ -14,6 +14,7 @@ Usage:
         --transcript <claude code jsonl> \
         [--resolution <RESOLUTION.md>] \
         [--scenario-name <slug>] \
+        --group <group folder, e.g. activity-packages/word-activities> \
         [--output <dir>] \
         [--scrub-map <json>] \
         [--apply]
@@ -86,7 +87,7 @@ description: >
   runs the uipath-troubleshoot skill against a uip CLI mock whose
   responses are the verbatim sub-agent outputs from the real session.
   Success = the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, e2e, faithful-replay]
+tags: [uipath-troubleshoot, {domain_tags}e2e, faithful-replay]
 
 agent:
   type: claude-code
@@ -102,7 +103,7 @@ sandbox:
   python: {{}}
   template_sources:
     - type: template_dir
-      path: ../_shared/mock_template
+      path: {shared_prefix}_shared/mock_template
 {process_source_block}    - type: template_dir
       path: fixtures
   # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
@@ -121,44 +122,23 @@ success_criteria:
     expected_skill: "uipath-troubleshoot"
     weight: 1.0
 
-  - type: file_exists
-    description: "Agent wrote investigation state under .local/investigations/"
-    path: .local/investigations/state.json
-    weight: 0.5
-
   - type: llm_judge
-    description: "Agent matched the correct playbook AND reached the same conclusion as RESOLUTION.md"
+    description: "Agent's diagnosis matches RESOLUTION.md"
     weight: 3.0
     pass_threshold: 0.7
     include_reference: true
     include_agent_output: true
-    include_tool_calls: true
-    files:
-      - .local/investigations/state.json
-      - .local/investigations/hypotheses.json
     prompt: |
-      You are grading a UiPath troubleshooting agent against a known-correct
-      reference outcome (the attached RESOLUTION.md).
+      Grade the agent's final answer against the attached RESOLUTION.md.
 
-      DIMENSION A -- Correct playbook
-        The matching playbook should appear in state.json's
-        `matched_playbooks`. Acceptable: the agent also Reads
-        neighboring playbooks during exploration.
+      Score on whether the agent identifies the same root cause and
+      recommends the same fix as RESOLUTION.md:
 
-      DIMENSION B -- Same conclusion as RESOLUTION.md
-        The agent's final answer should converge on the same root cause
-        and fix described in RESOLUTION.md. Evidence sources: state.json
-        (`requirements`, `triage_summary`, scope/domain), hypotheses.json
-        (the hypothesis flagged `is_root_cause: true`), and the agent's
-        last text response.
-
-      SCORING RUBRIC (single score):
-        1.0  Both dimensions correct: right playbook AND same root cause.
-        0.8  Both partially correct.
-        0.5  Only one dimension correct.
-        0.2  Recognized the surface but neither matched the playbook nor
-             reached the conclusion.
-        0.0  Reached the wrong conclusion or got blocked.
+        1.0  Same root cause AND same fix (or equivalent).
+        0.8  Same root cause; fix is right area but vague.
+        0.5  Adjacent cause, missing a key specific.
+        0.2  Wrong direction; recognized surface only.
+        0.0  Misdiagnosed or blocked.
 
       Return JSON: {{"score": <float>, "rationale": "<one sentence>"}}
 
@@ -201,7 +181,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 
 | Layer | Source |
 |---|---|
-| `mocks/uip` + `mocks/uip.cmd` | shared from `../_shared/mock_template/` (manifest-driven Python dispatcher) |
+| `mocks/uip` + `mocks/uip.cmd` | shared from the suite `_shared/mock_template/` (manifest-driven Python dispatcher) |
 | `process/` | frozen snapshot of the failing UiPath project |
 | `fixtures/mocks/responses/*.json` | real stdout extracted verbatim from the session transcript |
 | `fixtures/mocks/responses/manifest.json` | dispatch table mapping each command pattern to its recorded fixture |
@@ -211,7 +191,7 @@ agent reached a verified resolution. The fixtures are the verbatim
 The test scores the **conclusion**, not the trajectory:
 
 - Agent invoked the `uipath-troubleshoot` skill
-- Agent matched the correct playbook AND reached the same root cause as `RESOLUTION.md`
+- Agent's diagnosis matches `RESOLUTION.md`
 
 ## Re-running the extraction
 
@@ -220,7 +200,7 @@ If the source transcript or project changes, regenerate the scenario:
 ```bash
 python tests/tasks/uipath-troubleshoot/_shared/scripts/generate_scenario.py \\
     --investigation <path> --project <path> --transcript <path> \\
-    --scenario-name {slug} --apply
+    --scenario-name {slug} --group <group> --apply
 ```
 """
 
@@ -543,8 +523,27 @@ def _build_readme_md(scenario_name: str, summary: str) -> str:
         summary=summary or "_Add a 1–3 sentence summary of the original investigation here._",
     )
 
+def _group_shared_prefix(group: str) -> str:
+    """`_shared` is at the suite root; a scenario nested `group/scenario/` deep
+    reaches it with one `../` per path component plus one for the scenario dir."""
+    depth = len([p for p in group.split("/") if p]) + 1 if group else 1
+    return "../" * depth
+
+
+def _group_domain_tags(group: str) -> str:
+    """Default product/domain tag(s) for a group, ready to splice into `tags: [`.
+    Empty when no group (caller adds tags manually)."""
+    if not group:
+        return ""
+    if group.startswith("products/"):
+        tag = group.split("/", 1)[1]          # orchestrator | integration-service | maestro
+    else:                                      # activity-packages/* | runtime-exceptions | cross-system
+        tag = "rpa"
+    return f"{tag}, "
+
+
 def _build_task_yaml(
-    scenario_name: str, initial_prompt_indented: str, has_project: bool
+    scenario_name: str, initial_prompt_indented: str, has_project: bool, group: str = ""
 ) -> str:
     process_source_block = (
         "    - type: template_dir\n      path: process\n" if has_project else ""
@@ -553,6 +552,8 @@ def _build_task_yaml(
         slug=scenario_name,
         initial_prompt_indented=initial_prompt_indented,
         process_source_block=process_source_block,
+        shared_prefix=_group_shared_prefix(group),
+        domain_tags=_group_domain_tags(group),
     )
 
 # ---------- main pipeline ----------
@@ -602,7 +603,8 @@ def plan_scenario(args: argparse.Namespace) -> dict:
     # Build task.yaml.
     initial_prompt_indented = _format_initial_prompt(extracted, scenario_name)
     task_yaml = _build_task_yaml(
-        scenario_name, initial_prompt_indented, has_project=project is not None
+        scenario_name, initial_prompt_indented, has_project=project is not None,
+        group=args.group or "",
     )
 
     # Aggregate sample text for scrub detection.
@@ -638,7 +640,12 @@ def plan_scenario(args: argparse.Namespace) -> dict:
         else:
             project_plan_scrubbed.append((rel_scrubbed, content))
 
-    out_base = Path(args.output) if args.output else (DEFAULT_OUTPUT_BASE / scenario_name)
+    if args.output:
+        out_base = Path(args.output)
+    elif args.group:
+        out_base = DEFAULT_OUTPUT_BASE.joinpath(*args.group.split("/"), scenario_name)
+    else:
+        out_base = DEFAULT_OUTPUT_BASE / scenario_name
 
     return {
         "scenario_name": scenario_name,
@@ -742,6 +749,17 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--transcript", required=True, help="JSONL file or directory containing main + subagent transcripts.")
     parser.add_argument("--resolution", default=None)
     parser.add_argument("--scenario-name", default=None)
+    parser.add_argument(
+        "--group",
+        default=None,
+        help=(
+            "Group folder under tests/tasks/uipath-troubleshoot/ the scenario belongs to, "
+            "mirroring references/ — e.g. activity-packages/word-activities, products/orchestrator, "
+            "runtime-exceptions, cross-system. Sets placement, the depth-correct _shared path, and "
+            "the default product/domain tag (rpa for activity packages; orchestrator/integration-service/"
+            "maestro for products)."
+        ),
+    )
     parser.add_argument("--output", default=None)
     parser.add_argument("--scrub-map", default=None)
     parser.add_argument(

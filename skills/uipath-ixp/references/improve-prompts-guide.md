@@ -92,7 +92,7 @@ uip ixp documents list <project-name> --output json
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
 ```
 
-The `download` command auto-detects format and appends the correct extension — read the resolved `Path` from the response. View the document with the **Read tool** (handles PDF, PNG, JPG, etc.). Files persist across sessions — check for existing files before downloading.
+The `download` command auto-detects format and appends the correct extension — read the resolved `Path` from the response. View the document with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively for PDF/PNG/JPG). Files persist across sessions — check for existing files before downloading.
 
 ### 1e. Check for unlabelled documents
 

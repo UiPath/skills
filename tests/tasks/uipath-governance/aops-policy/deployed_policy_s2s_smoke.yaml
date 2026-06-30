@@ -40,7 +40,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked deployed-policy get with --user-id for S2S user lookup"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+get\b.*--user-id'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+get\b[\s\S]*--user-id'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked deployed-policy get with --tenant-only for tenant-level lookup"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+get\b.*--tenant-only'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+get\b[\s\S]*--tenant-only'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -56,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+[\s\S]*--output\s+json'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

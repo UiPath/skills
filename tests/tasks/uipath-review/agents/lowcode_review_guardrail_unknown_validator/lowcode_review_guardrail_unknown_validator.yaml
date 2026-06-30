@@ -1,0 +1,86 @@
+task_id: skill-review-agents-lowcode-guardrail-unknown-validator
+description: >
+  Smoke test for uipath-review on a low-code agent that has a built-in guardrail
+  whose `validatorType` is a made-up name not in the tenant's guardrail catalog.
+  pre_run scaffolds a minimal agent and injects the guardrail. The reviewer must
+  run the review CLI (Step 2.5a), which fetches the live catalog
+  (`uip agent guardrails list`) and emits `GUARDRAIL_UNKNOWN_VALIDATOR`
+  (guardrails category), then carry it into the report. Exercises the
+  catalog-backed built-in format path; needs the authed CLI (the smoke runner
+  passes UIPATH_CLI_* auth).
+tags: [uipath-review, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_guardrail_unknown_validator/inject_guardrail_unknown_validator.py"
+    timeout: 30
+
+initial_prompt: |
+  A low-code UiPath agent project exists at `ReviewSol/SampleAgent`
+  inside the solution `ReviewSol`. Review the agent project and produce
+  a structured review report with Critical / Warning / Info findings.
+
+  This is a read-only review. Do NOT modify, create, or delete any
+  files inside `ReviewSol/`. Do NOT scaffold a new project. Do NOT
+  ask for approval, confirmation, or feedback.
+
+  Important — produce the review in TWO places, identical content:
+
+  1. As the chat output (the normal review surface), AND
+  2. Save the SAME report to a file at `./_review_report.md` at the
+     sandbox root (NOT inside `ReviewSol/`).
+
+  Writing the file copy first, before producing the chat report, is
+  encouraged — that way the file persists even if the chat response is
+  cut off. The file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  # The unknown-validator finding can ONLY come from `uip agent review` fetching
+  # the live catalog — you can't tell a validator is unknown by eye. This
+  # command_executed criterion is the honesty gate: it proves the catalog-backed
+  # CLI ran, which lets the run_command check below accept either the verbatim
+  # rule_id OR a summarized "validator is not in the catalog" finding without
+  # letting an eyeballed guess pass. (Previously the check required the rule_id
+  # transcribed verbatim into the saved report, which flaked on Bedrock when the
+  # agent ran the review but summarized the finding instead of copying the id.)
+  - type: command_executed
+    description: "Ran the catalog-backed review CLI (Step 2.5a) — the only source of the unknown-validator finding"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+review'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review report surfaces the CLI finding (GUARDRAIL_UNKNOWN_VALIDATOR, or names totally_made_up_validator as uncataloged)"
+    command: "python3 $TASK_DIR/check_lowcode_review_guardrail_unknown_validator.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

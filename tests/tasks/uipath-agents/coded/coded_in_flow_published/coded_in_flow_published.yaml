@@ -21,7 +21,7 @@ initial_prompt: |
   model (e.g. `gpt-4o-mini-2024-07-18`) with `temperature=0` for
   deterministic runs. Scaffold the agent in a `tone-classifier/`
   folder at the working-directory root, then publish it into the
-  personal workspace so it's available as a regular UiPath resource.
+  personal workspace so it's available as a regular UiPath resource (use `1.0.current_unix_timestamp_here` as the version).
 
   Then, in a separate Maestro Flow project called `triage-flow`,
   use that published `tone-classifier` agent as one of the steps.

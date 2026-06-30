@@ -36,12 +36,22 @@ Key properties: `ImagePath` ("Picture to insert" — fully-qualified absolute pa
 
 `Read Text` extracts the document's text. Two distinct surfaces fail for different reasons: the **Word-pack** `Read Text` reads the document held open by a surrounding `Use Word File` / `Word Application Scope` (it has no file input of its own); the **standalone** `Read Text` under `System > File > Word Document` takes a file path directly (no container) but is OpenXML `.docx`-only.
 
+## Export to PDF
+
+`Export to PDF` (`WordExportToPdf`, also "Save Document as PDF") exports the open document to a PDF at a target path, via Word Interop inside a `Word Application Scope`. It does **not** auto-create the output directory. Faults are about the **output** (missing target folder, malformed path) or **COM** (orphaned `WINWORD.EXE` / locked input), not the document content.
+
+## Append Text
+
+`Append Text` (`WordAppendText`) appends text to the document. Like Read Text, it has two surfaces: the **App-Integration** `Append Text` appends to the document held open by a surrounding `Word Application Scope` / `Use Word File` (no file input of its own); the **standalone** `Append Text` under the **Word Document** category takes a file path directly (no container, no Word install needed).
+
 ## Key Activities
 
 - **Word Application Scope** (`WordApplicationScope`, display name "Word Application Scope") — open a Word document via Interop and run child activities against it. **COM-only** — requires desktop Word. Properties include the document `Path`, `CreateIfNotExists` (generate the file when absent), and `Password`.
 - **Add Picture** (`WordAddImage`, display name "Add Picture") — insert an image into the document opened by the parent scope; see the `Add Picture` execution model above.
 - **Replace Text in Document** (modern `ReplaceTextInDocument` inside `Use Word File`, classic `WordReplaceText` inside `Word Application Scope`) — find a `Search` string and substitute `Replace`. Classic versions cap `Search`/`Replace` at 256 characters.
 - **Read Text** (display name "Read Text") — extract the document's text. Word-pack `Read Text` reads the document held open by a surrounding `Use Word File` / `Word Application Scope` (no file input of its own); the standalone `System > File > Word Document` `Read Text` takes a file path directly but is OpenXML `.docx`-only.
+- **Export to PDF** (`WordExportToPdf`, display name "Export to PDF" / "Save Document as PDF") — export the open document to a PDF at a target path, via Interop inside a `Word Application Scope`. Does **not** auto-create the output directory.
+- **Append Text** (`WordAppendText`, display name "Append Text") — append text to the document. App-Integration `Append Text` appends to the document held open by a surrounding `Word Application Scope` / `Use Word File` (no file input of its own); the standalone `Word Document` `Append Text` takes a file path directly (no container, no Word install needed).
 
 ## Common Failure Patterns
 
@@ -58,6 +68,12 @@ Key properties: `ImagePath` ("Picture to insert" — fully-qualified absolute pa
 - **Read Text — activity outside its container** — the modern Word-pack `Read Text` warns at design time / faults at runtime as invalid because it has no file input of its own and was dropped outside a `Use Word File` / `Word Application Scope`. Fix: nest it in a container, or use the standalone `System > File > Word Document` `Read Text` (takes a file path).
 - **Read Text — standalone System Read Text fails on .doc** — the `System > File > Word Document` `Read Text` is OpenXML `.docx`-only and errors / returns nothing on legacy binary `.doc`. Fix: read `.doc` through a `Use Word File` (Interop reads both formats), or convert to `.docx` first.
 - **Read Text — Protected View blocks an externally-sourced file** — reading a file from email / internet / external share faults or hangs because Word opens it in Protected View (Mark-of-the-Web). Fix: unblock the file, add the folder to Trusted Locations, or disable Protected View on the host.
+- **Export to PDF — "Command Failed" (output directory missing)** — `Export to PDF` faults with a generic `Command Failed` because the target folder doesn't exist; the activity won't auto-create it. Fix: `Create Folder` before the export.
+- **Export to PDF — malformed output path / missing `.pdf`** — the File Path is built from unformatted concatenation (no `.pdf` suffix, missing/doubled separator, empty variable segment). Fix: `Path.Combine(folder, name & ".pdf")` and validate the pieces.
+- **Export to PDF — COM interop hang / crash / `COMException`** — an orphaned `WINWORD.EXE` or a locked input document blocks the export's COM call. Fix: Kill Process WINWORD before the scope, ensure the input is free; persistent → an Invoke Code C# `ExportAsFixedFormat` fallback.
+- **Append Text — "Activity is valid only inside WordApplicationScope"** — the App-Integration `Append Text` is outside a `Word Application Scope` / `Use Word File`; it has no file input of its own. Fix: nest it in a scope, or use the standalone `Word Document` `Append Text` (takes a file path).
+- **Append Text — "Archive file cannot be size zero"** — the target `.docx` is a 0-byte file (a renamed `.txt`, or a failed/truncated write), not a valid OpenXML package. Fix: delete it + `Create if not exists`, or fix the upstream that produced the empty file.
+- **COM wrong-thread cast (`0x8001010E RPC_E_WRONG_THREAD`)** — a child activity (commonly `Save Document as PDF`) faults casting `System.__ComObject` to `Microsoft.Office.Interop.Word._Document` (IID `{0002096B-...}`). The document proxy was created on one STA apartment and accessed from another. Causes: the scope attached to an already-open external Word; that external Word closed mid-run; an off-STA / non-interactive runtime (unattended / Session 0 / background); or a thread other than the scope creator (Parallel/Pick/Invoke/coded). Distinct from `0x80010108 RPC_E_DISCONNECTED` (the Word server died outright). See [word-export-pdf-com-wrong-thread.md](./playbooks/word-export-pdf-com-wrong-thread.md).
 
 ## Package
 

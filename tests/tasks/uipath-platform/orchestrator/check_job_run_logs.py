@@ -6,6 +6,7 @@ Reads only the job key from `job_key.txt`; everything else queried live."""
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 
@@ -41,14 +42,29 @@ state = _pick(env.get("Data") or {}, "State")
 if state not in ("Successful", "Faulted", "Stopped"):
     sys.exit(f"FAIL: job state={state!r}, expected Successful/Faulted/Stopped")
 
-# 2. Logs non-empty
-logs = uip_json("or", "jobs", "logs", job_key)
-if logs.get("Result") != "Success":
-    sys.exit(f"FAIL: jobs logs Result={logs.get('Result')!r}")
-log_data = logs.get("Data") or []
-if isinstance(log_data, dict):
-    log_data = _pick(log_data, "Value", "Items", "Results") or []
+# 2. Logs non-empty. Job log ingestion lags slightly behind the job reaching
+# a terminal state, so poll rather than reading once — a single early read
+# races the ingestion and reports an empty (false-negative) result.
+log_data: list = []
+last_result = None
+deadline = time.monotonic() + 60
+while True:
+    logs = uip_json("or", "jobs", "logs", job_key)
+    last_result = logs.get("Result")
+    if last_result == "Success":
+        data = logs.get("Data") or []
+        if isinstance(data, dict):
+            data = _pick(data, "Value", "Items", "Results") or []
+        if data:
+            log_data = data
+            break
+    if time.monotonic() >= deadline:
+        break
+    time.sleep(5)
+
+if last_result != "Success":
+    sys.exit(f"FAIL: jobs logs Result={last_result!r}")
 if not log_data:
-    sys.exit("FAIL: jobs logs returned empty")
+    sys.exit("FAIL: jobs logs returned empty after polling 60s")
 
 print(f"OK: job {job_key} state={state} logs={len(log_data)}")
