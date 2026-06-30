@@ -156,7 +156,7 @@ Repeat steps 2a–2d for all documents in the list.
 
 ### Detecting off-template documents
 
-IXP gives **no explicit "off-template" signal** — when a document doesn't match the project's document type it either returns **no predictions (all fields empty)** or **force-fits a value into a type-mismatched field** (e.g. a flight e-ticket's fare total predicted as the `Invoice Number`, or a bank statement / ride receipt yielding nothing). Treat both as the cue that the document is likely out of scope. When `get-predictions` for a document shows all-empty fields, or a value's shape doesn't fit its field (e.g. a money amount in an ID field), **confirm nothing** — review it with the Read tool and, if it's genuinely a different document type, delete it (below) so it doesn't pollute training. Note in your summary which documents you flagged as off-template and why.
+IXP gives **no explicit "off-template" signal**; the one mechanical cue is **empty predictions** — `get-predictions` returns no value for any field (all `FormattedValue` empty), visible directly from the output. When a document comes back empty, **confirm nothing** — open it with the Read tool and, if it's genuinely a different document type than the project targets, delete it (below) so it doesn't pollute training. Note in your summary which documents you flagged as off-template and why. (A document that *does* get predictions but they're wrong is not an off-template case — handle those per field in the normal review: leave them NOT CONFIRMED, Rule 11.)
 
 ### Removing a document from the project
 
