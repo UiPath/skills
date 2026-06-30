@@ -12,24 +12,27 @@ tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framew
 max_iterations: 1
 
 initial_prompt: |
-  Build a UiPath coded agent (LangGraph) named `refund-gate`. When it's
-  asked to issue a
-  refund over $500, it must pause and file a structured request for a
-  reviewer on the Compliance team in their `RefundReview` Action Center
-  app (folder `Compliance`) — the reviewer needs the customer, the
-  amount, and the stated reason. Once the reviewer replies, the agent
-  continues and produces a final outcome: whether to issue the refund
-  and the reviewer's note. Refunds of $500 or less go through without
-  review.
+  Can you build me a uipath coded agent in LangGraph for handling refunds?
+  Call it refund-gate, put it in a refund-gate folder. The idea: anything
+  over $500 needs a human to sign off first. Someone on the Compliance team
+  reviews it in their RefundReview app (that's in the Compliance folder) -
+  show them the customer, the amount, and why the refund's being asked for.
+  Once they decide, carry on with their call and whatever note they left.
+  Anything $500 or under just goes through. And please make sure the
+  RefundReview app is actually hooked up, otherwise it can't send them the
+  request.
 
-  Make sure the RefundReview app is hooked up for the agent — without it
-  the request can't be filed. Put the project in a `refund-gate/`
-  directory at the working-directory root.
-
-  I just need it built — no need to run it, sign in, or deploy. Work
-  through it in one pass.
+  No need to run or deploy it, just build it. Run it all the way through
+  and only stop if you hit something you genuinely can't get past.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent scaffolded the project"
     tool_name: "Bash"
