@@ -11,6 +11,20 @@ tags: [uipath-functions, smoke, mode:build, lifecycle:discover]
 dataset:
   id_field: id
   rows:
+    - id: api-custom-auth
+      prompt: |
+        I want a deterministic Python function with typed Input/Output models
+        (no LLM, no agent) that I can package and run as a UiPath job. Inside
+        it, I'll call a third-party REST API with a custom HMAC auth header and
+        map the response into the typed output fields. Which UiPath skill should
+        I use and what's the project layout? Just outline it, don't build.
+    - id: csv-transform
+      prompt: |
+        I want a deterministic Python function (no LLM) that takes a CSV of
+        orders, dedupes rows by order id, and returns the cleaned rows with a
+        typed output model, packaged so I can run it as a UiPath job. Which
+        UiPath skill should I use and what's the project layout? Don't create
+        files yet.
     - id: shipping-cost
       prompt: |
         I want a deterministic Python function (typed input/output, no LLM) that
@@ -19,20 +33,6 @@ dataset:
         rate tier applied — packaged so I can run it as a UiPath job. Which
         UiPath skill should I use and what's the project layout? Just outline
         it, don't build.
-    - id: csv-transform
-      prompt: |
-        I want a deterministic Python function (no LLM) that takes a CSV of
-        orders, dedupes rows by order id, and returns the cleaned rows with a
-        typed output model, packaged so I can run it as a UiPath job. Which
-        UiPath skill should I use and what's the project layout? Don't create
-        files yet.
-    - id: api-custom-auth
-      prompt: |
-        I want a deterministic Python function with typed Input/Output models
-        (no LLM, no agent) that I can package and run as a UiPath job. Inside
-        it, I'll call a third-party REST API with a custom HMAC auth header and
-        map the response into the typed output fields. Which UiPath skill should
-        I use and what's the project layout? Just outline it, don't build.
 
 initial_prompt: "${row.prompt}"
 
