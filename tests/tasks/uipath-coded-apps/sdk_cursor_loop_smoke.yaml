@@ -1,0 +1,80 @@
+task_id: skill-coded-apps-sdk-cursor-loop-smoke
+description: >
+  Smoke test (mode:operate): agent authors a service function that lists
+  EVERY row across all pages using the SDK's cursor-loop pattern. Verifies
+  Rule #14 ("every list call returns ONE page — loop the cursor"), the
+  most common silent-data-loss bug in coded apps. Static grep for the
+  cursor-loop signature (`nextCursor` + `hasNextPage` + loop construct +
+  accumulation) — no runtime required.
+tags: [uipath-coded-apps, smoke, mode:operate, feature:sdk-pagination]
+
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, author `src/listAllAssets.ts` — an async
+  function that returns EVERY asset in the active folder (not just the first
+  page) using the `@uipath/uipath-typescript` SDK.
+
+  Signature:
+    `export async function listAllAssets(): Promise<unknown[]>`
+
+  Implementation requirements:
+
+  - Use a subpath import for `Assets` and construct it via constructor DI.
+  - The SDK's list methods return ONE page per call. To list every row, loop
+    on the page's cursor: while `page.hasNextPage`, fetch the next page with
+    `{ cursor: page.nextCursor }` and accumulate items.
+  - A single `getAll()` call without the loop misses every row after the
+    first page — silent data loss in production.
+
+  Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/listAllAssets.ts was created"
+    path: "src/listAllAssets.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/listAllAssets.ts uses the Assets subpath import + constructor DI"
+    path: "src/listAllAssets.ts"
+    includes:
+      - "@uipath/uipath-typescript/assets"
+      - "new Assets("
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/listAllAssets.ts references BOTH nextCursor AND hasNextPage in executable code — the cursor-loop signature (Rule #14). Comments stripped so a doc-only stub can't pass."
+    command: "sed 's|//.*||' src/listAllAssets.ts | grep -F 'nextCursor' && sed 's|//.*||' src/listAllAssets.ts | grep -F 'hasNextPage'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/listAllAssets.ts contains a loop construct (while/for/do) in executable code — proves it iterates beyond a single page"
+    command: "sed 's|//.*||' src/listAllAssets.ts | grep -E '\\b(while|for|do)\\b'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/listAllAssets.ts accumulates items across iterations (push, concat, or spread) in executable code"
+    command: "sed 's|//.*||' src/listAllAssets.ts | grep -E '(\\.push\\(|\\.concat\\(|\\.\\.\\.)'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/listAllAssets.ts has NO package-root SDK import (Anti-pattern #1 not regressed)"
+    command: "sed 's|//.*||' src/listAllAssets.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 1.5
+    pass_threshold: 1.0

@@ -69,6 +69,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent ran `npm run build` (Rule #3 — never skip the build step). Pack would fail without `dist/`, but an explicit check tightens the signal and surfaces build skipping directly."
+    tool_name: "Bash"
+    command_pattern: 'npm\s+run\s+build'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent ran `uip codedapp publish` with `-t Action` / `--type Action` (Rule #6 — Action app, not Web)"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+codedapp\s+publish\b.*(?:-t\s+Action|--type\s+Action)'

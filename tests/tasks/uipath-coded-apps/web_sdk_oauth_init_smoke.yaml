@@ -1,0 +1,99 @@
+task_id: skill-coded-apps-web-sdk-oauth-init-smoke
+description: >
+  Smoke test (mode:build): agent authors the Web App OAuth bootstrap —
+  `src/hooks/useAuth.tsx` calling `sdk.initialize()` for PKCE handshake +
+  `sdk.completeOAuth()` for the post-redirect callback, plus `uipath.json`
+  declaring clientId + scope. Covers the entire Web-app OAuth surface (PKCE
+  flow + redirect URI resolution + uipath.json config file), which no other
+  test exercises. The positive counterpart of the Action-app rule R17
+  (`action_sdk_construction_smoke` asserts `.initialize()` MUST NOT appear in
+  Action apps; this test asserts it MUST appear in Web apps).
+tags: [uipath-coded-apps, smoke, mode:build, feature:oauth, feature:web-app]
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, author the OAuth bootstrap files needed for
+  the SDK to authenticate with the UiPath tenant via PKCE.
+
+  1. `src/hooks/useAuth.tsx` — exports `useAuth()` that constructs the
+     `@uipath/uipath-typescript` SDK with config sourced from
+     `import.meta.env.VITE_UIPATH_*`, calls `sdk.initialize()` to begin the
+     OAuth handshake, and handles the post-redirect callback by checking for
+     an auth code in the URL and calling `sdk.completeOAuth()`. Export the
+     authenticated SDK instance.
+
+  2. `uipath.json` at the sandbox root — declares `clientId` (or
+     `externalApplicationId`) and `scope` so the CLI picks them up at
+     pack/publish time. Use placeholder values like `<YOUR_CLIENT_ID>` and
+     `OR.Assets.Read`.
+
+  3. `.env.example` — declares the standard `VITE_UIPATH_*` env vars
+     (`VITE_UIPATH_CLIENT_ID`, `VITE_UIPATH_SCOPE`, `VITE_UIPATH_ORG_NAME`,
+     `VITE_UIPATH_TENANT_NAME`, `VITE_UIPATH_BASE_URL`).
+
+  This is a Web app, not an Action app — Action apps use host-injected
+  sessions, NEVER PKCE OAuth. Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/hooks/useAuth.tsx was authored"
+    path: "src/hooks/useAuth.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "uipath.json was authored at the sandbox root"
+    path: "uipath.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: ".env.example was authored"
+    path: ".env.example"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "useAuth code calls sdk.initialize() — the PKCE handshake entry point for Web apps (positive R17 — required in Web apps; forbidden in Action apps). Comments are stripped to prevent a commented-out call from passing."
+    command: "F=$(find . -path '*useAuth*' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && sed 's|//.*||' \"$F\" | grep -F '.initialize('"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "useAuth code handles the post-redirect callback (sdk.completeOAuth, handleRedirect, or exchangeCode equivalent). Comments stripped."
+    command: "F=$(find . -path '*useAuth*' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && sed 's|//.*||' \"$F\" | grep -E '(completeOAuth|handleRedirect|exchangeCode|handleCallback)'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uipath.json is valid JSON containing a clientId/externalApplicationId field AND a scope field"
+    command: "python3 -c \"import json,sys; d=json.load(open('uipath.json')); sys.exit(0 if d.get('scope') and (d.get('clientId') or d.get('externalApplicationId') or d.get('externalApplicationKey')) else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: ".env.example declares the standard VITE_UIPATH_* OAuth env vars"
+    path: ".env.example"
+    includes:
+      - "VITE_UIPATH_CLIENT_ID"
+      - "VITE_UIPATH_SCOPE"
+      - "VITE_UIPATH_BASE_URL"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_BASE_URL uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com)"
+    command: "grep -E '^VITE_UIPATH_BASE_URL=https://(\\w+\\.)?api\\.uipath\\.com' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

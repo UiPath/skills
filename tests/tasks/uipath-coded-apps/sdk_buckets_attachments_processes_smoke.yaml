@@ -1,0 +1,116 @@
+task_id: skill-coded-apps-sdk-buckets-attachments-processes-smoke
+description: >
+  Smoke test (mode:build): agent authors a service module using three SDK
+  service classes the skill teaches but no other test exercises — `Buckets`
+  (storage upload), `Attachments` (file fetch), and `Processes` (start a
+  process). Each via subpath import + constructor DI, with `.env.example`
+  scope coverage. Closes 3 of the 9 in-scope SDK component gaps in a single
+  test (Buckets, Attachments, Processes were all `None` per the coverage
+  report).
+tags: [uipath-coded-apps, smoke, mode:build, feature:sdk-buckets, feature:sdk-services]
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, author `src/storage.ts` with three exported
+  functions covering three different SDK service classes:
+
+  1. `uploadFile(bucketName: string, file: File): Promise<void>` — uses the
+     `Buckets` SDK service to upload a file to an Orchestrator storage
+     bucket.
+
+  2. `downloadAttachment(attachmentId: string): Promise<Blob>` — uses the
+     `Attachments` SDK service to fetch an attachment by ID.
+
+  3. `startProcess(processName: string): Promise<{ jobId: string }>` — uses
+     the `Processes` SDK service to start an Orchestrator process by name
+     (returns the job id of the started run).
+
+  Also write `.env.example` with the standard `VITE_UIPATH_*` env vars. The
+  `VITE_UIPATH_SCOPE` value must cover all three services — look up the
+  required Orchestrator scopes for each (Buckets, Attachments, Processes/
+  Jobs.Write or Jobs.Start) in the skill's scope reference.
+
+  Use subpath imports for every service class. Use constructor DI
+  (`new Buckets(sdk)`, etc.). Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/storage.ts was created"
+    path: "src/storage.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: ".env.example was created"
+    path: ".env.example"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/storage.ts imports Buckets, Attachments, and Processes via subpath (Anti-pattern #1 — never import service classes from the package root)"
+    path: "src/storage.ts"
+    includes:
+      - "@uipath/uipath-typescript/buckets"
+      - "@uipath/uipath-typescript/attachments"
+      - "@uipath/uipath-typescript/processes"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/storage.ts constructs all three services via DI: new Buckets, new Attachments, new Processes"
+    command: "grep -E 'new\\s+Buckets\\(' src/storage.ts && grep -E 'new\\s+Attachments\\(' src/storage.ts && grep -E 'new\\s+Processes\\(' src/storage.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uploadFile function exists in src/storage.ts"
+    command: "grep -E '\\buploadFile\\b' src/storage.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "downloadAttachment function exists in src/storage.ts"
+    command: "grep -E '\\bdownloadAttachment\\b' src/storage.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "startProcess function exists in src/storage.ts"
+    command: "grep -E '\\bstartProcess\\b' src/storage.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/storage.ts has NO package-root SDK imports (Anti-pattern #1)"
+    command: "sed 's|//.*||' src/storage.ts | grep -E \"from\\s+['\\\"]@uipath/uipath-typescript['\\\"]\""
+    timeout: 10
+    expected_exit_code: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references the Buckets scope (Rule #16)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Buckets' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references a Jobs/Process-start scope (Rule #16 — Processes service needs Jobs.Write or equivalent)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*(OR\\.Jobs|OR\\.Execution|OR\\.Processes)' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

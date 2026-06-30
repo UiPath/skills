@@ -1,0 +1,90 @@
+task_id: skill-coded-apps-integration-push-ignore-resources
+description: >
+  Integration test (mode:operate, cloud-auth required): agent pushes a Coded
+  App to Studio Web in a scenario where the Studio Web project already has
+  resources (env vars, connectors) configured by the team. The agent must
+  recall the right CLI flag to skip re-importing those resources. Tests the
+  `--ignore-resources` push flag (the last untested `uip codedapp push` flag
+  surface) WITHOUT naming the flag in the prompt — agent must recall it
+  from the skill.
+tags: [uipath-coded-apps, integration, mode:operate, feature:push-pull]
+
+run_limits:
+  expected_turns: 15
+  turn_timeout: 900
+
+initial_prompt: |
+  You're handed an existing Coded App that's already wired up to a Studio
+  Web project. The team's Studio Web side has its environment variables and
+  third-party connector configs already set up — your push to Studio Web
+  must NOT overwrite or re-import those resources.
+
+  Write these files at the sandbox root EXACTLY as shown (Step 1):
+
+  `package.json`:
+  ```
+  {
+    "name": "push-no-resources-app",
+    "version": "0.1.0",
+    "type": "module"
+  }
+  ```
+
+  `src/App.tsx`:
+  ```
+  export default function App() {
+    return <h1>Resource-Preserve Push Test</h1>;
+  }
+  ```
+
+  Step 2 — push to Studio Web:
+
+  1. Check login: `uip login status --output json`.
+  2. Run `uip codedapp push` with the appropriate flag(s) so that the push
+     does NOT re-import Studio Web resources. Pick the flag from the skill's
+     documented `push` surface — the team's Studio Web resources must be
+     left untouched.
+  3. Use `--output json` so the result is parseable.
+
+  Do NOT run `npm install`, `npm run build`, `uip codedapp pack`, `publish`,
+  or `deploy`.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran `uip login status` (Rule #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp push` (the operation under test)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+push\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Push command included the `--ignore-resources` flag — the agent recalled the right flag for the scenario (skill knowledge check; flag NOT named in the prompt)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+push\b.*--ignore-resources'
+    min_count: 1
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Push command used --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+push\b.*--output\s+json'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT run pack/publish/deploy (out of scope for this push-only test)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish|deploy)\b'
+    weight: 1.0
+    pass_threshold: 1.0

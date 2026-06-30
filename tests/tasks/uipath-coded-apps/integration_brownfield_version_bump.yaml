@@ -1,0 +1,176 @@
+task_id: skill-coded-apps-integration-brownfield-version-bump
+description: >
+  Integration test (mode:build, cloud-auth required): agent receives an
+  existing Coded Web App that was already published as v0.1.0, modifies a
+  source file, bumps the version in `package.json` to 0.2.0, repacks, and
+  republishes. Verifies Rule #5 ("bump version on re-publish") — the only
+  critical rule currently with zero direct coverage in the suite. Closes
+  the brownfield-version gap identified in tests/reports/uipath-coded-apps.md.
+tags: [uipath-coded-apps, integration, mode:build, feature:brownfield-version]
+
+run_limits:
+  expected_turns: 25
+  turn_timeout: 900
+
+initial_prompt: |
+  You're handed an existing Coded Web App project. The team wants to ship a
+  new version with a UI tweak (heading text change). The previous v0.1.0 has
+  already been published once to the tenant.
+
+  **Step 1 — Reproduce the existing state.** Write these files at the
+  sandbox root EXACTLY as shown (do NOT modify in this step):
+
+  `package.json`:
+  ```
+  {
+    "name": "version-bump-app",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+      "build": "vite build",
+      "dev": "vite"
+    },
+    "dependencies": {
+      "react": "^19.2.7",
+      "react-dom": "^19.2.7"
+    },
+    "devDependencies": {
+      "vite": "^5.4.0",
+      "@vitejs/plugin-react": "^4.3.0",
+      "typescript": "^5.0.0",
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0"
+    }
+  }
+  ```
+
+  `vite.config.ts`:
+  ```
+  import { defineConfig } from 'vite';
+  import react from '@vitejs/plugin-react';
+  export default defineConfig({ base: './', plugins: [react()] });
+  ```
+
+  `index.html`:
+  ```
+  <!DOCTYPE html>
+  <html><head><meta charset="UTF-8"><title>VB</title></head>
+  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+  ```
+
+  `src/main.tsx`:
+  ```
+  import { createRoot } from 'react-dom/client';
+  import App from './App';
+  createRoot(document.getElementById('root')!).render(<App />);
+  ```
+
+  `src/App.tsx`:
+  ```
+  export default function App() {
+    return <h1>Version Bump App v1</h1>;
+  }
+  ```
+
+  **Step 2 — Build and republish a NEW version.** Now the actual work:
+
+  1. Check login: `uip login status --output json`. Do NOT re-login.
+  2. Modify `src/App.tsx` so the heading reads `v2` (not `v1`).
+  3. Bump the version in `package.json` to `0.2.0`.
+  4. Run `npm install`, then `npm run build` to produce `dist/`.
+  5. Repack with the bumped version:
+     `uip codedapp pack dist -n VersionBumpApp_<EPOCH> --version 0.2.0 --output json`
+     (use a Unix epoch suffix on the app name so the test can be re-run).
+  6. Republish: `uip codedapp publish --output json`.
+
+  Verify the new `.nupkg` is `0.2.0` and `.uipath/app.config.json` reflects
+  the new version. Do NOT run `uip codedapp deploy` — out of scope for this
+  test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent ran `uip login status` (Rule #2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `npm run build` (Rule #3)"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+run\s+build'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pack` with --version 0.2.0 (Rule #5 — bumped, not reused)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+pack\b.*--version\s+0\.2\.0'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp publish` with --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+publish\b.*--output\s+json'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT pack with the old version 0.1.0 (would violate Rule #5 — can't republish the same version)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+pack\b.*--version\s+0\.1\.0'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did NOT attempt `uip codedapp deploy` (out of scope for this test)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "package.json version is 0.2.0 (Rule #5 — bumped)"
+    command: "python3 -c \"import json,sys; v=json.load(open('package.json'))['version']; sys.exit(0 if v == '0.2.0' else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/App.tsx was actually modified to reference v2 (proves the agent edited code, not just republished the same source)"
+    command: "grep -F 'v2' src/App.tsx"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A 0.2.0 .nupkg exists in .uipath/ (the repack produced the bumped artifact)"
+    command: "find . -path '*/.uipath/*0.2.0*.nupkg' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "`.uipath/` directory survived the rebuild — agent did NOT delete it between pack and publish (Anti-pattern AP3 graded directly here, not just implicitly via lifecycle survival)"
+    command: "find . -type d -name '.uipath' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".uipath/app.config.json reflects the new version (publish wrote v0.2.0 metadata back from the tenant)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); v=str(d.get('version','')); lv=str(d.get('latestVersion','')); sys.exit(0 if '0.2.0' in v or '0.2.0' in lv else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

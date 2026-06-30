@@ -69,22 +69,22 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Fault A — root cause names the wrong base URL / API subdomain issue (debug.md: 'API calls fail with 401/CORS — Wrong base URL — Use https://api.uipath.com not cloud.uipath.com')"
+    description: "Fault A — fix names the correct API subdomain or the env var being changed (debug.md: 'Use https://api.uipath.com not cloud.uipath.com'). Tight regex: agent must mention the API hostname or VITE_UIPATH_BASE_URL — NOT just 'cloud.uipath.com' (which is the wrong value, valid only for the OAuth redirect/UI host elsewhere)."
     path: "diagnosis.json"
     assertions:
       - expression: "faultA.fix"
         operator: regex
-        expected: "(?i)(api\\.uipath\\.com|VITE_UIPATH_BASE_URL|api[\\s_-]*subdomain|cloud\\.uipath\\.com)"
+        expected: "(?i)(VITE_UIPATH_BASE_URL|api\\.uipath\\.com)"
     weight: 2.5
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Fault B — root cause names a scope-coverage mismatch (debug.md: 'Mismatched scopes fail silently with 401/403' — Rule #16)"
+    description: "Fault B — fix names the scope env var being changed or the specific OR.Tasks scope being added (debug.md: 'Mismatched scopes fail silently with 401/403' — Rule #16). Tight regex: bare 'scope' alone no longer passes; agent must name the env var or the specific OR.Tasks scope."
     path: "diagnosis.json"
     assertions:
       - expression: "faultB.fix"
         operator: regex
-        expected: "(?i)(VITE_UIPATH_SCOPE|OR\\.Tasks|scope)"
+        expected: "(?i)(VITE_UIPATH_SCOPE|OR\\.Tasks)"
     weight: 2.5
     pass_threshold: 1.0
 

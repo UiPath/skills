@@ -120,11 +120,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "action-schema.json inputs has at least 4 fields (po number, vendor, amount, department)"
-    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; p=json.load(open('$F'))['inputs']['properties']; sys.exit(0 if len(p) >= 4 else 1)\""
-    timeout: 10
+    description: "action-schema.json property names cover all six business fields named in the spec (PO number, vendor, amount, department, comment, category). Substring match — accepts naming variants like poNumber/purchaseOrderNumber, vendor/supplier, amount/total, department/dept, comment/note. Replaces the older `>= 4 fields` count check, which let agents pass with four nameless fields."
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); keys=' '.join(k for s in ('inputs','outputs','inOuts') for k in d.get(s,{}).get('properties',{}).keys()).lower(); needed={'po':('po','purchase'),'vendor':('vendor','supplier'),'amount':('amount','total'),'department':('department','dept'),'comment':('comment','note'),'category':('category',)}; missing=[k for k,t in needed.items() if not any(x in keys for x in t)]; sys.exit(0 if not missing else 1)\""
+    timeout: 15
     expected_exit_code: 0
-    weight: 1.5
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json category field's enum contains the four spec-mandated values (Operations, Capital, Marketing, Other) — case-insensitive. Closes the gap where the test accepted any string field named 'category' without enforcing the documented choices."
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); req={'operations','capital','marketing','other'}; ok=any(req.issubset({str(e).lower() for e in v.get('enum',[])}) for s in ('inputs','outputs','inOuts') for k,v in d.get(s,{}).get('properties',{}).items() if 'category' in k.lower()); sys.exit(0 if ok else 1)\""
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -179,4 +187,12 @@ success_criteria:
     timeout: 5
     expected_exit_code: 0
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json captures the app_url key (presence required even if the value is null pending activation). Grades the agent's understanding of the post-deploy app.config.json contract — moves 'App URL generation' from Indirect to Direct coverage."
+    command: "python3 -c \"import json,sys; r=json.load(open('report.json')); sys.exit(0 if 'app_url' in r else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0

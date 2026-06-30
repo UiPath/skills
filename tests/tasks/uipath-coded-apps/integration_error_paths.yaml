@@ -63,6 +63,44 @@ initial_prompt: |
   retry any failing command.
 
 success_criteria:
+  # Per-scenario command_executed: each pattern matches ONLY that scenario's specific command,
+  # so an agent that runs the same broken command four times can no longer pass by going through
+  # the motions. Together with the per-scenario log files below, this verifies the agent recognized
+  # four distinct failure modes — not just produced four files.
+
+  - type: command_executed
+    description: "Scenario 1 — pack with non-existent `dist/` (unique pattern: `pack dist` with no other path arg)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack\s+dist\b(?!.*--name\s+OtherName)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Scenario 2 — pack with the unique missing-path argument `does-not-exist-dir`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack\s+does-not-exist-dir\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Scenario 3 — `uip codedapp deploy` (the only scenario using deploy — unambiguous)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Scenario 4 — pack with the conflicting `--name OtherName` flag (unique to this scenario)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+pack\b.*--name\s+OtherName'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Per-scenario log file capture
   - type: file_exists
     description: "err_1_no_dist.txt was captured"
     path: "err_1_no_dist.txt"
@@ -87,22 +125,26 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent ran `uip codedapp pack` (scenarios 1, 2, 4 — three pack attempts; min 2 to allow some flexibility in scenario 4 syntax)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+pack\b'
-    min_count: 2
+  # Each log is non-empty (proves stderr surfaced, not silently swallowed)
+  - type: run_command
+    description: "Each captured error log is non-empty"
+    command: "for f in err_1_no_dist.txt err_2_missing_path.txt err_3_no_folder_key.txt err_4_conflicting_name.txt; do test -s \"$f\" || { echo \"empty: $f\"; exit 1; }; done"
+    timeout: 5
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent ran `uip codedapp deploy` (scenario 3 — should error on missing folder key)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+deploy\b'
-    min_count: 1
-    weight: 2.0
+  # Scenario 3 produced a deploy-specific failure signature (only scenario using `deploy`;
+  # discriminates from pack errors in scenarios 1, 2, 4)
+  - type: run_command
+    description: "Scenario 3 log mentions deploy-specific failure tokens (folder, app.config, publish, or deploy) — distinguishes it from a generic pack error"
+    command: "grep -iE 'folder|app\\.config|publish|deploy' err_3_no_folder_key.txt"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
     pass_threshold: 1.0
 
+  # Behavioral discipline: agent did not retry by re-authenticating
   - type: command_not_executed
     description: "Agent did NOT attempt `uip login` (the prompt forbade it — these errors should surface without authenticating)"
     tool_name: "Bash"
@@ -110,24 +152,10 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # report.json structure only — content fields (exit_code, all_failed_as_expected)
+  # are self-reported by the agent and no longer graded as truth.
   - type: file_exists
     description: "report.json summarizing the four scenarios was created"
     path: "report.json"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "report.json declares all four scenarios failed as expected"
-    command: "python3 -c \"import json,sys; r=json.load(open('report.json')); sys.exit(0 if r.get('all_failed_as_expected') is True and len(r.get('scenarios',[])) >= 4 else 1)\""
-    timeout: 5
-    expected_exit_code: 0
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Each captured error log is non-empty (the agent didn't silently swallow stderr — Rule #7 of writing tests: prove the error surfaced)"
-    command: "for f in err_1_no_dist.txt err_2_missing_path.txt err_3_no_folder_key.txt err_4_conflicting_name.txt; do test -s \"$f\" || { echo \"empty: $f\"; exit 1; }; done"
-    timeout: 5
-    expected_exit_code: 0
-    weight: 2.0
+    weight: 1.0
     pass_threshold: 1.0

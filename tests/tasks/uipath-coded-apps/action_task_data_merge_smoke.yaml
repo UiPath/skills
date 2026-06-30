@@ -1,0 +1,92 @@
+task_id: skill-coded-apps-action-task-data-merge-smoke
+description: >
+  Smoke test (mode:build): agent authors `src/components/Form.tsx` for a
+  Coded Action App applying the `task.data` merge pattern — initial defaults
+  overlaid by `task.data` (which may not contain output fields on first
+  load). Tests the SKILL.md anti-pattern "Don't assume task.data has all
+  fields on first load" AND directly exercises the `@uipath/coded-action-app`
+  service task-lifecycle methods (`setTaskData`, `completeTask`), upgrading
+  that component from Indirect to Direct in the coverage report.
+tags: [uipath-coded-apps, smoke, mode:build, feature:action-app]
+
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Action App, author `src/components/Form.tsx` — a
+  React component for reviewing a leave-request action task.
+
+  The form receives a `task` prop from the `@uipath/coded-action-app` host.
+  On first render, `task.data` may contain ONLY the input fields
+  (`requestId`, `days`); the reviewer-filled output fields (`decision`,
+  `comment`) are undefined until the reviewer types them.
+
+  Requirements:
+
+  1. Define an interface `FormData` with all four fields: `requestId: string`,
+     `days: number`, `decision: 'Approved' | 'Rejected'`, `comment: string`.
+
+  2. Initialize state by MERGING `task.data` OVER a `defaults` object — so
+     `decision` defaults to `'Approved'` and `comment` defaults to `''` if
+     `task.data` doesn't include them. Do NOT spread `task.data` raw on
+     `useState` — that leaves undefined fields undefined.
+
+  3. On every input change, call `setTaskData(updated)` (from the
+     `@uipath/coded-action-app` service) so the host stays in sync.
+
+  4. On submit (Approve or Reject button), call `completeTask(outcome)` from
+     `@uipath/coded-action-app` with the chosen outcome.
+
+  Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/components/Form.tsx was created"
+    path: "src/components/Form.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Form.tsx imports from @uipath/coded-action-app (task-lifecycle service)"
+    path: "src/components/Form.tsx"
+    includes:
+      - "@uipath/coded-action-app"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Form.tsx defines a FormData interface containing all four business fields"
+    path: "src/components/Form.tsx"
+    includes:
+      - "FormData"
+      - "requestId"
+      - "days"
+      - "decision"
+      - "comment"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Form.tsx references task.data in executable code (one of the two halves of the merge pattern; the other half — defaults — is enforced structurally via the setTaskData + completeTask calls below). Comments stripped."
+    command: "sed 's|//.*||' src/components/Form.tsx | grep -F 'task.data'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Form.tsx calls setTaskData in executable code (host-side persistence — @uipath/coded-action-app service direct call). Comments stripped."
+    command: "sed 's|//.*||' src/components/Form.tsx | grep -F 'setTaskData'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Form.tsx calls completeTask in executable code (host-side submit handler — @uipath/coded-action-app service direct call). Comments stripped."
+    command: "sed 's|//.*||' src/components/Form.tsx | grep -F 'completeTask'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0

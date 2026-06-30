@@ -1,0 +1,79 @@
+task_id: skill-coded-apps-ui-pagination-table-smoke
+description: >
+  Smoke test (mode:build): agent authors a React table component for a Coded
+  Web App that paginates dynamic data (25-50 rows per page) with next/prev
+  controls AND guards against text overflow. Verifies Rule #15 ("tables of
+  dynamic data must paginate, 25-50 rows per page") AND Rule #12 ("guard
+  against text overflow in every UI") — two UI/behavioral rules that
+  previously had zero coverage. Static check of pagination state + controls
+  + overflow CSS.
+tags: [uipath-coded-apps, smoke, mode:build, feature:ui-pagination]
+
+run_limits:
+  expected_turns: 10
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, author `src/components/JobsTable.tsx` — a
+  React component that displays a list of Orchestrator jobs in a table with
+  pagination.
+
+  Requirements:
+
+  1. The table paginates with a fixed page size between 25 and 50 rows. Use a
+     local state variable (e.g. `currentPage`, `page`, or similar) for
+     pagination state.
+
+  2. The component exposes a way to advance/retreat pages — handler
+     functions named `nextPage`, `prevPage`, `goToPage`, or `setPage` (any
+     pair is fine). Render Next/Previous buttons or page-number controls.
+
+  3. Show a "Showing X–Y of Z" summary (the literal word "Showing" followed
+     by a range; the agent must compute X and Y from page state).
+
+  4. Long job names must NOT overflow the cell. Use a CSS approach — pick
+     one of: `text-overflow: ellipsis`, `overflow-wrap: break-word`,
+     `word-break`, or Tailwind's `truncate` / `line-clamp-N` utility class.
+     Put the rule either inline in the .tsx (`style={...}`) or in a
+     companion `src/components/JobsTable.css` file.
+
+  Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/components/JobsTable.tsx was created"
+    path: "src/components/JobsTable.tsx"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "JobsTable.tsx declares a page-size constant in the 25-50 range (Rule #15)"
+    command: "sed 's|//.*||' src/components/JobsTable.tsx | grep -E '(pageSize|PAGE_SIZE|rowsPerPage|perPage)\\s*[:=]\\s*(2[5-9]|[34][0-9]|50)\\b'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "JobsTable.tsx has pagination state and at least one navigation handler (next/prev/goToPage/setPage) — Rule #15"
+    command: "sed 's|//.*||' src/components/JobsTable.tsx | grep -E '(currentPage|\\bpage\\b)' && sed 's|//.*||' src/components/JobsTable.tsx | grep -E '(nextPage|prevPage|previousPage|goToPage|setPage)'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "JobsTable.tsx renders a 'Showing X-Y of Z' summary (literal 'Showing' + 'of' tokens)"
+    command: "sed 's|//.*||' src/components/JobsTable.tsx | grep -iE 'Showing\\b' && sed 's|//.*||' src/components/JobsTable.tsx | grep -iE '\\bof\\b'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "JobsTable handles text overflow somewhere (.tsx inline style OR .css file) — Rule #12: text overflow guards"
+    command: "find . \\( -path '*JobsTable*' \\) -not -path '*/node_modules/*' -exec grep -lE '(text-overflow|overflow-wrap|word-break|truncate|line-clamp)' {} + | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0

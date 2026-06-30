@@ -127,3 +127,11 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "A `.env` (or `.env.local`) file exists — push wrote it directly (Direct grading of the .env config-file component, not just Indirect via UIPATH_PROJECT_ID content check)"
+    command: "test -f .env -o -f .env.local"
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

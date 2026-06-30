@@ -1,0 +1,75 @@
+task_id: skill-coded-apps-df-schema-inspect-smoke
+description: >
+  Smoke test (mode:build): agent authors code that inspects a Data Fabric
+  entity's schema via `Entities.getById()` BEFORE issuing a write operation
+  via `insertRecordsById()`. Verifies Rule #13 ("Inspect DF schema before
+  writing") as it applies to Coded Apps — the skill teaches DF integration
+  patterns even though the deeper DF surface is owned by uipath-data-fabric.
+  Static check: schema inspection call must precede the write call.
+tags: [uipath-coded-apps, smoke, mode:build, feature:sdk-data-fabric]
+
+run_limits:
+  expected_turns: 8
+  turn_timeout: 600
+
+initial_prompt: |
+  Inside a UiPath Coded Web App, author `src/insertOrder.ts` — an async
+  function that inserts an order record into a Data Fabric entity.
+
+  Signature:
+    `export async function insertOrder(entityId: string, order: Record<string, unknown>): Promise<unknown>`
+
+  Implementation requirements:
+
+  - Before issuing the write, INSPECT the entity schema by calling
+    `entities.getById(entityId)` (or the equivalent on a constructed
+    `Entities` instance). Use the returned schema metadata to make sure the
+    record only carries fields the schema declares — Data Fabric silently
+    drops unknown keys.
+
+  - After inspection, call `entities.insertRecordsById(...)` (or
+    `insertRecordById`) to write the order.
+
+  - Use subpath import for `Entities` and construct it via constructor DI.
+
+  Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "src/insertOrder.ts was created"
+    path: "src/insertOrder.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "src/insertOrder.ts uses subpath import for Entities + constructor DI"
+    path: "src/insertOrder.ts"
+    includes:
+      - "@uipath/uipath-typescript/entities"
+      - "new Entities("
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/insertOrder.ts calls .getById() to introspect the schema (Rule #13)"
+    command: "sed 's|//.*||' src/insertOrder.ts | grep -E '\\.getById\\s*\\('"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "src/insertOrder.ts calls insertRecordById or insertRecordsById (the write op)"
+    command: "sed 's|//.*||' src/insertOrder.ts | grep -E 'insertRecords?ById'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "getById call APPEARS BEFORE the insertRecords*ById call in the source (Rule #13 — inspect schema BEFORE writing). Comments stripped; uses line numbers to enforce ordering."
+    command: "GB=$(sed 's|//.*||' src/insertOrder.ts | grep -nE '\\.getById\\s*\\(' | head -1 | cut -d: -f1); INS=$(sed 's|//.*||' src/insertOrder.ts | grep -nE 'insertRecords?ById' | head -1 | cut -d: -f1); test -n \"$GB\" && test -n \"$INS\" && test \"$GB\" -lt \"$INS\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

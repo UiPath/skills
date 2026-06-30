@@ -155,11 +155,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Source files use constructor DI (`new Jobs(sdk)` / `new Queues(sdk)`) — Anti-pattern #2"
-    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE \"new\\s+(Jobs|Queues)\\(\" {} + | grep -q ."
+    description: "Source files construct Jobs via constructor DI: `new Jobs(...)` (Anti-pattern #2 — never use dot-chain). Split from a combined Jobs|Queues check so each service is graded independently."
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE 'new\\s+Jobs\\(' {} + | grep -q ."
     timeout: 15
     expected_exit_code: 0
-    weight: 2.0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Source files construct Queues via constructor DI: `new Queues(...)` (Anti-pattern #2). Closes the gap where one of the two services could silently be missing while the combined-OR check still passed."
+    command: "find . \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE 'new\\s+Queues\\(' {} + | grep -q ."
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
