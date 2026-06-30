@@ -258,7 +258,6 @@ The UiPath CLI (`uip`) is a unified command-line tool for interacting with the U
 | **Resource** | `resource` | Assets, queues, queue items, storage buckets, bucket files | Available |
 | **Integration Service** | `is` | Connectors, connections, activities, resources | Available |
 | **Data Fabric** | `df` | Entities, records, files, choice sets (`@uipath/data-fabric-tool`) | Available |
-| **Test Manager** | `tm` | Test projects, test sets, test cases, executions, reports | Available |
 | **Tools** | `tools` | CLI tool extension management | Available |
 | **MCP** | `mcp` | Model Context Protocol server | Available |
 | **Coded Agents** | `codedagent` | Python agent lifecycle (setup, exec) | Available |
