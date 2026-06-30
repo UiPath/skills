@@ -17,16 +17,22 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  I'm building a UiPath Flow that hands work off to a UiPath coded agent that uses LangGraph. Set it
-  up as a solution called `GreeterSol`: a flow `GreeterFlow` that runs a
-  LangGraph coded agent `InputProcessor` — the agent takes some user
-  input and returns a short summary of it. Make sure the finished flow
-  validates.
+  I want a uipath coded agent (LangGraph) called `InputProcessor` that
+  takes some user input and returns a short summary. Wrap it in a solution
+  `GreeterSol` with a flow `GreeterFlow` that runs the agent, and make
+  sure the flow validates.
 
-  All local — nothing to publish or deploy. Work straight through in a
-  single pass.
+  All local, nothing to publish or deploy. Complete the task end-to-end.
+  Only stop if there is a critical blocker you cannot resolve.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not uipath-planner/maestro-flow alone)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent created the solution with uip solution init"
     tool_name: "Bash"

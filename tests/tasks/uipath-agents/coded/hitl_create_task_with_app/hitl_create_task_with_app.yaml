@@ -12,24 +12,25 @@ tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framew
 max_iterations: 1
 
 initial_prompt: |
-  Build a UiPath coded agent (LangGraph) named `refund-gate`. When it's
-  asked to issue a
-  refund over $500, it must pause and file a structured request for a
-  reviewer on the Compliance team in their `RefundReview` Action Center
-  app (folder `Compliance`) — the reviewer needs the customer, the
-  amount, and the stated reason. Once the reviewer replies, the agent
-  continues and produces a final outcome: whether to issue the refund
-  and the reviewer's note. Refunds of $500 or less go through without
-  review.
+  Build me a uipath coded agent (LangGraph) called `refund-gate` in a
+  `refund-gate/` folder. Refunds over $500 should pause for a reviewer on
+  the Compliance team via their `RefundReview` Action Center app (folder
+  `Compliance`) - they need the customer, amount, and reason - then
+  continue with the reviewer's decision and note. $500 or under goes
+  through automatically. Wire the RefundReview app up so the request can
+  be filed.
 
-  Make sure the RefundReview app is hooked up for the agent — without it
-  the request can't be filed. Put the project in a `refund-gate/`
-  directory at the working-directory root.
-
-  I just need it built — no need to run it, sign in, or deploy. Work
-  through it in one pass.
+  Just build it, no run or deploy. Complete the task end-to-end. Only stop
+  if there is a critical blocker you cannot resolve.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not claude-api or another skill)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent scaffolded the project"
     tool_name: "Bash"
