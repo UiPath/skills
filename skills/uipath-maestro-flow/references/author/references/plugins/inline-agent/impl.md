@@ -42,7 +42,7 @@ After editing `content`, rebuild the matching `messages[].contentTokens` (`type:
 
 Passing flow data into an inline agent requires **three hand-authored, aligned** pieces. **The CLI does not derive the input wiring** — `uip agent refresh` does **not** scan prompts, derive `inputSchema`, or populate `agentInputVariables`; you author all three, and packaging ships them as-authored. (Refresh *does* regenerate `messages[].contentTokens` from `content` — that's the one derived part; see the invariant below.) The converter builds the runtime `JobArguments` from the **flow node's `inputs.agentInputVariables[]`** (not from `$vars` tokens in `agent.json`). Flatten rule: `$vars.<trigger>.output.<var>` → `<trigger>__output__<var>`.
 
-The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (`agent.json` `inputSchema`), and **Resolution** (`{{input.<key>}}` in `messages[].content`) — and their examples are in the table below. Miss any one and build/refresh/validate still pass, but the agent gets empty or literal input at debug. Agent-side `inputSchema`/`contentTokens` mechanics: the `uipath-agents` skill's [inline-in-flow § Wiring Flow Inputs Into an Inline Agent](../../../../../../uipath-agents/references/lowcode/capabilities/inline-in-flow/inline-in-flow.md#wiring-flow-inputs-into-an-inline-agent-required).
+The three pieces — **Delivery** (node `agentInputVariables[]`), **Contract** (`agent.json` `inputSchema`), and **Resolution** (`{{input.<key>}}` in `messages[].content`) — and their examples are in the table below. `flow validate` catches a Resolution↔Contract mismatch (a `{{input.K}}` that's malformed or names a key not in `inputSchema`), but a missing/wrong **Delivery** binding passes validate and only shows up as empty input at `flow debug`. Agent-side `inputSchema`/`contentTokens` mechanics: the `uipath-agents` skill's [inline-in-flow § Wiring Flow Inputs Into an Inline Agent](../../../../../../uipath-agents/references/lowcode/capabilities/inline-in-flow/inline-in-flow.md#wiring-flow-inputs-into-an-inline-agent-required).
 
 > **Prerequisite — the bound value must actually exist as a variable.** A node binding `=$vars.X` resolves at runtime only if `$vars.X` is a declared variable. `flow validate` does **not** check that the path exists — a binding referencing an undeclared trigger field passes validate, then **faults at debug** with `JobArguments` empty. When the upstream node is a **trigger** (e.g. `core.trigger.manual`, id `start`), each field you bind must be declared in `variables.globals[]` as a trigger-associated input — `direction: "in"`, `triggerNodeId: "<triggerId>"` — and is then read as `$vars.<triggerId>.output.<id>`:
 >
@@ -63,17 +63,9 @@ Each binding's source `$vars.<node>.output.<field>` must reference a real node `
 
 ### The `content` ↔ `contentTokens` mirror invariant
 
-`content` is the source of truth; `contentTokens` is **derived from it**. **`uip agent refresh` regenerates `contentTokens` from `content`** (repairing type/brace/whitespace drift) — so author `content`, run `refresh`, and let it build the tokens. **Don't hand-author or hand-fix `contentTokens`.** `uip agent validate` is read-only: it only flags drift; fix a token error by re-running `refresh`, not by editing `rawString`. The decomposition refresh applies (and validate checks) is byte-exact:
+`content` is the source of truth. **`uip agent refresh` regenerates `messages[].contentTokens` from `content`** (correct `simpleText`/`variable` types, brace-free `rawString`). So: author the prompt in `content`, run `refresh`, and **don't hand-author or hand-fix `contentTokens`**. `uip agent validate` is read-only — if it flags a token mismatch (`Expected type "simpleText"…`, `Expected "input.X" but got "{{input.X}}"`, or `contentTokens has N entries but content requires M`), **re-run `refresh`** to regenerate; don't edit `rawString`.
 
-1. **`content`** holds the human-readable prompt with references: `...literal text... {{input.<trigger>__output__<var>}} ...more literal...`. The braces live **only** here.
-2. **`contentTokens[]`** is the ordered left-to-right decomposition of `content`:
-   - Each run of literal text → `{ "type": "simpleText", "rawString": "<the literal text VERBATIM, including every surrounding space and \n>" }`. Token type is **`simpleText`**, never `"text"`.
-   - Each `{{ ... }}` reference → `{ "type": "variable", "rawString": "<the text BETWEEN the braces, verbatim>" }` — i.e. `input.X` exactly as written inside the braces, **without** the braces. Braces never appear inside a `rawString`. (If you write `{{input.X}}` with no inner spaces, `rawString` has none.)
-3. **Reconstruction check** (this is what the validator runs): walk the tokens left to right; for `simpleText` append `rawString`, for `variable` append `"{{" + rawString + "}}"`. The concatenation MUST equal `content` character-for-character — same spaces, same newlines.
-
-Because `rawString` captures literal text verbatim, whitespace is preserved automatically: a two-space gap before a `{{` in `content` is two trailing spaces in the preceding `simpleText` token. Do not normalize spacing in one field but not the other.
-
-Worked decomposition — `content` = `"Invoice Number: {{input.start__output__invoiceNumber}}\n"`:
+What `refresh` produces, for `content` = `"Invoice Number: {{input.start__output__invoiceNumber}}\n"`:
 
 ```json
 "contentTokens": [
@@ -82,14 +74,6 @@ Worked decomposition — `content` = `"Invoice Number: {{input.start__output__in
   { "type": "simpleText", "rawString": "\n" }
 ]
 ```
-
-Reconstruct: `"Invoice Number: "` + `"{{" + "input.start__output__invoiceNumber" + "}}"` + `"\n"` = `"Invoice Number: {{input.start__output__invoiceNumber}}\n"` ✓ — identical to `content`.
-
-If `validate` rejects hand-edited `contentTokens`, **re-run `uip agent refresh` to regenerate them from `content`** — don't hand-fix the `rawString` (that back-and-forth is the loop that burns the turn). The validator strings (verbatim) and what each one means:
-
-- `Expected type "simpleText" but got "text"` → token type must be `simpleText`.
-- `Expected "input.X" but got "{{input.X}}"` → you put the braces (or extra spaces) in the `variable` `rawString`; it must be exactly the text between the braces (braces stay only in `content`).
-- `contentTokens has N entries but content requires M. Rebuild contentTokens to match content.` → the reverse over-correction: you stripped the `{{ }}` out of `content` too, so `content` no longer segments into the same number of tokens. Keep `{{input.X}}` in `content`; only the token `rawString` is brace-free.
 
 ### Worked example — end to end (repeat the triple per input)
 
@@ -440,8 +424,8 @@ uip maestro flow validate <FlowName>.flow --output json
 | `agent validate` flags `Expected type "simpleText" but got "text"` | Hand-edited `contentToken` written with `type: "text"` | Re-run `uip agent refresh` — it regenerates `contentTokens` from `content` (correct `simpleText`/`variable` types). Don't hand-edit the token. See § The `content` ↔ `contentTokens` mirror invariant. |
 | `agent validate` flags `Expected "input.X" but got "{{input.X}}"` | Hand-edited `variable` token has the braces/extra spaces in its `rawString` | Re-run `uip agent refresh` to regenerate the tokens from `content` (brace-free `rawString`) — don't hand-fix it. See § The `content` ↔ `contentTokens` mirror invariant. |
 | `agent validate` flags `contentTokens has N entries but content requires M. Rebuild contentTokens to match content.` | `content` and `contentTokens` drifted (e.g. tokens edited without `content`, or vice versa) | Re-run `uip agent refresh` to regenerate `contentTokens` from `content`. If the prompt itself is wrong, fix `content` first, then refresh. See § The `content` ↔ `contentTokens` mirror invariant. |
-| Agent prompt receives literal `{{input.X}}` text instead of flow data | `agent.json inputSchema.properties` is missing the `<trigger>__output__<var>` key (even if `JobArguments` delivered the value) | Add the `inputSchema` key. An empty/incomplete `inputSchema` makes the runtime leave the token unresolved. See § Wiring Flow Variables into Agent Prompts. |
-| `flow validate` passes but debug faults `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR`; agent reports it received the literal `input.<key>` text | Input not wired: (a) no `agentInputVariables[]` on the node → `JobArguments` empty; (b) `agent.json inputSchema` missing the key → delivered value not bound into `input`; or (c) the trigger global was never declared | (a) Add the node `agentInputVariables[]` binding `=$vars.<trigger>.output.<var>`. (b) Add the `inputSchema.properties.<trigger>__output__<var>` key. (c) Declare the global in `variables.globals[]` (`direction:"in"`, `triggerNodeId`). Verify at `flow debug` — `JobArguments` carries the value **and** output reflects it. See § Wiring Flow Variables into Agent Prompts. |
+| Prompt shows literal `{{input.X}}` at runtime | `inputSchema.properties` missing the referenced key (`flow validate` flags this — run it) | Add the `<trigger>__output__<var>` key to `inputSchema`. |
+| `flow validate` passes but debug faults `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` (literal `input.<key>`) | Node `agentInputVariables` uses `value:` instead of `binding:` (or is missing) → empty `JobArguments` | Set `binding:"=$vars.<trigger>.output.<var>"` on the node entry; ensure the trigger global is declared (`direction:"in"`). |
 | Debug faults `AGENT_RUNTIME.TERMINATION_LLM_RAISED_ERROR` "Template placeholders detected instead of actual values" — and the node *does* have `agentInputVariables[]` | Entries use `value: "=js:$vars…"` (Studio Web's canvas form) instead of `binding`; the converter only reads `binding`, so `JobArguments` are empty | Rename `value` → `binding` on each entry and strip the `=js:` prefix: `{ "id": "<key>", "binding": "=$vars.<trigger>.output.<var>" }`. See § Wiring Flow Variables into Agent Prompts. |
 
 ## Repair Recipes

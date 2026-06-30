@@ -128,7 +128,7 @@ resources/
 
 ## Wiring Flow Inputs Into an Inline Agent (required)
 
-**The CLI fills none of this** — `refresh` ships `agent.json` as-authored, so build / refresh / validate all pass even when input is missing; the gap surfaces only at `flow debug`.
+**The CLI does not derive the input wiring** — you author it; `refresh` only regenerates `contentTokens` from `content` (it does not fill `inputSchema` or `agentInputVariables`). `flow validate` *does* catch a prompt↔schema mismatch (a `{{input.K}}` that's malformed or names a key not in `inputSchema`), but **not** a missing/wrong node `agentInputVariables` binding — that delivery gap surfaces only at `flow debug`.
 
 This skill authors the **`agent.json` side** (flatten rule: `$vars.<trigger>.output.<var>` → `<trigger>__output__<var>`):
 - `inputSchema.properties` — one `<trigger>__output__<var>` key per input (mandatory; binds the delivered `JobArguments` into the agent's `input`). Empty schema → the agent sees the literal `input.<key>` token even when the value arrived.
