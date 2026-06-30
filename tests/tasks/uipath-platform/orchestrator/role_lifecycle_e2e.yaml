@@ -21,8 +21,8 @@ run_limits:
   expected_turns: 24
 
 initial_prompt: |
-  I need a new tenant-level role set up. Name it `e2e-role-` followed by
-  the unique prefix from `seed.json`.
+  I need a new tenant-level Orchestrator role set up. Name it `e2e-role-`
+  followed by the unique prefix from `seed.json`.
 
   The role should end up with exactly one permission attached. Pick the
   first permission from the list of grantable permissions on the tenant
