@@ -39,7 +39,9 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 **If the file does NOT exist** → run the discovery flow below.
 
 **Discovery flow** (used for both missing and stale context):
-1. Trigger the `uipath-project-discovery-agent` and wait for it to complete
+1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md).
+   - **Claude Code:** trigger the registered `uipath-project-discovery-agent` agent (registered via the plugin manifest).
+   - **UiPath Autopilot:** spawn a predefined read-only subagent and pass it `agents/uipath-project-discovery-agent.md` (relative to this skill) as its custom skill.
 2. The agent returns the generated context document as its response
 3. Write the returned content to **both**:
    - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
