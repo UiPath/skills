@@ -228,6 +228,24 @@ Namespaces: `UiPath.Activities.System.FileOperations`
 - [activity-packages/file-operations/overview.md](./activity-packages/file-operations/overview.md) — Package overview, Download File from URL execution model, and common failure patterns
 - [activity-packages/file-operations/summary.md](./activity-packages/file-operations/summary.md) — All playbooks for File Operations issues
 
+## Slack Activities (Integration Service)
+
+Activities for automating Slack through an Integration Service connection — Send Message, Get User by Email, and related BAF connector activities. Each activity resolves the Slack connection (OAuth token) and then calls the Slack Web API. Issues here split by phase: connection-resolution failures (`System.AggregateException` wrapping a `ConnectionException` — connection deleted / no longer valid / transient 503) and Slack API rejections (`UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException` carrying a Slack `error` code such as `invalid_arguments`/missing `channel`, `channel_not_found`, `not_in_channel`, `invalid_auth`). For the legacy `UiPath.Slack.Activities` (`SlackScope`) package, this is a different code path.
+
+Namespaces: `UiPath.Slack.IntegrationService.Activities`
+
+- [activity-packages/slack-activities/overview.md](./activity-packages/slack-activities/overview.md) — Package overview, connection-vs-API phase model, and common failure patterns
+- [activity-packages/slack-activities/summary.md](./activity-packages/slack-activities/summary.md) — All playbooks for Slack Integration Service Activities issues
+
+## Terminal Activities
+
+Activities for automating terminal/mainframe emulators (IBM 3270/5250 via EHLLAPI, VT, and other providers). Work runs inside a `Terminal Session` (`TerminalSession`) scope that opens a connection (new connection string or reused existing connection), runs child screen-interaction activities, then closes it. Issues here are overwhelmingly connection-time: unreachable host / wrong port / provider, provider runtime not installed on the robot, connect/wait timeout, or a stale reused connection — surfacing as a `TerminalConnectionException` (`System.Exception`) with `... | ResultCode=<code> | ConnectionStatus=<status>`, its async-wrapped `System.AggregateException` form, or a `System.NullReferenceException` that masks a failed open.
+
+Namespaces: `UiPath.Terminal.Activities`
+
+- [activity-packages/terminal-activities/overview.md](./activity-packages/terminal-activities/overview.md) — Package overview, session connection model, and common failure patterns
+- [activity-packages/terminal-activities/summary.md](./activity-packages/terminal-activities/summary.md) — All playbooks for Terminal Activities issues
+
 
 ## Playbooks
 
