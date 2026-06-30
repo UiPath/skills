@@ -1,6 +1,6 @@
 ---
 name: uipath-functions
-description: "Always invoke for UiPath Coded Functions. Coded functions are python projects that are not using LLMs or agentic frameworks like Langchain, Llamaindex or OpenAI."
+description: "UiPath Coded Functions — deterministic Python units built via `uip functions` (new/init/run/pack/publish); the `functions` map in `uipath.json`, `entry-points.json`, Pydantic Input/Output. Rule-based logic, data transforms, ERP/Integration Service connector calls — no LLM reasoning or agent loop. For LLM/agentic projects (LangGraph, LlamaIndex, OpenAI Agents, `agent.json`)→uipath-agents."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
