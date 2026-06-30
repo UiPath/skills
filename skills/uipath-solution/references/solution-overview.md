@@ -51,7 +51,7 @@ MySolution/
 ```mermaid
 graph LR
     A[init] --> B[project add]
-    B --> C[resource refresh]
+    B --> C[resources refresh]
     C --> D[pack]
     D --> E[publish]
     E --> F["deploy run<br/>(auto-activate by default)"]
@@ -63,7 +63,7 @@ Two distinct distribution paths from the same solution source:
 - **`pack` → `publish` → `deploy run`** — promotes a versioned package to Orchestrator.
 - **`upload`** — pushes the solution to Studio Web for browser-based debugging only. Does not produce a published package and cannot be deployed via `deploy run`.
 
-Always run `resource refresh` before either path so the bundled artefact files and `userProfile/<userId>/debug_overwrites.json` reflect the current cloud state.
+Always run `resources refresh` before either path so the bundled artefact files and `userProfile/<userId>/debug_overwrites.json` reflect the current cloud state.
 
 ---
 
