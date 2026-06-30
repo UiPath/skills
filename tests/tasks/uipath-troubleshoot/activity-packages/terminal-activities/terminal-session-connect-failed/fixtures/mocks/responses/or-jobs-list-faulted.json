@@ -13,7 +13,7 @@
       "State": "Faulted",
       "StartTime": "2026-06-20T11:08:05.463Z",
       "EndTime": "2026-06-20T11:08:17.150Z",
-      "ReleaseName": "TerminalRepro",
+      "ReleaseName": "MainframeInquiry",
       "Source": "Manual",
       "HostMachineName": "MOCK-HOST",
       "ErrorCode": "Robot",

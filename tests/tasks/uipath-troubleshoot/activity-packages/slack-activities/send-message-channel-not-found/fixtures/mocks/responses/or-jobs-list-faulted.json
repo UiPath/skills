@@ -13,7 +13,7 @@
       "State": "Faulted",
       "StartTime": "2026-06-20T11:08:39.840Z",
       "EndTime": "2026-06-20T11:08:45.333Z",
-      "ReleaseName": "SlackMsgRepro",
+      "ReleaseName": "TeamNotifications",
       "Source": "Manual",
       "HostMachineName": "MOCK-HOST",
       "ErrorCode": "Robot",

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Faithful replay: UiPath.Slack.IntegrationService.Activities.SendMessage faults AFTER the connection resolved, with UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException carrying the Slack Web API error (ProviderMessage {\"ok\":false,\"error\":\"channel_not_found\"}). The agent must read the Slack error code, not stop at the HTTP 400. Captured from a real Orchestrator job; PII scrubbed. First-match-wins.",
+  "_doc": "Faithful replay of a faulted UiPath.Slack.IntegrationService.Activities SendMessage job. Canned uip CLI responses captured from a real Orchestrator job; PII scrubbed. First-match-wins.",
   "rules": [
     {
       "match": "or folders list",
@@ -57,7 +57,7 @@
     {
       "pattern": "or jobs get f0c8117e-38f1-474a-8c14-81f94c86816c",
       "min": 1,
-      "description": "Agent fetches the faulted job to read the BusinessActivityExecutionException and the Slack ProviderMessage error code (channel_not_found)."
+      "description": "Agent fetches the faulted job to read its exception detail."
     }
   ]
 }
