@@ -297,7 +297,17 @@ The canonical happy-path walkthrough for creating, configuring, validating, and 
 which uip || npm root -g 2>/dev/null | xargs -I{} echo {}/uip/bin/uip
 ```
 
-If not found: `npm install -g @uipath/cli`
+If not found, use the official installer. It installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
+
+macOS/Linux:
+```bash
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+```
+
+Windows PowerShell:
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
+```
 
 ### Step 1 — Check login status
 

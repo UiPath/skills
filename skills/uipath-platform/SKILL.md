@@ -1,6 +1,6 @@
 ---
 name: uipath-platform
-description: "UiPath platform ops via the uip CLI — use for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway. Load BEFORE writing code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, Data Fabric entities/records/files/choice-sets (`uip df`), BYO LLM product configurations, context grounding, traces, licensing. For 'why did X fail' / root-cause→uipath-troubleshoot. For `uip solution` lifecycle→uipath-solution. For PDD/SDD design→uipath-planner. For workflow code (.xaml/.cs)→uipath-rpa, .flow (incl. Data Fabric connector nodes)→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
+description: "UiPath platform ops via the uip CLI — use for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway, and for CLI installation/bootstrap on fresh machines. Load BEFORE writing code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, Data Fabric entities/records/files/choice-sets (`uip df`), BYO LLM product configurations, context grounding, traces, licensing, and setup of Node.js / `@uipath/cli` / AI-agent skills / .NET SDK / Python. For 'why did X fail' / root-cause→uipath-troubleshoot. For `uip solution` lifecycle→uipath-solution. For PDD/SDD design→uipath-planner. For workflow code (.xaml/.cs)→uipath-rpa, .flow (incl. Data Fabric connector nodes)→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
 when_to_use: "User mentions UiPath / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway / 'uip' CLI / asset / queue / bucket / library / webhook / trigger / connector / connection / tenant / folder / robot / package / entity / record / choice set / BYO LLM. Also 'upload to UiPath', 'create asset', 'start job', 'list queues', 'deploy a single package to Orchestrator', 'OAuth2 token', 'create entity', 'insert record', 'query Data Fabric', 'upload file attachment', 'import CSV', 'register my own LLM key', 'configure a model substitution', 'my BYO LLM key stopped working / returns errors', 're-probe / audit a BYO configuration', 'uipath.com REST'. For `uip solution` ops or `.uipx` deploys→uipath-solution. For Data Fabric connector nodes inside a `.flow`→uipath-maestro-flow."
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
@@ -23,10 +23,44 @@ If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Se
 - "configure an Integration Service connection" → `uip is connections create <connector-key>` (NOT a hand-rolled OAuth flow)
 - "attach a file to a Data Fabric record" → `uip df files upload <entity-id> <record-id> <field-name> --file <path>` (NOT `records insert` / `records update` with the file value — the platform silently strips FILE columns and returns Success, see `references/data-fabric/data-fabric.md` Rule 6)
 
+## CLI Bootstrap for Fresh Machines
+
+When `uip --version` fails, Node/npm is missing, or a coding agent needs a workstation prepared for UiPath work, use the official onboarding installers instead of reconstructing package-manager logic. They are idempotent and safe to rerun.
+
+macOS/Linux:
+```bash
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+```
+
+Windows PowerShell:
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
+```
+
+The installers:
+- Ensure Node.js >= 20 and npm.
+- Install `@uipath/cli` from public npm.
+- Run `uip skills install --no-interactive` so installed AI coding agents (Claude Code, Codex, Gemini CLI, Cursor, etc.) can use the UiPath skills.
+- Best-effort install .NET SDK 8.0 and Python 3.11-3.14 for RPA, coded-agent, and tool workflows.
+
+For CI or a CLI-only machine where agent skills and runtimes are not needed, skip them explicitly:
+
+```bash
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash -s -- --skip-skills --skip-runtimes
+```
+
+```powershell
+iwr https://download.uipath.com/uipath-cli/install.ps1 -OutFile install.ps1
+./install.ps1 -SkipSkills -SkipRuntimes
+```
+
+Useful flags: `--skip-node`, `--skip-skills`, `--skip-dotnet`, `--skip-python`, `--skip-runtimes`, `--dry-run` on macOS/Linux; `-SkipNode`, `-SkipSkills`, `-SkipDotnet`, `-SkipPython`, `-SkipRuntimes`, `-DryRun` on Windows. The matching environment variables are `UIP_SKIP_NODE`, `UIP_SKIP_SKILLS`, `UIP_SKIP_DOTNET`, `UIP_SKIP_PYTHON`, `UIP_SKIP_RUNTIMES`, and `UIP_DRY_RUN`.
+
 ## When to Use This Skill
 
 Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 
+- **CLI bootstrap / workstation setup**: fresh machine, `uip` missing, Node/npm missing, Python or .NET SDK missing, or an LLM coding agent needs UiPath skills installed
 - **Auth & tenant**: login, logout, switch tenant, named login profiles via `--profile <name>`, `~/.uipath/.auth`, OAuth token, organization
 - **Orchestrator core**: folders (`list/get/create/edit/move/delete/runtimes`), processes/releases, jobs (`start/stop/logs/traces/healing-data`), packages (`upload/download/versions`), machines, users / roles / sessions (incl. DirectoryUser/DirectoryGroup/DirectoryRobot/DirectoryExternalApplication), licenses, calendars, settings, audit logs, credential stores, feeds, attachments
 - **Resources (Orchestrator-scoped)**: assets (text/integer/bool/credential), queues + queue items, storage buckets + bucket files (`upload/download/get-download-url/get-upload-url`), libraries (`.nupkg`), webhooks (HMAC signing), triggers (time/queue/api)
@@ -81,6 +115,16 @@ Rules:
 These tokens can be reused for direct Orchestrator REST API calls when CLI commands don't cover a use case. If a named profile is active, read the path from `uip login which --profile <name> --output json` rather than assuming `~/.uipath/.auth`.
 
 ## Quick Start
+
+### Step 0 — Ensure the CLI Exists
+
+Check first:
+
+```bash
+uip --version
+```
+
+If the command is missing, use the official installer from [CLI Bootstrap for Fresh Machines](#cli-bootstrap-for-fresh-machines), then open a new shell if the installer added PATH entries.
 
 ### Step 1 — Authenticate
 
@@ -170,6 +214,7 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 | **Report on license consumption** | [references/licensing/consumables-report.md](references/licensing/consumables-report.md) |
 | **Understand licensing concepts** | [references/licensing/licensing.md](references/licensing/licensing.md) |
 | **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
+| **Bootstrap `uip`, Node, Python, .NET, and agent skills** | [CLI Bootstrap for Fresh Machines](#cli-bootstrap-for-fresh-machines) |
 | **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
 
 ## Resolving UiPath Studio
