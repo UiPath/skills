@@ -156,7 +156,7 @@ Repeat steps 2a–2d for all documents in the list.
 
 ### Detecting off-template documents
 
-IXP gives **no explicit "off-template" signal**; the one mechanical cue is **empty predictions** — `get-predictions` returns no value for any field (all `FormattedValue` empty), visible directly from the output. When a document comes back empty, **confirm nothing** — open it with the Read tool and, if it's genuinely a different document type than the project targets, delete it (below) so it doesn't pollute training. Note in your summary which documents you flagged as off-template and why. (A document that *does* get predictions but they're wrong is not an off-template case — handle those per field in the normal review: leave them NOT CONFIRMED, Rule 11.)
+IXP gives **no explicit "off-template" signal**. Use **empty predictions** as the cue — `get-predictions` returns no value for any field (all `FormattedValue` empty), visible directly from the output. Do **not** try to infer off-template by comparing a predicted *value* against its field (e.g. flagging a money amount that landed in an Exact-Text `Invoice Number`): that isn't reliably detectable, because a text/ID field accepts any string. So a document that gets **wrong but non-empty** predictions is not an off-template case — leave those fields NOT CONFIRMED in the normal review (Rule 11). When a document comes back **empty**, **confirm nothing** — open it with the Read tool and, if it's genuinely a different document type than the project targets, delete it (below) so it doesn't pollute training. Note in your summary which documents you flagged as off-template and why.
 
 ### Removing a document from the project
 
