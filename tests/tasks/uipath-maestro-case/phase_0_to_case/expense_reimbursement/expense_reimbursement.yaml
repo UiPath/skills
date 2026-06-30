@@ -2,14 +2,14 @@ task_id: skill-case-phase-0-expense-reimbursement
 description: >
   Phase 0 INTERVIEW ONLY - simulated interview -> sdd.draft.md for an
   employee expense reimbursement case. Tests whether the Phase 0 interview
-  captures the bug-bash design: expense_requests record-created trigger,
-  5 primary stages in order (Submission -> Manager Approval -> Finance
-  Approval -> Payment -> Approved) plus 2 terminal disposition lanes
-  (Rejected, Withdrawn) modeled as secondary stages, user/finance-selected
-  Payment entry, and the core task-type mix. STOPS at the design document -
-  no tasks.md, no caseplan build. An LLM judge rates design coherence
-  (companion data objects + full task mix). Third domain alongside
-  candidate_interview and loan_origination.
+  captures the bug-bash design: 5 primary stages in order (Submission ->
+  Manager Approval -> Finance Approval -> Payment -> Approved) plus 2 terminal
+  disposition lanes (Rejected, Withdrawn) modeled as secondary stages,
+  user/finance-selected Payment entry, and the core task-type mix. STOPS at
+  the design document - no tasks.md, no caseplan build. An LLM judge rates
+  design coherence (record-created trigger on expense_requests, companion
+  data objects, full task mix). Third domain alongside candidate_interview
+  and loan_origination.
 tags:
   - uipath-maestro-case
   - integration
@@ -84,14 +84,6 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "design declares the expense_requests record-created trigger"
-    command: "cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'expense_requests' && cat sdd.draft.md sdd.md 2>/dev/null | grep -Eiq 'record[- ]created|created.*record|new.*record'"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
