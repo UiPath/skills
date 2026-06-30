@@ -89,6 +89,8 @@ Read the file, parse, append:
 
 Where `basename(caseplanFile)` is the schema file's base name including extension (typically `caseplan.json`), yielding a `filePath` fragment like `/content/caseplan.json.bpmn#trigger_xY2mNp`.
 
+Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
+
 Write back with **4-space indent** (`JSON.stringify(obj, null, 4)`).
 
 ## Write order
