@@ -59,16 +59,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/insertOrder.ts calls insertRecordById or insertRecordsById (the write op)"
-    command: "sed 's|//.*||' src/insertOrder.ts | grep -E 'insertRecords?ById'"
+    description: "src/insertOrder.ts calls insertRecordById or insertRecordsById (the write op). Requires `\\(` so JSDoc references like `\\`insertRecordsById\\`` don't match."
+    command: "sed 's|//.*||' src/insertOrder.ts | grep -E 'insertRecords?ById\\s*\\('"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "getById call APPEARS BEFORE the insertRecords*ById call in the source (Rule #13 — inspect schema BEFORE writing). Comments stripped; uses line numbers to enforce ordering."
-    command: "GB=$(sed 's|//.*||' src/insertOrder.ts | grep -nE '\\.getById\\s*\\(' | head -1 | cut -d: -f1); INS=$(sed 's|//.*||' src/insertOrder.ts | grep -nE 'insertRecords?ById' | head -1 | cut -d: -f1); test -n \"$GB\" && test -n \"$INS\" && test \"$GB\" -lt \"$INS\""
+    description: "getById call APPEARS BEFORE the insertRecords*ById call in the source (Rule #13 — inspect schema BEFORE writing). Both greps require `\\(` so JSDoc/comment references don't trigger false ordering failures."
+    command: "GB=$(sed 's|//.*||' src/insertOrder.ts | grep -nE '\\.getById\\s*\\(' | head -1 | cut -d: -f1); INS=$(sed 's|//.*||' src/insertOrder.ts | grep -nE 'insertRecords?ById\\s*\\(' | head -1 | cut -d: -f1); test -n \"$GB\" && test -n \"$INS\" && test \"$GB\" -lt \"$INS\""
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

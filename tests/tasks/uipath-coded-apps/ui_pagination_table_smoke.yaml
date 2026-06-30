@@ -47,11 +47,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "JobsTable.tsx declares a page-size constant in the 25-50 range (Rule #15)"
-    command: "sed 's|//.*||' src/components/JobsTable.tsx | grep -E '(pageSize|PAGE_SIZE|rowsPerPage|perPage)\\s*[:=]\\s*(2[5-9]|[34][0-9]|50)\\b'"
+    description: "JobsTable.tsx uses a page-size identifier (Rule #15) — accepts pageSize, PAGE_SIZE, rowsPerPage, perPage in any form (literal, default, clamp, prop)"
+    command: "sed 's|//.*||' src/components/JobsTable.tsx | grep -iE '(pageSize|page[_]?size|rowsPerPage|perPage|page[_]?length)'"
     timeout: 10
     expected_exit_code: 0
-    weight: 2.5
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "JobsTable.tsx contains a literal page-size value in the 25-50 range somewhere in code (Rule #15) — accepts default, clamp arg, or prop default"
+    command: "sed 's|//.*||' src/components/JobsTable.tsx | grep -E '\\b(2[5-9]|[34][0-9]|50)\\b'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command

@@ -90,10 +90,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "VITE_UIPATH_BASE_URL uses the API subdomain (Rule #8 — api.uipath.com, not cloud.uipath.com)"
-    command: "grep -E '^VITE_UIPATH_BASE_URL=https://(\\w+\\.)?api\\.uipath\\.com' .env.example"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
+  # Note: R8 (API subdomain) coverage lives in sdk_imports_scopes_smoke and
+  # the orchestrator_dashboard e2e — this test is about the OAuth handshake
+  # surface (PKCE flow + redirect URI + uipath.json), not retesting R8.
