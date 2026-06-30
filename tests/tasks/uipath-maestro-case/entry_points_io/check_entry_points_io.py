@@ -15,6 +15,22 @@ import os
 import sys
 
 
+# Canonical JOB_ATTACHMENTS_DEFINITION["job-attachment"] — must be emitted verbatim
+# (PackagingUtil.ts; references/entry-points-sync.md). Note the unbalanced inner quotes in
+# MimeType.description — reproduced exactly, as the FE does.
+EXPECTED_JOB_ATTACHMENT = {
+    "type": "object",
+    "properties": {
+        "ID": {"type": "string", "description": "Orchestrator attachment key"},
+        "FullName": {"type": "string", "description": "File name"},
+        "MimeType": {"type": "string", "description": 'The MIME type of the content, such as "application/json" or "image/png'},
+        "Metadata": {"type": "object", "description": "Dictionary<string, string> of metadata", "additionalProperties": {"type": "string"}},
+    },
+    "required": ["ID"],
+    "x-uipath-resource-kind": "JobAttachment",
+}
+
+
 def fail(msg):
     sys.exit(f"FAIL: {msg}")
 
@@ -84,8 +100,12 @@ def main():
     ja = defs.get("job-attachment")
     if not ja:
         fail("input.definitions.job-attachment is missing for the file-typed In-arg")
-    if ja.get("x-uipath-resource-kind") != "JobAttachment":
-        fail(f"job-attachment definition missing x-uipath-resource-kind, got {ja}")
+    if ja != EXPECTED_JOB_ATTACHMENT:
+        fail(
+            "job-attachment definition is not the verbatim JOB_ATTACHMENTS_DEFINITION constant.\n"
+            f"  expected: {json.dumps(EXPECTED_JOB_ATTACHMENT, sort_keys=True)}\n"
+            f"  got:      {json.dumps(ja, sort_keys=True)}"
+        )
 
     # required must be a present array; no Required column in the SDD -> []
     if not isinstance(inp.get("required"), list):

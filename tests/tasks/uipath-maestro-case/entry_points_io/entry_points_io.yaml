@@ -9,7 +9,7 @@ description: >
   projected into output.properties with companion-sourced defaults, plus
   that input.required is a present empty array. Integration tier — builds +
   validates, no debug run.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node, feature:arguments]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node, feature:trigger]
 
 run_limits:
   expected_turns: 95

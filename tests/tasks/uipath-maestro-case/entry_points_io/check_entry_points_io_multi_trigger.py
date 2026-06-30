@@ -45,6 +45,28 @@ def out_props(entry):
     return (entry.get("output") or {}).get("properties", {}) or {}
 
 
+def load_sibling_caseplan(ep_path):
+    cp = os.path.join(os.path.dirname(os.path.abspath(ep_path)), "caseplan.json")
+    if not os.path.isfile(cp):
+        hits = glob.glob(os.path.join(os.path.dirname(ep_path) or ".", "**", "caseplan.json"), recursive=True)
+        cp = hits[0] if hits else None
+    if not cp or not os.path.isfile(cp):
+        fail(f"sibling caseplan.json not found next to {ep_path} (needed to verify each entry's trigger type)")
+    try:
+        return json.load(open(cp))
+    except (OSError, json.JSONDecodeError) as e:
+        fail(f"could not read {cp}: {e}")
+
+
+def trigger_service_type(caseplan, node_id):
+    """serviceType of the trigger node — 'Intsvc.TimerTrigger' for a timer, None/other for a manual."""
+    for n in caseplan.get("nodes", []):
+        if n.get("id") == node_id:
+            up = n.get("data", {}).get("uipath")
+            return up.get("serviceType") if isinstance(up, dict) else None
+    fail(f"trigger node {node_id!r} (from an entry-point filePath fragment) not found in caseplan.json")
+
+
 def main():
     path = find_entry_points()
     try:
@@ -75,6 +97,19 @@ def main():
     claim_entry = next(e for e in entries if in_keys(e) == {"claimId"})
     prio_entry = next(e for e in entries if in_keys(e) == {"priority"})
 
+    # Map each entry back to its trigger node in the sibling caseplan.json and assert the binding
+    # DIRECTION — claimId on the MANUAL trigger (T02), priority on the TIMER trigger (T03). The
+    # partition check above passes even if T-resolution swapped the two; this catches that.
+    caseplan = load_sibling_caseplan(path)
+    claim_frag = claim_entry.get("filePath", "").split("#")[-1]
+    prio_frag = prio_entry.get("filePath", "").split("#")[-1]
+    claim_svc = trigger_service_type(caseplan, claim_frag)
+    prio_svc = trigger_service_type(caseplan, prio_frag)
+    if claim_svc == "Intsvc.TimerTrigger":
+        fail(f"claimId is bound to the TIMER trigger ({claim_frag}); expected the manual trigger (T02) — bindings swapped?")
+    if prio_svc != "Intsvc.TimerTrigger":
+        fail(f"priority is bound to a non-timer trigger ({prio_frag}, serviceType={prio_svc!r}); expected the timer trigger (T03, Intsvc.TimerTrigger) — bindings swapped?")
+
     # Types / defaults of the scoped In-args.
     claim = (claim_entry.get("input") or {}).get("properties", {}).get("claimId", {})
     if claim.get("type") != "string":
@@ -92,8 +127,8 @@ def main():
             fail(f"entry '{frag}' output.decision default should be 'Resolved', got {dec.get('default')!r}")
 
     print(
-        f"PASS: {path} — per-trigger partition confirmed "
-        f"(claimId and priority on separate triggers' entries, no overlap); decision projected to both entries."
+        f"PASS: {path} — per-trigger binding verified via caseplan "
+        f"(claimId→manual T02, priority→timer T03, no overlap); decision projected to both entries."
     )
 
 

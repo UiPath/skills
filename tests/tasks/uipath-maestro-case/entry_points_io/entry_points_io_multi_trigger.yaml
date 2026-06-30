@@ -8,7 +8,7 @@ description: >
   Exercises the per-trigger In-arg binding (feat/case-in-arg-trigger) feeding
   the Step 6.3 entry-points refresh. Integration tier — builds + validates,
   no debug run.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:arguments, feature:multi-trigger, feature:timer]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:trigger]
 
 run_limits:
   expected_turns: 95
