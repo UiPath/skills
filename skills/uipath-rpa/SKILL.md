@@ -261,6 +261,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **Use mock testing** | XAML | [testing-guide.md § Mock Testing (WIP)](references/testing-guide.md) — requires CLI command not yet available |
 | **Use XAML test activities** | XAML | [testing-guide.md § XAML Test Activities](references/testing-guide.md) |
 | **Use execution templates** | XAML | [testing-guide.md § Execution Templates](references/testing-guide.md) |
+| **Set up Test Manager for the project** (server URL + default project) | Both | [cli-reference.md § Test Manager](references/cli-reference.md) — `uip rpa tm connect` / `set-default-project` |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Use a common activity** (`Sequence` / `If` / `Switch<T>` / `TryCatch` / `While` / `DoWhile` / `ForEach<T>` / `Assign` / `LogMessage` / `WriteLine` / `Delay` / `Throw` / `Rethrow`) | XAML | [common-activity-card.md](references/common-activity-card.md) |
 | **Create/edit Flowchart** | XAML | [xaml/flowchart-guide.md](references/xaml/flowchart-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |
