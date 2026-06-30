@@ -21,18 +21,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    # Only run on non-fork PRs (secrets required), or on @claude mentions
+    # Only run on non-fork PRs (secrets required), or on @claude mentions from
+    # trusted authors (OWNER/MEMBER/COLLABORATOR). Untrusted actors must not be
+    # able to trigger a privileged run via a comment — see Layer 2 in the
+    # prompt-injection hardening notes.
     if: |
       (github.event_name == 'pull_request' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository) ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && github.event.pull_request.head.repo.full_name == github.repository) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && github.event.pull_request.head.repo.full_name == github.repository)
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude') && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && github.event.pull_request.head.repo.full_name == github.repository && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && github.event.pull_request.head.repo.full_name == github.repository && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association))
 
+    # Least privilege. contents stays read (no push). pull-requests/issues:write
+    # are required by track_progress to post and update the review comment.
+    # actions:read dropped — this prompt never reads workflow-run data.
     permissions:
       contents: read
       pull-requests: write
       issues: write
-      actions: read
 
     steps:
       - name: Checkout code
@@ -41,12 +46,25 @@ jobs:
           fetch-depth: 0
 
       - name: Claude Code Action
-        uses: anthropics/claude-code-action@v1
+        # Pinned to a full commit SHA (not @v1) so a moved tag cannot run
+        # untrusted action code with our token/secrets. SHA = v1.0.160.
+        uses: anthropics/claude-code-action@4633baf5267540f3f8cb58b684f79901d564c280 # v1.0.160
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           track_progress: true
-          claude_args: "--model claude-opus-4-6"
+          # Tool allowlist (prompt-injection containment). This review reads
+          # attacker-controlled content (diff, PR comments, file contents), so
+          # Claude is restricted to read-only commands plus the single write
+          # tool track_progress needs to post its review comment. Arbitrary
+          # Bash, network tools (WebFetch/WebSearch/curl/wget), git push, and
+          # `gh api`/`gh secret` are NOT in the list and therefore blocked —
+          # an injected instruction cannot reach env secrets (GITHUB_TOKEN /
+          # ANTHROPIC_API_KEY are env vars, not files) or mutate the repo.
+          # Residual: readable repo content could be echoed into the PR comment.
+          claude_args: >-
+            --model claude-opus-4-6
+            --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(gh pr view:*),Bash(ls:*),Bash(cat:*),mcp__github_comment__update_claude_comment"
           prompt: |
             You are reviewing a PR for a Claude Code plugin repository that contains
             markdown skill definitions, YAML frontmatter, shell hooks, and coder_eval
