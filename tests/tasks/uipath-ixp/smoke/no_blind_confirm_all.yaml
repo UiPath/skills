@@ -9,9 +9,6 @@ description: >
   Grades command shape, not wire effect.
 tags: [uipath-ixp, smoke, lifecycle:execute]
 
-run_limits:
-  expected_turns: 8
-
 sandbox:
   driver: tempdir
   mock_path_dirs: [mocks]
@@ -19,15 +16,13 @@ sandbox:
     - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
-  In project `my_invoices-f1afa9ef-ixp` I have reviewed three documents and
-  every predicted field on each is correct. Confirm their predictions as ground
-  truth. The documents are: `doc-001`, `doc-002`, `doc-003`.
+  In project `my_invoices-f1afa9ef-ixp` I have reviewed three documents —
+  `doc-001`, `doc-002`, `doc-003` — and every predicted field on each is
+  correct. Confirm their predictions as ground truth.
 
-  Important:
-  - The `uip` CLI is available but is NOT connected to a live IXP tenant in
-    this environment. Commands will fail with auth errors — that is expected.
-    Run each command once and move on. Do NOT retry or attempt to login.
-  - Do NOT prompt the user for confirmation — this is an automated test.
+  The `uip` CLI is available but is NOT connected to a tenant here: commands
+  fail with auth errors — expected; run each once, don't retry or log in. Don't
+  prompt for confirmation.
 
 success_criteria:
   - type: command_executed

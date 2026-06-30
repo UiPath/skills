@@ -96,7 +96,6 @@ If the user provides a taxonomy file, use `--skip-taxonomy` and `import-taxonomy
 | Metrics don't change after a prompt update | Re-evaluation hasn't completed | Wait ~2 minutes for retrain. |
 | ModelVersion doesn't advance | Retrain still in progress | Any change to model inputs (labellings OR instructions) triggers a full retrain. Wait ~2 min then retry. |
 | Field instructions conflict with label_def instructions | `fields update-prompts` only edits per-field instructions, NOT the parent label_def instructions | Before iterating, read the label_def `instructions` and update them with `groups update-prompts` if they contradict the per-field prompts. |
-| Your review would mark *every* field MISSING on a document | The document is off-template — none of the project's fields appear in it (IXP gives no explicit off-template flag) | `documents delete` it instead of recording an all-missing document. Empty predictions where the fields *are* present is a recall miss, not off-template — leave NOT CONFIRMED / fix the prompt (Rule 11). See [Label Documents Guide](references/label-documents-guide.md) § Detecting off-template documents. |
 
 ## Unsupported Capabilities
 

@@ -154,13 +154,9 @@ uip ixp labellings unconfirm <project-name> <document-id> \
 
 Repeat steps 2a–2d for all documents in the list.
 
-### Detecting off-template documents
-
-IXP gives no explicit "off-template" signal. The cue is your own review verdict: **if you'd mark *every* field MISSING** — IXP predicted nothing for any field AND none of them are actually present in the document — the document is off-template — it isn't the project's document type. Remove it with `documents delete` (see *Removing a document from the project*) rather than recording it as an all-missing document. (Empty predictions where the fields *are* present is a recall miss, not off-template — leave NOT CONFIRMED / fix the prompt, Rule 11.)
-
 ### Removing a document from the project
 
-If a document is unusable (wrong document type, corrupted, duplicate, off-template), delete it instead of confirming or skipping:
+If a document is unusable (wrong document type, corrupted, duplicate), delete it instead of confirming or skipping:
 
 ```bash
 uip ixp documents delete <project-name> <document-id> -y --output json
