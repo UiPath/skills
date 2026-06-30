@@ -20,7 +20,7 @@ run_limits:
   expected_turns: 28
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/_tm_shared/seed.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/seed.py"
     timeout: 30
 
 initial_prompt: |
@@ -103,7 +103,7 @@ success_criteria:
 
   - type: run_command
     description: "Data-grounded: retrieved name == created (seeded) name — real round-trip through the connector"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/_tm_shared/check.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

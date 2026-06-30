@@ -1,11 +1,11 @@
 # Data-grounded CRUD coverage (self-seeding round-trip). skip:false, integration tier
 # -> runs in nightly (codereval has a TM connection), NOT the required PR smoke gate.
-# pre_run seeds a unique name; the agent creates the generic record with it, reads it back,
+# pre_run seeds a unique name; the agent creates the TestCase with it, reads it back,
 # and check.py asserts retrieved == created (a real round-trip through the connector,
 # not just invocation). Self-cleaning (deletes at the end).
-task_id: skill-platform-is-testmanager-generic-records
+task_id: skill-platform-is-testmanager-testcase-lifecycle
 description: >
-  Data-grounded coverage: agent exercises the UiPath Test Manager generic record
+  Data-grounded coverage: agent exercises the UiPath Test Manager TestCase
   operations through the uipath-uipath-testmanager connector ('uip is resources
   run'), creating a uniquely-seeded record and verifying the create->read
   round-trip — plus invoking every operation in the group for coverage.
@@ -20,26 +20,26 @@ run_limits:
   expected_turns: 28
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/_tm_shared/seed.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/seed.py"
     timeout: 30
 
 initial_prompt: |
-  Using the UiPath Test Manager Integration Service connector, work with a record end to end and confirm the data round-trips.
+  Using the UiPath Test Manager Integration Service connector, work with a test case end to end and confirm the data round-trips.
 
   Read seed.json for a unique `name` and a `project_key`, then:
-  1. Create a record with that exact name under that project.
+  1. Create a test case with that exact name under that project.
   2. Read it back and confirm the name that comes back matches the name you created.
   3. Record result.json with `created_name`, `retrieved_name`, and `id`.
-  4. Update the record.
-  5. List records.
-  Finally, delete the record you created to clean up.
+  4. Update the test case.
+  5. Execute the test case(s).
+  Finally, delete the test case you created to clean up.
 
   Do NOT ask for approval, confirmation, or feedback.
   Do NOT pause between planning and implementation.
 
 success_criteria:
   - type: command_executed
-    description: "Insert Record (create)"
+    description: "Create Test Case"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
     min_count: 1
@@ -47,7 +47,7 @@ success_criteria:
     pass_threshold: 1.0
     require_success: true
   - type: command_executed
-    description: "Get Record"
+    description: "Get Test Case"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
     min_count: 1
@@ -55,7 +55,7 @@ success_criteria:
     pass_threshold: 1.0
     require_success: true
   - type: command_executed
-    description: "Update Record"
+    description: "Update Test Case"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
     min_count: 1
@@ -63,7 +63,7 @@ success_criteria:
     pass_threshold: 1.0
     require_success: true
   - type: command_executed
-    description: "Delete Record"
+    description: "Delete Test Case"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
     min_count: 1
@@ -71,13 +71,12 @@ success_criteria:
     pass_threshold: 1.0
     require_success: true
   - type: command_executed
-    description: "List Records"
+    description: "Execute Test Cases"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?ExecuteTestCases'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
-    require_success: true
   - type: command_executed
     description: "Used --output json on resource commands"
     tool_name: "Bash"
@@ -88,7 +87,7 @@ success_criteria:
 
   - type: run_command
     description: "Data-grounded: retrieved name == created (seeded) name — real round-trip through the connector"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/_tm_shared/check.py"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
