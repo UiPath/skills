@@ -13,12 +13,12 @@ dataset:
   rows:
     - id: invoice-validate
       prompt: |
-        I need a Python function that validates incoming invoice data: takes an
-        invoice number, vendor name, total amount, and currency, then returns
-        whether it's valid plus a list of validation errors. It should be
-        invocable as a UiPath job from a Maestro Service Task. Tell me which
-        skill to use and the file structure I'll need. Do NOT scaffold any
-        files yet — just identify the right skill and outline the project shape.
+        I need a deterministic Python function (typed input/output, no LLM) that
+        validates incoming invoice data — takes an invoice number, vendor name,
+        total amount, and currency, and returns whether it's valid plus a list
+        of validation errors, packaged so I can run it as a UiPath job. Which
+        UiPath skill should I use and what's the project layout? Just outline
+        it, don't build.
     - id: csv-transform
       prompt: |
         I want a deterministic Python function (no LLM) that takes a CSV of
