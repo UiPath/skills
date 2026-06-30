@@ -189,7 +189,7 @@ jobs:
           [ "$HAD_CONFLICTS" = "true" ] && title_prefix="[CONFLICTS]"
           jira_prefix=""
           [ -n "$JIRA_ID" ] && jira_prefix="[${JIRA_ID}]"
-          pr_title="${title_prefix}${jira_prefix}[${TARGET_BRANCH}] ${source_pr_title}"
+          pr_title="🍒 ${title_prefix}${jira_prefix}[${TARGET_BRANCH}] ${source_pr_title}"
 
           body_file="$(mktemp)"
           {
