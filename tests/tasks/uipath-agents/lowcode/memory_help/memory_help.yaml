@@ -1,8 +1,8 @@
 task_id: skill-agents-memory-smoke-help
 description: >
   Smoke test: agent should trigger the uipath-agents skill for a low-code
-  agent memory request and verify the `uip agent memory` CLI surface without
-  mutating project files.
+  agent memory request and run the skill's read-only memory-space discovery
+  before walking through the wiring, without mutating project files.
 tags: [uipath-agents, smoke, mode:build, lifecycle:discover, low-code]
 
 run_limits:
@@ -11,8 +11,9 @@ run_limits:
 initial_prompt: |
   I've got a low-code Agent Builder project and want to wire up one of our
   existing Memory Spaces so the agent can pull few-shot examples at runtime.
-  What's the command for that? Don't touch any of my files yet — just walk me
-  through the steps first.
+  I don't remember the exact name of the space — can you check which Memory
+  Spaces already exist, then walk me through the steps to attach one? Don't
+  modify any of my files yet.
 
 success_criteria:
   - type: skill_triggered
@@ -23,9 +24,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inspected the memory CLI help"
+    description: "Agent discovered existing memory spaces (read-only) before attaching"
     tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+memory\s+--help\b.*--output\s+json'
+    command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+MemorySpace\b.*--output\s+json'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
