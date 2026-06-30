@@ -5,7 +5,7 @@
     {
       "Level": "Error",
       "TimeStamp": "2026-06-20T11:08:16.641Z",
-      "Message": "Mainframe Session: One or more errors occurred. (One or more errors occurred. (There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected))\r\nin TerminalRun.xaml\r\n    at TerminalSession \"Mainframe Session\"\r\n    at TerminalRun \"TerminalRun\"\r\n\r\n--- .NET stack trace ---\r\nSystem.AggregateException\r\n   at UiPath.Terminal.Activities.TerminalSession.EndExecute(NativeActivityContext context, IAsyncResult result)\r\n   at UiPath.Terminal.Activities.AsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
+      "Message": "Mainframe Session: One or more errors occurred. (One or more errors occurred. (There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected))\r\nin Main.xaml\r\n    at TerminalSession \"Mainframe Session\"\r\n    at Main \"Main\"\r\n\r\n--- .NET stack trace ---\r\nSystem.AggregateException\r\n   at UiPath.Terminal.Activities.TerminalSession.EndExecute(NativeActivityContext context, IAsyncResult result)\r\n   at UiPath.Terminal.Activities.AsyncNativeActivity.BookmarkResumptionCallback(NativeActivityContext context, Bookmark bookmark, Object value)\r\n   at System.Activities.Runtime.BookmarkWorkItem.Execute(ActivityExecutor executor, BookmarkManager bookmarkManager)"
     }
   ]
 }

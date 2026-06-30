@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Faithful replay: TerminalSession faults at connection open with System.AggregateException wrapping an inner TerminalConnectionException ('There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected'). Host unreachable. Captured from a real Orchestrator job; PII scrubbed. First-match-wins.",
+  "_doc": "Faithful replay of a faulted UiPath.Terminal.Activities TerminalSession job. Canned uip CLI responses captured from a real Orchestrator job; PII scrubbed. First-match-wins.",
   "rules": [
     {
       "match": "or folders list",
@@ -57,7 +57,7 @@
     {
       "pattern": "or jobs get caf901ab-28a3-4621-bcfa-68a0447e49c8",
       "min": 1,
-      "description": "Agent fetches the faulted job to read the AggregateException and its inner TerminalConnectionException (connect failure)."
+      "description": "Agent fetches the faulted job to read its exception detail."
     }
   ]
 }

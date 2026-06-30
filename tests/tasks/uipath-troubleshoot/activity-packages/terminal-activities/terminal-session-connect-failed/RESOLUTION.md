@@ -1,6 +1,6 @@
 # Final Resolution
 
-**Fault:** The `TerminalRepro` job (folder Shared, host MOCK-HOST) ended **Faulted**. The fault is raised by a **`UiPath.Terminal.Activities.TerminalSession`** activity ("Mainframe Session") and surfaces as `System.AggregateException`.
+**Fault:** The `MainframeInquiry` job (folder Shared, host MOCK-HOST) ended **Faulted**. The fault is raised by a **`UiPath.Terminal.Activities.TerminalSession`** activity ("Mainframe Session") and surfaces as `System.AggregateException`.
 
 **Root cause:** The Terminal Session **could not open its terminal connection**. Unwrapping the `System.AggregateException` reaches the real cause — `UiPath.Terminal.Data.TerminalConnectionException: There was an error connecting to terminal. Error code: UnknownError | ResultCode=UnknownError | ConnectionStatus=Disconnected` — thrown from `TerminalConnection.Start` during connection establishment. The fault happens at connection open, before any child screen-interaction activity runs. The configured terminal host/port is unreachable from the robot machine (the connect attempt could not establish a session within the timeout).
 

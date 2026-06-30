@@ -1,6 +1,6 @@
 # Final Resolution
 
-**Fault:** The `SlackMsgRepro` job (folder Shared, host MOCK-HOST) ended **Faulted**. The fault is raised by a **`UiPath.Slack.IntegrationService.Activities.SendMessage`** activity ("Send Message to Channel") and surfaces as `UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException`.
+**Fault:** The `TeamNotifications` job (folder Shared, host MOCK-HOST) ended **Faulted**. The fault is raised by a **`UiPath.Slack.IntegrationService.Activities.SendMessage`** activity ("Send Message to Channel") and surfaces as `UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException`.
 
 **Root cause:** The Integration Service connection resolved successfully, and the **Slack Web API rejected the Send Message request** because the target channel does not exist. The actionable cause is the Slack error in the `ProviderMessage`: `{"ok":false,"error":"channel_not_found"}` (HTTP `Error Code: [400]`). The configured **Channel** value does not match a channel in the connected Slack workspace (wrong/typo channel id or name, or a channel from a different workspace than the connection).
 
