@@ -41,7 +41,7 @@ Position is not a user input. It is computed statefully (see below).
   node -e "console.log(crypto.randomUUID())"
   ```
 
-Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference (e.g., In-argument companions whose `elementId` is this trigger's id).
+Record `T<n> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — e.g., the global-vars plugin resolves this trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or when it is the primary trigger and the In-arg leaves `sourceTriggers` blank).
 
 ## Default-name fallback
 

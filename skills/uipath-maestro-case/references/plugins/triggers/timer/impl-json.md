@@ -97,7 +97,7 @@ Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append 
 - First-trigger path: literal `trigger_1` (no randomness).
 - Secondary path: `trigger_` prefix + 6 random chars per [`case-editing-operations.md § ID Generation`](../../../case-editing-operations.md#id-generation).
 
-Record `T<n> → <triggerId>` in `id-map.json` for downstream cross-reference.
+Record `T<n> → <triggerId>` in `id-map.json` for downstream cross-reference — incl. resolving an In-argument's bound trigger node when its `sourceTriggers` names this timer (or, when this timer is itself the primary trigger T02, an In-arg with blank `sourceTriggers`).
 
 ## Post-write validation
 
