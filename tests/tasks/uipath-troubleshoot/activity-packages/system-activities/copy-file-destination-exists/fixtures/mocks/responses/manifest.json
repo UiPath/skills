@@ -1,0 +1,56 @@
+{
+  "version": 2,
+  "_doc": "Faithful-replay fixtures for a captured LedgerConsolidation faulted job (Copy File — destination already exists). Names/paths/keys/timestamps scrubbed; exception text + activity class preserved verbatim.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "or-folders-list-current-user-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f\" --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-4b1c7e90-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-key 4b1c7e90-2a3d-4f5e-9c8b-1a2b3c4d5e6f --state Faulted --output json",
+      "file": "or-jobs-list-folder-key-4b1c7e90-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --process-name LedgerConsolidation",
+      "file": "or-jobs-list-folder-key-4b1c7e90-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path Finance",
+      "file": "or-jobs-list-folder-key-4b1c7e90-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs list --folder-path \"Finance\"",
+      "file": "or-jobs-list-folder-key-4b1c7e90-state-faulted-output-json.json"
+    },
+    {
+      "match": "or jobs get \"c7e0a2b4-9d1f-4e63-8a5c-2b3d4e5f6a71\" --output json",
+      "file": "or-jobs-get-c7e0a2b4-output-json.json"
+    },
+    {
+      "match": "or jobs get c7e0a2b4-9d1f-4e63-8a5c-2b3d4e5f6a71 --output json",
+      "file": "or-jobs-get-c7e0a2b4-output-json.json"
+    },
+    {
+      "match": "or jobs logs \"c7e0a2b4-9d1f-4e63-8a5c-2b3d4e5f6a71\" --level Error --output json",
+      "file": "or-jobs-logs-c7e0a2b4-level-error-output-json.json"
+    },
+    {
+      "match": "or jobs logs c7e0a2b4-9d1f-4e63-8a5c-2b3d4e5f6a71 --level Error --output json",
+      "file": "or-jobs-logs-c7e0a2b4-level-error-output-json.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns []. Lets the agent explore beyond the recorded path."
+  }
+}
