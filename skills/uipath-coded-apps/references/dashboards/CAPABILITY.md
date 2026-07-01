@@ -142,6 +142,8 @@ Your **[Dashboard Name]** is ready to be deployed.
 
 A standard dashboard deploys to a user-chosen folder with no pin question — see impl.md Step 4.
 
+> ⚠️ Pinning surfaces the dashboard in the Governance section, which is an **Agentic Governance preview** feature — it only takes effect if the org is enrolled in the preview. When offering the pin, say so; either way the dashboard deploys and is reachable at its URL. See `plugins/deploy/impl.md` Step 4 / Step 10.
+
 **HALT. Do not run any CLI command until the user confirms.**
 
 ### Step 3 — Follow plugins/deploy/impl.md

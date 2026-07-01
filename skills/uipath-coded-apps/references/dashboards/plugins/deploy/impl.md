@@ -30,7 +30,7 @@ A dashboard deploys one of two ways — pick before anything else:
 
 | Target | Where it goes | Tags | Elevated perms? |
 |--------|---------------|------|-----------------|
-| **Governance / admin dashboard** | the `AdminDashboards` folder, pinnable to the Governance section | `governance` (+ `dashboard` if pinned) | yes — Administrators get Folder Administrator on AdminDashboards |
+| **Governance / admin dashboard** | the `AdminDashboards` folder, pinnable to the Governance section *(pinning is an Agentic Governance **preview** feature — see Step 4)* | `governance` (+ `dashboard` if pinned) | yes — Administrators get Folder Administrator on AdminDashboards |
 | **Standard dashboard app** | a regular Orchestrator folder the user chooses | `dashboard` | no |
 
 **Infer the target from `.dashboard/state.json`, then let the user correct it in the plan (Step 4):**
@@ -134,6 +134,8 @@ End the deploy plan with: `Confirm to deploy, or tell me what to change.` — **
   | **Deploy without pinning** | Deploy only (`--tags "governance"`) |
 
   Free-text replies remain valid and take precedence.
+
+  > ⚠️ **Pinning is a preview feature.** Surfacing a dashboard in the Governance section depends on **Agentic Governance**, which is currently limited to organizations enrolled in the preview program. State this when offering the pin option: *"Pinning surfaces the dashboard in the Governance section — that's an Agentic Governance preview feature, so it only takes effect if your org is enrolled in the preview. Either way the dashboard deploys and is reachable at its URL."* If the org isn't enrolled, the deploy still succeeds and the app is fully usable via its URL — only the Governance-UI pin has no visible effect until preview access is granted (contact your UiPath representative).
 
 ---
 
@@ -287,7 +289,7 @@ Version <NEXT_SEMVER> · <FOLDER_NAME>
 ```
 
 **(governance only)**
-- If pinned: "Your dashboard is now visible in the Governance section."
+- If pinned: "Your dashboard is pinned to the Governance section. Note: the Governance section is an **Agentic Governance preview** feature — if your org isn't enrolled in the preview, the pin won't appear there yet (contact your UiPath representative for access). The dashboard is live and fully usable at the URL above regardless."
 - If not: "To pin it later, say 'redeploy and pin to governance'."
 
 Always: "To update after making changes, say 'deploy this dashboard' again."
@@ -307,6 +309,7 @@ Always: "To update after making changes, say 'deploy this dashboard' again."
 | Deploy "not been published" but you passed `--version` | Remove `--version` from the deploy call — deploy resolves the latest version itself |
 | Deploy "routing name must be unique" on an upgrade | You passed `--path-name` on an upgrade — omit it; routing already exists |
 | Deploy path-name conflict (fresh deploy) | Generate new suffix, retry deploy only (pack/publish already done) |
+| "Agentic Governance is a preview feature and is not enabled for your organization" (on a pinned/governance deploy) | Not a deploy failure — the app IS deployed and reachable at its URL. Governance pinning is preview-gated: the pin just won't surface in the Governance section until the org is enrolled. Report success with the URL, add the preview note (Step 10), and tell the user to contact their UiPath representative for preview access. Do NOT retry or bump the version. |
 | state.json missing | Tell user to run the build first |
 
 ## Rules
