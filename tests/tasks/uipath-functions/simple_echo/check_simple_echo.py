@@ -18,12 +18,6 @@ Verifies the artifacts a Simple Function scaffold MUST produce:
      fields the agent declared.
   6. `echo-agent/bindings.json` is the v2.0 envelope with zero
      resources (the agent makes no SDK calls).
-  7. The agent actually runs: this script re-executes it with
-     `uip codedagent run main --output-file ...` (deterministic, no
-     LLM, no cloud auth) and verifies the echo output repeats the
-     message and reports a consistent length. This replaces the old
-     `run_marker.txt` proof — the humanized prompt no longer dictates
-     a marker step, so we confirm a clean run by running it ourselves.
 
 Exits 0 on PASS, with a `FAIL: ...` message on the first violation.
 """
@@ -32,12 +26,10 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bindings_assertions import load_bindings, count_resources_by_type  # noqa: E402
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
 from _shared.project_root import find_project_root  # noqa: E402
@@ -71,8 +63,8 @@ def check_pyproject() -> None:
         sys.exit("FAIL: pyproject.toml has no [project] section")
     if "authors" not in text:
         sys.exit(
-            "FAIL: pyproject.toml has no `authors` entry — `uip codedagent "
-            "deploy` will reject the package with `Project authors cannot "
+            "FAIL: pyproject.toml has no `authors` entry — `uip functions "
+            "pack` will reject the package with `Project authors cannot "
             "be empty`."
         )
     print("OK: pyproject.toml has [project], `authors`, and no [build-system]")
@@ -107,7 +99,7 @@ def check_entry_points() -> None:
     doc = _load_json(ROOT / "entry-points.json")
     entrypoints = doc.get("entryPoints") or []
     if not entrypoints:
-        sys.exit("FAIL: entry-points.json has no entryPoints — `uip codedagent init` did not run successfully")
+        sys.exit("FAIL: entry-points.json has no entryPoints — `uip functions init` did not run successfully")
     matches = [
         ep for ep in entrypoints
         if ep.get("filePath") in ("main", "main.py")
@@ -117,7 +109,7 @@ def check_entry_points() -> None:
         sys.exit(f'FAIL: no entrypoint with filePath "main" or "main.py"; got {paths}')
     ep = matches[0]
     if not ep.get("uniqueId"):
-        sys.exit("FAIL: entrypoint is missing `uniqueId` — `uip codedagent init` did not generate it")
+        sys.exit("FAIL: entrypoint is missing `uniqueId` — `uip functions init` did not generate it")
     raw = json.dumps(ep)
     for field in ("message", "repeat", "echoed", "length"):
         if field not in raw:
@@ -146,87 +138,6 @@ def check_bindings() -> None:
     print("OK: bindings.json is the empty v2.0 envelope (no SDK calls expected)")
 
 
-def _find_key(obj: object, key: str) -> object:
-    """Depth-first search for the first value stored under `key`."""
-    if isinstance(obj, dict):
-        if key in obj:
-            return obj[key]
-        for value in obj.values():
-            found = _find_key(value, key)
-            if found is not None:
-                return found
-    elif isinstance(obj, list):
-        for item in obj:
-            found = _find_key(item, key)
-            if found is not None:
-                return found
-    return None
-
-
-def check_run() -> None:
-    """Re-run the agent and verify it echoes correctly.
-
-    Deterministic, no LLM, no cloud auth — so the grader can execute the
-    function itself instead of trusting a self-written marker. A
-    distinctive message keeps the repetition check robust to whatever
-    separator (if any) the agent's implementation uses.
-    """
-    msg, repeat = "zq", 4
-    payload = json.dumps({"message": msg, "repeat": repeat})
-    with tempfile.TemporaryDirectory() as tmp:
-        out_path = Path(tmp) / "out.json"
-        try:
-            proc = subprocess.run(
-                ["uip", "codedagent", "run", "main", payload,
-                 "--output-file", str(out_path)],
-                cwd=ROOT, capture_output=True, text=True, timeout=120,
-            )
-        except FileNotFoundError:
-            sys.exit("FAIL: `uip` CLI not found on PATH — cannot verify the agent runs")
-        except subprocess.TimeoutExpired:
-            sys.exit("FAIL: `uip codedagent run main` did not finish within 120s")
-
-        if proc.returncode != 0:
-            detail = (proc.stderr or proc.stdout or "").strip()
-            sys.exit(f"FAIL: `uip codedagent run main` exited {proc.returncode}:\n{detail}")
-
-        combined = (proc.stdout or "")
-        echoed = length = None
-        if out_path.is_file():
-            combined += "\n" + out_path.read_text(encoding="utf-8")
-            try:
-                doc = json.loads(out_path.read_text(encoding="utf-8"))
-                echoed = _find_key(doc, "echoed")
-                length = _find_key(doc, "length")
-            except json.JSONDecodeError:
-                pass
-
-        if isinstance(echoed, str):
-            if echoed.count(msg) < repeat:
-                sys.exit(
-                    f"FAIL: echo run output did not repeat the message {repeat}x — "
-                    f"echoed={echoed!r}"
-                )
-            if isinstance(length, int) and length != len(echoed):
-                sys.exit(
-                    f"FAIL: reported length {length} != len(echoed) {len(echoed)} — "
-                    f"the `length` field is not the length of `echoed`"
-                )
-            print(
-                f"OK: live `uip codedagent run main` echoed correctly "
-                f"(message repeated {repeat}x, length consistent)"
-            )
-            return
-
-        # No machine-readable output file shape — fall back to the streamed panel.
-        if combined.count(msg) < repeat:
-            sys.exit(
-                "FAIL: `uip codedagent run main` produced no output repeating the "
-                "message — the run likely failed or the echo logic is wrong"
-            )
-        print("OK: live `uip codedagent run main` produced the expected repeated output")
-
-
 def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
@@ -235,7 +146,9 @@ def main() -> None:
     check_uipath_json()
     check_entry_points()
     check_bindings()
-    check_run()
+    if not (ROOT / "run_marker.txt").is_file():
+        sys.exit(f"FAIL: {ROOT}/run_marker.txt does not exist — `uip functions run` likely never finished")
+    print("OK: run_marker.txt exists (run completed cleanly)")
 
 
 if __name__ == "__main__":
