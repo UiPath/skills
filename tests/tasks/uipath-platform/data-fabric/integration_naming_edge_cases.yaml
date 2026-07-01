@@ -14,23 +14,15 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Migrating a schema from another system — the data team handed over
-  `schema_migration.json` in the working directory. It has two sections:
+  Migrating a schema from another system — `schema_migration.json` in
+  the working directory has 6 lists to attempt (each with one `Title`
+  column, short text) and 12 columns to add to the first successful
+  list (`CE_NameOK1`). Try each item verbatim. For rejections, capture
+  the error verbatim — don't rewrite names or retry.
 
-    - `lists`: six lists to attempt (each with one `Title` column,
-      short text). Each entry carries a `_label` (A1, A2, …) plus the
-      list `name` to try verbatim.
-    - `columns_on_A1`: twelve columns to attempt against the first
-      successful list from the `lists` section (`CE_NameOK1`). Each
-      entry carries a `_label` (D1–D6, E1–E6) plus the column `name`
-      and its `type` in plain English.
-
-  Try each item verbatim. For rejections, capture the error verbatim
-  — don't rewrite names or retry.
-
-  When you're done, walk me through what came back for each item, using
-  the `_label` to identify it — what succeeded, what was rejected, and
-  for the rejections the exact error the platform returned.
+  When you're done, walk me through what came back for each item —
+  what succeeded, what was rejected, and for the rejections the exact
+  error the platform returned.
 
 success_criteria:
   - type: command_executed

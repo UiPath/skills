@@ -27,16 +27,11 @@ initial_prompt: |
     - Serial — an auto-generated number the system fills in
     - ParentLink — optional, links to another row in this list
 
-  Then work through `sales_batch.json` — each row carries a `_label`
-  (e.g. `"1A"`, `"2B"`, …) that identifies it in your walk-through, plus
-  the field values to attempt. A couple of notes on the file's shape:
-    - Some rows omit `Code` entirely, some send `null`, some send `""`
-      — those three cases are intentionally distinct.
-    - One row (`"8A"`) carries `_parent_from_label: "1A"` — that means
-      its `ParentLink` should be whatever row ID `1A` got after landing.
-      Substitute at load time.
-    - `Id`, `CreatedBy`, and `Serial` fields on some rows are
-      intentionally client-supplied to see how the platform handles them.
+  Then work through `sales_batch.json` — 22 rows, each with a `_label`
+  (`"1A"`, `"2B"`, …) that identifies it in your walk-through, plus the
+  field values to attempt. Then one last row from me: add a row `"REL1"`
+  whose `ParentLink` references the row ID from `"1A"` (assuming `1A`
+  landed successfully).
 
   When you're done, walk me through what succeeded and what failed, with
   the specific error text for each rejection. Don't retry rejected rows.

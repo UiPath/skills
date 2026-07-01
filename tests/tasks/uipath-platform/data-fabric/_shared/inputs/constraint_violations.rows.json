@@ -20,6 +20,5 @@
   { "_label": "7B", "Code": "SET", "Quantity": 5, "Serial": 999 },
   { "_label": "7C", "Code": "SYS", "Quantity": 5, "CreatedBy": "fake-user" },
   { "_label": "7D", "Code": "IDSET", "Quantity": 5, "Id": "00000000-0000-0000-0000-000000000001" },
-  { "_label": "8A", "Code": "REL1", "_parent_from_label": "1A" },
   { "_label": "8B", "Code": "RELBAD", "ParentLink": "00000000-0000-0000-0000-000000000099" }
 ]
