@@ -271,10 +271,10 @@ This command also populates the local cache at `~/.uipath/cache/integrationservi
 ### Step 4 — Discover activities
 
 ```bash
-uip is activities list "<connector-key>" --output json
+uip is activities list "<connector-key>" --project-type Agent --output json
 ```
 
-Present activities to the user. Note the chosen activity's `DisplayName`, `Description`, `ObjectName`, `MethodName`.
+The `--project-type Agent` flag calls the same Agent Builder typecache endpoints the frontend uses. It returns exactly the activities the UI shows for low-code agents — the curated subset from the Studio NuGet package for the connector. Activities with an empty `objectName` (deprecated stubs) are filtered out. File operation and HTTP activities appear in the UI with a "Preview" chip but are fully selectable — they are included in the output. Connectors not in the typecache are absent from the UI and return empty here. Present the activities to the user and note the chosen activity's `DisplayName`, `Description`, `ObjectName`, `MethodName`.
 
 ### Step 5 — Get connector details (for iconUrl)
 
@@ -332,7 +332,7 @@ uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
 
 See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md):
 - Critical Rules 11, 12 (folderPath / location)
-- Anti-pattern 13 (do NOT pass `--for-low-code-agents` — flag removed)
+- Critical Rule 13 (always pass `--project-type Agent`)
 
 IS-specific gotchas (each from a real Studio-Web silent-drop bug):
 - `enumValues` MUST be `[{name, value}]` objects, not bare strings.
