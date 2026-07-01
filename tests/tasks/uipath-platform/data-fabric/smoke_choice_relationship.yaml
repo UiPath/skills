@@ -1,95 +1,58 @@
 task_id: skill-datafabric-smoke-complex-fields
 description: >
-  Smoke test: agent uses the uipath-platform skill (Data Fabric area) to add complex field
+  Smoke test: agent uses the uipath-platform skill to add complex field
   types (CHOICE_SET_SINGLE, CHOICE_SET_MULTIPLE, RELATIONSHIP) to an entity,
   insert records writing the correct value tokens (NumberId integer / integer
   array for choice; target UUID for relationship), filter records on those
   fields, and refuse to author / modify a choice set from the CLI (read-only).
   Exercises the same entity / record / query commands as the other smoke
   tests, but on fields whose value form requires lookup tokens.
-tags: [uipath-platform, smoke, data-fabric, complex-fields]
+tags: [uipath-platform, data-fabric, smoke, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 24
-  max_turns: 60
+  max_turns: 35
 
-sandbox:
-  driver: docker
 
 initial_prompt: |
-  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
-  Every uip df command will fail with an auth error — that is expected and normal.
-  Run each command exactly once, ignore the auth error, and continue to the next step.
-  Do NOT retry any command. Do NOT attempt to login.
+  I'm sketching this out before I've actually logged in — every command
+  will fail on auth and that's expected, don't retry or try to log in.
+  I just want to see the steps you'd take.
 
-  This scenario exercises three field types — `CHOICE_SET_SINGLE`,
-  `CHOICE_SET_MULTIPLE`, and `RELATIONSHIP`. On the schema side each one needs
-  an extra config key (`choiceSetId` for the choice fields; `referenceEntityId`
-  + `referenceFieldId` for relationship — both are UUIDs, never names). On
-  records, choice values use the `NumberId` integer (or array for multi-select)
-  and relationship values use the target record's UUID `Id`.
+  Some things that already exist on the tenant:
+    - A category dropdown with travel, meals, and lodging
+    - A tags dropdown with urgent, reimbursable, and client
+    - An Employees list with one employee already in it (`emp-rec-500`)
+    - A Projects list
 
-  Pre-seeded placeholders (treat as real values for command construction):
-  - Choice set "ExpenseCategories"   ID: "cs-cat-001"
-      values: travel (NumberId 1), meals (NumberId 2), lodging (NumberId 3)
-  - Choice set "ExpenseTags"         ID: "cs-tag-002"
-      values: urgent (NumberId 1), reimbursable (NumberId 2), client (NumberId 3)
-  - Existing entity "Employee"       ID: "emp-ent-100"  (technical Name: "Employee")
-      one employee record ID: "emp-rec-500"
-      Id-field UUID:               "emp-idfield-700"
-  - Existing entity "Project"        ID: "proj-ent-200" (technical Name: "Project")
-      Id-field UUID:               "proj-idfield-800"
+  Could you walk me through this:
 
-  Do the following in order. Use --output json on every uip df command.
+    - Show me what lists and what dropdowns are already set up. Then
+      pull up the options on the category dropdown.
 
-  1. List native-only entities to discover what already exists.
+    - Add a new Expense list with these columns:
+        - amount — dollars and cents, required
+        - category — pick one from the category dropdown, required
+        - tags — pick one or more from the tags dropdown
+        - submitter — links to an employee, required
+        - project — links to a project
 
-  2. List all choice sets to confirm "ExpenseCategories" and "ExpenseTags"
-     exist and capture their IDs (use the placeholder values above).
+    - On Employees, add a status column that lets you pick one from
+      the tags dropdown.
 
-  3. Get the values for the "ExpenseCategories" choice set so you know the
-     NumberId for each category. Use placeholder choice set ID "cs-cat-001".
+    - Add one expense to the Expense list — $250, category is travel,
+      tags are urgent and reimbursable, submitter is employee
+      `emp-rec-500`.
 
-  4. Create a new entity "Expense" with these fields:
-       - amount      (DECIMAL, decimalPrecision 2, required)
-       - category    (CHOICE_SET_SINGLE   pointing at choice set "cs-cat-001", required)
-       - tags        (CHOICE_SET_MULTIPLE pointing at choice set "cs-tag-002")
-       - submitter   (RELATIONSHIP to Employee — referenceEntityId "emp-ent-100",
-                      referenceFieldId "emp-idfield-700", required)
-       - project     (RELATIONSHIP to Project  — referenceEntityId "proj-ent-200",
-                      referenceFieldId "proj-idfield-800")
+    - Show me the expenses in the travel category.
 
-  5. Add a CHOICE_SET_SINGLE field "status" to the existing Employee entity
-     using entities update with addFields. Point it at choice set "cs-tag-002".
+    - Show me the expenses submitted by employee `emp-rec-500`.
 
-  6. Insert one Expense record using a JSON object body. Use placeholder
-     entity ID "exp-ent-300". Choice values MUST be passed as NumberId
-     integers (NOT the display label string). Relationship values MUST be
-     the target record's UUID Id:
-       - amount:    250
-       - category:  1                   (travel — NumberId)
-       - tags: [uipath-platform, data-fabric, 1, 2]              (NumberId array for CHOICE_SET_MULTIPLE)
-       - submitter: "emp-rec-500"       (Employee record UUID)
+    - Last one — I'm about to ask you to make a brand-new dropdown
+      called PaymentStatus from the command line. Please refuse.
+      Dropdowns can only be set up in the web UI. Just explain that
+      and don't touch anything.
 
-  7. Filter Expense records on category == "travel" (NumberId 1) using a
-     filterGroup query. Pass the NumberId as a string in the filter value.
-
-  8. Filter Expense records linked to a specific Employee using a filterGroup
-     query — fieldName "submitter", value "emp-rec-500" (the target UUID).
-
-  9. The user then asks you to *create* a brand-new choice set called
-     "PaymentStatus" via the CLI. Refuse: the CLI is read-only for choice
-     sets — they must be authored in the Data Fabric web UI. Explain this in
-     your final message. Do NOT run any uip df choice-sets create / update /
-     delete command.
-
-  Additional constraints:
-  - NEVER write a choice value as a display label (e.g. "category":"travel")
-    or as the value's UUID Id — only NumberId integers.
-  - NEVER write a relationship value as anything other than the target
-    record's UUID Id (e.g. do not pass an email or a Name).
-  - Do NOT use removeFields. Do NOT delete any entity. Do NOT create or modify
-    a choice set via the CLI.
+  Please don't remove any columns and don't delete any lists.
 
 success_criteria:
   - type: command_executed
@@ -165,7 +128,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted a record writing target UUID for RELATIONSHIP field"
+    description: "Agent inserted a record writing target record ID for RELATIONSHIP field"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"submitter\"\s*:\s*\"emp-rec-500\"'
     min_count: 1

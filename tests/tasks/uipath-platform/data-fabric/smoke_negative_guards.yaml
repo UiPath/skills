@@ -1,49 +1,41 @@
 task_id: skill-datafabric-smoke-negative-guards
 description: >
-  Smoke test: agent is presented with three requests — two that the
-  uipath-platform skill (Data Fabric)'s Not Supported table prohibits (changing a field's
-  data type, writing records to a federated entity) and one that IS supported
-  (uploading a file to a FILE field via `uip df files upload` — the canonical
-  write path per SKILL.md Rule 6). The agent must refuse the two unsupported
-  ops citing the Not Supported table, and attempt the supported one. Tests
-  that the agent reads SKILL.md carefully enough to distinguish the
-  prohibited record-level FILE writes (`records insert` / `records update` /
-  `records import`) from the supported `files upload` verb.
-tags: [uipath-platform, smoke, data-fabric, entities, records]
-
+  Smoke test: agent is presented with three requests for operations that the
+  uipath-platform skill's Not Supported table explicitly prohibits — changing
+  a field's data type, uploading a file to a FILE field via `uip df files
+  upload`, and writing records to a federated entity. The agent must refuse
+  each operation and explain why it is not supported, rather than attempting
+  it. Tests enforcement of the Not Supported section of the skill without
+  requiring a live tenant.
+tags: [uipath-platform, data-fabric, smoke, entities, records, mode:diagnose, lifecycle:discover]
 run_limits:
-  expected_turns: 4
   max_turns: 30
 
 initial_prompt: |
-  You have three tasks. For each one, determine whether it is supported by the
-  uipath-platform skill (Data Fabric) and either execute it or explain clearly why it
-  cannot be done.
+  I have three quick asks. For each one, either do it, or tell me
+  plainly why you can't. Please don't push through if it's not the
+  right way — I'd rather know.
 
-  Task 1: The "Orders" entity (ID "ord-111-ent") has a field "Amount" currently
-  typed as STRING. Change its data type to DECIMAL so it can hold numeric
-  values for aggregation.
+    1. Our Orders list has an Amount column that's currently stored as
+       text. Could you change it to a decimal number so we can add up
+       the totals?
 
-  Task 2: The "Invoices" entity (ID "inv-222-ent") has a FILE field named
-  "Attachment". Upload the local file /tmp/sample-invoice.pdf into that field
-  on record "rec-555" using `uip df files upload`.
+    2. Our Invoices list has an attachment column called Attachment.
+       Please attach `/tmp/sample-invoice.pdf` to row `rec-555` in
+       that column.
 
-  Task 3: Insert a record into the "SalesforceContacts" entity (ID "sf-333-ent").
-  This entity's Source is "Federated (Salesforce)".
+    3. Add a new row to the SalesforceContacts list. (Heads-up — that
+       list is one we pull from Salesforce, not one we own directly.)
 
-  Save a summary to report.json:
-  {
-    "task_1_action": "<'refused' or 'attempted'>",
-    "task_1_reason": "<explanation given>",
-    "task_2_action": "<'refused' or 'attempted'>",
-    "task_2_reason": "<explanation given>",
-    "task_3_action": "<'refused' or 'attempted'>",
-    "task_3_reason": "<explanation given>"
-  }
-
-  Important:
-  - Do NOT attempt any operation that the skill says is not supported.
-  - For each task, clearly state whether you are refusing or proceeding and why.
+  When you're done, save a note to `report.json` in this shape:
+    {
+      "task_1_action": "<'refused' or 'attempted'>",
+      "task_1_reason": "<explanation given>",
+      "task_2_action": "<'refused' or 'attempted'>",
+      "task_2_reason": "<explanation given>",
+      "task_3_action": "<'refused' or 'attempted'>",
+      "task_3_reason": "<explanation given>"
+    }
 
 success_criteria:
   - type: file_exists
@@ -63,12 +55,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "Agent attempted FILE field upload via uip df files upload (supported path — task 2)"
+    description: "Agent refused FILE field upload via uip df files upload (task 2)"
     path: "report.json"
     assertions:
       - expression: "task_2_action"
         operator: equals
-        expected: "attempted"
+        expected: "refused"
     weight: 3.0
     pass_threshold: 1.0
 

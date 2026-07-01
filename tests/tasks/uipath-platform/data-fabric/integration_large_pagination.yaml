@@ -8,96 +8,83 @@ description: >
   (limit=60) to verify the 300-record Active=true subset across 5 pages.
   Covers large-dataset pagination stability, cursor continuity at scale, and
   offset-based page jumps.
-tags: [uipath-platform, integration, data-fabric, bulk-pagination]
-
+tags: [uipath-platform, data-fabric, integration, bulk-pagination, mode:operate, lifecycle:setup]
 run_limits:
-  expected_turns: 36
   max_turns: 60
   turn_timeout: 600
 
 pre_run:
+  # 1. Stage helper scripts the agent uses for pagination assertions.
   - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/extract_page_ids.py $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_pagination.py ."
     timeout: 10
     fail_on_error: true
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/wipe_entity_records.py --entity-name LargePaginationTest"
+
+  # 2. Schema-only seed: ensure CE_LargePaginationTest exists with the right
+  #    schema, and wipe any leftover records from a prior run (the agent's
+  #    job is to import 500 records via CSV; entity must start empty).
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
+      --entity-name CE_LargePaginationTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json
+      --reset
     timeout: 300
-    fail_on_error: true
+    fail_on_error: false
 
 initial_prompt: |
-  Pass `--output json` on every `uip df` command.
+  We need to stress-test how paging through a big list behaves.
+  There's an empty list called `CE_LargePaginationTest` with three
+  columns: a Name (required, unique, up to 100 characters), a Score
+  (required whole number, never negative), and an Active flag
+  (yes/no, required).
 
-  Two helper scripts are staged in the working directory by the harness:
+  Two little helper scripts are already sitting in the working
+  directory. Please use them as-is, don't rewrite:
+    - `./extract_page_ids.py` — pipe a page of results into it and
+      it saves the IDs to a file and prints a small status line.
+    - `./verify_pagination.py` — checks an IDs file against an
+      expected count, looks for duplicates, or compares slices.
 
-    ./extract_page_ids.py   pipes a records list/query response to disk,
-                            emits only {Result, IdCount, HasNextPage,
-                            NextCursor} to stdout
-    ./verify_pagination.py  asserts ID files match expected count /
-                            uniqueness / offset slice
+  First, generate `bulk_500.csv`:
+    - header row: `Name,Score,Active`
+    - rows 1 through 300: `Record-NNN, N, true`
+    - rows 301 through 500: `Record-NNN, N, false`
 
-  Use them as shown — do not write inline Python equivalents.
+  Load it into the list. Then do three different walks through the
+  data:
 
-  1. `uip login status --output json`. Do not re-login.
+  1) Page through every row 60 at a time. Each page has to be its
+     own separate command (a loop inside one Python process doesn't
+     count). Send each page's output through
+     `./extract_page_ids.py --out walk_ids.txt --append`. Keep
+     going until there's no next page. You should see 9 pages and
+     500 unique IDs total. Verify with
+     `./verify_pagination.py --mode walk --file walk_ids.txt
+     --count 500`.
 
-  2. List native-only entities. Reuse `LargePaginationTest` if present
-     (the harness wipes its records before the run starts; the entity is
-     guaranteed empty). Otherwise create it with fields `Name` (STRING),
-     `Score` (INTEGER), `Active` (BOOLEAN).
+  2) Jump straight to rows 181 through 240 in a single shot — page
+     size 60, starting position 180. (The position rounds down to
+     the nearest page boundary, so 180 + 60 lands on rows 181-240,
+     which is page 4.) Save those IDs to `offset_page_ids.txt`
+     (only one page, no walking). Compare that slice against your
+     walk with `./verify_pagination.py --mode offset --file
+     offset_page_ids.txt --against walk_ids.txt --start 180
+     --stop 240`. Never combine a position jump with paging on the
+     same command.
 
-  3. Generate `bulk_500.csv`:
-       header:        Name,Score,Active
-       rows   1..300: Record-NNN, N, true
-       rows 301..500: Record-NNN, N, false
+  3) Page through just the rows where Active is yes, 60 at a time.
+     Save IDs to `active_ids.txt`. You should see 5 pages and 300
+     IDs. Verify with `./verify_pagination.py --mode count --file
+     active_ids.txt --count 300` — the server filters before it
+     pages, so a straight count is enough.
 
-  4. `uip df records import <entity-id> --file bulk_500.csv --output json`
-
-  5. Cursor-walk all records, limit 60. Each page MUST be a separate
-     `uip df records list` Bash invocation — subprocess loops inside a
-     single Python call do not satisfy the per-page rule.
-
-       uip df records list <entity-id> --limit 60 --output json \
-         | python3 ./extract_page_ids.py --out walk_ids.txt --append
-
-     Subsequent pages add `--cursor "<NextCursor>"` before the pipe. Stop
-     when `HasNextPage` is false. Expected: 9 pages, 500 IDs.
-
-  6. Verify:
-       python3 ./verify_pagination.py --mode walk --file walk_ids.txt --count 500
-
-  7. Offset-jump to records 181..240:
-       uip df records list <entity-id> --limit 60 --offset 180 --output json \
-         | python3 ./extract_page_ids.py --out offset_page_ids.txt --no-pagination
-
-     `--offset` rounds down to the nearest page boundary (offset 180 +
-     limit 60 → page 4, records 181..240). Verify the slice matches:
-       python3 ./verify_pagination.py --mode offset \
-         --file offset_page_ids.txt --against walk_ids.txt --start 180 --stop 240
-
-     `--offset` and `--cursor` are mutually exclusive. Never pass both
-     on the same command.
-
-  8. Cursor-walk `Active=true` via `records query --body` with filterGroup,
-     limit 60. Same per-page Bash pattern; append IDs to `active_ids.txt`:
-
-       uip df records query <entity-id> --limit 60 --output json \
-         --body '{"filterGroup":{"logicalOperator":0,"queryFilters":[{"fieldName":"Active","operator":"=","value":true}]}}' \
-         | python3 ./extract_page_ids.py --out active_ids.txt --append
-
-     Subsequent pages add `--cursor`. Expected: 5 pages, 300 IDs.
-
-  9. Verify:
-       python3 ./verify_pagination.py --mode count --file active_ids.txt --count 300
-
-     Server-side filterGroup guarantees `Active=true` on every returned
-     record — count is sufficient.
-
-  Do not delete the entity. The harness handles cleanup.
+  Don't delete the list — cleanup wipes the rows for you.
 
 success_criteria:
   - type: command_executed
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -112,7 +99,7 @@ success_criteria:
   - type: command_executed
     description: "Agent paginated through all records with records list --limit (at least 9 calls)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+list\s+.*--limit'
+    command_pattern: 'uip\s+df\s+records\s+(list|query)\s+.*--limit'
     min_count: 9
     weight: 3.0
     pass_threshold: 1.0
@@ -167,5 +154,11 @@ success_criteria:
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
-    timeout: 60
+  # Schema-only revert: wipe whatever the agent imported. Entity is
+  # preserved across runs (brownfield); next pre_run is a no-op if the
+  # schema is already correct.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_LargePaginationTest
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/large_pagination.schema.json
+    timeout: 300

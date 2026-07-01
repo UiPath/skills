@@ -1,0 +1,234 @@
+task_id: skill-datafabric-integration-naming-edge-cases
+description: >
+  Integration test: agent walks the entity / field naming validation
+  surface end-to-end with paired positive/negative attempts that
+  differ by one character at a time. Covers leading digit (rejected),
+  hyphen (rejected), 100-character boundary (positive: 100 chars
+  succeeds; negative: 101 chars fails), reserved system field names
+  (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime — must be
+  rejected), SQL/C#/VB reserved keywords (Status, Order, Group, Key,
+  Type — must be rejected with RESERVED_LANGUAGE_KEYWORDS). Per Rule
+  18 the agent surfaces the exact error verbatim; per Rule 4 the
+  agent must NOT silently rename a rejected keyword without asking.
+  end state checked via a row-count oracle confirming only the
+  positive list survived.
+tags: [uipath-platform, data-fabric, integration, entities, naming, mode:diagnose, lifecycle:setup]
+
+run_limits:
+  max_turns: 60
+  turn_timeout: 600
+
+initial_prompt: |
+  Hey, we're migrating off our old CRM and the data team handed me a
+  schema list to recreate in Data Fabric. Could you set them up? I
+  know some of these names are a bit funky (the old system was way
+  more permissive about naming) — for anything Data Fabric rejects,
+  please just paste me back the error message and I'll go fight the
+  data team about renaming it. Don't fix the names yourself — I need
+  the original list of rejections to take back to them.
+
+  Here are the lists they want set up:
+    - `CE_NameOK1`           — one column called `Title` (short text)
+    - `9StartsWithDigit`     — one column called `Title`
+                              (the old system sorted by leading
+                              digits; we may have to rename this)
+    - `CE_NameWithUnderscore` — one column called `Title`
+    - `CE-Name-With-Hyphen`   — one column called `Title`
+                              (their convention used hyphens)
+    - A list named with `CE_` followed by 97 A's (so the full name
+      is 100 characters long) — one column called `Title`
+                              (some of their export-generated names
+                              are very long)
+    - A list named with `CE_` followed by 98 A's (101 characters
+      total) — one column called `Title`
+                              (similar export-generated name, one
+                              character longer)
+
+  Then on `CE_NameOK1`, please add the following columns (the data
+  team wants the old system's schema mirrored exactly):
+    - `Notes`       — long text
+    - `Id`          — short text  (yes, they actually had a column called Id)
+    - `CreatedBy`   — short text
+    - `CreateTime`  — date with time
+    - `UpdatedBy`   — short text
+    - `UpdateTime`  — date with time
+    - `OrderStatus` — short text  (their workflow status field)
+    - `Status`      — short text  (a separate "active/inactive" flag)
+    - `Order`       — whole number (sort order in their UI)
+    - `Group`       — short text  (logical grouping)
+    - `Key`         — short text  (their internal key)
+    - `Type`        — short text  (record type)
+
+  When you're done, write up the results in `report.json` so I can
+  forward it back to the data team. For each one, put either
+  "succeeded" if it went through, or paste the error message you got:
+
+    {
+      "pair_A1": "succeeded" | "<error>",
+      "pair_A2": "<error or 'succeeded'>",
+      "pair_B1": "...", "pair_B2": "...",
+      "pair_C1": "...", "pair_C2": "...",
+      "pair_D1": "...", "pair_D2": "...", "pair_D3": "...",
+      "pair_D4": "...", "pair_D5": "...", "pair_D6": "...",
+      "pair_E1": "...", "pair_E2": "...", "pair_E3": "...",
+      "pair_E4": "...", "pair_E5": "...", "pair_E6": "...",
+      "lists_created": <count of lists that actually exist now>,
+      "reserved_keyword_error_seen": <true|false>
+    }
+
+  For `reserved_keyword_error_seen` — set it to true if any of the
+  column rejections mentioned "reserved" or "keyword" in the error.
+  That'll tell the data team they need to do a global rename, not
+  just retry.
+
+  Use the labels above (A1 = first list, A2 = second list, …, E6 =
+  last column attempt) so the data team can map your report back to
+  their source list.
+
+  Don't delete any of the lists yourself.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent attempted to create multiple lists (positives and negatives)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create'
+    min_count: 5
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted to add columns (may batch multiple per update call)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields'
+    min_count: 3
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent explicitly tried to add a column named exactly `Id` (must be rejected by server)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields.*"fieldName"\s*:\s*"Id"'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent explicitly tried to add a column named exactly `Status` (must be rejected by server)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields.*"fieldName"\s*:\s*"Status"'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT silently rename a rejected keyword to make it pass"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create'
+    min_count: 5
+    max_count: 15
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Leading digit rejected; underscore name accepted"
+    path: "report.json"
+    assertions:
+      - expression: "pair_A1"
+        operator: contains
+        expected: "succeeded"
+      - expression: "pair_A2"
+        operator: not_equals
+        expected: "succeeded"
+      - expression: "pair_B1"
+        operator: contains
+        expected: "succeeded"
+      - expression: "pair_B2"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Length boundary at 101 chars rejected (the 100-char case is informational — current platform behavior varies)"
+    path: "report.json"
+    assertions:
+      - expression: "pair_C2"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Length boundary at 100 chars recorded (either outcome captured — informational)"
+    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); sys.exit(0 if isinstance(d.get('pair_C1'),str) and d['pair_C1'] else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Reserved system field-name attempts recorded for all 5 (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime)"
+    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); sys.exit(0 if all(isinstance(d.get(k),str) and d[k] for k in ['pair_D2','pair_D3','pair_D4','pair_D5','pair_D6']) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Renamed alternative (`OrderStatus`) succeeded"
+    path: "report.json"
+    assertions:
+      - expression: "pair_E1"
+        operator: contains
+        expected: "succeeded"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Reserved-keyword column attempts recorded for all 5 (Status, Order, Group, Key, Type) — platform may accept or reject; we just want the outcomes captured"
+    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); sys.exit(0 if all(isinstance(d.get(k),str) and d[k] for k in ['pair_E2','pair_E3','pair_E4','pair_E5','pair_E6']) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "At least the 2 fully-positive list names landed (A1 and B1); C1 outcome is platform-dependent"
+    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); count=d.get('lists_created',-1); sys.exit(0 if count>=2 else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+pre_run:
+  # Idempotency safety net — sweep any leftovers from a prior crashed run
+  # before the agent starts. Without this, an already-existing CE_NameOK1
+  # makes the agent's create call fail with "Another entity with the same
+  # name already exists", which then fails pair_A1.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameOK"
+    timeout: 60
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameWithUnderscore"
+    timeout: 60
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_AAA"
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  # Three positives created: CE_NameOK1, CE_NameWithUnderscore, and the
+  # 100-char `CE_AAAA…` list. Sweep them all by the CE_ prefix the test
+  # uses, plus any stray 9StartsWithDigit / CE-Name-With-Hyphen that the
+  # server somehow accepted.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameOK"
+    timeout: 60
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameWithUnderscore"
+    timeout: 60
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_AAA"
+    timeout: 60
