@@ -38,14 +38,25 @@ RUN set -euo pipefail && \
     uip tools install @uipath/orchestrator-tool && \
     uip tools install @uipath/integrationservice-tool && \
     uip tools install @uipath/maestro-tool && \
+    # `uip agent …` (e.g. `agent review`) is provided by agent-tool. Pre-install
+    # from the @alpha feed so the eval-time on-demand resolver doesn't fall back
+    # to public npm (stable only) — stable lacks the alpha-only guardrail-format
+    # review rules, which silently scores guardrail review tasks 0.
+    uip tools install @uipath/agent-tool && \
+    # IXP command group (`uip ixp …`) ships as a separate plugin on the @alpha
+    # feed. Required so the live ixp e2e (full_lifecycle) can actually execute
+    # `uip ixp` — without it the command is unknown and the e2e thrashes to
+    # MAX_TURNS. (Smoke ixp tasks pass regardless, since they grade command shape.)
+    uip tools install @uipath/ixp-tool && \
     # AgentHub command group ships as a separate plugin (CLI fetches it lazily).
     # Pre-install from the same @alpha feed so live `uip agenthub …` MCP e2e
     # tasks don't hit a missing-plugin 401.
     uip tools install @uipath/agenthub-tool && \
     # Data Fabric command group (`uip df …`) — required by every
-    # tests/tasks/uipath-data-fabric/* task. Without this, `uip df entities …`
-    # / `records …` / `choice-sets …` / `files …` all return
-    # "unknown command 'df'" and pre_run seed scripts + agent calls both fail.
+    # tests/tasks/uipath-platform/data-fabric/* task. Without this,
+    # `uip df entities …` / `records …` / `choice-sets …` / `files …` all
+    # return "unknown command 'df'" and pre_run seed scripts + agent calls
+    # both fail.
     uip tools install @uipath/data-fabric-tool && \
     uip tools list
 
