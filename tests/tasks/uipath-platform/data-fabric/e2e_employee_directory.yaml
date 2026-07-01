@@ -15,6 +15,7 @@ description: >
 tags: [uipath-platform, data-fabric, e2e, employee-directory, mode:build, lifecycle:setup]
 
 run_limits:
+  expected_turns: 40
   max_turns: 50
   turn_timeout: 1200
 
@@ -50,9 +51,6 @@ initial_prompt: |
     {
       "entity_id": "<created-entity-id>"
     }
-
-  Leave the list in place when you're done — I'll wipe it later
-  using the entity ID from `report.json`.
 
 success_criteria:
   - type: command_executed
@@ -170,6 +168,23 @@ success_criteria:
     description: "report.json was written so cleanup can delete the entity"
     path: "report.json"
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
 pre_run:

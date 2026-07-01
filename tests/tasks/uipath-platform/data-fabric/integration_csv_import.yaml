@@ -7,6 +7,7 @@ description: >
   with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
 tags: [uipath-platform, data-fabric, integration, records, import, mode:build, lifecycle:setup]
 run_limits:
+  expected_turns: 25
   turn_timeout: 600
 
 initial_prompt: |
@@ -19,8 +20,6 @@ initial_prompt: |
   and then pull the list back to confirm everything came through —
   tell me how many rows got inserted and how many are now in the
   list.
-
-  Leave the rows in place — I'll clean up afterward.
 
 success_criteria:
   - type: command_executed
@@ -86,6 +85,23 @@ success_criteria:
     command: "awk 'NR==1 && /(^|,)(Id|CreatedBy|CreateTime|UpdatedBy|UpdateTime)(,|$)/ { exit 1 }' inventory.csv"
     timeout: 5
     expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
     weight: 2.0
     pass_threshold: 1.0
 

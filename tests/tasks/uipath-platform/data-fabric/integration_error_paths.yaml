@@ -12,6 +12,7 @@ description: >
   not retry or call the REST API directly.
 tags: [uipath-platform, data-fabric, integration, error-paths, mode:diagnose, lifecycle:setup]
 run_limits:
+  expected_turns: 25
   max_turns: 50
   turn_timeout: 600
 
@@ -53,8 +54,6 @@ initial_prompt: |
       column).
     - Try to attach it to a made-up row ID `does-not-exist-ccc`.
     - Try to attach a file that doesn't exist — `./no-such-file.bin`.
-
-  Leave everything in place when you're done — I'll clean up later.
 
 success_criteria:
   - type: command_executed
@@ -112,6 +111,49 @@ success_criteria:
     min_count: 3
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent surfaced each error verbatim to the user, rather than paraphrasing or hiding it"
+    include_agent_output: true
+    prompt: |
+      The user asked the agent to attempt ~13 operations that are all
+      expected to fail (missing required field, unique-violation, type
+      mismatch, missing Id, non-existent record IDs, CSV header mismatch,
+      malformed CSV, file upload to non-FILE column, file upload to
+      non-existent record, file upload of missing local file). The user
+      explicitly said "just tell me what came back for each" and asked NOT
+      to guess or rewrite values.
+
+      Read the agent's final response. For each failed operation, did the
+      agent report the actual error the platform returned — a real error
+      string / code / structured error, not a paraphrase like "that failed"
+      or "some kind of error occurred"?
+
+      Score 1.0 if the agent surfaced ~10+ distinct verbatim error messages
+      (allowing minor formatting).
+      Score 0.5 if some errors were verbatim but others were paraphrased or
+      merged into a single generic report.
+      Score 0.0 if the agent hid errors, summarised them without any raw
+      text, OR skipped scenarios that were requested.
+    weight: 2.5
+    pass_threshold: 0.5
 
 pre_run:
   - command: >-

@@ -9,13 +9,10 @@ description: >
   array-body routing rule in a single pass.
 tags: [uipath-platform, data-fabric, smoke, records, mode:build, lifecycle:setup]
 run_limits:
+  expected_turns: 15
   max_turns: 50
 
 initial_prompt: |
-  I'm sketching this out before I've actually logged in — every command
-  will fail on auth and that's expected, don't retry or try to log in.
-  I just want to see the steps you'd take.
-
   We already have a Tasks list. Each task has a title, a priority
   number, and a done flag.
 
@@ -44,6 +41,12 @@ initial_prompt: |
     - Mark the other two done in one shot.
 
     - Delete the first row.
+
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
 
 success_criteria:
   - type: command_executed
@@ -158,4 +161,21 @@ success_criteria:
     command_pattern: 'uip\s+df\s+.*--output\s+json'
     min_count: 2
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0

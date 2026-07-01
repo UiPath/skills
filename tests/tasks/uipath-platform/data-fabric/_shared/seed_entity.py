@@ -173,14 +173,22 @@ def wipe_records(entity_id: str) -> None:
             print("WARN: could not parse records list output during wipe", file=sys.stderr)
             return
         records_body = (data.get("Data") if isinstance(data, dict) else None) or {}
-        records = records_body.get("Records") or records_body.get("records") or []
+        records = (
+            records_body.get("Items")
+            or records_body.get("Records")
+            or records_body.get("records")
+            or []
+        )
         if not records:
             break
         ids = [r.get("Id") or r.get("ID") for r in records if isinstance(r, dict)]
         ids = [i for i in ids if i]
         if not ids:
             break
-        del_code, _del_out, del_err = run_uip("df", "records", "delete", entity_id, *ids)
+        del_code, _del_out, del_err = run_uip(
+            "df", "records", "delete", entity_id, *ids,
+            "--yes", "--reason", "brownfield-test pre/post-run wipe",
+        )
         if del_code != 0:
             print(f"WARN: uip df records delete batch failed (exit {del_code}): {del_err.strip()}", file=sys.stderr)
             return

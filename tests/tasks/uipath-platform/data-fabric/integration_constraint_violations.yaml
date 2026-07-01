@@ -15,69 +15,55 @@ description: >
 tags: [uipath-platform, data-fabric, integration, constraints, error-paths, mode:diagnose, lifecycle:setup]
 
 run_limits:
+  expected_turns: 30
   max_turns: 70
   turn_timeout: 600
 
 initial_prompt: |
-  Can you help me load our product inventory? Sales sent over a
-  spreadsheet of new SKUs and I think a few rows are a little iffy.
-  Let's just try to load them all and see what happens — for anything
-  that doesn't go in cleanly, please tell me what the system said and
-  we'll go back to Sales to fix it. Don't guess what they "probably
-  meant" or rewrite any values; I need to know exactly what was bad
-  so we can correct the source.
+  We're loading a batch of product SKUs into a new list. For rows the
+  system rejects, record the actual error verbatim — don't guess or
+  rewrite values.
 
-  Set up a list called `CE_ConstraintTest` with these columns:
+  Set up `CE_ConstraintTest` with these columns:
     - Code — required, short text, up to 10 characters
-    - Quantity — whole number, between 0 and 100
-    - Price — dollar amount with cents, never negative
-    - HireDate — when the SKU was first stocked (just a date)
+    - Quantity — whole number, 0 to 100
+    - Price — dollars with cents, never negative
+    - HireDate — a date
     - Serial — an auto-generated number the system fills in
-    - ParentLink — optional, links to another SKU in the same list
-      (for variant products)
+    - ParentLink — optional, links to another row in this list
 
-  Here's what Sales sent. Please try to load each one — for the ones
-  that fail, just record the error message so I can show them:
+  Try loading each row. For failures, record the error verbatim:
 
-    1A. Code "OK1",      Quantity 5         — looks normal
-    1B. Code missing,    Quantity 5         — Sales forgot the SKU code
-    1C. Code = null,     Quantity 5         — the export tool left a literal null
-    1D. Code = "",       Quantity 5         — empty code from an old form
-    2A. Code "AAAAAAAAAA" (10 chars), Quantity 5  — long but should be at the limit
-    2B. Code "AAAAAAAAAAB" (11 chars), Quantity 5 — one character too long
-    3A. Code "MIN0",     Quantity 0         — out of stock
-    3B. Code "NEG1",     Quantity -1        — Sales says this was a return; not sure if it'll take
-    4A. Code "MAX",      Quantity 100       — top of the range
-    4B. Code "OVR",      Quantity 101       — over by one
-    4C. Code "INTOV",    Quantity 2147483648 — looks like Sales pasted a giant number by mistake
-    5A. Code "DP2",      Quantity 5, Price 9.99   — normal price
-    5B. Code "DP3",      Quantity 5, Price 9.999  — three decimal places, not sure how it handles that
-    6A. Code "DT1",      HireDate "2024-01-15"    — normal date
-    6B. Code "DTLOW",    HireDate "0001-01-01"    — placeholder used for legacy items
-    6C. Code "DTHI",     HireDate "9999-12-31"    — placeholder used for "never expires" items
-    6D. Code "DTBAD",    HireDate "2024-02-30"    — February 30th, clearly a typo
-    7A. Code "AUTO",     Quantity 5               — let Serial fill in itself; tell me what number you got
-    7B. Code "SET",      Quantity 5, Serial 999   — someone put a serial in by hand
-    7C. Code "SYS",      Quantity 5, CreatedBy "fake-user" — export tool included audit columns
-    7D. Code "IDSET",    Quantity 5, Id "00000000-0000-0000-0000-000000000001" — export included a row Id
+    1A. "OK1",      Qty 5
+    1B. Code missing, Qty 5
+    1C. Code = null,  Qty 5
+    1D. Code = "",    Qty 5
+    2A. "AAAAAAAAAA" (10 chars), Qty 5
+    2B. "AAAAAAAAAAB" (11 chars), Qty 5
+    3A. "MIN0", Qty 0
+    3B. "NEG1", Qty -1
+    4A. "MAX",  Qty 100
+    4B. "OVR",  Qty 101
+    4C. "INTOV",Qty 2147483648
+    5A. "DP2",  Qty 5, Price 9.99
+    5B. "DP3",  Qty 5, Price 9.999
+    6A. "DT1",  HireDate "2024-01-15"
+    6B. "DTLOW",HireDate "0001-01-01"
+    6C. "DTHI", HireDate "9999-12-31"
+    6D. "DTBAD",HireDate "2024-02-30"
+    7A. "AUTO", Qty 5 — let Serial auto-fill; note the number
+    7B. "SET",  Qty 5, Serial 999 — manual serial
+    7C. "SYS",  Qty 5, CreatedBy "fake-user" — audit column
+    7D. "IDSET",Qty 5, Id "00000000-0000-0000-0000-000000000001"
+    8A. "REL1", ParentLink = row ID of 1A (first successful row)
+    8B. "RELBAD",ParentLink = "00000000-0000-0000-0000-000000000099"
 
-  And two more that are supposed to link to other products:
-    8A. Code "REL1",     ParentLink = the row ID of the first row you
-                         loaded successfully (1A)
-    8B. Code "RELBAD",   ParentLink = "00000000-0000-0000-0000-000000000099"
-                         — this ID isn't a real row; Sales is double-
-                         checking what variant this should point to
-
-  When you're done, write up the results in `report.json` so I can
-  forward it. For each entry, just put "succeeded" if it loaded, or
-  paste the actual error message if it didn't:
+  Save to `report.json` — put "succeeded" for accepted rows, the raw
+  error text for rejected ones:
 
     {
       "entity_id": "<list ID>",
-      "pair_1_A": "succeeded" | "<error>",
-      "pair_1_B": "<error or 'succeeded'>",
-      "pair_1_C": "<error or 'succeeded'>",
-      "pair_1_D": "<error or 'succeeded'>",
+      "pair_1_A": "...", "pair_1_B": "...", "pair_1_C": "...", "pair_1_D": "...",
       "pair_2_A": "...", "pair_2_B": "...",
       "pair_3_A": "...", "pair_3_B": "...",
       "pair_4_A": "...", "pair_4_B": "...", "pair_4_C": "...",
@@ -85,11 +71,8 @@ initial_prompt: |
       "pair_6_A": "...", "pair_6_B": "...", "pair_6_C": "...", "pair_6_D": "...",
       "pair_7_A": "...", "pair_7_B": "...", "pair_7_C": "...", "pair_7_D": "...",
       "pair_8_A": "...", "pair_8_B": "...",
-      "successful_inserts": <int>
+      "successful_inserts": <row count at end>
     }
-
-  `successful_inserts` is just the row count in the list at the end —
-  not how many we tried. Cleanup runs after, so don't delete anything.
 
 success_criteria:
   - type: command_executed
@@ -238,6 +221,23 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
 pre_run:

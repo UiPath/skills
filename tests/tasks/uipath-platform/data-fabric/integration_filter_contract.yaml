@@ -11,11 +11,8 @@ description: >
   against the CLI and asserts each is accepted — or, for anti-patterns,
   silently dropped. Asserts command-shape validity, not record counts.
 tags: [uipath-platform, data-fabric, integration, records, mode:operate, lifecycle:discover]
-
-agent:
-  type: claude-code
-
 run_limits:
+  expected_turns: 25
   max_turns: 40
   turn_timeout: 600
 
@@ -186,6 +183,23 @@ success_criteria:
     command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CodeEvalTestEntity --expected 20"
     timeout: 60
     expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
     weight: 2.0
     pass_threshold: 1.0
 

@@ -15,77 +15,51 @@ description: >
 tags: [uipath-platform, data-fabric, integration, entities, naming, mode:diagnose, lifecycle:setup]
 
 run_limits:
+  expected_turns: 30
   max_turns: 60
   turn_timeout: 600
 
 initial_prompt: |
-  Hey, we're migrating off our old CRM and the data team handed me a
-  schema list to recreate in Data Fabric. Could you set them up? I
-  know some of these names are a bit funky (the old system was way
-  more permissive about naming) — for anything Data Fabric rejects,
-  please just paste me back the error message and I'll go fight the
-  data team about renaming it. Don't fix the names yourself — I need
-  the original list of rejections to take back to them.
+  Migrating a schema from another system. Try each list and column
+  below. For rejections, record the error verbatim — don't rewrite
+  names or retry.
 
-  Here are the lists they want set up:
-    - `CE_NameOK1`           — one column called `Title` (short text)
-    - `9StartsWithDigit`     — one column called `Title`
-                              (the old system sorted by leading
-                              digits; we may have to rename this)
-    - `CE_NameWithUnderscore` — one column called `Title`
-    - `CE-Name-With-Hyphen`   — one column called `Title`
-                              (their convention used hyphens)
-    - A list named with `CE_` followed by 97 A's (so the full name
-      is 100 characters long) — one column called `Title`
-                              (some of their export-generated names
-                              are very long)
-    - A list named with `CE_` followed by 98 A's (101 characters
-      total) — one column called `Title`
-                              (similar export-generated name, one
-                              character longer)
+  Lists (each with one `Title` column, short text):
+    A1. `CE_NameOK1`
+    A2. `9StartsWithDigit`
+    B1. `CE_NameWithUnderscore`
+    B2. `CE-Name-With-Hyphen`
+    C1. `CE_` + 97 A's (100 chars total)
+    C2. `CE_` + 98 A's (101 chars total)
 
-  Then on `CE_NameOK1`, please add the following columns (the data
-  team wants the old system's schema mirrored exactly):
-    - `Notes`       — long text
-    - `Id`          — short text  (yes, they actually had a column called Id)
-    - `CreatedBy`   — short text
-    - `CreateTime`  — date with time
-    - `UpdatedBy`   — short text
-    - `UpdateTime`  — date with time
-    - `OrderStatus` — short text  (their workflow status field)
-    - `Status`      — short text  (a separate "active/inactive" flag)
-    - `Order`       — whole number (sort order in their UI)
-    - `Group`       — short text  (logical grouping)
-    - `Key`         — short text  (their internal key)
-    - `Type`        — short text  (record type)
+  Columns to add to `CE_NameOK1`:
+    D1. `Notes`      — long text
+    D2. `Id`         — short text
+    D3. `CreatedBy`  — short text
+    D4. `CreateTime` — date with time
+    D5. `UpdatedBy`  — short text
+    D6. `UpdateTime` — date with time
+    E1. `OrderStatus`— short text
+    E2. `Status`     — short text
+    E3. `Order`      — whole number
+    E4. `Group`      — short text
+    E5. `Key`        — short text
+    E6. `Type`       — short text
 
-  When you're done, write up the results in `report.json` so I can
-  forward it back to the data team. For each one, put either
-  "succeeded" if it went through, or paste the error message you got:
+  Save to `report.json` — "succeeded" if it went through, the raw
+  error string otherwise:
 
     {
-      "pair_A1": "succeeded" | "<error>",
-      "pair_A2": "<error or 'succeeded'>",
+      "pair_A1": "...", "pair_A2": "...",
       "pair_B1": "...", "pair_B2": "...",
       "pair_C1": "...", "pair_C2": "...",
       "pair_D1": "...", "pair_D2": "...", "pair_D3": "...",
       "pair_D4": "...", "pair_D5": "...", "pair_D6": "...",
       "pair_E1": "...", "pair_E2": "...", "pair_E3": "...",
       "pair_E4": "...", "pair_E5": "...", "pair_E6": "...",
-      "lists_created": <count of lists that actually exist now>,
-      "reserved_keyword_error_seen": <true|false>
+      "lists_created": <count actually created>,
+      "reserved_keyword_error_seen": <true if any rejection said "reserved"/"keyword">
     }
-
-  For `reserved_keyword_error_seen` — set it to true if any of the
-  column rejections mentioned "reserved" or "keyword" in the error.
-  That'll tell the data team they need to do a global rename, not
-  just retry.
-
-  Use the labels above (A1 = first list, A2 = second list, …, E6 =
-  last column attempt) so the data team can map your report back to
-  their source list.
-
-  Don't delete any of the lists yourself.
 
 success_criteria:
   - type: command_executed
@@ -206,12 +180,29 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
 pre_run:
   # Idempotency safety net — sweep any leftovers from a prior crashed run
   # before the agent starts. Without this, an already-existing CE_NameOK1
   # makes the agent's create call fail with "Another entity with the same
   # name already exists", which then fails pair_A1.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameOK"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameOK1"
     timeout: 60
     fail_on_error: false
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameWithUnderscore"
@@ -226,7 +217,7 @@ post_run:
   # 100-char `CE_AAAA…` list. Sweep them all by the CE_ prefix the test
   # uses, plus any stray 9StartsWithDigit / CE-Name-With-Hyphen that the
   # server somehow accepted.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameOK"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameOK1"
     timeout: 60
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameWithUnderscore"
     timeout: 60

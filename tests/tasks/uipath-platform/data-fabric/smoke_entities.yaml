@@ -9,13 +9,10 @@ description: >
   all entity command syntax in a single pass.
 tags: [uipath-platform, data-fabric, smoke, entities, mode:build, lifecycle:setup]
 run_limits:
-  max_turns: 30
+  expected_turns: 20
+  max_turns: 60
 
 initial_prompt: |
-  I'm sketching out a Departments module before I actually log in — every
-  command will fail on auth and that's expected, don't retry or try to log
-  in. I just want to see the steps you'd take.
-
   We already have an Employees list. It holds first name, last name, and
   hire date.
 
@@ -42,14 +39,20 @@ initial_prompt: |
 
   Please don't remove anything or delete lists.
 
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
+
 success_criteria:
   - type: command_executed
-    description: "Agent listed native-only entities (--native-only required)"
+    description: "Agent listed native-only entities (skill recommendation; soft — a plain `entities list` also works for discovery)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent used fieldName (not name) in entity create body"
@@ -78,7 +81,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used updateFields with lowercase id key in entities update body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update.*updateFields.*\"id\"'
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?updateFields[\s\S]*?\\?\"[Ii]d\\?\"'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -121,4 +124,21 @@ success_criteria:
     command_pattern: 'uip\s+df\s+.*--output\s+json'
     min_count: 2
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0

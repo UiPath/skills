@@ -10,14 +10,11 @@ description: >
 tags: [uipath-platform, data-fabric, smoke, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
-  max_turns: 35
+  expected_turns: 20
+  max_turns: 60
 
 
 initial_prompt: |
-  I'm sketching this out before I've actually logged in — every command
-  will fail on auth and that's expected, don't retry or try to log in.
-  I just want to see the steps you'd take.
-
   Some things that already exist on the tenant:
     - A category dropdown with travel, meals, and lodging
     - A tags dropdown with urgent, reimbursable, and client
@@ -47,12 +44,15 @@ initial_prompt: |
 
     - Show me the expenses submitted by employee `emp-rec-500`.
 
-    - Last one — I'm about to ask you to make a brand-new dropdown
-      called PaymentStatus from the command line. Please refuse.
-      Dropdowns can only be set up in the web UI. Just explain that
-      and don't touch anything.
+    - Add a brand-new dropdown called PaymentStatus with values
+      "paid", "unpaid", "refunded". I'd like to use it on the
+      Expense list.
 
-  Please don't remove any columns and don't delete any lists.
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
 
 success_criteria:
   - type: command_executed
@@ -128,9 +128,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted a record writing target record ID for RELATIONSHIP field"
+    description: "Agent inserted a record writing a target record ID (any string, quoted) for the RELATIONSHIP field submitter"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"submitter\"\s*:\s*\"emp-rec-500\"'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert[\s\S]*?\\?\"[Ss]ubmitter\\?\"\s*:\s*\\?\"[^\"\\]+'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -161,12 +161,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent must NOT attempt to create / update / delete a choice set via the CLI"
+    description: "Agent authored the PaymentStatus choice set via choice-sets create (CLI-supported per the skill)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+choice-sets\s+(create|update|delete)'
-    min_count: 0
-    max_count: 0
-    weight: 3.0
+    command_pattern: '(?i)uip\s+df\s+choice-sets\s+create[\s\S]*?PaymentStatus'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added the three PaymentStatus values (paid, unpaid, refunded) via choice-set-values create"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip\s+df\s+choice-set-values\s+create[\s\S]*?(paid|unpaid|refunded)'
+    min_count: 3
+    weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
@@ -175,4 +182,21 @@ success_criteria:
     command_pattern: 'uip\s+df\s+.*--output\s+json'
     min_count: 3
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0

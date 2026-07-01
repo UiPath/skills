@@ -17,87 +17,69 @@ description: >
 tags: [uipath-platform, data-fabric, e2e, expense-tracker, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
+  expected_turns: 45
   max_turns: 60
   turn_timeout: 600
 
 initial_prompt: |
-  Finance needs a simple expense tracker. Each expense gets submitted
-  by an employee, has a category from a dropdown, can carry one or
-  more tags, and has somewhere to attach a receipt. Just build it —
-  no need to pause for approval.
+  Build an expense tracker for Finance. Two linked lists.
 
-  An Employees list, call it `CE_E2EEmployee`:
-    - a name — required, up to 200 characters
-    - an email — unique, up to 255 characters
-    - a department — required, up to 100 characters
+  `CE_E2EEmployee`:
+    - name — required, up to 200 chars
+    - email — unique, up to 255 chars
+    - department — required, up to 100 chars
 
-  An Expenses list, call it `CE_E2EExpense`:
-    - an amount in dollars — required, cents allowed, between $0 and
-      $100,000
-    - who submitted it — required, links to an employee (call this
-      column `submitter`)
-    - a description — long text, up to 2000 characters
-    - a receipt — a slot for attaching a PDF later (call this column
-      `Receipt`)
-    - a category — pick one from a dropdown, IF the tenant has one
-    - tags — pick one or more from a dropdown, IF the tenant has a
-      second one (reusing the category dropdown for tags is fine if
-      there's only one)
+  `CE_E2EExpense` (each expense belongs to an employee):
+    - amount in dollars — required, cents allowed, $0 to $100,000
+    - `submitter` — required, links to an employee
+    - description — long text, up to 2000 chars
+    - `Receipt` — attachment slot for a PDF
+    - category — pick from a dropdown if the tenant has one, else skip
+    - tags — pick one-or-more from a second dropdown if it exists (or
+      reuse the category dropdown if there's only one, or skip)
 
-  Dropdowns can only be set up in the web UI. See what the tenant
-  already has and pick the best fits. If a dropdown's name contains
-  "Category", "Expense", or "Type", that's likely the category one;
-  otherwise grab the first one. If there are none, skip category
-  and tags and note that in the report.
+  Pick the tenant's best fit for `category`: if a dropdown name contains
+  "Category", "Expense", or "Type", use that; else grab the first one.
+  If none exist, skip category+tags and note that in the report.
 
-  Seed some data:
-    - 6 employees — 3 in Engineering, 3 in Sales — realistic names
-      and emails
-    - 12 expenses — 2 per employee, amounts from $25 to $1200. Vary
-      categories across the set; on about half, add 1–2 tags.
+  Seed:
+    - 6 employees — 3 Engineering, 3 Sales
+    - 12 expenses — 2 per employee, amounts $25 to $1200. Vary
+      categories; add 1-2 tags on about half.
 
-  Then answer these for me (run fresh queries — don't reuse counts
-  from earlier responses):
-    - How many expenses does one specific employee have?
-    - If we're using categories, how many expenses are in each one?
-    - What's the total dollar amount of expenses submitted by the
-      Engineering department? (Find the 3 Engineering employees
-      first, then add up their expense amounts.)
+  Answer with FRESH queries (not counts from earlier responses):
+    - how many expenses one specific employee has
+    - if categories used, how many expenses in each
+    - total dollars of expenses from Engineering employees (find the
+      3 Engineering employees first, then sum)
 
-  Open one expense back up and confirm the values stored correctly:
-  the submitter should be stored as an employee ID (not the email),
-  the category — if used — should be stored as a number (not the
-  dropdown label), and tags — if used — should be stored as a list
-  of numbers.
+  Open one expense: confirm `submitter` stored as employee ID (not
+  email/name), category stored as a number (not the label), tags
+  stored as a list of numbers.
 
-  When you're done, save `report.json`:
-
+  Save `report.json`:
     {
-      "category_choice_set_id": "<id-or-null>",
-      "category_value_map": { "<Name>": <NumberId>, ... } | null,
-      "tags_choice_set_id": "<id-or-null>",
-      "tags_value_map":     { "<Name>": <NumberId>, ... } | null,
-      "attachment_entity_id": "<id>",
+      "category_choice_set_id":  "<id-or-null>",
+      "category_value_map":      { "<Name>": <NumberId>, ... } | null,
+      "tags_choice_set_id":      "<id-or-null>",
+      "tags_value_map":          { "<Name>": <NumberId>, ... } | null,
+      "attachment_entity_id":    "<id>",
       "attachment_name_field_id": "<id>",
-      "parent_entity_id": "<id>",
-      "child_entity_id":  "<id>",
-      "employee_ids": [ ... 6 IDs ... ],
-      "expense_ids":  [ ... 12 IDs ... ],
-      "q_per_employee_count": <int>,
-      "q_per_category": { "<Name>": <int>, ... } | null,
-      "engineering_employee_ids": [ "<id>", "<id>", "<id>" ],
+      "parent_entity_id":        "<id>",
+      "child_entity_id":         "<id>",
+      "employee_ids":            [ ... 6 IDs ... ],
+      "expense_ids":             [ ... 12 IDs ... ],
+      "q_per_employee_count":    <int>,
+      "q_per_category":          { "<Name>": <int>, ... } | null,
+      "engineering_employee_ids":[ "<id>", "<id>", "<id>" ],
       "engineering_total_amount": <number>,
       "stored_submitter_is_uuid": true,
-      "stored_category_is_integer": <bool|null>,
-      "stored_tags_is_integer_array": <bool|null>
+      "stored_category_is_integer":  <bool|null>,
+      "stored_tags_is_integer_array":<bool|null>
     }
 
-  Couple of things to keep in mind:
-    - Please don't try to upload an actual receipt file — uploads from
-      the command line aren't working right now. The field just needs
-      to exist.
-    - Please don't create or change any dropdown lists.
-    - Leave the lists and rows in place — I'll sweep them later.
+  We'll wire receipt uploads up later — just get the column in place.
+  Don't author any new dropdowns either.
 
 success_criteria:
   - type: command_executed
@@ -175,17 +157,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted employee records"
+    description: "Agent inserted employee records (either --body with inline field names OR --file with a JSON payload)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert.*\"(Name|Email|Department)\"'
+    command_pattern: '(?is)uip\s+df\s+records\s+insert[\s\S]*?(?:--body[\s\S]*?\\?\"(Name|Email|Department)\\?\"|--file\s+\S+\.json)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted expense records (either `--body` with inline `submitter` UUID, or `--file` with a JSON payload — the file-content shape is verified by report.json's stored_submitter_is_uuid assertion)"
+    description: "Agent inserted expense records (either --body with inline submitter UUID, or --file with a JSON payload — the file-content shape is verified by report.json's stored_submitter_is_uuid assertion)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+records\s+insert\s+\S+\s+(?:--body[\s\S]*\"[Ss]ubmitter\"\s*:\s*\"[0-9a-fA-F-]{8,}|--file\s+\S+\.json)'
+    command_pattern: '(?s)uip\s+df\s+records\s+insert[\s\S]*?(?:--body[\s\S]*?\\?\"[Ss]ubmitter\\?\"\s*:\s*\\?\"[0-9a-fA-F-]{8,}|--file\s+\S+\.json)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -295,6 +277,23 @@ success_criteria:
         operator: gte
         expected: 0
     weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
 pre_run:

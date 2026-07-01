@@ -15,41 +15,32 @@ description: >
   semantics in the skill.
 tags: [uipath-platform, data-fabric, integration, entities, records, mode:build, lifecycle:setup]
 run_limits:
+  expected_turns: 35
   turn_timeout: 600
 
 initial_prompt: |
-  Please check whether a list called `CE_LifecycleTest` already
-  exists. If it does, reuse it. If not, set it up with these columns:
-    - Label — short text, up to 200 characters
-    - Score — whole number, between 0 and 1000
+  If a list called `CE_LifecycleTest` already exists, reuse it. Otherwise
+  create it with:
+    - Label — short text, up to 200 chars
+    - Score — whole number, 0 to 1000
     - Active — yes/no
 
-  Once the list is there:
-    - Read its settings back, then print the limits we set on the
-      Score column (the min and max) so I can see them — that tells
-      me they saved properly.
-    - Add a long-text column called `Notes_<EPOCH>` (with <EPOCH>
-      being the current Unix epoch seconds so each run gets a fresh
-      column). Up to 2000 characters.
-    - Tighten the Score column: rename it "Test Score", make it
-      required, and drop the max from 1000 to 500.
-    - Rename the list itself to "Lifecycle Test Entity" with the
-      description "Lifecycle test fixture (created and destroyed
-      each run)." Then read it back and confirm both stuck.
+  Once it's there:
+    - Read its settings back and show me the Score column's min and
+      max — that tells me they saved.
+    - Add a long-text column (up to 2000 chars) for freeform notes.
+      Pick any column name you like.
+    - Tighten Score: rename it "Test Score", make it required, and
+      drop the max to 500.
+    - Rename the list itself to "Lifecycle Test Entity" and set a
+      description. Read it back and confirm both stuck.
 
-  Then some data:
+  Then:
     - Add row "alpha" with score 10 and Active = yes.
     - Add row "beta" with score 5 and Active = no.
-    - Pull all rows where Active is yes — at least one should come
-      back.
-    - Update alpha's score to 99.
-    - Read alpha back to confirm.
-    - Remove just those two rows — leave the list itself in place.
-
-  Please don't try to remove any columns and don't delete the list.
-  (Heads up: each successful run leaves one `Notes_<EPOCH>` column
-  behind — that's known and we'll clean up when column removal
-  lands.)
+    - Pull rows where Active is yes — at least one should come back.
+    - Update alpha's score to 99. Read alpha back to confirm.
+    - Delete both rows. Leave the list itself in place.
 
 success_criteria:
   - type: command_executed

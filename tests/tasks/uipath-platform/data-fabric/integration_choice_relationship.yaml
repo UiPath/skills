@@ -19,63 +19,52 @@ description: >
 tags: [uipath-platform, data-fabric, integration, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
+  expected_turns: 30
   max_turns: 65
   turn_timeout: 600
 
 initial_prompt: |
-  I need a small customers-and-orders setup for a test. Just build it,
-  no need to pause for approval.
+  Build two linked lists — customers and their orders.
 
-  A Customer list, call it `CE_IntegrationCustomer`:
-    - a name — required, up to 200 characters
-    - an email — required, unique per customer, up to 255 characters
-    - a free-form notes area (things like "Net-30 terms") — long text,
-      up to 2000 characters
+  `CE_IntegrationCustomer`:
+    - name — required, up to 200 chars
+    - email — required, unique, up to 255 chars
+    - notes — long text, up to 2000 chars
 
-  An Orders list, call it `CE_IntegrationOrder`, where each order
-  belongs to a customer:
-    - an amount in dollars — required, two decimal places, never
-      negative and never above $1,000,000
-    - the customer it belongs to — required (call this column
-      `customerId`)
-    - a place to attach the receipt PDF later — call this column
-      `Receipt`
-    - the order's status — pick one from a dropdown if the tenant has
-      one set up. Skip this column if the tenant has no dropdowns.
+  `CE_IntegrationOrder` (each order belongs to a customer):
+    - amount in dollars — required, cents allowed, $0 to $1,000,000
+    - customer link — required (call this column `customerId`)
+    - a receipt attachment slot — call this column `Receipt`
+    - status — pick from a dropdown if the tenant already has one. Skip
+      this column entirely if none exist. Don't author new dropdowns.
 
-  Dropdowns are set up in the web UI, not from the command line.
+  Seed: two customers (`alice@integration.test`, `bravo@integration.test`)
+  and three orders (2 for alice, 1 for bravo).
 
-  Now seed:
-    - Two customers: one with email `alice@integration.test`, the
-      other `bravo@integration.test`
-    - Three orders: two belonging to alice, one to bravo
+  Sanity checks:
+    - Find alice by email, then pull her orders. Should be 2.
+    - Open one order and confirm the customer link is stored as her ID
+      (not email, not name). If status was set, confirm it's stored as
+      a number.
+    - If status was set, all 3 orders filtered by that status should
+      come back.
 
-  Then a few sanity checks:
-    - Look alice up by her email, then pull all orders belonging to
-      her. Should be exactly 2.
-    - Open one order back up and confirm the customer link is stored
-      as her ID (not her email, not her name). If a status was set,
-      confirm it's stored as a number, not the dropdown label.
-    - If status was set, pulling all orders with that status should
-      return all 3.
-
-  Finally, read both lists' settings back and confirm every limit we
-  put on took effect. Save what you found to `report.json`:
+  Read both lists' settings back and save to `report.json`:
 
     {
-      "choice_set_available": <true|false>,
-      "chosen_choice_set_id": "<id-or-null>",
+      "choice_set_available":  <bool>,
+      "chosen_choice_set_id":  "<id-or-null>",
       "chosen_choice_number_id": <int-or-null>,
-      "attachment_entity_id": "<id>",
+      "attachment_entity_id":   "<id>",
       "attachment_name_field_id": "<id>",
-      "parent_entity_id": "<id>",
-      "child_entity_id":  "<id>",
+      "parent_entity_id":       "<id>",
+      "child_entity_id":        "<id>",
       "parent_id_a": "<id>", "parent_id_b": "<id>",
       "child_id_1":  "<id>", "child_id_2":  "<id>", "child_id_3": "<id>",
       "filter_by_relationship_count": <int>,
-      "filter_by_choice_count": <int-or-null>,
-      "stored_relationship_is_uuid": <bool>,
-      "stored_choice_is_integer": <bool-or-null>,
+      "filter_by_choice_count":       <int-or-null>,
+      "stored_relationship_is_uuid":  <bool>,
+      "stored_choice_is_integer":     <bool-or-null>,
       "schema_echo": {
         "customer_name_length_limit":            <int>,
         "customer_notes_length_limit":           <int>,
@@ -87,11 +76,8 @@ initial_prompt: |
       }
     }
 
-  A couple of things:
-    - Don't try to upload an actual receipt file — the column just
-      needs to exist.
-    - Don't create or change any dropdowns.
-    - Leave the lists and rows in place — I'll clean up later.
+  We'll wire receipt uploads up later — just get the column in place.
+  Don't author any new dropdowns either.
 
 success_criteria:
   - type: command_executed
@@ -299,6 +285,23 @@ success_criteria:
         operator: equals
         expected: true
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
 pre_run:

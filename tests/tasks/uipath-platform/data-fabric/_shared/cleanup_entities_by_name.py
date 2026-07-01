@@ -44,8 +44,11 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     return result.returncode, result.stdout, result.stderr
 
 
-def list_native_entities() -> list[dict]:
-    code, out, err = run_uip("df", "entities", "list", "--native-only")
+def list_native_entities(include_folders: bool = False) -> list[dict]:
+    args = ["df", "entities", "list", "--native-only"]
+    if include_folders:
+        args.append("--include-folders")
+    code, out, err = run_uip(*args)
     if code != 0 or not out.strip():
         print(f"SKIP: uip df entities list failed (exit {code}): {err.strip()}")
         return []
@@ -62,31 +65,36 @@ def list_native_entities() -> list[dict]:
     return []
 
 
-def match_by_prefix(entities: list[dict], prefix: str) -> list[tuple[str, str]]:
-    """Return (id, name) pairs for entities matching the prefix.
+def match_by_prefix(entities: list[dict], prefix: str) -> list[tuple[str, str, str]]:
+    """Return (id, name, folder_key) tuples for entities matching the prefix.
 
     A name matches when it equals `<prefix>` exactly OR starts with `<prefix>_`.
+    folder_key is the empty string for tenant-scoped entities.
     """
     suffix_match = f"{prefix}_"
-    out: list[tuple[str, str]] = []
+    out: list[tuple[str, str, str]] = []
     for ent in entities:
         if not isinstance(ent, dict):
             continue
         name = ent.get("Name") or ent.get("name") or ""
         eid = ent.get("ID") or ent.get("Id") or ent.get("id") or ""
+        folder_key = ent.get("FolderKey") or ent.get("folderKey") or ""
         if not name or not eid:
             continue
         if name == prefix or name.startswith(suffix_match):
-            out.append((eid, name))
+            out.append((eid, name, folder_key))
     return out
 
 
-def delete_entity(entity_id: str, name: str) -> None:
-    code, out, err = run_uip(
+def delete_entity(entity_id: str, name: str, folder_key: str = "") -> None:
+    args = [
         "df", "entities", "delete", entity_id,
         "--confirm",
         "--reason", "greenfield-test pre/post-run cleanup",
-    )
+    ]
+    if folder_key:
+        args += ["--folder-key", folder_key]
+    code, out, err = run_uip(*args)
     if code == 0:
         print(f"OK: deleted leftover entity {name} ({entity_id})")
     else:
@@ -106,18 +114,24 @@ def main() -> None:
         required=True,
         help="Base entity name (matches `<prefix>` exactly or `<prefix>_*`).",
     )
+    parser.add_argument(
+        "--include-folders",
+        action="store_true",
+        help="Also sweep folder-scoped entities. Deletes each with its --folder-key.",
+    )
     args = parser.parse_args()
 
-    entities = list_native_entities()
+    entities = list_native_entities(include_folders=args.include_folders)
     matches = match_by_prefix(entities, args.name_prefix)
     if not matches:
         print(f"OK: no leftover entities matching `{args.name_prefix}` / `{args.name_prefix}_*`")
         sys.exit(0)
 
     print(f"Found {len(matches)} leftover entity/entities matching `{args.name_prefix}`:")
-    for eid, name in matches:
-        print(f"  - {name} ({eid})")
-        delete_entity(eid, name)
+    for eid, name, folder_key in matches:
+        scope = f"folder={folder_key}" if folder_key else "tenant"
+        print(f"  - {name} ({eid}) [{scope}]")
+        delete_entity(eid, name, folder_key)
 
     sys.exit(0)
 

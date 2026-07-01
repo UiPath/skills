@@ -1,0 +1,147 @@
+task_id: skill-datafabric-integration-folder-records
+description: >
+  Integration test: agent creates a folder-scoped entity, seeds records into it,
+  and verifies that records are isolated to that folder — a query from a
+  different folder must return zero rows, and a query without folder context
+  must not see the folder-scoped rows either. Exercises the --folder-key
+  parameter across entity create, records insert, and records query, and
+  confirms cross-folder isolation is enforced. Complements
+  integration_entity_scope, which covers entity-level visibility only.
+tags: [uipath-platform, data-fabric, integration, entity-scope, records, mode:operate, lifecycle:setup]
+run_limits:
+  expected_turns: 25
+  max_turns: 45
+  turn_timeout: 600
+
+initial_prompt: |
+  We're setting up a small folder-scoped list for a regional-reports test.
+
+  First, take a look at the folders on the tenant. If there are at least
+  two, call the first one folder A and the second folder B. If there's
+  only one, note that and stop — this test needs two folders.
+
+  Create a list called `CE_FolderRecordsTest` scoped to folder A, with
+  two columns:
+    - Name — required text, up to 100 characters
+    - Value — required whole number, 0 to 1000
+
+  Add three rows to it in folder A:
+    - "R1", 10
+    - "R2", 20
+    - "R3", 30
+
+  Now check the folder-scope behavior:
+    - Query the list from folder A — expect all 3 rows.
+    - Look at the folder-list output from folder B's context (list
+      the entities scoped to folder B). The list `CE_FolderRecordsTest`
+      should NOT show up there — folder A is where it lives.
+    - Look at the folder-list output from folder A's context. The
+      list SHOULD show up there.
+
+  Save what you observed to `report.json`:
+    {
+      "entity_id":                       "<created-entity-id>",
+      "folder_a_key":                    "<folder A key you used>",
+      "folder_b_key":                    "<folder B key you used>",
+      "row_count_from_folder_a":         <int>,
+      "entity_visible_from_folder_a":    <true|false>,
+      "entity_visible_from_folder_b":    <true|false>
+    }
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed folders to pick folder A and folder B"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the entity with --folder-key (folder-scoped placement)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CE_FolderRecordsTest)(?=.*--folder-key)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --folder-key when inserting records into folder A"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert.*--folder-key'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed entities with --folder-key at least twice (folder A and folder B contexts, to compare visibility)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list.*--folder-key'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Folder A returned exactly 3 rows (data landed in the right folder)"
+    path: "report.json"
+    assertions:
+      - expression: "row_count_from_folder_a"
+        operator: equals
+        expected: 3
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Entity is visible from folder A (its home folder)"
+    path: "report.json"
+    assertions:
+      - expression: "entity_visible_from_folder_a"
+        operator: equals
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Entity is NOT visible from folder B (cross-folder entity isolation)"
+    path: "report.json"
+    assertions:
+      - expression: "entity_visible_from_folder_b"
+        operator: equals
+        expected: false
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — cleanup runs post_run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Sweep any leftover folder-scoped entities from prior runs.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --include-folders"
+    timeout: 120
+    fail_on_error: false
+
+post_run:
+  # Cleanup the folder-scoped entity + any siblings created during the run.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderRecordsTest --include-folders"
+    timeout: 120

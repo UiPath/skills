@@ -1,0 +1,211 @@
+task_id: skill-datafabric-integration-folder-binding
+description: >
+  Integration test: agent creates RELATIONSHIP / CHOICE_SET / FILE fields
+  whose targets are folder-scoped and confirms the scope-binding contract
+  documented in the skill — a folder RELATIONSHIP field to a same-folder
+  target requires `referenceFolderKey` even when the parent and target sit
+  in the same folder (omitting it fails with a misleading tenant-level
+  error), and folder-to-tenant / tenant-to-folder bindings are rejected
+  outright (CHOICE_SET / RELATIONSHIP / FILE fields need same scope class).
+  Exercises the negative + positive paths the agent must learn to surface
+  rather than swallow.
+tags: [uipath-platform, data-fabric, integration, entity-scope, complex-fields, mode:diagnose, lifecycle:setup]
+run_limits:
+  expected_turns: 30
+  max_turns: 45
+  turn_timeout: 600
+
+initial_prompt: |
+  I'm setting up two linked lists for a folder-scoped test.
+
+  First, take a look at the folders on the tenant. Pick one and call
+  it folder A — that's where these lists will live. If the tenant has
+  no folders, stop and tell me.
+
+  Create two lists both scoped to folder A:
+    - `CE_FolderBindEmployee` — one Name column (required text, up to
+      100 characters)
+    - `CE_FolderBindExpense`  — an Amount column (required whole
+      number, 0 to 100000) and a link to Employee (call this column
+      `submitter`, required)
+
+  Add two rows to Employee first (Alice, Bob), then use one of their
+  IDs as the submitter for an Expense row of 250.
+
+  Now try a couple of scope-binding scenarios and record what came
+  back for each:
+
+    1. Add a second link column on Expense called `manager` that
+       points to Employee — but this time do NOT pass any folder
+       reference on the field. Try it and record the error.
+
+    2. Now add the same `manager` link column with the proper folder
+       reference so Data Fabric knows both entities live in folder A.
+       Confirm it goes through.
+
+    3. Create a tenant-level list `CE_FolderBindTenantTarget` (no
+       folder), then try to add a link column on the folder-scoped
+       Expense that points at this tenant list. Record what came
+       back — I expect the platform to reject cross-scope links.
+
+  Save what you saw to `report.json`:
+    {
+      "folder_a_key":                          "<folder A key>",
+      "employee_entity_id":                    "<id>",
+      "expense_entity_id":                     "<id>",
+      "tenant_target_entity_id":               "<id>",
+      "add_manager_without_folder_ref":        "<succeeded | error text>",
+      "add_manager_with_folder_ref":           "<succeeded | error text>",
+      "add_link_to_tenant_target":             "<succeeded | error text>",
+      "manager_field_bound_correctly":         <true|false>
+    }
+
+  `manager_field_bound_correctly` — read the Expense schema back at
+  the end and set true if the `manager` column exists AND the schema
+  echo shows it pointing at Employee (folder A). Set false if the
+  column is missing, points elsewhere, or has empty references.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent listed folders to pick folder A"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+or\s+folders\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created both folder-scoped entities with --folder-key"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+create.*--folder-key'
+    min_count: 2
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent declared a RELATIONSHIP field with referenceEntityId + referenceFieldId (Rule 12)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used referenceFolderKey on the RELATIONSHIP field for same-folder binding (once the negative case surfaced the requirement)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update(?=.*addFields)(?=.*RELATIONSHIP)(?=.*referenceFolderKey)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was created"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "First attempt (no folder reference) surfaced an error, not a silent success"
+    path: "report.json"
+    assertions:
+      - expression: "add_manager_without_folder_ref"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Second attempt (with proper folder reference) succeeded"
+    path: "report.json"
+    assertions:
+      - expression: "add_manager_with_folder_ref"
+        operator: contains
+        expected: "succeeded"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Cross-scope link (folder Expense → tenant target) was rejected"
+    path: "report.json"
+    assertions:
+      - expression: "add_link_to_tenant_target"
+        operator: not_equals
+        expected: "succeeded"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Final schema read confirmed the manager field is correctly bound"
+    path: "report.json"
+    assertions:
+      - expression: "manager_field_bound_correctly"
+        operator: equals
+        expected: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent surfaced the scope-binding requirement in plain terms before retrying (not a silent retry)"
+    include_agent_output: true
+    prompt: |
+      The agent tried three scope-binding scenarios: (1) same-folder link
+      without folder reference (fails), (2) same-folder link WITH the folder
+      reference (succeeds), (3) folder-to-tenant cross-scope link (fails).
+
+      When scenario 1 failed, did the agent explain to the user WHY it failed
+      before retrying? A knowledgeable agent should identify that the
+      RELATIONSHIP / CHOICE_SET / FILE field targeting a folder-scoped entity
+      requires `referenceFolderKey` even for same-folder targets, and mention
+      that as the reason for the retry.
+
+      When scenario 3 failed, did the agent explain that folder-to-tenant
+      (or tenant-to-folder) cross-scope bindings are rejected — targets and
+      parents must share the same scope class?
+
+      Score 1.0 if the agent explained BOTH failures with the specific scope
+      requirement, distinct from a generic "it failed, retrying".
+      Score 0.5 if the agent explained one but not the other, or gave a
+      partial explanation.
+      Score 0.0 if the agent silently retried without explanation, OR the
+      final result was wrong (missing required scenarios).
+    weight: 2.5
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — cleanup runs post_run"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  # Sweep any leftover entities from a prior run — folder-scoped ones need --include-folders.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
+    timeout: 120
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
+    timeout: 120
+    fail_on_error: false
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindTenantTarget"
+    timeout: 120
+    fail_on_error: false
+
+post_run:
+  # Child (Expense) first so any relationship references are dropped before targets.
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindExpense --include-folders"
+    timeout: 120
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindEmployee --include-folders"
+    timeout: 120
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FolderBindTenantTarget"
+    timeout: 120

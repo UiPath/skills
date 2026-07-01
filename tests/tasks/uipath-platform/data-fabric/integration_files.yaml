@@ -8,52 +8,33 @@ description: >
   upload/download/delete workflow including overwrite semantics and byte integrity.
 tags: [uipath-platform, data-fabric, integration, files, mode:build, lifecycle:setup]
 run_limits:
+  expected_turns: 25
   turn_timeout: 600
 
 initial_prompt: |
-  We have an Assets list called `CE_IntegrationAssets` with one row
-  already in it. Each asset has an asset name and a Document
-  attachment slot.
+  `CE_IntegrationAssets` has one row with a Document attachment slot.
+  Walk the full attach-swap-remove cycle:
 
-  Walk me through the full attach-and-swap-and-remove cycle on that
-  one row's Document:
+    - Create `original.txt` with "hello data fabric v1". Attach it.
+    - Download as `downloaded.txt` and confirm it matches original.
+    - Create `updated.txt` with "hello data fabric v2". Attach — it
+      should replace the first.
+    - Download as `verify_update.txt` and confirm it matches updated.
+    - Remove the attachment, then try to download again — should fail.
 
-    - Make a small local file called `original.txt` with the text
-      "hello data fabric v1".
-    - Attach it to that row's Document.
-    - Pull it back down as `downloaded.txt`. Confirm it came back
-      byte-for-byte the same as `original.txt`.
-    - Make another file `updated.txt` with the text "hello data
-      fabric v2". Attach that to the same slot — it should replace
-      the first one.
-    - Pull it back down as `verify_update.txt`. Confirm it matches
-      the new file, not the old one.
-    - Remove the attachment, then try to pull the file down one more
-      time — that should fail. Tell me what came back.
+  Then three unusual filename cases — one upload each, don't retry:
+    - `empty.txt` (0 bytes): was it accepted?
+    - `café-📎.txt` (unicode + emoji): did the filename survive intact?
+    - `../../etc-passwd.txt`: rejected or filename sanitized?
 
-  I also want to see how three unusual files behave. For each, try
-  the upload once and tell me what came back — don't retry or swap
-  in something else:
-    - Make an empty file `empty.txt` (zero bytes) and try to attach
-      it. Was a zero-byte file accepted?
-    - Make a file `café-📎.txt` (unicode name plus an emoji) with
-      some text in it. Try to attach it. Did the filename come back
-      intact?
-    - Make a file `../../etc-passwd.txt` (weird name, plain text
-      inside). Try to attach it. Did the system reject the filename
-      or sanitize it?
-
-  Save your observations to `report.json`:
+  Save to `report.json`:
     {
       "entity_id": "<list ID>",
       "record_id": "<row ID>",
-      "empty_file_accepted": <true|false>,
-      "unicode_filename_preserved": <true|false>,
+      "empty_file_accepted":       <bool>,
+      "unicode_filename_preserved": <bool>,
       "traversal_filename_outcome": "<rejected|sanitized|<error>>"
     }
-
-  Leave the list and its row in place — just remove the last file
-  attachment when you're done.
 
 success_criteria:
   - type: command_executed
@@ -162,6 +143,23 @@ success_criteria:
     timeout: 5
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
 pre_run:
