@@ -20,6 +20,7 @@ What can cause it:
 - Case mismatch — the default `Dictionary` is case-sensitive, so `"apikey"` ≠ `"ApiKey"`
 - A key derived from input data that varies between runs
 - A dictionary populated from an asset/queue/JSON that lacked the expected entry
+- An `If` / `While` **Condition** that indexes a dictionary with an absent key (e.g., `If config["FeatureEnabled"] == "true"`) — the fault occurs while resolving the condition, before either branch runs
 
 What to look for:
 - The missing key name in the message — exact, case-sensitive
