@@ -72,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Starter kit extracted (kit set up; edit reused the existing project)"
     tool_name: "Bash"
-    command_pattern: '(unzip|Expand-Archive).*governance-dashboard-starter-kit'
+    command_pattern: 'tar\b.*governance-dashboard-starter-kit'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

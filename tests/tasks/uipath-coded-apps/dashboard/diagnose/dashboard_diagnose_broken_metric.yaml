@@ -22,7 +22,7 @@ sandbox:
 pre_run:
   - command: |
       mkdir -p agent-health/metrics
-      unzip -oq "$SKILLS_REPO_PATH/skills/uipath-coded-apps/assets/fixtures/governance-dashboard-starter-kit.zip" -d agent-health
+      tar -xzf "$SKILLS_REPO_PATH/skills/uipath-coded-apps/assets/fixtures/governance-dashboard-starter-kit.tar.gz" -C agent-health
       cat > agent-health/intent.json << 'EOF'
       {
         "schemaVersion": 2,
