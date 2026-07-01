@@ -2,9 +2,10 @@ task_id: skill-api-workflow-package-solution
 description: >
   Skill-guided evaluation: agent authors an API workflow and packages it into a
   deployable solution artifact via the solution packager. Tests whether the
-  skill teaches the build/publish path (rule 19 — API workflows pack via
-  `uip solution pack`, not a non-existent `uip api-workflow build`) and the
-  Phase 4 packaging step. Local-only (pack does not publish, needs no auth).
+  skill teaches the build/publish path (rule 19 — a multi-project solution is
+  packaged via `uip solution pack`, not the project-scoped `uip api-workflow
+  pack`/`build`) and the Phase 4 packaging step. Local-only (pack does not
+  publish, needs no auth).
 tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate]
 
 initial_prompt: |
