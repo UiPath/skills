@@ -1,7 +1,7 @@
 task_id: skill-troubleshoot-if-key-not-found-exception
 description: >
   Faithful replay of a UiPath troubleshooting investigation into a job that
-  faulted with System.Collections.Generic.KeyNotFoundException thrown from an Assign expression. The agent runs
+  faulted with System.Collections.Generic.KeyNotFoundException thrown while resolving an If Condition expression. The agent runs
   the uipath-troubleshoot skill against a uip CLI mock; success = it reaches
   the same root cause as RESOLUTION.md.
 tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose]
@@ -22,9 +22,9 @@ sandbox:
     - type: template_dir
       path: process
     - type: template_dir
-      path: fixtures
+      path: data
   mock_path_dirs:
-    - mocks
+    - m
 
 reference:
   file: RESOLUTION.md
