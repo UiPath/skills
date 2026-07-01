@@ -30,5 +30,8 @@
     "openai-agents",
     "troubleshoot"
   ],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "agents": [
+    "./skills/uipath-rpa/agents/uipath-project-discovery-agent.md"
+  ]
 }
