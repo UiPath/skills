@@ -32,16 +32,14 @@ initial_prompt: |
   and three orders (2 for alice, 1 for bravo).
 
   Sanity checks — walk me through what you saw:
-    - Alice's order count (should be 2 when filtering by her ID).
-    - When you open one order back up: the customer link stored as
-      her ID (not email, not name); if status was set, stored as a
-      number.
-    - If status was set: filtering all orders by that status should
-      return 3.
-    - Read both lists' settings back and tell me the constraints
-      Data Fabric echoed for: customer name length limit, notes
-      length limit, order amount's decimal precision + min/max, and
-      the Receipt column's type + reference target.
+    - How many orders does alice have?
+    - Open one order and describe what you see for the customer
+      link + status (if status was set).
+    - If status was set, how many orders come back when you filter
+      by that status?
+    - Read both lists' settings back and tell me what Data Fabric
+      echoed for the constraints on customer name / notes, order
+      amount, and the Receipt column.
 
   We'll wire receipt uploads up later — just get the column in place.
   Don't author any new dropdowns either.

@@ -17,35 +17,18 @@ initial_prompt: |
   a status. Please don't change anything — I just need a handful of
   searches run over it.
 
-  Run each of these and remember the answer:
+  Run each of these and tell me the result:
 
-    - Active orders worth more than $300. Should be just ORD-002.
-      Save the count as `and_query_count`.
-
-    - Orders that are Pending OR Closed. Should be ORD-001 and
-      ORD-004 (2 rows). Save as `or_query_count`.
-
-    - Either (Active AND worth more than $200) OR Pending. Should be
-      ORD-001, ORD-002, ORD-003 (3 rows). Save as `nested_query_count`.
-
-    - Sort everything by value, highest first — tell me the top row's
-      value. Save as `sort_first_value` (should be 750.0).
-
-    - Return just the code column for every row — confirm value and
-      status don't appear at all in the response. Save
-      `projection_value_absent` and `projection_status_absent`.
-
-    - Page through all the rows two at a time, no filter. Keep going
-      until there are no more pages. Confirm you got 4 unique IDs
-      with no duplicates. Save `pagination_total_ids` and
-      `pagination_no_duplicates`.
-
-    - Orders whose status is one of {Pending, Active}. Should be
-      ORD-001, ORD-002, ORD-003 (3 rows). Save as `in_query_count`.
-
-    - Count of orders grouped by status. Should give: Pending → 1,
-      Active → 2, Closed → 1. Save as `agg_by_status` keyed by
-      status.
+    - Active orders worth more than $300 — how many, and which codes?
+    - Orders that are Pending OR Closed — how many, and which codes?
+    - Either (Active AND worth more than $200) OR Pending — how many?
+    - Sort everything by value, highest first — top row's value?
+    - Return just the code column for every row. Are value and status
+      absent from the response?
+    - Page through everything two at a time, no filter, until no more
+      pages. Any duplicate IDs across pages? How many unique IDs total?
+    - Orders whose status is one of {Pending, Active} — how many?
+    - Count of orders grouped by status — one count per status.
 
   Paging should stay on the command line — never put page-size or
   page-cursor stuff inside the search body itself.

@@ -23,20 +23,18 @@ initial_prompt: |
 
   Then run each of these searches and tell me the count that came
   back:
-    - All the active rows (expect 12)
-    - Everything with a score above 7 (expect 6 — scores 7.5 through
-      10.0)
-    - Title exactly "The Matrix" (expect 1)
-    - Title contains "Matrix" (expect 3)
-    - Score at least 7 AND active (expect 7)
+    - All the active rows
+    - Everything with a score above 7
+    - Title exactly "The Matrix"
+    - Title contains "Matrix"
+    - Score at least 7 AND active
 
-  Sort everything by score, highest first — the top score should be
-  10.0.
+  Sort everything by score, highest first — tell me the top score.
 
   Page through every row in batches of 5. Each page has to be its
   own separate command (a loop inside one Python process doesn't
-  count). Move forward one page at a time until you're done — you
-  should see 4 pages and 20 unique IDs.
+  count). Move forward one page at a time until you're done. Tell
+  me the total unique IDs seen and how many pages it took.
 
   Then pick one of the active rows, set its notes to
   "test-annotation-by-agent", read it back to confirm, then clear

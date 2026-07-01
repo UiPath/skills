@@ -29,7 +29,7 @@ initial_prompt: |
   `products.csv` — 5 per category.
 
   Once the data is in, could you do a few quick things:
-    - Pull just the Electronics — should be exactly 5.
+    - Pull just the Electronics — how many are there?
     - Bump the two most expensive products (across all categories)
       by 10%, one at a time.
     - Mark the three cheapest as out of stock.
