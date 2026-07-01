@@ -31,15 +31,15 @@ initial_prompt: |
 
   Sort everything by score, highest first — tell me the top score.
 
-  Page through every row in batches of 5. Each page has to be its
-  own separate command (a loop inside one Python process doesn't
-  count). Move forward one page at a time until you're done. Tell
-  me the total unique IDs seen and how many pages it took.
+  Page through every row in batches of 5. Please do one page at a
+  time as a separate command — no in-process loops — and tell me
+  how many rows you saw in total and whether the paging behaved
+  cleanly.
 
-  Then pick one of the active rows, set its notes to
-  "test-annotation-by-agent", read it back to confirm, then clear
-  the notes (set them empty) and read it back once more. Tell me
-  which row you touched.
+  Then pick any active row and put a short note on it — something
+  like "reviewed" is fine. Read it back so I can see the note landed,
+  then clear the note back out and read it once more to confirm it's
+  empty. Let me know which row you used.
 
 success_criteria:
   - type: command_executed
