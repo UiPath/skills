@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: a UiPath.SAP.BAPI.Activities SAP Application Scope faults with UiPath.SAP.BAPI.Utilities.SapActivityException 'Advanced Parameters has invalid parameter <key>. Connection cannot be established.' (from SapConnectionService.OverideWithAdvancedParameters) because an unsupported RFC advanced-parameter key was configured. Signature captured verbatim from a live uip rpa run (no SAP system - fails at advanced-param parsing before any network call); workflow/process names neutralized. The agent must read the invalid advanced-parameter as the cause (a UiPath-layer config check before connect), not blame the BAPI, host reachability, or logon. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e --state Faulted",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs get 2e7c9a10-4b6d-4f82-91c3-5a8e0d1f2b30",
+      "file": "or-jobs-get.json"
+    },
+    {
+      "match": "or jobs logs 2e7c9a10-4b6d-4f82-91c3-5a8e0d1f2b30 --level Error",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs logs 2e7c9a10-4b6d-4f82-91c3-5a8e0d1f2b30",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs traces 2e7c9a10-4b6d-4f82-91c3-5a8e0d1f2b30",
+      "file": "or-jobs-traces.json"
+    },
+    {
+      "match": "traces spans get --job-key 2e7c9a10-4b6d-4f82-91c3-5a8e0d1f2b30",
+      "file": "or-traces-spans.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in Shared to find the failing job."
+    },
+    {
+      "pattern": "or jobs get 2e7c9a10-4b6d-4f82-91c3-5a8e0d1f2b30",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the SapActivityException invalid-advanced-parameter signature."
+    }
+  ]
+}
