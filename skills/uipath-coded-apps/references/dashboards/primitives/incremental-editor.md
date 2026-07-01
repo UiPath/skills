@@ -12,13 +12,15 @@ Detects `.dashboard/state.json` at session start or after `BUILD_RESULT`. State 
 
 ## edit-intent.json schema
 
-Write to `<PROJECT_DIR>/edit-intent.json`. **Multiple changes = ONE `ops` batch — never run the script once per change.** The whole batch is validated up front (nothing is written if any op would fail), applied in order, and Dashboard.tsx/index.ts + tsc run once at the end.
+Write `edit-intent.json` **inside the project directory** (the dir that holds `.dashboard/state.json`). **Multiple changes = ONE `ops` batch — never run the script once per change.** The whole batch is validated up front (nothing is written if any op would fail), applied in order, and Dashboard.tsx/index.ts + tsc run once at the end.
+
+> **Path safety — never reconstruct the project's absolute path.** Reuse the directory the build already created (where `.dashboard/state.json` lives) and work with **relative** paths: `cd` into the project, set `"projectDir": "."`, and pass a relative `edit-intent.json` to the script. Do NOT retype or rebuild a `/tmp/…` sandbox path — the sandbox hash can differ by a single character (e.g. `_` vs `-`), and a mistyped absolute path silently writes the edit to a sibling directory the build never created, so the change appears to succeed but lands nowhere the project (or the graders) can see it.
 
 `edit-intent.json` carries **metadata only** — no `fnBody` fields. Data-fetch code ships as `metrics/<name>.ts` modules sibling to `edit-intent.json`.
 
 ```json
 {
-  "projectDir": "/abs/path",
+  "projectDir": ".",
   "ops": [
     { "op": "CHANGE", "target": "MemoryCallsTrend", "delta": { "displayAs": "bar-chart" } },
     { "op": "REMOVE", "target": "AgentConsumption" },
@@ -39,9 +41,13 @@ A single-op shorthand (`{ "op": "ADD", "projectDir": "...", "metric": ... }`) is
 
 ## Run command
 
+Run from **inside the project directory** (the one holding `.dashboard/state.json` — reference it relatively, e.g. `cd <ROUTING_NAME>`, never a retyped `/tmp/…` path), with `edit-intent.json` written there and `"projectDir": "."`:
+
 ```bash
-node "${SKILL_BASE_DIR}/assets/scripts/dashboards/build-dashboard.mjs" "${EDIT_INTENT_PATH}"
+cd "<PROJECT_DIR>" && node "${SKILL_BASE_DIR}/assets/scripts/dashboards/build-dashboard.mjs" edit-intent.json
 ```
+
+The script resolves both `projectDir` (`.`) and the relative `edit-intent.json` against this directory, so there is no absolute sandbox path to mistype. (`${SKILL_BASE_DIR}` is the skill's own install dir — unrelated to the project — and is safe to use as-is.)
 
 ## CHANGE semantics
 
@@ -83,3 +89,4 @@ Any build or edit against an existing project emits `UPGRADE_AVAILABLE:{from,to}
 3. After REMOVE or CHANGE: always regenerate Dashboard.tsx and widgets/index.ts (the build does this automatically).
 4. Chart widgets get their detail view regenerated on ADD/CHANGE/REBUILD automatically — never hand-create views.
 5. Do not touch `uipath.json` unless user explicitly requests a config change.
+6. **Never reconstruct the project's absolute path.** Run the edit from inside the project (`cd <ROUTING_NAME>`, `"projectDir": "."`, relative `edit-intent.json`). A retyped `/tmp/…` sandbox path — off by even one character (`_`↔`-`) — writes the edit to a sibling directory, so it silently no-ops. See § edit-intent.json schema (Path safety).
