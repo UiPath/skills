@@ -10,9 +10,9 @@ A PDF activity faults because the input PDF is password-protected and no passwor
 
 What this looks like:
 
-**Read / Extract activities on an encrypted PDF** (`Read PDF Text`, `Extract PDF Page Range`, …) — the failure comes from the reader (`UiPath.PDF.PdfReader`), so the exception type is `UiPath.PDF.PdfException`:
+**Read / Extract activities on an encrypted PDF** (`Read PDF Text`, `Extract PDF Page Range`, …) — the failure comes from the reader (`UiPath.PDF.PdfReader..ctor` → `ReadPDFText.GetFileReader`), so the exception type is `UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException`:
 
-- A `UiPath.PDF.PdfException` whose inner exception is a `PdfIncorrectPasswordException` — the PDF requires a user password and none / the wrong one was supplied (the reader re-throws the Digitizer incorrect-password error as `PdfException`). This is the runtime fault you see in a faulted job when reading an encrypted PDF.
+- `UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException: The password is incorrect.` — the PDF requires a user password and none / the wrong one was supplied (verified verbatim; a missing password reads as "incorrect"). This is the runtime fault you see in a faulted job when reading an encrypted PDF.
 
 **`Manage PDF Password`-specific argument validation** (`System.ArgumentException`, raised by the activity before/around the reader — these strings belong to `Manage PDF Password`, NOT to the read activities):
 
@@ -29,7 +29,7 @@ What can cause it:
 - **Manage-password misconfiguration** — missing new password, insufficient owner rights, or identical user/owner passwords.
 
 What to look for:
-- For a **read/extract** activity, the encryption failure is a `PdfException` (inner `PdfIncorrectPasswordException`) — set/correct the `Password` argument. The `A password for the encrypted PDF file was not supplied` string is a **Manage PDF Password** validation, not a read-activity message — don't expect it from `Read PDF Text`.
+- For a **read/extract** activity, the encryption failure is `UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException: The password is incorrect.` — set/correct the `Password` argument. The `A password for the encrypted PDF file was not supplied` string is a **Manage PDF Password** validation, not a read-activity message — don't expect it from `Read PDF Text`.
 
 > **Different cause — do not apply this playbook:**
 > - `Could not find file` / `does not have a .PDF extension` (`ArgumentException`) means the input path is wrong, before any encryption check → use [pdf-file-not-found-or-not-pdf.md](./pdf-file-not-found-or-not-pdf.md).
@@ -37,13 +37,13 @@ What to look for:
 
 ## Investigation
 
-1. **Read the message / exception type.** A `PdfException` (inner `PdfIncorrectPasswordException`) from a read/extract activity = encrypted PDF, no/wrong `Password`. A `Manage PDF Password` `ArgumentException` (`A password for the encrypted PDF file was not supplied` / `...not encrypted...yet a password was supplied`) = a Manage-PDF-Password argument problem.
+1. **Read the message / exception type.** `UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException: The password is incorrect.` from a read/extract activity = encrypted PDF, no/wrong `Password`. A `Manage PDF Password` `ArgumentException` (`A password for the encrypted PDF file was not supplied` / `...not encrypted...yet a password was supplied`) = a Manage-PDF-Password argument problem.
 2. **Confirm whether the file is actually encrypted** (e.g. opening it in a viewer prompts for a password). This separates "needs a password" from "password supplied on a plain file."
 3. **For Manage PDF Password**, capture which field check fired (no new password / owner rights / identical passwords).
 
 ## Resolution
 
-- **If a read/extract `PdfException` / `PdfIncorrectPasswordException` (encrypted PDF):** set the `Password` argument on the read/extract activity to the document's user password (store it as a secure asset/credential; with explicit user approval, wire it from there). If a password was already set, correct it to the right one for this document.
+- **If a read/extract `PdfException: The password is incorrect.` (encrypted PDF):** set the `Password` argument on the read/extract activity to the document's user password (store it as a secure asset/credential; with explicit user approval, wire it from there). If a password was already set, correct it to the right one for this document.
 - **If `Manage PDF Password` → `A password for the encrypted PDF file was not supplied`:** provide the document's current user password to Manage PDF Password.
 - **If `Manage PDF Password` → `The input PDF file is not encrypted with a user password, yet a password was supplied`:** clear the supplied password for this (non-encrypted) file.
 - **If `At least one password field value is required`:** provide a new user and/or owner password on `Manage PDF Password`.

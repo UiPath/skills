@@ -9,7 +9,7 @@ These activities are purely local — they open a file path on the robot host an
 Two validation layers produce two exception shapes:
 
 1. **Activity-level validation** (`ValidationHelper`, argument checks) throws `System.ArgumentException` / `System.ArgumentNullException` carrying a resource string (e.g. `The input file does not have a .PDF extension: <path>`). This fires before the file is parsed.
-2. **Reader-level failures** (`PdfReader`) surface as `UiPath.PDF.PdfException`. The underlying `PdfIncorrectPasswordException` (wrong/missing password) and a corrupt/non-PDF stream (`Invalid input stream`) are both caught and re-thrown as `PdfException` with the same message. `Create PDF From Images` throws `UiPath.PDF.ImageToPdfException` for image-input problems.
+2. **Reader-level failures** (`PdfReader`) surface as `UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException`. An encrypted PDF with a missing/wrong password gives `The password is incorrect.` (verified); a corrupt/non-PDF stream gives `Invalid input stream`. `Create PDF From Images` throws `UiPath.PDF.ImageToPdfException` for image-input problems.
 
 ## Key Activities
 
