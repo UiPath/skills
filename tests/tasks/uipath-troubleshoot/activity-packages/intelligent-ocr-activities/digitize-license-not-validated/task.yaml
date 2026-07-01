@@ -1,15 +1,17 @@
 task_id: skill-troubleshoot-du-digitize-license-not-validated
 description: >
   Faithful replay of a UiPath.IntelligentOCR.Activities Digitize Document
-  failure. The UiPath Document OCR call to the Document Understanding server is
-  rejected with HTTP 401 and the activity faults with
-  UiPath.SmartData.Utils.DocumentUnderstandingClient.DUApiException
-  ("Your license could not be validated. Please make sure that the API key
-  parameter is correctly configured."). The agent runs the uipath-troubleshoot
-  skill against a uip CLI mock and must identify the invalid/misconfigured
-  Document Understanding API key (401) as the cause — not blame the document
-  content, a missing file, the Digitizer PDF-component license, or DU not being
-  enabled on the tenant. Success = same root cause as RESOLUTION.md.
+  failure. The UiPath Document OCR call to the Document Understanding service is
+  rejected because the API key is invalid, and the activity faults with
+  System.AggregateException whose inner message is
+  "Server response: Invalid API key specified Error:UiPathOCRInvalidApiKey"
+  (from PageDigitizer.ApplyOcr). The agent runs the uipath-troubleshoot skill
+  against a uip CLI mock and must identify the invalid UiPath Document OCR API
+  key as the cause — reading the inner server response, not stopping at the
+  AggregateException wrapper, and not blaming the document, a missing file, the
+  Digitizer PDF-component license, or DU not being enabled on the tenant.
+  Signature captured verbatim from a live run. Success = same root cause as
+  RESOLUTION.md.
 tags: [uipath-troubleshoot, rpa, document-understanding, e2e, faithful-replay, mode:diagnose]
 
 agent:

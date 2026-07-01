@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Faithful replay: a UiPath.IntelligentOCR.Activities Digitize Document (UiPath Document OCR engine) faults with UiPath.SmartData.Utils.DocumentUnderstandingClient.DUApiException 'Your license could not be validated...' (HTTP 401) because the Document Understanding API key is invalid/misconfigured. Signature taken verbatim from UiPath.IntelligentOCR source (DUServerCaller 401 branch); workflow/process names neutralized, no real key/document. The agent must read the API-key/license-validation 401 as the cause, not blame the document content, a missing file, the Digitizer PDF-component license, or tenant-not-enabled. First-match-wins.",
+  "_doc": "Faithful replay: a UiPath.IntelligentOCR.Activities Digitize Document (UiPath Document OCR engine) faults with System.AggregateException whose inner message is 'Server response: Invalid API key specified Error:UiPathOCRInvalidApiKey' (from PageDigitizer.ApplyOcr) because the UiPath Document OCR API key is invalid. Signature captured verbatim from a live uip rpa run; workflow/process names neutralized, no real key/document. The agent must read the inner server response as the cause (invalid OCR ApiKey), not stop at the AggregateException wrapper, and not blame the document, a missing file, the Digitizer PDF-component license, or tenant-not-enabled. First-match-wins.",
   "rules": [
     {
       "match": "or folders list",
@@ -57,7 +57,7 @@
     {
       "pattern": "or jobs get c5f2a8d1-3e6b-4f9c-8a2d-1b3c4d5e6f70",
       "min": 1,
-      "description": "Agent fetches the faulted job to read the DUApiException 401 'license could not be validated' signature from the Info / Error log."
+      "description": "Agent fetches the faulted job to read the 'Server response: Invalid API key specified Error:UiPathOCRInvalidApiKey' signature (System.AggregateException) from the Info / Error log."
     }
   ]
 }
