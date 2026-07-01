@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Hand-authored Assign-originated runtime-exception replay. Deterministic first-match rules.",
+  "_doc": "Hand-authored faithful-replay fixtures. Deterministic first-match rules; unmatched commands return an empty array.",
   "rules": [
     {
       "match": "or folders list --output json",
@@ -24,17 +24,17 @@
     {
       "pattern": "or folders list",
       "min": 1,
-      "description": "Agent enumerates folders to locate the Shared folder where the faulted job lives."
+      "description": "Agent enumerates folders to locate the folder that owns the job under investigation."
     },
     {
       "pattern": "or jobs get a7c8e9f0-7777-4abc-9def-000000000007",
       "min": 1,
-      "description": "Agent fetches the faulted job to read the System.NullReferenceException message and the stack frame pointing at Main.xaml / the Assign."
+      "description": "Agent fetches the job's execution details."
     },
     {
       "pattern": "or jobs logs a7c8e9f0-7777-4abc-9def-000000000007",
       "min": 0,
-      "description": "OPTIONAL — agent may pull error-level logs to corroborate the stack frame; the job-get Info already contains it. min:0 = tracked-but-not-required."
+      "description": "OPTIONAL — agent may pull error-level logs for additional detail; min:0 = tracked-but-not-required."
     }
   ]
 }
