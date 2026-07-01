@@ -80,17 +80,17 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # The fix landed in the BUILT metric module — src/metrics/active-agents-kpi.ts,
-  # the copy the Stage-A typecheck compiles and the file the METRICS_RETRY error
-  # names. The fabricated method (getActiveAgentCount) is gone and the real read
-  # method (getAll) replaced it. Grades the diagnose outcome directly (recognizing a
-  # non-existent SDK call and swapping it for the real one) without requiring a full
-  # dashboard rebuild. Scoped to src/metrics/ on purpose: the agent fixes the file
-  # the build error points to; the authored source metrics/<name>.ts (a build input)
-  # may legitimately differ here. Full-build compilation is covered by full_e2e.
+  # Grade the diagnose OUTCOME on the metric module the agent fixes: the fabricated
+  # method (getActiveAgentCount) is gone and the real read method (getAll) is present.
+  # Matches the AUTHORED source (metrics/<name>.ts, sibling to intent.json) OR the
+  # built copy (src/metrics/<name>.ts). The build re-derives src/metrics/ from the
+  # authored source on every run, so the durable fix belongs in metrics/ — a fix only
+  # in the copy is clobbered on rebuild. Grading either location keeps this robust to
+  # whether a full build (npm ci + Stage-A) completes in the sandbox; full-build
+  # compilation is covered by full_e2e.
   - type: run_command
-    description: "Built metric module fixed: fabricated method gone, real getAll present"
-    command: "sh -c 'F=$(find . -path \"*/src/metrics/active-agents-kpi.ts\" -not -path \"*/node_modules/*\"); test -n \"$F\" && ! grep -lq getActiveAgentCount $F && grep -lq getAll $F'"
+    description: "Metric module fixed: fabricated method gone, real getAll present"
+    command: "sh -c 'F=$(find . -path \"*metrics/active-agents-kpi.ts\" -not -path \"*/node_modules/*\"); test -n \"$F\" && ! grep -lq getActiveAgentCount $F && grep -lq getAll $F'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
