@@ -41,9 +41,14 @@ Bind a folder-scoped choice set to an entity in a different folder by passing on
 
 ## Value `Name` validation
 
-A choice-set value's `Name` must be alphanumeric, start with a letter, and avoid SQL / C# / VB reserved keywords — same rule as entity / field names (**data-fabric.md Rule 4**). Domain words that commonly collide: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`.
+A choice-set value's `Name` must be alphanumeric and start with a letter. The server rejects C# / VB reserved keywords with *"Choiceset member name must … not be C# keyword"* — but this is a **separate code path from the entity/field-name validator (data-fabric.md Rule 4)**, and the two behave differently:
 
-When a desired label is reserved, namespace the system `Name` and leave `DisplayName` unchanged: `Name: "internal_audit"` with `DisplayName: "Internal"`. The dropdown shows "Internal"; the validator sees `internal_audit`.
+| Aspect | Entity / field name (Rule 4) | Choice-set value `Name` (here) |
+|---|---|---|
+| Case match | **case-insensitive** (`Class`, `class`, `CLASS` all rejected) | **case-sensitive** (`class` rejected, `Class` may pass — empirically verified: `New` accepted while `new` would be rejected) |
+| Keyword list | full C#/VB reserved list — incl. `Select`, `Return`, `New`, `Internal`, … | partial list — some keywords missing (empirically `select` is NOT rejected as a choice-set value, but `Select` IS rejected as a field name) |
+
+Do not assume a name is legal in one place because it's legal in the other. The safe, portable convention for choice-set value `Name`s: **all-lowercase, snake_case, namespaced to dodge the C# keyword list outright** — `internal_audit`, `new_lead`, `class_a`. Move the human label to `DisplayName`: `Name: "internal_audit"` with `DisplayName: "Internal"`. The dropdown shows "Internal"; the validator sees `internal_audit`. Lowercase tokens that the choice-value validator does reject: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`.
 
 ## Sourcing `NumberId` after batch value creates
 

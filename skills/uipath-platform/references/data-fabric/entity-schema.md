@@ -90,7 +90,7 @@ Both entity names and field names must:
 - Start with a letter (`[a-zA-Z]`)
 - Contain only letters, digits, and underscores (`[a-zA-Z0-9_]`)
 - Be 3–100 characters long
-- **Not** be a SQL, C#, or VB reserved keyword — full list, error string (`"cannot be a reserved word in C# or VB"` / `RESERVED_LANGUAGE_KEYWORDS`), and rename examples are in **data-fabric.md Rule 4**.
+- **Not** be a C# or VB reserved keyword — full list, error string (`"cannot be a reserved word in C# or VB"` / `RESERVED_LANGUAGE_KEYWORDS`), and rename examples are in **data-fabric.md Rule 4**. SQL keywords (e.g. `Status`, `Order`, `Key`) are NOT rejected — idiomatic field names are fine.
 
 **Reserved field names** (will error if used): `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`
 
@@ -389,12 +389,10 @@ uip df entities update <entity-id> \
 |-----|-------------|
 | `addFields` | Array of field definition objects to add (same shape as create) |
 | `updateFields` | Array of field updates — each entry must include `id` (field UUID) |
-| `removeFields` | Array of fields to drop — each entry uses `{"fieldName": "..."}`, NOT `{"id": "..."}` |
+| `removeFields` | Array of field-delete entries — each takes `{"fieldName":"..."}`; see [Deleting a Field](#deleting-a-field) for full gating |
 | `displayName` | New display name for the entity |
 | `description` | New description |
 | `isRbacEnabled` | Toggle RBAC on the entity |
-
-> `removeFields` is supported but irreversible — it drops the column and every record's value in it. The CLI requires `--yes` and `--reason "<why>"` (the reason is echoed back in the response for audit). See [Deleting a Field](#deleting-a-field) above.
 
 ## System Fields
 
