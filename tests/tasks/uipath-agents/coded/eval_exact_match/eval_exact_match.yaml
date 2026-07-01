@@ -14,24 +14,17 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a Simple Function UiPath coded agent named `adder` whose
-  `main(input)` returns the sum of two integers. No LLM — purely
-  deterministic.
+  Build a deterministic UiPath coded agent named `adder` that adds two
+  whole numbers and returns the sum — no LLM, just arithmetic.
 
-  Input fields: `a` (int), `b` (int). Output field: `result` (int).
+  Then set up an evaluation for it: cover a handful of cases and check
+  that the agent's output matches the expected answer exactly. Since
+  both the agent and the check are deterministic, every case should
+  score a perfect pass. Run the evals locally — no cloud reporting — and
+  write the results out so I can look them over.
 
-  Take the agent through scaffold → init → run, then add an
-  evaluation harness using the **ExactMatch evaluator** with three
-  test cases (e.g. 2+3=5, 0+0=0, 7+1=8). Run the eval set locally
-  (no Studio Web reporting) and save the output to
-  `eval-results.json` in the project root.
-
-  Every test case must score 1.0 — deterministic agent +
-  deterministic evaluator means anything below 1.0 is a regression.
-
-  Do NOT publish, upload, or deploy. Do NOT call `uip login`. Do NOT
-  pause between planning and implementation. Complete end-to-end in
-  a single pass.
+  It's all local — no sign-in, nothing to publish or deploy. Work
+  through it in a single pass.
 
 success_criteria:
   - type: command_executed

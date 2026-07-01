@@ -11,6 +11,12 @@ tags: [uipath-ixp, smoke, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 5
 
+sandbox:
+  driver: tempdir
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
+
 initial_prompt: |
   Create an IXP project named ap-invoices from the invoices in ./invoices/,
   and let IXP suggest the taxonomy.

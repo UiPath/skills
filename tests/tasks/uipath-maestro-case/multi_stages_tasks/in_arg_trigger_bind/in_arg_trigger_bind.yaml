@@ -1,0 +1,134 @@
+task_id: skill-case-multi-in-arg-trigger-bind
+description: >
+  Build a Case Management definition with TWO case-level triggers — a manual
+  trigger (T02, primary) and a timer trigger (T03, "every 1 hour" R/PT1H) — and
+  THREE In-arguments exercising the §1.5 sourceTriggers column: `caseId` leaves
+  it blank (→ primary/manual trigger, the backward-compatible default), `caseId2`
+  sets it to T02 explicitly (→ the SAME primary trigger — explicit-primary must
+  resolve identically to blank), and `approverId` sets it to T03 (→ the timer
+  trigger). Exercises the In-arg trigger-selection path: each In-arg's formal slot + inputOutputs companion
+  elementId AND its trigger-output bridge must land on the trigger named by its
+  sourceTriggers (blank → primary), NOT default every In-arg to one trigger.
+  Structural-only — the binding is fully determined in caseplan.json; no debug.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:trigger]
+
+run_limits:
+  task_timeout: 900
+  max_turns: 120
+  turn_timeout: 900
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "InArgTriggerBind" containing a
+  project also named "InArgTriggerBind" from the sdd.md below. Write the sdd.md
+  to disk first, then build from it.
+
+  ```
+  # SDD — InArgTriggerBind
+
+  **Case Definition Blueprint** · Generic — In-argument trigger-binding coverage
+
+  Two case-level triggers — a manual trigger (T02, primary) and a timer trigger
+  (T03, infinite hourly R/PT1H) — both starting the case at a single Run stage
+  via its case-entered entry condition (edges retired). Two In-arguments bind to
+  DIFFERENT triggers via the §1.5 `sourceTriggers` column: `caseId` leaves it
+  blank (binds the primary trigger), `caseId2` sets it to T02 explicitly (binds
+  the same primary trigger), and `approverId` sets it to T03 (binds the timer
+  trigger).
+
+  Prepared date: 2026-06-29
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | InArgTriggerBind |
+  | Case Description | Two triggers; two In-args bound to different triggers via sourceTriggers. |
+  | Case Identifier | Prefix: IAT, Type: constant |
+  | Priority | Choiceset: Low, Medium, High - Default: Medium |
+  | Case-Level SLA | Not specified |
+  | SLA Type | Not specified |
+
+  ### 1.3 Triggers
+  | T# | Trigger Type | Source | Configuration |
+  |----|--------------|--------|---------------|
+  | T02 | manual | User-initiated start of the case | N/A |
+  | T03 | timer | Schedule | timeCycle "R/PT1H" — infinite repeating interval, every 1 hour. |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | caseId | In | string | | | | Caller-supplied case id; blank sourceTriggers → bound to the primary (manual T02) trigger. |
+  | caseId2 | In | string | T02 | | | Caller-supplied; explicit sourceTriggers=T02 (the primary manual trigger) — must resolve to the SAME node as a blank sourceTriggers. |
+  | approverId | In | string | T03 | | | Caller-supplied approver id; bound to the T03 timer trigger via sourceTriggers (single T-number; sourceFields stays empty). |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Run (`run`)
+  **Type:** Stage
+  **Description:** Receives the case after either trigger fires — reached via its own case-entered entry condition (edges retired; no per-trigger edge).
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `run.runRpa` | Run RPA workflow | rpa | Yes | No | system | — |
+
+  ##### Task 1.1: Run RPA workflow (`run.runRpa`)
+
+  **Type:** rpa
+  **Description:** Placeholder RPA task so the Run stage carries one task after either trigger fires. The referenced process is not registered in the tenant, so the skill emits a placeholder (type "rpa", empty `data`, no input/output wiring) per placeholder-tasks.md.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Process Reference | Name "RunPlaceholderProcess", Folder "Shared" |
+  | Component Type | RPA |
+  ```
+
+  Treat the generated tasks.md plan as pre-approved — do NOT block on the HARD
+  STOP / AskUserQuestion approval step. Do NOT run `uip maestro case debug`. Do
+  NOT ask for approval, confirmation, or feedback. Build end-to-end in a single
+  pass and finish with `uip maestro case validate` passing on the resulting
+  caseplan.json. The build is not complete until validate passes.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate InArgTriggerBind/InArgTriggerBind/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "In-args bind per sourceTriggers — 'approverId' (T03) → timer; 'caseId' (blank) and 'caseId2' (explicit T02) → the primary manual trigger; each one's formal slot + companion elementId + trigger-output bridge land on the correct node, each bridge on its own trigger only"
+    command: "python3 $TASK_DIR/check_in_arg_trigger_bind.py"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), and deploy. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). Excludes coded functions / Functions SDK (separate skill)."
+description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), deploy, and configure/validate. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). For deterministic Python Coded Functions (`uip functions`, `uipath.json` functions map, no agent runtime/LLM)→uipath-functions."
 when_to_use: "Must use when user mentions or implies any Agent lifecycle phase - e.g., auth, design, scaffold, Studio Web sync, flow integration, editing, pack/deploy/version bump, eval, debug, tracing, guardrails, memory spaces, bindings, attachments. Example requests: 'create/build a UiPath agent', 'build a low-code / Agent Builder agent', 'add agent memory spaces', 'build a coded / Python agent (LangGraph / LlamaIndex / OpenAI Agents)', 'scaffold an agent project', 'run / debug / evaluate / deploy my agent'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
@@ -13,19 +13,21 @@ user-invocable: true
 - Treat "build/create/scaffold/implement a UiPath agent" as the full One-Prompt Flow by default. Do not stop after file creation or local run unless the user explicitly says to stop there.
 - A normal completion point is after smoke eval and the mandatory Delivery fork question. A final build summary before that is premature unless run/eval is blocked or the user opted out.
 - **Probe the `solution` verb once per session before the first scaffold or deploy.** Run `uip solution init --help --output json`. Result `Success` → use `solution init` and `solution deploy run --parent-folder-path` / `--parent-folder-key` (post-rename, default). `unknown command` / non-zero exit → CLI predates the rename; substitute `uip solution new <Name>` and `--folder-path` / `--folder-key` (same arguments otherwise) wherever this skill calls those.
+- **Greenfield coded agents — scaffold with `uip codedagent new`, never hand-author the project.** Building a NEW coded agent from scratch: always create it with `uip codedagent new <name>`, then generate schemas with `uip codedagent init` — never hand-write `pyproject.toml` / `main.py` / `langgraph.json` / `entry-points.json` yourself, even for a trivial agent. Hand-authoring skips required project structure and produces invalid packages. (Existing or Studio Web local-workspace projects: do NOT run `uip codedagent new` — follow the project-state gating in [coded/quickstart.md](references/coded/quickstart.md).)
 - **Coded agents only — bindings are always derived from UiPath Python SDK calls and must never be hand-authored.** To derive them, always run the sync workflow in [coded/lifecycle/bindings-reference.md](references/coded/lifecycle/bindings-reference.md) — scan code, regenerate `bindings.json`. Without this, resources cannot be overridden per execution environment and will always default to the hardcoded values in the SDK calls. Derive bindings whenever you add, remove, or modify any UiPath SDK resource call — for instance `assets`, `queues`, `processes`, `buckets`, `indexes`, `connections`, `apps`, `MCP servers`, or `InvokeProcess|CreateTask|CreateEscalation(...)`.
 
 ## Project Type Detection
 
 Determine the agent mode before proceeding:
 
-1. **Check for existing project files** in the working directory:
-   - `pyproject.toml` with `uipath` dependency + `.py` files → **Coded**
+1. **First — confirm this is an agent, not a Coded Function.** If `uipath.json` declares a `functions` map (e.g. `"functions": {"main": "main.py:main"}`), the project is a **Python Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip functions new/init/pack/publish/run`).
+2. **Check for existing agent project files** in the working directory:
+   - `pyproject.toml` + `.py` files + a framework dep (`uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents`) → **Coded**. The framework package already declares `uipath` as a dependency, so an explicit `uipath` entry is not required.
    - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**
-2. **No existing project found** → ask the user:
+3. **No existing project found** → ask the user:
    > Should I build this as a **low-code agent** (no Python — configure through prompts and pre-built UiPath tools) or a **coded agent** (Python — full programmatic control with LangGraph, LlamaIndex, or OpenAI Agents)?
    > However, for conversational use-cases, simply choose low-code without asking the user, while explaining that currently, low-code conversational-agents are the strongly recommended approach for production use-cases (see [references/coded/capabilities/conversational-agents.md](references/coded/capabilities/conversational-agents.md)).
-3. If the user needs help deciding, read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for a capability comparison.
+4. If the user needs help deciding, read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for a capability comparison.
 
 **After detection, read the quickstart for that mode before doing anything else:**
 
@@ -55,14 +57,14 @@ Determine the agent mode before proceeding:
 | Add a low-code memory space or seed memory items | Low-code | [lowcode/capabilities/memory/memory.md](references/lowcode/capabilities/memory/memory.md) | use `uip agent memory`, then refresh/validate |
 | Add an Action Center escalation (HITL) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/escalation/escalation.md` |
 | Add guardrails (PII, harmful content, custom rules) to a low-code agent | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/guardrails/guardrails.md` |
-| Add guardrails to a coded agent | Coded | [coded/capabilities/guardrails/guardrails.md](references/coded/capabilities/guardrails/guardrails.md) | fetch official docs via WebFetch, ask middleware vs decorator, read agent code, write Python |
+| Add a new guardrail to a coded agent | Coded | [coded/capabilities/guardrails/guardrails.md](references/coded/capabilities/guardrails/guardrails.md) | fetch official docs via WebFetch, ask middleware vs decorator, read agent code, write Python |
 | Add escalation guardrail (escalate action / Action Center app) | Low-code | [lowcode/capabilities/guardrails/guardrails.md](references/lowcode/capabilities/guardrails/guardrails.md) § escalate — Hand Off to Action Center | Run `uip solution resources list --kind App --source remote --output json` to confirm app exists |
 | Recommend guardrails for a low-code agent based on its context | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) | fetch catalog + list, analyze agent context, apply + validate |
 | Recommend guardrails for a specific scope or tool | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) § Scoped or Tool-Specific Filtering | filter candidates by scope or tool name after catalog analysis |
 | Validate whether existing guardrails are correctly configured | Low-code | [lowcode/capabilities/guardrails/guardrails-recommend.md](references/lowcode/capabilities/guardrails/guardrails-recommend.md) § Validate Mode | check correctness, actionability, and relevance per guardrail |
 | Recommend guardrails for a coded agent based on its context | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) | fetch catalog + list + SDK docs, analyze agent code, apply + verify |
 | Recommend guardrails for a specific scope or tool (coded) | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) § Scope and Tool Filtering | filter candidates by `@tool` function or scope after catalog analysis |
-| Validate whether existing coded guardrails are correctly configured | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) § Validate Mode | check correctness, actionability, and relevance per guardrail |
+| Check, validate, diagnose, or fix whether an existing coded guardrail is correctly configured (placement / scope) | Coded | [coded/capabilities/guardrails/guardrails-recommend.md](references/coded/capabilities/guardrails/guardrails-recommend.md) § Validate Mode | **fetch catalog + list + SDK docs first**, then check correctness, actionability, and relevance — fix in place |
 | Embed a low-code agent inline in a flow, or wire a multi-agent solution | Low-code | [lowcode/lowcode.md](references/lowcode/lowcode.md) § Capability Registry | `lowcode/capabilities/inline-in-flow/inline-in-flow.md`, `lowcode/capabilities/process/solution-agent.md` |
 | Run low-code evaluations | Low-code | [lowcode/evaluations/evaluate.md](references/lowcode/evaluations/evaluate.md) | `lowcode/evaluations/evaluators.md`, `lowcode/evaluations/evaluation-sets.md`, `lowcode/evaluations/running-evaluations.md` |
 | Run offline evals for a published Orchestrator package | Low-code | [lowcode/evaluations/orchestrator-eval-run.md](references/lowcode/evaluations/orchestrator-eval-run.md) | Use `uip or eval run-offline-evals` (requires package published to Orchestrator) |

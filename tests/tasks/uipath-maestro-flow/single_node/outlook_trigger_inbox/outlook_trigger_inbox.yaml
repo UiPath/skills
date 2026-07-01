@@ -64,6 +64,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent described the trigger object for EMAIL_RECEIVED (connector-trigger Step 1b-2, mandatory) — required event params (e.g. parentFolderId) live in describe's EventParameters, not in triggers objects' parameters[]"
+    tool_name: "Bash"
+    # `[\s\S]` matches across newlines — agents often split `uip` commands with
+    # backslash line-continuation, which `.*` would miss. Quotes around the
+    # connector key / operation are optional, so match bare tokens.
+    command_pattern: 'uip\s+is\s+triggers\s+describe[\s\S]+?uipath-microsoft-outlook365[\s\S]+?EMAIL_RECEIVED'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent resolved MailFolder against the current --connection-id (PR #348 regression)"
     tool_name: "Bash"
     # `[\s\S]` matches across newlines — agents often split `uip` commands with

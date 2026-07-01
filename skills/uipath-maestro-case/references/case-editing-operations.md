@@ -50,7 +50,7 @@ Before every write to `caseplan.json`, confirm each item. These are the failure 
 
    Do NOT emit node-level `position`, `style`, `measured`, `width`, `height`, `zIndex` (Rule 18 layout-strip).
 
-4. **Regular Stage vs Exception Stage at creation time.** Regular `case-management:Stage` nodes are written without `entryConditions` / `exitConditions` keys. `case-management:ExceptionStage` nodes initialize both as empty arrays at creation time. Regular stages acquire those keys later when the condition plugins write them. Do not emit empty arrays on regular Stage.
+4. **Primary Stage vs Secondary Stage at creation time.** Both are `case-management:Stage` nodes; a secondary stage is distinguished by `data.stageType: "secondary"`. Primary stages (no `data.stageType`) are written without `entryConditions` / `exitConditions` keys. Secondary stages (`data.stageType: "secondary"`) initialize both as empty arrays at creation time. Primary stages acquire those keys later when the condition plugins write them. Do not emit empty arrays on primary Stage.
 
 5. **Edges are not authored (RETIRED).** `schema.edges` stays `[]` — do not construct edge handles or append edge objects. Stage transitions derive from entry/exit conditions.
 
@@ -79,7 +79,7 @@ All IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix + `c
 | Entity | Prefix | Suffix length | Example | Notes |
 |---|---|---|---|---|
 | Case (top-level `id`) | `case-` | 10 | `case-aBcDeFgHiJ` | |
-| Stage (regular + exception) | `Stage_` | 6 | `Stage_aB3kL9` | |
+| Stage (primary + secondary) | `Stage_` | 6 | `Stage_aB3kL9` | |
 | Trigger (secondary — any subtype: manual / timer / event) | `trigger_` | 6 | `trigger_xY2mNp` | |
 | Initial trigger (first trigger in the case) | fixed literal `trigger_1` | — | `trigger_1` | |
 | Task | `t` | 8 | `t8GQTYo8O` | |
@@ -90,6 +90,9 @@ All IDs follow the CLI's `prefixedId(prefix, count)` scheme: a fixed prefix + `c
 | Sticky note | `StickyNote_` | 6 | `StickyNote_aBcDeF` | |
 | SLA escalation | `esc_` | 6 | `esc_gH2jKl` | |
 | Binding | `b` | 8 | `b3KmNp7Q9` | |
+| Variable formal arg slot (`variables.inputs[]` / `variables.outputs[]` `id`) | `v` | 8 | `vK3mNp9Qx` | In/Out-arg formal slot. Surfaces in case BPMN as `<uipath:input id>` + dot-referenced via `=vars.<id>` — MUST be letter-leading. See [global-vars](plugins/variables/global-vars/impl-json.md#formal-arg-slot-id-format). |
+
+> **Leading-letter requirement.** Any id that surfaces as a BPMN element / input id, or is referenced via `=vars.<id>` / `=bindings.<id>` dot notation, MUST start with a letter or underscore (C# identifier + XML NCName rules). Every prefix above is letter-leading, which satisfies this — never mint a **prefix-less** random id for a variable / argument slot; a digit-leading id fails BPMN with `illegal ID`.
 
 ### Algorithm — inline, no subprocess
 
@@ -213,7 +216,7 @@ Rule_   + "jdBFrJ"  → "Rule_jdBFrJ"
 
 > **UUID v4 only** (`operate.json.projectId`, `entry-points.json` `uniqueId`) uses `node -e "console.log(crypto.randomUUID())"` — see § Tool usage. Prefixed-IDs above never call Bash.
 
-### Add a node (Trigger / Stage / ExceptionStage)
+### Add a node (Trigger / Stage)
 
 1. Read `caseplan.json`.
 2. Determine `data` fields per plugin's JSON Recipe. Do not emit `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18).
@@ -304,7 +307,7 @@ On failure: fix the reported issue (usually a missing field, malformed ID, or or
 - **Do NOT write helper scripts (`.py`, `.js`, `.sh`) that open / parse / modify / save JSON files.** Even one-shot scripts are forbidden — the agent is the processor, Read/Write/Edit are the only I/O primitives.
 - **Do NOT hand-edit IDs with human-readable patterns** (e.g., `my_stage_1`). The frontend's `generateNextId` expects CLI's format.
 - **Do NOT emit node-level layout fields** (`position`, `style`, `measured`, `width`, `height`, `zIndex`) — these belong in top-level `layout`, not on the node (Rule 18).
-- **Do NOT put `entryConditions`/`exitConditions` on regular Stages.** Only ExceptionStage has them.
+- **Do NOT put `entryConditions`/`exitConditions` on primary Stages.** Only secondary stages (`data.stageType: "secondary"`) have them.
 - **Do NOT auto-inject a task `entryCondition` at task-creation time based on task type.** Entry conditions come from the SDD via the task-entry-conditions plugin (Step 10), uniformly across task types. Injecting one early duplicates the Step 10 write and corrupts `displayName` indexing.
 - **Do NOT write partial JSON with Edit tool regex.** Round-trip through Read → reason → Edit per the per-section batch contract.
 - **Do NOT run validation after every single Edit.** Validate at section boundaries, not per-T-entry.

@@ -1,0 +1,208 @@
+task_id: skill-datafabric-integration-full-lifecycle
+description: >
+  Integration test: agent performs a complete Data Fabric lifecycle against a
+  live tenant — verifies login, discovers or creates an entity with advanced
+  per-type field constraints (lengthLimit on STRING, minValue / maxValue on
+  INTEGER), retrieves the schema to collect field IDs and confirms the
+  constraints come back under Fields[].fieldDataType, adds and updates fields
+  (including tightening a constraint via updateFields), inserts records,
+  queries with a filter, updates one record, verifies the update with
+  records get, and deletes only the test records. Tests the full Discover →
+  Act → Verify workflow combining schema management, advanced field
+  constraints, and record CRUD in one multi-step run.
+tags: [uipath-platform, integration, data-fabric, entities, records]
+
+run_limits:
+  expected_turns: 31
+  turn_timeout: 600
+
+initial_prompt: |
+  Perform a complete Data Fabric lifecycle. Use --output json on every uip df command.
+
+  1. Check login: run `uip login status --output json`. Do NOT re-login — use
+     whatever tenant is currently active.
+
+  2. List native-only entities. If an entity named "LifecycleTest" already exists,
+     use its ID. If not, create it with fields and advanced constraints:
+       - Label  (STRING,  lengthLimit 200)
+       - Score  (INTEGER, minValue 0, maxValue 1000)
+       - Active (BOOLEAN)
+
+  3. Retrieve the full schema for LifecycleTest using entities get.
+     From the Fields array, note the ID (Fields[].ID) for the Score field.
+     Confirm the response echoes the constraints back under
+     Fields[].fieldDataType.{lengthLimit,minValue,maxValue} — print them so
+     they are visible in the transcript.
+
+  4. Add a new field to the entity using a unique name: `Notes_<EPOCH>`
+     (MULTILINE_TEXT, lengthLimit 2000), where `<EPOCH>` is the current
+     Unix epoch seconds. The epoch suffix guarantees the field does not
+     yet exist on the reused entity, so the `addFields` call always
+     applies a fresh field.
+     # Operational note: each successful run leaves one Notes_<EPOCH> field
+     # on the shared LifecycleTest entity. Periodic cleanup is done out of
+     # band via `entities update --body '{"removeFields":[...]}' --confirm
+     # --reason "<why>"` — kept out of this test to keep the run idempotent.
+
+  5. Update the Score field: set displayName to "Test Score", isRequired to
+     true, and tighten maxValue from 1000 to 500. Use the field ID from
+     step 3 in the updateFields body — the payload key is "id" (lowercase),
+     not "ID".
+
+  6. Insert two records:
+       - { "Label": "alpha", "Score": 10, "Active": true }
+       - { "Label": "beta",  "Score": 5,  "Active": false }
+     Save both record IDs from the insert responses.
+
+  7. Query records where Active = true. Confirm at least one result is returned.
+
+  8. Update the "alpha" record: set Score to 99.
+     Use the record ID from step 6 in the update body as "Id".
+
+  9. Verify the update: fetch the record with `records get` and confirm Score = 99.
+
+  10. Delete only the two records inserted in step 6.
+      Do NOT delete the entity.
+
+  Do NOT use removeFields. Do NOT delete the entity.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before any operation"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed native-only entities"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved entity schema with entities get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+get\s+'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran entities update for both addFields and updateFields"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+update'
+    min_count: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent inserted records"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+insert'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent queried records with a filter body"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+query'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated a record"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+update'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the update with records get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+get'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the test records"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+records\s+delete'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used the `fieldName` key when defining a field (entity create or update addFields)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*fieldName'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used addFields key in entities update body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used updateFields with lowercase id key"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*updateFields.*\"id\"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used filterGroup key in records query body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+query.*filterGroup'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent included Id key in records update body"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+update.*\"Id\"'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied lengthLimit on a field (via entities create or addFields on update)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*lengthLimit'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied minValue/maxValue on a numeric field (via entities create or update)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update).*(minValue|maxValue)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent tightened a numeric constraint via updateFields"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*updateFields.*(minValue|maxValue)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
+    timeout: 60

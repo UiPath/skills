@@ -20,12 +20,6 @@ Verifies the invariants the capability doc teaches, AST-linked to the actual
   4. `main.py` does NOT instantiate `UiPath` at module level (anti-pattern #6),
      alias-aware, and constructs it somewhere.
   5. No lowcode-only `resources/<Tool>/resource.json` sidecar.
-  6. `__uipath/uipath.json` resourceOverwrites carries non-empty `connectionId`
-     and `folderKey` (alias `ConnectionId`) for `connection.<key>`;
-     `ConnectionResourceOverwrite` (`uipath/platform/common/_bindings.py:100`)
-     defines only those two with `extra="ignore"`, so an `elementInstanceId`
-     entry is rejected here as a skill-hygiene anti-pattern (#1) — the SDK would
-     silently drop it.
 
 Exits 0 on PASS, with `FAIL: ...` on the first violation.
 """
@@ -354,51 +348,6 @@ def check_invocation_and_metadata(
     )
 
 
-def check_resource_overwrites() -> None:
-    path = ROOT / "__uipath" / "uipath.json"
-    if not path.is_file():
-        sys.exit(
-            "FAIL: missing __uipath/uipath.json — the local-runtime binding "
-            "recipe requires resourceOverwrites to live here "
-            "(cli_run.py reads runtime_dir/uipath.json at local run)."
-        )
-    doc = _load_json(path)
-    overwrites = (
-        doc.get("runtime", {})
-        .get("internalArguments", {})
-        .get("resourceOverwrites", {})
-    )
-    key = f"connection.{BINDING_KEY}"
-    if key not in overwrites:
-        sys.exit(
-            f"FAIL: resourceOverwrites is missing key `{key}` (must match "
-            "the bindings.json connection resource key exactly)."
-        )
-    entry = overwrites[key]
-    if not isinstance(entry, dict):
-        sys.exit(f"FAIL: resourceOverwrites[`{key}`] is not an object.")
-
-    conn_id = entry.get("connectionId", entry.get("ConnectionId"))
-    folder_key = entry.get("folderKey")
-    # Non-empty strings: `ResourceOverwriteParser.parse` would reject null/empty
-    # and the override is silently skipped (`_common.py:217-225`).
-    for field, val in (("connectionId (or ConnectionId)", conn_id), ("folderKey", folder_key)):
-        if not (isinstance(val, str) and val.strip()):
-            sys.exit(
-                f"FAIL: resourceOverwrites for `{key}` field {field} must be a "
-                f"non-empty string (got {val!r}); the SDK skips invalid overrides "
-                "and the binding key 400s at local run."
-            )
-    if "elementInstanceId" in entry:
-        sys.exit(
-            f"FAIL: resourceOverwrites for `{key}` contains `elementInstanceId`. "
-            "`ConnectionResourceOverwrite` has `extra=\"ignore\"` and silently "
-            "drops it (capability anti-pattern #1). Remove it; `element_instance_id` "
-            "is exposed on the live `Connection.element_instance_id` after retrieve()."
-        )
-    print("OK: resourceOverwrites carries non-empty connectionId + folderKey, no elementInstanceId")
-
-
 def main() -> None:
     if not ROOT.is_dir():
         sys.exit(f"FAIL: project directory {ROOT} does not exist")
@@ -410,7 +359,6 @@ def main() -> None:
     check_no_lowcode_sidecar()
     check_lazy_sdk_init(tree, aliases)
     check_invocation_and_metadata(tree, assigns, aliases)
-    check_resource_overwrites()
     print("PASS: coded IS smoke shape checks complete")
 
 

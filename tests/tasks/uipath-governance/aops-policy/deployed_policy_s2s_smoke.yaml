@@ -1,0 +1,68 @@
+task_id: skill-gov-deployed-policy-s2s-smoke
+description: >
+  Smoke test: agent queries the effective deployed policy for another
+  user via S2S token mode (--user-id flag). Also tests --tenant-only
+  mode. These are the highest-value diagnose surfaces for "what policy
+  applies to user X?" and are currently untested.
+
+  Platform note: runs without an authenticated tenant — commands will
+  fail with auth errors. That is acceptable; what matters is correct
+  command shape with --user-id and --tenant-only flags.
+tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, deployed-policy]
+
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  I need to check which AOps governance policy is in effect for a
+  specific user. Query the effective deployed policy for:
+  - License type: `Attended`
+  - Product: `Development`
+  - Tenant: `00000000-0000-0000-0000-000000000000`
+  - User ID: `11111111-1111-1111-1111-111111111111`
+
+  Also run a second query for the same tuple but in tenant-only mode
+  (skip user/group chain, return only the tenant-level assignment).
+
+  Save all command output to ./output.txt.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live governance
+    tenant in this environment. Commands will fail with auth errors — that
+    is expected. Run each command once, capture both stdout and stderr to
+    ./output.txt (use `> output.txt 2>&1` for the first command and
+    `>> output.txt 2>&1` for subsequent ones), and move on. Do NOT retry
+    or attempt to login.
+  - Use --output json on every uip gov aops-policy command.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent invoked deployed-policy get with --user-id for S2S user lookup"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+get\b[\s\S]*--user-id'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent invoked deployed-policy get with --tenant-only for tenant-level lookup"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployed-policy\s+get\b[\s\S]*--tenant-only'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+gov\s+aops-policy\s+[\s\S]*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Command output captured to ./output.txt"
+    path: "output.txt"
+    weight: 1.0
+    pass_threshold: 1.0

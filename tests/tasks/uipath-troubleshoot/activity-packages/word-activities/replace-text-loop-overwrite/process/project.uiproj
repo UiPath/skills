@@ -1,0 +1,6 @@
+{
+  "Name": "BulkOfferLetters",
+  "ProjectType": "Process",
+  "Description": "Reproduces a Replace Text loop failure: the workflow edits the template in place each iteration, so the placeholder is consumed after the first row and later rows come out unchanged.",
+  "MainFile": "Main.xaml"
+}

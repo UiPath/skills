@@ -1,0 +1,72 @@
+task_id: skill-admin-apms-bypass-rule-lifecycle-e2e
+description: >
+  End-to-end test: full bypass-rule CRUD lifecycle — create a bypass
+  rule from a file body, get it by ID, update its regex pattern, then
+  delete it. Only `bypass-rules list` is currently covered; this test
+  exercises the entire mutation surface.
+
+  Command-construction only — no live tenant. What matters is correct
+  command sequencing and flag usage for bypass-rule CRUD.
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, apms, bypass-rules]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Create an IP restriction bypass rule that exempts the URL pattern
+  "^https://webhook\.example\.com/.*$" with the name "Webhook Bypass
+  Test". After creating, retrieve the rule by its ID to verify it,
+  then update the pattern to "^https://webhook\.example\.com/api/.*$",
+  and finally delete the rule to clean up.
+
+  Important:
+  - The `uip` CLI is available but the `admin` subcommand may not be
+    installed and/or the CLI is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT try to install tools,
+    do NOT troubleshoot errors.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created a bypass rule with --file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+bypass-rules\s+create\b.*--file'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent retrieved the bypass rule via get with positional ID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+bypass-rules\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent updated the bypass rule"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+bypass-rules\s+update\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted the bypass rule"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+bypass-rules\s+delete\b'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

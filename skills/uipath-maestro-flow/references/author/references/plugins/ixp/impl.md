@@ -101,7 +101,7 @@ Confirm:
 - `model.type` — `bpmn:ServiceTask`. `model.serviceType` — `IXP.Extraction`. The manifest's `model` is two fields only (`type`, `serviceType`) — no `context`, no `version`. Both are injected by the BPMN serializer at compile time.
 - `form.id` — `ixp-standalone-form`. Three sections: `ixp-model` (Configuration), `ixp-file-upload` (File input), `schema-definition` (Schema definition — a single custom field `inputs.model` rendered by the `ixp-model-taxonomy` component).
 - `inputDefinition.properties` — `model` (object), `modelName`, `projectName`, `projectId`, `versionTag`, `folderKey`, `folderName`, `fileRef`, `pageRange`, `attachmentConfig`, `guardrails`, `attachment`. `inputDefinition.required` — `["fileRef"]`.
-- `inputDefaults` — carries the full `model` metadata blob plus flat `modelName` / `projectName` / `folderKey` / `folderName` mirrors. The blob shape is `{ modelName, fullyQualifiedName, description, folderKey, folderName }` plus DU-API extras (`kind`, `type`, `detailsUrl`, `asyncDigitizationUrl`, `asyncExtractionUrl`).
+- `inputDefaults` — carries the full `model` metadata blob plus flat `modelName` / `projectName` / `folderKey` / `folderName` mirrors. The deployment-node blob shape is `{ id, modelName, modelDisplayName, folderKey, folderName, folderPath, description }`. Note: `model.modelName` is frequently `null` for published/OOB deployments — the human name is in `model.modelDisplayName` (and mirrored in the flat `inputDefaults.modelName`). See Authoring rule #1.
 - `outputDefinition` — populated. `output` carries the full extraction-result JSON schema; `error` carries the standard error envelope.
 
 ## Adding / Editing
@@ -126,8 +126,9 @@ Then assemble the instance by copying these paths verbatim:
 
 | Instance field | Source path in `registry get` response | Required |
 | --- | --- | --- |
-| `inputs.model` (full object) | `Data.Node.inputDefaults.model` | **YES** — undefined → canvas crash |
-| `inputs.modelName` | `Data.Node.inputDefaults.modelName` | YES |
+| `inputs.model` (full object) | `Data.Node.inputDefaults.model` — copy verbatim, then apply the `modelName` rule on the next line | **YES** — undefined → canvas crash |
+| `inputs.model.modelName` | `Data.Node.inputDefaults.model.modelName`, **but when that is `null`/empty, use `Data.Node.inputDefaults.model.modelDisplayName`** | **YES** — `null`/empty → `flow validate` fails (`ixp-node`: must be a non-empty string) |
+| `inputs.modelName` (flat) | `Data.Node.inputDefaults.modelName` | YES |
 | `inputs.projectName` | `Data.Node.inputDefaults.projectName` | YES |
 | `inputs.folderKey` | `Data.Node.inputDefaults.folderKey` | YES |
 | `inputs.folderName` | `Data.Node.inputDefaults.folderName` | YES |
@@ -157,16 +158,13 @@ If you find yourself typing any of those five field names while authoring an IxP
   "display": { "label": "Extract Invoice Fields" },
   "inputs": {
     "model": {
+      "id": "<model GUID — from inputDefaults.model.id>",
       "modelName": "Invoice Model",
-      "description": "",
-      "kind": "Extractor",
-      "type": "IXP",
-      "fullyQualifiedName": "Shared/invoice-model",
-      "detailsUrl": "https://<tenant>.uipath.com/.../models/invoice-model?api-version=2.0",
-      "asyncDigitizationUrl": "https://<tenant>.uipath.com/.../models/invoice-model/digitization/start?api-version=2.0",
-      "asyncExtractionUrl": "https://<tenant>.uipath.com/.../models/invoice-model/extraction/start?api-version=2.0",
+      "modelDisplayName": "Invoice Model",
       "folderKey": "<FOLDER_GUID>",
-      "folderName": "Shared"
+      "folderName": "Shared",
+      "folderPath": "<FOLDER_GUID>",
+      "description": ""
     },
     "modelName": "Invoice Model",
     "description": "",
@@ -186,7 +184,8 @@ If you find yourself typing any of those five field names while authoring an IxP
 
 ### Authoring rules
 
-1. **`inputs.model` MUST be present and MUST be the full blob from `Data.Node.inputDefaults.model`.** Copy verbatim — do not synthesize, do not abbreviate, do not omit the DU-API extras (`detailsUrl`, `asyncDigitizationUrl`, `asyncExtractionUrl`, `kind`, `type`). The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` custom component, which destructures `modelName` and `folderKey` out of it. If `inputs.model` is undefined, clicking the node in Studio Web crashes the property panel with `Cannot destructure property 'modelName' of 't' as it is undefined` — and `flow validate` does not catch it.
+1. **`inputs.model` MUST be present and MUST be copied from `Data.Node.inputDefaults.model`.** Copy the blob verbatim — do not abbreviate, do not omit fields, do not invent fields that aren't there. The current deployment-node blob is `{ id, modelName, modelDisplayName, folderKey, folderName, folderPath, description }`; source every field from the actual `registry get` response, not from memory (older docs showed `fullyQualifiedName` / `kind` / `type` / `detailsUrl` / `async*` fields — these are NOT present on deployment nodes; do not add them). The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` custom component, which destructures `modelName` and `folderKey` out of it. If `inputs.model` is undefined, clicking the node in Studio Web crashes the property panel with `Cannot destructure property 'modelName' of 't' as it is undefined` — and `flow validate` does not catch it.
+   - **`inputs.model.modelName` MUST be a non-empty string.** For many published/OOB deployments `inputDefaults.model.modelName` comes back `null`, with the name carried in `inputDefaults.model.modelDisplayName` instead. When `modelName` is `null`/empty, set `inputs.model.modelName` to `modelDisplayName`. This is NOT synthesis — `modelDisplayName` is the model's own name from the same blob (and matches the flat `inputDefaults.modelName`). The `ixp-node` validator rejects a `null`/empty `inputs.model.modelName` (`flow validate` fails), and Studio Web crashes on it.
 2. **Flat mirrors stay alongside `inputs.model`.** `modelName`, `projectName`, `folderKey`, `folderName` are surfaced as disabled text fields in the `ixp-model` form section and are read directly from `inputs.*`, not from `inputs.model.*`.
 3. **`fileRef` is the only schema-required input** (`inputDefinition.required: ["fileRef"]`). Use `=js:$vars.<upstream>.output.<field>` per Critical Rule #13.
 4. **`outputs.output` AND `outputs.error` MUST both be present**, copied verbatim from `Data.Node.outputDefinition.output` and `Data.Node.outputDefinition.error`. Omitting either breaks downstream `$vars.<nodeId>.output` / `.error` resolution and hides the field in Studio Web's variable picker. `flow validate` does not catch the omission.
@@ -195,7 +194,7 @@ If you find yourself typing any of those five field names while authoring an IxP
 
 The `definitions[]` entry is copied verbatim from `registry get` (`Data.Node`). Critical Rule #7 applies unchanged.
 
-> **`uip maestro flow validate` enforces the Authoring rules above** via the `ixp-node` validator. Failures surface as `severity: "error"` issues with `path` like `nodes[<nodeId>].inputs.model` and a self-contained `message` describing the violation — fix the `.flow` file, not the validator. The registry's `inputDefinition.properties` is the schema of the property catalog, not a license to override the rules: `digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, and `mimeType` are NOT returned by `registry get` and must not be set on the instance.
+> **`uip maestro flow validate` enforces the Authoring rules above** via the `ixp-node` validator. Failures surface as `severity: "error"` issues with `path` like `nodes[<nodeId>].inputs.model` and a self-contained `message` describing the violation — fix the `.flow` file, not the validator. A common failure is `inputs.model must be an object with non-empty string modelName and folderKey` — this fires when `inputDefaults.model.modelName` was `null` and copied through verbatim; fix it by setting `inputs.model.modelName` from `inputDefaults.model.modelDisplayName` (Authoring rule #1), not by relaxing the validator. The registry's `inputDefinition.properties` is the schema of the property catalog, not a license to override the rules: `digitizationMode`, `documentTaxonomy`, `attachmentId`, `fileName`, and `mimeType` are NOT returned by `registry get` and must not be set on the instance.
 
 ### `inputs.fileRef` vs the emitted `model.inputs[]` body
 
@@ -323,4 +322,5 @@ IxP also exposes classifier models (type `Classifier`) that label documents rath
 | `fileRef` not resolving | Expression references an upstream variable that isn't wired, or the upstream node didn't produce a file output | Verify the upstream node exports a file reference and that the `=js:$vars.{upstreamId}.output.<field>` expression matches |
 | Extraction failed | Underlying IxP model errored (unsupported MIME type, corrupted file, service-side failure) | Check `$vars.{nodeId}.error.detail` for the IxP service response |
 | `uip maestro flow node configure` rejects with "not a connector type node" | Expected — IxP is not a connector. | Edit `inputs.*` in the `.flow` JSON directly. |
-| Studio Web: "Cannot destructure property 'modelName' of 't' as it is undefined" when clicking the node | `inputs.model` blob is missing or undefined. The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` component, which destructures `modelName` and `folderKey` out of it. When `inputs.model` is missing, the destructure throws. | Copy `definition.inputDefaults.model` verbatim into the node instance's `inputs.model`. The blob carries `modelName`, `fullyQualifiedName`, `description`, `folderKey`, `folderName` plus DU-API extras (`kind`, `type`, `detailsUrl`, `asyncDigitizationUrl`, `asyncExtractionUrl`). See [JSON Structure](#json-structure). |
+| Studio Web: "Cannot destructure property 'modelName' of 't' as it is undefined" when clicking the node | `inputs.model` blob is missing or undefined. The `schema-definition` form section binds `inputs.model` to the `ixp-model-taxonomy` component, which destructures `modelName` and `folderKey` out of it. When `inputs.model` is missing, the destructure throws. | Copy `definition.inputDefaults.model` verbatim into the node instance's `inputs.model`. The blob carries `id`, `modelName`, `modelDisplayName`, `folderKey`, `folderName`, `folderPath`, `description`. See [JSON Structure](#json-structure). |
+| `flow validate` error `inputs.model must be an object with non-empty string modelName and folderKey` | `inputDefaults.model.modelName` was `null` (common for published/OOB deployments) and copied verbatim into `inputs.model`. | Set `inputs.model.modelName` from `inputDefaults.model.modelDisplayName` (Authoring rule #1). `folderKey` is normally populated in the blob; if it too is empty, take it from the flat `inputDefaults.folderKey`. |

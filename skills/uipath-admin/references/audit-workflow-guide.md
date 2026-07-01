@@ -226,17 +226,17 @@ audit-exports/
     └── 2026-01-31.json
 ```
 
-Each `.json` file is a JSON array of audit events with **PascalCase** keys (`Id`, `CreatedOn`, `OrganizationId`, `ActorId`, `ActorName`, `EventType`, …) — different from the camelCase shape returned by the live `events` endpoint. Note this in the user's hand-off if they're going to feed the dump into other tooling.
+Each `.json` file is a JSON array of audit events with **LTS-schema** keys (`Identifier`, `DateCreatedUtc`, `OrganizationId`, `ActorId`, `User`, `Action`, …) — different from the camelCase shape returned by the live `events` endpoint. Note this in the user's hand-off if they're going to feed the dump into other tooling.
 
 **CSV** — find the generated file, then inspect the header and row count:
 
 ```bash
 csv=$(ls ./audit-exports/audit_*.csv | head -1)   # the generated audit_<from>_<to>_<generatedAt>.csv
-head -1 "$csv"                                      # shared header (PascalCase columns)
+head -1 "$csv"                                      # shared header (LTS-schema columns)
 python3 -c "import csv,sys; print(sum(1 for _ in csv.reader(open(sys.argv[1]))) - 1, 'rows')" "$csv"
 ```
 
-One header row, then every event across all days as a data row (same PascalCase column names as the JSON files' keys). The row count should match `Events` in the result envelope.
+One header row, then every event across all days as a data row (same LTS-schema column names as the JSON files' keys). The row count should match `Events` in the result envelope.
 
 Edge cases the CLI handles automatically — surface in your hand-off only if they appear:
 
@@ -302,7 +302,7 @@ Two or more signals? Run them in sequence and stitch the results in the final re
 - **`tenant` events without an active tenant fail loudly.** If `uip login` has no tenant selected, every tenant-scoped command throws. Either re-`uip login` and pick a tenant, or pass `--tenant-id <guid>` on every call.
 - **`events` cursor pagination is chronologically reversed from intuition.** `next` = newer (often null), `previous` = older (the typical "load more"). The CLI tool follows `previous` automatically when you bump `--limit > 200` — don't re-implement this in the agent.
 - **Date-only ISO strings are interpreted as UTC midnight.** `--from-date 2026-01-01` means `2026-01-01T00:00:00Z`. To capture the full final day in `--to-date`, use `2026-02-01` (exclusive next day) or `2026-01-31T23:59:59.999Z`.
-- **Export format depends on `--file-format`.** The default `json` writes one **JSON** file per UTC day (named `<YYYY-MM-DD>.json`) into a generated subfolder under `--output-path`, with **PascalCase** keys; `--file-format csv` produces a single merged **CSV** whose header uses those same PascalCase field names. Both differ from the camelCase live `events` endpoint — don't paste an export into a parser expecting the live shape. In the CSV, `Status` is numeric (`0`/`1`) and `ClientInfo` is a JSON-stringified cell.
+- **Export format depends on `--file-format`.** The default `json` writes one **JSON** file per UTC day (named `<YYYY-MM-DD>.json`) into a generated subfolder under `--output-path`, with **LTS-schema** keys; `--file-format csv` produces a single merged **CSV** whose header uses those same LTS-schema field names. Both differ from the camelCase live `events` endpoint — don't paste an export into a parser expecting the live shape. In the CSV, `Status` is numeric (`0`/`1`) and `ClientInformation` is a JSON-stringified cell.
 - **Org sources and tenant sources are different sets.** Don't reuse a GUID from `org sources` in a `tenant events` query — the filter will silently match nothing.
 
 ## Output Etiquette — after an audit query or export

@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
-"""Check for LC_GUARDRAIL_PII_MISSING — the agent processes personal data
-(customer_email / full_name / ssn) but has no pii_detection guardrail.
+"""Check for LC_GUARDRAIL_RECOMMENDED (PII flavor) — the agent processes
+personal data (customer_email / full_name / ssn) but has no pii_detection
+guardrail, so the reviewer should recommend one.
+
+`LC_GUARDRAIL_RECOMMENDED` is the single missing-guardrail recommendation rule
+(it superseded the per-type `LC_GUARDRAIL_PII_MISSING` / `_INJECTION_MISSING`),
+with the specifics — here the PII case — carried in the message. The
+`customer_email` token confirms those details reached the report.
 
 Verifies the saved review report cites the rule_id and references a PII
 field, and that other rule-id citations resolve (catalog or CLI-emitted;
@@ -12,7 +18,7 @@ import sys
 from pathlib import Path
 
 REPORT = Path(os.getcwd()) / "_review_report.md"
-REQUIRED_RULE_ID = "LC_GUARDRAIL_PII_MISSING"
+REQUIRED_RULE_ID = "LC_GUARDRAIL_RECOMMENDED"
 REQUIRED_TOKEN = "customer_email"
 MIN_REPORT_BYTES = 500
 

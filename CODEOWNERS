@@ -29,6 +29,7 @@
 /skills/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /skills/uipath-platform/references/traces/ @UiPath/llmops-team
 /skills/uipath-platform/references/integration-service/ @chandusailella @baishalighosh
+/skills/uipath-platform/references/data-fabric/ @UiPath/DatafabricCodingAgent
 /skills/uipath-platform/references/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
 /tests/tasks/uipath-platform/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
 /tests/tasks/uipath-platform/orchestrator/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
@@ -37,6 +38,7 @@
 /tests/tasks/uipath-platform/llmgateway/ @denispetre @vstoleru-uipath @dragosvelcea
 /tests/tasks/uipath-platform/traces/ @UiPath/llmops-team
 /tests/fixtures/ @gabrielavaduva @alexenica @andreiopr @vlad-voinea-uipath @emanueldejanu @gcoman @puscasu-ion-daniel @razvalex @aeremencu @alinahornet @DinuDanNicolae @florin-munteanu-uipath @StefanPopaUi @razvanpotcoveanu @vladbucur-8 @busesorin94 @dmorosanu @MarinRzv @vladimir-cozma @UiPath/team-merlot @UiPath/team-orange
+/tests/tasks/uipath-platform/data-fabric/ @UiPath/DatafabricCodingAgent
 
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
@@ -63,6 +65,11 @@
 # Guardrails tests (folder-level ownership)
 /tests/tasks/uipath-agents/lowcode/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/coded/guardrails/ @apetraru-uipath @valentinabojan @ctiliescuuipath
+
+# Functions skill (Python Coded Functions — Phase 1; JS HTTP/background Phase 2/3)
+/skills/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
+/tests/tasks/uipath-functions/ @AlexBizon @UiPath/team-coded-agents
+/tests/tasks/activation/uipath-functions.jsonl @AlexBizon @UiPath/team-coded-agents
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
 /skills/uipath-planner/ @RaduAna-Maria
@@ -101,6 +108,10 @@
 /skills/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
 /tests/tasks/uipath-coded-apps/ @Raina451 @deepeshrai-tech @Sandeepan-Ghosh-0312 @swati354
 
+# Connector Builder skill
+/skills/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
+/tests/tasks/uipath-connector-builder/ @mukeshkumar-uipath @chandusailella @apoosarla-uipath
+
 # Flow skill — plugin guides (away team owned)
 # Add your team here when contributing a new plugin category
 /skills/uipath-maestro-flow/references/plugins/connector/ @baishalighosh @chandusailella @bai-uipath @rockymadden
@@ -122,6 +133,7 @@
 # Troubleshooting
 /skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /tests/tasks/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
+/tests/tasks/activation/uipath-troubleshoot.jsonl @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
 /skills/uipath-troubleshoot/references/products/agents/ @UiPath/llmops-team @andreibalas-uipath
 
 # Governance skill
@@ -132,9 +144,6 @@
 /skills/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
 /tests/tasks/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
 
-# Data Fabric skill (CLI entity/record management)
-/skills/uipath-data-fabric/ @aditi-goyal-uipath
-/tests/tasks/uipath-data-fabric/ @aditi-goyal-uipath
 
 # Tasks skill (Action Center Operate)
 /skills/uipath-tasks/ @UiPath/ActionCenterDev

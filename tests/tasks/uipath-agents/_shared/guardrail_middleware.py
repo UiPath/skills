@@ -26,6 +26,19 @@ def call_name(call: ast.Call) -> str | None:
     return None
 
 
+def call_kwarg(call: ast.Call, name: str) -> ast.expr | None:
+    """Return the value node for keyword ``name`` in a Call, or None if absent.
+
+    Used to inspect optional middleware arguments (e.g. ``scopes=``) so a check can
+    accept a guardrail that relies on the SDK default instead of demanding the
+    argument be spelled out explicitly.
+    """
+    for kw in call.keywords:
+        if kw.arg == name:
+            return kw.value
+    return None
+
+
 def _var_to_call(tree: ast.AST) -> dict:
     """Map each variable name to the Call it was last assigned (resolves ``*name`` spreads)."""
     mapping: dict = {}

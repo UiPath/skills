@@ -1,0 +1,51 @@
+{
+  "name": "ClauseInserter",
+  "projectId": "a8b9c0d1-e2f3-4193-4051-627384950617",
+  "description": "Reproduces a design-time Studio crash (TargetInvocationException) when the Replace Text activity is dropped/opened, caused by a UiPath.Word.Activities version newer than the installed Studio supports.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "UiPath.Word.Activities": "[2.0.0]",
+    "UiPath.System.Activities": "[22.4.4]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "21.10.5.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "isAttended": false,
+    "executionType": "Workflow",
+    "requiresUserInteraction": true,
+    "supportsPersistence": false,
+    "excludedLoggedData": [
+      "Private:*",
+      "*password*"
+    ]
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": {
+      "privateWorkflows": []
+    },
+    "processOptions": {
+      "ignoredFiles": []
+    },
+    "fileInfoCollection": [],
+    "saveToCloud": false
+  },
+  "expressionLanguage": "CSharp",
+  "entryPoints": [
+    {
+      "filePath": "Main.xaml",
+      "uniqueId": "e1f2a3b4-c5d6-7890-1234-56789abcdef4",
+      "input": [],
+      "output": []
+    }
+  ],
+  "isTemplate": false,
+  "templateProjectData": {},
+  "publishData": {},
+  "targetFramework": "Windows"
+}

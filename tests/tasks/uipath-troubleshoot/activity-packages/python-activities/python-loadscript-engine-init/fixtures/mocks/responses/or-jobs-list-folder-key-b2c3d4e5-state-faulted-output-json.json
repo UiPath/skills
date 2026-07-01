@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "c3d4e5f6-a7b8-4293-a4b5-c6d7e8f90123",
+      "State": "Faulted",
+      "ProcessName": "PyDataTransform",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-ROBOT",
+      "MachineKey": "",
+      "StartTime": "2026-06-10T14:03:11.210Z",
+      "EndTime": "2026-06-10T14:03:13.640Z",
+      "CreationTime": "2026-06-10T14:03:10.800Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

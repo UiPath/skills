@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "_doc": "Canned responses extracted from the original investigation's raw/ CLI outputs (scrubbed). Substring dispatch, first match wins — specific rules precede generic ones.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "file": "or-jobs-get-37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9-output-json.json"
+    },
+    {
+      "match": "or jobs logs 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9 --level Error",
+      "file": "or-jobs-logs-37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9-level-error.json",
+      "_doc": "Recorded verbatim. The session captured only the Error-level log query; the single row is the job's one Error entry — the CV Click ElementNotFoundException."
+    },
+    {
+      "match": "or jobs logs 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "file": "or-jobs-logs-37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9-level-error.json",
+      "_doc": "No unfiltered-logs raw was recorded; the Error-level set answers any logs variant — the exception row is the only diagnostic content."
+    },
+    {
+      "match": "or jobs history 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "file": "or-jobs-history-37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9-output-json.json",
+      "_doc": "Recorded verbatim: the Running -> Faulted transition set. Confirms a clean single execution — carries no diagnostic signal beyond jobs get."
+    },
+    {
+      "match": "or jobs traces 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "file": "or-jobs-traces-37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9-output-json.json",
+      "_doc": "Recorded verbatim. One RobotJob span whose Attributes carry the full UiPath.CV.ElementNotFoundException stack with the CvClickWithDescriptor.EndExecute faulting frame and the CVScope.OnFault propagation frame. No child CvClick/CVScope spans were emitted (no per-activity OpenTelemetry spans for this job), so the trace adds the verbatim .NET stack but no extra attribute-level disambiguation beyond jobs get/logs."
+    },
+    {
+      "match": "traces spans get --job-key 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "file": "or-jobs-traces-37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9-output-json.json",
+      "_doc": "Alternate trace-retrieval form (platform traces command). Maps to the same recorded span payload so the investigation does not depend on which trace form the agent reaches for."
+    },
+    {
+      "match": "or jobs list --folder-key defb8e05-e36b-4c36-bf11-0b4d08ce6cd1",
+      "file": "or-jobs-list-folder-key-defb8e05-e36b-4c36-bf11-0b4d08ce6cd1.json",
+      "_doc": "No --state Faulted raw was recorded in this session, so there is no Faulted-only fixture; substring dispatch routes `--state Faulted` variants here too, returning the full recorded list — the failing CV job (37e7a8bb...) is the most recent row."
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-defb8e05-e36b-4c36-bf11-0b4d08ce6cd1.json",
+      "_doc": "Fallback for flag-order variations. The Shared folder's recorded job list is the correct answer for any jobs-list variant the agent tries; the most recent row is the faulted CV job."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "docsai queries always passthrough — query strings vary between runs and canned responses go stale. Cached per-query within a run."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched by `rules` returns an empty array. Lets the agent explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key (defb8e05-e36b-4c36-bf11-0b4d08ce6cd1) before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job — the CV process job 37e7a8bb..."
+    },
+    {
+      "pattern": "or jobs get 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the UiPath.CV.ElementNotFoundException 'Element not found' fault from CvClickWithDescriptor (\"CV Click - 'Button'\") inside CVScope (\"CV Screen Scope 'msedge.exe  Google'\") in CV_ElementNotFound.xaml."
+    },
+    {
+      "pattern": "traces",
+      "min": 1,
+      "description": "Trace retrieval surfaces the verbatim .NET stack confirming the faulting frame is CvClickWithDescriptor.EndExecute propagating through CVScope.OnFault — pinning the fault to the CV Click find, not scope setup or a downstream action."
+    },
+    {
+      "pattern": "or jobs logs 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
+      "min": 0,
+      "description": "OPTIONAL — state transitions (Running -> Faulted) confirm a clean single execution."
+    }
+  ]
+}

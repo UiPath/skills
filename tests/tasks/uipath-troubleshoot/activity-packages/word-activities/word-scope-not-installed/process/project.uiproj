@@ -1,0 +1,6 @@
+{
+  "Name": "DocGenerator",
+  "ProjectType": "Process",
+  "Description": "Reproduces a classic Word Application Scope failure caused by Microsoft Word not being installed on the robot host (REGDB_E_CLASSNOTREG).",
+  "MainFile": "Main.xaml"
+}

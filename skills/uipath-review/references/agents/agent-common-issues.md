@@ -118,7 +118,7 @@ from uipath.platform.common import CreateTask, WaitTask  # Correct HITL imports
 
 ### Missing Guardrails
 
-> *Rule catalog: `LC_GUARDRAIL_PII_MISSING`, `LC_GUARDRAIL_INJECTION_MISSING`, `LOWCODE_TOOL_GUARDRAIL_FIELD_MISSING`, `LOWCODE_GUARDRAIL_TOOL_REF_NONEXISTENT` cover this at Step 2.5.*
+> *Rule catalog: `LC_GUARDRAIL_RECOMMENDED` (one finding per missing guardrail, with the validator type, recommended scope, and action in the message), `LOWCODE_TOOL_GUARDRAIL_FIELD_MISSING`, `LOWCODE_GUARDRAIL_TOOL_REF_NONEXISTENT` cover this at Step 2.5. See [guardrails/guardrails-review.md](guardrails/guardrails-review.md).*
 
 **Symptom:** User-facing agent with no input validation, PII detection, or prompt injection defense.
 

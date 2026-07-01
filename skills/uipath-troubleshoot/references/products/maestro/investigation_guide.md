@@ -4,9 +4,10 @@
 
 Before using any fetched data, verify it matches the user's reported problem:
 
+- **Maestro instance key == Orchestrator job key for ProcessOrchestration jobs.** When the user's reported entity is a job whose `RuntimeType` is `ProcessOrchestration`, the job IS the Maestro process instance — the GUID on the Orchestrator job is also the Maestro instance ID. ALWAYS use that key when running `uip maestro <type> instance <verb>` commands. **Do NOT use `ParentJobKey`** — that field, when present, points at the parent Orchestrator job, not the Maestro instance. Using `ParentJobKey` against a Maestro instance command returns empty results that are silently misread as "the instance doesn't exist", which then propagates a wrong root cause downstream.
 - **Process/Solution** — the BPMN process name and solution match what the user reported
 - **Instance** — the process instance ID matches the specific execution the user is investigating
-- **Folder** — data comes from the correct Orchestrator folder (permissions, triggers, and jobs are folder-scoped)
+- **Folder** — data comes from the correct Orchestrator folder (permissions, triggers, and jobs are folder-scoped). The Maestro instance lives in the same folder as the Orchestrator job — NOT in any "personal workspace" or parent-job folder. Use the folder key resolved on the Orchestrator job, not a workspace key.
 - **Time window** — timestamps fall within the relevant period the user described
 - **Child Jobs** — if investigating a service task, verify the child job belongs to the correct parent instance. Always check the child job's **error message and final state** — the child's failure reason is often the actual root cause, not the parent's error code. Search for child jobs in all states (Faulted, Stopped, Successful, Running), not just the expected state.
 

@@ -10,6 +10,7 @@ description: >
   Does not deploy or run the flow.
 tags: [uipath-human-in-the-loop, e2e, green-field, invoice, approval-gate, write-back]
 
+
 run_limits:
   expected_turns: 19
   max_turns: 60
@@ -38,7 +39,7 @@ success_criteria:
     description: "Flow contains the inline HITL node type"
     path: "InvoiceApproval/InvoiceApproval/InvoiceApproval.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 3.0
     pass_threshold: 1.0
 

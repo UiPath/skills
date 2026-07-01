@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ExceptionStage: two ExceptionStages (Issues + Critical), interrupting entries, return-to-origin (edges retired)."""
+"""Secondary stages: two secondary stages (Issues + Critical), interrupting entries, return-to-origin (edges retired)."""
 
 import os
 import sys
@@ -7,9 +7,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from _shared.case_check import (  # noqa: E402
     find_node_by_label,
+    find_stages,
     first_rule_of_condition,
     get_default_sla,
-    iter_nodes_of_type,
     iter_stage_entry_conditions,
     iter_stage_exit_conditions,
     read_caseplan,
@@ -40,16 +40,22 @@ def main():
             f"got exit types {[ec.get('type') for ec in process_exits]}"
         )
 
-    exception_nodes = list(iter_nodes_of_type(plan, "case-management:ExceptionStage"))
-    labels = sorted((n.get("data") or {}).get("label") for n in exception_nodes)
-    if len(exception_nodes) != 2:
+    def _is_secondary(n):
+        return (
+            (n.get("data") or {}).get("stageType") == "secondary"
+            or n.get("type") == "case-management:ExceptionStage"
+        )
+
+    secondary_nodes = [n for n in find_stages(plan, include_exception=True) if _is_secondary(n)]
+    labels = sorted((n.get("data") or {}).get("label") for n in secondary_nodes)
+    if len(secondary_nodes) != 2:
         sys.exit(
-            f"FAIL: expected 2 ExceptionStage nodes (Issues + Critical); "
-            f"got {len(exception_nodes)} with labels {labels}"
+            f"FAIL: expected 2 secondary stages (Issues + Critical); "
+            f"got {len(secondary_nodes)} with labels {labels}"
         )
     if "Issues" not in labels or "Critical" not in labels:
         sys.exit(
-            f"FAIL: ExceptionStage labels must include 'Issues' and 'Critical'; "
+            f"FAIL: secondary stage labels must include 'Issues' and 'Critical'; "
             f"got {labels}"
         )
 
@@ -135,7 +141,7 @@ def main():
     if not timer_tasks:
         types_seen = sorted({t.get("type", "?") for t in issues_tasks})
         sys.exit(
-            f"FAIL: 'Issues' exception stage has no wait-for-timer task; "
+            f"FAIL: 'Issues' secondary stage has no wait-for-timer task; "
             f"types seen: {types_seen}"
         )
     ack = timer_tasks[0]
@@ -168,7 +174,7 @@ def main():
 
     print(
         "OK: Process is a regular Stage with an explicit exit-only exit condition "
-        "(required-tasks-completed, marks complete); 2 ExceptionStages (Issues + "
+        "(required-tasks-completed, marks complete); 2 secondary stages (Issues + "
         "Critical) reached via interrupting entries (edges retired); Issues has "
         "interrupting selected-stage-exited entry referencing Process, "
         "return-to-origin exit, 2h SLA + sla-breached UserGroup escalation, AND a "

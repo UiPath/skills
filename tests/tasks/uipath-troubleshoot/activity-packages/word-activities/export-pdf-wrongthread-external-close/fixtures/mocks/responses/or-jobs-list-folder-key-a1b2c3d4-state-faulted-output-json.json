@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "b2c3d4e5-f6a7-4819-8b2c-3d4e5f607182",
+      "State": "Faulted",
+      "ProcessName": "ContractPdfExport",
+      "ReleaseKey": "",
+      "Source": "Manual",
+      "Type": "Attended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-19T14:22:11.210Z",
+      "EndTime": "2026-06-19T14:22:18.640Z",
+      "CreationTime": "2026-06-19T14:22:10.980Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

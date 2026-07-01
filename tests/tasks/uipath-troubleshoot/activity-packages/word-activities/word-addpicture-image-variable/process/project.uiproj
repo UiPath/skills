@@ -1,0 +1,6 @@
+{
+  "Name": "WordReportImage",
+  "ProjectType": "Process",
+  "Description": "Repro: Word Add Picture process that feeds an in-memory UiPath.Core.Image to the Picture-to-insert (ImagePath) property instead of a file path string. The runtime resolves the image object's ToString() to the literal 'UiPath.Core.Image' and faults with FileNotFoundException. Exercises the image-variable branch (C4) of the add-picture-failures playbook.",
+  "MainFile": "Main.xaml"
+}

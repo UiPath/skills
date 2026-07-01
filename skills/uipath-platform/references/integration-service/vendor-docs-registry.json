@@ -1,0 +1,173 @@
+{
+  "_comment": "Maps a vendor to its connector-key and the authoritative API docs URL used for baseline grounding. The live http-request call is the final authority. Add entries as new vendors are supported. 'dynamic' flags objects that can carry tenant-specific custom fields. Population basis: Tier 1 connectors per INSCE 'Connector tiering definitions' (third-party, GA only; excludes UiPath-internal, generic-protocol, FPS/not-yet-GA, and SDK-only connectors with no HTTP API).",
+  "vendors": {
+    "slack": {
+      "connectorKey": "uipath-salesforce-slack",
+      "docsUrl": "https://docs.slack.dev/reference/methods",
+      "dynamic": false,
+      "notes": "Method-per-operation (e.g. chat.postMessage). Static schema; same for every workspace."
+    },
+    "salesforce": {
+      "connectorKey": "uipath-salesforce-sfdc",
+      "docsUrl": "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/",
+      "dynamic": true,
+      "notes": "Per-org custom fields end in __c. Lookups via SOQL query with literal spaces."
+    },
+    "jira": {
+      "connectorKey": "uipath-atlassian-jira",
+      "docsUrl": "https://developer.atlassian.com/cloud/jira/platform/rest/v2/intro/",
+      "dynamic": true,
+      "notes": "Custom fields keyed customfield_*. Field set depends on project + issue type (parent fields)."
+    },
+    "servicenow": {
+      "connectorKey": "uipath-servicenow-servicenow",
+      "docsUrl": "https://developer.servicenow.com/dev.do#!/reference/api/australia/rest/c_TableAPI",
+      "dynamic": true,
+      "notes": "Base URL already includes /api/now; Table API is versioned: /v1/table/<table>. Custom columns prefixed u_. WARNING: connector mangles = and ^ in sysparm_query (literal AND %-encoded) -> use =/^-free operators (STARTSWITH/LIKE) and refine client-side; verify the filter applied via row count. sysparm_fields/sysparm_limit honored."
+    },
+    "mailchimp": {
+      "connectorKey": "uipath-mailchimp-mailchimp",
+      "docsUrl": "https://mailchimp.com/developer/marketing/api/",
+      "dynamic": true,
+      "notes": "Audience (list) merge fields are per-list, keyed by tag (FNAME, LNAME, plus custom). CASCADING: the add/update-member body field set depends on list_id (a PATH param) -> author as a discovery resource (scopeFields:[list_id], path /lists/{list_id}/merge-fields?count=1000, fieldsAt:merge_fields). Discovered values go under merge_fields.<TAG>; static fields are email_address/status/email_type/vip/language)."
+    },
+    "outlook": {
+      "connectorKey": "uipath-microsoft-outlook365",
+      "docsUrl": "https://learn.microsoft.com/en-us/graph/api/overview?view=graph-rest-1.0",
+      "dynamic": true,
+      "notes": "Microsoft Graph. Base https://graph.microsoft.com/v1.0; mail under /me/messages, /users/{id}/messages; calendar under /me/events. OData $filter/$select/$top/$orderby. Pagination via @odata.nextLink (follow as-is). Custom mail props via singleValueExtendedProperties/openExtensionProperties (per-tenant). immutableId vs default id quirk on messages."
+    },
+    "onedrive": {
+      "connectorKey": "uipath-microsoft-onedrive",
+      "docsUrl": "https://learn.microsoft.com/en-us/graph/api/overview?view=graph-rest-1.0",
+      "dynamic": true,
+      "notes": "Microsoft Graph (OneDrive & SharePoint). Base /v1.0. Files under /me/drive, /drives/{id}/items, /sites/{id}/drive. SharePoint list custom columns surface as listItem fields (per-list, tenant-specific). @odata.nextLink pagination, OData $filter/$expand. Path addressing /items/root:/path/to/file: vs item-id. delta query for change tracking."
+    },
+    "gmail": {
+      "connectorKey": "uipath-google-gmail",
+      "docsUrl": "https://developers.google.com/workspace/gmail/api/reference/rest",
+      "dynamic": false,
+      "notes": "Base https://gmail.googleapis.com/gmail/v1/users/{userId}/... ; use 'me' for userId. Fixed schema. Pagination via pageToken/nextPageToken. messages.list filters via q= Gmail search syntax (from:, subject:, is:unread, after:). Message bodies base64url-encoded in payload.parts. Raw uploads at /upload/gmail/v1/. batchModify/batchDelete take ID arrays."
+    },
+    "googledrive": {
+      "connectorKey": "uipath-google-drive",
+      "docsUrl": "https://developers.google.com/workspace/drive/api/guides/about-sdk?hl=en",
+      "dynamic": false,
+      "notes": "Base https://www.googleapis.com/drive/v3/; uploads at /upload/drive/v3/files (uploadType=media|multipart|resumable). Fixed schema. files.list pagination via pageToken/nextPageToken; filter via q= search syntax (mimeType=, name contains, 'PARENT_ID' in parents, trashed=false). Default fields sparse -> pass fields= to expand. Shared Drives need supportsAllDrives=true. Export Google-native docs via files/{id}/export."
+    },
+    "googlesheets": {
+      "connectorKey": "uipath-google-sheets",
+      "docsUrl": "https://developers.google.com/workspace/sheets/api/reference/rest?hl=en",
+      "dynamic": true,
+      "notes": "Base https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}. Ranges use A1 notation in path, URL-encode (e.g. Sheet1!A1:C10). values.get/update/append; valueInputOption=RAW|USER_ENTERED required on writes. Multi-range via values:batchGet?ranges=...&ranges=...; structural edits via :batchUpdate. Cell contents are arbitrary user data -> no fixed column schema."
+    },
+    "teams": {
+      "connectorKey": "uipath-microsoft-teams",
+      "docsUrl": "https://learn.microsoft.com/en-us/graph/api/resources/teams-api-overview?view=graph-rest-1.0",
+      "dynamic": false,
+      "notes": "Microsoft Graph. Base /v1.0. /teams/{id}/channels/{id}/messages, /chats/{id}/messages. @odata.nextLink pagination; many message/list endpoints reject arbitrary $filter (limited OData support). Fixed schema; no tenant custom fields on core objects."
+    },
+    "openai": {
+      "connectorKey": "uipath-openai-openai",
+      "docsUrl": "https://platform.openai.com/docs/api-reference",
+      "dynamic": false,
+      "notes": "Fixed host https://api.openai.com/v1. POST /v1/chat/completions. Auth: Authorization: Bearer <API_KEY>. Static schema same for all callers; model selected via body \"model\". Streaming via SSE (\"stream\": true). Newer Responses API exists but chat/completions is canonical."
+    },
+    "dynamicscrm": {
+      "connectorKey": "uipath-microsoft-dynamicscrm",
+      "docsUrl": "https://learn.microsoft.com/en-us/power-apps/developer/data-platform/webapi/reference/about?view=dataverse-latest",
+      "dynamic": true,
+      "notes": "Dataverse Web API, OData v4. Base path /api/data/v9.2/. Tenant-specific custom entities + custom columns; custom logical names carry publisher prefix (new_, cr123_), entity set pluralized in URL. $filter/$select/$expand. No $skip -> page via Prefer: odata.maxpagesize header + @odata.nextLink/$skiptoken; default cap 5000 rows. Lookups set via @odata.bind. Auth: Azure AD OAuth2, resource = org URL."
+    },
+    "datadog": {
+      "connectorKey": "uipath-datadog-datadog",
+      "docsUrl": "https://docs.datadoghq.com/api/latest/",
+      "dynamic": false,
+      "notes": "Site-specific host: api.datadoghq.com (US1), api.us3/us5.datadoghq.com, api.datadoghq.eu (EU1), api.ap1/ap2.datadoghq.com, api.ddog-gov.com. Wrong site 403s. Auth headers: DD-API-KEY (all), DD-APPLICATION-KEY (most read/scoped endpoints). Versioned paths /api/v1 and /api/v2 coexist. Pagination via page[cursor]/cursor params on v2."
+    },
+    "netsuite": {
+      "connectorKey": "uipath-oracle-netsuite",
+      "docsUrl": "https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/book_1559132836.html",
+      "dynamic": true,
+      "notes": "SuiteTalk REST. Base https://<ACCOUNT_ID>.suitetalk.api.netsuite.com/services/rest. Records at /record/v1/<recordType>; SuiteQL at /query/v1/suiteql (POST, body {\"q\":...}, set Prefer: transient). Per-account custom fields prefixed custentity_/custbody_; custom record types custrecord_/customrecord_. Pagination limit/offset query params (max 1000/page), next via links. Auth: OAuth2 or token-based (TBA). Record schemas at system.netsuite.com REST_API_Browser."
+    },
+    "snowflake": {
+      "connectorKey": "uipath-snowflake-snowflake",
+      "docsUrl": "https://docs.snowflake.com/en/developer-guide/sql-api/reference",
+      "dynamic": true,
+      "notes": "Account-specific host https://<account_identifier>.snowflakecomputing.com/api/v2. POST /statements to run SQL; returns 202 + statementHandle if not finished -> poll GET /statements/{handle} until 200; cancel via POST /statements/{handle}/cancel. Async via ?async=true. Auth: Bearer JWT(key-pair)/OAuth. Large results partitioned. Tables/columns are tenant-defined -> schema not inferable from docs."
+    },
+    "github": {
+      "connectorKey": "uipath-microsoft-github",
+      "docsUrl": "https://docs.github.com/en/rest",
+      "dynamic": false,
+      "notes": "Base https://api.github.com. Set Accept: application/vnd.github+json and X-GitHub-Api-Version (default 2022-11-28). Pagination via Link header (rel=next/last) + per_page/page query params, NOT OData. No $filter; resource-specific query params. Fixed schema."
+    },
+    "workday": {
+      "connectorKey": "uipath-workday-workday",
+      "docsUrl": "https://community.workday.com/sites/default/files/file-hosting/restapi/",
+      "dynamic": true,
+      "notes": "Tenant-specific base host: https://{host}.workday.com/ccx/api/{service}/{version}/{tenant}/{endpoint} (e.g. .../api/wql/v1/{tenant}/data). Per-service versioning (workers v6, common v1, wql v1). WQL endpoint runs read-only queries; RaaS exposes custom reports. Pagination: limit (max 100) + offset. Auth: OAuth2 bearer, API client scoped per service. Custom fields/objects + report data sources are tenant-defined -> discover via tenant API explorer, not generic docs."
+    },
+    "azure": {
+      "connectorKey": "uipath-microsoft-azure",
+      "docsUrl": "https://learn.microsoft.com/en-us/rest/api/resources/",
+      "dynamic": false,
+      "notes": "Azure Resource Manager REST. Base host https://management.azure.com. Every request requires ?api-version=YYYY-MM-DD (per-resource-provider; omitting it 400s). Auth: Bearer OAuth2 (AAD, scope https://management.azure.com/.default). Paginate via nextLink in response body. Fixed schema per resource provider."
+    },
+    "azuread": {
+      "connectorKey": "uipath-microsoft-azureactivedirectory",
+      "docsUrl": "https://learn.microsoft.com/en-us/graph/api/overview?view=graph-rest-1.0",
+      "dynamic": true,
+      "notes": "Microsoft Graph. Base https://graph.microsoft.com/v1.0 (use v1.0, not beta, for prod). Auth: Bearer OAuth2 (scope https://graph.microsoft.com/.default). Paginate via @odata.nextLink. Directory extension attributes + open/schema extensions are tenant-specific custom fields not in docs; query with $select. Advanced filters need ConsistencyLevel:eventual header + $count."
+    },
+    "aws": {
+      "connectorKey": "uipath-amazon-webservices",
+      "docsUrl": "https://docs.aws.amazon.com/",
+      "dynamic": false,
+      "notes": "No single REST API; per-service endpoints host https://<service>.<region>.amazonaws.com (e.g. ec2.us-east-1.amazonaws.com). All requests require SigV4 signing (canonical request + Authorization header scoped to service+region+date; clock skew >5min rejected). Many services are query/JSON-RPC, not pure REST. Pagination via NextToken/marker per service. SigV4 ref: https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html"
+    },
+    "box": {
+      "connectorKey": "uipath-box-box",
+      "docsUrl": "https://developer.box.com/reference/",
+      "dynamic": true,
+      "notes": "Box Content API. Base https://api.box.com/2.0; uploads use https://upload.box.com/api/2.0. Marker-based pagination: marker + limit query params, next_marker in response (null = done); some endpoints offset-based, force marker with usemarker=true. Custom fields live in tenant-defined metadata templates (scope enterprise_<id>, templateKey); query via POST /metadata_queries/execute_read. Auth: OAuth2."
+    },
+    "sapodata": {
+      "connectorKey": "uipath-sap-odata",
+      "docsUrl": "https://api.sap.com/content-type/API/apis/ODATA",
+      "dynamic": true,
+      "notes": "SAP S/4HANA + C4C OData v2 (not v4). Service path /sap/opc/odata/sap/<SERVICE>/ varies by tenant-activated service. Tenant custom OData services + Z-fields/custom entities not in standard docs. $filter (OData v2 operators eq/ne/gt/substringof), $select/$expand/$orderby; pagination $top/$skip + $inlinecount=allpages or __next link. CSRF: GET with X-CSRF-Token: Fetch before writes. Auth: Basic or OAuth2."
+    },
+    "vertex": {
+      "connectorKey": "uipath-google-vertex",
+      "docsUrl": "https://cloud.google.com/vertex-ai/docs/reference/rest",
+      "dynamic": false,
+      "notes": "Regional host {LOCATION}-aiplatform.googleapis.com (e.g. us-central1-); 'global' uses aiplatform.googleapis.com. Versions v1 (stable) / v1beta1. Generative: POST projects/{p}/locations/{l}/publishers/google/models/{model}:generateContent (streamGenerateContent for streaming). Custom endpoints: endpoints/{id}:predict. countTokens/computeTokens separate. Body schema fixed per model."
+    },
+    "agentforce": {
+      "connectorKey": "uipath-salesforce-agent",
+      "docsUrl": "https://developer.salesforce.com/docs/ai/agentforce/references/agent-api",
+      "dynamic": true,
+      "notes": "Host https://api.salesforce.com (gov: api.gov.salesforce.com). Flow: start session (needs per-org AGENT_ID), POST message to session, end session. Auth: OAuth client-credentials via external client app (consumer key/secret + my-domain) -> Bearer token. AGENT_ID and Flows are per-org -> not knowable from docs."
+    },
+    "databricks": {
+      "connectorKey": "uipath-databricks-databricks",
+      "docsUrl": "https://docs.databricks.com/api/workspace/servingendpoints/query",
+      "dynamic": true,
+      "notes": "Workspace-specific host https://<workspace-host>/serving-endpoints/{name}/invocations (POST). Endpoint {name} (agent/model) is workspace-defined -> not knowable from docs. Auth: Bearer PAT/OAuth. Body shape depends on endpoint type: chat/completions/embeddings for foundation/external models (extra_params), dataframe_records/dataframe_split for custom models."
+    },
+    "snowflakecortex": {
+      "connectorKey": "uipath-snowflake-cortex",
+      "docsUrl": "https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-rest-api",
+      "dynamic": true,
+      "notes": "Account-specific host https://<account_identifier>.snowflakecomputing.com/api/v2/cortex. OpenAI-compatible POST /v1/chat/completions (also Anthropic-style /v1/messages). Auth: Bearer JWT/OAuth/PAT. Streaming via SSE (\"stream\": true). Model availability region-gated; host is per-account."
+    },
+    "powerautomate": {
+      "connectorKey": "uipath-microsoft-powerautomate",
+      "docsUrl": "https://learn.microsoft.com/en-us/rest/api/power-platform/",
+      "dynamic": false,
+      "notes": "Power Platform API. Base https://api.powerplatform.com/{namespace}/{resource}; mandatory api-version query param (e.g. 2024-10-01). Environment-scoped resources need environmentId in path; tenant inferred from bearer token. Flows stored in Dataverse (Workflow table) -> alt access via Dataverse Web API."
+    }
+  }
+}

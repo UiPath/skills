@@ -11,9 +11,10 @@ run_limits:
   expected_turns: 5
 
 initial_prompt: |
-  My personal access token is being rejected with 403 when I call
-  the Orchestrator API to list folders. The token was working last
-  week. How do I check what's wrong?
+  One of my personal access tokens might be expired or have the wrong
+  scopes — it's getting 403 on Orchestrator folder listings. List my
+  PATs using the `uip` CLI so I can check their expiration dates and
+  scope coverage.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be

@@ -1,0 +1,114 @@
+task_id: skill-platform-is-testmanager-execution-results
+description: >
+  Coverage test: agent uses the uipath-platform skill to exercise every UiPath
+  Test Manager connector activity related to test executions and results through
+  the `uip is` surface — get/delete a test execution, read its test case logs,
+  read a test case log, robot logs, assertions, download an assertion, and read
+  test steps and step logs. Offline (command-shape) grading; runs in CI without a
+  live connection.
+tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
+
+run_limits:
+  expected_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+initial_prompt: |
+  Using the UiPath Test Manager Integration Service connector to exercise the full operation set — perform each of these:
+
+  - Get a test execution
+  - Delete a test execution
+  - Get the test case logs of a test execution
+  - Get a test case log
+  - Get robot logs
+  - Get assertions
+  - Download an assertion
+  - Get test steps
+  - Get test step logs
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Get Test Execution (`... run get uipath-uipath-testmanager TestExecution`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestExecution'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Delete Test Execution (`... run delete uipath-uipath-testmanager TestExecution`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestExecution'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Test Case Logs of Test Execution (`... run list uipath-uipath-testmanager GetTestCaseLogsOfTestExecution`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetTestCaseLogsOfTestExecution'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Test Case Log (`... run get uipath-uipath-testmanager TestCaseLog`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCaseLog'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Robot Logs (`... run list uipath-uipath-testmanager GetRobotLogs`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetRobotLogs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Assertions (`... run list uipath-uipath-testmanager GetAssertions`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAssertions'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Download Assertion (`... run get uipath-uipath-testmanager DownloadAssertion`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?DownloadAssertion'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Test Steps (`... run list uipath-uipath-testmanager GetTestSteps`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetTestSteps'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Get Test Step Logs (`... run list uipath-uipath-testmanager GetTestStepLogs`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetTestStepLogs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Used --output json on resource commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0

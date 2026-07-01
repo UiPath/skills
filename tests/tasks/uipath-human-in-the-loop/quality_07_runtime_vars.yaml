@@ -27,7 +27,7 @@ success_criteria:
     description: "HITL node with specified ID is present in the flow file"
     path: "ReviewAndRoute/ReviewAndRoute/ReviewAndRoute.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 1.5
     pass_threshold: 1.0
 

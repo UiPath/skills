@@ -1,0 +1,84 @@
+task_id: skill-review-agents-lowcode-guardrail-content-safety
+description: >
+  Integration test for uipath-review on a low-code marketing-copywriter agent
+  that generates open-ended promotional content but configures no content-safety
+  guardrail. The reviewer should apply guardrails-review.md Recommend Mode
+  (catalog-driven) and emit `LC_GUARDRAIL_RECOMMENDED` naming the content-safety
+  case at Info — generically (do not name a platform-documented validator unless
+  already present). Non-gating (integration tag). Needs the authed CLI.
+tags: [uipath-review, integration, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1200
+  task_timeout: 1500
+  max_turns: 40
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_guardrail_content_safety/inject_guardrail_content_safety.py"
+    timeout: 30
+
+initial_prompt: |
+  A low-code UiPath agent project exists at `ReviewSol/SampleAgent`
+  inside the solution `ReviewSol`. Review the agent project and produce
+  a structured review report with Critical / Warning / Info findings.
+
+  This is a read-only review. Do NOT modify, create, or delete any
+  files inside `ReviewSol/`. Do NOT scaffold a new project. Do NOT
+  ask for approval, confirmation, or feedback.
+
+  Important — produce the review in TWO places, identical content:
+
+  1. As the chat output (the normal review surface), AND
+  2. Save the SAME report to a file at `./_review_report.md` at the
+     sandbox root (NOT inside `ReviewSol/`).
+
+  Writing the file copy first, before producing the chat report, is
+  encouraged — that way the file persists even if the chat response is
+  cut off. The file is the source of truth the test harness will check.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_executed
+    description: "Ran the review CLI first (Step 2.5a)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+review'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Fetched the live guardrail catalog (guardrails-review.md Step 0)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+catalog'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review report recommends a content-safety guardrail (LC_GUARDRAIL_RECOMMENDED, content-safety flavor)"
+    command: "python3 $TASK_DIR/check_lowcode_review_guardrail_content_safety.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

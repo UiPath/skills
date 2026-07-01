@@ -17,19 +17,26 @@ run_limits:
 pre_run:
   - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_llm_judges/_fixtures/intent-classifier ."
     timeout: 10
+  - command: "bash -c 'cd intent-classifier && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
+    timeout: 300
 
 initial_prompt: |
-  I want to test that this UiPath coded agent works as it should.
-  Write a couple evaluations backed by LLMs if possible: 
-  one that checks the answer the agent gives back and one that checks
-  the path it took to get there.
-  Save the eval results to `eval-results.json`.
-  
+  I've got a uipath coded agent in this project and I want to evaluate it.
+  Can you set up a couple of LLM-backed evals - one that judges the answer
+  it gives back, and one that judges the path it took to get there - and
+  run them? Save the results to eval-results.json next to pyproject.toml.
 
-  Don't publish, upload, or deploy. Just work through it to the end in
-  one go — only stop if you hit a real blocker.
+  Don't publish, upload, or deploy. Just work through it to the end in one
+  go - only stop if you hit a real blocker.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent ran the eval suite with --no-report"
     tool_name: "Bash"

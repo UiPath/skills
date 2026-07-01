@@ -17,11 +17,31 @@
 //   resources: comma-separated release names, or a numeric folder ID, for the
 //              optional solution-resource liveness ping (requires uip CLI auth).
 import BpmnModdle from "bpmn-moddle";
+import sax from "sax";
 import descriptor from "./uipath-moddle.v1.json" with { type: "json" };
 import { readFileSync, existsSync } from "fs";
 import { execFileSync } from "child_process";
 import { buildModel, collectKnownVariableIds, allNodes, allEdges } from "./model.mjs";
 import { validateDiagram, validateVariableExistence, validateVariableNotSet, SEVERITY } from "./rules.mjs";
+
+// Strict XML well-formedness check via sax's strict mode. Returns the first
+// error message (with a line number) or null when the document is well-formed.
+function strictXmlError(xml) {
+  const parser = sax.parser(true, {});
+  let error = null;
+  parser.onerror = (e) => {
+    if (!error) {
+      const line = (parser.line ?? 0) + 1;
+      error = `${e.message.split("\n")[0]} (near line ${line})`;
+    }
+  };
+  try {
+    parser.write(xml).close();
+  } catch (e) {
+    if (!error) error = String(e.message ?? e).split("\n")[0];
+  }
+  return error;
+}
 
 // --- uip CLI resolution (cached) — used only for the liveness-ping extra. ---
 let _uipBin;
@@ -66,6 +86,20 @@ if (!file) {
 }
 
 const xml = readFileSync(file, "utf8");
+
+// Strict XML well-formedness gate. bpmn-moddle's SAX parser (saxen) is lenient:
+// it accepts unescaped `&`/`<`, `--` inside comments, and other malformed input
+// that strict parsers — and the Studio Web canvas import — reject. A validator
+// that is more permissive than the real import gives false confidence, so parse
+// strictly first and refuse anything the import would refuse.
+{
+  const err = strictXmlError(xml);
+  if (err) {
+    console.error(`WELL-FORMEDNESS ERROR: ${err}`);
+    process.exit(2);
+  }
+}
+
 const moddle = new BpmnModdle({ uipath: descriptor });
 
 let definitions;

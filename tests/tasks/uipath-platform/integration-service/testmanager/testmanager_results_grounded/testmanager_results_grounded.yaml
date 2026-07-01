@@ -1,0 +1,55 @@
+# PROTOTYPE — data-grounded RESULTS pattern (vs invocation-only). skip:true.
+# Unlike CRUD, results activities (Get Assertions / Robot Logs / Test Steps /
+# Test Case Logs) can't self-seed — they read byproducts of a prior test
+# EXECUTION. So this needs a MAINTAINED FIXTURE: a stable, completed test
+# execution with known assertions in the eval tenant.
+# TODO before un-skipping:
+#   1. Pick a stable finished execution in the eval tenant (uip tm executions list)
+#      that has assertions; put its ExecutionId in <FIXTURE_EXECUTION_ID> below.
+#   2. Set EXPECTED_MIN in check.py to that execution's real assertion count.
+# This is the reusable pattern for Get Assertions / Download Assertion / Get Robot
+# Logs / Get Test Steps / Get Test Step Logs / Get Test Case Logs — swap the object
+# + the expected fixture value.
+task_id: skill-platform-is-testmanager-results-grounded
+description: >
+  Data-grounded coverage: agent retrieves the assertions for a known seeded test
+  execution via the uipath-uipath-testmanager connector and records them. Graded
+  on the agent invoking Get Assertions AND on the returned assertion count meeting
+  the fixture's expected minimum — i.e. it fetched real results, not just called
+  the activity. Reusable pattern for the read/results activities (assertions,
+  robot logs, test steps, test case logs).
+tags: [uipath-platform, integration, integration-service, test-manager, resources, execute]
+skip: true
+
+sandbox:
+  driver: tempdir
+  python: {}
+  node: {}
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  Using the UiPath Test Manager Integration Service connector, retrieve the assertions for
+  test execution `<FIXTURE_EXECUTION_ID>`. Record result.json with `execution_id` and an
+  `assertions` array containing what the connector returned.
+
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent retrieved assertions (`uip is resources run list uipath-uipath-testmanager GetAssertions`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+uipath-uipath-testmanager\s+GetAssertions'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data-grounded: returned assertion count meets the fixture's expected minimum (real results fetched)"
+    command: "python3 $TASK_DIR/check.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

@@ -59,6 +59,13 @@ def module_constants(tree: ast.Module) -> dict[str, object]:
             for tgt in node.targets:
                 if isinstance(tgt, ast.Name):
                     consts[tgt.id] = node.value.value
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.target, ast.Name)
+        ):
+            # Annotated constant, e.g. ``APP_NAME: str = "RefundReview"``.
+            consts[node.target.id] = node.value.value
     return consts
 
 

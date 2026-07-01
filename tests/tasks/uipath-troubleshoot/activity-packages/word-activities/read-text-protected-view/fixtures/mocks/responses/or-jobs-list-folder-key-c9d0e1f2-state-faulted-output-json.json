@@ -1,0 +1,26 @@
+{
+  "Result": "Success",
+  "Code": "JobList",
+  "Data": [
+    {
+      "Key": "d0e1f2a3-b4c5-4204-c061-25b6c7d8e9f0",
+      "State": "Faulted",
+      "ProcessName": "InboundDocReader",
+      "ReleaseKey": "",
+      "Source": "Queue",
+      "Type": "Unattended",
+      "Priority": "Normal",
+      "Machine": "MOCK-HOST",
+      "MachineKey": "",
+      "StartTime": "2026-06-16T11:02:02.540Z",
+      "EndTime": "2026-06-16T11:02:06.980Z",
+      "CreationTime": "2026-06-16T11:02:02.320Z"
+    }
+  ],
+  "Pagination": {
+    "Returned": 1,
+    "Limit": 50,
+    "Offset": 0,
+    "HasMore": false
+  }
+}

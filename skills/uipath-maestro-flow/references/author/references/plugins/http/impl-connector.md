@@ -40,7 +40,10 @@ Record the chosen connection's `Id` and `FolderKey` — Step 3 needs both.
 
 ## Step 3 — Configure the node
 
-> **Find missing values first.** Before composing `url` / `query` / `body`, resolve any values the agent doesn't have (IDs from names, required body fields, response shape, …). See [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md).
+> **STOP — open the platform skill before configuring.** Before composing `url` / `query` / `body`, read [/uipath:uipath-platform — http-request.md](../../../../../../uipath-platform/references/integration-service/http-request.md) and resolve every value you don't already have (IDs from names, required body fields, endpoint path, response shape).
+>
+> - **If the target connector is listed in that skill's `vendor-docs-registry.json`:** you MUST follow its **Step 0 (Ground Against the Vendor's API Docs)** — read the `docsUrl` + `notes` and confirm the exact endpoint with the `http-request` probe before running `node configure`. Pass the endpoint path verbatim: vendor method names can contain literal dots (Slack ``chat.postMessage`) — the dot is part of the path segment.
+> - **If the connector is NOT listed:** the registry-grounding step does not apply — resolve missing values via the `http-request` probe / vendor docs as usual.
 
 ```bash
 uip maestro flow node configure <ProjectName>.flow <nodeId> \
