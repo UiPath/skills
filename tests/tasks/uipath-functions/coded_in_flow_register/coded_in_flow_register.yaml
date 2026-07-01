@@ -1,13 +1,16 @@
-# DISABLED until #1144 merges (Coded Function moving to uipath-functions skill).
-task_id: skill-agent-coded-in-flow-register
+task_id: skill-functions-in-flow-register
 description: >
   Smoke test: scaffold a UiPath solution containing a Flow project and a
-  sibling Coded Function agent project, then confirm the agent is registered
-  as a local resource in the solution. Verifies `uip solution project add`
-  registers the project and writes a process resource file with a `resource.key`
-  UUID under `resources/solution_folder/process/`, and that
-  `uip solution resources list` surfaces it as a Local resource.
-tags: [uipath-agents, coded, mode:build, lifecycle:generate, resource, feature:registry]
+  sibling Coded Function project, then confirm the function is registered and
+  synced as a local resource in the solution. Two distinct steps verified:
+  (1) the function PROJECT is registered in the .uipx Projects manifest —
+  written either by explicit `uip solution project add` or by the
+  auto-registration `uip functions init` performs in a parent solution; and
+  (2) syncing resources (`uip solution resources refresh`, or a pack) mints a
+  process resource file with a `resource.key` UUID under
+  `resources/solution_folder/process/` and surfaces it via
+  `uip solution resources list` as a Local resource.
+tags: [uipath-functions, smoke, mode:build, lifecycle:generate, resource, feature:registry]
 
 run_limits:
   expected_turns: 43
@@ -16,11 +19,11 @@ run_limits:
 
 initial_prompt: |
   Create a UiPath solution "ClaimsSol" containing a Flow project
-  "ClaimsFlow" and a sibling Coded Function agent "ClassifierAgent"
-  (Python, simple stub — no LLM call needed, just Input/Output Pydantic
-  models). Register the coded agent in the solution and confirm it is
-  registered as a local resource using `uip solution resources list`.
-  When confirming local registration, use structured CLI output:
+  "ClaimsFlow" and a sibling Coded Function "ClassifierAgent" in its own
+  `ClassifierAgent/` subfolder (Python, simple stub — no LLM call needed,
+  just Input/Output Pydantic models). Register the function in the solution,
+  then sync solution resources so it is tracked as a Local resource, and
+  confirm it appears with structured CLI output:
   `uip solution resources list ... --output json`.
 
   Use the Coded Function framework (package: `uipath`) — NOT LangGraph,
@@ -60,14 +63,6 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent registered the coded agent project in the solution (uip solution project add or import)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+solution\s+project\s+(add|import)'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
     description: "Agent confirmed local registration with uip solution resources list"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+resources\s+list'
@@ -96,7 +91,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Local resource file (resource.key) was minted by `uip solution project add` (accepts agent/ or function/ subdirectory)"
+    description: "Local resource file (resource.key) was minted during solution registration — explicit `uip solution project add` or `uip functions init` auto-registration (accepts agent/ or function/ subdirectory)"
     command: |
       python3 -c "
       import os, json, sys

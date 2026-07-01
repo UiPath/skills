@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
-"""File-attachment-input coded-agent check.
+"""File-attachment-input Coded Function check.
 
-Verifies the artifacts a coded agent accepting a `job-attachment` input
-MUST produce, per `references/coded/capabilities/file-attachments.md`:
+Verifies the artifacts a Coded Function accepting a `job-attachment` input
+MUST produce, per the uipath-functions skill ("File attachment inputs"):
 
   1. `attachment-agent/pyproject.toml` has `[project]` + `authors` and
-     NO `[build-system]` section (Critical Rule C1).
+     NO `[build-system]` section.
   2. `attachment-agent/main.py` imports `Attachment` from
      `uipath.platform.attachments` and declares an `Input` model with an
      `Attachment`-typed field.
   3. `attachment-agent/main.py` has no module-level UiPath* client
-     construction (Critical Rule C4 — lazy init).
-  4. `attachment-agent/main.py` implements the local-testing fallback —
-     detects local vs. platform via `UiPathConfig.job_key` and reads
-     bytes from `UIPATH_LOCAL_ATTACHMENT` when running locally.
-  5. `attachment-agent/entry-points.json` carries
+     construction (lazy init).
+  4. `attachment-agent/entry-points.json` carries
      `x-uipath-resource-kind: JobAttachment` somewhere in the input
-     schema — the load-bearing artifact proving `init` understood the
-     `Attachment` type so Studio Web / Orchestrator render a file
-     picker for that field.
+     schema — the load-bearing artifact proving `uip functions init`
+     understood the `Attachment` type so Studio Web / Orchestrator render
+     a file picker for that field.
 
 Exits 0 on PASS, with a `FAIL: ...` message on the first violation.
 """
@@ -30,7 +27,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.ast_lazy_init_check import find_module_level_llm_clients  # noqa: E402
 from _shared.project_root import find_project_root  # noqa: E402
 
@@ -62,8 +59,8 @@ def check_pyproject() -> None:
         sys.exit("FAIL: pyproject.toml has no [project] section")
     if "authors" not in text:
         sys.exit(
-            "FAIL: pyproject.toml has no `authors` entry — `uip codedagent "
-            "deploy` will reject the package."
+            "FAIL: pyproject.toml has no `authors` entry — `uip functions "
+            "pack` will reject the package."
         )
     print("OK: pyproject.toml has [project], `authors`, and no [build-system]")
 
@@ -89,24 +86,6 @@ def check_main_py() -> None:
     if violations:
         sys.exit("FAIL: " + " | ".join(violations))
     print("OK: main.py has no module-level UiPath* construction")
-    if "UiPathConfig.job_key" not in text:
-        sys.exit(
-            "FAIL: main.py does not branch on `UiPathConfig.job_key` — the "
-            "local-testing fallback is required so `uip codedagent run` can "
-            "exercise attachment logic without a platform job."
-        )
-    if "UIPATH_LOCAL_ATTACHMENT" not in text:
-        sys.exit(
-            "FAIL: main.py does not read `UIPATH_LOCAL_ATTACHMENT` — the "
-            "env-var fallback supplies attachment bytes on local runs."
-        )
-    print("OK: main.py implements the local-testing fallback")
-    if ".full_name" not in text:
-        sys.exit(
-            "FAIL: main.py does not access `.full_name` — `Attachment` "
-            "fields are snake_case in Python."
-        )
-    print("OK: main.py uses snake_case Attachment accessors")
 
 
 def check_entry_points() -> None:
@@ -115,7 +94,7 @@ def check_entry_points() -> None:
     if "JobAttachment" not in raw:
         sys.exit(
             "FAIL: entry-points.json does not contain "
-            "`x-uipath-resource-kind: JobAttachment` — `uip codedagent init` "
+            "`x-uipath-resource-kind: JobAttachment` — `uip functions init` "
             "did not emit the job-attachment schema."
         )
     print(
