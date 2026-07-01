@@ -1002,15 +1002,15 @@ Use when adding input/output safeguards (PII detection, harmful content blocking
 
 > **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
 >
-> **MANDATORY: Run `uip agent guardrails list --output json` before writing any guardrail**, regardless of type. The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation.
+> **MANDATORY for `builtInValidator` guardrails: run `uip agent guardrails list --output json` before writing one.** The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation. **Custom guardrails (`$guardrailType: "custom"`) do NOT need this step** — their rules (word/number/boolean/always), operators, and actions are fully specified here in this reference and use no validator catalog. Only run `guardrails list` for a custom guardrail if you are unsure whether the request should instead use a built-in validator.
 
-### Step 0 — Fetch available validators (mandatory for ALL guardrail types)
+### Step 0 — Fetch available validators (mandatory for `builtInValidator` guardrails; skip for custom-only)
 
 ```bash
 uip agent guardrails list --output json
 ```
 
-Build a lookup of `{ validatorId: status }` from `Data`. Required for both custom and built-in guardrails — confirms the correct parameter shapes and scope/stage constraints for the guardrail you are about to write.
+Build a lookup of `{ validatorId: status }` from `Data`. Required before adding any built-in validator — confirms the correct parameter shapes and scope/stage constraints. Skip this step when the guardrail is purely custom (deterministic rules); the validator catalog does not apply to custom rules.
 
 ### Step 1 — Verify existing agent
 
