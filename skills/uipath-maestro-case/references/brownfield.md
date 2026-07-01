@@ -42,7 +42,7 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 
 | Edit | Operation + recipe |
 |---|---|
-| Add / insert a stage | [case-editing-operations.md § Add a node](case-editing-operations.md#add-a-node-trigger--stage--exceptionstage) + [plugins/stages/impl-json.md](plugins/stages/impl-json.md). Every regular stage needs ≥1 entry condition (Step 10). |
+| Add / insert a stage | [case-editing-operations.md § Add a node](case-editing-operations.md#add-a-node-trigger--stage) + [plugins/stages/impl-json.md](plugins/stages/impl-json.md). Every regular stage needs ≥1 entry condition (Step 10). |
 | Insert a stage between two existing stages | [case-editing-operations.md § Insert a stage between two existing stages](case-editing-operations.md#insert-a-stage-between-two-existing-stages) |
 | Add a task to a stage | [case-editing-operations.md § Add a task to a stage](case-editing-operations.md#add-a-task-to-a-stage) + the task type's [plugins/tasks/<type>/impl-json.md](plugins/tasks/) |
 | Bind / change a task input | [case-editing-operations.md § Bind an input](case-editing-operations.md#bind-an-input) + [bindings-and-expressions.md](bindings-and-expressions.md) |
