@@ -10,7 +10,7 @@ Activities from the `UiPath.SAP.BAPI.Activities` package for calling SAP BAPIs /
 
 Failures surface as plain framework/connector exceptions carrying a fixed resource string — there is no single SAP-specific wrapper for all of them:
 
-- `System.Exception` with a connection resource string (`Connection could not be created.`, `Cannot create sap connection, connection info params are not set`).
+- `SAP.Middleware.Connector.*` NCo exceptions surfaced via `SapConnectionService.Connect` — `RfcConfigurationException` (config/params, e.g. `Not any kind of host is specified`), `RfcCommunicationException` (unreachable), `RfcLogonException` (credentials). Sometimes a UiPath-layer `System.Exception` with a resource string (`Connection could not be created.`, `Cannot create sap connection, connection info params are not set`).
 - `UiPath.SAP.BAPI.Utilities.SapActivityException` for invalid advanced parameters.
 - `UiPath.SAP.BAPI.SapBapiExceptions.UnSupportedBapiException` (carries an `ErrorCode`) when the BAPI has nested complex types the activity can't marshal.
 - `System.TimeoutException` (often wrapping an `RfcCommunicationException`) when the RFC call/connection times out.
@@ -23,7 +23,7 @@ Failures surface as plain framework/connector exceptions carrying a fixed resour
 
 ## Common Failure Patterns
 
-- **Connection / logon failure** — `Connection could not be created.`, `Cannot create sap connection, connection info params are not set`, `Missing mandatory field: <field> for connection`, `Advanced Parameters has invalid parameter <param>. Connection cannot be established.`, or `System.TimeoutException`. See [sap-connection-failed.md](./playbooks/sap-connection-failed.md).
+- **Connection / logon failure** — NCo `RfcConfigurationException` (e.g. `Not any kind of host is specified`) / `RfcCommunicationException` / `RfcLogonException`, or UiPath-layer `Connection could not be created.` / `Cannot create sap connection, connection info params are not set` / `Missing mandatory field: <field> for connection` / `Advanced Parameters has invalid parameter <param>...` (`SapActivityException`), or `System.TimeoutException`. See [sap-connection-failed.md](./playbooks/sap-connection-failed.md).
 - **BAPI not found / not named** — `Function: <name> could not be created` (the BAPI doesn't exist in the connected system or the user can't access it) or `BAPI name is null or empty`. See [sap-bapi-not-found.md](./playbooks/sap-bapi-not-found.md).
 - **Unsupported BAPI** — `Unsupported BAPI. Contains nested complex types.` (`UnSupportedBapiException`). See [sap-unsupported-bapi.md](./playbooks/sap-unsupported-bapi.md).
 

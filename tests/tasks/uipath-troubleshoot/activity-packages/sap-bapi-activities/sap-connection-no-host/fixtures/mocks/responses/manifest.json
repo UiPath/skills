@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: a UiPath.SAP.BAPI.Activities SAP Application Scope faults opening the RFC connection with SAP.Middleware.Connector.RfcConfigurationException 'Not any kind of host is specified' (from RfcDestination.CheckConfiguration via SapConnectionService.Connect) because no connection parameters were configured. Signature captured verbatim from a live uip rpa run (no SAP system needed - fails at config before any network call); workflow/process names neutralized. The agent must read the connection-config signature as the cause (missing connection params/server), before any BAPI, not blame the BAPI or a live SAP outage. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e --state Faulted",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs get 4f8a1c60-7e2d-4b93-a5c1-6d3e9f0a2b40",
+      "file": "or-jobs-get.json"
+    },
+    {
+      "match": "or jobs logs 4f8a1c60-7e2d-4b93-a5c1-6d3e9f0a2b40 --level Error",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs logs 4f8a1c60-7e2d-4b93-a5c1-6d3e9f0a2b40",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs traces 4f8a1c60-7e2d-4b93-a5c1-6d3e9f0a2b40",
+      "file": "or-jobs-traces.json"
+    },
+    {
+      "match": "traces spans get --job-key 4f8a1c60-7e2d-4b93-a5c1-6d3e9f0a2b40",
+      "file": "or-traces-spans.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in Shared to find the failing job."
+    },
+    {
+      "pattern": "or jobs get 4f8a1c60-7e2d-4b93-a5c1-6d3e9f0a2b40",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the RfcConfigurationException 'Not any kind of host is specified' connection-config signature."
+    }
+  ]
+}
