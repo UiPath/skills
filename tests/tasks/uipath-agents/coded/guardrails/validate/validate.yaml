@@ -20,9 +20,10 @@ sandbox:
       path: ../_fixtures/MisplacedPromptAttacksAgent
 
 initial_prompt: |
-  I have a uipath coded agent in graph.py. I added a guardrail recently but
-  I'm not sure I put it in the right place. Can you make sure it's configured
-  correctly and fix it if it isn't?
+  I've got a UiPath coded agent in graph.py and I added a UiPath guardrail to
+  it recently. I'm not confident it's set up the way UiPath expects. I might
+  have attached it to the wrong thing. Can you check it against how UiPath
+  guardrails are actually meant to be configured and fix it if it's wrong?
 
   Do NOT publish, upload, or deploy. Complete the task end-to-end. Only stop
   if there is a critical blocker you cannot resolve.
