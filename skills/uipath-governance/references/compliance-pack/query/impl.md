@@ -1,5 +1,7 @@
 # Query — Control and Clause Lookup
 
+**Preview gate:** Compliance Standards is a preview feature. Append the disclaimer to user-facing output; on any compliance-packs **403**, stop (org not enrolled). See [preview-gate.md](../preview-gate.md).
+
 Pure information — no state commands, no mutations. Uses `catalog get` data only.
 
 ## When to use
@@ -64,6 +66,8 @@ Current posture on <tenantName>: <inPlaceCount> / <totalCount> settings Applied
 **Terminology:** "settings" for configured items. Plain-English clause name in headline, clause ID as secondary reference in parentheses.
 
 ## Auth failure handling
+
+**403 / Forbidden** (not 401) → org not enrolled in the Compliance Standards preview; stop and show the opt-in message. See [preview-gate.md](../preview-gate.md).
 
 If `catalog get` returns an auth error (401 / `RetryWillNotFix`):
 1. Report the error to the user.

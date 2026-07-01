@@ -1,5 +1,7 @@
 # Catalog — Pack Discovery and Detail
 
+**Preview gate:** Compliance Standards is a preview feature. Append the disclaimer to user-facing output; on any compliance-packs **403**, stop (org not enrolled). See [preview-gate.md](../preview-gate.md).
+
 ## Discover available packs
 
 ```bash

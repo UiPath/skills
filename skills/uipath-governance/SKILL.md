@@ -52,8 +52,9 @@ Activate on **any** governance / policy / rule intent — even when the user did
 4. **Each mechanic owns its own Critical Rules.** Once routed, follow the branch's rules — do not relax them from this top level.
 5. **Never apply compliance settings without posture analysis + user confirmation.** Run posture analysis first, show the plan (summary + detail), require `y` before any settings are configured.
 6. **Always show a receipt after any apply.** Present the post-apply report (settings configured, manual steps needed, Applied by / date) so the user has a record. No local file write is needed — the CLI and UiPath platform are the source of truth.
-7. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
-8. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
+7. **Compliance Standards is a preview feature — gate every compliance-pack flow.** Append the preview disclaimer to user-facing compliance-standard responses, and on any `uip gov compliance-packs …` call returning **HTTP 403 / Forbidden**, stop immediately (do not retry, run no further compliance commands) and tell the user the feature requires enrolling in the preview program. Exact wording + placement in [`references/compliance-pack/preview-gate.md`](./references/compliance-pack/preview-gate.md). A **403** is preview-not-enabled; a **401** is a normal login failure — do NOT conflate them.
+8. **Always `uip login` before any `uip gov …` command.** `evaluate` (Access) additionally requires tenant-scoped login — see [`access-policy-overview-guide.md` § Critical Rules](./references/access-policy/access-policy-overview-guide.md#critical-rules).
+9. **Never fabricate UUIDs.** Resolve every named user / group / process / agent / flow / robot / tenant via the relevant branch's lookups.
 
 ## Workflow
 
@@ -107,6 +108,7 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 | **Apply specific controls / clauses** | [`references/compliance-pack/partial-apply/planning.md`](./references/compliance-pack/partial-apply/planning.md) |
 | **Remove compliance standard settings** | [`references/compliance-pack/disable/impl.md`](./references/compliance-pack/disable/impl.md) |
 | **Query — what does a clause / control recommend?** | [`references/compliance-pack/query/impl.md`](./references/compliance-pack/query/impl.md) |
+| **Preview disclaimer + 403 opt-in gate (all compliance flows)** | [`references/compliance-pack/preview-gate.md`](./references/compliance-pack/preview-gate.md) |
 
 ## Anti-patterns
 

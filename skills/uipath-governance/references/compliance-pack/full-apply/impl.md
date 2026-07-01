@@ -1,5 +1,7 @@
 # Full Apply — Configure All Recommended Settings
 
+**Preview gate:** Compliance Standards is a preview feature. Append the disclaimer to user-facing output; on any compliance-packs **403**, stop (org not enrolled). See [preview-gate.md](../preview-gate.md).
+
 Applies the entire compliance standard in one command. Backend creates and deploys all recommended settings.
 
 **Note:** This configures settings recommended by ISO 42001. Your organization's auditor determines compliance status — UiPath does not certify compliance.
@@ -155,7 +157,8 @@ Note: compliance status is determined by your auditor, not this tool.
 
 | Error | Action |
 |---|---|
-| `state enable` → 4xx | Halt. Report error verbatim. Do NOT retry. |
+| Any compliance-packs call → **403 / Forbidden** | Org not enrolled in the Compliance Standards preview — stop, do not retry, run no further compliance commands. Show the opt-in message. See [preview-gate.md](../preview-gate.md). |
+| `state enable` → 4xx (non-403) | Halt. Report error verbatim. Do NOT retry. |
 | `state enable` → 5xx AND `"Retry": "RetryWillNotFix"` | Halt. Report error verbatim. Do NOT retry — the server explicitly flagged retrying as futile. |
 | `state enable` → 5xx (transient, no `RetryWillNotFix`) | Retry once after a short pause. If it fails again, halt and report. |
 | `Data.active != true` after enable | Unexpected — ask user to run `state get` manually and report the output. |

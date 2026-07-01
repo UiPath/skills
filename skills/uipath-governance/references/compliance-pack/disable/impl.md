@@ -1,5 +1,7 @@
 # Disable — Remove Recommended Settings
 
+**Preview gate:** Compliance Standards is a preview feature. Append the disclaimer to user-facing output; on any compliance-packs **403**, stop (org not enrolled). See [preview-gate.md](../preview-gate.md).
+
 Removes all policy deployments configured by the compliance standard.
 
 ## Check current state first

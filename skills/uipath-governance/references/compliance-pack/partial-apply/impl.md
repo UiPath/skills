@@ -1,5 +1,7 @@
 # Partial Apply — Implementation
 
+**Preview gate:** Compliance Standards is a preview feature. Append the disclaimer to user-facing output; on any compliance-packs **403**, stop (org not enrolled). See [preview-gate.md](../preview-gate.md).
+
 Synthesizes and deploys AOPS policies for the NLP-matched clause/product subset only. Used when the user asked for specific settings rather than the full standard.
 
 **Note:** This configures a subset of ISO 42001 recommended settings. Your organization's auditor determines compliance status.
@@ -258,6 +260,7 @@ To configure all ISO 42001 settings: 'Apply the full ISO 42001 standard'
 
 | Error | Action |
 |---|---|
+| Any compliance-packs call (e.g. `catalog get`) → **403 / Forbidden** | Org not enrolled in the Compliance Standards preview — stop, do not retry. Show the opt-in message. See [preview-gate.md](../preview-gate.md). |
 | `synthesize-formdata.mjs` exit 3 | Skip that product. Log: "No recommended settings found for <product> in selected clauses." Continue. |
 | `aops-policy create` → 4xx | Halt. Report error verbatim. Do NOT retry. |
 | `deployment tenant configure` → 4xx | Halt. Report error verbatim. |
