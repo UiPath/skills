@@ -5,7 +5,7 @@ description: >
   surface ambiguous columns (date-shaped strings, 0/1 flags, decimal precision), and wait for
   explicit user confirmation before invoking `entities create`. Silent inference + immediate
   CLI invocation is a Rule 14 violation.
-tags: [uipath-platform, smoke, data-fabric, entities, bulk-import]
+tags: [uipath-platform, smoke, data-fabric, entities, bulk-import, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 8
@@ -99,4 +99,12 @@ success_criteria:
     command_pattern: 'uip\s+df\s+.*--output\s+json'
     min_count: 0
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent engaged the CLI before pausing — proves it didn't just write the self-report file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+(entities|choice-sets|--help)'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0

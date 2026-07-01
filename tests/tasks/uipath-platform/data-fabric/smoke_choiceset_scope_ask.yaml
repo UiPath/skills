@@ -6,7 +6,7 @@ description: >
   Silently defaulting to tenant level (or to personal workspace) is a Rule 19 violation. None of
   the bypass clauses apply here — the prompt does not say "do not ask", does not name a folder,
   does not state tenant, and does not derive a folder GUID.
-tags: [uipath-platform, smoke, data-fabric, complex-fields]
+tags: [uipath-platform, smoke, data-fabric, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 6
@@ -56,4 +56,12 @@ success_criteria:
     command_pattern: 'uip\s+df\s+.*--output\s+json'
     min_count: 0
     weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent engaged the CLI before pausing — proves it didn't just write the self-report file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+(choice-sets|entities|--help)'
+    min_count: 1
+    weight: 1.5
     pass_threshold: 1.0
