@@ -25,7 +25,18 @@ initial_prompt: |
 
   1. Check login: `uip login status --output json`. Do NOT re-login.
 
-  2. Write these two files at the sandbox root EXACTLY as shown:
+  2. **Bootstrap the persistent test project.** This test uses a pre-created
+     Studio Web project (managed by test infra, not the agent). Write `.env`
+     at the sandbox root with the project ID from the
+     `CODED_APPS_TEST_PROJECT_ID` environment variable — this makes push
+     non-interactive:
+     ```
+     echo "UIPATH_PROJECT_ID=$CODED_APPS_TEST_PROJECT_ID" > .env
+     ```
+     Do NOT proceed if `$CODED_APPS_TEST_PROJECT_ID` is empty — surface the
+     configuration error to the user.
+
+  3. Write these two files at the sandbox root EXACTLY as shown:
 
      `package.json`:
      ```
@@ -44,16 +55,26 @@ initial_prompt: |
      }
      ```
 
-  3. Push to Studio Web: `uip codedapp push --output json`. This auto-creates
-     a Studio Web project on first run and persists `UIPATH_PROJECT_ID` to
-     `.env`. Run push as a SINGLE Bash invocation, not chained with other
-     commands.
+  4. Create a stub `dist/` folder — push requires a build-output folder
+     to exist, but we're skipping `npm run build`, so seed one with a
+     placeholder:
+     ```
+     mkdir -p dist && echo "<html><body>stub</body></html>" > dist/index.html
+     ```
+     This is NOT the build we care about — it's just there so push has a
+     `dist/` to point at. Our real assertion target is `src/App.tsx`.
 
-  4. Locally corrupt `src/App.tsx` by replacing the marker line with
+  5. Push to Studio Web: `uip codedapp push --output json`. Runs non-interactive
+     because `UIPATH_PROJECT_ID` was pre-populated in Step 2. Push uploads
+     `dist/` (as build output) AND `src/` (as source files) — pull will
+     later restore `src/App.tsx` from Studio Web's source copy. Run push as
+     a SINGLE Bash invocation, not chained with other commands.
+
+  6. Locally corrupt `src/App.tsx` by replacing the marker line with
      `// roundtrip-marker:LOCAL-CORRUPTED`. Keep the rest of the file
      identical. Save it.
 
-  5. Pull from Studio Web: `uip codedapp pull --overwrite --output json`.
+  7. Pull from Studio Web: `uip codedapp pull --overwrite --output json`.
      The `--overwrite` flag is REQUIRED — without it, pull will refuse to
      replace the locally-modified `src/App.tsx`. This downloads the
      version-of-record from Studio Web; after pull, `src/App.tsx` must

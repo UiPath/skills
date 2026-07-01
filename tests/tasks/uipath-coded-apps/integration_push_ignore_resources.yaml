@@ -19,12 +19,26 @@ initial_prompt: |
   third-party connector configs already set up — your push to Studio Web
   must NOT overwrite or re-import those resources.
 
-  Write these files at the sandbox root EXACTLY as shown (Step 1):
+  **Step 0 — bootstrap the persistent test project.** This test uses a
+  pre-created Studio Web project on the tenant (managed by test infra, not
+  the agent). Write `.env` at the sandbox root with the project ID from the
+  `CODED_APPS_TEST_PROJECT_ID` environment variable. This makes push
+  non-interactive:
+  ```
+  echo "UIPATH_PROJECT_ID=$CODED_APPS_TEST_PROJECT_ID" > .env
+  ```
+  Do NOT proceed if `$CODED_APPS_TEST_PROJECT_ID` is empty — surface the
+  configuration error to the user.
+
+  Write these files at the sandbox root EXACTLY as shown (Step 1). The seed
+  content is deliberately identical to `integration_push_pull_roundtrip` so
+  both tests can share the same persistent fixture without racing on
+  content — parallel writes are byte-identical no-ops on Studio Web.
 
   `package.json`:
   ```
   {
-    "name": "push-no-resources-app",
+    "name": "integration-roundtrip-app",
     "version": "0.1.0",
     "type": "module"
   }
@@ -32,19 +46,23 @@ initial_prompt: |
 
   `src/App.tsx`:
   ```
+  // roundtrip-marker:v1
   export default function App() {
-    return <h1>Resource-Preserve Push Test</h1>;
+    return null;
   }
   ```
 
   Step 2 — push to Studio Web:
 
   1. Check login: `uip login status --output json`.
-  2. Run `uip codedapp push` with the appropriate flag(s) so that the push
-     does NOT re-import Studio Web resources. Pick the flag from the skill's
-     documented `push` surface — the team's Studio Web resources must be
-     left untouched.
-  3. Use `--output json` so the result is parseable.
+  2. Create a stub `dist/` folder — push requires a build-output folder
+     to exist, but we're skipping `npm run build`, so seed one with a
+     placeholder: `mkdir -p dist && echo "<html><body>stub</body></html>" > dist/index.html`.
+  3. Run `uip codedapp push` with the appropriate flag(s) so that the push
+     does NOT re-import Studio Web resources. Pick that flag from the
+     skill's documented `push` surface — the team's Studio Web resources
+     must be left untouched.
+  4. Use `--output json` so the result is parseable.
 
   Do NOT run `npm install`, `npm run build`, `uip codedapp pack`, `publish`,
   or `deploy`.
