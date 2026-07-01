@@ -8,7 +8,7 @@ confidence: medium
 
 A DU activity (`Digitize Document`, `Data Extraction Scope`, `Classify Document Scope`) faults when its call to the Document Understanding OCR / server endpoint is rejected. There are **two distinct error shapes** depending on which DU client made the call — match the one you see:
 
-**A. `Digitize Document` via the UiPath Document OCR engine** (the common case). The fault is a `System.AggregateException` (the OCR call runs async), and the inner message carries the DU OCR server's response verbatim. Verified signature for an invalid API key:
+**A. `Digitize Document` via the UiPath Document OCR engine** (the common case). The fault is a `System.AggregateException` (the OCR call runs async), and the inner message carries the DU OCR server's response verbatim. Signature for an invalid API key:
 
 ```
 System.AggregateException

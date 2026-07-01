@@ -26,7 +26,7 @@ If the data doesn't match: discard it.
 
 ## Testing Prerequisites
 
-> The invalid-API-key case can be staged locally (Digitize Document + UiPath Document OCR with a bad key, deps aligned); tenant-not-enabled / storage / document-rejected failures need a licensed DU endpoint + OCR + trained models / a non-DU tenant / a HITL pipeline. Diagnosis is evidence-based from the faulted job.
+> The invalid-API-key failure occurs on the OCR call itself; tenant-not-enabled / storage / document-rejected failures depend on the DU project / endpoint / storage / HITL setup. Diagnosis is evidence-based from the faulted job.
 
 1. **Activity identity** — which DU activity and its display name.
 2. **Exception type + message** — `DUApiException` (with HTTP status / `CF-RAY` / `AppId`) vs. tenant resource string vs. storage resource string vs. `DocumentRejectedByUserException`, verbatim.

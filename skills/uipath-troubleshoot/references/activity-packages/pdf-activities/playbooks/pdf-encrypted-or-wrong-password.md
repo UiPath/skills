@@ -12,7 +12,7 @@ What this looks like:
 
 **Read / Extract activities on an encrypted PDF** (`Read PDF Text`, `Extract PDF Page Range`, …) — the failure comes from the reader (`UiPath.PDF.PdfReader..ctor` → `ReadPDFText.GetFileReader`), so the exception type is `UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException`:
 
-- `UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException: The password is incorrect.` — the PDF requires a user password and none / the wrong one was supplied (verified verbatim; a missing password reads as "incorrect"). This is the runtime fault you see in a faulted job when reading an encrypted PDF.
+- `UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException: The password is incorrect.` — the PDF requires a user password and none / the wrong one was supplied (a missing password also reads as "incorrect"). This is the runtime fault you see in a faulted job when reading an encrypted PDF.
 
 **`Manage PDF Password`-specific argument validation** (`System.ArgumentException`, raised by the activity before/around the reader — these strings belong to `Manage PDF Password`, NOT to the read activities):
 

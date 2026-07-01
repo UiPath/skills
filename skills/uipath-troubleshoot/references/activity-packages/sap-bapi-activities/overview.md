@@ -27,7 +27,7 @@ Failures surface as plain framework/connector exceptions carrying a fixed resour
 - **BAPI not found / not named** — `Function: <name> could not be created` (the BAPI doesn't exist in the connected system or the user can't access it) or `BAPI name is null or empty`. See [sap-bapi-not-found.md](./playbooks/sap-bapi-not-found.md).
 - **Unsupported BAPI** — `Unsupported BAPI. Contains nested complex types.` (`UnSupportedBapiException`). See [sap-unsupported-bapi.md](./playbooks/sap-unsupported-bapi.md).
 
-> **Connection-configuration** failures (missing params, invalid advanced parameter) ARE reproducible locally with no SAP system — the SAP .NET Connector rejects the destination before any network call. **BAPI lookup / unsupported-BAPI** failures need a live SAP connection (the scope must connect first). Either way, diagnosis is evidence-based from the faulted job's exception text + the connection/BAPI configuration.
+> **Connection-configuration** failures (missing params, invalid advanced parameter) are rejected before any network call — the SAP .NET Connector never contacts the system. **BAPI lookup / unsupported-BAPI** failures occur only after the connection opens. Diagnosis is from the faulted job's exception text + the connection/BAPI configuration.
 
 ## Package
 

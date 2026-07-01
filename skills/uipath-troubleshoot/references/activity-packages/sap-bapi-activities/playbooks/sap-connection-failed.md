@@ -10,7 +10,7 @@ A SAP BAPI activity faults while opening the RFC connection (`SAP Application Sc
 
 What this looks like — the fault often comes straight from the SAP .NET Connector (NCo), `SAP.Middleware.Connector.*`, via `SapConnectionService.Connect`:
 
-- `SAP.Middleware.Connector.RfcConfigurationException: Not any kind of host is specified` — **verified**: no application server / message server was configured (empty/missing connection parameters). Thrown by `RfcDestination.CheckConfiguration()` before any network call. Other `RfcConfigurationException` variants name the specific missing/invalid field the same way.
+- `SAP.Middleware.Connector.RfcConfigurationException: Not any kind of host is specified` — no application server / message server was configured (empty/missing connection parameters). Thrown by `RfcDestination.CheckConfiguration()` before any network call. Other `RfcConfigurationException` variants name the specific missing/invalid field the same way.
 - `SAP.Middleware.Connector.RfcCommunicationException` — the host is specified but unreachable (wrong host/port/route, network/firewall, SNC mismatch, or the SAP system is down).
 - `SAP.Middleware.Connector.RfcLogonException` — reached the system but logon was rejected (wrong/expired password, locked user, wrong client, missing RFC authorization).
 - `Advanced Parameters has invalid parameter <param>. Connection cannot be established.` (`UiPath.SAP.BAPI.Utilities.SapActivityException`) — an advanced RFC parameter is malformed/unrecognized (a UiPath-layer check).

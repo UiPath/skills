@@ -26,7 +26,7 @@ The pipeline combines local config (taxonomy, classifier/extractor configuration
 - **Storage bucket / taxonomy / folder missing** — `No such bucket named '<name>'`, `Couldn't find path <p> in bucket <b> associated with '<x>'`, `The local directory path '<path>' could not be found.`, `Could not load the <x> from storage bucket <b> and path <p>`, `Could not find Orchestrator Folder '<name>'`. See [du-storage-or-taxonomy-missing.md](./playbooks/du-storage-or-taxonomy-missing.md).
 - **Document rejected at Validation Station** — `DocumentRejectedByUserException` (a human rejected the document). See [du-document-rejected.md](./playbooks/du-document-rejected.md).
 
-> The **invalid-API-key** case IS reproducible locally (Digitize Document + UiPath Document OCR with a bad key). **Tenant-not-enabled**, **storage/taxonomy**, and **document-rejected** failures generally need a licensed DU endpoint + OCR + trained models / a non-DU tenant / a HITL pipeline. Diagnosis is evidence-based from the faulted job's exception text + configuration.
+> The **invalid-API-key** failure occurs on the OCR call itself; **tenant-not-enabled**, **storage/taxonomy**, and **document-rejected** failures depend on the DU project / endpoint / storage / HITL setup. Diagnosis is evidence-based from the faulted job's exception text + configuration.
 
 ## Package
 

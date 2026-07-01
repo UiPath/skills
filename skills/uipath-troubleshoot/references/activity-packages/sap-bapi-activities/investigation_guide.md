@@ -24,7 +24,7 @@ If the data doesn't match: discard it.
 
 ## Testing Prerequisites
 
-> Connection-configuration failures (missing params, invalid advanced parameter) can be staged locally with no SAP system (the NCo layer rejects the config before connecting); BAPI-lookup / unsupported-BAPI failures need a live SAP connection. Diagnosis is evidence-based from the faulted job.
+> Connection-configuration failures (missing params, invalid advanced parameter) are rejected before any network call; BAPI-lookup / unsupported-BAPI failures occur only after the connection opens. Diagnosis is evidence-based from the faulted job.
 
 1. **Activity identity** — `SapApplicationScope` vs `InvokeBAPI`/`InvokeSapBapi` vs `SapOpenConnection`, with the display name.
 2. **Exception type + message** — `System.Exception` (connection string) vs `SapActivityException` vs `UnSupportedBapiException` vs `TimeoutException`, verbatim.
