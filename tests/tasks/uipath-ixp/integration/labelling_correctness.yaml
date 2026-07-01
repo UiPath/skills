@@ -79,7 +79,7 @@ success_criteria:
   - type: command_executed
     description: "Batched confirm with --updates carrying a corrections entry across occurrences"
     tool_name: "Bash"
-    command_pattern: '(?s)(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b.*--group.*--updates.*corrections'
+    command_pattern: '(?s)(?=.*(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b)(?=.*--group)(?=.*--updates)(?=.*corrections)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
