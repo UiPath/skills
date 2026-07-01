@@ -12,23 +12,27 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Build a Python UiPath coded agent (LangGraph) named `expense-approver`
-  that handles expense-reimbursement requests. Requests of $1000 or less
-  are auto-approved; anything above that has to be escalated to a manager
-  for sign-off before it can be approved.
+  Can you build me a uipath coded agent in LangGraph for expense
+  reimbursements? Call it expense-approver. Anything $1000 or under can
+  just get auto-approved, but bigger than that needs a manager to sign off
+  before it goes through. When something's over the limit, escalate it to
+  a reviewer through the ExpenseReview app (it's in the Finance folder) and
+  pass along the whole request - the agent should wait while that's pending,
+  then pick back up once the reviewer decides and report whether it got
+  approved and what they said.
 
-  When a request goes over the limit, escalate it to a reviewer through
-  an Action Center app called `ExpenseReview` in the `Finance` folder,
-  passing along the full request. The agent should pause while the
-  escalation is outstanding and pick back up once the reviewer's
-  decision comes in, then report whether it was approved and what the
-  reviewer decided.
-
-  I just need it built with the ExpenseReview app hooked up so it can
-  actually escalate — no need to run it, sign in, or deploy. Take it
-  through in one pass.
+  Just build it with the ExpenseReview app wired up so it can actually
+  escalate - no need to run, sign in, or deploy. Take it all the way
+  through and only stop if you hit something you genuinely can't get past.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill (not uipath-human-in-the-loop alone)"
+    skill_name: "uipath-agents"
+    expected_skill: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent scaffolded the project with uip codedagent new"
     tool_name: "Bash"

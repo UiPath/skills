@@ -1,20 +1,19 @@
 # stages — Planning
 
-A stage node inside the case. Stages contain tasks and connect via entry/exit conditions (edges are retired). Two variants (`stage` and `exception`) share the same plugin.
+A stage node inside the case. Stages contain tasks and connect via entry/exit conditions (edges are retired). Two variants (`stage` and `secondary`) share the same plugin.
 
 ## Terminology
 
 | Term | Same as |
 |------|---------|
 | Regular stage | `case-management:Stage` (default) |
-| Exception stage | `case-management:ExceptionStage` |
-| Secondary stage | Alias for exception stage. Sometimes used in sdd.md. |
+| Secondary stage | `case-management:Stage` with `data.stageType: "secondary"` |
 
-The only difference between `stage` and `exception` is the JSON `type` value (`case-management:Stage` vs `case-management:ExceptionStage`). All other fields (label, description, entry/exit conditions, tasks, SLA) behave identically. `ExceptionStage` can carry `slaRules` (expression-driven SLA) the same as a regular Stage; conditional SLA rules themselves are root-only.
+The only difference is `data.stageType`: omitted for a primary/regular stage (do NOT emit `"primary"`), `"secondary"` for a secondary stage; both use `type: case-management:Stage`. All other fields (label, description, entry/exit conditions, tasks, SLA) behave identically. A secondary stage can carry `slaRules` (expression-driven SLA) the same as a regular Stage; conditional SLA rules themselves are root-only.
 
-## When to Pick `exception` vs `stage`
+## When to Pick `secondary` vs `stage`
 
-Use exception (also "secondary stage") when the sdd.md describes any of:
+Use secondary (also "secondary stage") when the sdd.md describes any of:
 
 - A handler for errors, escalations, or rejected items
 - A rework / retry loop
@@ -31,18 +30,18 @@ When ambiguous, use **AskUserQuestion** with both options + "Something else".
 No stage of either variant has edges. Reachability is expressed entirely through stage entry/exit conditions:
 
 - **Regular stage** — reached via a **non-interrupting** entry condition: `case-entered` for the first stage, or `selected-stage-completed` / `selected-stage-exited` naming a predecessor. Every regular stage MUST have ≥1 entry condition, or it is orphaned and unreachable. See [stage-entry-conditions plugin](../conditions/stage-entry-conditions/planning.md).
-- **Exception / secondary stage** — reached via an **interrupting** entry condition (fires on case state), and exits via a `return-to-origin` exit condition back to the stage it came from. See [stage-exit-conditions plugin](../conditions/stage-exit-conditions/planning.md).
+- **Secondary stage** — reached via an **interrupting** entry condition (fires on case state), and exits via a `return-to-origin` exit condition back to the stage it came from. See [stage-exit-conditions plugin](../conditions/stage-exit-conditions/planning.md).
 
-Do NOT create edges for any stage. If the sdd.md describes a stage "connected via an arrow / edge" to another, model it as the target stage's entry condition (plus a source-stage exit condition when the source diverges). Onward flow from an exception stage uses `return-to-origin`, letting the origin stage's own entry/exit conditions carry the case forward.
+Do NOT create edges for any stage. If the sdd.md describes a stage "connected via an arrow / edge" to another, model it as the target stage's entry condition (plus a source-stage exit condition when the source diverges). Onward flow from a secondary stage uses `return-to-origin`, letting the origin stage's own entry/exit conditions carry the case forward.
 
 ## Required Fields from sdd.md
 
 | Field | Source | Notes |
 |-------|--------|-------|
 | `label` | sdd.md stage name | Shown in the UI. |
-| `type` | sdd.md intent | `stage` (default) or `exception` — see above |
+| `type` | sdd.md intent | `stage` (default) or `secondary` — see above |
 | `description` | sdd.md stage description | Optional. |
-| `isRequired` | sdd.md (default `true` for regular, `false` for exception) | **Planning-only metadata.** See note below. |
+| `isRequired` | sdd.md (default `true` for regular, `false` for secondary) | **Planning-only metadata.** See note below. |
 
 ### Note on `isRequired`
 
@@ -50,7 +49,7 @@ Do NOT create edges for any stage. If the sdd.md describes a stage "connected vi
 
 Record `isRequired` in `tasks.md` for each stage. Use:
 - `true` — **Default for regular stages.** Stage is on the main flow path and must complete for case completion.
-- `false` — **Default for exception stages.** Exception / optional / fallback / rework stages only reached via conditional/interrupting entry conditions.
+- `false` — **Default for secondary stages.** Secondary / optional / fallback / rework stages only reached via conditional/interrupting entry conditions.
 
 Implementation phase consumes this value when adding case-exit-conditions; the stage itself is created without it.
 
@@ -77,11 +76,11 @@ Stages are created **after** the root case (T01) and **before** any tasks or con
 - verify: Confirm Result: Success, capture StageId
 ```
 
-Exception variant:
+Secondary variant:
 
 ```markdown
-## T<n>: Create exception stage "<label>"
-- type: exception
+## T<n>: Create secondary stage "<label>"
+- type: secondary
 - description: "<description from sdd.md>"
 - isRequired: <true|false from sdd.md; false if unspecified>
 - order: after T<m>

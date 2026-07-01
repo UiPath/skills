@@ -10,7 +10,8 @@ just a structurally valid one:
     exists as a condition-driven transition path (edges retired; arbitrary
     intermediate routing allowed)
   - At least 3 of the 4 named exception lanes (Customer Comms, Escalation,
-    Withdrawn, Rejected) exist as ExceptionStage nodes OR as regular stages
+    Withdrawn, Rejected) exist as secondary stages (data.stageType ==
+    "secondary") OR as primary stages
   - Withdrawn and Rejected are terminal (no outgoing transitions leaving them
     back into the happy path) and at least one terminal exception drives a
     case-exit condition that marks the case complete
@@ -164,7 +165,7 @@ def main():
         )
     out_transitions = find_transitions(plan, source=resolved["id"])
     if out_transitions:
-        # Allow exit-to into an exception stage but not into another primary
+        # Allow exit-to into a secondary stage but not into another primary
         leaks = [
             t.get("target")
             for t in out_transitions

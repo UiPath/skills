@@ -511,10 +511,11 @@
       "stages": [
         {
           "name": string,
-          "type": "Stage" | "ExceptionStage",
+          "type": "Stage",
+          "stageType": "primary" | "secondary" | null,   // omit/null = primary, "secondary" = secondary/exception stage
           "description": string,
           "requiredForCompletion": boolean,
-          "interrupting": boolean | null,     // ExceptionStage only
+          "interrupting": boolean | null,     // secondary stages only (stageType === "secondary")
           "entryConditions": [{ "when": string, "if": string, "interrupting": "Yes"|"No", "displayName": string }],
           "exitConditions":  [{ "when": string, "if": string, "exitType": string, "marksComplete": "Yes"|"No", "displayName": string }],
           "sla": { "count": number, "unit": string, "atRiskPct": string, "atRiskAction": string, "breachAction": string } | null,
@@ -827,7 +828,7 @@
       }));
       const stageNodes = stages.map((s, i) => ({
         id: "s-" + i,
-        kind: s.type === "ExceptionStage" ? "exception" : "stage",
+        kind: (s.stageType === "secondary" || s.type === "ExceptionStage") ? "exception" : "stage",
         label: s.name || "(unnamed)",
         sub: pluralize((s.tasks || []).length, "task") + (s.sla ? ` · SLA ${s.sla.count}${s.sla.unit}` : ""),
         stageIdx: i,
@@ -1007,7 +1008,7 @@
         glyph.setAttribute("fill", stroke);
         glyph.setAttribute("font-weight", "600");
         glyph.setAttribute("text-transform", "uppercase");
-        glyph.textContent = n.kind === "trigger" ? "TRIGGER" : (n.kind === "exception" ? "EXCEPTION" : "STAGE");
+        glyph.textContent = n.kind === "trigger" ? "TRIGGER" : (n.kind === "exception" ? "SECONDARY" : "STAGE");
         g.appendChild(glyph);
 
         // label
@@ -1053,7 +1054,7 @@
       legend.innerHTML =
         '<span><span class="swatch" style="background:#fff1ea;border-color:#fa4616"></span>Trigger</span>' +
         '<span><span class="swatch" style="background:#ffffff;border-color:#cdd2d9"></span>Stage</span>' +
-        '<span><span class="swatch" style="background:#fef2f2;border-color:#ef4444"></span>Exception stage</span>' +
+        '<span><span class="swatch" style="background:#fef2f2;border-color:#ef4444"></span>Secondary stage</span>' +
         '<span><span class="swatch" style="background:transparent;border-color:transparent;border-bottom:2px dashed #ef4444"></span>Interrupting edge</span>' +
         '<span style="color:var(--text-subtle)">· Click a stage to jump to its detail card.</span>';
       wrap.appendChild(legend);
@@ -1070,7 +1071,7 @@
 
     function renderStage(stage, idx) {
       const id = "stage-" + slug(stage.name) || "stage-" + idx;
-      const isException = stage.type === "ExceptionStage";
+      const isException = stage.stageType === "secondary" || stage.type === "ExceptionStage";
       const collapsed = state.collapsedStages.has(idx);
       const root = el("div", {
         class: "stage" + (isException ? " exception" : "") + (collapsed ? " collapsed" : ""),
@@ -1085,7 +1086,7 @@
       const title = el("div", { class: "stage-title" }, [
         el("span", { class: "seq" }, "Stage " + (idx + 1) + " ·"),
         document.createTextNode(stage.name || "(unnamed)"),
-        el("span", { class: "stage-type" }, isException ? "Exception" : "Stage")
+        el("span", { class: "stage-type" }, isException ? "Secondary" : "Stage")
       ]);
       titleWrap.appendChild(title);
       const summary = el("div", { class: "stage-summary" });

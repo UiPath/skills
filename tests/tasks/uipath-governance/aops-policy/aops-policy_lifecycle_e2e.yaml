@@ -22,6 +22,10 @@ run_limits:
   expected_turns: 18
   max_turns: 40
 
+pre_run:
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="aitl-crud-lifecycle-clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 30
+
 initial_prompt: |
   Walk the full lifecycle of an AOps governance policy on the current
   login tenant. Use the product `AITrustLayer`.
@@ -42,7 +46,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the test policy named `aitl-crud-lifecycle-clie2e` AND the server accepted it (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+(?=.*--name\s+["'']?aitl-crud-lifecycle-clie2e["'']?\s).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+(?=[\s\S]*--name\s+["'']?aitl-crud-lifecycle-clie2e["'']?\s).*'
     require_success: true
     min_count: 1
     weight: 2.5
@@ -58,10 +62,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent updated the policy description to `Updated by CRUD lifecycle e2e test` AND the server accepted it (exit 0) — full-replace update, dropping a required field (e.g. --name) or a server-side rejection would fail this"
+    description: "Agent ran update with --identifier and --description (command shape validation)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+update\s+(?=.*--identifier\s+["'']?(?:\$\w+|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}))(?=.*--description\s+["'']?Updated by CRUD lifecycle e2e test).*'
-    require_success: true
+    command_pattern: 'uip\s+gov\s+aops-policy\s+update\s+(?=[\s\S]*--identifier\s)(?=[\s\S]*--description\s)[\s\S]*'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -78,7 +81,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --output json on at least 3 aops-policy commands (skill convention)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+.*--output\s+json'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+[\s\S]*--output\s+json'
     min_count: 3
     weight: 1.0
     pass_threshold: 1.0

@@ -1,0 +1,58 @@
+task_id: skill-planner-integration-lane-b-dispatcher-performer-plan
+description: >
+  Lane B (non-PDD) build→deploy routing coverage: a doc-less request for a
+  multi-project RPA solution (a Dispatcher bot and a Performer bot connected by
+  an Orchestrator queue, then deployed) must engage the planner, route the
+  build to uipath-rpa, and route the deploy step to uipath-solution /
+  uipath-platform. Exercises the build-then-deploy routing chain in Lane B.
+  Unambiguously multi-project so the routing decision is deterministic.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 16
+  task_timeout: 1800
+  turn_timeout: 1500
+
+initial_prompt: |
+  I want to build a UiPath solution from scratch — I have NO design document.
+  It is TWO brand-new RPA bots I still have to build: a Dispatcher that reads a
+  daily Excel export and pushes one queue item per row to an Orchestrator
+  queue, and a Performer that processes each queue item into SAP. After they're
+  built, both must be deployed to Orchestrator so they run unattended.
+
+  Load the appropriate UiPath skill. Work autonomously — don't ask me
+  questions, and don't build or scaffold anything yet. Produce the
+  implementation plan only: break the work into tasks routed to the right
+  specialist skills, and save it as `rpa-build-plan.md` in the current
+  directory.
+
+success_criteria:
+  - type: file_exists
+    description: "Lane B wrote the implementation plan file"
+    path: "rpa-build-plan.md"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Build tasks route to the RPA specialist"
+    path: "rpa-build-plan.md"
+    includes:
+      - "uipath-rpa"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Deploy step routes to the solution/platform specialist (not left to uipath-rpa)"
+    command: "grep -Eiq 'uipath-solution|uipath-platform' rpa-build-plan.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stayed in planning — did not start building (no .xaml authored)"
+    command: "! find . -name '*.xaml' -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

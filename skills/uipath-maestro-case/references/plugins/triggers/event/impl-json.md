@@ -63,7 +63,7 @@ For a **single-trigger case**, configure the existing `trigger_1` node. For **mu
 - ID: `trigger_` + 6 alphanumeric chars
 - No node-level layout fields (Rule 18 — `position`, `style`, `measured`, etc. omitted)
 
-Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx` in `id-map.json` so the variables plugin can resolve T-number references.
+Set the trigger's display name from `tasks.md`. Record `T<N> → trigger_xxxxxx` in `id-map.json` for downstream cross-reference — incl. the global-vars plugin resolving this event trigger's node id for an In-argument whose `sourceTriggers` names this trigger's T-number (or, when this event trigger is the primary trigger T02, an In-arg with blank `sourceTriggers`).
 
 ### 7b. `data` structure
 

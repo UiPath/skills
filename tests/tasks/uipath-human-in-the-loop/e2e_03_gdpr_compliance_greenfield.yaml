@@ -37,7 +37,7 @@ success_criteria:
     description: "Flow contains the inline HITL node type"
     path: "GdprDeletionApproval/GdprDeletionApproval/GdprDeletionApproval.flow"
     includes:
-      - '"uipath.human-in-the-loop"'
+      - '"uipath.human-in-the-loop.quick-form"'
     weight: 3.0
     pass_threshold: 1.0
 

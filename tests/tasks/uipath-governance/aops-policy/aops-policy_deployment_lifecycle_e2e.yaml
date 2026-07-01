@@ -23,8 +23,14 @@ description: >
 tags: [uipath-governance, e2e, aops-policy, deployment, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 55
-  max_turns: 120
+  expected_turns: 35
+  max_turns: 70
+
+pre_run:
+  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_deployments.py''))"'
+    timeout: 30
+  - command: 'CLEANUP_POLICY_KIND="aops-policy" CLEANUP_POLICY_NAME="e2e-deployment-lifecycle-clie2e" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''cleanup_policy.py''))"'
+    timeout: 30
 
 initial_prompt: |
   Walk the full deployment lifecycle of an AOps governance policy on the
@@ -44,9 +50,10 @@ initial_prompt: |
   4. Remove only the `E2E` license type entry for the `E2E` product
      from the tenant's deployments, leaving every other entry intact.
 
-  User scope (current login user):
+  User scope (first user in the organization):
   5. Configure a user deployment that maps the `E2E` product to the
-     policy from step 1.
+     policy from step 1. Look up the first user in the org to get
+     their user ID.
   6. Get the user's deployments to confirm the new entry is present.
   7. Remove all of that user's deployments.
 
@@ -59,7 +66,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created the deployment-test policy named `e2e-deployment-lifecycle-clie2e` for E2E AND the server accepted it (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+(?=.*--name\s+["'']?e2e-deployment-lifecycle-clie2e["'']?\s)(?=.*--product-name\s+["'']?E2E["'']?).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+create\s+(?=[\s\S]*--name\s+["'']?e2e-deployment-lifecycle-clie2e["'']?\s)(?=[\s\S]*--product-name\s+["'']?E2E["'']?).*'
     require_success: true
     min_count: 1
     weight: 2.0
@@ -68,7 +75,7 @@ success_criteria:
   - type: command_executed
     description: "Agent configured a tenant deployment with --tenant-name and --input on the current tenant GUID (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--tenant-name\s)(?=.*--input\s).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=[\s\S]*--tenant-name\s)(?=[\s\S]*--input\s).*'
     require_success: true
     min_count: 1
     weight: 2.5
@@ -86,7 +93,7 @@ success_criteria:
   - type: command_executed
     description: "Agent called tenant remove scoped to E2E product + E2E license type (command construction — server may reject if configure didn't land the entry)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+remove\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--product-name\s+["'']?E2E)(?=.*--license-type\s+["'']?E2E).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+tenant\s+remove\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=[\s\S]*--product-name\s+["'']?E2E)(?=[\s\S]*--license-type\s+["'']?E2E).*'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -94,7 +101,7 @@ success_criteria:
   - type: command_executed
     description: "Agent configured a user deployment with --user and --input on the current user GUID (exit 0)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=.*--user\s)(?=.*--input\s).*'
+    command_pattern: 'uip\s+gov\s+aops-policy\s+deployment\s+user\s+configure\s+["'']?(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)["'']?[\s\\]+(?=[\s\S]*--user\s)(?=[\s\S]*--input\s).*'
     require_success: true
     min_count: 1
     weight: 2.5

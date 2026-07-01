@@ -40,7 +40,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked `uip admin users list --search` for the email-based user lookup with --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+users\s+list\s+.*--search\s+["'']?[^"'' ]*alice[^"'' ]*["'']?\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+users\s+list\s+[\s\S]*--search\s+["'']?[^"'' ]*alice[^"'' ]*["'']?\s+[\s\S]*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked `uip admin robot-accounts list --search` for the robot lookup with --output json"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+robot-accounts\s+list\s+.*--search\s+["'']?[^"'' ]*build-bot[^"'' ]*["'']?\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+robot-accounts\s+list\s+[\s\S]*--search\s+["'']?[^"'' ]*build-bot[^"'' ]*["'']?\s+[\s\S]*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -56,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Agent invoked `uip admin groups list --output json` for the group lookup (groups list has no --search; agent filters client-side)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+groups\s+list\s+.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+groups\s+list\s+[\s\S]*--output\s+json'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

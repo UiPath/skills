@@ -1,0 +1,54 @@
+task_id: skill-planner-smoke-lane-a-marker-detect
+description: >
+  Entry-guard coverage in isolation: when an SDD carrying the `## Planner
+  Handoff` marker is present, the skill's entry guard must detect it and report
+  Lane A WITHOUT performing the full task derivation. Isolates marker detection
+  (fast) from the heavier lane_a_task_derivation end-to-end test.
+tags: [uipath-planner, smoke, mode:build, lifecycle:discover]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The file `inventory-sync-sdd.md` in this folder is a finished Solution Design
+  Document. Load the appropriate UiPath skill and tell me which entry-guard
+  path applies to it.
+
+  Do NOT derive tasks. Do NOT author or rewrite the SDD. Do NOT build anything.
+
+  Write exactly one line to `lane.txt`: the exact name of the lane the entry
+  guard routes this SDD to — use the name exactly as it appears in the skill
+  body.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent engaged the uipath-planner skill to evaluate the entry guard"
+    tool_name: "Skill"
+    command_pattern: "uipath-planner"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent produced lane.txt"
+    path: "lane.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Detected the Planner Handoff marker and reported Lane A"
+    path: "lane.txt"
+    includes:
+      - "Lane A"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stayed at marker detection — did NOT run the full task derivation (no tasks file)"
+    command: "! find . -name '*-tasks.md' -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0

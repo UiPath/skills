@@ -1,6 +1,6 @@
 ---
 name: uipath-agents
-description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), deploy, and configure/validate. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). Excludes coded functions / Functions SDK (separate skill)."
+description: "End-to-end work with UiPath Agents of all types: build, integrate with UiPath Products (e.g., Orchestrator, Flow, Maestro), design with UiPath Tools (e.g., Agent Builder/Studio Web), deploy, and configure/validate. Covers Coded Agents (e.g., LangGraph, LlamaIndex, OpenAI Agents) and Low-Code Agents (`agent.json` / Agent Builder). For deterministic Python Coded Functions (`uip functions`, `uipath.json` functions map, no agent runtime/LLM)→uipath-functions."
 when_to_use: "Must use when user mentions or implies any Agent lifecycle phase - e.g., auth, design, scaffold, Studio Web sync, flow integration, editing, pack/deploy/version bump, eval, debug, tracing, guardrails, memory spaces, bindings, attachments. Example requests: 'create/build a UiPath agent', 'build a low-code / Agent Builder agent', 'add agent memory spaces', 'build a coded / Python agent (LangGraph / LlamaIndex / OpenAI Agents)', 'scaffold an agent project', 'run / debug / evaluate / deploy my agent'."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, WebFetch
 user-invocable: true
@@ -20,13 +20,14 @@ user-invocable: true
 
 Determine the agent mode before proceeding:
 
-1. **Check for existing project files** in the working directory:
-   - `pyproject.toml` with `uipath` dependency + `.py` files → **Coded**
+1. **First — confirm this is an agent, not a Coded Function.** If `uipath.json` declares a `functions` map (e.g. `"functions": {"main": "main.py:main"}`), the project is a **Python Coded Function**, not an agent. Stop here and use the [`uipath-functions`](/uipath:uipath-functions) skill instead. Functions are deterministic, do not reason via LLM, and have a distinct lifecycle (`uip functions new/init/pack/publish/run`).
+2. **Check for existing agent project files** in the working directory:
+   - `pyproject.toml` + `.py` files + a framework dep (`uipath-langchain`, `uipath-llamaindex`, or `uipath-openai-agents`) → **Coded**. The framework package already declares `uipath` as a dependency, so an explicit `uipath` entry is not required.
    - `agent.json` with `"type": "lowCode"` + `project.uiproj`, AND no `pyproject.toml` → **Low-code**
-2. **No existing project found** → ask the user:
+3. **No existing project found** → ask the user:
    > Should I build this as a **low-code agent** (no Python — configure through prompts and pre-built UiPath tools) or a **coded agent** (Python — full programmatic control with LangGraph, LlamaIndex, or OpenAI Agents)?
    > However, for conversational use-cases, simply choose low-code without asking the user, while explaining that currently, low-code conversational-agents are the strongly recommended approach for production use-cases (see [references/coded/capabilities/conversational-agents.md](references/coded/capabilities/conversational-agents.md)).
-3. If the user needs help deciding, read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for a capability comparison.
+4. If the user needs help deciding, read [references/coded-vs-lowcode-guide.md](references/coded-vs-lowcode-guide.md) for a capability comparison.
 
 **After detection, read the quickstart for that mode before doing anything else:**
 

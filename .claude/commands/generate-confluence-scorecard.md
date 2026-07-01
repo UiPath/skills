@@ -139,23 +139,28 @@ for s in sorted(agg): line(s, agg[s])
 print('\n=== uipath-platform SUB-DIRS (split eval/passfail across the 5 platform rows) ===')
 for s in sorted(psub): line(s, psub[s])
 
-# --- CROSS-CUTTING capability TAGS (e.g. context-grounding → ECS) — THE source for those rows ---
-# coverage.json entries with "cross_cutting": true carry a `tag`; their tasks are TAG-selected,
-# spread across host skills, and ALREADY counted under those host skills (so non-additive to totals).
-# Source each cross-cutting product row's pass/fail from THIS block — NEVER from a same-named
-# directory bucket (e.g. the psub bucket `uipath-platform/context-grounding` is a strict SUBSET and
-# is what wrongly produced ECS 3/3 instead of the full tag set). Count ALL variants: cross-cutting
-# tasks may live in disjoint variant sets, so feature-wide health spans the whole run — report the split.
-CROSS_CUTTING = [('context-grounding','ECS')]   # (tag, product row) — populate from coverage.json cross_cutting entries
+# --- CROSS-CUTTING capability TAGS (context-grounding → ECS; integration-service|ipe → Integration Service) ---
+# These products are maintained ACROSS many skills and identified by TAG, not by directory. Tasks are
+# tag-selected, spread across host skills, and ALREADY counted under those host skills (so non-additive to totals).
+# A row may match MORE THAN ONE tag alias (Integration Service = `integration-service` OR `ipe`) — a task counts
+# if it carries ANY listed alias. Source each cross-cutting product row's pass/fail from THIS block — NEVER from a
+# same-named directory bucket: `uipath-platform/context-grounding` AND `uipath-platform/integration-service` are
+# strict SUBSETS. That bug produced ECS 3/3 instead of the full tag set, and for IS the platform dir (8 tasks) misses
+# every IS task in uipath-agents (is_*), uipath-maestro-flow (ipe), uipath-troubleshoot and uipath-maestro-bpmn.
+# Count ALL variants: cross-cutting tasks may live in disjoint variant sets, so feature-wide health spans the whole run.
+CROSS_CUTTING = [(['context-grounding'], 'ECS'),
+                 (['integration-service','ipe'], 'Integration Service')]  # (tag aliases, product row)
 print('\n=== CROSS-CUTTING TAGS (tag-selected, ALL variants; non-additive — do NOT add to totals) ===')
-for tag_v, row in CROSS_CUTTING:
-    b = new(); vsplit = Counter()
+for aliases, row in CROSS_CUTTING:
+    al = {a.lower() for a in aliases}
+    b = new(); vsplit = Counter(); hosts = Counter()
     for t in tr_all:
-        if any(str(x).lower() == tag_v for x in (t.get('tags') or [])):
+        if any(str(x).lower() in al for x in (t.get('tags') or [])):
             add(b, t, t.get('weighted_score')); vsplit[t.get('variant_id')] += 1
-    line(f'[tag] {tag_v} → {row}', b)
-    print(f'    variant split {dict(vsplit)} — this row counts ALL variants (footnote ⁷); '
-          f'do not use the psub `{row}` directory bucket above')
+            mh = re.search(r'/tests/tasks/([^/]+)/', t.get('task_path','')); hosts[mh.group(1) if mh else '?'] += 1
+    line(f'[tag] {"|".join(aliases)} → {row}', b)
+    print(f'    variant split {dict(vsplit)}; host skills {dict(hosts)} — this row counts ALL variants & ALL '
+          f'host skills (footnote ⁷); do NOT use a `{row}` directory/psub bucket above (strict subset)')
 
 run_n = len(tr); succ = sum(1 for t in tr if t.get('status')=='SUCCESS')
 sc = [t['weighted_score'] for t in tr if t.get('weighted_score') is not None]
@@ -167,7 +172,7 @@ if nonstd:   print('NON-SCORECARD mode values seen (surface, never drop/fold):',
 if unmapped: print('UNMAPPED task_ids (no tests/tasks/<skill>/ in path):', unmapped)
 ```
 
-Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode % for `build`/`operate`/`diagnose` (each with its `(n=…)` tagged-task count), the **per-tier split** (`SMOKE=` and combined `INT+E2E=` pass/total, plus any `untiered` remainder — feeds the org card's 2nd table, see Phase 4 §3b), plus any `NON-SCORECARD-MODES`. The script also prints the **`uipath-platform` sub-dir breakdown** (Phase 3 platform split — note `tiers()` works on `psub` buckets too, so each platform sub-product has its own Smoke/Int+E2E split), the **CROSS-CUTTING TAGS** block (tag-selected, all-variant pass/fail + tiers for `cross_cutting` capability rows like ECS — this, NOT any directory bucket, is the source for those rows; see Phase 2/3), the **status-code counts** (ERROR vs FAILURE vs MAX_TURNS_EXHAUSTED — use for the failures note in Phase 4), the **overall mean weighted score**, and any `NON-SCORECARD` mode values / `UNMAPPED` task_ids. Headline numbers come from this script (`run_n`, `succ`, overall mean) — **recompute for the scored variant**, do not copy `d['tasks_run']`/`experiment.md` blindly (those count all variants).
+Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode % for `build`/`operate`/`diagnose` (each with its `(n=…)` tagged-task count), the **per-tier split** (`SMOKE=` and combined `INT+E2E=` pass/total, plus any `untiered` remainder — feeds the org card's 2nd table, see Phase 4 §3b), plus any `NON-SCORECARD-MODES`. The script also prints the **`uipath-platform` sub-dir breakdown** (Phase 3 platform split — note `tiers()` works on `psub` buckets too, so each platform sub-product has its own Smoke/Int+E2E split), the **CROSS-CUTTING TAGS** block (tag-selected, all-variant, all-host-skill pass/fail + tiers for capability rows maintained across skills — **ECS** (tag `context-grounding`) and **Integration Service** (tags `integration-service`|`ipe`) — this, NOT any directory bucket, is the source for those rows; see Phase 2/3), the **status-code counts** (ERROR vs FAILURE vs MAX_TURNS_EXHAUSTED — use for the failures note in Phase 4), the **overall mean weighted score**, and any `NON-SCORECARD` mode values / `UNMAPPED` task_ids. Headline numbers come from this script (`run_n`, `succ`, overall mean) — **recompute for the scored variant**, do not copy `d['tasks_run']`/`experiment.md` blindly (those count all variants).
 
 > **Untiered tasks.** `tier_of()` returns `none` for run tasks carrying no `smoke`/`integration`/`e2e` tag. They count in the product total but in neither tier column, so Smoke + Int+E2E will not always sum to the total — surface the `(+p/t untiered)` remainder rather than silently dropping it (it also flags tag-hygiene gaps in the source repo).
 
@@ -186,7 +191,9 @@ Record per skill: **Tests Pass/Fail** (`pass/total`), **mean score %**, per-mode
 
 **Cross-cutting capability entries → a product row.** A coverage.json entry with `"cross_cutting": true` (e.g. `uipath-context-grounding`) is the Test-Coverage / Skill-Coverage source for the **standalone product row it maps to** — currently `uipath-context-grounding` → **ECS / Context Grounding** (see Phase 3 mapping). For that row use the entry's `overall_pct` as **Skill Coverage / Test Coverage** (instead of `—`), and its `mode_coverage` / `mode_floor` for the per-mode read. Its tasks are tag-selected and **also counted under the host skills** (`host_skills`), so the row's Tests Pass/Fail are **cross-cutting, non-additive** (footnote ⁷) — never add them into the run totals or the host-skill rows.
 
-> **Source the Tests Pass/Fail + Smoke/Int+E2E from the Phase 1 CROSS-CUTTING TAGS block — by `tag`, ALL variants.** Add each cross-cutting entry's `(tag, product-row)` to the script's `CROSS_CUTTING` list (the `tag` field of the coverage.json entry; default `context-grounding` → `ECS`). The block selects every task carrying that tag across host skills and across **both** variants, and prints pass/total + the Smoke / Int+E2E tiers. Use those numbers. **NEVER take a cross-cutting row's pass/fail from a same-named directory bucket** — e.g. the `psub` bucket `uipath-platform/context-grounding` is a strict SUBSET of the tag set (one host dir, default variant only) and taking it is exactly the bug that published **ECS 3/3** instead of the true **13/14**. The directory bucket is a trap: it resolves, looks plausible, and is wrong. Cross-cutting counts all variants because tag-matched tasks can live in disjoint variant sets (nuance 5); state the all-variant basis and the variant split in footnote ⁷ (it is the one row that may count a variant the rest of the card excludes). If no `cross_cutting` entry exists yet (older coverage.json), still run the tag selection from the Phase 1 block — do not fall back to a directory bucket.
+**Integration Service is cross-cutting too — but has NO coverage.json `cross_cutting` entry yet.** IS is maintained across skills and identified by the tags `integration-service` (in `uipath-platform/integration-service`, `uipath-agents/coded/is_*`, `uipath-troubleshoot`, `uipath-maestro-bpmn`, and `uipath-rpa` when present) OR `ipe` (in `uipath-maestro-flow` connector tasks). Its pass/fail + tiers come from the Phase 1 CROSS-CUTTING TAGS block (already seeded). For **coverage**, there is currently no single IS `overall_pct` (only `uipath-context-grounding` is registered cross-cutting). Until `/test-coverage` registers IS as a cross-cutting capability, use the `uipath-platform` aggregate Overall % as a **labeled floor** for the IS row and footnote it: *"platform-aggregate floor — under-represents IS; the IS tasks in agents/flow/troubleshoot/bpmn are not reflected. Register IS as a cross-cutting capability in `/test-coverage` for a true IS coverage %."* Do NOT present the platform % as the full IS coverage without that caveat, and do NOT write `—` (IS clearly has tests). Pass/fail + tiers are unaffected — they always come from the tag block.
+
+> **Source the Tests Pass/Fail + Smoke/Int+E2E from the Phase 1 CROSS-CUTTING TAGS block — by `tag`, ALL variants, ALL host skills.** Add each cross-cutting `(tag-aliases, product-row)` pair to the script's `CROSS_CUTTING` list. Two are seeded: `['context-grounding'] → ECS` and `['integration-service','ipe'] → Integration Service` (IS matches **either** alias). The block selects every task carrying any listed tag across host skills and across **all** variants, and prints pass/total + the Smoke / Int+E2E tiers + the host-skill split. Use those numbers. **NEVER take a cross-cutting row's pass/fail from a same-named directory bucket** — the `psub` bucket `uipath-platform/context-grounding` is a strict SUBSET of the tag set (one host dir, default variant only) and taking it is exactly the bug that published **ECS 3/3** instead of the true **13/14**. The same trap hits IS: `uipath-platform/integration-service` is ~8 tasks, but the full `integration-service`|`ipe` tag set spans agents (is_*), flow (ipe), troubleshoot and bpmn — sourcing IS from that one dir badly undercounts it. The directory bucket is a trap: it resolves, looks plausible, and is wrong. Cross-cutting counts all variants because tag-matched tasks can live in disjoint variant sets (nuance 5); state the all-variant basis and the variant split in footnote ⁷ (it is the one row that may count a variant the rest of the card excludes). If no `cross_cutting` entry exists yet (older coverage.json), still run the tag selection from the Phase 1 block — do not fall back to a directory bucket.
 
 Read the coverage source (default `tests/reports/SUMMARY.md`). For each skill take the **Overall** % from the Overview table — this is the **Test Coverage vs Skills** value (coverage of taught capabilities by tests; **not** a pass-rate). Planned-but-missing skills are `0% (planned)`.
 
@@ -218,7 +225,7 @@ Do not edit this embedded table on the fly; report drift so a human updates the 
 | Flow (uip maestro flow) | `uipath-maestro-flow` | |
 | Case Management | `uipath-maestro-case` (`uipath-case-management/` empty) | |
 | BPMN | `uipath-maestro-bpmn` | |
-| Integration Service (uip is) | `uipath-platform/integration-service` | 5 dedicated + cross-cutting connector tasks in flow/agents |
+| Integration Service (uip is) | **cross-cutting** — tags `integration-service` OR `ipe`, ANY skill (`uipath-platform/integration-service`, `uipath-agents/coded/is_*`, `uipath-maestro-flow` connector tasks, `uipath-troubleshoot`, `uipath-maestro-bpmn`, `uipath-rpa`) | IS is maintained across skills, not one dir. Pass/fail + tiers from the Phase 1 CROSS-CUTTING TAGS block (tags `integration-service`/`ipe`, ALL variants, ALL host skills), non-additive ⁷. NEVER source from the `uipath-platform/integration-service` psub bucket — strict subset (~8 tasks) that misses the IS tasks in agents/flow/troubleshoot/bpmn. Coverage: platform-aggregate floor until IS is registered cross-cutting in `/test-coverage` (Phase 2) |
 | HITL (uip hitl) | `uipath-human-in-the-loop` | no `uip hitl` verb; +`uipath-maestro-flow/hitl` cross-cutting |
 | Low & Code Agents | `uipath-agents` | |
 | Agent Hub (uip agenthub) | `uipath-agenthub` | |
@@ -244,7 +251,7 @@ Do not edit this embedded table on the fly; report drift so a human updates the 
 
 | Platform sub-dir(s) | Product row |
 |---|---|
-| `integration-service` | Integration Service (uip is) |
+| `integration-service` | **NOT this bucket.** Integration Service is cross-cutting — source it from the Phase 1 CROSS-CUTTING TAGS block (tags `integration-service`/`ipe`, all skills, all variants), NOT this psub bucket. The platform sub-dir is a strict subset (~8 tasks) that omits IS tasks in agents/flow/troubleshoot/bpmn |
 | `orchestrator` + `resources` | Orchestrator (uip or) — **sum both** buckets |
 | `licensing` | Licensing |
 | `traces` | LLMOPS/Traces |
@@ -266,7 +273,7 @@ Produce these sections, in this order:
 
    **3b. Product Capability Enumeration** (second table) — columns: Product/Capability, Product Capability Enumeration, CLI Coverage, **Skill Coverage**, CLI Smoke Tests, CLI Int and E2E Tests, CLI Test Coverage%, **Skills Smoke Tests (No.)**, **Skills Integration and E2E Tests (No.)**, Exhaustive Scenarios, Test Peer Sign-off. **Fill (the three Skills columns are the whole point of this table):** `Skill Coverage` = coverage.json Overall % per product (same value as 3a's Test Coverage, color-banded); `Skills Smoke Tests` and `Skills Integration and E2E Tests` = the per-tier `pass/total` from Phase 1's `tiers()` (combine integration+e2e; append the `(+p/t untiered)` remainder where present). **CLI columns are NOT derivable from a skills run** — carry the org card's existing CLI values verbatim (note: the org card's "CLI Smoke Tests" column is populated with coverage *percentages*, not pass/total — copy as-is, do not reinterpret) and leave CLI Coverage / CLI Int+E2E / CLI Test Coverage% / Product Capability Enumeration / Exhaustive Scenarios / Test Peer Sign-off blank. Color the Skills cells with the pass-rate bands.
 
-   Footnotes (both tables): platform sub-product split + platform-wide coverage (³), rpa-shared / under-RPA (²), per-column overall-mean fallback (*), non-scorecard mode tags (†), duplicate org-card row (⁴), skip-thinned denominator (⁵), planned/not-yet-built skill — e.g. Agent Hub (⁶), cross-cutting capability — tag-selected, already counted in host skills, non-additive — e.g. ECS / Context Grounding from `uipath-context-grounding` (⁷).
+   Footnotes (both tables): platform sub-product split + platform-wide coverage (³), rpa-shared / under-RPA (²), per-column overall-mean fallback (*), non-scorecard mode tags (†), duplicate org-card row (⁴), skip-thinned denominator (⁵), planned/not-yet-built skill — e.g. Agent Hub (⁶), cross-cutting capability — tag-selected across skills, already counted in host skills, non-additive — ECS / Context Grounding (tag `context-grounding`) and Integration Service (tags `integration-service`/`ipe`); for IS, coverage is the platform-aggregate floor until IS is registered cross-cutting in `/test-coverage` (⁷).
 4. **Coverage × Eval risk reads** — the analytical payoff of merging the two sources. For each product with both a coverage % and a pass-rate, classify into a quadrant (thresholds: coverage ≥ 50% = "tested", pass-rate ≥ `--target` = "passing"):
 
    | Coverage | Pass-rate | Quadrant | Read |
@@ -353,7 +360,8 @@ Exclude the generic `uip … --output json` sentinel pattern (unattributable). N
 | Run task counts differ from current repo | Expected (run is a snapshot); note divergence, don't reconcile to dir counts | 1 |
 | `tests/reports/coverage.json` present | Prefer it over scraping `SUMMARY.md` (stable contract; gives top_untested + contributions too) | 2 |
 | `cross_cutting` coverage.json entry (e.g. `uipath-context-grounding`) | Maps to its standalone product row (ECS); Skill Coverage = its `overall_pct`; pass/fail from the Phase 1 CROSS-CUTTING TAGS block (by `tag`, ALL variants), non-additive (⁷, already in host skills). NEVER from a same-named directory/`psub` bucket — that subset wrongly yields 3/3 vs the true 13/14 | 1,2,3 |
-| Cross-cutting tag has a like-named directory (e.g. `uipath-platform/context-grounding`) | Trap: the directory bucket is a strict subset of the tag set. Use the tag block, not the bucket | 1,3 |
+| Integration Service (cross-cutting; tags `integration-service`\|`ipe`) | Pass/fail + tiers + eval from the Phase 1 CROSS-CUTTING TAGS block across ALL skills + ALL variants (platform IS dir, `uipath-agents/coded/is_*`, flow `ipe` tasks, troubleshoot, bpmn, rpa). Matches **either** tag alias. NEVER source from the `uipath-platform/integration-service` psub bucket (~8-task subset). No coverage.json cross_cutting entry yet → coverage = platform-aggregate floor, footnoted ⁷ | 1,2,3 |
+| Cross-cutting tag has a like-named directory (e.g. `uipath-platform/context-grounding`, `uipath-platform/integration-service`) | Trap: the directory bucket is a strict subset of the tag set. Use the tag block, not the bucket | 1,3 |
 | Variants present but task_id sets are DISJOINT (not A/B) | Excluded variant = distinct tasks, not duplicates. Script prints task_id overlap + dropped counts; surface them, don't silently drop | 1 |
 | `SUMMARY.md` has multiple `\| uipath- \|` tables | Only when no `coverage.json`: parse the `## Overview` table only (header has `Overall`); naive parse double-counts | 2 |
 | Coverage cell has `~` / `(planned)` decoration | Strip bold only; keep `~` and `(planned)` verbatim | 2 |
@@ -363,7 +371,7 @@ Exclude the generic `uip … --output json` sentinel pattern (unattributable). N
 | Skill in coverage, absent from run | Eval/pass `—`/`not in run` | 2 |
 | Org scorecard adds/removes a product row (e.g. Agent Hub) | Reconcile vs the parent revision you selected; emit/flag, don't drop. Planned skill with no folder → Skill Coverage `0% (planned)`, Skills tiers `not in run` | 3 |
 | New skill folder maps to no product row | Surface in Source Data; tell user | 3 |
-| `uipath-platform` sub-product eval/pass-fail | Split from the run's `psub` breakdown by default (orchestrator+resources summed); coverage stays platform-wide unless `uipath-platform.md` splits it. `tiers()` also runs per sub-dir for the 2nd table | 3 |
+| `uipath-platform` sub-product eval/pass-fail | Split from the run's `psub` breakdown by default (orchestrator+resources summed); coverage stays platform-wide unless `uipath-platform.md` splits it. `tiers()` also runs per sub-dir for the 2nd table. **Exception:** the `integration-service` sub-dir does NOT feed the IS row — IS is cross-cutting (tag block), and the platform dir is a strict subset | 3 |
 | Org card has TWO product tables | Reproduce both (Phase 4 §3a + §3b); the 2nd ("Product Capability Enumeration") is where Skill Coverage / Skills Smoke / Skills Int+E2E go | 3,4 |
 | 2nd table's CLI columns | Not derivable from a skills run — carry org-card values verbatim (its "CLI Smoke Tests" column holds coverage %, not pass/total); leave CLI Coverage/Int+E2E/Test-Cov% blank | 4 |
 | Untiered run tasks (no smoke/integration/e2e tag) | Counted in product total, in neither tier column; surface `(+p/t untiered)` remainder, don't drop | 1,4 |
@@ -387,7 +395,8 @@ Exclude the generic `uip … --output json` sentinel pattern (unattributable). N
 - **Don't double-count coverage from `SUMMARY.md`'s second table.** Parse the `## Overview` table only.
 - **Don't mix snapshots silently.** If the coverage source and run dates diverge, surface it in the warning panel and to the user.
 - **Don't double-count variants** — but don't blindly drop one either. Score one variant only when variants are true A/B arms (overlapping task_ids). If the variant sets are disjoint (no shared task_ids), the other variant is distinct tasks; surface the dropped count, don't pretend the run was just the scored variant.
-- **Don't source a cross-cutting row's pass/fail from a same-named directory bucket.** ECS / Context Grounding (and any `cross_cutting` tag) is TAG-selected across host skills and all variants — use the Phase 1 CROSS-CUTTING TAGS block. The `uipath-platform/context-grounding` directory/`psub` bucket is a strict subset and produced a wrong 3/3 instead of 13/14. Same trap for any future cross-cutting capability that also happens to have a like-named folder.
+- **Don't source a cross-cutting row's pass/fail from a same-named directory bucket.** ECS / Context Grounding (tag `context-grounding`) and Integration Service (tags `integration-service`/`ipe`) are TAG-selected across host skills and all variants — use the Phase 1 CROSS-CUTTING TAGS block. The `uipath-platform/context-grounding` directory/`psub` bucket is a strict subset and produced a wrong 3/3 instead of 13/14; `uipath-platform/integration-service` (~8 tasks) is the same trap for IS — it omits the IS tasks in agents/flow/troubleshoot/bpmn. Same trap for any future cross-cutting capability that also happens to have a like-named folder.
+- **Don't reduce Integration Service to the platform skill.** IS spans `uipath-platform`, `uipath-maestro-flow`, `uipath-troubleshoot`, `uipath-maestro-bpmn` (and `uipath-rpa` when present). A task belongs to IS iff it carries the tag `integration-service` OR `ipe` — count across ALL those skills, never just the platform dir.
 - **Don't create duplicate pages.** Same-title page exists → update it (default) or suffix the new one; never leave two identical-title pages.
 - **Don't force unmapped skills into a product row.** Aux/connector skills with no product row belong only in the Source Data table.
 - **Don't reproduce only the first product table.** The org card has two (Product Level Scorecard + Product Capability Enumeration); the second is where Skill Coverage / Skills Smoke / Skills Int+E2E live — omitting it drops the columns the platform team reads for the skills side.

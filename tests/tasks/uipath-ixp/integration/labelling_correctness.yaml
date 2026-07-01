@@ -11,7 +11,7 @@ tags: [uipath-ixp, integration, mode:operate]
 run_limits:
   max_turns: 68
   task_timeout: 2400
-  turn_timeout: 900
+  turn_timeout: 1200
 
 sandbox:
   # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
@@ -26,10 +26,17 @@ initial_prompt: |
   Set up a trained invoice project. Use the tenant I'm already signed into
   (check I'm logged in; don't re-authenticate): create a blank project (give it a unique title
   `ixp-it-labelling-<random-suffix>` so concurrent runs don't collide) and upload
-  `./fixtures/csi_tower_invoice.png`. Then set up the taxonomy yourself — add a
+  `./fixtures/csi_tower_invoice.png`. Work only on the project you create; other
+  runs share this tenant, so never list, read, or modify any other project.
+  Then set up the taxonomy yourself — add a
   "Line Items" field group with three fields: "Description" (text), "Amount"
-  (monetary), and "Tax" (monetary). Give it time to train, then look at the
-  predictions.
+  (monetary), and "Tax" (monetary).
+
+  Training takes a few minutes. Poll the project's training status on a fixed
+  interval — wait 2 min between checks, up to 5 checks. Do NOT use a single
+  long sleep or escalating waits. Read predictions only once training has
+  completed; if it's still training after 5 checks, stop and report rather
+  than waiting longer.
 
   Then, on that invoice's line items:
   - Confirm only the first line item — the other rows look wrong, leave them.
@@ -41,7 +48,7 @@ initial_prompt: |
   - These line items have no tax column, so "Tax" doesn't apply here — mark it
     missing, and save that response to `mark_missing_result.json`.
 
-  Clean up by deleting the project when you're done.
+  Clean up by deleting the project when you're done — even if a step above failed.
 
 success_criteria:
   - type: command_executed

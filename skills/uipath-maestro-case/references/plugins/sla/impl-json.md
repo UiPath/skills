@@ -31,7 +31,7 @@ Record every `T<n> → esc_xxxxxx` in `id-map.json` under `{kind: "escalation", 
 
 - `target: "root"` → **`metadata.slaRules`** (top-level `metadata` block — there is no `root` key on disk)
 - `target: "<stage-name>"` → locate node by `data.label === <stage-name>`; write to `node.data.slaRules`
-- Accepted node types: `case-management:Stage` and `case-management:ExceptionStage`.
+- Accepted node types: `case-management:Stage` (a secondary/exception stage is the same node with `data.stageType === "secondary"`).
 - If the stage node isn't found, halt and AskUserQuestion with candidate stage labels + "Something else".
 
 ## Recipe — one target

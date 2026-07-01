@@ -39,11 +39,13 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 **If the file does NOT exist** → run the discovery flow below.
 
 **Discovery flow** (used for both missing and stale context):
-1. Trigger the `uipath-project-discovery-agent` and wait for it to complete
+1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
+   - **Host registers plugin agents by name** (e.g., Claude Code) → trigger the registered `uipath-project-discovery-agent` agent.
+   - **Host only spawns its own predefined subagents** (e.g., UiPath Autopilot) → spawn a read-only subagent and pass it that file (relative to this skill) as its instructions / custom skill.
 2. The agent returns the generated context document as its response
 3. Write the returned content to **both**:
    - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
-   - `AGENTS.md` at project root — read by UiPath Autopilot in Studio Desktop. If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
+   - `AGENTS.md` at project root — the shared cross-agent context convention (read by UiPath Autopilot in Studio Desktop and other AGENTS.md-aware hosts). If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
 4. Then proceed with the skill workflow
 
 ## Step 0: Resolve PROJECT_DIR
@@ -261,6 +263,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | **Use mock testing** | XAML | [testing-guide.md § Mock Testing (WIP)](references/testing-guide.md) — requires CLI command not yet available |
 | **Use XAML test activities** | XAML | [testing-guide.md § XAML Test Activities](references/testing-guide.md) |
 | **Use execution templates** | XAML | [testing-guide.md § Execution Templates](references/testing-guide.md) |
+| **Set up Test Manager for the project** (server URL + default project) | Both | [cli-reference.md § Test Manager](references/cli-reference.md) — `uip rpa tm connect` / `set-default-project` |
 | **Create/edit XAML workflow** | XAML | [xaml/workflow-guide.md](references/xaml/workflow-guide.md) → [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) |
 | **Use a common activity** (`Sequence` / `If` / `Switch<T>` / `TryCatch` / `While` / `DoWhile` / `ForEach<T>` / `Assign` / `LogMessage` / `WriteLine` / `Delay` / `Throw` / `Rethrow`) | XAML | [common-activity-card.md](references/common-activity-card.md) |
 | **Create/edit Flowchart** | XAML | [xaml/flowchart-guide.md](references/xaml/flowchart-guide.md) → [xaml/canvas-layout-guide.md](references/xaml/canvas-layout-guide.md) |

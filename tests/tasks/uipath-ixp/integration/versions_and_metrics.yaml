@@ -11,7 +11,7 @@ tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
   max_turns: 72
-  task_timeout: 2400
+  task_timeout: 3000
   turn_timeout: 1200
 
 sandbox:
@@ -29,6 +29,14 @@ initial_prompt: |
   in; don't re-authenticate): start a project from the files in `./fixtures/` —
   give it a unique title `ixp-it-versions-<random-suffix>` so concurrent runs don't
   collide — import the taxonomy, upload one of the invoices — and let it train.
+  Work only on the project you create; other runs share this tenant, so never
+  list, read, or modify any other project.
+
+  Training takes a few minutes (you'll wait through it twice). Each time, poll
+  the project's training status on a fixed interval — wait 2 min between checks,
+  up to 5 checks. Do NOT use a single long sleep or escalating waits. Move on
+  only once training has completed; if it's still training after 5 checks, stop
+  and report rather than waiting longer.
 
   Once it's trained, confirm the predictions on the document so there's some
   ground truth to score against. Pull that version's metrics and save them to
@@ -40,7 +48,7 @@ initial_prompt: |
   instruction so it only captures the grand total payable. Once it has retrained,
   pull the new version's metrics the same way into `metrics_v2.json`.
 
-  Delete the project when you're done.
+  Delete the project when you're done — even if a step above failed.
 
 success_criteria:
   - type: command_executed
