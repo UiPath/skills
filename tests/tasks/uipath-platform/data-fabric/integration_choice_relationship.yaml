@@ -1,21 +1,11 @@
 task_id: skill-datafabric-integration-complex-fields
 description: >
-  Integration test: agent builds a two-entity Customer/Order schema that
-  exercises the full advanced-schema surface — STRING/MULTILINE_TEXT
-  lengthLimit, DECIMAL decimalPrecision + minValue/maxValue, a
-  CHOICE_SET_SINGLE field on a discovered choice set, a RELATIONSHIP from
-  Order back to Customer, and a FILE field bound to the EntityAttachment
-  storage entity. Also covers the Rule 4 reserved-keyword rename
-  (`Status` → `orderStatus`) and confirms `entities get` echoes every
-  constraint back under Fields[].fieldDataType. Inserts records, filters
-  by relationship + choice fields, and resolves a Customer by Email
-  before writing the related Order. Distinct from e2e_expense_tracker
-  (which covers CHOICE_SET_MULTIPLE + `in`-operator aggregation): this
-  test exercises the resolve-by-unique-key pattern (Email → Id) before a
-  relational write and the create-only FILE-field schema (upload via CLI
-  is not supported). Choice sets are authored only in the web UI — if
-  none exists in the tenant, the test records the gap and still
-  completes the relationship + FILE-field + constraint workflow.
+  Integration: two-entity Customer/Order schema with STRING/MULTILINE_TEXT
+  lengthLimit, DECIMAL precision + min/max, a RELATIONSHIP + optional
+  CHOICE_SET_SINGLE + FILE field. Exercises the resolve-by-Email pattern
+  before the relational write and the reserved-keyword rename (Rule 4).
+  Grading via assert_record_count + verify_field_binding + inline schema-
+  echo constraint reads + llm_judge on the walk-through.
 tags: [uipath-platform, data-fabric, integration, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
@@ -41,40 +31,17 @@ initial_prompt: |
   Seed: two customers (`alice@integration.test`, `bravo@integration.test`)
   and three orders (2 for alice, 1 for bravo).
 
-  Sanity checks:
-    - Find alice by email, then pull her orders. Should be 2.
-    - Open one order and confirm the customer link is stored as her ID
-      (not email, not name). If status was set, confirm it's stored as
-      a number.
-    - If status was set, all 3 orders filtered by that status should
-      come back.
-
-  Read both lists' settings back and save to `report.json`:
-
-    {
-      "choice_set_available":  <bool>,
-      "chosen_choice_set_id":  "<id-or-null>",
-      "chosen_choice_number_id": <int-or-null>,
-      "attachment_entity_id":   "<id>",
-      "attachment_name_field_id": "<id>",
-      "parent_entity_id":       "<id>",
-      "child_entity_id":        "<id>",
-      "parent_id_a": "<id>", "parent_id_b": "<id>",
-      "child_id_1":  "<id>", "child_id_2":  "<id>", "child_id_3": "<id>",
-      "filter_by_relationship_count": <int>,
-      "filter_by_choice_count":       <int-or-null>,
-      "stored_relationship_is_uuid":  <bool>,
-      "stored_choice_is_integer":     <bool-or-null>,
-      "schema_echo": {
-        "customer_name_length_limit":            <int>,
-        "customer_notes_length_limit":           <int>,
-        "order_amount_decimal_precision":        <int>,
-        "order_amount_min_value":                <number>,
-        "order_amount_max_value":                <number>,
-        "order_receipt_type":                    "FILE",
-        "order_receipt_reference_entity_matches": <bool>
-      }
-    }
+  Sanity checks — walk me through what you saw:
+    - Alice's order count (should be 2 when filtering by her ID).
+    - When you open one order back up: the customer link stored as
+      her ID (not email, not name); if status was set, stored as a
+      number.
+    - If status was set: filtering all orders by that status should
+      return 3.
+    - Read both lists' settings back and tell me the constraints
+      Data Fabric echoed for: customer name length limit, notes
+      length limit, order amount's decimal precision + min/max, and
+      the Receipt column's type + reference target.
 
   We'll wire receipt uploads up later — just get the column in place.
   Don't author any new dropdowns either.
@@ -220,72 +187,90 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "report.json captured parent + child entity IDs"
-    path: "report.json"
-    assertions:
-      - expression: "parent_entity_id"
-        operator: regex
-        expected: "^[0-9a-fA-F-]{8,}"
-      - expression: "child_entity_id"
-        operator: regex
-        expected: "^[0-9a-fA-F-]{8,}"
+  - type: run_command
+    description: "End state (deterministic): 2 Customer records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationCustomer --expected 2"
+    timeout: 60
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Relationship filter returned exactly 2 records for parent_id_a"
-    path: "report.json"
-    assertions:
-      - expression: "filter_by_relationship_count"
-        operator: equals
-        expected: 2
-    weight: 2.5
+  - type: run_command
+    description: "End state (deterministic): 3 Order records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationOrder --expected 3"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Stored relationship value is a UUID (not a label / email)"
-    path: "report.json"
-    assertions:
-      - expression: "stored_relationship_is_uuid"
-        operator: equals
-        expected: true
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "entities get echoed back the constraint values authored on the schema"
-    path: "report.json"
-    assertions:
-      - expression: "schema_echo.customer_name_length_limit"
-        operator: equals
-        expected: 200
-      - expression: "schema_echo.customer_notes_length_limit"
-        operator: equals
-        expected: 2000
-      - expression: "schema_echo.order_amount_decimal_precision"
-        operator: equals
-        expected: 2
-      - expression: "schema_echo.order_amount_min_value"
-        operator: equals
-        expected: 0
-      - expression: "schema_echo.order_amount_max_value"
-        operator: equals
-        expected: 1000000
-      - expression: "schema_echo.order_receipt_type"
-        operator: equals
-        expected: "FILE"
-      - expression: "schema_echo.order_receipt_reference_entity_matches"
-        operator: equals
-        expected: true
+  - type: run_command
+    description: "Schema (deterministic): `customerId` RELATIONSHIP field on CE_IntegrationOrder is correctly bound to CE_IntegrationCustomer"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_IntegrationOrder --field-name customerId --target-entity-name CE_IntegrationCustomer"
+    timeout: 60
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stored form + schema (deterministic): an Order record's `customerId` is a UUID; entity schema echoes lengthLimit / decimalPrecision / minValue / maxValue as authored"
+    command: >-
+      python3 -c "
+      import subprocess, json, re, sys;
+      def uip(*a):
+        r = subprocess.run(['uip', *a, '--output', 'json'], capture_output=True, text=True, timeout=60);
+        return json.loads(r.stdout) if r.stdout else {};
+      ents = uip('df', 'entities', 'list', '--native-only').get('Data') or [];
+      cust_id = next((e.get('Id') for e in ents if isinstance(e, dict) and e.get('Name') == 'CE_IntegrationCustomer'), None);
+      ord_id  = next((e.get('Id') for e in ents if isinstance(e, dict) and e.get('Name') == 'CE_IntegrationOrder'), None);
+      assert cust_id and ord_id, 'entities not found';
+      recs = ((uip('df', 'records', 'list', ord_id, '--limit', '1').get('Data') or {}).get('Items')) or [];
+      assert recs, 'no order records';
+      cid = recs[0].get('customerId') or recs[0].get('CustomerId');
+      assert cid and re.match(r'^[0-9a-fA-F-]{8,}', str(cid)), f'customerId not UUID: {cid!r}';
+      schema = (uip('df', 'entities', 'get', ord_id).get('Data') or {});
+      fields = schema.get('Fields') or [];
+      fdt = lambda name: next((f.get('FieldDataType', {}) for f in fields if (f.get('Name') or f.get('FieldName')) == name), {});
+      amt = fdt('amount') or fdt('Amount');
+      assert amt.get('DecimalPrecision') == 2, f'amount decimalPrecision != 2: {amt}';
+      assert amt.get('MinValue') in (0, '0', 0.0), f'amount minValue != 0: {amt}';
+      assert amt.get('MaxValue') in (1000000, '1000000', 1000000.0), f'amount maxValue != 1000000: {amt}';
+      cust_schema = (uip('df', 'entities', 'get', cust_id).get('Data') or {}).get('Fields') or [];
+      name_fdt = next((f.get('FieldDataType', {}) for f in cust_schema if (f.get('Name') or '').lower() == 'name'), {});
+      notes_fdt = next((f.get('FieldDataType', {}) for f in cust_schema if (f.get('Name') or '').lower() == 'notes'), {});
+      assert name_fdt.get('LengthLimit') == 200, f'name lengthLimit != 200: {name_fdt}';
+      assert notes_fdt.get('LengthLimit') == 2000, f'notes lengthLimit != 2000: {notes_fdt}';
+      print('OK: customerId is UUID, decimalPrecision=2, minValue=0, maxValue=1000000, name/notes lengthLimits=200/2000');
+      "
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent walked through Alice's order count (2), stored-form observations, and choice-status filter — accurately if status was used"
+    include_agent_output: true
+    prompt: |
+      The agent built CE_IntegrationCustomer (2 customers) and
+      CE_IntegrationOrder (3 orders: 2 for alice, 1 for bravo), then
+      was asked for a walk-through of four observations:
+
+        1. Alice's order count (should be 2 when filtering by her ID).
+        2. What one open order shows: customerId stored as her UUID
+           (not email/name), and — IF a status choice was set — status
+           stored as a number.
+        3. If status was set, filtering all orders by that status
+           should return 3.
+        4. Schema constraint values echoed back by entities get:
+           customer name lengthLimit=200, notes lengthLimit=2000,
+           order amount decimalPrecision=2 + min=0 + max=1000000,
+           Receipt column of type FILE.
+
+      Read the agent's final walk-through. Score 1.0 if all 4 are
+      reported clearly and correctly (allowing "status wasn't used"
+      as valid for #3 if the tenant had no dropdown). Score 0.5 if
+      2-3 are correct. Score 0.0 if 2+ are wrong or skipped.
+    weight: 2.5
+    pass_threshold: 0.5
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"

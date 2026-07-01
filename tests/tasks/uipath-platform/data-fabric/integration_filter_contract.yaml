@@ -1,15 +1,10 @@
 task_id: skill-datafabric-integration-filter-contract
 description: >
-  Integration test: validates the records-query filter contract end-to-end
-  against a live tenant. The agent constructs documented filter shapes
-  (supported operators, logicalOperator forms, valueList, nested
-  filterGroups, sortOptions, aggregates, is-empty/is-not-empty), returns
-  all fields by default (no gratuitous `selectedFields`), and avoids the
-  anti-pattern shapes the skill warns against (`filters`/`field`/`==`/
-  `Equals`, comparison on Text). An independent run_command oracle
-  (verify_filter_contract.py) then probes every documented shape directly
-  against the CLI and asserts each is accepted — or, for anti-patterns,
-  silently dropped. Asserts command-shape validity, not record counts.
+  Integration: filter contract probe on 20-row `CodeEvalTestEntity` —
+  supported operators + logicalOperator forms + valueList + is-empty +
+  aggregates, and negative-shape guards (`filters` / `field` / `==` /
+  `Equals` / comparison-on-Text). Asserts command-shape validity, not
+  record counts; deterministic oracle is `verify_filter_contract.py`.
 tags: [uipath-platform, data-fabric, integration, records, mode:operate, lifecycle:discover]
 run_limits:
   expected_turns: 25

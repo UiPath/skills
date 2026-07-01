@@ -120,6 +120,22 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "End state (deterministic): 2 Employee rows landed in CE_FolderBindEmployee"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_FolderBindEmployee --expected 2"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): 1 Expense row landed in CE_FolderBindExpense"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_FolderBindExpense --expected 1"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent must NOT delete any entity — cleanup runs post_run"
     tool_name: "Bash"

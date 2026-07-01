@@ -1,15 +1,12 @@
 task_id: skill-datafabric-integration-error-paths
 description: >
-  Integration test: agent exercises all major negative paths for records,
-  CSV import, and file operations against a live tenant — missing required
-  field (R-C-08), unique constraint violation on insert and update (R-C-09,
-  R-U-06), type mismatch on insert and update (R-C-10, R-U-07), update body
-  missing Id (R-U-08), record not found on update and delete (R-U-05,
-  R-D-04), CSV header mismatch (R-C-11), malformed CSV (R-C-12), file upload
-  to non-FILE field (F-U-05), file upload with non-existent record (F-U-06),
-  and file upload with missing local file (F-U-08). All commands are expected
-  to fail; the test verifies the agent captures structured errors and does
-  not retry or call the REST API directly.
+  Integration: ~13 negative CLI paths against `CE_ErrorPathsTest` —
+  required-field / unique / type-mismatch / missing-Id / not-found on
+  insert / update / delete, CSV header-mismatch + malformed CSV, and
+  file-upload edges (non-FILE column, non-existent record, missing local
+  file). Every command is expected to fail; agent must capture the raw
+  error and NOT retry. Grading via command-shape + llm_judge on verbatim
+  error surfacing.
 tags: [uipath-platform, data-fabric, integration, error-paths, mode:diagnose, lifecycle:setup]
 run_limits:
   expected_turns: 25
@@ -110,6 +107,24 @@ success_criteria:
     command_pattern: '(?s)uip\s+df\s+files\s+upload\s+.*--file'
     min_count: 3
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent created wrong_headers.csv locally for the CSV-header-mismatch scenario"
+    path: "wrong_headers.csv"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent created malformed.csv locally for the malformed-CSV scenario"
+    path: "malformed.csv"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent created temp.txt locally as the file-upload source"
+    path: "temp.txt"
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed

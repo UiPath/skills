@@ -1,16 +1,10 @@
 task_id: skill-datafabric-integration-filter-edge-cases
 description: >
-  Integration test: agent runs filter and pagination scenarios that
-  catch real-world regressions — null-vs-not-null semantics, special
-  characters in filter literals (single quote, percent, underscore,
-  backslash — SQL injection and LIKE-escape vectors), case sensitivity
-  on STRING equality, $top=0, $top above the documented max, $skip
-  past the end of the result set, $orderby on a nullable field
-  (null-first vs null-last consistency across pages), and pagination
-  consistency while the underlying data is modified mid-walk. Each
-  scenario has an expected outcome captured in report.json; an
-  independent record-count oracle verifies the entity ended up in the
-  expected state.
+  Integration: 10-row `feedback_batch.json` fixture probes filter + paging
+  edges — null-vs-empty-vs-missing, special chars (`'`, `%`, `_`, `\`),
+  case sensitivity, page-size 0 / oversized / past-end, sort stability on
+  a nullable column, and pagination consistency during mid-walk mutation.
+  Grading via command-shape + llm_judge on walk-through observations.
 tags: [uipath-platform, data-fabric, integration, records, filter-edges, mode:operate, lifecycle:discover]
 
 run_limits:
@@ -21,72 +15,38 @@ run_limits:
 initial_prompt: |
   Set up a list `CE_FilterEdgeTest` with three columns: Title (required
   text, up to 200 chars), Score (optional whole number), Notes (optional
-  long text). Load these 10 rows and remember every row ID:
+  long text). Then load the 10 rows from `feedback_batch.json` in the
+  working directory — some rows have `Score: null`, some omit `Notes`,
+  some have `Notes: ""`, and a few include quotes / percent / underscore
+  / backslash / unicode / newline. Load each row verbatim.
 
-    1.  "alpha",              Score 10,   Notes "first"
-    2.  "beta",                Score 20,  Notes blank
-    3.  "Gamma",              Score blank, Notes ""
-    4.  "delta",              Score 30,   Notes "with quote: O'Brien"
-    5.  "epsilon",            Score 40,   Notes "with percent 50%"
-    6.  "zeta",               Score 50,   Notes "with underscore _ here"
-    7.  "eta",                Score 60,   Notes "with backslash \\ here"
-    8.  "ALPHA",              Score 70,   Notes "uppercase twin"
-    9.  "row with newline",   Score 80,   Notes "line1\nline2"
-    10. "unicode café résumé",Score 90,   Notes "non-ascii"
-
-  Run these and record counts:
+  Then run these searches and walk me through the counts / results:
 
   Null / empty:
-    - customers with no score (edge_1_A) / with a score (edge_1_B)
-    - notes blank (edge_1_C) / notes empty-string (edge_1_D) — the two
-      should NOT be the same set
+    - customers with no score / with a score
+    - notes blank (missing key) / notes empty-string — the two should
+      NOT be the same set
 
   Substring / special chars in Notes:
-    - contains "O'Brien" (edge_2_A), "%" (edge_2_B), "_" (edge_2_C),
-      "\\" (edge_2_D)
+    - contains "O'Brien", "%", "_", "\\"
 
   Case-sensitivity:
-    - Title exactly "alpha" (edge_3_A). Note whether "ALPHA" also
-      matched (edge_3_A_case_insensitive).
+    - Title exactly "alpha". Note whether "ALPHA" also matched.
 
   Paging edges (describe what came back — no exceptions):
-    - page size 0 (edge_4_A: empty | error | count)
-    - page size 100000 (edge_4_B: clamped | count | error)
-    - start position 1000 on a 10-row list (edge_4_C: empty | error)
+    - page size 0
+    - page size 100000
+    - start position 1000 on a 10-row list
 
   Sort stability:
     - sort by Score ascending. Where does the null-score row land
-      (edge_5_A_null_position: first | last | middle)? Repeat the
-      same sort and check position matches (edge_5_A_position_stable).
+      (first / last / middle)? Repeat the same sort and confirm the
+      null row lands in the same spot.
 
   Concurrent write during walk:
-    - Start walking in pages of 3. Between page 1 and page 2, add a
-      row "midstream-add" (score 95) and delete row 5. Keep walking
-      with the SAME cursor. Report duplicate IDs (edge_6_C_duplicate_ids)
-      and missing IDs (edge_6_C_missing_ids).
-
-  Save to `report.json`:
-    {
-      "entity_id": "<list ID>",
-      "row_ids": ["<r1>", "<r2>", ... "<r10>"],
-      "edge_1_A_count": <int>,
-      "edge_1_B_count": <int>,
-      "edge_1_C_count": <int>,
-      "edge_1_D_count": <int>,
-      "edge_2_A_count": <int>,
-      "edge_2_B_count": <int>,
-      "edge_2_C_count": <int>,
-      "edge_2_D_count": <int>,
-      "edge_3_A_count": <int>,
-      "edge_3_A_case_insensitive": <true|false>,
-      "edge_4_A_result": "<empty|error|count>",
-      "edge_4_B_result": "<count|error|clamped>",
-      "edge_4_C_result": "<empty|error>",
-      "edge_5_A_null_position": "<first|last|middle>",
-      "edge_5_A_position_stable": <true|false>,
-      "edge_6_C_duplicate_ids": [<list of ids that appeared in 2+ pages, or []>],
-      "edge_6_C_missing_ids": [<list of ids that should have appeared but didn't, or []>]
-    }
+    - Start walking in pages of 3. Between page 1 and page 2, add a row
+      "midstream-add" (score 95) and delete row 5. Keep walking with the
+      SAME cursor. Report duplicate IDs and missing IDs (if any).
 
 success_criteria:
   - type: command_executed
@@ -137,79 +97,39 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
+  - type: llm_judge
+    description: "Agent walked through null/empty/substring/case/pagination/sort edge-case observations coherently — reasonable counts + observations, not obvious contradictions"
+    include_agent_output: true
+    prompt: |
+      The agent loaded 10 edge-case rows into `CE_FilterEdgeTest` and was
+      asked to walk through six categories of observations after running
+      queries against it:
 
-  - type: json_check
-    description: "Null vs empty vs missing distinction captured correctly"
-    path: "report.json"
-    assertions:
-      - expression: "edge_1_A_count"
-        operator: equals
-        expected: 1
-      - expression: "edge_1_B_count"
-        operator: equals
-        expected: 9
-      - expression: "edge_1_C_count"
-        operator: equals
-        expected: 1
-      - expression: "edge_1_D_count"
-        operator: equals
-        expected: 1
+        1. Null / empty on Score AND Notes:
+             - rows with no score (1) vs with a score (9)
+             - notes blank (1: row 2 omits Notes) vs empty-string (1: row 3)
+             - the two "no notes" sets should NOT be identical
+        2. Substring / special chars in Notes: contains "O'Brien" (row 4),
+           "%" (row 5), "_" (row 6), "\\" (row 7). Each search should return
+           at least 1 row (may return more if the platform treats %/_ as
+           LIKE wildcards — worth noting either way).
+        3. Case-sensitivity: exact-match Title "alpha" — is "ALPHA" (row 8)
+           also matched or not?
+        4. Pagination edges: page size 0, page size 100000, start position
+           1000 on a 10-row list. Agent describes what came back (empty,
+           error, count, clamped) — no fixed expectation on which.
+        5. Sort stability: sort by Score ascending, note where the
+           null-score row lands, re-sort, confirm position stable.
+        6. Concurrent write during walk: paging in 3s, adding + deleting
+           between page 1 and page 2 — report duplicate/missing IDs.
+
+      Read the agent's final walk-through. Score 1.0 if the agent reported
+      plausible observations across at LEAST 5 of the 6 categories AND the
+      null-count claim (1 with no score, 9 with a score) matches the data.
+      Score 0.5 if 3-4 categories are reported clearly.
+      Score 0.0 if 3+ categories are missing OR the null count is wrong.
     weight: 3.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Special-character searches at least found the target row (the platform treats %/_ as LIKE wildcards so they may match extra rows — captured separately)"
-    path: "report.json"
-    assertions:
-      - expression: "edge_2_A_count"
-        operator: gte
-        expected: 1
-      - expression: "edge_2_B_count"
-        operator: gte
-        expected: 1
-      - expression: "edge_2_C_count"
-        operator: gte
-        expected: 1
-      - expression: "edge_2_D_count"
-        operator: gte
-        expected: 1
-    weight: 3.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Case-sensitivity behavior recorded (test does not prescribe — agent must observe)"
-    path: "report.json"
-    assertions:
-      - expression: "edge_3_A_count"
-        operator: gte
-        expected: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Pagination edges captured (page size 0, oversized, past-end)"
-    path: "report.json"
-    assertions:
-      - expression: "edge_4_C_result"
-        operator: equals
-        expected: "empty"
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Sort on nullable column is stable across repeated queries"
-    path: "report.json"
-    assertions:
-      - expression: "edge_5_A_position_stable"
-        operator: equals
-        expected: true
-    weight: 2.5
-    pass_threshold: 1.0
+    pass_threshold: 0.5
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
@@ -229,6 +149,11 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
+  # Stage the input fixture into the agent's working directory.
+  - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/inputs/filter_edge_cases.rows.json ./feedback_batch.json"
+    timeout: 10
+    fail_on_error: true
+
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_FilterEdgeTest"
     timeout: 60
     fail_on_error: false

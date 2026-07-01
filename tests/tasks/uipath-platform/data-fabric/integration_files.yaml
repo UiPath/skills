@@ -27,14 +27,10 @@ initial_prompt: |
     - `café-📎.txt` (unicode + emoji): did the filename survive intact?
     - `../../etc-passwd.txt`: rejected or filename sanitized?
 
-  Save to `report.json`:
-    {
-      "entity_id": "<list ID>",
-      "record_id": "<row ID>",
-      "empty_file_accepted":       <bool>,
-      "unicode_filename_preserved": <bool>,
-      "traversal_filename_outcome": "<rejected|sanitized|<error>>"
-    }
+  When you're done, walk me through what happened for each of the three
+  unusual uploads — was the zero-byte file accepted, did the unicode
+  filename survive intact, and did the traversal-name path get rejected
+  or sanitized?
 
 success_criteria:
   - type: command_executed
@@ -86,24 +82,34 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_exists
-    description: "report.json with the edge-case observations was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_exists
     description: "Empty file was created (zero-byte edge)"
     path: "empty.txt"
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "Edge observations recorded as the right shape (booleans + traversal-outcome string)"
-    command: 'python3 -c "import json,sys; d=json.load(open(''report.json'')); ok=(isinstance(d.get(''empty_file_accepted''),bool) and isinstance(d.get(''unicode_filename_preserved''),bool) and isinstance(d.get(''traversal_filename_outcome''),str)); sys.exit(0 if ok else 1)"'
-    timeout: 10
-    expected_exit_code: 0
+  - type: llm_judge
+    description: "Agent reported an outcome for each of the three unusual uploads (empty / unicode / traversal) — accepted vs rejected vs sanitized, based on what the platform actually returned"
+    include_agent_output: true
+    prompt: |
+      The agent attempted three unusual file uploads and was asked to
+      walk through what happened for each:
+
+        1. `empty.txt` — a zero-byte file. Was the upload accepted or
+           rejected?
+        2. `café-📎.txt` — unicode name plus an emoji. Did the filename
+           survive intact (readable back verbatim) or was it altered /
+           rejected?
+        3. `../../etc-passwd.txt` — a path-traversal-shaped filename.
+           Was it rejected outright or was the filename sanitized to
+           something safe (e.g., stripped to `etc-passwd.txt`)?
+
+      Read the agent's final walk-through. Score 1.0 if the agent
+      reported a specific outcome for all three uploads (accepted /
+      rejected / sanitized, and where relevant a verbatim error).
+      Score 0.5 if 2 of 3 are reported clearly.
+      Score 0.0 if 2+ are missing OR the outcomes are self-contradictory.
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0.5
 
   - type: file_exists
     description: "original.txt was created"

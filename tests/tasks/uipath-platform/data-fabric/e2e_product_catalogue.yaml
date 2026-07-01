@@ -123,6 +123,38 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: run_command
+    description: "End state (deterministic): all 15 product records landed in CE_ProductCatalogue"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_ProductCatalogue --expected 15"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent reported the final tally correctly — total products (15), in-stock count (12: 15 minus 3 marked out-of-stock), Electronics count (5, one per category)"
+    include_agent_output: true
+    prompt: |
+      The agent seeded 15 products (5 per category across Electronics,
+      Clothing, Home). Then:
+        - bumped the top-2 most-expensive products' prices by 10%,
+        - marked the 3 cheapest as out-of-stock,
+        - attached product_hero.jpg to the single most-expensive product,
+        - was asked for a final tally.
+
+      The expected tally values are:
+        - total products = 15
+        - in-stock count = 12 (15 minus the 3 marked out-of-stock)
+        - Electronics count = 5
+
+      Read the agent's final response. Score 1.0 if the tally reports
+      all three numbers correctly (allowing minor phrasing variance —
+      "12 in stock", "12 available", etc.).
+      Score 0.5 if 2 of 3 are correct.
+      Score 0.0 if 2+ are wrong or skipped.
+    weight: 2.5
+    pass_threshold: 0.5
+
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
     tool_name: "Bash"

@@ -1,19 +1,11 @@
 task_id: skill-datafabric-e2e-expense-tracker
 description: >
-  E2E scenario: agent builds an expense tracker in Data Fabric — a parent
-  Employee entity and a child Expense entity whose fields exercise every
-  complex / constrained type (RELATIONSHIP to Employee, CHOICE_SET_SINGLE
-  for category, optional CHOICE_SET_MULTIPLE for tags, a Receipt FILE field
-  bound to the EntityAttachment storage entity, plus lengthLimit on
-  STRING/MULTILINE_TEXT and decimalPrecision + minValue + maxValue on
-  DECIMAL). Seeds 6 employees and 12 expenses, produces a department
-  summary using filterGroup queries on both the relationship and choice
-  fields, and confirms each field stores its expected value form (UUID for
-  relationship, integer for choice). FILE upload via CLI is not supported,
-  so the Receipt field is created but never written. Choice sets are
-  authored only in the web UI — if none exists in the tenant, the agent
-  records the gap and finishes the relationship + FILE + constraint
-  workflow.
+  E2E: parent Employee + child Expense entity exercising RELATIONSHIP,
+  CHOICE_SET_SINGLE / _MULTIPLE, FILE, and DECIMAL constraints. Seeds 6
+  employees + 12 expenses, runs filterGroup queries by relationship and
+  choice, and does an Engineering department aggregation. Grading via
+  assert_record_count + verify_field_binding + inline UUID check on a
+  live record + llm_judge on the aggregate walk-through.
 tags: [uipath-platform, data-fabric, e2e, expense-tracker, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
@@ -57,26 +49,12 @@ initial_prompt: |
   email/name), category stored as a number (not the label), tags
   stored as a list of numbers.
 
-  Save `report.json`:
-    {
-      "category_choice_set_id":  "<id-or-null>",
-      "category_value_map":      { "<Name>": <NumberId>, ... } | null,
-      "tags_choice_set_id":      "<id-or-null>",
-      "tags_value_map":          { "<Name>": <NumberId>, ... } | null,
-      "attachment_entity_id":    "<id>",
-      "attachment_name_field_id": "<id>",
-      "parent_entity_id":        "<id>",
-      "child_entity_id":         "<id>",
-      "employee_ids":            [ ... 6 IDs ... ],
-      "expense_ids":             [ ... 12 IDs ... ],
-      "q_per_employee_count":    <int>,
-      "q_per_category":          { "<Name>": <int>, ... } | null,
-      "engineering_employee_ids":[ "<id>", "<id>", "<id>" ],
-      "engineering_total_amount": <number>,
-      "stored_submitter_is_uuid": true,
-      "stored_category_is_integer":  <bool|null>,
-      "stored_tags_is_integer_array":<bool|null>
-    }
+  Then walk me through:
+    - the per-employee expense count for one specific employee,
+    - the per-category breakdown (if categories were used),
+    - the Engineering total (three employee IDs + summed amount),
+    - what you saw when you opened one expense — the stored form
+      of submitter / category / tags.
 
   We'll wire receipt uploads up later — just get the column in place.
   Don't author any new dropdowns either.
@@ -165,7 +143,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted expense records (either --body with inline submitter UUID, or --file with a JSON payload — the file-content shape is verified by report.json's stored_submitter_is_uuid assertion)"
+    description: "Agent inserted expense records (either --body with inline submitter UUID, or --file with a JSON payload — the stored-form check is a separate run_command that reads a live record's submitter value)"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+records\s+insert[\s\S]*?(?:--body[\s\S]*?\\?\"[Ss]ubmitter\\?\"\s*:\s*\\?\"[0-9a-fA-F-]{8,}|--file\s+\S+\.json)'
     min_count: 1
@@ -231,53 +209,83 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
+  - type: run_command
+    description: "End state (deterministic): 6 Employee records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_E2EEmployee --expected 6"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "report.json captured parent + child entity IDs and 6 employees + 12 expenses"
-    path: "report.json"
-    assertions:
-      - expression: "parent_entity_id"
-        operator: regex
-        expected: "^[0-9a-fA-F-]{8,}"
-      - expression: "child_entity_id"
-        operator: regex
-        expected: "^[0-9a-fA-F-]{8,}"
-      - expression: "length(employee_ids)"
-        operator: equals
-        expected: 6
-      - expression: "length(expense_ids)"
-        operator: equals
-        expected: 12
+  - type: run_command
+    description: "End state (deterministic): 12 Expense records landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_E2EExpense --expected 12"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema (deterministic): `submitter` RELATIONSHIP field on CE_E2EExpense is correctly bound to CE_E2EEmployee"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_E2EExpense --field-name submitter --target-entity-name CE_E2EEmployee"
+    timeout: 60
+    expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Stored relationship value is a UUID (not a label / email)"
-    path: "report.json"
-    assertions:
-      - expression: "stored_submitter_is_uuid"
-        operator: equals
-        expected: true
-    weight: 2.5
+  - type: run_command
+    description: "Stored form (deterministic): a live Expense record's `submitter` value is a UUID (not an email / name)"
+    command: >-
+      python3 -c "
+      import subprocess, json, re, sys;
+      def uip(*a):
+        r = subprocess.run(['uip', *a, '--output', 'json'], capture_output=True, text=True, timeout=60);
+        return json.loads(r.stdout) if r.stdout else {};
+      ents = uip('df', 'entities', 'list', '--native-only').get('Data') or [];
+      eid = next((e.get('Id') for e in ents if isinstance(e, dict) and e.get('Name') == 'CE_E2EExpense'), None);
+      assert eid, 'CE_E2EExpense not found';
+      recs = ((uip('df', 'records', 'list', eid, '--limit', '1').get('Data') or {}).get('Items')) or [];
+      assert recs, 'no expense records';
+      v = recs[0].get('submitter') or recs[0].get('Submitter');
+      assert v and re.match(r'^[0-9a-fA-F-]{8,}', str(v)), f'submitter not UUID-shaped: {v!r}';
+      print(f'OK: submitter stored as UUID: {v}');
+      "
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Engineering aggregation resolved 3 employee UUIDs and a numeric total"
-    path: "report.json"
-    assertions:
-      - expression: "length(engineering_employee_ids)"
-        operator: equals
-        expected: 3
-      - expression: "engineering_total_amount"
-        operator: gte
-        expected: 0
-    weight: 2.5
-    pass_threshold: 1.0
+  - type: llm_judge
+    description: "Agent's walk-through covers the per-employee count, per-category breakdown, and Engineering total (3 employees + summed amount) accurately"
+    include_agent_output: true
+    prompt: |
+      The agent built two linked entities (CE_E2EEmployee with 6 rows —
+      3 Engineering, 3 Sales — and CE_E2EExpense with 12 rows, 2 per
+      employee, amounts $25-$1200) and was asked to answer three
+      questions with FRESH queries after seeding:
+
+        Q1. How many expenses does one specific employee have? (Should
+            be 2, since 2 expenses per employee.)
+        Q2. If categories were used, how many expenses per category?
+        Q3. Total dollar amount of expenses from the 3 Engineering
+            employees — first identify the 3 Engineering IDs, then sum
+            those employees' expense amounts.
+
+      Read the agent's final walk-through. Did the agent report:
+        - Q1: a plausible per-employee count (any positive integer OK
+          if the reasoning shows one specific employee's expenses)?
+        - Q2: either a category breakdown, OR an explicit note that
+          the tenant had no dropdown so this was skipped?
+        - Q3: exactly 3 Engineering employee IDs identified AND a
+          numeric total dollar amount summed from their expenses?
+        - Stored-form observation: submitter as UUID, category as
+          integer (if used), tags as list of integers (if used)?
+
+      Score 1.0 if all four are reported clearly and correctly.
+      Score 0.5 if 2-3 are correct.
+      Score 0.0 if 2+ are wrong or skipped.
+    weight: 3.0
+    pass_threshold: 0.5
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"

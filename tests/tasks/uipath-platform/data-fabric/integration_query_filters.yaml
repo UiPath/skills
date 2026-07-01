@@ -189,6 +189,31 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: llm_judge
+    description: "Agent's reported answers match the expected counts / values for each of the 8 query scenarios"
+    include_agent_output: true
+    prompt: |
+      The agent ran 8 queries against a seeded 4-row `CE_IntegrationOrders`
+      entity (records ORD-001..ORD-004, statuses: 1x Pending, 2x Active,
+      1x Closed; values 100, 500, 200, 750). Expected answers:
+
+        Q1. AND(status=Active, value>300) → 1 row (ORD-002)
+        Q2. OR(status=Pending, status=Closed) → 2 rows (ORD-001, ORD-004)
+        Q3. Nested: (Active AND value>200) OR Pending → 3 rows
+             (ORD-001, ORD-002, ORD-003)
+        Q4. Sort by value desc — top value = 750.0
+        Q5. Project just Code column — value / status absent from response
+        Q6. Full pagination walk, page size 2 — 4 unique IDs, no duplicates
+        Q7. IN filter {Pending, Active} → 3 rows
+        Q8. Aggregate count by status → { Pending: 1, Active: 2, Closed: 1 }
+
+      Read the agent's final response. Score 1.0 if the agent reported
+      correct answers for at LEAST 6 of the 8 questions (allowing minor
+      phrasing variance). Score 0.5 if 4-5 are correct. Score 0.0 if 3+
+      are wrong OR queries were skipped.
+    weight: 3.0
+    pass_threshold: 0.5
+
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
     tool_name: "Bash"

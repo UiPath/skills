@@ -1,17 +1,11 @@
 task_id: skill-datafabric-integration-constraint-violations
 description: >
-  Integration test: agent probes per-type constraint boundaries with
-  paired positive/negative attempts that differ by exactly one variable.
-  Covers required vs null vs empty string (three distinct semantics),
-  STRING at lengthLimit and at limit+1, INTEGER at min/max and just
-  outside, DECIMAL at decimalPrecision and just over, DATE at year
-  boundaries plus an invalid calendar date, AUTO_NUMBER client-supplied
-  (server-managed — should reject), system fields client-supplied
-  (CreatedBy / Id), and a relationship pointing to a non-existent row.
-  Per skill Rule 18 the agent must surface the upstream error verbatim
-  and NOT silently substitute or retry. Grading is deterministic on
-  command shape + end-state record count, with an llm_judge on the
-  agent's final response for verbatim error surfacing (no self-report).
+  Integration: 23-row SKU batch from `sales_batch.json` probes per-type
+  constraint boundaries — required / length / min-max / decimal precision
+  / date / AUTO_NUMBER / system columns / relationship-to-missing-row.
+  Agent must surface each rejection verbatim (Rule 18) and NOT retry.
+  Grading via verify_constraint_outcomes.py (per-row present/absent) +
+  assert_record_count aggregate + llm_judge on verbatim errors.
 tags: [uipath-platform, data-fabric, integration, constraints, error-paths, mode:diagnose, lifecycle:setup]
 
 run_limits:
@@ -20,12 +14,12 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Sales just sent a messy spreadsheet of new SKUs — a few rows look iffy.
-  Load what you can and tell me what came back for each. For anything the
-  system rejects, capture the actual error verbatim — don't guess or
-  rewrite values.
+  Sales just sent a messy batch of new SKUs — file is `sales_batch.json`
+  in the working directory. Load what you can and tell me what came back
+  for each row. For anything the system rejects, capture the actual error
+  verbatim — don't guess or rewrite values.
 
-  Set up `CE_ConstraintTest` with these columns:
+  Set up `CE_ConstraintTest` with these columns first:
     - Code — required, short text, up to 10 characters
     - Quantity — whole number, 0 to 100
     - Price — dollars with cents, never negative
@@ -33,31 +27,16 @@ initial_prompt: |
     - Serial — an auto-generated number the system fills in
     - ParentLink — optional, links to another row in this list
 
-  Try loading each row:
-
-    1A. "OK1",      Qty 5
-    1B. Code missing, Qty 5
-    1C. Code = null,  Qty 5
-    1D. Code = "",    Qty 5
-    2A. "AAAAAAAAAA" (10 chars), Qty 5
-    2B. "AAAAAAAAAAB" (11 chars), Qty 5
-    3A. "MIN0", Qty 0
-    3B. "NEG1", Qty -1
-    4A. "MAX",  Qty 100
-    4B. "OVR",  Qty 101
-    4C. "INTOV",Qty 2147483648
-    5A. "DP2",  Qty 5, Price 9.99
-    5B. "DP3",  Qty 5, Price 9.999
-    6A. "DT1",  StockedDate "2024-01-15"
-    6B. "DTLOW",StockedDate "0001-01-01"
-    6C. "DTHI", StockedDate "9999-12-31"
-    6D. "DTBAD",StockedDate "2024-02-30"
-    7A. "AUTO", Qty 5
-    7B. "SET",  Qty 5, Serial 999
-    7C. "SYS",  Qty 5, CreatedBy "fake-user"
-    7D. "IDSET",Qty 5, Id "00000000-0000-0000-0000-000000000001"
-    8A. "REL1", ParentLink = row ID of 1A (first successful row)
-    8B. "RELBAD",ParentLink = "00000000-0000-0000-0000-000000000099"
+  Then work through `sales_batch.json` — each row carries a `_label`
+  (e.g. `"1A"`, `"2B"`, …) that identifies it in your walk-through, plus
+  the field values to attempt. A couple of notes on the file's shape:
+    - Some rows omit `Code` entirely, some send `null`, some send `""`
+      — those three cases are intentionally distinct.
+    - One row (`"8A"`) carries `_parent_from_label: "1A"` — that means
+      its `ParentLink` should be whatever row ID `1A` got after landing.
+      Substitute at load time.
+    - `Id`, `CreatedBy`, and `Serial` fields on some rows are
+      intentionally client-supplied to see how the platform handles them.
 
   When you're done, walk me through what succeeded and what failed, with
   the specific error text for each rejection. Don't retry rejected rows.
@@ -156,6 +135,12 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
+  # Stage the input fixture into the agent's working directory so the prompt
+  # can refer to it as sales_batch.json (kept out of the skill workspace).
+  - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/inputs/constraint_violations.rows.json ./sales_batch.json"
+    timeout: 10
+    fail_on_error: true
+
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ConstraintTest"
     timeout: 60
     fail_on_error: false

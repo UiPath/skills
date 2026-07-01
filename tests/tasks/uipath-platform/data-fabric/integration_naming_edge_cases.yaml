@@ -1,17 +1,11 @@
 task_id: skill-datafabric-integration-naming-edge-cases
 description: >
-  Integration test: agent walks the entity / field naming validation
-  surface end-to-end with paired positive/negative attempts that
-  differ by one character at a time. Covers leading digit (rejected),
-  hyphen (rejected), 100-character boundary (positive: 100 chars
-  succeeds; negative: 101 chars fails), reserved system field names
-  (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime — must be
-  rejected), SQL/C#/VB reserved keywords (Status, Order, Group, Key,
-  Type — must be rejected with RESERVED_LANGUAGE_KEYWORDS). Per Rule
-  18 the agent surfaces the exact error verbatim; per Rule 4 the
-  agent must NOT silently rename a rejected keyword without asking.
-  Grading via command-shape (explicit reserved-name attempts fired) +
-  llm_judge on the agent's final walk-through — no self-report file.
+  Integration: name-validation matrix from `schema_migration.json` —
+  6 list names (leading digit, hyphen, underscore, 100/101-char
+  boundary) + 12 column names (system-reserved Id/CreatedBy/…,
+  SQL/C#/VB keywords). Agent must surface each rejection verbatim
+  and NOT silently rename. Grading via tenant queries (positives
+  present / negatives absent) + llm_judge on the walk-through.
 tags: [uipath-platform, data-fabric, integration, entities, naming, mode:diagnose, lifecycle:setup]
 
 run_limits:
@@ -20,35 +14,23 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  Migrating a schema from another system. Try each list and column
-  below. For rejections, capture the error verbatim — don't rewrite
-  names or retry.
+  Migrating a schema from another system — the data team handed over
+  `schema_migration.json` in the working directory. It has two sections:
 
-  Lists (each with one `Title` column, short text):
-    A1. `CE_NameOK1`
-    A2. `9StartsWithDigit`
-    B1. `CE_NameWithUnderscore`
-    B2. `CE-Name-With-Hyphen`
-    C1. `CE_` + 97 A's (100 chars total)
-    C2. `CE_` + 98 A's (101 chars total)
+    - `lists`: six lists to attempt (each with one `Title` column,
+      short text). Each entry carries a `_label` (A1, A2, …) plus the
+      list `name` to try verbatim.
+    - `columns_on_A1`: twelve columns to attempt against the first
+      successful list from the `lists` section (`CE_NameOK1`). Each
+      entry carries a `_label` (D1–D6, E1–E6) plus the column `name`
+      and its `type` in plain English.
 
-  Columns to add to `CE_NameOK1`:
-    D1. `Notes`      — long text
-    D2. `Id`         — short text
-    D3. `CreatedBy`  — short text
-    D4. `CreateTime` — date with time
-    D5. `UpdatedBy`  — short text
-    D6. `UpdateTime` — date with time
-    E1. `OrderStatus`— short text
-    E2. `Status`     — short text
-    E3. `Order`      — whole number
-    E4. `Group`      — short text
-    E5. `Key`        — short text
-    E6. `Type`       — short text
+  Try each item verbatim. For rejections, capture the error verbatim
+  — don't rewrite names or retry.
 
-  When you're done, walk me through what came back for each item —
-  what succeeded, what was rejected, and for the rejections the exact
-  error the platform returned.
+  When you're done, walk me through what came back for each item, using
+  the `_label` to identify it — what succeeded, what was rejected, and
+  for the rejections the exact error the platform returned.
 
 success_criteria:
   - type: command_executed
@@ -157,6 +139,11 @@ success_criteria:
     pass_threshold: 1.0
 
 pre_run:
+  # Stage the migration input into the agent's working directory.
+  - command: "cp $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/inputs/naming_migration.json ./schema_migration.json"
+    timeout: 10
+    fail_on_error: true
+
   # Idempotency safety net — sweep any leftovers from a prior crashed run
   # before the agent starts. Without this, an already-existing CE_NameOK1
   # makes the agent's create call fail with "Another entity with the same

@@ -96,6 +96,31 @@ success_criteria:
     weight: 1.5
     pass_threshold: 0.0
 
+  - type: llm_judge
+    description: "Agent reported the scope visibility observations correctly for each of the 5 asks"
+    include_agent_output: true
+    prompt: |
+      The agent probed entity-scope visibility with these five asks:
+
+        1. `entities list` (no folder) — CE_TenantScopeTest should show up.
+        2. `entities list --folder-key <A>` — CE_TenantScopeTest still shows
+           (tenant entities are visible from every folder context).
+        3. Create `CE_FolderScopeTest` inside folder A.
+        4. `entities list --folder-key <B>` — CE_FolderScopeTest should NOT
+           show up (folder-scoped entities are isolated to their folder).
+        5. Try `entities create CE_FolderScopeTest_Invalid` with the folder
+           ID `00000000-0000-0000-0000-000000000000` — should fail with a
+           folder-not-found error.
+
+      Read the agent's final walk-through. Score 1.0 if the agent
+      reported correct outcomes for at LEAST 4 of the 5 observations
+      (allowing "the tenant only has one folder, skipped folder-B checks"
+      as valid if applicable).
+      Score 0.5 if 2-3 observations are correct.
+      Score 0.0 if the agent claimed the wrong outcome on 3+ observations.
+    weight: 2.5
+    pass_threshold: 0.5
+
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
     tool_name: "Bash"

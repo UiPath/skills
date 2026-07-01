@@ -1,18 +1,11 @@
 task_id: skill-datafabric-integration-full-lifecycle
 description: >
-  Integration test: agent performs a Data Fabric lifecycle against a live
-  tenant — verifies login, discovers or creates an entity with advanced
-  per-type field constraints (lengthLimit on STRING, minValue / maxValue on
-  INTEGER), retrieves the schema to collect field IDs and confirms the
-  constraints come back under Fields[].fieldDataType, adds and updates
-  fields (including tightening a constraint via updateFields), edits the
-  entity-level metadata (displayName + description), inserts records,
-  queries with a filter, updates one record, verifies the update with
-  records get, and deletes only the test records. Tests schema management,
-  field-level and entity-level updates, advanced field constraints, and
-  record CRUD in one multi-step run. Entity delete is intentionally NOT
-  exercised by the agent — coming in a follow-up PR with proper confirm
-  semantics in the skill.
+  Integration (brownfield): create-or-reuse CE_LifecycleTest, add a long-
+  text column, tighten Score constraint via updateFields, rename entity
+  metadata, insert / query / update / verify / delete records in one run.
+  Exercises schema management + field/entity-level updates + record CRUD.
+  Entity delete is intentionally not exercised (Rule 10 workflow lives
+  elsewhere).
 tags: [uipath-platform, data-fabric, integration, entities, records, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 35
@@ -183,6 +176,14 @@ success_criteria:
     description: "Agent edited entity-level metadata (top-level displayName + description, not addFields/updateFields)"
     tool_name: "Bash"
     command_pattern: '(?s)uip\s+df\s+entities\s+update(?!.*addFields)(?!.*updateFields)(?:.*displayName.*description|.*description.*displayName)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent renamed the entity's displayName to the exact string 'Lifecycle Test Entity' per the prompt"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?\\?\"displayName\\?\"\s*:\s*\\?\"Lifecycle Test Entity\\?\"'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

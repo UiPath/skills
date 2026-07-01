@@ -124,6 +124,30 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  - type: llm_judge
+    description: "Agent's reported counts match the expected values for each of the 5 filter queries + the sort/pagination observations"
+    include_agent_output: true
+    prompt: |
+      The agent queried a pre-seeded 20-row `CodeEvalTestEntity` (movies)
+      and was asked to report specific counts:
+
+        Q1. Active=true → 12 rows
+        Q2. Score > 7 → 6 rows (scores 7.5 through 10.0)
+        Q3. Title exactly "The Matrix" → 1 row
+        Q4. Title contains "Matrix" → 3 rows
+        Q5. Score >= 7 AND active → 7 rows
+        Q6. Sort by score desc — top score = 10.0
+        Q7. Full pagination walk (page size 5) → 4 pages, 20 unique IDs
+
+      Read the agent's final response. Score 1.0 if at LEAST 5 of these
+      7 observations are correctly reported (allowing minor phrasing
+      variance — "12 active rows" or "12 records where Active is true"
+      both fine).
+      Score 0.5 if 3-4 are correct.
+      Score 0.0 if 3+ are wrong OR queries were skipped.
+    weight: 3.0
+    pass_threshold: 0.5
+
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
     tool_name: "Bash"
