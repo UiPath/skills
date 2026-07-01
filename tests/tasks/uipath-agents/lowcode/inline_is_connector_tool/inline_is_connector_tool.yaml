@@ -24,14 +24,13 @@ run_limits:
   turn_timeout: 1200
 
 initial_prompt: |
-  Create a UiPath Flow project "ResearchFlow" that runs an inline low-code
-  agent which can look things up on the web. Give the agent a tool so it can
-  run web searches on demand, and wire it into the flow. The solution should be
-  named "ResearchFlowSol".
+  I want to build an automation that can look things up on the web for me.
+  Set it up as a flow with an AI agent inside it, and give the agent a way to
+  search the web on its own whenever it needs to. Call the flow "ResearchFlow"
+  and the solution "ResearchFlowSol".
 
-  Do NOT publish, upload, or deploy. Do NOT ask for approval,
-  confirmation, or feedback. Do NOT pause between planning and
-  implementation. Complete the entire task end-to-end in a single pass.
+  Build it locally, start to finish — no need to publish or deploy it, and
+  don't stop to check in with me along the way.
 
 success_criteria:
   - type: command_executed
