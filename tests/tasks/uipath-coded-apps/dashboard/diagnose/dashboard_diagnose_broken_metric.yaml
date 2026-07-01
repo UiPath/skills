@@ -80,17 +80,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Grade the diagnose OUTCOME on the metric module the agent fixes: the fabricated
-  # method (getActiveAgentCount) is gone and the real read method (getAll) is present.
-  # Matches the AUTHORED source (metrics/<name>.ts, sibling to intent.json) OR the
-  # built copy (src/metrics/<name>.ts). The build re-derives src/metrics/ from the
-  # authored source on every run, so the durable fix belongs in metrics/ — a fix only
-  # in the copy is clobbered on rebuild. Grading either location keeps this robust to
-  # whether a full build (npm ci + Stage-A) completes in the sandbox; full-build
-  # compilation is covered by full_e2e.
+  # Grade the diagnose OUTCOME: AT LEAST ONE active-agents-kpi.ts (the authored source
+  # metrics/<name>.ts sibling to intent.json, OR the built copy src/metrics/<name>.ts)
+  # has the fabricated method (getActiveAgentCount) gone and the real read method
+  # (getAll) present. The agent legitimately varies which copy it edits — `npm run
+  # build` compiles src/metrics/, while the build-dashboard.mjs pipeline re-derives
+  # src/metrics/ from the authored metrics/ — and either edit demonstrates the recovery
+  # this guard checks (recognized a non-existent SDK call, swapped in the real one).
+  # "At least one fixed" keeps the signal stable across that variance and robust to
+  # whether a full build completes in the sandbox; full-build compilation is covered by
+  # full_e2e.
   - type: run_command
     description: "Metric module fixed: fabricated method gone, real getAll present"
-    command: "sh -c 'F=$(find . -path \"*metrics/active-agents-kpi.ts\" -not -path \"*/node_modules/*\"); test -n \"$F\" && ! grep -lq getActiveAgentCount $F && grep -lq getAll $F'"
+    command: "sh -c 'for F in $(find . -path \"*metrics/active-agents-kpi.ts\" -not -path \"*/node_modules/*\"); do grep -q getAll \"$F\" && ! grep -q getActiveAgentCount \"$F\" && exit 0; done; exit 1'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

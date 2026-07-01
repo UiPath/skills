@@ -48,13 +48,14 @@ success_criteria:
     pass_threshold: 1.0
 
   # Fresh deploy (folderKey null): the agent resolves a folder and deploys with
-  # -n <name> --folder-key <guid>. (On the fresh path the agent derives its own
+  # -n/--name <name> --folder-key <guid>. (On the fresh path the agent derives its own
   # routing name from the dashboard title, so we assert the deploy shape, not the
-  # exact slug.)
+  # exact slug.) Accept both the short -n and long --name flag — the CLI exposes
+  # `-n, --name` and the agent may use either.
   - type: command_executed
-    description: "Agent ran uip codedapp deploy with -n <name> and a resolved --folder-key"
+    description: "Agent ran uip codedapp deploy with -n/--name <name> and a resolved --folder-key"
     tool_name: "Bash"
-    command_pattern: 'uip\s+codedapp\s+deploy.*-n\s+.*--folder-key\s+\S'
+    command_pattern: 'uip\s+codedapp\s+deploy.*(--name|-n)\s+.*--folder-key\s+\S'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
