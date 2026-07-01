@@ -15,7 +15,7 @@ Checks:
   2. `daily-digest/main.py` retains the seeded `@traced()` `main`
      definition (no rewrite).
   3. `daily-digest/.uipath/` exists and contains at least one
-     `*.nupkg` — proof that `uip codedagent deploy` got past the
+     `*.nupkg` — proof that `uip functions pack` got past the
      pyproject rejection and produced a package.
 """
 
@@ -26,7 +26,7 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.project_root import find_project_root  # noqa: E402
 
 ROOT = find_project_root("daily-digest")
@@ -92,7 +92,7 @@ def check_pack_artifacts() -> None:
     uipath_dir = ROOT / ".uipath"
     if not uipath_dir.is_dir():
         sys.exit(
-            f"FAIL: {uipath_dir} does not exist — `uip codedagent deploy` "
+            f"FAIL: {uipath_dir} does not exist — `uip functions pack` "
             "either never re-ran after the fix or did not produce a "
             "package directory."
         )
