@@ -509,7 +509,7 @@ Each operation's JSON shape lives in its plugin's `impl-json.md`. This file cove
 | I need to... | Go to |
 |---|---|
 | Scaffold the case root + sidecar files (T01) | [plugins/case/impl-json.md](plugins/case/impl-json.md) |
-| Add a Stage / ExceptionStage | [plugins/stages/impl-json.md](plugins/stages/impl-json.md) |
+| Add a Stage (primary / secondary) | [plugins/stages/impl-json.md](plugins/stages/impl-json.md) |
 | Add a manual / timer / event trigger | [triggers/manual](plugins/triggers/manual/impl-json.md) · [triggers/timer](plugins/triggers/timer/impl-json.md) · [triggers/event](plugins/triggers/event/impl-json.md) |
 | Add an action / agent / RPA / process task | [tasks/action](plugins/tasks/action/impl-json.md) · [tasks/agent](plugins/tasks/agent/impl-json.md) · [tasks/rpa](plugins/tasks/rpa/impl-json.md) · [tasks/process](plugins/tasks/process/impl-json.md) |
 | Add an api-workflow / case-management / wait-for-timer task | [tasks/api-workflow](plugins/tasks/api-workflow/impl-json.md) · [tasks/case-management](plugins/tasks/case-management/impl-json.md) · [tasks/wait-for-timer](plugins/tasks/wait-for-timer/impl-json.md) |
