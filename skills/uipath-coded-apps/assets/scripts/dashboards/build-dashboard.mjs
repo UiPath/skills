@@ -57,8 +57,15 @@ function widgetsDir() {
 }
 function t3ShellTemplatePath() { return join(widgetsDir(), 't3-shell.tsx.template') }
 
-/** Fixed dev server port — high enough to avoid common app collisions */
-export const DASHBOARD_PORT = 57173
+/**
+ * Fixed dev server port. Kept BELOW the ephemeral ranges (Linux 32768+, Windows/macOS
+ * 49152+) so it can't land in an OS-reserved block — Windows (WinNAT/Hyper-V/WSL2)
+ * carves reserved chunks out of the ephemeral range, and a dev server can't bind one
+ * even when it's free (`An attempt was made to access a socket in a way forbidden by
+ * its access permissions`). 25173 is high enough to dodge common dev servers yet clear
+ * of every ephemeral range. Must match the scaffold's vite.config.ts `server.port`.
+ */
+export const DASHBOARD_PORT = 25173
 
 // ── Capability registry ────────────────────────────────────────────────────────
 

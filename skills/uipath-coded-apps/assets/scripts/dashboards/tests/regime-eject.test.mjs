@@ -53,7 +53,7 @@ test('packTemplate stages source + template.json, strips tenant identity', () =>
     orgName: 'acme-org',
     tenantName: 'acme-tenant',
     baseUrl: 'https://acme.api.uipath.com',
-    redirectUri: 'http://localhost:57173',
+    redirectUri: 'http://localhost:25173',
   }))
   writeFileSync(join(P, 'src', 'metrics', 'm.ts'), 'export const fetchData = async () => []')
   writeFileSync(join(P, 'dist', 'index.html'), '<html></html>')
