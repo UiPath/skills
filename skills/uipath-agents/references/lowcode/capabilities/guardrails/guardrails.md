@@ -8,11 +8,11 @@ Two types exist:
 - **`custom`** — deterministic rules you define (word matching, number comparison, boolean checks, universal triggers)
 - **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks)
 
-> **Autonomous agents:** All guardrails are configured at the `agent.json` root `guardrails` array. **Conversational agents:** see § Conversational Support below — the runtime-effective location is each tool's `resources/<Tool>/resource.json` → `guardrail.policies[]`.
+> **Autonomous agents:** All guardrails are configured at the `agent.json` root `guardrails` array. **Conversational agents:** each guardrail goes in **both** the tool's `resources/<Tool>/resource.json` → `guardrail.policies[]` and the `agent.json` root array — see § Conversational Support below.
 
 ## Conversational Support
 
-**Status: Custom (deterministic) `Tool`-scoped guardrails ONLY. No built-in validators.** Conversational agents do NOT support any `builtInValidator` guardrail (`pii_detection`, `prompt_injection`, `harmful_content`, `intellectual_property`, `user_prompt_attacks`) — those are autonomous-only. The only guardrails that run for a conversational agent are `$guardrailType: "custom"` deterministic rules (word/number/boolean/always) with `selector.scopes: ["Tool"]`, authored per-tool. `"Agent"` and `"Llm"` scopes are not available. If a user asks for PII / harmful-content / injection detection on a conversational agent, tell them built-in validators are autonomous-only and offer a Custom deterministic Tool guardrail or an autonomous agent instead.
+**Status: Custom (deterministic) `Tool`-scoped guardrails ONLY. No built-in validators.** `builtInValidator` guardrails (`pii_detection`, `prompt_injection`, `harmful_content`, `intellectual_property`, `user_prompt_attacks`) are autonomous-only. The only guardrails that run are `$guardrailType: "custom"` deterministic rules (word/number/boolean/always) with `selector.scopes: ["Tool"]`. Write each as the **same object (same `id`) in two places**: the tool's `resources/<Tool>/resource.json` → `guardrail.policies[]` **and** `agent.json` root `guardrails[]`. `"Agent"` and `"Llm"` scopes are not available. If asked for PII / harmful-content / injection detection, explain built-in validators are autonomous-only and offer a Custom Tool guardrail or an autonomous agent instead.
 
 This restriction is enforced as [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1.
 
