@@ -235,21 +235,7 @@ success_criteria:
 
   - type: run_command
     description: "Stored form (deterministic): a live Expense record's `submitter` value is a UUID (not an email / name)"
-    command: >-
-      python3 -c "
-      import subprocess, json, re, sys;
-      def uip(*a):
-        r = subprocess.run(['uip', *a, '--output', 'json'], capture_output=True, text=True, timeout=60);
-        return json.loads(r.stdout) if r.stdout else {};
-      ents = uip('df', 'entities', 'list', '--native-only').get('Data') or [];
-      eid = next((e.get('Id') for e in ents if isinstance(e, dict) and e.get('Name') == 'CE_E2EExpense'), None);
-      assert eid, 'CE_E2EExpense not found';
-      recs = ((uip('df', 'records', 'list', eid, '--limit', '1').get('Data') or {}).get('Items')) or [];
-      assert recs, 'no expense records';
-      v = recs[0].get('submitter') or recs[0].get('Submitter');
-      assert v and re.match(r'^[0-9a-fA-F-]{8,}', str(v)), f'submitter not UUID-shaped: {v!r}';
-      print(f'OK: submitter stored as UUID: {v}');
-      "
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_record_field.py --entity-name CE_E2EExpense --field-name submitter --value-regex '^[0-9a-fA-F-]{8,}'"
     timeout: 90
     expected_exit_code: 0
     weight: 3.0

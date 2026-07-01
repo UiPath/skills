@@ -212,38 +212,27 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Stored form + schema (deterministic): an Order record's `customerId` is a UUID; entity schema echoes lengthLimit / decimalPrecision / minValue / maxValue as authored"
-    command: >-
-      python3 -c "
-      import subprocess, json, re, sys;
-      def uip(*a):
-        r = subprocess.run(['uip', *a, '--output', 'json'], capture_output=True, text=True, timeout=60);
-        return json.loads(r.stdout) if r.stdout else {};
-      ents = uip('df', 'entities', 'list', '--native-only').get('Data') or [];
-      cust_id = next((e.get('Id') for e in ents if isinstance(e, dict) and e.get('Name') == 'CE_IntegrationCustomer'), None);
-      ord_id  = next((e.get('Id') for e in ents if isinstance(e, dict) and e.get('Name') == 'CE_IntegrationOrder'), None);
-      assert cust_id and ord_id, 'entities not found';
-      recs = ((uip('df', 'records', 'list', ord_id, '--limit', '1').get('Data') or {}).get('Items')) or [];
-      assert recs, 'no order records';
-      cid = recs[0].get('customerId') or recs[0].get('CustomerId');
-      assert cid and re.match(r'^[0-9a-fA-F-]{8,}', str(cid)), f'customerId not UUID: {cid!r}';
-      schema = (uip('df', 'entities', 'get', ord_id).get('Data') or {});
-      fields = schema.get('Fields') or [];
-      fdt = lambda name: next((f.get('FieldDataType', {}) for f in fields if (f.get('Name') or f.get('FieldName')) == name), {});
-      amt = fdt('amount') or fdt('Amount');
-      assert amt.get('DecimalPrecision') == 2, f'amount decimalPrecision != 2: {amt}';
-      assert amt.get('MinValue') in (0, '0', 0.0), f'amount minValue != 0: {amt}';
-      assert amt.get('MaxValue') in (1000000, '1000000', 1000000.0), f'amount maxValue != 1000000: {amt}';
-      cust_schema = (uip('df', 'entities', 'get', cust_id).get('Data') or {}).get('Fields') or [];
-      name_fdt = next((f.get('FieldDataType', {}) for f in cust_schema if (f.get('Name') or '').lower() == 'name'), {});
-      notes_fdt = next((f.get('FieldDataType', {}) for f in cust_schema if (f.get('Name') or '').lower() == 'notes'), {});
-      assert name_fdt.get('LengthLimit') == 200, f'name lengthLimit != 200: {name_fdt}';
-      assert notes_fdt.get('LengthLimit') == 2000, f'notes lengthLimit != 2000: {notes_fdt}';
-      print('OK: customerId is UUID, decimalPrecision=2, minValue=0, maxValue=1000000, name/notes lengthLimits=200/2000');
-      "
+    description: "Stored form (deterministic): a live Order record's `customerId` value is a UUID (not an email / name)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_record_field.py --entity-name CE_IntegrationOrder --field-name customerId --value-regex '^[0-9a-fA-F-]{8,}'"
     timeout: 90
     expected_exit_code: 0
-    weight: 3.5
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema echo (deterministic): CE_IntegrationOrder amount field has decimalPrecision=2, minValue=0, maxValue=1000000 as authored"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_IntegrationOrder --assertions 'amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=1000000'"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Schema echo (deterministic): CE_IntegrationCustomer Name/Notes lengthLimit values match the authored constraints"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_IntegrationCustomer --assertions 'name.lengthLimit=200,notes.lengthLimit=2000'"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: llm_judge
