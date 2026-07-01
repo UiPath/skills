@@ -404,6 +404,14 @@ uip solution resources refresh --output json
 
 Verify `ConnectorToolsGenerated` in the refresh output (each entry carries `nodeId`, `name`, `connectorKey`, `resourceId`). If nothing is generated, the tool node isn't wired to the agent's `tool` port or `node configure` wasn't run — see [connector/impl.md § Agent Tool Connector Nodes](../connector/impl.md#agent-tool-connector-nodes). Keep the flow node's `inputs.source` equal to the returned `resourceId` (refresh reuses an existing `inputs.source`), then re-run validate to confirm no drift.
 
+### Debug Tips
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| `uip agent validate` shows `resources: 0` | No `resource.json` generated — tool node not wired to the agent's `tool` port, or `node configure` not run | Check the `tool` edge from the agent to the connector node, run `node configure`, then `uip agent refresh --inline-in-flow` |
+| `AGENT_RUNTIME.HTTP_ERROR` / status 400 | A required param is missing from `inputs.detail` (e.g. a required query param like `send_as` not auto-filled) | Re-run `node configure`; if still missing, add it under `--detail.queryParameters` / `bodyParameters` and re-run refresh |
+| Studio Web drops the tool / "value not found" for a static param | Static param (e.g. `send_as`) absent from the generated `resource.json` `inputSchema` | Re-run `uip agent refresh --inline-in-flow` to regenerate from `inputs.detail` (static params are added to `inputSchema.required`) |
+
 ## JSON Structure
 
 The instance carries only per-instance data (`inputs`, `outputs`, `display`). BPMN type, serviceType, version, and context templates come from the definition in `definitions[]`.

@@ -658,6 +658,26 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 
 ---
 
+## Agent Tool Connector Nodes
+
+Agent tool connector nodes (`uipath.agent.resource.tool.connector.<connector-key>.<operation>`) are IS connector tools wired to an inline agent's `tool` artifact port. They use the **same `inputs.detail` structure** and the **same `uip maestro flow node configure` CLI carve-out** as regular connector activity nodes.
+
+When `node configure` detects an agent tool connector node, it populates the request buckets in `inputs.detail` — `bodyParameters`, `queryParameters`, `pathParameters` — from the connector's IS metadata. Body fields default to `{{prompt: "<field description>"}}` chips (agent-decided); a **single-value** enum body field is written as its static constant, and query/path params with a concrete default (e.g. Slack `send_as=bot`) are static; **multi-value** enum body fields stay `{{prompt}}` (the agent picks). This is in addition to standard configuration (connection info, `instanceParameters`, `connector`, `connectionResourceId`, `telemetryData`, etc.). **No `fieldsContainer` is written.** `uip agent refresh --inline-in-flow` then **fetches the typed IS metadata** (for field types, enum members, output schema — `inputs.detail` only has the values) and builds the tool's `resource.json` by joining it with the configured values: `{{prompt}}` chips → `fieldVariant: "dynamic"`, concrete values → `"static"`. `enum`/`oneOf` is emitted in `inputSchema` only for dynamic fields (a static field carrying an enum breaks the agent runtime's model build).
+
+### Configuration
+
+After adding the tool node to the flow (with its definition from `registry get`), run `node configure` exactly as for regular connector nodes:
+
+```bash
+uip maestro flow node configure <FlowFile>.flow <nodeId> \
+  --detail '{"connectionId":"<CONN_UUID>","folderKey":"<FOLDER_KEY>","method":"POST","endpoint":"<path>"}' \
+  --output json
+```
+
+This single command populates the complete `inputs.detail` — connection info, `instanceParameters`, `connector`, `connectionResourceId`, `telemetryData`, and the request buckets `bodyParameters` / `queryParameters` / `pathParameters` (body fields as `{{prompt:}}` chips, static concrete values for single-value enums and query/path params with defaults). It also creates the top-level `bindings[]` entries. The `endpoint` path and `method` come from the definition's `model.context[]` or from `uip is resources describe`. For the debug-tips table specific to agent-tool connector nodes, see [inline-agent/impl.md § Adding an IS Connector Tool Node](../inline-agent/impl.md#adding-an-is-connector-tool-node).
+
+---
+
 ## Debug
 
 ### Common Errors
@@ -680,36 +700,6 @@ For connector-trigger flows, the same pattern applies — top-level `bindings[]`
 | Custom fields fault at runtime with token unresolved | A `{token}` in `objectActions[].apiConfiguration.url` or `body` has no entry in `parameterValues` | Re-read the ObjectAction's `apiConfiguration` placeholders, add the missing tuple to `parameterValues`. CLI does not validate token coverage. |
 | `node configure` fails with `customFieldsRequestDetails has unknown keys: ObjectActionName, ParameterValues` | PascalCase inner keys instead of camelCase | Use `objectActionName` / `parameterValues`. Studio Web emits camelCase; PascalCase is rejected. |
 | Field rejected at runtime as unknown (e.g. `"unknown field 'fields.labels[*]'"`) after a clean `flow validate` | `[*]` was left in the `bodyParameters` / `queryParameters` / `pathParameters` key. `[*]` is an array marker from `requestFields[].name`, not part of the wire key. | Strip `[*]` from the key in your `--detail` payload, pass an array value matching the field's `dataType`, and re-run `node configure`. Fields with `[*].` (segments after the `[*]`) are not authorable. See the array-fields table in Step 6b. |
-
----
-
-## Agent Tool Connector Nodes
-
-Agent tool connector nodes (`uipath.agent.resource.tool.connector.<connector-key>.<operation>`) are IS connector tools wired to an inline agent's `tool` artifact port. They use the **same `inputs.detail` structure** and the **same `uip maestro flow node configure` CLI carve-out** as regular connector activity nodes.
-
-When `node configure` detects an agent tool connector node, it populates the request buckets in `inputs.detail` — `bodyParameters`, `queryParameters`, `pathParameters` — from the connector's IS metadata. Body fields default to `{{prompt: "<field description>"}}` chips (agent-decided); a **single-value** enum body field is written as its static constant, and query/path params with a concrete default (e.g. Slack `send_as=bot`) are static; **multi-value** enum body fields stay `{{prompt}}` (the agent picks). This is in addition to standard configuration (connection info, `instanceParameters`, `connector`, `connectionResourceId`, `telemetryData`, etc.). **No `fieldsContainer` is written.** `uip agent refresh --inline-in-flow` then **fetches the typed IS metadata** (for field types, enum members, output schema — `inputs.detail` only has the values) and builds the tool's `resource.json` by joining it with the configured values: `{{prompt}}` chips → `fieldVariant: "dynamic"`, concrete values → `"static"`. `enum`/`oneOf` is emitted in `inputSchema` only for dynamic fields (a static field carrying an enum breaks the agent runtime's model build).
-
-### Configuration
-
-After adding the tool node to the flow (with its definition from `registry get`), run `node configure` exactly as for regular connector nodes:
-
-```bash
-uip maestro flow node configure <FlowFile>.flow <nodeId> \
-  --detail '{"connectionId":"<CONN_UUID>","folderKey":"<FOLDER_KEY>","method":"POST","endpoint":"<path>"}' \
-  --output json
-```
-
-This single command populates the complete `inputs.detail` — connection info, `instanceParameters`, `connector`, `connectionResourceId`, `telemetryData`, and the request buckets `bodyParameters` / `queryParameters` / `pathParameters` (body fields as `{{prompt:}}` chips, static concrete values for single-value enums and query/path params with defaults). It also creates the top-level `bindings[]` entries. The `endpoint` path and `method` come from the definition's `model.context[]` or from `uip is resources describe`.
-
-### Debug Tips
-
-| Error | Cause | Fix |
-| --- | --- | --- |
-| `uip agent validate` shows `resources: 0` | No `resource.json` generated — tool node not wired to the agent's `tool` port, or `node configure` not run | Check the `tool` edge from the agent to the connector node, run `node configure`, then `uip agent refresh --inline-in-flow` |
-| `AGENT_RUNTIME.HTTP_ERROR` / status 400 | A required param is missing from `inputs.detail` (e.g. a required query param like `send_as` not auto-filled) | Re-run `node configure`; if still missing, add it under `--detail.queryParameters` / `bodyParameters` and re-run refresh |
-| Studio Web drops the tool / "value not found" for a static param | Static param (e.g. `send_as`) absent from the generated `resource.json` `inputSchema` | Re-run `uip agent refresh --inline-in-flow` to regenerate from `inputs.detail` (static params are added to `inputSchema.required`) |
-
----
 
 ### Debug Tips
 
