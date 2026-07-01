@@ -31,7 +31,7 @@ post_run:
 
 initial_prompt: |
   Build me a UiPath agent health dashboard: active agents, agent consumption
-  over the last 24 hours, error rate trend for the week, and top agents by
+  over the last 24 hours, agent error trend over the week, and top agents by
   usage with health scores.
 
   This is a non-interactive automated test — there is NO user to approve the plan.
