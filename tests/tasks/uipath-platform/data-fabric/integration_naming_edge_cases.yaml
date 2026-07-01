@@ -10,8 +10,8 @@ description: >
   Type — must be rejected with RESERVED_LANGUAGE_KEYWORDS). Per Rule
   18 the agent surfaces the exact error verbatim; per Rule 4 the
   agent must NOT silently rename a rejected keyword without asking.
-  end state checked via a row-count oracle confirming only the
-  positive list survived.
+  Grading via command-shape (explicit reserved-name attempts fired) +
+  llm_judge on the agent's final walk-through — no self-report file.
 tags: [uipath-platform, data-fabric, integration, entities, naming, mode:diagnose, lifecycle:setup]
 
 run_limits:
@@ -21,7 +21,7 @@ run_limits:
 
 initial_prompt: |
   Migrating a schema from another system. Try each list and column
-  below. For rejections, record the error verbatim — don't rewrite
+  below. For rejections, capture the error verbatim — don't rewrite
   names or retry.
 
   Lists (each with one `Title` column, short text):
@@ -46,20 +46,9 @@ initial_prompt: |
     E5. `Key`        — short text
     E6. `Type`       — short text
 
-  Save to `report.json` — "succeeded" if it went through, the raw
-  error string otherwise:
-
-    {
-      "pair_A1": "...", "pair_A2": "...",
-      "pair_B1": "...", "pair_B2": "...",
-      "pair_C1": "...", "pair_C2": "...",
-      "pair_D1": "...", "pair_D2": "...", "pair_D3": "...",
-      "pair_D4": "...", "pair_D5": "...", "pair_D6": "...",
-      "pair_E1": "...", "pair_E2": "...", "pair_E3": "...",
-      "pair_E4": "...", "pair_E5": "...", "pair_E6": "...",
-      "lists_created": <count actually created>,
-      "reserved_keyword_error_seen": <true if any rejection said "reserved"/"keyword">
-    }
+  When you're done, walk me through what came back for each item —
+  what succeeded, what was rejected, and for the rejections the exact
+  error the platform returned.
 
 success_criteria:
   - type: command_executed
@@ -81,21 +70,21 @@ success_criteria:
   - type: command_executed
     description: "Agent explicitly tried to add a column named exactly `Id` (must be rejected by server)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields.*"fieldName"\s*:\s*"Id"'
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?addFields[\s\S]*?\\?\"fieldName\\?\"\s*:\s*\\?\"Id\\?\"'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent explicitly tried to add a column named exactly `Status` (must be rejected by server)"
+    description: "Agent explicitly tried to add a column named exactly `Status` (attempts a SQL-keyword name; platform behavior is what we're testing)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update.*addFields.*"fieldName"\s*:\s*"Status"'
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?addFields[\s\S]*?\\?\"fieldName\\?\"\s*:\s*\\?\"Status\\?\"'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent did NOT silently rename a rejected keyword to make it pass"
+    description: "Agent did NOT silently rename a rejected keyword to make it pass (bounded number of entity-create calls)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+create'
     min_count: 5
@@ -103,82 +92,51 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Leading digit rejected; underscore name accepted"
-    path: "report.json"
-    assertions:
-      - expression: "pair_A1"
-        operator: contains
-        expected: "succeeded"
-      - expression: "pair_A2"
-        operator: not_equals
-        expected: "succeeded"
-      - expression: "pair_B1"
-        operator: contains
-        expected: "succeeded"
-      - expression: "pair_B2"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Length boundary at 101 chars rejected (the 100-char case is informational — current platform behavior varies)"
-    path: "report.json"
-    assertions:
-      - expression: "pair_C2"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 2.5
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Length boundary at 100 chars recorded (either outcome captured — informational)"
-    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); sys.exit(0 if isinstance(d.get('pair_C1'),str) and d['pair_C1'] else 1)\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Reserved system field-name attempts recorded for all 5 (Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime)"
-    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); sys.exit(0 if all(isinstance(d.get(k),str) and d[k] for k in ['pair_D2','pair_D3','pair_D4','pair_D5','pair_D6']) else 1)\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Renamed alternative (`OrderStatus`) succeeded"
-    path: "report.json"
-    assertions:
-      - expression: "pair_E1"
-        operator: contains
-        expected: "succeeded"
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Reserved-keyword column attempts recorded for all 5 (Status, Order, Group, Key, Type) — platform may accept or reject; we just want the outcomes captured"
-    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); sys.exit(0 if all(isinstance(d.get(k),str) and d[k] for k in ['pair_E2','pair_E3','pair_E4','pair_E5','pair_E6']) else 1)\""
-    timeout: 10
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "At least the 2 fully-positive list names landed (A1 and B1); C1 outcome is platform-dependent"
-    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); count=d.get('lists_created',-1); sys.exit(0 if count>=2 else 1)\""
-    timeout: 10
+    description: "End state (deterministic): at least the 2 fully-positive list names landed (CE_NameOK1 + CE_NameWithUnderscore)"
+    command: "python3 -c \"import subprocess,json,sys; r=subprocess.run(['uip','df','entities','list','--native-only','--output','json'], capture_output=True, text=True, timeout=60); data=json.loads(r.stdout or '{}'); items=data.get('Data') if isinstance(data.get('Data'),list) else []; names={e.get('Name') for e in items if isinstance(e,dict)}; sys.exit(0 if 'CE_NameOK1' in names and 'CE_NameWithUnderscore' in names else 1)\""
+    timeout: 90
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): rejected names are NOT present on the tenant — 9StartsWithDigit (leading digit), CE-Name-With-Hyphen (hyphen), and the 101-char over-limit name were all correctly rejected by the server"
+    command: "python3 -c \"import subprocess,json,sys; r=subprocess.run(['uip','df','entities','list','--native-only','--output','json'], capture_output=True, text=True, timeout=60); data=json.loads(r.stdout or '{}'); items=data.get('Data') if isinstance(data.get('Data'),list) else []; names={e.get('Name') for e in items if isinstance(e,dict)}; over_limit='CE_'+'A'*98; sys.exit(0 if not any(n in names for n in ['9StartsWithDigit','CE-Name-With-Hyphen',over_limit]) else 1)\""
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent correctly reported which names were accepted vs rejected and surfaced the specific platform error for each rejection"
+    include_agent_output: true
+    prompt: |
+      The agent attempted 18 name-boundary probes (6 list names + 12 column
+      names) against Data Fabric entity naming rules:
+
+        Should SUCCEED: A1 (CE_NameOK1), B1 (CE_NameWithUnderscore),
+        C1 (100-char CE_A…A), D1 (Notes), E1 (OrderStatus).
+        Should FAIL: A2 (leading digit 9StartsWithDigit), B2 (hyphen
+        CE-Name-With-Hyphen), C2 (101-char over-limit), D2-D6 (reserved
+        system fields: Id, CreatedBy, CreateTime, UpdatedBy, UpdateTime).
+        Platform-dependent: E2-E6 (SQL keywords Status/Order/Group/Key/Type).
+
+      Read the agent's final walk-through. Did the agent:
+        - Correctly report the accept/reject outcome for all 18 attempts?
+        - For each rejection, cite the platform's actual error string (not
+          "it failed" or a paraphrase)?
+        - NOT silently rename any rejected name to make it pass?
+
+      Score 1.0 if the walk-through covers all 18 attempts with correct
+      outcomes AND verbatim errors for at least the D2-D6 (system-field)
+      rejections.
+      Score 0.5 if 14-17 attempts are correctly reported OR the reject
+      errors are described generically.
+      Score 0.0 if 4+ outcomes are wrong OR the agent silently renamed a
+      rejected name.
+    weight: 3.0
+    pass_threshold: 0.5
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
@@ -188,6 +146,7 @@ success_criteria:
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
     tool_name: "Bash"
@@ -201,7 +160,7 @@ pre_run:
   # Idempotency safety net — sweep any leftovers from a prior crashed run
   # before the agent starts. Without this, an already-existing CE_NameOK1
   # makes the agent's create call fail with "Another entity with the same
-  # name already exists", which then fails pair_A1.
+  # name already exists", which then fails the corresponding llm_judge case.
   - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_NameOK1"
     timeout: 60
     fail_on_error: false

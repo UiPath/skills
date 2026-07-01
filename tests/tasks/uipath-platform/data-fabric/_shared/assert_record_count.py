@@ -78,11 +78,18 @@ def total_count(entity_id: str) -> int | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Assert an entity has exactly the expected record count."
+        description="Assert an entity's record count is exactly --expected, or within [--min, --max]."
     )
     parser.add_argument("--entity-name", required=True)
-    parser.add_argument("--expected", required=True, type=int)
+    parser.add_argument("--expected", type=int, help="Exact count required.")
+    parser.add_argument("--min", type=int, dest="min_count", help="Lower bound (inclusive) for range check.")
+    parser.add_argument("--max", type=int, dest="max_count", help="Upper bound (inclusive) for range check.")
     args = parser.parse_args()
+
+    if args.expected is None and args.min_count is None and args.max_count is None:
+        parser.error("provide --expected or a --min/--max range")
+    if args.expected is not None and (args.min_count is not None or args.max_count is not None):
+        parser.error("--expected is mutually exclusive with --min/--max")
 
     entity_id = find_entity_id(args.entity_name)
     if not entity_id:
@@ -93,15 +100,28 @@ def main() -> None:
     if actual is None:
         sys.exit(1)
 
-    if actual != args.expected:
+    if args.expected is not None:
+        if actual != args.expected:
+            print(
+                f"FAIL: entity '{args.entity_name}' has {actual} record(s), expected {args.expected} "
+                f"(agent likely inserted/deleted records — brownfield contract violated)",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        print(f"OK: '{args.entity_name}' has {actual} record(s) — matches expected {args.expected}")
+        sys.exit(0)
+
+    lo = args.min_count if args.min_count is not None else 0
+    hi = args.max_count if args.max_count is not None else float("inf")
+    if actual < lo or actual > hi:
+        bound = f"{lo}..{args.max_count if args.max_count is not None else '∞'}"
         print(
-            f"FAIL: entity '{args.entity_name}' has {actual} record(s), expected {args.expected} "
-            f"(agent likely inserted/deleted records — brownfield contract violated)",
+            f"FAIL: entity '{args.entity_name}' has {actual} record(s), expected in {bound}",
             file=sys.stderr,
         )
         sys.exit(1)
-
-    print(f"OK: '{args.entity_name}' has {actual} record(s) — matches expected {args.expected}")
+    bound = f"{lo}..{args.max_count if args.max_count is not None else '∞'}"
+    print(f"OK: '{args.entity_name}' has {actual} record(s) — within {bound}")
     sys.exit(0)
 
 

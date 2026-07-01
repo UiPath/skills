@@ -47,11 +47,6 @@ initial_prompt: |
     1. Top performers (score above 85), highest first.
     2. Headcount per department — one query per department.
 
-  When you're done, save `report.json`:
-    {
-      "entity_id": "<created-entity-id>"
-    }
-
 success_criteria:
   - type: command_executed
     description: "Agent created the entity"
@@ -162,12 +157,6 @@ success_criteria:
     timeout: 5
     expected_exit_code: 0
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was written so cleanup can delete the entity"
-    path: "report.json"
-    weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed

@@ -1,12 +1,12 @@
 task_id: skill-datafabric-integration-folder-records
 description: >
   Integration test: agent creates a folder-scoped entity, seeds records into it,
-  and verifies that records are isolated to that folder — a query from a
-  different folder must return zero rows, and a query without folder context
-  must not see the folder-scoped rows either. Exercises the --folder-key
-  parameter across entity create, records insert, and records query, and
-  confirms cross-folder isolation is enforced. Complements
-  integration_entity_scope, which covers entity-level visibility only.
+  and verifies entity-level folder isolation — the entity is visible in its
+  home folder's `entities list` and NOT visible from a different folder.
+  Exercises `--folder-key` across entity create, records insert, and entities
+  list. Grading is via command-shape + an llm_judge on the agent's final
+  walk-through — no self-report file. Complements integration_entity_scope,
+  which covers scope-visibility more broadly.
 tags: [uipath-platform, data-fabric, integration, entity-scope, records, mode:operate, lifecycle:setup]
 run_limits:
   expected_turns: 25
@@ -32,21 +32,14 @@ initial_prompt: |
 
   Now check the folder-scope behavior:
     - Query the list from folder A — expect all 3 rows.
-    - Look at the folder-list output from folder B's context (list
-      the entities scoped to folder B). The list `CE_FolderRecordsTest`
-      should NOT show up there — folder A is where it lives.
-    - Look at the folder-list output from folder A's context. The
-      list SHOULD show up there.
+    - Look at the folder-list output from folder B's context (list the
+      entities scoped to folder B). `CE_FolderRecordsTest` should NOT
+      show up there — folder A is where it lives.
+    - Look at the folder-list output from folder A's context. The list
+      SHOULD show up there.
 
-  Save what you observed to `report.json`:
-    {
-      "entity_id":                       "<created-entity-id>",
-      "folder_a_key":                    "<folder A key you used>",
-      "folder_b_key":                    "<folder B key you used>",
-      "row_count_from_folder_a":         <int>,
-      "entity_visible_from_folder_a":    <true|false>,
-      "entity_visible_from_folder_b":    <true|false>
-    }
+  When you're done, walk me through what you observed for each of those
+  three checks — did the row count / visibility match what we expected?
 
 success_criteria:
   - type: command_executed
@@ -81,40 +74,33 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
+  - type: llm_judge
+    description: "Agent correctly observed row count in folder A + entity-visibility contrast between folder A and folder B"
+    include_agent_output: true
+    prompt: |
+      The agent seeded 3 rows into an entity `CE_FolderRecordsTest` scoped to
+      folder A, then checked two folder-listing outputs (`entities list
+      --folder-key <A>` and `--folder-key <B>`).
 
-  - type: json_check
-    description: "Folder A returned exactly 3 rows (data landed in the right folder)"
-    path: "report.json"
-    assertions:
-      - expression: "row_count_from_folder_a"
-        operator: equals
-        expected: 3
+      Read the agent's final walk-through. Did the agent correctly report:
+
+      1. Folder A's records query returned exactly 3 rows (R1, R2, R3).
+      2. `CE_FolderRecordsTest` was visible in folder A's entity list.
+      3. `CE_FolderRecordsTest` was NOT visible in folder B's entity list.
+
+      Score 1.0 if the agent correctly reported ALL THREE observations.
+      Score 0.5 if 2 out of 3 are correct.
+      Score 0.0 if the agent claimed the wrong outcome on 2+ observations
+      (e.g., "folder B also showed the list") OR skipped observations.
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.5
 
-  - type: json_check
-    description: "Entity is visible from folder A (its home folder)"
-    path: "report.json"
-    assertions:
-      - expression: "entity_visible_from_folder_a"
-        operator: equals
-        expected: true
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Entity is NOT visible from folder B (cross-folder entity isolation)"
-    path: "report.json"
-    assertions:
-      - expression: "entity_visible_from_folder_b"
-        operator: equals
-        expected: false
-    weight: 3.0
+  - type: run_command
+    description: "End state (deterministic): CE_FolderRecordsTest has exactly 3 records — the R1/R2/R3 seeds landed"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_FolderRecordsTest --expected 3"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed

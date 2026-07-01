@@ -48,22 +48,10 @@ initial_prompt: |
        Expense that points at this tenant list. Record what came
        back — I expect the platform to reject cross-scope links.
 
-  Save what you saw to `report.json`:
-    {
-      "folder_a_key":                          "<folder A key>",
-      "employee_entity_id":                    "<id>",
-      "expense_entity_id":                     "<id>",
-      "tenant_target_entity_id":               "<id>",
-      "add_manager_without_folder_ref":        "<succeeded | error text>",
-      "add_manager_with_folder_ref":           "<succeeded | error text>",
-      "add_link_to_tenant_target":             "<succeeded | error text>",
-      "manager_field_bound_correctly":         <true|false>
-    }
-
-  `manager_field_bound_correctly` — read the Expense schema back at
-  the end and set true if the `manager` column exists AND the schema
-  echo shows it pointing at Employee (folder A). Set false if the
-  column is missing, points elsewhere, or has empty references.
+  When you're done, walk me through what came back for each of the
+  three scenarios — did it succeed or fail, and if it failed, what
+  did the platform say? Then read the Expense schema back and confirm
+  the `manager` column ended up correctly bound to Employee.
 
 success_criteria:
   - type: command_executed
@@ -98,78 +86,39 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "First attempt (no folder reference) surfaced an error, not a silent success"
-    path: "report.json"
-    assertions:
-      - expression: "add_manager_without_folder_ref"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Second attempt (with proper folder reference) succeeded"
-    path: "report.json"
-    assertions:
-      - expression: "add_manager_with_folder_ref"
-        operator: contains
-        expected: "succeeded"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Cross-scope link (folder Expense → tenant target) was rejected"
-    path: "report.json"
-    assertions:
-      - expression: "add_link_to_tenant_target"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Final schema read confirmed the manager field is correctly bound"
-    path: "report.json"
-    assertions:
-      - expression: "manager_field_bound_correctly"
-        operator: equals
-        expected: true
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: llm_judge
-    description: "Agent surfaced the scope-binding requirement in plain terms before retrying (not a silent retry)"
+    description: "Agent correctly reported all three scope-binding outcomes (fail, succeed, fail) with the specific reason for each failure — plus confirmed the manager field is correctly bound at the end"
     include_agent_output: true
     prompt: |
-      The agent tried three scope-binding scenarios: (1) same-folder link
-      without folder reference (fails), (2) same-folder link WITH the folder
-      reference (succeeds), (3) folder-to-tenant cross-scope link (fails).
+      The agent ran three scope-binding scenarios and then re-read the
+      Expense schema:
 
-      When scenario 1 failed, did the agent explain to the user WHY it failed
-      before retrying? A knowledgeable agent should identify that the
-      RELATIONSHIP / CHOICE_SET / FILE field targeting a folder-scoped entity
-      requires `referenceFolderKey` even for same-folder targets, and mention
-      that as the reason for the retry.
+        Scenario 1 — add `manager` RELATIONSHIP column WITHOUT
+        `referenceFolderKey`. Expected: platform rejects (folder targets
+        require the key even for same-folder bindings).
+        Scenario 2 — same column WITH `referenceFolderKey`. Expected: succeeds.
+        Scenario 3 — folder-scoped Expense linking to a TENANT-level target.
+        Expected: platform rejects (cross-scope bindings not allowed).
+        Final check — read Expense schema back; `manager` should exist and
+        point at Employee.
 
-      When scenario 3 failed, did the agent explain that folder-to-tenant
-      (or tenant-to-folder) cross-scope bindings are rejected — targets and
-      parents must share the same scope class?
-
-      Score 1.0 if the agent explained BOTH failures with the specific scope
-      requirement, distinct from a generic "it failed, retrying".
-      Score 0.5 if the agent explained one but not the other, or gave a
-      partial explanation.
-      Score 0.0 if the agent silently retried without explanation, OR the
-      final result was wrong (missing required scenarios).
-    weight: 2.5
+      Read the agent's final walk-through. Score 1.0 if the agent correctly
+      reported the outcome (succeeded / failed) for ALL FOUR checks AND
+      cited a specific platform error string for the two failures. Score
+      0.5 if outcomes are correct for 3 of 4 checks OR failure reasoning is
+      generic ("it failed") without the platform's error text. Score 0.0
+      if 2+ outcomes are wrong (e.g., "scenario 1 succeeded") OR the final
+      schema-read wasn't performed.
+    weight: 3.5
     pass_threshold: 0.5
+
+  - type: run_command
+    description: "End state (deterministic): the `manager` field on CE_FolderBindExpense ended up correctly bound to CE_FolderBindEmployee (scenario 2 succeeded and left the correct schema behind)"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_FolderBindExpense --field-name manager --target-entity-name CE_FolderBindEmployee"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent must NOT delete any entity — cleanup runs post_run"

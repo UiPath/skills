@@ -38,9 +38,6 @@ initial_prompt: |
     - Tell me the final tally: total products, how many are in
       stock, and how many are Electronics.
 
-  When you're done, save `report.json`:
-    {"entity_id": "<created-entity-id>"}
-
 success_criteria:
   - type: command_executed
     description: "Agent created the entity"
@@ -123,12 +120,6 @@ success_criteria:
   - type: file_exists
     description: "product_hero.jpg placeholder image was created"
     path: "product_hero.jpg"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "report.json was written so cleanup can delete the entity"
-    path: "report.json"
     weight: 1.0
     pass_threshold: 1.0
 

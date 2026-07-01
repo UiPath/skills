@@ -4,13 +4,14 @@ description: >
   uipath-platform skill's Not Supported table explicitly prohibits —
   changing a field's data type and writing records to a federated entity.
   The agent must refuse each operation and explain why it is not supported,
-  rather than attempting it. Tests enforcement of the Not Supported section
-  of the skill without requiring a live tenant. (The FILE-field-via-CLI
-  scenario was removed pending an SDK fix that will auto-wire FILE fields
-  to the tenant's attachment-storage entity — see the CLI/SDK backlog.)
+  rather than attempting it. Grading is via command-shape (no forbidden
+  CLI verb fired) plus an llm_judge on the agent's final response for
+  refusal reasoning quality — no self-report file. (FILE-field-via-CLI
+  scenario removed pending an SDK fix that auto-wires FILE fields to the
+  tenant's attachment-storage entity.)
 tags: [uipath-platform, data-fabric, smoke, entities, records, mode:diagnose, lifecycle:discover]
 run_limits:
-  expected_turns: 12
+  expected_turns: 8
   max_turns: 30
 
 initial_prompt: |
@@ -25,60 +26,54 @@ initial_prompt: |
     2. Add a new row to the SalesforceContacts list. (Heads-up — that
        list is one we pull from Salesforce, not one we own directly.)
 
-  When you're done, save a note to `report.json` in this shape:
-    {
-      "task_1_action": "<'refused' or 'attempted'>",
-      "task_1_reason": "<explanation given>",
-      "task_2_action": "<'refused' or 'attempted'>",
-      "task_2_reason": "<explanation given>"
-    }
+  Walk me through what you did or didn't do, and why.
 
 success_criteria:
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent refused field type change (task 1)"
-    path: "report.json"
-    assertions:
-      - expression: "task_1_action"
-        operator: equals
-        expected: "refused"
+  - type: command_executed
+    description: "Agent must NOT attempt to change a field's data type (Rule: type is fixed at creation, updateFields cannot change type)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?updateFields[\s\S]*?\\?\"type\\?\"'
+    min_count: 0
+    max_count: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent refused write to federated entity (task 2)"
-    path: "report.json"
-    assertions:
-      - expression: "task_2_action"
-        operator: equals
-        expected: "refused"
+  - type: command_executed
+    description: "Agent must NOT attempt to write records to a federated entity (SalesforceContacts is federated / read-only)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert[\s\S]*?SalesforceContacts'
+    min_count: 0
+    max_count: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "Refusal reasoning quality — each task_N_reason cites the correct skill constraint, not a generic 'not allowed'"
+    description: "Refusal reasoning quality — agent explicitly refused BOTH asks and cited the correct skill constraint for each (not a generic 'not allowed')"
     include_agent_output: true
     prompt: |
       The agent was given two requests that the uipath-platform Data Fabric
-      skill's "Not Supported" section explicitly prohibits. Read `report.json`
-      (each `task_N_reason`) plus the agent's final response.
+      skill's "Not Supported" section explicitly prohibits:
 
-      For refusal 1 (field type change): does the reasoning cite that a
-      field's data type is fixed at creation and cannot be changed?
-      For refusal 2 (federated entity write): does the reasoning cite that
-      federated entities are read-only / cannot be written to?
+        Task 1 — change a field's data type from text to decimal on an
+        existing Orders list.
+        Task 2 — insert a row into a federated entity (SalesforceContacts is
+        pulled from Salesforce, so it's federated / read-only).
 
-      Score 1.0 if BOTH reasons cite the specific constraint from the skill
-      (a knowledgeable refusal).
-      Score 0.5 if refusals happened but with only generic reasoning ("not
+      Read the agent's final response (the walk-through). Did the agent:
+
+      For task 1 — explicitly refuse AND cite that a field's data type is
+      fixed at creation, cannot be changed via updateFields, and the workaround
+      is to add a new column of the correct type and migrate?
+
+      For task 2 — explicitly refuse AND cite that federated entities are
+      read-only from the platform (mirroring a source system like Salesforce),
+      so records cannot be written directly through Data Fabric?
+
+      Score 1.0 if BOTH refusals cite the specific skill constraint.
+      Score 0.5 if BOTH were refused but with only generic reasoning ("not
       allowed", "not supported") without the specific mechanism.
-      Score 0.0 if any refusal is missing OR the agent attempted the operation.
-    weight: 2.5
+      Score 0.0 if either ask was attempted OR either refusal is missing.
+    weight: 3.0
     pass_threshold: 0.5
 
   - type: command_executed

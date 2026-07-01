@@ -9,9 +9,9 @@ description: >
   (server-managed — should reject), system fields client-supplied
   (CreatedBy / Id), and a relationship pointing to a non-existent row.
   Per skill Rule 18 the agent must surface the upstream error verbatim
-  and NOT silently substitute or retry — captured in report.json. End
-  state is validated via assert_record_count.py to confirm only the
-  positive attempts landed.
+  and NOT silently substitute or retry. Grading is deterministic on
+  command shape + end-state record count, with an llm_judge on the
+  agent's final response for verbatim error surfacing (no self-report).
 tags: [uipath-platform, data-fabric, integration, constraints, error-paths, mode:diagnose, lifecycle:setup]
 
 run_limits:
@@ -20,19 +20,20 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  We're loading a batch of product SKUs into a new list. For rows the
-  system rejects, record the actual error verbatim — don't guess or
+  Sales just sent a messy spreadsheet of new SKUs — a few rows look iffy.
+  Load what you can and tell me what came back for each. For anything the
+  system rejects, capture the actual error verbatim — don't guess or
   rewrite values.
 
   Set up `CE_ConstraintTest` with these columns:
     - Code — required, short text, up to 10 characters
     - Quantity — whole number, 0 to 100
     - Price — dollars with cents, never negative
-    - HireDate — a date
+    - StockedDate — a date (when the SKU was first stocked)
     - Serial — an auto-generated number the system fills in
     - ParentLink — optional, links to another row in this list
 
-  Try loading each row. For failures, record the error verbatim:
+  Try loading each row:
 
     1A. "OK1",      Qty 5
     1B. Code missing, Qty 5
@@ -47,32 +48,19 @@ initial_prompt: |
     4C. "INTOV",Qty 2147483648
     5A. "DP2",  Qty 5, Price 9.99
     5B. "DP3",  Qty 5, Price 9.999
-    6A. "DT1",  HireDate "2024-01-15"
-    6B. "DTLOW",HireDate "0001-01-01"
-    6C. "DTHI", HireDate "9999-12-31"
-    6D. "DTBAD",HireDate "2024-02-30"
-    7A. "AUTO", Qty 5 — let Serial auto-fill; note the number
-    7B. "SET",  Qty 5, Serial 999 — manual serial
-    7C. "SYS",  Qty 5, CreatedBy "fake-user" — audit column
+    6A. "DT1",  StockedDate "2024-01-15"
+    6B. "DTLOW",StockedDate "0001-01-01"
+    6C. "DTHI", StockedDate "9999-12-31"
+    6D. "DTBAD",StockedDate "2024-02-30"
+    7A. "AUTO", Qty 5
+    7B. "SET",  Qty 5, Serial 999
+    7C. "SYS",  Qty 5, CreatedBy "fake-user"
     7D. "IDSET",Qty 5, Id "00000000-0000-0000-0000-000000000001"
     8A. "REL1", ParentLink = row ID of 1A (first successful row)
     8B. "RELBAD",ParentLink = "00000000-0000-0000-0000-000000000099"
 
-  Save to `report.json` — put "succeeded" for accepted rows, the raw
-  error text for rejected ones:
-
-    {
-      "entity_id": "<list ID>",
-      "pair_1_A": "...", "pair_1_B": "...", "pair_1_C": "...", "pair_1_D": "...",
-      "pair_2_A": "...", "pair_2_B": "...",
-      "pair_3_A": "...", "pair_3_B": "...",
-      "pair_4_A": "...", "pair_4_B": "...", "pair_4_C": "...",
-      "pair_5_A": "...", "pair_5_B": "...",
-      "pair_6_A": "...", "pair_6_B": "...", "pair_6_C": "...", "pair_6_D": "...",
-      "pair_7_A": "...", "pair_7_B": "...", "pair_7_C": "...", "pair_7_D": "...",
-      "pair_8_A": "...", "pair_8_B": "...",
-      "successful_inserts": <row count at end>
-    }
+  When you're done, walk me through what succeeded and what failed, with
+  the specific error text for each rejection. Don't retry rejected rows.
 
 success_criteria:
   - type: command_executed
@@ -100,128 +88,54 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Pair 1 — required field handling captured for all three semantics"
-    path: "report.json"
-    assertions:
-      - expression: "pair_1_A"
-        operator: contains
-        expected: "succeeded"
-      - expression: "pair_1_B"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Pair 2 — string length boundary: at-limit succeeds, over-limit fails"
-    path: "report.json"
-    assertions:
-      - expression: "pair_2_A"
-        operator: contains
-        expected: "succeeded"
-      - expression: "pair_2_B"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Pair 3 — numeric minimum: at-min succeeds, below-min fails"
-    path: "report.json"
-    assertions:
-      - expression: "pair_3_A"
-        operator: contains
-        expected: "succeeded"
-      - expression: "pair_3_B"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Pair 4 — numeric maximum: at-max succeeds, over-max fails, int32+1 fails"
-    path: "report.json"
-    assertions:
-      - expression: "pair_4_A"
-        operator: contains
-        expected: "succeeded"
-      - expression: "pair_4_B"
-        operator: not_equals
-        expected: "succeeded"
-      - expression: "pair_4_C"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Pair 5 — decimal precision behavior captured"
-    path: "report.json"
-    assertions:
-      - expression: "pair_5_A"
-        operator: contains
-        expected: "succeeded"
+  - type: run_command
+    description: "End state (aggregate): CE_ConstraintTest has between 8 and 14 records — positive-path rows landed and no unambiguous rejections were silently accepted"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_ConstraintTest --min 8 --max 14"
+    timeout: 60
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Pair 6 — invalid calendar date rejected"
-    path: "report.json"
-    assertions:
-      - expression: "pair_6_A"
-        operator: contains
-        expected: "succeeded"
-      - expression: "pair_6_D"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 2.5
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Pair 7 — baseline insert without a client-supplied Serial succeeds (system / auto behavior is platform-dependent and just captured)"
-    path: "report.json"
-    assertions:
-      - expression: "pair_7_A"
-        operator: contains
-        expected: "succeeded"
-    weight: 2.5
-    pass_threshold: 1.0
-
   - type: run_command
-    description: "Pair 7 — outcomes for client-supplied Serial / CreatedBy / Id all recorded (each may pass or fail depending on platform)"
-    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); sys.exit(0 if all(isinstance(d.get(k),str) and d[k] for k in ['pair_7_B','pair_7_C','pair_7_D']) else 1)\""
-    timeout: 10
+    description: "Per-row deterministic outcome check (server-side): each unambiguous positive-path row (Code present in list) and each unambiguous negative-path row (Code absent from list). Ambiguous rows (DP3, SET, SYS, IDSET, and the missing/null/empty Code rows 1B/1C/1D — no Code to query on) are intentionally omitted; platform behavior varies."
+    command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_constraint_outcomes.py
+      --entity-name CE_ConstraintTest
+      --expected-codes "OK1=present,AAAAAAAAAA=present,AAAAAAAAAAB=absent,MIN0=present,NEG1=absent,MAX=present,OVR=absent,INTOV=absent,DP2=present,DT1=present,DTLOW=present,DTHI=present,DTBAD=absent,AUTO=present,REL1=present,RELBAD=absent"
+    timeout: 90
     expected_exit_code: 0
-    weight: 1.5
+    weight: 4.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Pair 8 — relationship to non-existent row is rejected"
-    path: "report.json"
-    assertions:
-      - expression: "pair_8_A"
-        operator: contains
-        expected: "succeeded"
-      - expression: "pair_8_B"
-        operator: not_equals
-        expected: "succeeded"
-    weight: 3.0
-    pass_threshold: 1.0
+  - type: llm_judge
+    description: "Agent surfaced distinct verbatim errors covering the expected constraint categories (required / length / min-max / decimal-precision / invalid-date / relationship-not-found), not paraphrased or aggregated"
+    include_agent_output: true
+    prompt: |
+      The agent was given 23 rows to attempt inserting against a Data Fabric
+      list `CE_ConstraintTest`. Most rows are DESIGNED to be rejected by
+      specific constraints:
 
-  - type: run_command
-    description: "Side-effect check: only the rows the server accepted actually landed"
-    command: "python3 -c \"import json,sys; d=json.load(open('report.json')); pos=sum(1 for k,v in d.items() if k.startswith('pair_') and isinstance(v,str) and 'succeeded' in v.lower()); count=d.get('successful_inserts',-1); sys.exit(0 if count==pos and pos>=8 else 1)\""
-    timeout: 10
-    expected_exit_code: 0
+        - required-field rejections (rows 1B, 1C, 1D — Code missing/null/empty)
+        - string length-limit rejections (row 2B — 11 chars vs limit 10)
+        - numeric min-value / max-value rejections (rows 3B, 4B, 4C)
+        - decimal-precision rejection (row 5B — 3 dp vs limit 2)
+        - invalid calendar date (row 6D — Feb 30)
+        - client-supplied system columns (rows 7C, 7D)
+        - relationship to non-existent row (row 8B)
+
+      Read the agent's final response (its "walk me through" summary). Does
+      the agent report DISTINCT VERBATIM error messages for the rejection
+      cases — real error strings / codes from the platform, distinguishable
+      per constraint category? Or does the agent aggregate/paraphrase?
+
+      Score 1.0 if the agent surfaced verbatim errors for at least 5 of the
+      7 expected rejection categories, distinguishing WHICH constraint fired.
+      Score 0.5 if the agent surfaced verbatim errors for 2-4 categories, or
+      surfaced 5+ but merged them into a single generic summary.
+      Score 0.0 if the agent hid all errors behind paraphrases like "some
+      rows failed" without any raw text OR skipped scenarios.
     weight: 3.0
-    pass_threshold: 1.0
+    pass_threshold: 0.5
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
@@ -231,6 +145,7 @@ success_criteria:
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
     tool_name: "Bash"
