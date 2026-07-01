@@ -43,29 +43,34 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     return result.returncode, result.stdout, result.stderr
 
 
-def find_entity_id(name: str) -> str | None:
-    code, out, err = run_uip("df", "entities", "list", "--native-only")
-    if code != 0 or not out.strip():
-        print(f"FAIL: uip df entities list failed: {err.strip()}", file=sys.stderr)
-        return None
-    try:
-        data = json.loads(out)
-    except json.JSONDecodeError:
-        print("FAIL: could not parse entities list output", file=sys.stderr)
-        return None
-    items = data.get("Data") if isinstance(data.get("Data"), list) else []
-    for ent in items:
-        if isinstance(ent, dict) and (ent.get("Name") or ent.get("name")) == name:
-            return ent.get("ID") or ent.get("Id") or ent.get("id")
-    return None
+def find_entity_id(name: str) -> tuple[str | None, str | None]:
+    """Return (id, folder_key) — folder_key is empty for tenant-scoped."""
+    for extra in (["--include-folders"], []):
+        code, out, _ = run_uip("df", "entities", "list", "--native-only", *extra)
+        if code != 0 or not out.strip():
+            continue
+        try:
+            data = json.loads(out)
+        except json.JSONDecodeError:
+            continue
+        items = data.get("Data") if isinstance(data.get("Data"), list) else []
+        for ent in items:
+            if isinstance(ent, dict) and (ent.get("Name") or ent.get("name")) == name:
+                return (
+                    ent.get("ID") or ent.get("Id") or ent.get("id"),
+                    ent.get("FolderKey") or ent.get("folderKey") or "",
+                )
+    return None, None
 
 
-def list_all_codes(entity_id: str, key_column: str) -> set[str] | None:
+def list_all_codes(entity_id: str, key_column: str, folder_key: str = "") -> set[str] | None:
     """Page through every record and collect the value of `key_column`."""
     seen: set[str] = set()
     cursor: str | None = None
     while True:
         args = ["df", "records", "list", entity_id, "--limit", str(LIST_PAGE_SIZE)]
+        if folder_key:
+            args += ["--folder-key", folder_key]
         if cursor:
             args += ["--cursor", cursor]
         code, out, err = run_uip(*args)
@@ -127,12 +132,12 @@ def main() -> None:
     except ValueError as e:
         p.error(str(e))
 
-    entity_id = find_entity_id(args.entity_name)
+    entity_id, folder_key = find_entity_id(args.entity_name)
     if not entity_id:
         print(f"FAIL: entity '{args.entity_name}' not found", file=sys.stderr)
         sys.exit(1)
 
-    seen = list_all_codes(entity_id, args.key_column)
+    seen = list_all_codes(entity_id, args.key_column, folder_key)
     if seen is None:
         sys.exit(1)
 

@@ -41,28 +41,34 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     return result.returncode, result.stdout, result.stderr
 
 
-def find_entity_id(name: str) -> str | None:
-    code, out, err = run_uip("df", "entities", "list", "--native-only")
-    if code != 0 or not out.strip():
-        print(f"FAIL: uip df entities list failed: {err.strip()}", file=sys.stderr)
-        return None
-    try:
-        data = json.loads(out)
-    except json.JSONDecodeError:
-        print("FAIL: could not parse entities list output", file=sys.stderr)
-        return None
-    inner = data.get("Data") if isinstance(data, dict) else None
-    recs = inner if isinstance(inner, list) else (inner or {}).get("Records") or (inner or {}).get("records") or []
-    for ent in recs:
-        if not isinstance(ent, dict):
+def find_entity_id(name: str) -> tuple[str | None, str | None]:
+    """Return (entity_id, folder_key) — folder_key is empty string for tenant-scoped."""
+    # Try with --include-folders first (sees both tenant and folder-scoped entities).
+    # If the CLI version doesn't support the flag, fall back to plain --native-only.
+    for extra in (["--include-folders"], []):
+        code, out, err = run_uip("df", "entities", "list", "--native-only", *extra)
+        if code != 0 or not out.strip():
             continue
-        if (ent.get("Name") or ent.get("name")) == name:
-            return ent.get("ID") or ent.get("Id") or ent.get("id")
-    return None
+        try:
+            data = json.loads(out)
+        except json.JSONDecodeError:
+            continue
+        inner = data.get("Data") if isinstance(data, dict) else None
+        recs = inner if isinstance(inner, list) else (inner or {}).get("Records") or (inner or {}).get("records") or []
+        for ent in recs:
+            if not isinstance(ent, dict):
+                continue
+            if (ent.get("Name") or ent.get("name")) == name:
+                folder_key = ent.get("FolderKey") or ent.get("folderKey") or ""
+                return (ent.get("ID") or ent.get("Id") or ent.get("id"), folder_key)
+    return None, None
 
 
-def total_count(entity_id: str) -> int | None:
-    code, out, err = run_uip("df", "records", "list", entity_id, "--limit", "1")
+def total_count(entity_id: str, folder_key: str = "") -> int | None:
+    args = ["df", "records", "list", entity_id, "--limit", "1"]
+    if folder_key:
+        args += ["--folder-key", folder_key]
+    code, out, err = run_uip(*args)
     if code != 0 or not out.strip():
         print(f"FAIL: uip df records list failed: {err.strip()}", file=sys.stderr)
         return None
@@ -91,12 +97,12 @@ def main() -> None:
     if args.expected is not None and (args.min_count is not None or args.max_count is not None):
         parser.error("--expected is mutually exclusive with --min/--max")
 
-    entity_id = find_entity_id(args.entity_name)
+    entity_id, folder_key = find_entity_id(args.entity_name)
     if not entity_id:
-        print(f"FAIL: entity '{args.entity_name}' not found", file=sys.stderr)
+        print(f"FAIL: entity '{args.entity_name}' not found (searched tenant + folders)", file=sys.stderr)
         sys.exit(1)
 
-    actual = total_count(entity_id)
+    actual = total_count(entity_id, folder_key)
     if actual is None:
         sys.exit(1)
 

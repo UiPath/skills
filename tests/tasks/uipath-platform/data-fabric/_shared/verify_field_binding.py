@@ -61,15 +61,21 @@ def list_entities_including_folders() -> list[dict]:
     return []
 
 
-def find_entity_id(entities: list[dict], name: str) -> str | None:
+def find_entity(entities: list[dict], name: str) -> tuple[str | None, str | None]:
+    """Return (id, folder_key) for the named entity. folder_key is empty for tenant-scoped."""
     for ent in entities:
         if isinstance(ent, dict) and (ent.get("Name") or ent.get("name")) == name:
-            return ent.get("ID") or ent.get("Id") or ent.get("id")
-    return None
+            eid = ent.get("ID") or ent.get("Id") or ent.get("id")
+            fk = ent.get("FolderKey") or ent.get("folderKey") or ""
+            return eid, fk
+    return None, None
 
 
-def get_entity_schema(entity_id: str) -> dict | None:
-    code, out, err = run_uip("df", "entities", "get", entity_id)
+def get_entity_schema(entity_id: str, folder_key: str = "") -> dict | None:
+    args = ["df", "entities", "get", entity_id]
+    if folder_key:
+        args += ["--folder-key", folder_key]
+    code, out, err = run_uip(*args)
     if code != 0 or not out.strip():
         print(f"FAIL: uip df entities get {entity_id} failed: {err.strip()}", file=sys.stderr)
         return None
@@ -95,12 +101,12 @@ def main() -> None:
         print("FAIL: could not list entities", file=sys.stderr)
         sys.exit(1)
 
-    parent_id = find_entity_id(entities, args.entity_name)
+    parent_id, parent_folder = find_entity(entities, args.entity_name)
     if not parent_id:
         print(f"FAIL: parent entity '{args.entity_name}' not found", file=sys.stderr)
         sys.exit(1)
 
-    target_id = find_entity_id(entities, args.target_entity_name)
+    target_id, _ = find_entity(entities, args.target_entity_name)
     if not target_id:
         if args.allow_missing_target:
             print(f"OK (allowed): target entity '{args.target_entity_name}' not found — check skipped")
@@ -108,7 +114,7 @@ def main() -> None:
         print(f"FAIL: target entity '{args.target_entity_name}' not found", file=sys.stderr)
         sys.exit(1)
 
-    schema = get_entity_schema(parent_id)
+    schema = get_entity_schema(parent_id, parent_folder)
     if not schema:
         sys.exit(1)
 
@@ -125,14 +131,28 @@ def main() -> None:
         sys.exit(1)
 
     fdt = match.get("FieldDataType") or match.get("fieldDataType") or {}
+    # The CLI returns references in two possible shapes:
+    #   flat:   Fields[].FieldDataType.ReferenceEntityId = "<uuid>"
+    #   nested: Fields[].ReferenceEntity = { Id: "<uuid>", Name: "<…>" }
+    # Also seen at the top-level field object (not under FieldDataType).
+    ref_entity_obj = (
+        match.get("ReferenceEntity") or match.get("referenceEntity")
+        or fdt.get("ReferenceEntity") or fdt.get("referenceEntity") or {}
+    )
+    if isinstance(ref_entity_obj, dict):
+        nested_ref = ref_entity_obj.get("Id") or ref_entity_obj.get("id") or ref_entity_obj.get("ID")
+    else:
+        nested_ref = None
     ref_id = (
-        fdt.get("ReferenceEntityId") or fdt.get("referenceEntityId")
+        nested_ref
+        or fdt.get("ReferenceEntityId") or fdt.get("referenceEntityId")
         or match.get("ReferenceEntityId") or match.get("referenceEntityId")
     )
     if not ref_id:
+        type_hint = fdt.get("SqlTypeName") or fdt.get("Type") or match.get("Type") or "unknown"
         print(
             f"FAIL: field '{args.field_name}' has no referenceEntityId "
-            f"(field type: {fdt.get('SqlTypeName') or match.get('Type') or 'unknown'})",
+            f"(field type: {type_hint}; checked flat + nested ReferenceEntity shapes)",
             file=sys.stderr,
         )
         sys.exit(1)

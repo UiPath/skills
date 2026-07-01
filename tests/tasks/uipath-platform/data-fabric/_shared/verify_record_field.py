@@ -47,25 +47,31 @@ def run_uip(*args: str) -> tuple[int, str, str]:
     return r.returncode, r.stdout, r.stderr
 
 
-def find_entity_id(name: str) -> str | None:
-    code, out, err = run_uip("df", "entities", "list", "--native-only")
-    if code != 0 or not out.strip():
-        print(f"FAIL: uip df entities list failed: {err.strip()}", file=sys.stderr)
-        return None
-    try:
-        data = json.loads(out)
-    except json.JSONDecodeError:
-        print("FAIL: could not parse entities list output", file=sys.stderr)
-        return None
-    items = data.get("Data") if isinstance(data.get("Data"), list) else []
-    for e in items:
-        if isinstance(e, dict) and (e.get("Name") or e.get("name")) == name:
-            return e.get("ID") or e.get("Id") or e.get("id")
-    return None
+def find_entity_id(name: str) -> tuple[str | None, str | None]:
+    """Return (id, folder_key) — folder_key is empty for tenant-scoped."""
+    for extra in (["--include-folders"], []):
+        code, out, _ = run_uip("df", "entities", "list", "--native-only", *extra)
+        if code != 0 or not out.strip():
+            continue
+        try:
+            data = json.loads(out)
+        except json.JSONDecodeError:
+            continue
+        items = data.get("Data") if isinstance(data.get("Data"), list) else []
+        for e in items:
+            if isinstance(e, dict) and (e.get("Name") or e.get("name")) == name:
+                return (
+                    e.get("ID") or e.get("Id") or e.get("id"),
+                    e.get("FolderKey") or e.get("folderKey") or "",
+                )
+    return None, None
 
 
-def sample_record(entity_id: str) -> dict | None:
-    code, out, err = run_uip("df", "records", "list", entity_id, "--limit", "1")
+def sample_record(entity_id: str, folder_key: str = "") -> dict | None:
+    args = ["df", "records", "list", entity_id, "--limit", "1"]
+    if folder_key:
+        args += ["--folder-key", folder_key]
+    code, out, err = run_uip(*args)
     if code != 0 or not out.strip():
         print(f"FAIL: uip df records list failed: {err.strip()}", file=sys.stderr)
         return None
@@ -103,12 +109,12 @@ def main() -> None:
     except re.error as e:
         p.error(f"invalid --value-regex: {e}")
 
-    eid = find_entity_id(args.entity_name)
+    eid, fk = find_entity_id(args.entity_name)
     if not eid:
         print(f"FAIL: entity '{args.entity_name}' not found", file=sys.stderr)
         sys.exit(1)
 
-    rec = sample_record(eid)
+    rec = sample_record(eid, fk)
     if rec is None:
         print(f"FAIL: no records on '{args.entity_name}' to sample", file=sys.stderr)
         sys.exit(1)
