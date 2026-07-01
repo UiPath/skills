@@ -49,34 +49,36 @@ Respond that the operation is not supported. Do not try to work around it.
 
 ## Critical Rules
 
-> ### ⛔ Destructive Operations — STOP and Confirm
+> ### ⛔ Confirmation Protocol — the six triggers
 >
-> **Never invoke any of the following without explicit user approval in the current turn.** Approval = the user typed *yes / approved / proceed / delete / confirm* in response to a previewed plan. Implied consent, prior-turn approval, or "the user asked me to clean up" is NOT approval.
+> Every `uip df` mutation is gated by this protocol. Do not run the CLI until it clears.
 >
-> | Operation | CLI shape | Detail |
+> | Trigger | Fires when | Detail |
 > |---|---|---|
-> | Delete entity | `entities delete <id> --yes --reason "<why>"` | Rule 10 — list dependents first, never cascade silently |
-> | Delete field | `entities update <id> --body '{"removeFields":[...]}' --yes --reason "<why>"` | Rule 11 — for `CHOICE_SET_*` / `RELATIONSHIP` fields, ask whether to also delete the referenced choice set / target entity before invoking |
-> | Delete record(s) | `records delete <entity-id> <id1> <id2> --yes --reason "<why>"` | Per-record `--yes --reason` required |
-> | Delete file attachment | `files delete <entity-id> <record-id> <field-name> --yes --reason "<why>"` | Irreversible |
-> | Delete choice set | `choice-sets delete <id> --yes --reason "<why>"` | Shared resource — verify no entity binds it first |
-> | Delete choice-set value | `choice-set-values delete <id> --yes --reason "<why>"` | Shifts NumberIds of later values — see [`choice-sets.md`](choice-sets.md) |
-> | Create / schema-alter | `entities create`, `entities update` with `addFields`/`updateFields`/`removeFields`, `choice-sets create`, `choice-set-values create` | Rule 14 — preview schema, wait for explicit approval |
+> | **Scope** | Prompt hasn't pinned tenant vs folder (see Rule 19 bypass clauses) | `AskUserQuestion` dropdown — `Tenant level` vs a specific folder. Never default to personal workspace |
+> | **Pick-or-create** | Target entity / choice set / relationship target not disambiguated | Run the list command, dropdown of matches, offer `create new`. See Rule 13 |
+> | **Schema preview** | Any `entities create`, `entities update` with `addFields`/`updateFields`/`removeFields`, `choice-sets create`, `choice-set-values create` | Render full proposal (readable table or JSON); wait for explicit *yes / approved / proceed*. See Rule 14 |
+> | **Inferred types** | Field types come from a CSV / sample file, not spelled out by the user | Flag every type as inferred; dropdown-confirm ambiguous columns (date-shaped strings, `0/1` flags, decimal precision, UUID-shaped). See Rule 14 |
+> | **Cascade decision** | Deleting a `CHOICE_SET_*` or `RELATIONSHIP` field | Dropdown: `Delete only the field` / `Also delete the referenced choice set / target entity` / `Stop`. Each downstream delete re-runs the protocol. See Rule 11 |
+> | **Destructive op** | Any row in the destructive-op table below | Preview target + impact, list dependents (Rule 10/11), wait for explicit per-op *yes* |
 >
-> **Mandatory sequence for every row above:**
-> 1. **Resolve folder scope first** (Rule 19) — if scope isn't already pinned in the conversation, fire the `AskUserQuestion` dropdown for `Tenant level` vs a specific folder before doing anything else. Never guess; never default to personal workspace.
-> 2. Surface the exact target (entity name + ID, field name, record IDs) and what will be lost.
-> 3. For deletes — list dependents (Rule 10/11).
-> 4. Wait for the user's explicit *yes / proceed / delete*. Silence ≠ approval. *"Do not ask"* / *"no confirmation needed"* ≠ approval either — destructive ops are non-bypassable (Rule 0). Only a direct authorisation of THIS op (*"yes, delete X"*, *"drop the column"*, *"--yes already authorised"*) clears the gate.
-> 5. Then run the CLI with `--folder-key <key>` (if folder-scoped) and `--yes --reason "<user-supplied or user-approved reason>"`.
+> **Destructive operations — always subject to the protocol:**
 >
-> **Cascade only on confirmation.** Field deletes do not auto-cascade. For `CHOICE_SET_*` / `RELATIONSHIP` fields, Rule 11 mandates an `AskUserQuestion` dropdown offering `Delete only the field` / `Also delete the referenced choice set / target entity` / `Stop`. Each downstream delete runs its own confirmation cycle (Rule 10, choice-set delete safety).
+> | Operation | CLI shape |
+> |---|---|
+> | Delete entity | `entities delete <id> --yes --reason "<why>"` |
+> | Delete field | `entities update <id> --body '{"removeFields":[...]}' --yes --reason "<why>"` |
+> | Delete record(s) | `records delete <entity-id> <id1> <id2> --yes --reason "<why>"` |
+> | Delete file attachment | `files delete <entity-id> <record-id> <field-name> --yes --reason "<why>"` |
+> | Delete choice set | `choice-sets delete <id> --yes --reason "<why>"` |
+> | Delete choice-set value | `choice-set-values delete <id> --yes --reason "<why>"` |
+> | Schema-alter | `entities create`, `entities update` with `addFields`/`updateFields`/`removeFields`, `choice-sets create`, `choice-set-values create` |
+>
+> **What clears the gate.** Only explicit per-op user authorisation in the current turn — *"yes, delete X"*, *"drop the column"*, *"--yes already authorised"*, *"proceed with the proposal"*. What does NOT clear it: silence, implied consent, prior-turn approval, *"do not ask"* / *"no confirmation needed"* / *"proceed without confirmation"* (those cover **scope only** — Rule 19 — not destructive ops or schema previews).
+>
+> **What to do when you can't ask.** *"No reachable user"* / *"single-turn"* / *"offline test"* is NOT permission to default. Never write phrases like *"Assumption I will proceed with:"*, *"defaulting to tenant"*, *"I'll assume X — let me know if you want Y"*. The correct end-of-turn is: open question listed to output or a file, no mutation issued.
 
-0. **Ask liberally — never assume at decision points.** When the request leaves any choice unresolved — scope (folder vs tenant), which folder, which entity to target, which field to drop, whether to cascade to a referenced choice set / entity, which choice set value to write, whether a destructive op should proceed, which of several name-matches is the right one — stop and raise an `AskUserQuestion` dropdown. The bias is *ask, then act*, not *act, then explain*. Render every multi-option pick as a dropdown, not a markdown list.
-
-    **Destructive ops are non-bypassable.** For any row in the hoisted Destructive Operations block (entity / field / record / file / choice-set / choice-set-value delete, and schema-altering creates / updates) you MUST raise the AskUserQuestion confirmation **even if the user said "do not ask" / "do not pause" / "no approval needed" / "proceed without confirmation"**. The Rule 19 bypass clauses apply only to *scope resolution* (tenant vs folder, which folder) — they never silence the destructive-op confirmation. Schema previews (Rule 14) and field-delete cascade asks (Rule 11) are part of this gate. The user can pre-approve the destructive op explicitly in the same prompt (*"yes, delete entity X"*, *"--yes already authorised"*, *"I'm sure, drop the column"*) and that satisfies the gate — silence or "do not ask" alone does not.
-
-    **Never self-resolve a scope question.** If you find yourself drafting language like *"Assumption I will proceed with (absent further input):"*, *"defaulting to tenant since no folder was specified"*, *"I'll proceed with X — let me know if you want Y"*, *"I'll assume tenant level"*, or any other unilateral resolution — you are violating this rule. Halt the `uip df` mutation. Write the open question(s) to a file or to your assistant output and STOP — do not call `entities create`, `choice-sets create`, `records insert`, `files upload`, or any other mutation until the user answers. *"No reachable user"* / *"single-turn"* / *"offline test"* is NOT permission to default. Inability to ask is not the same as having been told to proceed. The correct end-of-turn here is: question listed, no mutation issued.
+0. **Never mutate before the Confirmation Protocol clears.** The six triggers above are non-bypassable. Render every multi-option pick as a dropdown (`AskUserQuestion`), not a markdown list. The bias is *ask, then act*, not *act, then explain*.
 
 1. **Install the tool first.** If `uip df` returns "unknown command": `uip tools install @uipath/data-fabric-tool`. See *Tool Version Requirements* below for the floor needed per feature.
 
@@ -84,7 +86,7 @@ Respond that the operation is not supported. Do not try to work around it.
 
 3. **Always resolve entity ID first.** Use `entities list` before any operation. Never assume an entity ID.
 
-4. **Entity and field names must pass validation**: start with a letter, contain only letters/digits/underscores (`[a-zA-Z0-9_]`), 3–100 characters. No hyphens or spaces. Reserved field names that will error: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`. Also never use **C# or VB reserved keywords** — match is **case-insensitive** (`Class`, `class`, `CLASS` all rejected). Common rejections: `Case`, `Class`, `If`, `Then`, `Else`, `New`, `Object`, `Public`, `Return`, `Select`, `Internal`, `Private`, `Static`. The API surfaces these as *"cannot be a reserved word in C# or VB"* (or `RESERVED_LANGUAGE_KEYWORDS`). SQL keywords (e.g. `Status`, `Order`, `Key`, `User`, `Role`, `Type`, `Group`, `Index`, `From`, `Where`, `Table`) are **NOT** rejected — those idiomatic field names work as-is; don't rename them defensively. Pick a domain-specific rename only for actual C#/VB collisions: `Case` → `WorkItem`; `Class` → `Category`; `New` → `IsNew`. **The choice-set-value `Name` validator is a different code path with different behavior — see [`choice-sets.md` → Value `Name` validation](choice-sets.md#value-name-validation); do not assume a choice-value name is legal just because a field name with the same spelling is, or vice versa.**
+4. **Entity and field names must pass validation.** Full alphabet / case-match / keyword rules and rename table live in [`reserved-keywords.md`](reserved-keywords.md). Look up the target validator there before creating a name — the entity/field validator (case-insensitive, full C#/VB list) and the choice-value `Name` validator (case-sensitive, partial list) do NOT overlap; a name legal in one place may be illegal in the other. On any live API rejection, surface the error verbatim to the user and pick a domain-specific rename — never silently substitute (Rule 18).
 
 5. **All updates require `Id` in the body.** The CLI routes single vs batch by whether the body is a JSON object (1 record) or array (multiple). Both require `"Id"` in the record. Use `records list` or `records query` to retrieve record IDs before updating.
 
@@ -98,9 +100,9 @@ Respond that the operation is not supported. Do not try to work around it.
 
 9. **Only work with native entities.** When listing entities before a write, use `entities list --native-only` to filter out federated entities. Never write to federated entities.
 
-10. **Entity delete — dependent discovery.** Gating + sequence live in the hoisted Destructive Operations block. Unique to entity delete: scan for dependents and list them to the user one by one — (a) other entities that reference this one (run `entities list --output json` and pull every entry whose `Fields[].ReferenceEntity.Id == <id>` — these will have broken FKs after the delete); (b) choice sets used by this entity's fields (`Fields[].ChoiceSetId` from `entities get`) — those choice sets are shared and may still be in use elsewhere. Ask per dependent: delete it too, leave it, or stop. Apply only the choices the user confirms.
+10. **Entity delete — dependent discovery.** Gating + sequence live in the Confirmation Protocol. Unique to entity delete: scan for dependents and list them to the user one by one — (a) other entities that reference this one (run `entities list --output json` and pull every entry whose `Fields[].ReferenceEntity.Id == <id>` — these will have broken FKs after the delete); (b) choice sets used by this entity's fields (`Fields[].ChoiceSetId` from `entities get`) — those choice sets are shared and may still be in use elsewhere. Ask per dependent: delete it too, leave it, or stop. Apply only the choices the user confirms.
 
-11. **Field delete — body shape + cascade-ask.** Gating + sequence live in the hoisted Destructive Operations block. Unique to field delete:
+11. **Field delete — body shape + cascade-ask.** Gating + sequence live in the Confirmation Protocol. Unique to field delete:
     - `removeFields` takes `{"fieldName": "<name>"}` — NOT `{"id": "..."}` like `updateFields`. Mixing the two yields `Each field in removeFields must include a non-empty 'fieldName' string`.
     - **Cascade-ask for CHOICE_SET / RELATIONSHIP fields.** Before invoking `removeFields`, look up the field's type from `entities get <id>`. If the field is `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` or `RELATIONSHIP`, raise an `AskUserQuestion` dropdown:
       - `CHOICE_SET_*` → resolve `Fields[].ChoiceSetId` → ask: `Delete only the field` · `Also delete the referenced choice set <Name> (<id>)` · `Stop`. Echo any other entities that share the choice set (`entities list --output json` → entries whose `Fields[].ChoiceSetId == <id>`) so the user sees the blast radius.
@@ -122,7 +124,7 @@ Respond that the operation is not supported. Do not try to work around it.
 
     Choice-set authoring uses `choice-sets create` / `update` / `delete` + `choice-set-values create` / `update` / `delete`; surface in [`choice-sets.md`](choice-sets.md).
 
-14. **Schema preview — how to compose the proposal.** Gating + approval wait live in the hoisted Destructive Operations block. Unique to schema-altering ops (`entities create`, `entities update` with `addFields` / `updateFields` / `removeFields`, `choice-sets create`, `choice-set-values create`): (1) compose the full proposal — entity / choice-set name, `displayName`, `description`, and every field with its `fieldName`, normalized UPPERCASE `type`, and all extras (`isRequired`, `isUnique`, `lengthLimit`, `maxValue` / `minValue`, `decimalPrecision`, `defaultValue`, `choiceSetId`, `referenceEntityId` / `referenceFieldId`); (2) render it as a readable table or formatted JSON block (NOT a raw CLI command); (3) apply revisions exactly as requested — never silently add, drop, rename, or retype fields the user didn't approve; re-show the revised proposal and ask again. Show the proposal **once per round** — don't re-show an unchanged schema after every minor question.
+14. **Schema preview — how to compose the proposal.** Gating + approval wait live in the Confirmation Protocol. Unique to schema-altering ops (`entities create`, `entities update` with `addFields` / `updateFields` / `removeFields`, `choice-sets create`, `choice-set-values create`): (1) compose the full proposal — entity / choice-set name, `displayName`, `description`, and every field with its `fieldName`, normalized UPPERCASE `type`, and all extras (`isRequired`, `isUnique`, `lengthLimit`, `maxValue` / `minValue`, `decimalPrecision`, `defaultValue`, `choiceSetId`, `referenceEntityId` / `referenceFieldId`); (2) render it as a readable table or formatted JSON block (NOT a raw CLI command); (3) apply revisions exactly as requested — never silently add, drop, rename, or retype fields the user didn't approve; re-show the revised proposal and ask again. Show the proposal **once per round** — don't re-show an unchanged schema after every minor question.
 
     **`referenceFieldId` is a user-facing display choice, not a technical default.** When proposing a `RELATIONSHIP` or `FILE` field, the value of `referenceFieldId` controls which target-entity field renders in pickers, lists, and the Data Fabric UI when the relationship is shown. List the target's plausible display fields (e.g. `Name`, `Email`, `Title` — any human-readable scalar field on the target) via `entities get <target-entity-id>` and raise an `AskUserQuestion` dropdown — never silently default to the target's `Id` UUID. Auto Mode does NOT waive this confirmation; rendering choices are user-domain. The stored value remains the target record's UUID regardless of which field is bound here.
 
@@ -257,7 +259,7 @@ If a verb returns `unknown option '--folder-key'`, the installed tool is older t
 | Update entity / add fields | `entities update <id> --body '{"addFields":[{"fieldName":"NewField","type":"STRING"}]}'` |
 | Update existing field metadata | `entities update <id> --body '{"updateFields":[{"id":"<field-uuid>","displayName":"New Label","isRequired":true}]}'` — body uses `id` (lowercase); the response key is `Id` (different case, same value) |
 | Update entity metadata | `entities update <id> --body '{"displayName":"New Name","description":"desc"}'` |
-| Delete an entity | `entities delete <id> [--folder-key <…>]` — see Destructive Operations block + Rule 10 |
+| Delete an entity | `entities delete <id> [--folder-key <…>]` — see Confirmation Protocol + Rule 10 |
 | Delete a field | `entities update <id> --body '{"removeFields":[{"fieldName":"<name>"}]}'` — `removeFields` uses `fieldName`, NOT `id` (Rule 11) |
 | Read records (first page) | `records list <entity-id> --limit 50` |
 | Read records (next page) | `records list <entity-id> --cursor <NextCursor.Value>` — extract the inner `Value` from the previous response's `Data.NextCursor` object; passing the whole object errors |
@@ -266,14 +268,14 @@ If a verb returns `unknown option '--folder-key'`, the installed tool is older t
 | Batch insert | `records insert <entity-id> --body '[{...},{...}]'` |
 | Update one record | `records update <entity-id> --body '{"Id":"<record-id>","field":"val"}'` |
 | Batch update | `records update <entity-id> --body '[{"Id":"<id1>","field":"val"},{"Id":"<id2>","field":"val"}]'` |
-| Delete records | `records delete <entity-id> <id1> <id2> [--folder-key <…>]` — IDs are positional varargs (separate args, NOT space-joined). See Destructive Operations block |
+| Delete records | `records delete <entity-id> <id1> <id2> [--folder-key <…>]` — IDs are positional varargs (separate args, NOT space-joined). See Confirmation Protocol |
 | Filter/search records | `records query <entity-id> --body '{...}'`. Choice / relationship filter operators: see [`records-query.md`](records-query.md#filtering-on-choice-set-fields) |
 | Aggregate / group-by metrics | `records query <entity-id> --body '{"aggregates":[{"function":"COUNT","field":"Id","alias":"total"}],"groupBy":["FieldName"]}'` |
 | Bulk import from CSV (Basic field types only — `CHOICE_SET_*`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` are **not supported** by `records import`; **surface this to the user before invoking — Rule 20**) | `records import <entity-id> --file data.csv [--folder-key <…>]` |
 | Bulk seed records that include complex fields | `records insert <entity-id> --file records.json` with a JSON array body |
 | Upload file to record | `files upload <entity-id> <record-id> <field-name> --file path` |
 | Download file | `files download <entity-id> <record-id> <field-name> --destination path` |
-| Delete file | `files delete <entity-id> <record-id> <field-name> [--folder-key <…>]` — see Destructive Operations block |
+| Delete file | `files delete <entity-id> <record-id> <field-name> [--folder-key <…>]` — see Confirmation Protocol |
 
 ---
 
@@ -334,8 +336,8 @@ Pass the query body via `--body` or `--file`; pagination uses `--limit` / `--cur
 | Import errors in CSV | Header mismatch | Run `entities get` and check exact field names (case-sensitive) |
 | `records import` succeeded but choice / relationship / file / auto-number column is `null` on every row | Complex field types are **not supported** by `records import` (Basic types only) — current Data Fabric platform behavior | Re-seed those columns via `records insert` with a JSON body (FILE fields additionally require `files upload` — Rule 6). Surface the limitation **before** invoking import next time — see Rule 20 and [`bulk-import.md`](bulk-import.md) |
 | Write to federated entity | Entity is read-only | Use `--native-only`; federated entities cannot be written to |
-| `cannot be a reserved word in C# or VB` (alias: `RESERVED_LANGUAGE_KEYWORDS`) | Entity or field name collides with a C# / VB reserved keyword (e.g. `Case`, `Class`, `New`, `Return`, `Internal`). SQL keywords like `Status` / `Order` / `Key` are **not** rejected. | Surface the rejected name + the error to the user. Offer a domain-specific rename: `Case` → `WorkItem` / `Matter`; `Class` → `Category`; `New` → `IsNew`. Apply only the user-confirmed rename. See Rule 4. |
-| `Choiceset member name must only contain alphanumeric characters, start with alphabetic characters and not be C# keyword` | Choice-set value `Name` validator (separate code path from Rule 4 — case-SENSITIVE lowercase match, incomplete keyword list). Lowercase tokens like `class`, `new`, `case` are rejected; the same word capitalized (`New`) or words not on its list (`select`) can slip through. | Namespace the system `Name` with a lowercase suffix (`internal_audit`, `new_lead`) and keep `DisplayName` unchanged. Do not rely on title-case to bypass — the entity / field validator (case-insensitive) would still reject it elsewhere. Full rule + the related `NumberId`-ordering caveat: [`choice-sets.md` → Value `Name` validation](choice-sets.md#value-name-validation). |
+| `cannot be a reserved word in C# or VB` (alias: `RESERVED_LANGUAGE_KEYWORDS`) | Entity or field name collides with a C# / VB reserved keyword. | Surface the error to the user and offer a domain-specific rename. Look up the keyword / rename table in [`reserved-keywords.md`](reserved-keywords.md). Apply only the user-confirmed rename. |
+| `Choiceset member name must only contain alphanumeric characters, start with alphabetic characters and not be C# keyword` | Choice-set value `Name` validator (separate code path from field-name — see [`reserved-keywords.md`](reserved-keywords.md)). | Namespace the system `Name` as lowercase snake_case (`internal_audit`, `new_lead`); keep `DisplayName` for the label. Related `NumberId`-ordering caveat: [`choice-sets.md` → Sourcing `NumberId`](choice-sets.md#sourcing-numberid-after-batch-value-creates). |
 | Constraint violation (`"outside of allowed range"`, `"exceeds lengthLimit"`, etc.) | Write value broke `minValue` / `maxValue` / `lengthLimit` / `decimalPrecision` | Surface the full error to the user, show the allowed range from `entities get`, and ask what value to use — never silently clamp. See Rule 18. |
 | `referenceEntityId` missing on RELATIONSHIP/FILE field | Field defined with names instead of UUIDs | Pass `referenceEntityId` + `referenceFieldId` (UUIDs from `entities list` / `entities get`). See Rule 12. |
 | `Cannot read properties of undefined (reading 'sqlTypeName')` | Field `type` value didn't match a known `EntityFieldDataType` enum — almost always lowercase / mixed-case (e.g. `"boolean"` instead of `"BOOLEAN"`) | Case-fold to the UPPERCASE enum from the type table — see [`entity-schema.md` → Normalizing user-facing type names](entity-schema.md#normalizing-user-facing-type-names) |

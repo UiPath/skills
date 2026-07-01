@@ -90,7 +90,7 @@ Both entity names and field names must:
 - Start with a letter (`[a-zA-Z]`)
 - Contain only letters, digits, and underscores (`[a-zA-Z0-9_]`)
 - Be 3–100 characters long
-- **Not** be a C# or VB reserved keyword — full list, error string (`"cannot be a reserved word in C# or VB"` / `RESERVED_LANGUAGE_KEYWORDS`), and rename examples are in **data-fabric.md Rule 4**. SQL keywords (e.g. `Status`, `Order`, `Key`) are NOT rejected — idiomatic field names are fine.
+- **Not** be a C# or VB reserved keyword — full list, error string, and rename examples in [`reserved-keywords.md`](reserved-keywords.md). SQL keywords (e.g. `Status`, `Order`, `Key`) are NOT rejected.
 
 **Reserved field names** (will error if used): `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`
 

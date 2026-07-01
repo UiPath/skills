@@ -41,14 +41,10 @@ Bind a folder-scoped choice set to an entity in a different folder by passing on
 
 ## Value `Name` validation
 
-A choice-set value's `Name` must be alphanumeric and start with a letter. The server rejects C# / VB reserved keywords with *"Choiceset member name must … not be C# keyword"* — but this is a **separate code path from the entity/field-name validator (data-fabric.md Rule 4)**, and the two behave differently:
+Full validator matrix (case-sensitivity, keyword list, portable-convention) is in [`reserved-keywords.md`](reserved-keywords.md). Two facts specific to authoring:
 
-| Aspect | Entity / field name (Rule 4) | Choice-set value `Name` (here) |
-|---|---|---|
-| Case match | **case-insensitive** (`Class`, `class`, `CLASS` all rejected) | **case-sensitive** (`class` rejected, `Class` may pass — empirically verified: `New` accepted while `new` would be rejected) |
-| Keyword list | full C#/VB reserved list — incl. `Select`, `Return`, `New`, `Internal`, … | partial list — some keywords missing (empirically `select` is NOT rejected as a choice-set value, but `Select` IS rejected as a field name) |
-
-Do not assume a name is legal in one place because it's legal in the other. The safe, portable convention for choice-set value `Name`s: **all-lowercase, snake_case, namespaced to dodge the C# keyword list outright** — `internal_audit`, `new_lead`, `class_a`. Move the human label to `DisplayName`: `Name: "internal_audit"` with `DisplayName: "Internal"`. The dropdown shows "Internal"; the validator sees `internal_audit`. Lowercase tokens that the choice-value validator does reject: `internal`, `public`, `private`, `class`, `case`, `new`, `default`, `static`, `void`, `event`, `lock`, `object`, `string`, `int`.
+- **Choice-value `Name` uses a different code path from the entity/field-name validator** — do not assume portability. Look up the choice-value column in `reserved-keywords.md` before picking a `Name`.
+- **Recommended convention:** lowercase snake_case with a namespace suffix — `internal_audit`, `new_lead`, `class_a`. Move the human label to `DisplayName` (`Name: "internal_audit"` with `DisplayName: "Internal"`). The dropdown shows the label; the validator sees the safe token.
 
 ## Sourcing `NumberId` after batch value creates
 
