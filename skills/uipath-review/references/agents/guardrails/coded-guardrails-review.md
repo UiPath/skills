@@ -34,9 +34,8 @@ which guardrail fits which agent, or which Python class implements which validat
 
 Run this once when the coded agent's entry source wires guardrails (any `*UiPath…Middleware(...)` inside
 `create_agent(middleware=[...])` or any `@guardrail(...)` decorator) **or** the agent matches a catalog use case
-(so Recommend Mode can run). Same fetches the `uipath-agents`
-[`coded/capabilities/guardrails/guardrails-recommend.md`](../../../../uipath-agents/references/coded/capabilities/guardrails/guardrails-recommend.md)
-Step 0 uses — reuse that reasoning; here we emit findings instead of writing code.
+(so Recommend Mode can run). This is the read-only review counterpart of the guardrail recommend capability — it
+runs the same Step 0 fetches (specified in full below) but emits findings instead of writing code.
 
 ### Catalog (cacheable — 30-minute TTL)
 
