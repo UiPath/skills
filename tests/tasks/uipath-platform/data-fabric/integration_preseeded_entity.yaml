@@ -18,8 +18,8 @@ initial_prompt: |
   with 20 rows. Please help me poke at it — no changes I don't ask
   for, and please don't delete anything.
 
-  Start by reading the list's settings back and confirming all 7
-  columns are there with the right types.
+  Start by reading the list's settings back and tell me what columns
+  it has and their types.
 
   Then run each of these searches and tell me the count that came
   back:
@@ -31,9 +31,8 @@ initial_prompt: |
 
   Sort everything by score, highest first — tell me the top score.
 
-  Page through every row in batches of 5. Please do one page at a
-  time as a separate command — no in-process loops — and tell me
-  how many rows you saw in total and whether the paging behaved
+  Page through every row in batches of 5, one page at a time. Walk
+  me through how many rows you saw and whether the paging behaved
   cleanly.
 
   Then pick any active row and put a short note on it — something
