@@ -273,6 +273,15 @@ Namespaces: `UiPath.IntelligentOCR.Activities` (exceptions: `UiPath.SmartData.Ut
 - [activity-packages/intelligent-ocr-activities/overview.md](./activity-packages/intelligent-ocr-activities/overview.md) — Package overview, pipeline phases, exception types, and common failure patterns
 - [activity-packages/intelligent-ocr-activities/summary.md](./activity-packages/intelligent-ocr-activities/summary.md) — All playbooks for Intelligent OCR / Document Understanding Activities issues
 
+## IPC Activities
+
+Activities for **inter-process communication** between UiPath processes running at the same time on one host. `Broadcast Message` / `Send Message` publish a payload on a named **channel**; a **Message Receiver Trigger** in a parallel process listens on the same channel. The transport is a local **named pipe** — confined to the **same robot, same Windows user, same session, same machine**. Issues here involve `System.TimeoutException` (`Timeout of <N> ms has passed and no channel was found to send the message to.` — no live receiver on the channel before the timeout, a channel-name mismatch, or a too-low `Timeout`) and `System.UnauthorizedAccessException` (`Access to the path is denied.` — the pipe ACL rejects a peer in a different session / user / elevation level). The faulted activity + exception class is the discriminator (the `System.*` exception prefix alone does NOT route here). Not to be confused with the internal `UiPath.Ipc` / `UiPath.CoreIpc` transport behind Integration Service connectors (`RemoteException`, `DAP-*`) — that is under Integration Service.
+
+Namespaces: `UiPath.IPC.Activities`
+
+- [activity-packages/ipc-activities/overview.md](./activity-packages/ipc-activities/overview.md) — Package overview, channel / named-pipe execution model, and common failure patterns
+- [activity-packages/ipc-activities/summary.md](./activity-packages/ipc-activities/summary.md) — All playbooks for IPC Activities issues
+
 
 ## Playbooks
 
