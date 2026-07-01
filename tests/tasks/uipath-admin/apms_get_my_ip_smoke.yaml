@@ -13,8 +13,8 @@ run_limits:
   expected_turns: 4
 
 initial_prompt: |
-  What public IP does my UiPath organization see for my current connection?
-  I need this to update the IP restriction allowlist.
+  Look up my public IP address as seen by the UiPath admin IP restriction
+  service on my UiPath organization.
 
   Important:
   - The `uip` CLI is available but the `admin` subcommand may not be
