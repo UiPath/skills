@@ -43,6 +43,12 @@ RUN set -euo pipefail && \
     # to public npm (stable only) — stable lacks the alpha-only guardrail-format
     # review rules, which silently scores guardrail review tasks 0.
     uip tools install @uipath/agent-tool && \
+    # `uip codedagent …` (e.g. `codedagent review`) is provided by codedagent-tool.
+    # Pre-install from the @alpha feed so the eval-time resolver doesn't fall back
+    # to public npm — stable lacks the alpha-only coded guardrail review rules
+    # (CODED_GUARDRAIL_WRONG_IMPORT / _TOOL_SCOPE_NO_TOOLS / _INVALID_CONTRACT),
+    # which silently scores coded guardrail review tasks 0.
+    uip tools install @uipath/codedagent-tool && \
     # IXP command group (`uip ixp …`) ships as a separate plugin on the @alpha
     # feed. Required so the live ixp e2e (full_lifecycle) can actually execute
     # `uip ixp` — without it the command is unknown and the e2e thrashes to
