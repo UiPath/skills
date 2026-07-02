@@ -136,7 +136,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
           "label": "Notes",
           "type": "string",
           "direction": "output",
-          "variable": "notes",
+          "variable": "vars.notes",
           "required": false
         },
         {
@@ -144,7 +144,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
           "label": "Decision",
           "type": "string",
           "direction": "output",
-          "variable": "decision",
+          "variable": "vars.decision",
           "required": true
         }
       ],
@@ -283,6 +283,62 @@ Output-direction and inOut-direction fields are also materialized as workflow-le
 
 ---
 
+## Canonical Field Shape (reference)
+
+This is the exact JSON a correctly authored QuickForm `fields[]` entry looks like for each direction. Use this as ground truth when writing or reviewing HITL nodes.
+
+```json
+{
+  "fields": [
+    {
+      "id": "invoiceid",
+      "type": "number",
+      "label": "Invoice ID",
+      "direction": "input",
+      "binding": "vars.fetchInvoice1.output.invoiceId"
+    },
+    {
+      "id": "vendorname",
+      "type": "string",
+      "label": "Vendor Name",
+      "direction": "input",
+      "binding": "vars.fetchInvoice1.output.vendorName"
+    },
+    {
+      "id": "approveddate",
+      "type": "date",
+      "label": "Approved Date",
+      "direction": "output",
+      "variable": "vars.approvedDate"
+    },
+    {
+      "id": "approved",
+      "type": "boolean",
+      "label": "Approved",
+      "direction": "output",
+      "variable": "vars.approved"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "submit",
+      "name": "Submit",
+      "type": "string",
+      "action": "Continue",
+      "isPrimary": true
+    }
+  ]
+}
+```
+
+**Key rules this sample encodes:**
+- `type`: always a JS/JSON type — `string`, `number`, `boolean`, `date`, or `file`. Never `"text"`.
+- `variable`: always `"vars.<name>"` — the `vars.` prefix is required.
+- `binding`: input/inOut fields only; raw path (`vars.<nodeId>.output.<field>`), no `=js:$` prefix.
+- Output/inOut fields have `variable`; input fields do not.
+
+---
+
 ## Schema Conversion — Examples
 
 The agent translates the user's business description into the `fields[]` and `outcomes[]` arrays. No CLI needed — apply these rules directly.
@@ -295,7 +351,7 @@ The agent translates the user's business description into the `fields[]` and `ou
 | `direction` | `inputs[]` items → `"input"`, `outputs[]` → `"output"`, `inOuts[]` → `"inOut"` |
 | field `type` | Use the JS/JSON type: `string`, `number`, `boolean`, `date`, or `file` |
 | `binding` | **Input / inOut fields only.** Format: `"vars.<nodeId>.output.<field>"` for node outputs; `"vars.<globalId>"` for flow globals. **No `=js:$` prefix** — HITL binding is a raw path, not an expression. |
-| `variable` | **Output / inOut fields only** — absent on input fields. Format: `"<name>"` (**no** `vars.` prefix — just the variable name). Defaults to the camelCase of the field `id` if not specified. |
+| `variable` | **Output / inOut fields only** — absent on input fields. Format: `"vars.<name>"` (always include the `vars.` prefix). Defaults to `"vars.<camelCase id>"` if not specified. |
 | `required` | omit if false; set `true` for mandatory outputs |
 | `outcomes[0]` | `isPrimary: true`, `action: "Continue"` |
 | `outcomes[1+]` | `isPrimary: false`, `action: "End"` |
@@ -323,7 +379,7 @@ Business description: *"Human sees the AI-drafted email, can edit it, then click
 ```json
 "fields": [
   { "id": "recipient",  "label": "Recipient",  "type": "string", "direction": "input", "binding": "vars.draft1.output.recipient" },
-  { "id": "emailbody",  "label": "Email Body", "type": "string", "direction": "inOut", "binding": "vars.draft1.output.body", "variable": "emailBody" }
+  { "id": "emailbody",  "label": "Email Body", "type": "string", "direction": "inOut", "binding": "vars.draft1.output.body", "variable": "vars.emailBody" }
 ],
 "outcomes": [
   { "id": "send",    "name": "Send",    "type": "string", "isPrimary": true,  "action": "Continue" },
@@ -338,8 +394,8 @@ Business description: *"Agent couldn't extract vendor name or cost center. Human
 ```json
 "fields": [
   { "id": "rawextract",  "label": "Raw Extract",  "type": "string", "direction": "input",  "binding": "vars.extract1.output.rawText" },
-  { "id": "vendorname",  "label": "Vendor Name",  "type": "string", "direction": "output", "variable": "vendorName",  "required": true },
-  { "id": "costcenter",  "label": "Cost Center",  "type": "string", "direction": "output", "variable": "costCenter", "required": true }
+  { "id": "vendorname",  "label": "Vendor Name",  "type": "string", "direction": "output", "variable": "vars.vendorName",  "required": true },
+  { "id": "costcenter",  "label": "Cost Center",  "type": "string", "direction": "output", "variable": "vars.costCenter", "required": true }
 ],
 "outcomes": [
   { "id": "submit", "name": "Submit", "type": "string", "isPrimary": true, "action": "Continue" }
@@ -354,7 +410,7 @@ Business description: *"If agent confidence is low, escalate. Human sees reasoni
 "fields": [
   { "id": "reasoning",       "label": "Agent Reasoning",  "type": "string",   "direction": "input",  "binding": "vars.classify1.output.reasoning" },
   { "id": "confidencescore", "label": "Confidence Score", "type": "number", "direction": "input",  "binding": "vars.classify1.output.score" },
-  { "id": "notes",           "label": "Notes",            "type": "string",   "direction": "output", "variable": "notes" }
+  { "id": "notes",           "label": "Notes",            "type": "string",   "direction": "output", "variable": "vars.notes" }
 ],
 "outcomes": [
   { "id": "retry",    "name": "Retry",    "type": "string", "isPrimary": true,  "action": "Continue" },
