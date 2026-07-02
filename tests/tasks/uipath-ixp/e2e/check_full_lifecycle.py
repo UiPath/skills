@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the IXP full-lifecycle e2e task drove the improve-a-model workflow FOR REAL.
+"""Verify the IXP full-lifecycle e2e task genuinely drove the improve-a-model workflow.
 
 Run from the sandbox working directory. Exits 0 on success, 1 on failure.
 
@@ -11,8 +11,11 @@ quantized in ~0.17-0.33 steps, so normal retrain noise makes any F1-direction
 gate flaky (a single flipped prediction swings it past any tolerance finer than a
 step). So we assert only what a correct run genuinely controls:
   - artifacts present and well-formed (baseline metrics, improved metrics, target field);
-  - metrics coherent — Fields[] populated, ModelVersion an int that did not go
-    backwards (backwards => stale/swapped/other-project artifacts);
+  - metrics coherent — Fields[] populated; ModelVersion a real int (not a JSON
+    bool) that did not go backwards (backwards => stale/swapped/other-project
+    artifacts); and if the version advanced, the Fields[] measurement actually
+    changed (a new version whose Fields[] is byte-identical to the old snapshot
+    is the same capture with the counter hand-bumped — no real re-measurement);
   - the agent targeted a REAL field — its chosen field_id resolves to a row with
     a numeric F1 in BOTH the baseline and improved metrics.
 The target field's F1 delta is printed for human debugging but never gates.
@@ -74,6 +77,12 @@ def find_field(fields: list[dict], field_id: str) -> dict | None:
     return None
 
 
+def is_int_not_bool(value) -> bool:
+    """True for a genuine int. Excludes bool: in Python bool subclasses int, so
+    isinstance(True, int) is True — a JSON true/false must not pass as a version."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
 def read_f1(field: dict) -> float | None:
     """Parse a field's F1 as a float; None if missing or non-numeric.
     Callers that gate on F1 must handle None explicitly."""
@@ -112,13 +121,20 @@ def main() -> int:
 
     baseline_version = baseline.get("ModelVersion")
     improved_version = improved.get("ModelVersion")
-    if not isinstance(baseline_version, int) or not isinstance(improved_version, int):
+    if not is_int_not_bool(baseline_version) or not is_int_not_bool(improved_version):
         log_fail(f"ModelVersion not an int (baseline={baseline_version!r}, improved={improved_version!r})")
     if improved_version < baseline_version:
         log_fail(f"ModelVersion went backwards (baseline={baseline_version}, improved={improved_version}) — improved_metrics is stale, from another project, or the artifacts are swapped")
     if improved_version == baseline_version:
         log_info(f"ModelVersion unchanged at {baseline_version} — retrain produced no new version yet (acceptable)")
     else:
+        # A newly minted model version must carry a genuinely new measurement. If
+        # the version advanced but every field is byte-identical to baseline, the
+        # "improved" metrics are the baseline snapshot with only the counter
+        # bumped — no retrain re-measurement occurred. Gates artifact incoherence,
+        # NOT F1 direction: it never inspects which way any F1 moved.
+        if improved_fields == baseline_fields:
+            log_fail(f"ModelVersion advanced {baseline_version} -> {improved_version} but Fields[] is byte-identical to baseline — a new model version must carry a fresh re-measurement (looks like one snapshot captured twice with only the version bumped)")
         log_info(f"ModelVersion advanced {baseline_version} -> {improved_version}")
 
     # The agent must have targeted a REAL, measurable field: its chosen field_id
