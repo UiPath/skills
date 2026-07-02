@@ -73,6 +73,7 @@ Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycl
 | **Debug cycle (consent-gated, § Running UI Automation Workflows)** | ONE `Bash` chain: window baseline `&&` `debug start` `&&` `execution cancel` `&&` re-list windows; next turn: diff, close stray windows via the interact CLI, report |
 
 - Default is author-once-after-capture — all OR refs are already in conversation. Fall back to per-screen authoring interleave only on long captures (5+ screens) where context pressure is real; the `validate`/`build` gate still runs ONCE at the end either way.
+- Screens after the first (same window): carry the OR screen reference from the previous capture into the next `uia-configure-target` invocation — it skips the OR screen lookup. Invocation shape and argument: the package skill's `USAGE.md` § Multi-screen capture sessions.
 - Indication fallback (user physically clicks) and every interact advance are sequential gates — never batched, never parallel.
 - Selector failures at debug time → the `uia-improve-selector` flow (never hand-edit selectors).
 
