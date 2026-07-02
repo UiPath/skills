@@ -43,6 +43,15 @@ main() {
     | head -1 | sed 's/.*"\([^"]*\)"$/\1/' | tr -cd 'A-Za-z0-9._-' | cut -c1-64)"
   [ -n "$sid" ] || exit 0
 
+  # If the file exists but doesn't end with a newline (another hook's partial
+  # write), appending directly would concatenate onto its last line and could
+  # break the sourced env file for the whole session — repair it first.
+  # `tail -c 1` in a $() strips a trailing newline, so "" means the file is
+  # newline-terminated.
+  if [ -s "$CLAUDE_ENV_FILE" ] && [ -n "$(tail -c 1 "$CLAUDE_ENV_FILE" 2>/dev/null)" ]; then
+    printf '\n' >> "$CLAUDE_ENV_FILE" 2>/dev/null
+  fi
+
   printf "export UIPATH_SESSION_ID='%s'\n" "$sid" >> "$CLAUDE_ENV_FILE" 2>/dev/null
 
   exit 0

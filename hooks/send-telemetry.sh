@@ -409,6 +409,13 @@ main() {
     outcome="$(lifecycle_outcome)"
   fi
 
+  # Enforce the per-event field scoping the contract documents: session_source
+  # only on session-start, reason only on session-end. The awk pass extracts
+  # `source`/`reason` from ANY event's envelope, so a future payload that adds
+  # either key to another event must not bleed into these dimensions.
+  [ "$event_name" = "session-start" ] || session_source=""
+  [ "$event_name" = "session-end" ]   || reason=""
+
   skills_ver="$(read_skills_version)"
 
   # durationMs is a JSON number. Emit JSON null (not 0) when absent, so a missing

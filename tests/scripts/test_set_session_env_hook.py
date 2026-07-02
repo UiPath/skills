@@ -70,6 +70,17 @@ def test_appends_after_unrelated_lines():
     )
 
 
+def test_repairs_missing_trailing_newline_before_appending():
+    """A pre-existing file WITHOUT a final newline must not have the export
+    concatenated onto its last line (that could break the sourced env file)."""
+    preexisting = "export OTHER_VAR='x'"  # no trailing newline
+    content = run_hook(PAYLOAD, env_file_content=preexisting)
+    assert content == (
+        "export OTHER_VAR='x'\n"
+        "export UIPATH_SESSION_ID='3f2504e0-4f89-41d3-9a0c-0305e82c3301'\n"
+    )
+
+
 def test_sanitizes_hostile_session_id():
     """The env file is sourced by the agent, so a quote-breaking id must not
     survive: everything outside [A-Za-z0-9._-] is stripped."""

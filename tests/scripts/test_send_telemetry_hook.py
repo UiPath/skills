@@ -81,6 +81,23 @@ def test_stop_maps_to_completion_ok():
     assert event["outcome"] == "ok"
 
 
+def test_session_fields_do_not_bleed_across_events():
+    """`source`/`reason` are extracted from any envelope, but the contract
+    scopes session_source to session-start and reason to session-end — a stray
+    key on another event (future payload additions) must come out empty."""
+    event = run_hook(
+        {
+            "hook_event_name": "Stop",
+            "session_id": "sess-1",
+            "source": "startup",
+            "reason": "spurious",
+        }
+    )
+    assert event["eventName"] == "completion"
+    assert event["session_source"] == ""
+    assert event["reason"] == ""
+
+
 def test_stop_failure_maps_to_completion_failure():
     event = run_hook({"hook_event_name": "StopFailure", "session_id": "sess-1"})
     assert event["eventName"] == "completion"

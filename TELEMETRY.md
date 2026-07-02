@@ -63,8 +63,12 @@ plugin; everything else exits silently. A call qualifies when:
 
 ## How it works
 
-1. The `PostToolUse` hook fires on every tool call and exits silently unless
-   the call is attributable to this plugin (table above).
+1. The hook fires on every registered event. On `PostToolUse` it exits
+   silently unless the tool call is attributable to this plugin (table above);
+   the lifecycle events (`SessionStart` / `SessionEnd` / `Stop` /
+   `StopFailure`) are session-scoped and skip that per-call gate — steps 2–4
+   below describe the richer tool-use path, lifecycle events carry only the
+   envelope fields (see [Events](#events)).
 2. For a qualifying call it derives a small set of low-cardinality fields and
    sanitizes each value (charset + 120-char cap). Field extraction is
    **region-scoped**: a single string-aware `awk` pass walks the payload once,
