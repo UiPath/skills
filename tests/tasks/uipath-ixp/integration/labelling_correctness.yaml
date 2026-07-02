@@ -32,10 +32,11 @@ initial_prompt: |
   predictions.
 
   Then, on that invoice's line items:
-  - Confirm only the first line item — the other rows look wrong, leave them.
-  - The OCR mangled the "Amount" on the first two line items — confirm both of them
-    in one call, correcting the first's Amount to `1,234.56` and the second's to
-    `2,500.00`. Save that command's response to `confirm_result.json`.
+  - Line 1 (the first line item) is extracted correctly — confirm just that one
+    line on its own, leaving every other row untouched.
+  - Separately, the OCR mangled the "Amount" on line 2 and line 3 — correct both
+    of those Amounts in a single batched call (line 2 to `500.00`, line 3 to
+    `105.42`). Save that command's response to `confirm_result.json`.
   - Actually, scrap that — roll back everything you just confirmed on this document,
     and save that command's response to `unconfirm_result.json`.
   - These line items have no tax column, so "Tax" doesn't apply here — mark it
@@ -71,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Batched confirm with --updates carrying a corrections entry across occurrences"
     tool_name: "Bash"
-    command_pattern: '(?s)(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b.*--group.*--updates.*corrections'
+    command_pattern: '(?s)(?=.*(uip|\$UIP)\s+ixp\s+labellings\s+confirm\b)(?=.*--group)(?=.*--updates)(?=.*corrections)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
