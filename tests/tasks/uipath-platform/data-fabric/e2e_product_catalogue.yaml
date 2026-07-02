@@ -6,44 +6,37 @@ description: >
   out of stock, uploads a product image to the most expensive item, and
   produces a final inventory summary. Tests the full Discover → Act → Verify
   loop for a realistic e-commerce use case.
-tags: [uipath-platform, e2e, data-fabric, product-catalogue]
+tags: [uipath-platform, data-fabric, e2e, product-catalogue, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 35
-  max_turns: 50
-  turn_timeout: 600
+  expected_turns: 60
+  max_turns: 100
+  turn_timeout: 1500
 
 initial_prompt: |
-  Build an e-commerce product catalogue in UiPath Data Fabric.
+  I need a product catalogue set up for our e-commerce team. Just
+  build it.
 
-  Create entity `ProductCatalogue_<EPOCH>` (Unix epoch seconds suffix —
-  e.g. `ProductCatalogue_1716163200`) with fields:
-    - ProductName  STRING
-    - Category     STRING   (values: Electronics | Clothing | Home)
-    - Price        DECIMAL
-    - InStock      BOOLEAN
-    - SKU          STRING
-    - Poster       FILE
+  A list called `CE_ProductCatalogue` with these columns:
+    - product name
+    - category — one of Electronics, Clothing, or Home
+    - price — dollars with cents
+    - in stock — yes/no
+    - SKU
+    - a poster image attachment (call this column `Poster`)
 
-  Generate `products.csv` with 15 products, 5 per category (omit the
-  Poster column — file fields are not importable via CSV). Import via
-  `uip df records import --file products.csv`.
+  Then bulk-load 15 products from a spreadsheet you generate,
+  `products.csv` — 5 per category.
 
-  Then:
-    - Query Electronics — confirm exactly 5 results.
-    - Apply +10% to the two most expensive products (across all
-      categories), updating each individually.
-    - Mark the three cheapest products `InStock=false`.
-    - Create `product_hero.jpg` locally and upload it to the `Poster`
-      field of the single most expensive product.
-    - Report final state: total products, in-stock count, Electronics
-      count.
-
-  Before finishing, write `report.json` to the working directory:
-    {"entity_id": "<created-entity-id>"}
-
-  The harness deletes the entity using `report.json`. Do not delete it
-  yourself.
+  Once the data is in, could you do a few quick things:
+    - Pull just the Electronics — how many are there?
+    - Bump the two most expensive products (across all categories)
+      by 10%, one at a time.
+    - Mark the three cheapest as out of stock.
+    - Make a placeholder image locally called `product_hero.jpg` and
+      attach it to the single most expensive product.
+    - Tell me the final tally: total products, how many are in
+      stock, and how many are Electronics.
 
 success_criteria:
   - type: command_executed
@@ -55,9 +48,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent imported products from CSV"
+    description: "Agent bulk-loaded products — CSV via records import, JSON array via records insert --body '[...]', or JSON via records insert --file"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+import'
+    command_pattern: '(?s)uip\s+df\s+records\s+(?:import|insert[\s\S]*?(?:--file\s+\S+|--body\s+[\''"]?\[))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -130,12 +123,60 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "report.json was written so cleanup can delete the entity"
-    path: "report.json"
-    weight: 1.0
+  - type: run_command
+    description: "End state (deterministic): all 15 product records landed in CE_ProductCatalogue"
+    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_ProductCatalogue --expected 15"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
+  - type: llm_judge
+    description: "Agent reported the final tally correctly — total products (15), in-stock count (12: 15 minus 3 marked out-of-stock), Electronics count (5, one per category)"
+    include_agent_output: true
+    prompt: |
+      The agent seeded 15 products (5 per category across Electronics,
+      Clothing, Home). Then:
+        - bumped the top-2 most-expensive products' prices by 10%,
+        - marked the 3 cheapest as out-of-stock,
+        - attached product_hero.jpg to the single most-expensive product,
+        - was asked for a final tally.
+
+      The expected tally values are:
+        - total products = 15
+        - in-stock count = 12 (15 minus the 3 marked out-of-stock)
+        - Electronics count = 5
+
+      Read the agent's final response. Score 1.0 if the tally reports
+      all three numbers correctly (allowing minor phrasing variance —
+      "12 in stock", "12 available", etc.).
+      Score 0.5 if 2 of 3 are correct.
+      Score 0.0 if 2+ are wrong or skipped.
+    weight: 2.5
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue"
+    timeout: 60
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_ProductCatalogue"
     timeout: 60

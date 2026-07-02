@@ -6,66 +6,45 @@ description: >
   via SHA-256 hash, uploads a second version to confirm overwrite, deletes the
   attachment, and verifies the field is empty post-delete. Covers the full files
   upload/download/delete workflow including overwrite semantics and byte integrity.
-tags: [uipath-platform, integration, data-fabric, files]
-
+tags: [uipath-platform, data-fabric, integration, files, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 29
-  turn_timeout: 600
+  expected_turns: 25
+  turn_timeout: 1200
 
 initial_prompt: |
-  Perform a complete file attachment lifecycle. Use --output json on every uip df command.
+  `CE_IntegrationAssets` has one row with a Document attachment slot.
+  Walk the full attach-swap-remove cycle:
 
-  1. Check login: run `uip login status --output json`. Do NOT re-login — use
-     whatever tenant is currently active.
+    - Create `original.txt` with "hello data fabric v1". Attach it.
+    - Download as `downloaded.txt` and confirm it matches original.
+    - Create `updated.txt` with "hello data fabric v2". Attach — it
+      should replace the first.
+    - Download as `verify_update.txt` and confirm it matches updated.
+    - Remove the attachment, then try to download again — should fail.
 
-  2. List native-only entities. Use an entity named "IntegrationAssets" if it
-     already exists. If not, create it with fields:
-       - AssetName (STRING)
-       - Document (FILE)
+  Then three unusual filename cases — one upload each, don't retry:
+    - `empty.txt` (0 bytes): was it accepted?
+    - `café-📎.txt` (unicode + emoji): did the filename survive intact?
+    - `../../etc-passwd.txt`: rejected or filename sanitized?
 
-  3. Insert one record: { "AssetName": "TestAsset" }
-     Save the record ID from the response.
-
-  4. Create a local file named original.txt with content "hello data fabric v1".
-
-  5. Upload original.txt to the Document field of the record:
-       uip df files upload <entity-id> <record-id> Document --file original.txt
-
-  6. Download the file back, saving to downloaded.txt:
-       uip df files download <entity-id> <record-id> Document --destination downloaded.txt
-
-  7. Verify byte integrity: compute SHA-256 hashes of original.txt and downloaded.txt
-     using `shasum -a 256` or Python's hashlib. Confirm they match.
-
-  8. Create a second file named updated.txt with content "hello data fabric v2".
-
-  9. Upload updated.txt to the same Document field (overwrite v1):
-       uip df files upload <entity-id> <record-id> Document --file updated.txt
-
-  10. Download the file again to verify_update.txt and confirm the SHA-256 now
-      matches updated.txt, not original.txt.
-
-  11. Delete the file attachment:
-        uip df files delete <entity-id> <record-id> Document
-
-  12. Attempt to download again. The download should fail since the file was deleted.
-      Record the result (expected: error or empty response).
-
-  Do NOT delete the entity — only delete the file attachment.
+  When you're done, walk me through what happened for each of the three
+  unusual uploads — was the zero-byte file accepted, did the unicode
+  filename survive intact, and did the traversal-name path get rejected
+  or sanitized?
 
 success_criteria:
   - type: command_executed
     description: "Agent verified login status"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
-    min_count: 1
+    min_count: 0
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent inserted a record"
+    description: "Agent looked up the seed record (records query / list / get)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+records\s+insert'
+    command_pattern: 'uip\s+df\s+records\s+(query|list|get)\s+'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -93,6 +72,44 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attempted to upload the empty / unicode / traversal-named files (3 extra edge attempts)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+files\s+upload\s+.*--file'
+    min_count: 5
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Empty file was created (zero-byte edge)"
+    path: "empty.txt"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent reported an outcome for each of the three unusual uploads (empty / unicode / traversal) — accepted vs rejected vs sanitized, based on what the platform actually returned"
+    include_agent_output: true
+    prompt: |
+      The agent attempted three unusual file uploads and was asked to
+      walk through what happened for each:
+
+        1. `empty.txt` — a zero-byte file. Was the upload accepted or
+           rejected?
+        2. `café-📎.txt` — unicode name plus an emoji. Did the filename
+           survive intact (readable back verbatim) or was it altered /
+           rejected?
+        3. `../../etc-passwd.txt` — a path-traversal-shaped filename.
+           Was it rejected outright or was the filename sanitized to
+           something safe (e.g., stripped to `etc-passwd.txt`)?
+
+      Read the agent's final walk-through. Score 1.0 if the agent
+      reported a specific outcome for all three uploads (accepted /
+      rejected / sanitized, and where relevant a verbatim error).
+      Score 0.5 if 2 of 3 are reported clearly.
+      Score 0.0 if 2+ are missing OR the outcomes are self-contradictory.
+    weight: 2.0
+    pass_threshold: 0.5
 
   - type: file_exists
     description: "original.txt was created"
@@ -134,6 +151,36 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+pre_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
+      --entity-name CE_IntegrationAssets
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_assets.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_assets.records.json
+    timeout: 180
+    fail_on_error: false
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities.py"
-    timeout: 60
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
+      --entity-name CE_IntegrationAssets
+      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_assets.schema.json
+      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_assets.records.json
+    timeout: 180

@@ -1,40 +1,32 @@
 task_id: skill-datafabric-smoke-files
 description: >
-  Smoke test: agent uses the uipath-platform skill (Data Fabric area) to manage file attachments
+  Smoke test: agent uses the uipath-platform skill to manage file attachments
   offline — create a local test file, upload it to a FILE-type field on a record
   using files upload, download it back using files download with --destination,
   and delete the attachment using files delete. Tests correct files command
   syntax: positional args (entity-id record-id field-name), --file flag for
   upload, --destination flag for download, and --output json on all commands.
-tags: [uipath-platform, smoke, data-fabric, files]
-
+tags: [uipath-platform, data-fabric, smoke, files, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 11
+  expected_turns: 10
   max_turns: 30
 
 initial_prompt: |
-  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
-  Every uip df command will fail with an auth error — that is expected and normal.
-  Run each command exactly once, ignore the auth error, and continue to the next step.
-  Do NOT retry any command. Do NOT attempt to login.
+  We have a Documents list. One of the rows already has a spot for an
+  Attachment.
 
-  There is an entity "Documents" with entity ID "doc-001-ent".
-  It has a FILE-type field named "Attachment".
-  There is a record with ID "rec-001-id" in that entity.
+  Could you:
+    - Make a tiny text file locally, `test_upload.txt`, with anything
+      in it.
+    - Attach it to that row's Attachment slot.
+    - Pull it back down, saving it as `downloaded.txt`.
+    - Then remove the attachment.
 
-  Do the following in order:
-  1. Create a small local test file at test_upload.txt with some text content.
-  2. Upload test_upload.txt to the Attachment field of record "rec-001-id":
-       uip df files upload doc-001-ent rec-001-id Attachment --file test_upload.txt
-  3. Download the file back from the same field, saving to downloaded.txt:
-       uip df files download doc-001-ent rec-001-id Attachment --destination downloaded.txt
-  4. Delete the file attachment from that field:
-       uip df files delete doc-001-ent rec-001-id Attachment
-
-  Additional constraints:
-  - Use --output json on every uip df command.
-  - The download flag is --destination (not --output).
-  - Field names are case-sensitive — use the exact name "Attachment".
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
 
 success_criteria:
   - type: file_exists
@@ -75,3 +67,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

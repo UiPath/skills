@@ -1,61 +1,58 @@
 task_id: skill-datafabric-smoke-entities
 description: >
-  Smoke test: agent uses the uipath-platform skill (Data Fabric area) to manage entity schemas
+  Smoke test: agent uses the uipath-platform skill to manage entity schemas
   offline — list native entities, create a new entity with typed fields (fieldName
   key, EntityFieldDataType strings) including advanced per-type constraints
   (lengthLimit, decimalPrecision, minValue / maxValue), retrieve a schema and
   identify field IDs from Fields[].ID, add new fields (addFields), and update an
   existing field's metadata and constraints (updateFields with id key). Tests
   all entity command syntax in a single pass.
-tags: [uipath-platform, smoke, data-fabric, entities]
-
+tags: [uipath-platform, data-fabric, smoke, entities, mode:build, lifecycle:setup]
 run_limits:
-  expected_turns: 14
-  max_turns: 30
+  expected_turns: 20
+  max_turns: 60
 
 initial_prompt: |
-  OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
-  Every uip df command will fail with an auth error — that is expected and normal.
-  Run each command exactly once, ignore the auth error, and continue to the next step.
-  Do NOT retry any command. Do NOT attempt to login.
+  We already have an Employees list. It holds first name, last name, and
+  hire date.
 
-  There is an existing entity "Employees" with entity ID "ent-456-xyz".
-  Fields: FirstName (STRING), LastName (STRING), HireDate (DATE).
+  Could you help me with this:
 
-  Do the following in order:
-  1. List native-only entities to discover what already exists.
-  2. Create a new entity "Departments" with these fields and advanced constraints:
-       - DeptName    (STRING,   lengthLimit 100, required)
-       - HeadCount   (INTEGER,  minValue 0, maxValue 10000)
-       - Budget      (DECIMAL,  decimalPrecision 2, minValue 0, maxValue 999999)
-       - Description (MULTILINE_TEXT, lengthLimit 2000)
-  3. Get the full schema for Employees using entities get.
-     Note which property in the Fields array contains each field's ID and that
-     existing field constraints are echoed under
-     Fields[].fieldDataType.{lengthLimit,maxValue,minValue,decimalPrecision}.
-  4. Add one new field to Employees: Salary (DECIMAL, decimalPrecision 2,
-     minValue 0).
-  5. Update the HireDate field on Employees: set displayName to "Date Hired"
-     and isRequired to true. Use placeholder field ID "field-hire-id" (which
-     would come from Fields[].ID in the entities get response) in the
-     updateFields body.
-  6. Tighten the DeptName field on Departments via updateFields: change its
-     lengthLimit to 200. Use placeholder field ID "field-deptname-id".
+    - Show me the lists we already have on the tenant.
 
-  Additional constraints:
-  - Use --output json on every uip df command.
-  - Do NOT apply lengthLimit to numeric types, and do NOT apply decimalPrecision
-    to STRING or INTEGER — those combinations are invalid.
-  - Do NOT use removeFields. Do NOT delete any entity.
+    - Add a new Departments list called `CE_SmokeDepartments`. Each
+      department should hold:
+        - a name — required, up to 100 characters
+        - a head count — whole number, somewhere between 0 and 10,000
+        - a budget in dollars — up to two decimal places, between $0
+          and $999,999
+        - a description — free-form long text, up to 2000 characters
+
+    - Read the Employees list back so we know what's in it.
+
+    - On Employees, add a salary — dollars and cents, never negative.
+
+    - Rename the hire-date entry to "Date Hired" and make it required.
+
+    - On Departments, stretch the name length limit up to 200
+      characters.
+
+  Please don't remove anything or delete lists.
+
+  Important:
+  - The `uip` CLI is available but not connected to a live tenant. Commands
+    will fail — that is expected. Run each command exactly once regardless
+    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
+    do NOT troubleshoot.
 
 success_criteria:
   - type: command_executed
-    description: "Agent listed native-only entities (--native-only required)"
+    description: "Agent listed native-only entities (skill recommendation; soft — a plain `entities list` also works for discovery)"
     tool_name: "Bash"
     command_pattern: 'uip\s+df\s+entities\s+list\s+.*--native-only'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent used fieldName (not name) in entity create body"
@@ -84,7 +81,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used updateFields with lowercase id key in entities update body"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+update.*updateFields.*\"id\"'
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?updateFields[\s\S]*?\\?\"[Ii]d\\?\"'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -129,3 +126,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

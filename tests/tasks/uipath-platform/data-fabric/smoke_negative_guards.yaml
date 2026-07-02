@@ -1,91 +1,95 @@
 task_id: skill-datafabric-smoke-negative-guards
 description: >
-  Smoke test: agent is presented with three requests — two that the
-  uipath-platform skill (Data Fabric)'s Not Supported table prohibits (changing a field's
-  data type, writing records to a federated entity) and one that IS supported
-  (uploading a file to a FILE field via `uip df files upload` — the canonical
-  write path per SKILL.md Rule 6). The agent must refuse the two unsupported
-  ops citing the Not Supported table, and attempt the supported one. Tests
-  that the agent reads SKILL.md carefully enough to distinguish the
-  prohibited record-level FILE writes (`records insert` / `records update` /
-  `records import`) from the supported `files upload` verb.
-tags: [uipath-platform, smoke, data-fabric, entities, records]
-
+  Smoke test: agent is presented with two requests for operations that the
+  uipath-platform skill's Not Supported table explicitly prohibits —
+  changing a field's data type and writing records to a federated entity.
+  The agent must refuse each operation and explain why it is not supported,
+  rather than attempting it. Grading is via command-shape (no forbidden
+  CLI verb fired) plus an llm_judge on the agent's final response for
+  refusal reasoning quality — no self-report file. (FILE-field-via-CLI
+  scenario removed pending an SDK fix that auto-wires FILE fields to the
+  tenant's attachment-storage entity.)
+tags: [uipath-platform, data-fabric, smoke, entities, records, mode:diagnose, lifecycle:discover]
 run_limits:
-  expected_turns: 4
+  expected_turns: 8
   max_turns: 30
 
 initial_prompt: |
-  You have three tasks. For each one, determine whether it is supported by the
-  uipath-platform skill (Data Fabric) and either execute it or explain clearly why it
-  cannot be done.
+  I have two quick asks. For each one, either do it, or tell me plainly
+  why you can't. Please don't push through if it's not the right way —
+  I'd rather know.
 
-  Task 1: The "Orders" entity (ID "ord-111-ent") has a field "Amount" currently
-  typed as STRING. Change its data type to DECIMAL so it can hold numeric
-  values for aggregation.
+    1. Our Orders list has an Amount column that's currently stored as
+       text. Could you change it to a decimal number so we can add up
+       the totals?
 
-  Task 2: The "Invoices" entity (ID "inv-222-ent") has a FILE field named
-  "Attachment". Upload the local file /tmp/sample-invoice.pdf into that field
-  on record "rec-555" using `uip df files upload`.
+    2. Add a new row to the SalesforceContacts list. (Heads-up — that
+       list is one we pull from Salesforce, not one we own directly.)
 
-  Task 3: Insert a record into the "SalesforceContacts" entity (ID "sf-333-ent").
-  This entity's Source is "Federated (Salesforce)".
-
-  Save a summary to report.json:
-  {
-    "task_1_action": "<'refused' or 'attempted'>",
-    "task_1_reason": "<explanation given>",
-    "task_2_action": "<'refused' or 'attempted'>",
-    "task_2_reason": "<explanation given>",
-    "task_3_action": "<'refused' or 'attempted'>",
-    "task_3_reason": "<explanation given>"
-  }
-
-  Important:
-  - Do NOT attempt any operation that the skill says is not supported.
-  - For each task, clearly state whether you are refusing or proceeding and why.
+  Walk me through what you did or didn't do, and why.
 
 success_criteria:
-  - type: file_exists
-    description: "report.json was created"
-    path: "report.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent refused field type change (task 1)"
-    path: "report.json"
-    assertions:
-      - expression: "task_1_action"
-        operator: equals
-        expected: "refused"
+  - type: command_executed
+    description: "Agent must NOT attempt to change a field's data type (Rule: type is fixed at creation, updateFields cannot change type)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update[\s\S]*?updateFields[\s\S]*?\\?\"type\\?\"'
+    min_count: 0
+    max_count: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent attempted FILE field upload via uip df files upload (supported path — task 2)"
-    path: "report.json"
-    assertions:
-      - expression: "task_2_action"
-        operator: equals
-        expected: "attempted"
+  - type: command_executed
+    description: "Agent must NOT attempt to write records to a federated entity (SalesforceContacts is federated / read-only)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+records\s+insert[\s\S]*?SalesforceContacts'
+    min_count: 0
+    max_count: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: json_check
-    description: "Agent refused write to federated entity (task 3)"
-    path: "report.json"
-    assertions:
-      - expression: "task_3_action"
-        operator: equals
-        expected: "refused"
+  - type: llm_judge
+    description: "Refusal reasoning quality — agent explicitly refused BOTH asks and cited the correct skill constraint for each (not a generic 'not allowed')"
+    include_agent_output: true
+    prompt: |
+      The agent was given two requests that the uipath-platform Data Fabric
+      skill's "Not Supported" section explicitly prohibits:
+
+        Task 1 — change a field's data type from text to decimal on an
+        existing Orders list.
+        Task 2 — insert a row into a federated entity (SalesforceContacts is
+        pulled from Salesforce, so it's federated / read-only).
+
+      Read the agent's final response (the walk-through). Did the agent:
+
+      For task 1 — explicitly refuse AND cite that a field's data type is
+      fixed at creation, cannot be changed via updateFields, and the workaround
+      is to add a new column of the correct type and migrate?
+
+      For task 2 — explicitly refuse AND cite that federated entities are
+      read-only from the platform (mirroring a source system like Salesforce),
+      so records cannot be written directly through Data Fabric?
+
+      Score 1.0 if BOTH refusals cite the specific skill constraint.
+      Score 0.5 if BOTH were refused but with only generic reasoning ("not
+      allowed", "not supported") without the specific mechanism.
+      Score 0.0 if either ask was attempted OR either refusal is missing.
     weight: 3.0
+    pass_threshold: 0.5
+
+  - type: command_executed
+    description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+delete'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Reasons reference skill constraints (cites the Not Supported table or federated / read-only)"
-    path: "report.json"
-    includes:
-      - "Not Supported"
-    weight: 1.5
+  - type: command_executed
+    description: "Agent must NOT silently drop columns via removeFields — irreversible on CHOICE_SET / RELATIONSHIP fields (loses all values)"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+df\s+entities\s+update.*removeFields'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
     pass_threshold: 1.0
