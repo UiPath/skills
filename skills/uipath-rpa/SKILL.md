@@ -36,7 +36,7 @@ Before doing any work, check if `.claude/rules/project-context.md` exists in the
 6. If **any individual count differs by 60–70% or more** → run the discovery flow below
 7. If all counts are within the threshold → context is fresh, proceed with the skill workflow
 
-**If the file does NOT exist** → run the discovery flow below.
+**If the file does NOT exist** → if a `project.json` exists, run the discovery flow below. **Greenfield (no `project.json`): skip the discovery agent** — nothing to discover. After the build completes, write both context files yourself (step 3 below) from what you just created: structure, dependencies, entry points.
 
 **Discovery flow** (used for both missing and stale context):
 1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`agents/uipath-project-discovery-agent.md`](agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
@@ -157,7 +157,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
    - **Smoke-test shortcut:** A successful `uip rpa run` substitutes for the standalone end-of-session `build` — `run` compiles internally. Prefer `run --skip-build` when `build` has just passed; see [validation-guide.md § Smoke Test](references/validation-guide.md).
 
    See [references/validation-guide.md](references/validation-guide.md).
-4. **ALWAYS validate files as you go AND verify the project builds before declaring done.** After every create or edit: per-file `validate` to clean. Project-level `build` runs once at the end of the edit session (or at any compile-verification gate) — not after every Edit, because `build` is project-scoped and rebuilds the entire project regardless of which file changed. `validate` clean alone is not "validated"; it cannot see member or enum errors — the project-level `build` is mandatory before declaring done. See [references/validation-guide.md](references/validation-guide.md).
+4. **ALWAYS bring every touched file to per-file `validate` clean AND verify the project builds before declaring done.** Cadence per Rule 18: batch-author, then validate. Project-level `build` runs once at the end of the edit session (or at any compile-verification gate) — not after every Edit, because `build` is project-scoped and rebuilds the entire project regardless of which file changed. `validate` clean alone is not "validated"; it cannot see member or enum errors — the project-level `build` is mandatory before declaring done. See [references/validation-guide.md](references/validation-guide.md).
 5. **Prefer UiPath built-in activities** for Orchestrator integration, UI automation, and document handling. Prefer plain .NET / third-party packages for pure data transforms, HTTP calls, parsing.
 6. **ALWAYS ensure required package dependencies are in `project.json`** before using their activities or services.
 6a. **Pre-edit verification gate.** Two authoring actions are hard to roll back once `build` fails — verify before serialization, not after.
@@ -199,24 +199,11 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 - "Feels expensive", "many tool calls used", "natural pause point", "partial result looks usable", and "too complex to continue in one session" are **NOT** Stop conditions. Only the concrete hard blockers in the plan's `Stop conditions` section count.
 - Plan decisions already made are authoritative. Do not `AskUserQuestion` about structure, file count, selector strategy, or capture approach when the plan specifies them — those questions belonged to the planner.
 
-### Call Batching (Both Modes)
+### Execution Maps (Both Modes)
 
-**Batch independent tool calls into one assistant message — minimize model round-trips.** Two points in a new-project build serialize needlessly by default; collapse each into a single message.
+**Follow the journey map in [execution-maps-guide.md](references/execution-maps-guide.md) for every build or edit** — it fixes which tool calls batch into which assistant turn (greenfield ≤5 turns, brownfield ≤4). Within a turn: chain dependent `uip` calls with `&&` in one `Bash`; emit independent `Bash`/`Read`/`Edit` calls as parallel tool uses. Split turns only where a call needs an earlier call's stdout or a file mutation. Rule 21 discovery for off-card activities fans out inside T1/T2 — all K `find`s parallel, then all K doc `Read`s, then all K `get-default-xaml`s — never one activity at a time.
 
-1. **Post-`init` prerequisite batch.** After `uip rpa init` returns, these depend only on the project existing — NOT on each other. Emit them in ONE message:
-   - `Read` `project.json` + the scaffolded `Main.xaml`
-   - `uip rpa analyzer-rules list` (Rule 3 authoring-phase prerequisite)
-   - `uip rpa packages install` for packages already known from the request
-   - `uip rpa activities find` for activities you'll author
-
-   These share the warmed Studio host (§ Session Pre-warm) — pay the cold-start once, then fire the batch.
-2. **Activity-discovery fan-out.** Rule 21 runs a triple per non-card activity (`activities find` → read `<Activity>.md` → `get-default-xaml`). For K activities, emit all K `find`s as parallel `Bash`, then all K doc `Read`s in parallel, then all K `get-default-xaml`s in parallel — never one activity at a time. See [xaml/workflow-guide.md § Phase 1](references/xaml/workflow-guide.md).
-
-**Chaining:** chain dependent `uip` calls with `&&` in one `Bash`; emit independent `Bash` / `Read` calls as parallel tool uses. Split a turn only where a call needs an earlier call's stdout or a file mutation.
-
-**Do NOT batch — sequential by design:**
-- `templates search` → `init`. The search result (and possibly an `AskUserQuestion`) picks `--template-package-id` (Rule 2). Decision gate, not a chain.
-- The **per-file `validate` / per-activity authoring loop** (Rule 4, XAML Rule 18). Build one activity at a time, validate after each; project-level `build` runs once at the end. Batching validation hides which activity broke and burns the 5-attempt cap (Rule 3).
+**Sequential by design — never batch across:** `templates search` → `init` (Rule 2 decision gate); any `AskUserQuestion` or consent gate; UIA capture flows (Rule 7).
 
 ### Coded-Specific Rules
 
@@ -232,11 +219,11 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 
 16. **[XAML] Activity docs are the source of truth** — check `{projectRoot}/.local/docs/packages/{PackageId}/` first. Always.
 17. **[XAML] MUST understand project structure** — read `project.json`, check expression language, scan existing patterns. NEVER generate XAML blind.
-18. **[XAML] Start minimal, iterate to correct** — build one activity at a time, validate after each addition.
+18. **[XAML] Batch-author, single gate** — author the complete workflow in one pass, sourcing each activity card → memory → Rule 21 triple (precedence in [execution-maps-guide.md](references/execution-maps-guide.md)). Then per-file `validate` to clean, then one project `build` (Rule 3 cadence, 5-attempt caps unchanged). On failure: fix by error category (Rule 19); >2 errors with ambiguous origin → bisect (stub out half the new activities, re-validate).
 19. **[XAML] Fix errors by category** — Package → Structure → Type → Activity Properties → Logic.
 20. **[XAML] Flowchart node structure + ViewState both decide whether a Flowchart renders.** **Structure first:** every `FlowStep`/`FlowDecision`/`FlowSwitch` MUST be a direct child of `<Flowchart>` (only direct children are added to the `Flowchart.Nodes` collection), wired through `Flowchart.StartNode`/`FlowStep.Next`/branches with `<x:Reference>`+`x:Name`. NEVER build the flow as a nested chain — one `FlowStep` physically nested inside the previous one's `<FlowStep.Next>` — because nested-only steps are absent from `Flowchart.Nodes` and the designer renders almost nothing, regardless of ViewState. **Then ViewState:** when generating new Flowchart/StateMachine/ProcessDiagram workflows, per-node ViewState is MANDATORY — `ShapeLocation`+`ShapeSize` on every node (`ConnectorLocation` optional, Studio auto-routes). Without it Studio stacks every node at (0,0) so they overlap into what looks like a single node, and Studio does NOT auto-arrange on open (see [canvas-layout-guide.md](references/xaml/canvas-layout-guide.md)). When editing existing files, do NOT modify ViewState on nodes you are not changing. For Sequences, ViewState is optional.
 21. **[XAML] Reading `<Activity>.md` from `{PROJECT_DIR}/.local/docs/packages/...` is a precondition for `activities get-default-xaml` — for every activity not on the common-activity card.**
-    - **Card-listed activities:** check [references/common-activity-card.md](references/common-activity-card.md) first; if the activity is on the card, author from the card entry alone — skip `activities find`, skip `activities get-default-xaml`, skip the per-activity MD read.
+    - **Card-listed activities and patterns:** check [references/common-activity-card.md](references/common-activity-card.md) and [references/common-pattern-card.md](references/common-pattern-card.md) first; on a card hit, author from the card entry alone — skip `activities find`, skip `activities get-default-xaml`, skip the per-activity MD read. Precedence: card → agent memory ([execution-maps-guide.md § Cross-session memory](references/execution-maps-guide.md#cross-session-memory)) → full triple. A memory hit substitutes for the triple only; `validate`/`build` still gate.
     - **All other activities:** (1) `activities find` → class name, (2) **read `<Activity>.md` first** and extract a property checklist (required + use-case-relevant), (3) `activities get-default-xaml` → starter element, (4) **diff your checklist against the starter and add what's missing** — an empty checklist means you skipped step 2, go back.
     - **Doc lookup order:** primary `{PROJECT_DIR}/.local/docs/packages/<PackageId>/activities/<Activity>.md`; fallback `references/activity-docs/<PackageId>/<closest-version>/<Activity>.md` for older package versions where `.local/docs` is empty. **Exception — `UiPath.UIAutomation.Activities` has no bundled fallback:** `.local/docs` (present only after the package is installed) is its sole activity-doc source. If it is absent, do not hunt for a bundled copy — follow Rule 7a (install with consent per [uia-prerequisites.md](references/uia-prerequisites.md), or use the Placeholder-Selector Stub Pattern).
     - **Trigger activities are special — read BOTH docs.** When the class name ends in `Trigger`, the namespace contains `.Triggers`, or the description mentions "starts a job" / "Monitor Events" / "Trigger Scope", also read the bundled `references/activity-docs/<PackageId>/<closest-version>/activities/<Activity>.md` **and** the package's bundled `overview.md`. The auto-generated `.local/docs` version is sparse for triggers; the bundled hand-written docs carry placement guidance (entry-point vs. `ui:TriggerScope`), deployment context, and cross-cutting namespace/assembly gotchas that the extractor does not capture. See Common Rule 12 and [trigger-pattern-guide.md](references/trigger-pattern-guide.md).
@@ -253,6 +240,7 @@ uip rpa activities find --query log --output json > /dev/null 2>&1 &
 | I need to... | Mode | Read these |
 |-------------|------|-----------|
 | **Work in a Legacy (.NET 4.6.1) project** | Legacy | [legacy/legacy-mode-guide.md](references/legacy/legacy-mode-guide.md) — entry point. Modern-mode rules below do not apply. |
+| **Plan the build's turn structure** | Both | [execution-maps-guide.md](references/execution-maps-guide.md) — read first for any build/edit journey |
 | **Choose coded vs XAML** | Both | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) |
 | **Work in a hybrid project** | Hybrid | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) → [project-structure.md](references/project-structure.md) |
 | **Create a new project** | Both | [environment-setup.md](references/environment-setup.md) |
@@ -464,6 +452,8 @@ UIA references live in two locations. Always cite by location so the reader know
 2. If any `[ ]` boxes remain AND the plan's header says `Execution autonomy: autonomous` AND no `Stop conditions` item was hit — **do not report done**. Resume execution on the next unchecked task.
 3. If unchecked boxes remain because a Stop condition was hit, name the exact stop-condition item in the report.
 4. If the plan is fully checked off, or execution autonomy is `interactive`, proceed to the report format below.
+
+Then, if the harness provides persistent memory, save validated patterns per [execution-maps-guide.md § Cross-session memory](references/execution-maps-guide.md#cross-session-memory) before reporting.
 
 When you finish a task, report to the user:
 1. **What was done** — files created, edited, or deleted (list file paths)
