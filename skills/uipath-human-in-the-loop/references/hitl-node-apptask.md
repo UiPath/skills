@@ -281,7 +281,7 @@ Merge rules:
 ```json
 {
   "id": "invoiceReview1",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.coded-action-app",
   "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {

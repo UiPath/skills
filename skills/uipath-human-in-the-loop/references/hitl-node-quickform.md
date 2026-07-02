@@ -1,6 +1,6 @@
 # HITL QuickForm Node — Direct JSON Reference
 
-The agent writes the `uipath.human-in-the-loop` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is available when the user explicitly requests it, or as a fallback if direct JSON writing fails — see [CLI reference: uip maestro flow hitl add](../../uipath-maestro-flow/references/shared/cli-commands.md#uip-maestro-flow-hitl-add).
+The agent writes the `uipath.human-in-the-loop.quick-form` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is available when the user explicitly requests it, or as a fallback if direct JSON writing fails — see [CLI reference: uip maestro flow hitl add](../../uipath-maestro-flow/references/shared/cli-commands.md#uip-maestro-flow-hitl-add).
 
 ---
 
@@ -102,7 +102,7 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 ```json
 {
   "id": "invoiceReview1",
-  "type": "uipath.human-in-the-loop",
+  "type": "uipath.human-in-the-loop.quick-form",
   "typeVersion": "1.0",
   "display": { "label": "Invoice Review" },
   "inputs": {
@@ -186,11 +186,11 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 
 ## Definition Entry
 
-Every `.flow` file must have one definition entry for `uipath.human-in-the-loop` in `workflow.definitions`. Add it exactly once — deduplicate by `nodeType`.
+Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.quick-form` in `workflow.definitions`. Add it exactly once — deduplicate by `nodeType`.
 
 ```json
 {
-  "nodeType": "uipath.human-in-the-loop",
+  "nodeType": "uipath.human-in-the-loop.quick-form",
   "version": "1.0",
   "category": "human-task",
   "tags": ["human-task", "hitl", "human-in-the-loop", "approval"],
