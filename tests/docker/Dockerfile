@@ -67,6 +67,20 @@ RUN set -euo pipefail && \
     # Governance tool — provides `uip gov aops-policy`, `uip gov access-policy`,
     # and `uip gov compliance-packs` commands used by uipath-governance skill tests.
     uip tools install @uipath/gov-tool && \
+    # Test Manager command group (`uip tm …`) — required by uipath-test tasks
+    # (e.g. skill-test-auth-and-testset-hierarchy-discovery), whose CHECKER also
+    # runs `uip tm project list`. Eval-time on-demand install is doubly broken:
+    # the checker env pins NPM_CONFIG_PREFIX (see the rationale above), and under
+    # delegate-sdk the Aria interop injects npm_config_prefix=~/.aria/npm/prefix
+    # into every shell, sending `npm install -g` to a prefix the CLI's tool
+    # discovery never consults (the `npm root -g` fallback is skipped when the
+    # CLI-adjacent dir already holds plugins) — install "succeeds", `uip tm`
+    # stays "unknown command 'tm'".
+    uip tools install @uipath/test-manager-tool && \
+    # Solution command group (`uip solution …`) — required by uipath-solution
+    # tasks (e.g. skill-solution-deploy-list); same delegate-sdk on-demand
+    # install failure mode as test-manager-tool above.
+    uip tools install @uipath/solution-tool && \
     uip tools list
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
