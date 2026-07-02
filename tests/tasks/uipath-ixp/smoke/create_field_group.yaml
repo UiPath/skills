@@ -20,8 +20,8 @@ sandbox:
 initial_prompt: |
   In the IXP project my_invoices-f1afa9ef-ixp, create a new field group named
   "Subscriber information" with fields: surname, address, bank account, and
-  phone number. Pass all four fields inline in the single `groups add --fields`
-  JSON array — do not load the payload from a separate file.
+  phone number. Pass all four fields inline in one batched call — do not load
+  the payload from a separate file.
 
   Important:
   - The `uip` CLI is available but is NOT connected to a live IXP tenant in
