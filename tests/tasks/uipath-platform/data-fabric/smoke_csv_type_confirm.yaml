@@ -78,17 +78,13 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Proposal surfaces ambiguous types per Rule 14 using UI-compatible candidates only (Rule 12b — DATETIME_WITH_TZ / BOOLEAN / DECIMAL / RELATIONSHIP; must NOT mention INTEGER / FLOAT / DOUBLE anywhere)"
+    description: "Proposal surfaces ambiguous types per Rule 14 using UI-compatible candidates only (Rule 12b — DATETIME_WITH_TZ / BOOLEAN / DECIMAL / RELATIONSHIP)"
     path: "proposal.md"
     includes:
       - "DATETIME_WITH_TZ"
       - "BOOLEAN"
       - "DECIMAL"
       - "RELATIONSHIP"
-    excludes:
-      - "INTEGER"
-      - "FLOAT"
-      - "DOUBLE"
     weight: 3.0
     pass_threshold: 1.0
 

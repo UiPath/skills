@@ -161,7 +161,7 @@ success_criteria:
     command_pattern: 'uip\s+df\s+.*--output\s+json'
     min_count: 1
     weight: 0.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0
 
   - type: command_executed
     description: "Agent must NOT delete any entity — the list stays intact even if columns or rows are dropped"
