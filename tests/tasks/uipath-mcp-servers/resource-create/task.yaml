@@ -4,7 +4,7 @@ description: |
 tags: [uipath-mcp-servers, smoke, 'mode:build', resource]
 agent:
   type: claude-code
-  allowed_tools: [Bash, Read, Write]
+  allowed_tools: [Skill, Bash, Read, Write]
 sandbox:
   driver: tempdir
   python: {}
