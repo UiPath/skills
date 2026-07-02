@@ -11,10 +11,10 @@ tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
   max_turns: 72
-  # Two trainings, each polled up to 30 min (see prompt) — generous ceiling so a
+  # Two trainings, each polled up to 10 min (see prompt) — generous ceiling so a
   # slow-training day doesn't kill the run before the second version lands.
   task_timeout: 6000
-  turn_timeout: 1200
+  turn_timeout: 1800
 
 sandbox:
   # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
@@ -35,9 +35,9 @@ initial_prompt: |
   list, read, or modify any other project.
 
   Training takes a few minutes (you'll wait through it twice). Each time, poll
-  the project's training status on a fixed interval — wait 3 min between checks,
-  up to 10 checks. Do NOT use a single long sleep or escalating waits. Move on
-  only once training has completed; if it's still training after 10 checks, stop
+  the project's training status on a fixed interval — wait 2 min between checks,
+  up to 5 checks. Do NOT use a single long sleep or escalating waits. Move on
+  only once training has completed; if it's still training after 5 checks, stop
   and report rather than waiting longer.
 
   Once it's trained, confirm the predictions on the document so there's some

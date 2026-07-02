@@ -10,10 +10,10 @@ tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
   max_turns: 68
-  # One training, polled up to 30 min (see prompt) — ceiling with headroom so a
+  # One training, polled up to 10 min (see prompt) — ceiling with headroom so a
   # slow-training day doesn't kill the run before predictions are ready.
   task_timeout: 3600
-  turn_timeout: 1200
+  turn_timeout: 1800
 
 sandbox:
   # driver: docker (NOT tempdir) so `uip ixp` resolves the migrated in-image
@@ -36,9 +36,9 @@ initial_prompt: |
   (monetary), and "Tax" (monetary).
 
   Training takes a few minutes. Poll the project's training status on a fixed
-  interval — wait 3 min between checks, up to 10 checks. Do NOT use a single
+  interval — wait 2 min between checks, up to 5 checks. Do NOT use a single
   long sleep or escalating waits. Read predictions only once training has
-  completed; if it's still training after 10 checks, stop and report rather
+  completed; if it's still training after 5 checks, stop and report rather
   than waiting longer.
 
   Then, on that invoice's line items:
