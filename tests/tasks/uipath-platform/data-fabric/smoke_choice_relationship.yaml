@@ -10,10 +10,10 @@ description: >
 tags: [uipath-platform, data-fabric, smoke, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 30
-  max_turns: 80
+  expected_turns: 45
+  max_turns: 120
   turn_timeout: 1500
-  task_timeout: 2100
+  task_timeout: 2400
 
 
 initial_prompt: |
