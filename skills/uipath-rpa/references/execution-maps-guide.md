@@ -17,7 +17,7 @@ One dense file, read once per build. Fixes which tool calls go in which assistan
 - `templates search` → `init` (Rule 2): runs only when the user names a template or domain pattern; its result (possibly an `AskUserQuestion`) picks `--template-package-id`.
 - Rule 2a framework/language question when the request carries no signal.
 - Any `AskUserQuestion` or consent gate.
-- UIA capture (Rule 7) — out of map scope entirely; UIA journeys keep their own flow.
+- UIA state advances and indication (see [§ Journey: UIA capture + build](#journey-uia-capture--build-xaml)) — capture screens are gated by real application state.
 
 ## Journey: Greenfield XAML (no UIA)
 
@@ -60,6 +60,22 @@ Skip the project-discovery subagent — no project exists (SKILL.md § Precondit
 
 Brownfield XAML journey with coded reads: T1 `Read` target `.cs` + `.local/docs/.../coded/coded-api.md` for touched services; T2 `Edit`s ∥ install; T3 gate; T4 report.
 
+## Journey: UIA capture + build (XAML)
+
+Budget shape: **~3 fixed turns + ~3 turns per capture-screen + 2-turn debug cycle.** Capture is serialized ACROSS screens by application state (Complete-then-advance, [uia-configure-target-workflows.md](uia-configure-target-workflows.md)) — never try to batch across an advance. Concrete UIA CLI syntax is package-owned: `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/cli-reference.md`.
+
+| Turn | Emit in ONE assistant message |
+|---|---|
+| **T0 — Reads + pre-flight** | Parallel `Read`: [ui-automation-guide.md](ui-automation-guide.md) + [uia-configure-target-workflows.md](uia-configure-target-workflows.md) (Rule 7, in full) + package skill docs (`.local/docs/.../skills/uia-configure-target/{SKILL,USAGE}.md`) ∥ prerequisites check ([uia-prerequisites.md](uia-prerequisites.md)) ∥ ONE `Bash`: window baseline via the UIA snapshot CLI ∥ build the element inventory/checklist from manual steps ([ui-automation-guide.md § Capturing from Manual Test Steps](ui-automation-guide.md)) |
+| **Per capture-screen** | (a) capture bundle — run the `uia-configure-target` flow for ALL of this screen's checklist elements in one pass (batch `\|` pattern; per-screen batched OR entry points), through OR registration; (b) ONE state advance via the interact CLI — only to reach the next screen, never to test behavior |
+| **T-author — after ALL screens captured** | Scaffold/authoring prerequisites (Capture-First Fast Path order) ∥ batch-author every screen's activities in one pass (Rule 18), embed path for OR target attachment |
+| **T-gate** | ONE `Bash`: per-file `validate` (relative `--file-path`) `&&` `build` |
+| **Debug cycle (consent-gated, § Running UI Automation Workflows)** | ONE `Bash` chain: window baseline `&&` `debug start` `&&` `execution cancel` `&&` re-list windows; next turn: diff, close stray windows via the interact CLI, report |
+
+- Default is author-once-after-capture — all OR refs are already in conversation. Fall back to per-screen authoring interleave only on long captures (5+ screens) where context pressure is real; the `validate`/`build` gate still runs ONCE at the end either way.
+- Indication fallback (user physically clicks) and every interact advance are sequential gates — never batched, never parallel.
+- Selector failures at debug time → the `uia-improve-selector` flow (never hand-edit selectors).
+
 ## Failure exits
 
 | Symptom | Open |
@@ -69,7 +85,7 @@ Brownfield XAML journey with coded reads: T1 `Read` target `.cs` + `.local/docs/
 | Coded `CS*` errors | [coded/coding-guidelines.md § Common Issues](coded/coding-guidelines.md) |
 | CLI error (`timeout`, `EPIPE`, `401`, `not in the project folder`) | [cli-reference.md § CLI Error Recovery](cli-reference.md#cli-error-recovery) |
 | Card snippet rejected by validate/build | Fall back to Rule 21 triple for that activity; report stale entry via `/uipath-feedback` |
-| Anything UIA | Rule 7 flow — leave this map |
+| UIA selector fails at debug time | `uia-improve-selector` flow per [ui-automation-guide.md § Runtime Selector Failure Recovery](ui-automation-guide.md) — never hand-edit |
 
 ## Cross-session memory
 
@@ -83,6 +99,6 @@ Harness-conditional: engage only when the harness provides persistent memory; ot
 2. Error→root-cause→fix triples that cost >1 validate attempt.
 3. Cross-version package gotchas.
 
-**Never save:** project-specific facts (paths, asset names, connections — belong in `project-context.md`), anything UIA (selectors/targets are per-app), secrets.
+**Never save:** project-specific facts (paths, asset names, connections — belong in `project-context.md`), UIA selectors/targets/OR references (per-app), UIA CLI syntax (package-owned, co-versioned), secrets. Process-level UIA lessons (e.g., a failure mode and its fix direction) MAY be saved.
 
 **Expiry:** recalled snippet fails validation → delete/overwrite that entry, fall back to Rule 21 triple.
