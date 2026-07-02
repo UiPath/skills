@@ -1,12 +1,14 @@
 # Common Pattern Card
 
-**Package anchor:** `UiPath.System.Activities` 26.6.1 — every entry CLI-verified (`uip rpa validate` + `uip rpa build` clean) on a `Portable` (cross-platform) / VisualBasic project. Modern Windows-target projects use the same assembly names (`System.Private.CoreLib`); Legacy (.NET 4.6.1) projects are NOT covered.
+**Package anchors:** `UiPath.System.Activities` 26.6.1 · `UiPath.Excel.Activities` 3.6.0-preview (CSV group) · `UiPath.WebAPI.Activities` 2.5.1 — every entry CLI-verified (`uip rpa validate` + `uip rpa build` clean) on a `Portable` (cross-platform) / VisualBasic project. Modern Windows-target projects use the same assembly names (`System.Private.CoreLib`); Legacy (.NET 4.6.1) projects are NOT covered.
+
+**Not on this card (Windows-only, unverifiable on the cross-platform gate):** Excel X activities (`ExcelProcessScopeX`/`ExcelApplicationCard`/`ReadRangeX`, …) and SMTP `SendMail` — their docs state `Platform: Windows only`; cross-platform assemblies throw `TypeLoadException`. Author via the full Rule 21 triple on a Windows-target project.
 
 Copy-safe multi-activity snippets. **Supersedes the Rule 21 discovery procedure for every activity inside a listed pattern.** For activities outside these patterns, Rule 21 applies. Precedence: card → agent memory → Rule 21 triple ([execution-maps-guide.md](execution-maps-guide.md)). If `validate`/`build` rejects a card snippet: fall back to the Rule 21 triple for that activity and report the stale entry via `/uipath-feedback`.
 
 ## Card entries
 
-Text file read/append/write · File ops guarded copy · DataTable generate→filter→CSV · Queue publish · Retry wrap · Invoke workflow with arguments
+Text file read/append/write · File ops guarded copy · DataTable generate→filter→CSV · Queue publish · Retry wrap · Invoke workflow with arguments · CSV file read/write · HTTP request → JSON
 
 ## How to read the snippets
 
@@ -18,6 +20,11 @@ xmlns:uic="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activitie
 xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"
 xmlns:sd="clr-namespace:System.Data;assembly=System.Data.Common"
 xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"
+xmlns:csv="clr-namespace:UiPath.CSV.Activities;assembly=UiPath.Excel.Activities"
+xmlns:nhr="clr-namespace:UiPath.Web.Activities.Http;assembly=UiPath.Web.Activities"
+xmlns:nhrm="clr-namespace:UiPath.Web.Activities.Http.Models;assembly=UiPath.Web.Activities"
+xmlns:web="clr-namespace:UiPath.Web.Activities;assembly=UiPath.Web.Activities"
+xmlns:jn="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json"
 ```
 
 Each entry lists which of these it needs. VB expression form (`[expr]` attributes); C# projects: [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
@@ -223,3 +230,50 @@ Child workflow declares its contract via root `x:Members`:
 
 **Notes:** Keys must match the child's declared argument names exactly; `InArgument`/`OutArgument`/`InOutArgument` per direction. Runs synchronously. `WorkflowFileName` is project-relative. XML-escape `&` in VB concatenation (`&amp;`).
 **Long-form:** [`InvokeWorkflow.md`](activity-docs/UiPath.System.Activities/26.4/activities/InvokeWorkflow.md)
+
+---
+
+### CSV file read / write
+**Activities:** `UiPath.CSV.Activities.ReadCsvFile` · `AppendWriteCsvFile`
+**Packages:** `UiPath.Excel.Activities` 3.6.0-preview (CSV activities are Excel-package-owned, cross-platform, no Excel app needed)
+**Prefixes:** `csv:`, `sd:`
+**Variables:** `csvData : System.Data.DataTable`.
+
+```xml
+<Sequence DisplayName="CSV Read Write">
+  <Sequence.Variables>
+    <Variable x:TypeArguments="sd:DataTable" Name="csvData" />
+  </Sequence.Variables>
+  <csv:ReadCsvFile DisplayName="Read CSV" FilePath="data/input.csv" IncludeColumnNames="True" DataTable="[csvData]" />
+  <csv:AppendWriteCsvFile DisplayName="Write CSV" FilePath="data/output.csv" CsvAction="Write" AddHeaders="True">
+    <csv:AppendWriteCsvFile.DataTable>
+      <InArgument x:TypeArguments="sd:DataTable">[csvData]</InArgument>
+    </csv:AppendWriteCsvFile.DataTable>
+  </csv:AppendWriteCsvFile>
+</Sequence>
+```
+
+**Notes:** `CsvAction`: `Write` replaces, `Append` adds after existing rows. Delimiter via `DelimitatorForViewModel` (`Comma` default; `Semicolon`/`Pipe`/`Caret`/`Tab`). `IncludeColumnNames="True"` = first row is headers.
+**Long-form:** [`ReadCsvFile.md` (3.6)](activity-docs/UiPath.Excel.Activities/3.6/activities/ReadCsvFile.md) · `{PROJECT_DIR}/.local/docs/packages/UiPath.Excel.Activities/activities/AppendWriteCsvFile.md`
+
+---
+
+### HTTP request → JSON
+**Activities:** `UiPath.Web.Activities.Http.NetHttpRequest` · `UiPath.Web.Activities.DeserializeJson<T>`
+**Packages:** `UiPath.WebAPI.Activities` 2.5.1
+**Prefixes:** `nhr:`, `nhrm:`, `web:`, `jn:`
+**Variables:** `httpResponse : UiPath.Web.Activities.Http.Models.HttpResponseSummary`; `jsonResult : Newtonsoft.Json.Linq.JObject`.
+
+```xml
+<Sequence DisplayName="HTTP GET Deserialize">
+  <Sequence.Variables>
+    <Variable x:TypeArguments="nhrm:HttpResponseSummary" Name="httpResponse" />
+    <Variable x:TypeArguments="jn:JObject" Name="jsonResult" />
+  </Sequence.Variables>
+  <nhr:NetHttpRequest DisplayName="GET API Data" RequestUrl="https://api.example.com/data" Method="GET" RequestBodyType="None" RetryPolicyType="Basic" RetryCount="[3]" TimeoutInMiliseconds="[10000]" Result="[httpResponse]" />
+  <web:DeserializeJson x:TypeArguments="jn:JObject" DisplayName="Deserialize JSON" JsonString="[httpResponse.TextContent]" JsonObject="[jsonResult]" />
+</Sequence>
+```
+
+**Notes (build-verified traps):** Use `NetHttpRequest` — `HttpClient` is legacy. The XAML assembly is `UiPath.Web.Activities`, NOT the package id `UiPath.WebAPI.Activities`; `HttpResponseSummary` lives in `...Http.Models`. Read body from `httpResponse.TextContent`, verdict from `httpResponse.StatusCode`. Default `ContinueOnError=True` turns network failures into synthetic `503` responses — guard on `StatusCode` before parsing. POST JSON: `RequestBodyType="Text"` + `TextPayload` (content type defaults to `application/json`).
+**Long-form:** `{PROJECT_DIR}/.local/docs/packages/UiPath.WebAPI.Activities/activities/NetHttpRequest.md` · `.../DeserializeJson.md`
