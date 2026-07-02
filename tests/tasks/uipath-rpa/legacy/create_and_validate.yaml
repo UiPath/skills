@@ -36,6 +36,9 @@ initial_prompt: |
     authenticated against the sandbox tenant in this CI step.
   - Do not run `uip rpa-legacy debug` — just attempt validation.
   - Omit optional runtime logging-exclusion settings.
+  - Author Main.xaml incrementally instead of one single large write: first
+    write the file with the root element and the workflow body, then add the
+    baseline namespace-import and assembly-reference blocks in separate edits.
   - Use `--output json` on the uip CLI commands you run.
 
 success_criteria:
