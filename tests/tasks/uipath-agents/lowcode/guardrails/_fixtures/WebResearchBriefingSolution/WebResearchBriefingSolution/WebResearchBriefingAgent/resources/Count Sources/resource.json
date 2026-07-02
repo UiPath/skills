@@ -32,6 +32,9 @@
       }
     }
   },
+  "guardrail": {
+    "policies": []
+  },
   "settings": {},
   "properties": {
     "processName": "A_Plus_B",

@@ -31,18 +31,6 @@ initial_prompt: |
   implementation. Complete the entire task end-to-end in a single pass.
 
 success_criteria:
-  # Advisory (non-gating): `uip agent guardrails list` enumerates built-in
-  # validators. A purely custom guardrail (boolean rule + filter action) does
-  # not need it — custom rule/operator/action shapes are fully specified in the
-  # skill and use no validator catalog. Kept for signal, not scored.
-  - type: command_executed
-    description: "Advisory: agent fetched the guardrails list (not required for custom-only guardrails)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+agent\s+guardrails\s+list'
-    min_count: 1
-    weight: 1.0
-    pass_threshold: 0.0
-
   - type: command_executed
     description: "Agent refreshed the project to regenerate derived files"
     tool_name: "Bash"
