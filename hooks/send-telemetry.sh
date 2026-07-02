@@ -1,18 +1,25 @@
 #!/bin/bash
-# PostToolUse telemetry hook for the UiPath skills plugin.
+# Telemetry hook for the UiPath skills plugin (Claude Code).
 #
-# Reads the hook JSON payload from stdin, decides whether the tool call is
-# attributable to THIS plugin (skill gate), resolves the UiPath environment
-# (alpha / staging / prod), and pipes one flat JSON object to `uip track`,
-# which forwards it through the CLI's own telemetry tracker as a single
-# uip.skills.tool-use Application Insights event. Calls from other plugins or
-# bare Claude Code are dropped.
+# Registered on multiple Claude Code hook events (PostToolUse, SessionStart,
+# SessionEnd, Stop, StopFailure). Reads the hook JSON payload from stdin, maps
+# the event to a canonical eventName, and pipes one flat JSON object to
+# `uip track`, which forwards it through the CLI's own telemetry tracker as a
+# single uip.skills.<event> Application Insights event.
+#
+# tool-use is per-call and gated on plugin attribution (skill gate) — calls from
+# other plugins or bare Claude Code are dropped. Lifecycle events (session-start,
+# session-end, completion) are session-scoped and fire for every session where
+# this plugin is installed.
 #
 # The CLI (see UiPath/cli#2600) owns transport, the App Insights connection,
-# the event name, the authenticated cloud identity, and the `source:
-# "skills-plugin"` dimension. This hook only derives + sanitizes fields and
-# gates on the opt-out flag; value sanitization stays the hook's responsibility
-# because the CLI and skills ship co-versioned.
+# the event name, the authenticated cloud identity, the `source:
+# "skills-plugin"` dimension, and — since UiPath/cli#2806 — the
+# environment/base_url/region base dimensions stamped fresh on every event
+# from its own auth context (so this hook sends no environment info). This
+# hook only derives + sanitizes fields and gates on the opt-out flag; value
+# sanitization stays the hook's responsibility because the CLI and skills
+# ship co-versioned.
 #
 # REGION-SCOPED EXTRACTION (see extract_fields): the payload embeds free-form
 # customer content (prompts, command lines, stdout/stderr, file contents). A
@@ -20,8 +27,9 @@
 # contains JSON-shaped text (`"success":false`, `uip solution publish`,
 # `.flow"`, `"resolvedModel":"..."`). So a single string-aware awk pass walks
 # the JSON once and pulls each field ONLY from the region it lives in:
-#   ENVELOPE (top-level)  -> toolName, toolUseId, sessionId, permissionMode,
-#                            durationMs, effortLevel (effort.level), agentType
+#   ENVELOPE (top-level)  -> toolName, toolUseId, session_id, permissionMode,
+#                            durationMs, effortLevel (effort.level), agentType,
+#                            source (-> session_source), reason (session-end)
 #   tool_input            -> skillName, uipSubcommand (command), fileExtension
 #                            (file_path), subagentType (subagent_type, or
 #                            agent_type for a Codex spawn_agent call)
@@ -55,8 +63,12 @@
 set +e
 
 # schemaVersion of the emitted event. Bump on ANY change to the key set so App
-# Insights can segment events emitted with older/churned schemas.
-SCHEMA_VERSION=1
+# Insights can segment events emitted with older/churned schemas. v2: adds the
+# eventName / session_source / reason keys for lifecycle events, renames
+# sessionId -> session_id (canonical casing, matches the CLI command stream,
+# UiPath/cli#2800), and drops environment/baseUrl (the CLI stamps fresh
+# environment/base_url/region base dimensions itself, UiPath/cli#2806).
+SCHEMA_VERSION=2
 
 # --- extraction ------------------------------------------------------------
 
@@ -73,7 +85,7 @@ extract_fields() {
       if (d == 1)
         return (k=="tool_name"||k=="tool_use_id"||k=="session_id"|| \
                 k=="permission_mode"||k=="duration_ms"||k=="agent_type"|| \
-                k=="hook_event_name")
+                k=="hook_event_name"||k=="source"||k=="reason")
       if (d == 2 && c == "input")
         return (k=="skill"||k=="command"||k=="file_path"||k=="subagent_type"|| \
                 k=="agent_type")
@@ -173,7 +185,7 @@ read_fields() {
   event=""; tool=""; tool_use_id=""; session_id=""; permission_mode=""
   duration_ms=""; agent_type=""; skill=""; command=""; file_path=""
   subagent_type=""; interrupted=""; success=""; resolved_model=""
-  effort_level=""; response_seen=""
+  effort_level=""; response_seen=""; session_source=""; reason=""
   local k v
   while IFS="$(printf '\t')" read -r k v; do
     case "$k" in
@@ -184,6 +196,8 @@ read_fields() {
       permission_mode)    permission_mode="$v" ;;
       duration_ms)        duration_ms="$v" ;;
       agent_type)         agent_type="$v" ;;
+      source)             session_source="$v" ;;
+      reason)             reason="$v" ;;
       skill)              skill="$v" ;;
       command)            command="$v" ;;
       file_path)          file_path="$v" ;;
@@ -233,54 +247,6 @@ is_uipath_call() {
   return 1
 }
 
-# --- environment resolution ------------------------------------------------
-
-# cache_val <file> <key>: emit a cached value stripped to a safe charset. Parses
-# the cache as DATA — never `source` it, so a tampered cache can't execute
-# arbitrary shell in this hook's context.
-cache_val() {
-  grep -E "^$2=" "$1" 2>/dev/null | head -1 | cut -d= -f2- | tr -cd 'A-Za-z0-9:._/-'
-}
-
-# resolve_environment: set env_name + base_url from `uip login status` (~0.5s),
-# cached per-user for 1h so only one tool call per hour pays the cost. The cache
-# dir is per-user, owner-only (NOT world-writable /tmp), so another local user
-# can't pre-create the file. chmod is a no-op on Windows but harmless.
-resolve_environment() {
-  local cache_dir cache ttl now _ts status_json
-  cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/uipath-telemetry"
-  mkdir -p "$cache_dir" 2>/dev/null && chmod 700 "$cache_dir" 2>/dev/null
-  cache="$cache_dir/env.cache"
-  ttl=3600
-  now="$(date +%s 2>/dev/null || echo 0)"
-
-  env_name="unknown"; base_url=""; _ts=0
-  if [ -f "$cache" ]; then
-    _ts="$(cache_val "$cache" _ts)"
-    env_name="$(cache_val "$cache" env_name)"
-    base_url="$(cache_val "$cache" base_url)"
-    case "$_ts" in *[!0-9]*|"") _ts=0 ;; esac   # non-numeric -> treat as stale
-  fi
-
-  [ "$(( now - _ts ))" -ge "$ttl" ] || return 0
-
-  status_json="$(uip login status --output json 2>/dev/null)"
-  base_url="$(printf '%s' "$status_json" \
-    | grep -oE '"BaseUrl"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
-  case "$base_url" in
-    *alpha.uipath.com*)   env_name="alpha" ;;
-    *staging.uipath.com*) env_name="staging" ;;
-    *cloud.uipath.com*)   env_name="prod" ;;
-    "")                   env_name="unknown" ;;
-    *)                    env_name="other" ;;
-  esac
-  {
-    echo "_ts=$now"
-    echo "env_name=$env_name"
-    echo "base_url=$base_url"
-  } > "$cache" 2>/dev/null
-}
-
 # --- field derivation ------------------------------------------------------
 
 # derive_fields: set skill_name, uip_subcommand, file_ext from the parsed
@@ -321,6 +287,31 @@ compute_outcome() {
   fi
 }
 
+# map_event_name: translate the Claude Code hook event into the canonical
+# eventName token the CLI's `uip track` maps to a uip.skills.<event> event. An
+# unrecognized event prints empty so main() drops it. Stop and StopFailure both
+# map to `completion`, distinguished by outcome (see lifecycle_outcome).
+map_event_name() {
+  case "$event" in
+    PostToolUse)      printf 'tool-use' ;;
+    SessionStart)     printf 'session-start' ;;
+    SessionEnd)       printf 'session-end' ;;
+    Stop|StopFailure) printf 'completion' ;;
+    *)                printf '' ;;
+  esac
+}
+
+# lifecycle_outcome: outcome for the non-tool events. A normal turn end (Stop)
+# is `ok`; an API-error turn end (StopFailure) is `failure`. session-start and
+# session-end carry no turn outcome (session-end's `reason` conveys the why).
+lifecycle_outcome() {
+  case "$event" in
+    Stop)        printf 'ok' ;;
+    StopFailure) printf 'failure' ;;
+    *)           printf '' ;;
+  esac
+}
+
 # model_family <resolvedModel>: print the low-cardinality family and drop the
 # context-window marker (e.g. claude-opus-4-8[1m] -> opus). Empty when absent
 # (plain main-loop call); `other` for an unrecognized family.
@@ -357,21 +348,22 @@ san() { printf '%s' "$1" | tr -c 'A-Za-z0-9:._/ -' '_' | cut -c1-120; }
 build_event_json() {
   local spec json sep fkey ftyp fval
   spec="schemaVersion|n|$SCHEMA_VERSION
+eventName|s|$event_name
 toolName|s|$tool
 skillName|s|$skill_name
 uipSubcommand|s|$uip_subcommand
 fileExtension|s|$file_ext
-environment|s|$env_name
-baseUrl|s|$base_url
 outcome|s|$outcome
 permissionMode|s|$permission_mode
 effortLevel|s|$effort_level
 skillsVersion|s|$skills_ver
 toolUseId|s|$tool_use_id
-sessionId|s|$session_id
+session_id|s|$session_id
 subagentModel|s|$subagent_model
 subagentType|s|$subagent_type
 agentType|s|$agent_type
+session_source|s|$session_source
+reason|s|$reason
 durationMs|n|$dur_json"
   json="{"; sep=""
   while IFS='|' read -r fkey ftyp fval; do
@@ -397,27 +389,39 @@ main() {
   payload="$(cat)"
   read_fields "$(printf '%s' "$payload" | extract_fields)"
 
-  [ "$event" = "PostToolUse" ] || exit 0
-  is_uipath_call || exit 0
+  # Map the hook event to a canonical eventName; drop unrecognized events.
+  event_name="$(map_event_name)"
+  [ -n "$event_name" ] || exit 0
 
-  resolve_environment
-  derive_fields
+  # Derived only on tool-use; keep defined so the fixed key set always assembles.
+  skill_name=""; uip_subcommand=""; file_ext=""; subagent_model=""
 
-  outcome="$(compute_outcome)"
+  if [ "$event_name" = "tool-use" ]; then
+    # tool-use is per-call: gate on plugin attribution, then derive tool fields.
+    is_uipath_call || exit 0
+    derive_fields
+    outcome="$(compute_outcome)"
+    subagent_model="$(model_family "$resolved_model")"
+  else
+    # Lifecycle events are session-scoped — they fire for every session where
+    # this plugin is installed (the activation-rate denominator), so they skip
+    # the per-call attribution gate and tool-field derivation.
+    outcome="$(lifecycle_outcome)"
+  fi
+
+  skills_ver="$(read_skills_version)"
+
   # durationMs is a JSON number. Emit JSON null (not 0) when absent, so a missing
   # value doesn't skew latency aggregations. The CLI drops a null-valued
   # property, so a missing duration records as "no data". Stays unquoted.
   case "$duration_ms" in ''|*[!0-9]*) dur_json="null" ;; *) dur_json="$duration_ms" ;; esac
-  subagent_model="$(model_family "$resolved_model")"
-  skills_ver="$(read_skills_version)"
 
   # Sanitize every string field before assembly.
+  event_name="$(san "$event_name")"
   tool="$(san "$tool")"
   skill_name="$(san "$skill_name")"
   uip_subcommand="$(san "$uip_subcommand")"
   file_ext="$(san "$file_ext")"
-  env_name="$(san "$env_name")"
-  base_url="$(san "$base_url")"
   outcome="$(san "$outcome")"
   permission_mode="$(san "$permission_mode")"
   effort_level="$(san "$effort_level")"
@@ -427,12 +431,14 @@ main() {
   subagent_model="$(san "$subagent_model")"
   subagent_type="$(san "$subagent_type")"
   agent_type="$(san "$agent_type")"
+  session_source="$(san "$session_source")"
+  reason="$(san "$reason")"
 
-  # Hand off to the CLI telemetry tracker. The CLI hard-codes the event name
-  # (uip.skills.tool-use), stamps source: "skills-plugin", attaches the
-  # authenticated cloud identity + CLI app version, and owns transport + flush;
-  # it drops any non-scalar value (so a null durationMs disappears). Send no
-  # `event` key, no envelope, and no `source` (the CLI overrides it).
+  # Hand off to the CLI telemetry tracker. The CLI maps our eventName token to
+  # the uip.skills.<event> name, stamps source: "skills-plugin", attaches the
+  # authenticated cloud identity + CLI app version, owns transport + flush,
+  # redacts PII, and drops any non-scalar value (so a null durationMs
+  # disappears). Send no envelope and no `source` (the CLI overrides it).
   #
   # Detached subshell ( cmd & ) survives this hook's exit so the agent never
   # waits. `uip track` is never-fail (exits 0, emits nothing when telemetry is
