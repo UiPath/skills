@@ -217,6 +217,7 @@ Destinations:
 
 - Delivery model + product exclusions → Phase 1 Step 0 skip rules and the [Constraint Gate](product-selection-guide.md#constraint-gate).
 - Signing modality, document storage, robot attendance → §9 Application Inventory / §16 Deployment Environment (or product equivalents); `[SME REVIEW]` when the PDD handles documents or signatures but leaves the modality ambiguous.
+- **Human-only login (physical hardware 2FA token, smart card, biometric, non-scriptable interactive sign-in)** → do NOT stop at `[SME REVIEW]`. Emit the §9 *Interactive Authentication / Re-auth Handoff* subsection (RPA template) with the handoff contract, set §16 Robot type = Attended, and route the build to `uipath-rpa` per the [attended re-authentication pattern](attended-reauth-pattern-guide.md). A **soft** second factor the robot can read (Google/MS/Okta TOTP, SMS/email code) is scripted by `uipath-rpa` — no handoff subsection.
 
 ### Development Details
 
