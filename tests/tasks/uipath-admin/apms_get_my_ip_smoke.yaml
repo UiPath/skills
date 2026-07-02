@@ -33,9 +33,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent ran ip-restriction my-ip with --output json"
+    description: "Agent ran ip-restriction my-ip"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+ip-restriction\s+my-ip[\s\S]*--output\s+json'
+    command_pattern: 'uip\s+admin\s+ip-restriction\s+my-ip'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

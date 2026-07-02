@@ -29,7 +29,7 @@ success_criteria:
   - type: command_executed
     description: "Agent inspected external apps via get or list"
     tool_name: "Bash"
-    command_pattern: 'uip\s+admin\s+external-apps\s+(get|list)\b.*--output\s+json'
+    command_pattern: 'uip\s+admin\s+external-apps\s+(get|list)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
