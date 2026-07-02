@@ -89,7 +89,7 @@ def match_by_prefix(entities: list[dict], prefix: str) -> list[tuple[str, str, s
 def delete_entity(entity_id: str, name: str, folder_key: str = "") -> None:
     args = [
         "df", "entities", "delete", entity_id,
-        "--confirm",
+        "--yes",
         "--reason", "greenfield-test pre/post-run cleanup",
     ]
     if folder_key:
@@ -103,6 +103,37 @@ def delete_entity(entity_id: str, name: str, folder_key: str = "") -> None:
         # error, already deleted in a parallel run, etc.).
         msg = (err.strip() or out.strip())[:200]
         print(f"WARN: uip df entities delete {entity_id} failed (exit {code}): {msg}", file=sys.stderr)
+
+
+def list_choice_sets() -> list[dict]:
+    code, out, err = run_uip("df", "choice-sets", "list")
+    if code != 0 or not out.strip():
+        print(f"SKIP: uip df choice-sets list failed (exit {code}): {err.strip()}")
+        return []
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError as e:
+        print(f"SKIP: could not parse choice-sets list output: {e}")
+        return []
+    inner = data.get("Data") if isinstance(data, dict) else None
+    if isinstance(inner, dict):
+        return inner.get("Items") or inner.get("Records") or inner.get("records") or []
+    if isinstance(inner, list):
+        return inner
+    return []
+
+
+def delete_choice_set(cs_id: str, name: str) -> None:
+    code, out, err = run_uip(
+        "df", "choice-sets", "delete", cs_id,
+        "--yes",
+        "--reason", "greenfield-test pre/post-run cleanup",
+    )
+    if code == 0:
+        print(f"OK: deleted leftover choice set {name} ({cs_id})")
+    else:
+        msg = (err.strip() or out.strip())[:200]
+        print(f"WARN: uip df choice-sets delete {cs_id} failed (exit {code}): {msg}", file=sys.stderr)
 
 
 def main() -> None:
@@ -119,19 +150,34 @@ def main() -> None:
         action="store_true",
         help="Also sweep folder-scoped entities. Deletes each with its --folder-key.",
     )
+    parser.add_argument(
+        "--include-choice-sets",
+        action="store_true",
+        help="Also sweep choice sets whose Name matches the same prefix rule.",
+    )
     args = parser.parse_args()
 
     entities = list_native_entities(include_folders=args.include_folders)
     matches = match_by_prefix(entities, args.name_prefix)
-    if not matches:
+    if matches:
+        print(f"Found {len(matches)} leftover entity/entities matching `{args.name_prefix}`:")
+        for eid, name, folder_key in matches:
+            scope = f"folder={folder_key}" if folder_key else "tenant"
+            print(f"  - {name} ({eid}) [{scope}]")
+            delete_entity(eid, name, folder_key)
+    else:
         print(f"OK: no leftover entities matching `{args.name_prefix}` / `{args.name_prefix}_*`")
-        sys.exit(0)
 
-    print(f"Found {len(matches)} leftover entity/entities matching `{args.name_prefix}`:")
-    for eid, name, folder_key in matches:
-        scope = f"folder={folder_key}" if folder_key else "tenant"
-        print(f"  - {name} ({eid}) [{scope}]")
-        delete_entity(eid, name, folder_key)
+    if args.include_choice_sets:
+        cs = list_choice_sets()
+        cs_matches = match_by_prefix(cs, args.name_prefix)
+        if cs_matches:
+            print(f"Found {len(cs_matches)} leftover choice set(s) matching `{args.name_prefix}`:")
+            for cs_id, name, _ in cs_matches:
+                print(f"  - {name} ({cs_id})")
+                delete_choice_set(cs_id, name)
+        else:
+            print(f"OK: no leftover choice sets matching `{args.name_prefix}` / `{args.name_prefix}_*`")
 
     sys.exit(0)
 

@@ -10,34 +10,36 @@ description: >
 tags: [uipath-platform, data-fabric, smoke, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 20
-  max_turns: 60
-  task_timeout: 1800
+  expected_turns: 30
+  max_turns: 80
+  turn_timeout: 1500
+  task_timeout: 2100
 
 
 initial_prompt: |
-  Some things that already exist on the tenant:
-    - A category dropdown with travel, meals, and lodging
-    - A tags dropdown with urgent, reimbursable, and client
-    - An Employees list with one employee already in it (`emp-rec-500`)
-    - A Projects list
+  Tenant-scoped setup already exists:
+    - `CE_SmokeCategories` dropdown with travel, meals, lodging
+    - `CE_SmokeTags` dropdown with urgent, reimbursable, client
+    - Employees list at tenant level with an employee `emp-rec-500`
+    - Projects list at tenant level
 
   Could you walk me through this:
 
-    - Show me what lists and what dropdowns are already set up. Then
-      pull up the options on the category dropdown.
+    - Show me what tenant-level lists and dropdowns are set up. Then
+      pull up the options on `CE_SmokeCategories`.
 
-    - Add a new Expense list with these columns:
+    - Add a new tenant-level list called `CE_SmokeExpense` with these
+      columns:
         - amount — dollars and cents, required
-        - category — pick one from the category dropdown, required
-        - tags — pick one or more from the tags dropdown
-        - submitter — links to an employee, required
-        - project — links to a project
+        - category — pick one from `CE_SmokeCategories`, required
+        - tags — pick one or more from `CE_SmokeTags`
+        - submitter — links to the tenant-level Employees list, required
+        - project — links to the tenant-level Projects list
 
     - On Employees, add a status column that lets you pick one from
-      the tags dropdown.
+      `CE_SmokeTags`.
 
-    - Add one expense to the Expense list — $250, category is travel,
+    - Add one expense to `CE_SmokeExpense` — $250, category is travel,
       tags are urgent and reimbursable, submitter is employee
       `emp-rec-500`.
 
@@ -45,15 +47,9 @@ initial_prompt: |
 
     - Show me the expenses submitted by employee `emp-rec-500`.
 
-    - Add a brand-new dropdown called PaymentStatus with values
-      "paid", "unpaid", "refunded". I'd like to use it on the
-      Expense list.
-
-  Important:
-  - The `uip` CLI is available but not connected to a live tenant. Commands
-    will fail — that is expected. Run each command exactly once regardless
-    of errors. Do NOT retry, do NOT attempt to login, do NOT install tools,
-    do NOT troubleshoot.
+    - Add a brand-new tenant-level dropdown called `CE_SmokePaymentStatus`
+      with values "paid", "unpaid", "refunded". I'd like to use it on
+      the `CE_SmokeExpense` list.
 
 success_criteria:
   - type: command_executed
@@ -83,7 +79,7 @@ success_criteria:
   - type: command_executed
     description: "Agent declared a CHOICE_SET_SINGLE field with choiceSetId in entities create"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CHOICE_SET_SINGLE)(?=.*choiceSetId)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update)(?=.*CHOICE_SET_SINGLE)(?=.*choiceSetId)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -91,7 +87,7 @@ success_criteria:
   - type: command_executed
     description: "Agent declared a CHOICE_SET_MULTIPLE field with choiceSetId in entities create"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*CHOICE_SET_MULTIPLE)(?=.*choiceSetId)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update)(?=.*CHOICE_SET_MULTIPLE)(?=.*choiceSetId)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -99,7 +95,7 @@ success_criteria:
   - type: command_executed
     description: "Agent declared a RELATIONSHIP field with referenceEntityId + referenceFieldId (UUIDs per SKILL.md Rule 12)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+df\s+entities\s+create(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
+    command_pattern: '(?s)uip\s+df\s+entities\s+(create|update)(?=.*RELATIONSHIP)(?=.*referenceEntityId)(?=.*referenceFieldId)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -164,17 +160,40 @@ success_criteria:
   - type: command_executed
     description: "Agent authored the PaymentStatus choice set via choice-sets create (CLI-supported per the skill)"
     tool_name: "Bash"
-    command_pattern: '(?i)uip\s+df\s+choice-sets\s+create[\s\S]*?PaymentStatus'
+    command_pattern: '(?i)uip\s+df\s+choice-sets\s+create[\s\S]*?CE_SmokePaymentStatus'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent added the three PaymentStatus values (paid, unpaid, refunded) via choice-set-values create"
+    description: "Agent invoked choice-set-values create for at least one of paid/unpaid/refunded (agents often chain all three in one Bash call)"
     tool_name: "Bash"
     command_pattern: '(?i)uip\s+df\s+choice-set-values\s+create[\s\S]*?(paid|unpaid|refunded)'
-    min_count: 3
-    weight: 2.5
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "End state (deterministic): CE_SmokePaymentStatus has paid + unpaid + refunded"
+    command: >-
+      python3 -c "
+      import json, subprocess, sys
+      def uip(*a):
+        r = subprocess.run(['uip', *a, '--output', 'json'], capture_output=True, text=True, timeout=60)
+        return json.loads(r.stdout) if r.returncode==0 and r.stdout.strip() else {}
+      cs_list = (uip('df','choice-sets','list').get('Data') or [])
+      cs = next((c for c in cs_list if c.get('Name')=='CE_SmokePaymentStatus'), None)
+      if not cs: print('FAIL: CE_SmokePaymentStatus not found'); sys.exit(1)
+      vals_data = uip('df','choice-sets','list-values', cs.get('Id') or cs.get('ID'))
+      items = vals_data.get('Data') or []
+      names = {(v.get('Name') or v.get('name') or '').lower() for v in items}
+      missing = {'paid','unpaid','refunded'} - names
+      if missing: print(f'FAIL: missing values {sorted(missing)}; got {sorted(names)}'); sys.exit(1)
+      print(f'OK: CE_SmokePaymentStatus has all 3 values (also {sorted(names - {\"paid\",\"unpaid\",\"refunded\"})} extras)')
+      "
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
@@ -201,3 +220,39 @@ success_criteria:
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
+
+pre_run:
+  # Brownfield prereqs: idempotently ensure the tenant has the tenant-scoped
+  # choice sets the test consumes. Skips silently on re-run.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py
+      --spec $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_categories.choice_set.json
+    timeout: 90
+    fail_on_error: false
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py
+      --spec $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/smoke_tags.choice_set.json
+    timeout: 90
+    fail_on_error: false
+  # Greenfield cleanup: entities/choice sets the agent creates each run
+  # must start from a clean slate.
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeExpense --include-choice-sets
+    timeout: 90
+    fail_on_error: false
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokePaymentStatus --include-choice-sets
+    timeout: 90
+    fail_on_error: false
+
+post_run:
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokeExpense --include-choice-sets
+    timeout: 90
+  - command: >-
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py
+      --name-prefix CE_SmokePaymentStatus --include-choice-sets
+    timeout: 90
