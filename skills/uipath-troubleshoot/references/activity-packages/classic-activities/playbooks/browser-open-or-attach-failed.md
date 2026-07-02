@@ -1,5 +1,10 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "BrowserOperationException"
+exclusions:
+  - "browser type vs communication method incompatibility → ui-activity-configuration-error.md"
 ---
 
 # Browser Could Not Open or Attach

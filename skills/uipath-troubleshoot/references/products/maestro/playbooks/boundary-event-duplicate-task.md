@@ -1,5 +1,6 @@
 ---
 confidence: medium
+silent: true
 ---
 
 # Boundary Event and Duplicate Task Execution

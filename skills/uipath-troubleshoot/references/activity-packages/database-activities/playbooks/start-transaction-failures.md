@@ -1,5 +1,14 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "The type initializer for 'Microsoft.Data.SqlClient.SqlConnection' threw an exception"
+    note: "reached through a Start Transaction scope after Windows-Legacy → Windows migration, or DatabaseConnection type unresolvable at design time (branch 3); on a plain Connect to Database → connect-to-database-failures.md"
+  - kind: state
+    value: "Success"
+    note: "job green but database unchanged/partial (child fault swallowed, no rollback — branch 1) or no in-scope activity logs at all (v1.5.0 body-skip — branch 2)"
+exclusions:
+  - "child SQL-syntax / parameter / command-timeout faults inside the scope → execute-query-failures.md / execute-non-query-failures.md"
 ---
 
 # Start Transaction Failures

@@ -1,5 +1,11 @@
 ---
 confidence: high
+signatures:
+  - kind: error-code
+    value: "AGENT_RUNTIME.TERMINATION_GUARDRAIL_VIOLATION"
+  - kind: message
+    value: "guardrailEvaluation"
+    note: "span type carrying guardrailName/action/validationResult — also toolGuardrailEvaluation"
 ---
 
 # Guardrail Violation

@@ -1,5 +1,11 @@
 ---
 confidence: high
+signatures:
+  - kind: error-code
+    value: "400001"
+    note: "NoOutgoingFlow"
+  - kind: message
+    value: "No condition for an outgoing flow was met"
 ---
 
 # No Outgoing Flow Condition Met (400001)

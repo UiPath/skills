@@ -1,5 +1,12 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Could not find file"
+    note: "Word Application Scope document path does not resolve on the robot host"
+  - kind: message
+    value: "Could not find a part of the path"
+    note: "folder segment of the Word document path missing — relative path / mapped drive / bad concatenation"
 ---
 
 # Word Application Scope — File Path Verification Errors / Document Not Found

@@ -1,5 +1,11 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Reference is not valid"
+  - kind: error-code
+    value: "0x800A03EC"
+    note: "on Lookup Range — malformed Range field (empty-string literal instead of blank, or invalid A1 reference)"
 ---
 
 # Lookup Range — Invalid Range Syntax or Value Misconfiguration

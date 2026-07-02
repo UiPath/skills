@@ -1,5 +1,9 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "FileNotFoundError"
+    note: "Python-side, referencing a relative path — CWD is the robot per-package folder, not the project; the activities themselves succeed"
 ---
 
 # Python Scope — Script Runs but Reads/Writes the Wrong Files (WorkingFolder / Relative Path)

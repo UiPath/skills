@@ -1,5 +1,11 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "because it is being used by another process"
+    note: "on Lookup Range or its Excel Application Scope / Use Excel File — workbook file handle held; Read Range family full lock-owner chain → read-range-file-locked.md"
+  - kind: message
+    value: "is locked for editing by"
 ---
 
 # Lookup Range — Workbook Locked / File In Use

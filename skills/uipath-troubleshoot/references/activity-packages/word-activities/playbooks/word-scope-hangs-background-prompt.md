@@ -1,5 +1,6 @@
 ---
 confidence: medium
+silent: true
 ---
 
 # Word Application Scope — Workflow Hangs / Freezes on a Background Dialog

@@ -1,5 +1,24 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Error opening workbook. Make sure Excel is installed."
+    note: "host DOES have Excel — inner COMException 0x8002801D TYPE_E_LIBNOTREGISTERED / 0x80040154 means broken COM registration (branch 1); no Excel install at all → excel-application-card-failures.md"
+  - kind: error-code
+    value: "0x8002801D"
+    note: "TYPE_E_LIBNOTREGISTERED inner COMException opening a workbook on Excel Application Scope — broken Excel COM/type-library registration despite Excel installed (branch 1)"
+  - kind: error-code
+    value: "0x80040154"
+    note: "REGDB_E_CLASSNOTREG despite a confirmed Excel install → registration corruption; Excel absent → excel-application-card-failures.md"
+  - kind: message
+    value: "Failed opening the Excel file. Possible reasons: file is corrupt, already used by another process or password protected."
+  - kind: exception
+    value: "System.InvalidCastException"
+    note: "cast of System.__ComObject to a Microsoft.Office.Interop.Excel interface fails with E_NOINTERFACE — COM add-in clash (branch 3); marshaling EntryMethodParameters on Invoke VBA → invoke-vba-parameter-formatting.md"
+  - kind: error-code
+    value: "0x80004002"
+exclusions:
+  - "Excel truly not installed, empty/illegal WorkbookPath, multi-scope RPC races, child outside scope, sensitivity label → excel-application-card-failures.md"
 ---
 
 # Excel Application Scope (Classic) COM-Interop Failures

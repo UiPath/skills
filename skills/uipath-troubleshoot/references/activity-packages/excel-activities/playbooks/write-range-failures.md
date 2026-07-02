@@ -1,5 +1,26 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.NullReferenceException"
+    note: "raised at Write Range — source DataTable argument is Nothing (branch 1)"
+  - kind: message
+    value: "Ignore empty source"
+    note: "BusinessException — source DataTable has 0 rows with ExcludeHeaders=False (branch 3)"
+  - kind: message
+    value: "Failing on Empty Header"
+  - kind: message
+    value: "hidden rows"
+    note: "hidden rows/columns inside the Write Range target rectangle (package v2.8.5+, branch 4); append region intersecting hidden rows → append-range-failures.md"
+  - kind: message
+    value: "The data you want to write has a wrong format, or Excel is busy"
+    note: "on Write Range — oversized batch or formula-prefix cell values (branch 5); on Write Cell → write-cell-failures.md"
+  - kind: exception
+    value: "System.OutOfMemoryException"
+    note: "oversized DataTable written in one call via Excel COM (branch 5)"
+exclusions:
+  - "IOException 'being used by another process' → read-range-file-locked.md"
+  - "BusinessException 'The sheet with the name ... does not exist' → read-range-sheet-not-found.md"
 ---
 
 # Write Range Failures

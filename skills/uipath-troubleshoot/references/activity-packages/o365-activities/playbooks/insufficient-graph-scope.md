@@ -1,5 +1,17 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "The caller doesn't have permission to perform the action."
+  - kind: message
+    value: "Access restricted to the item's owner."
+  - kind: message
+    value: "The action is not allowed by the system."
+  - kind: message
+    value: "Insufficient privileges to complete the operation."
+exclusions:
+  - "The sharing link no longer exists, or you do not have permission to access it. (per-resource shared-link failure) → drive-item-not-found.md"
+  - "The caller is not authenticated. / token-expiry messages → authentication-token-invalid.md"
 ---
 
 # O365 — Insufficient Graph permission scope / access denied (403)

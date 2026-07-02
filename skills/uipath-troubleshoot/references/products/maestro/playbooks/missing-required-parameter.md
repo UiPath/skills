@@ -1,5 +1,8 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Missing value for required parameter"
 ---
 
 # Missing Value for Required Parameter (400)

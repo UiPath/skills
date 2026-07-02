@@ -1,5 +1,17 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "The unattended robot has the wrong machine credentials to execute the job"
+  - kind: error-code
+    value: "RobotNoMatchingUsernames"
+    note: "robot user account does not match any machine user mapping"
+  - kind: error-code
+    value: "TemplateNoLicense"
+    note: "machine template has zero Unattended runtime slots allocated"
+  - kind: state
+    value: "Pending"
+    note: "with PendingReason RobotNoMatchingUsernames or TemplateNoLicense — robot/machine configuration, not host availability"
 ---
 
 # Robot Credentials or Machine User Mismatch

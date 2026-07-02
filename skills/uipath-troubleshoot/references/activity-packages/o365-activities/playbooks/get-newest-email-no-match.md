@@ -1,5 +1,9 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "No email matching the filter criteria, received in the last 1 hour has been found"
+    note: "Office365Exception from O365 GetNewestEmail (also WaitForEmailReceived / NewEmailReceived sample lookups); the identical sentence as a GmailException is the Gmail trigger debug run → get-newest-email-not-found.md (gsuite)"
 ---
 
 # O365 Get Newest Email — no email matched the filter criteria

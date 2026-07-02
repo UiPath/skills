@@ -1,5 +1,19 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.NullReferenceException"
+    note: "raised at Execute Query — null / expired / out-of-scope DatabaseConnection (branch 1)"
+  - kind: message
+    value: "Keyword not supported"
+  - kind: message
+    value: "Execute Query: A database error occurred"
+  - kind: message
+    value: "Execute Query: Timeout expired"
+  - kind: message
+    value: "Timeout period elapsed prior to completion of the operation"
+  - kind: error-code
+    value: "0xE0434352"
 ---
 
 # Execute Query Failures

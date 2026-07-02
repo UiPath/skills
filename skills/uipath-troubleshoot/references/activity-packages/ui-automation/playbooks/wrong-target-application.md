@@ -1,5 +1,10 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "WrongTargetApplicationException"
+  - kind: message
+    value: "The identified element does not belong to the target application/browser."
 ---
 
 # Identified Element Belongs to a Different Application

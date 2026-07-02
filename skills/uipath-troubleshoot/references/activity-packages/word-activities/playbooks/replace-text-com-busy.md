@@ -1,5 +1,18 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "The message filter indicated that the application is busy"
+    note: "at Replace Text / Read Text inside a Word scope — WINWORD.EXE busy, locked, or stalled on a hidden modal dialog"
+  - kind: error-code
+    value: "0x8001010A"
+    note: "RPC_E_SERVERCALL_RETRYLATER at Replace Text / Read Text — orphaned WINWORD.EXE or modal dialog; package-level E3 tree → word-com-interop-failures.md"
+  - kind: message
+    value: "Call was rejected by callee"
+    note: "RPC_E_CALL_REJECTED wording — same busy/blocked surface"
+  - kind: error-code
+    value: "0x80010001"
+    note: "RPC_E_CALL_REJECTED at Replace Text; package-level E3 tree → word-com-interop-failures.md"
 ---
 
 # Replace Text in Document — "Application is busy" / COM Interop Retry Failure (0x8001010A)

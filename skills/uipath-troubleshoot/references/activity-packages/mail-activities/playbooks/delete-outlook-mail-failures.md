@@ -1,5 +1,15 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "The operation failed. An object could not be found."
+    note: "stale message reference — item moved/deleted between Get and Delete (branch 1)"
+  - kind: message
+    value: "Collection was modified; enumeration operation may not execute"
+    note: "Delete runs inside a For Each over the live message list (branch 2)"
+  - kind: message
+    value: "The operation has timed out"
+    note: "at Delete Outlook Mail — COM blocked by a modal programmatic-access dialog or privilege mismatch (branch 4); on Get → get-outlook-mail-failures.md"
 ---
 
 # Delete Outlook Mail Message Failures

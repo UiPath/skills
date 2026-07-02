@@ -1,5 +1,22 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Could not start executor"
+  - kind: message
+    value: "Logon failed for user"
+  - kind: error-code
+    value: "0x0000052E"
+    note: "Windows logon failure — bad username or password"
+  - kind: error-code
+    value: "0x00000775"
+    note: "Windows account locked out"
+  - kind: error-code
+    value: "0x00000532"
+    note: "Windows password expired"
+  - kind: error-code
+    value: "131092"
+    note: "appears as 'Last error: 131092' alongside the logon-failure message"
 ---
 
 # Could Not Start Executor — Logon Failed for User

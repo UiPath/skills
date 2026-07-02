@@ -1,5 +1,26 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Error invoking the python method"
+    note: "wrapper around a Python-side exception raised inside the invoked function"
+  - kind: message
+    value: "One or more errors occurred"
+    note: "on Invoke Python Method with a Python traceback naming a line inside the function (M4); at Python Scope open → python-scope-architecture-version-mismatch.md; at script load → load-script-failures.md"
+  - kind: message
+    value: "has no attribute"
+    note: "Python AttributeError — the Name property does not match a module-level def (M1: typo, case mismatch, nested, or __main__-guarded)"
+  - kind: exception
+    value: "System.IO.PipeException"
+    note: "mid-call on Invoke Python Method — oversized return payload or destabilized engine (M5); 'Pipe is broken' wording → invoke-python-method-pipe-is-broken.md"
+  - kind: exception
+    value: "System.NullReferenceException"
+    note: "on Invoke Python Method — Instance not bound to a successful Load Python Script result (M6)"
+  - kind: error-code
+    value: "BC36754"
+    note: "design-time VB compile error on InputParameters — argument is not an Object array (M3)"
+exclusions:
+  - "engine-init / script-load faults (Error initializing Python engine, top-level ModuleNotFoundError, syntax error) → load-script-failures.md"
 ---
 
 # Invoke Python Method (InvokeMethod) Failures

@@ -1,5 +1,13 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "No host is available on the machine template assigned for this job"
+  - kind: state
+    value: "Pending"
+    note: "assigned template currently has zero connected runtimes (robotVersions empty) — if a runtime IS connected, see job-pending-stale-dispatch.md"
+exclusions:
+  - "connected runtime present + JobHistory has only the original Pending entry → job-pending-stale-dispatch.md"
 ---
 
 # Job Pending — No Available Host

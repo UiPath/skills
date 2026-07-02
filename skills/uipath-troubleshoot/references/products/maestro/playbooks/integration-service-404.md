@@ -1,5 +1,17 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Request to Integration Services failed with status code '404'"
+  - kind: error-code
+    value: "102001"
+    note: "IntSvcResourceNotFound"
+  - kind: message
+    value: "Invalid Element Instance Id provided."
+    note: "surfaced through a Maestro IS call; in an agent run's trace spans → products/agents is-invalid-element-instance.md"
+  - kind: http-status
+    value: "404"
+    note: "on an Integration Service call — connector/connection/action missing; job attachment → attachment-not-found.md; job start → process-not-found-404.md"
 ---
 
 # Integration Service Failure (404)

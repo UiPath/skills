@@ -1,5 +1,16 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "UiPath.CV.ElementNotFoundException"
+    note: "message contains the Scrolled-the-entire-screen literal and ScrollDirection != None — scroll-search exhausted, not a plain find timeout"
+  - kind: message
+    value: "Scrolled the entire screen, but element was not found"
+    note: "hardcoded English, never localized — the word Scrolled is the discriminator from plain Element not found"
+exclusions:
+  - "Generic not-found without Scrolled in the message, or ScrollDirection = None → cv-element-not-found.md"
+  - "Cell-targeting sentences → cv-cell-targeting-failures.md"
+  - "CvElementExistsWithDescriptor returned false after a scroll search (message swallowed) → cv-silent-failures-and-false-results.md"
 ---
 
 # CV scroll-search failures (scrolled entire screen, scroll not reaching pane, silent scroll skip)

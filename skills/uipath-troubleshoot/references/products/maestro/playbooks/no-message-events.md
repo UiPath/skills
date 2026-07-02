@@ -1,5 +1,11 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "No Message events found"
+  - kind: message
+    value: "No File events found"
+    note: "OneDrive/SharePoint file trigger variant"
 ---
 
 # No Message Events Found (400)

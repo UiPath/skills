@@ -1,5 +1,16 @@
 ---
 confidence: high
+signatures:
+  - kind: error-code
+    value: "DAP-RT-1003"
+    note: "surfaced as a Maestro element fault (502); raw connector activity fault in a job → integration-service connector-runtime-exception.md"
+  - kind: message
+    value: "field is required. Error code: DAP-RT-1003"
+  - kind: http-status
+    value: "502"
+    note: "raised by an Integration Service activity expecting a file input — DAP-RT-1003 present"
+exclusions:
+  - "file orphaned by job retention → attachment-not-found.md"
 ---
 
 # 'File' Field Required — DAP-RT-1003 (502)

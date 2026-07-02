@@ -1,5 +1,8 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "The asset does not have a value associated with this robot"
 ---
 
 # Get Asset Failed — Per-Robot Asset Has No Value

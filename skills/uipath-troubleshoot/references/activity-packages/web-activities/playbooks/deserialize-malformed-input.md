@@ -1,5 +1,18 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "Newtonsoft.Json.JsonReaderException"
+    note: "raised by DeserializeJson / DeserializeJsonArray — input string is not valid JSON (most often an upstream HTTP call returned an HTML/error body)"
+  - kind: exception
+    value: "System.Xml.XmlException"
+    note: "raised by DeserializeXml (XDocument.Parse) — input string is not valid XML"
+  - kind: message
+    value: "Unexpected character encountered while parsing value"
+  - kind: message
+    value: "Unexpected end of content while loading JArray"
+  - kind: message
+    value: "Data at the root level is invalid"
 ---
 
 # Deserialize — Malformed JSON / XML Input

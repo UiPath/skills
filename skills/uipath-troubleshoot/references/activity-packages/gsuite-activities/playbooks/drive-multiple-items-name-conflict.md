@@ -1,5 +1,9 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Multiple items with the name"
+    note: "GSuiteException from a Drive activity's ConflictResolution lookup — not for DownloadAttachmentsConnections (local path conflict); the same wording from O365 downloads → download-multiple-items-name-conflict.md (o365)"
 ---
 
 # GSuite Drive — Multiple items with the same name in the specified folder

@@ -1,5 +1,11 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "The specified Python path is not valid"
+    note: "at Python Scope open — Path points at python.exe or the WindowsApps Store alias instead of the install folder"
+exclusions:
+  - "engine-init errors (One or more errors occurred / Error initializing the Python engine) → python-scope-architecture-version-mismatch.md"
 ---
 
 # Python Scope — The Specified Python Path Is Not Valid

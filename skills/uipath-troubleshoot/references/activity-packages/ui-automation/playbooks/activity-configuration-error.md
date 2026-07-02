@@ -1,5 +1,18 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Value for property [Movement units] can not be lower than 1."
+  - kind: message
+    value: "Searched element Target or Input UI Element must be set when Scroll type is set to Until element is found."
+  - kind: message
+    value: "Unable to find the searched element."
+  - kind: message
+    value: "Invalid or empty shortcut sequence."
+  - kind: message
+    value: "'File name' can not be null, empty or whitespace."
+  - kind: message
+    value: "Required argument 'Saved image' was not provided."
 ---
 
 # Activity Configuration Error — Invalid Property Value

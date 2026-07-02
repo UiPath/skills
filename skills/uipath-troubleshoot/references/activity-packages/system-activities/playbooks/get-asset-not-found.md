@@ -1,5 +1,12 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Could not find an asset with this name"
+  - kind: message
+    value: "Could not find the asset"
+  - kind: error-code
+    value: "1002"
 ---
 
 # Get Asset Failed — Asset Does Not Exist

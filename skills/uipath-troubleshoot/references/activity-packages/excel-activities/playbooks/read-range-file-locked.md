@@ -1,5 +1,15 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.IO.IOException"
+    note: "on Read Range / Excel read-write family or the surrounding scope — cannot acquire the workbook file; pass-through .NET IO message names the path"
+  - kind: message
+    value: "because it is being used by another process"
+    note: "on Read Range family / Excel Application Scope / Use Excel File — full lock-owner investigation (user edit, orphan EXCEL.EXE, share lock, concurrent jobs, AV/sync client)"
+  - kind: error-code
+    value: "0x800A03EC"
+    note: "COMException wrapper of the same file lock under Excel COM — Excel's own message about the file being locked for editing"
 ---
 
 # Read Range — File In Use By Another Process

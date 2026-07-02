@@ -1,5 +1,15 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Invalid Query. Please use OData format for filter queries."
+  - kind: message
+    value: "Invalid filter clause:"
+  - kind: error-code
+    value: "RequestBroker--ParseUri"
+exclusions:
+  - "There was an error on the email server. Please try modifying your Query or Top values to continue. → transient-service-error.md"
+  - "Zero results with no error → get-newest-email-no-match.md"
 ---
 
 # O365 Mail — Invalid OData filter query

@@ -1,5 +1,11 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Job Operation Timeout"
+  - kind: http-status
+    value: "502"
+    note: "child job often Successful in Orchestrator while Maestro reports timeout — gateway/proxy limit"
 ---
 
 # Job Operation Timeout (502)

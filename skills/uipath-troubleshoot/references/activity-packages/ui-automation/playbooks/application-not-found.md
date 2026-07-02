@@ -1,5 +1,16 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "ApplicationNotFoundException"
+  - kind: message
+    value: "Could not find target application."
+  - kind: state
+    value: "OpenMode=Never"
+    note: "gating condition — the scope was told not to launch the app"
+exclusions:
+  - "App missing and OpenMode != Never (launch attempted) → application-open-failed.md"
+  - "Selector found a window owned by a different process → wrong-target-application.md"
 ---
 
 # Application Not Found — Target Application Could Not Be Located

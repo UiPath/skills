@@ -1,5 +1,8 @@
 ---
 confidence: low
+signatures:
+  - kind: message
+    value: "Orchestrator information is not available"
 ---
 
 # Get Asset Failed — Network or Connectivity Issue

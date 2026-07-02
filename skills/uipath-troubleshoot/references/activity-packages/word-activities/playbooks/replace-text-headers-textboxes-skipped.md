@@ -1,5 +1,8 @@
 ---
 confidence: medium
+silent: true
+exclusions:
+  - "body-text silent miss caused by run-splitting → replace-text-silent-no-substitution.md"
 ---
 
 # Replace Text in Document — Headers, Footers, and Text Boxes Not Replaced

@@ -1,5 +1,8 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "No compiled code to run"
 ---
 
 # Invoke Code Failed

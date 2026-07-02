@@ -1,5 +1,19 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Required argument 'URL' was not provided."
+  - kind: exception
+    value: "BrowserInvalidURLException"
+  - kind: message
+    value: "Requested URL is invalid, value is null."
+  - kind: exception
+    value: "BrowserFailedToNavigateToUrlException"
+  - kind: message
+    value: "Failed to navigate to the specified URL."
+  - kind: message
+    value: "Failed to open the indicated local URL."
+    note: "local file:// URL on a Chromium browser without the Allow-access-to-file-URLs extension permission"
 ---
 
 # Go To URL — Navigation Failed

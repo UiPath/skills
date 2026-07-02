@@ -1,5 +1,17 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "NodeNotFoundException"
+    note: "closest matches in the exception belong to a different page/locale — enclosing scope container attached wrong; the inner selector itself is correct"
+  - kind: exception
+    value: "SelectorNotFoundException"
+    note: "closest matches in the exception belong to a different page/locale — enclosing scope container attached wrong; the inner selector itself is correct"
+  - kind: exception
+    value: "UiElementNotFoundException"
+    note: "closest matches in the exception belong to a different page/locale — enclosing scope container attached wrong; the inner selector itself is correct"
+exclusions:
+  - "HA disabled at the process/job level (un-helped click is an enablement issue) → selector-failure-healing-disabled.md"
 ---
 
 # Selector Failure — Scope Container Attached to Wrong Page/Window

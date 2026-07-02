@@ -1,5 +1,27 @@
 ---
 confidence: high
+signatures:
+  - kind: state
+    value: "Issues Detected"
+    note: "Jobs-grid Healing Agent column / job detail Healing Agent tab — detection-only status"
+  - kind: state
+    value: "Unlicensed version"
+    note: "Healing Agent tab banner — preview UIA 24.10.x detecting unlicensed"
+  - kind: message
+    value: "Healing agent configuration."
+    note: "benign Info-level config read on every run — zero consumption"
+  - kind: message
+    value: "Healing Agent settings"
+    note: "reworded variant of the benign config-read Info line"
+  - kind: message
+    value: "No available license / Agentic units to perform healing analysis and recovery"
+    note: "Surface 4 informational notice — benign if customer does NOT want HA (job continues); if they DO want HA it is the real licensing error → healing-agent-no-license.md"
+  - kind: message
+    value: "Recommendations for resolution or self-healing procedures have been quickly generated"
+    note: "email/in-app Notification Summary, Component = Healing Agent — real HA event"
+exclusions:
+  - "Customer wants HA working and the robot log carries the no-license line → healing-agent-no-license.md"
+  - "HA licensed and engaged but produced no data (connectivity, classic activity, image-only target) → no-recovery-data.md"
 ---
 
 # Healing Agent — Orchestrator Status, Logs & Notifications (Is This Expected?)

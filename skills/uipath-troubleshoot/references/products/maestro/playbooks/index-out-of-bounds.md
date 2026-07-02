@@ -1,5 +1,13 @@
 ---
 confidence: low
+signatures:
+  - kind: exception
+    value: "System.IndexOutOfRangeException"
+  - kind: message
+    value: "Index was outside the bounds of the array."
+  - kind: http-status
+    value: "502"
+    note: "with System.IndexOutOfRangeException stack trace — engine/platform bug"
 ---
 
 # Index Outside Bounds of Array (502)

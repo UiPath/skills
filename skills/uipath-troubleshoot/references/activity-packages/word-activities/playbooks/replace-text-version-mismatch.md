@@ -1,5 +1,11 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.Reflection.TargetInvocationException"
+    note: "design-time — Studio errors on dropping Replace Text / opening the workflow; Studio vs UiPath.Word.Activities version mismatch"
+exclusions:
+  - "runtime 'Cannot create unknown type WordApplicationScope' fault → word-scope-cannot-create-unknown-type.md"
 ---
 
 # Replace Text in Document — TargetInvocationException / Studio Crash on Drop

@@ -1,5 +1,15 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "is invalid or you do not have access"
+    note: "connection missing, cross-workspace, disabled, or caller lacks permissions — when raised as DAP-GE-3000 on a connector activity see connector-general-exception.md"
+  - kind: error-code
+    value: "102002"
+    note: "IntSvcOperationFailed at connection resolution — process fails immediately when using the connection"
+  - kind: error-code
+    value: "102008"
+    note: "GetConnectionInvalidInputError"
 ---
 
 # Connection Invalid or No Access

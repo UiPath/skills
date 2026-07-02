@@ -1,5 +1,6 @@
 ---
 confidence: high
+silent: true
 ---
 
 # Maestro Service Disabled

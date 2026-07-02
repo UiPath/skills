@@ -1,5 +1,13 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Input does not conform to schema"
+  - kind: message
+    value: "Agent.InputArgumentsSchema"
+  - kind: message
+    value: "Value is 'null' but should be 'object'"
+    note: "optional file/attachment passed as null"
 ---
 
 # Input Does Not Conform to Schema (400)

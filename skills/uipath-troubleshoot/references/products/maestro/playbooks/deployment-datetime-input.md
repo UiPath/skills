@@ -1,5 +1,9 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Package entry points definition is invalid"
+    note: "deployment fails after adding DateTime input parameters to a BPMN start event"
 ---
 
 # Deployment Error — DateTime Input Parameters

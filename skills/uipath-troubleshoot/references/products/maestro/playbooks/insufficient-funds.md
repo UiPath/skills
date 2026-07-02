@@ -1,5 +1,8 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Insufficient funds: Your account doesn't have enough credits for execution"
 ---
 
 # Insufficient Funds / Agent Units (400)

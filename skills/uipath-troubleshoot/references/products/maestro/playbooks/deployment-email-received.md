@@ -1,5 +1,10 @@
 ---
 confidence: high
+signatures:
+  - kind: error-code
+    value: "4006"
+  - kind: message
+    value: "No package resource with type 'Property' and key 'EMAIL_RECEIVED' was found"
 ---
 
 # Deployment Error — EMAIL_RECEIVED

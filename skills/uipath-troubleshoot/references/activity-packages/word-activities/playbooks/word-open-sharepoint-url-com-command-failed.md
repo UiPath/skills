@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.Runtime.InteropServices.COMException"
+    note: "message 'Command failed' faulting on Documents.Open — FilePath is a SharePoint/OneDrive sharing link; at Export to PDF with an orphaned/locked WINWORD.EXE → export-pdf-com-hang.md"
+  - kind: message
+    value: "Command failed"
+    note: "on the open path (Documents.Open / WordDocumentFactory) with a :w:/:f: sharing-link FilePath; 'Command Failed' at Export to PDF → export-pdf-missing-output-dir.md"
+  - kind: message
+    value: "WordDocumentFactory.OpenOrCreateNewDocument"
+    note: "stack frame — open path, not COM start"
+  - kind: message
+    value: "'Create if not exists' is not supported when using a URL for the file path"
+    note: "validation warning — CreateNewFile defaulting True against a URL path"
+exclusions:
+  - "wrong-thread cast 0x8001010E on a child activity → word-export-pdf-com-wrong-thread.md"
 ---
 
 # Word Application Scope — Open SharePoint URL COMException "Command failed"

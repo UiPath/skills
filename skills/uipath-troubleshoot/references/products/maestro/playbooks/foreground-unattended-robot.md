@@ -1,5 +1,10 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Foreground job requires an unattended robot to be defined on your user"
+  - kind: error-code
+    value: "#1230"
 ---
 
 # Foreground Job Requires Unattended Robot (409, #1230)

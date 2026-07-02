@@ -1,5 +1,11 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Job stopped with an unexpected exit code: 0x40010004"
+  - kind: error-code
+    value: "0x40010004"
+    note: "DBG_TERMINATE_PROCESS — executor killed via TerminateProcess, not a workflow throw"
 ---
 
 # Job Stopped — Unexpected Exit Code 0x40010004

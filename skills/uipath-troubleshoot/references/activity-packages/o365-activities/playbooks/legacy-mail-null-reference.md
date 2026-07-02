@@ -1,5 +1,11 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.NullReferenceException"
+    note: "raw, with stack frames in UiPath.MicrosoftOffice365.Activities.Mail.* (legacy) — Connections activities remap it to 'The object used in the activity does not exist.'"
+exclusions:
+  - "NullReferenceException whose stack trace is in the user's workflow code → null-reference-exception.md"
 ---
 
 # O365 Mail — NullReferenceException from legacy Mail activity

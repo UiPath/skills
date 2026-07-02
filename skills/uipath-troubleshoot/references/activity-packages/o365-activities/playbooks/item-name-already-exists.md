@@ -1,5 +1,10 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "The specified item name already exists."
+exclusions:
+  - "Multiple items with the name <name> found in the specified folder. (local destination conflict) → download-multiple-items-name-conflict.md"
 ---
 
 # O365 — The specified item name already exists

@@ -1,5 +1,22 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Error opening workbook. Make sure Excel is installed."
+    note: "Excel genuinely absent or install broken on a card/scope needing COM (branch 1); Excel confirmed installed with inner 0x8002801D/0x80040154 → excel-application-scope-failures.md"
+  - kind: message
+    value: "Excel File path is empty or not set"
+  - kind: message
+    value: "Illegal characters in path"
+  - kind: error-code
+    value: "0x800706BA"
+  - kind: error-code
+    value: "0x80010108"
+    note: "RPC_E_DISCONNECTED — multiple scopes raced on EXCEL.EXE or a prior scope tore it down without an Excel Process Scope (branch 3); on the activity right after a macro → execute-macro-failures.md"
+  - kind: error-code
+    value: "0x80080005"
+exclusions:
+  - "child activity BusinessException 'must be placed inside' → append-range-failures.md / delete-range-failures.md"
 ---
 
 # Use Excel File / Excel Application Card Failures
