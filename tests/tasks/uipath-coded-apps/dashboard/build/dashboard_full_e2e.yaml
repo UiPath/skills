@@ -7,7 +7,7 @@ description: >
   (Agents.getAll + timelines), generated widgets under src/dashboard/widgets/,
   named time constants, state.json written, and a clean `tsc --noEmit` over the
   generated project (the gold-standard correctness gate).
-tags: [uipath-coded-apps, e2e, dashboard, feature:scaffold, feature:routing, mode:build]
+tags: [uipath-coded-apps, e2e, dashboard, mode:build, lifecycle:generate]
 
 run_limits:
   turn_timeout: 1200

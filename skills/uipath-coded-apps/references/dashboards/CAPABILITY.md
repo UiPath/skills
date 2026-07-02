@@ -14,7 +14,7 @@ Read the user's message and classify it as one of three intents. **Do not load a
 | "add/remove/change a widget", "update the chart", "make it 7 days" | **EDIT** | Follow the Edit path below |
 | "deploy this", "publish it", "make it live", "ship it to the team", "deploy the dashboard" | **DEPLOY** | Follow the Deploy path below |
 
-If the intent is unclear, ask one question — "What do you want to do with the dashboard?" — as a **structured choice** (SKILL.md Critical Rule 17: native question tool with selectable options when the host agent has one, else a numbered list):
+If the intent is unclear, ask one question — "What do you want to do with the dashboard?" — as a **structured choice** (SKILL.md Critical Rule 18: native question tool with selectable options when the host agent has one, else a numbered list):
 
 | Option | Description |
 |--------|-------------|

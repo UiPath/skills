@@ -7,7 +7,7 @@ description: >
   (writes edit-intent.json, regenerates only the affected widget) and reuse the
   already-extracted starter kit — NOT re-extract it / re-scaffold. Regression
   guard for the entire edit lifecycle (ADD), which had no coverage.
-tags: [uipath-coded-apps, e2e, dashboard, feature:incremental, mode:build]
+tags: [uipath-coded-apps, e2e, dashboard, mode:build, lifecycle:generate]
 
 run_limits:
   turn_timeout: 1200

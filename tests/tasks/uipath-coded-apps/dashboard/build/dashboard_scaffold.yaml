@@ -8,7 +8,7 @@ description: >
   Asserts authored/generated shape; does not run tsc
   (that belongs to e2e). Integration-tier: a full inline build is too
   turn-heavy for the 40-turn PR-smoke gate — runs nightly at 200 turns.
-tags: [uipath-coded-apps, integration, dashboard, feature:scaffold, mode:build]
+tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

@@ -3,7 +3,7 @@ description: >
   Validates the approval gate: agent must show a plain-language plan with
   [SDK] or [Insights] labels before writing any files. No scaffold, no
   npm ci, no widget files until the user confirms.
-tags: [uipath-coded-apps, smoke, dashboard, feature:approval-gate, mode:build]
+tags: [uipath-coded-apps, smoke, dashboard, feature:approval-gate, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

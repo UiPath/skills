@@ -3,7 +3,7 @@ description: >
   Validates that an ambiguous prompt does not trigger immediate scaffolding.
   The agent must show a disambiguation question and halt before building.
   Verified by: npm ci not run AND no package.json created.
-tags: [uipath-coded-apps, smoke, dashboard, mode:build]
+tags: [uipath-coded-apps, smoke, dashboard, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

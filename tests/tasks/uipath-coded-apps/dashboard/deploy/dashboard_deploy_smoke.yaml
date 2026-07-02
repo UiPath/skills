@@ -4,7 +4,7 @@ description: >
   correct order: pack → publish → deploy. Checks command invocations only —
   commands will fail with auth errors in CI (expected). Verifies the agent
   follows the deploy/impl.md flow without shortcuts.
-tags: [uipath-coded-apps, smoke, dashboard, mode:operate, feature:scaffold]
+tags: [uipath-coded-apps, smoke, dashboard, mode:operate, lifecycle:setup]
 
 sandbox:
   driver: tempdir

@@ -6,7 +6,7 @@ description: >
   module that parses governance spans (parseGovernanceSpans) fetched via
   Traces.getById. Guards that the explicit-runtime-compliance signal opens the
   gate to the trace-derived family documented in sdk/governance-traces.md.
-tags: [uipath-coded-apps, integration, dashboard, feature:governance, mode:build]
+tags: [uipath-coded-apps, integration, dashboard, feature:compliance, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

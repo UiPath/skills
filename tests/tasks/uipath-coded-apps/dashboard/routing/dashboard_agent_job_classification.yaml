@@ -7,7 +7,7 @@ description: >
   'Agent'). Using sourceType (the trigger origin, not the agent discriminator)
   or filtering on a mapped field name like processName is wrong and returns
   the wrong rows. The skill teaches this in sdk/orchestrator.md.
-tags: [uipath-coded-apps, integration, dashboard, feature:routing, mode:build]
+tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

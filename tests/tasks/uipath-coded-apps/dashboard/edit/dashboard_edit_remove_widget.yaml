@@ -9,7 +9,7 @@ description: >
   starter kit. Regression guard for the REMOVE op, which had no coverage.
   Integration-tier: a full inline build + edit is too turn-heavy for the 40-turn
   PR-smoke gate — runs nightly at 200 turns.
-tags: [uipath-coded-apps, integration, dashboard, feature:incremental, mode:build]
+tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate]
 
 run_limits:
   turn_timeout: 1200

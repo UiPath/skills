@@ -10,7 +10,7 @@ description: >
   call — or that leaves the fabricated method in place — fails this.
   Integration-tier: a full inline build + fix is too turn-heavy for the 40-turn
   PR-smoke gate — runs nightly at 200 turns.
-tags: [uipath-coded-apps, integration, dashboard, mode:diagnose]
+tags: [uipath-coded-apps, integration, dashboard, mode:diagnose, lifecycle:generate]
 
 run_limits:
   turn_timeout: 1200

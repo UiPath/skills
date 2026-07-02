@@ -220,7 +220,7 @@ export async function runDashboardBuild(intent, intentPath) {
       writeAtomic(widgetPath, widgetContent)
 
       // intentMetric is persisted so incremental CHANGE/REBUILD can regenerate
-      // the widget without the original intent.json (fnBody, title, hints).
+      // the widget without the original intent.json (title, display hints).
       widgetHashes[componentName] = { hash: hashContent(widgetContent), tier: metric.tier, metric: metric.name, template: displayAs, module: metric.module ?? `metrics/${metric.name}.ts`, intentMetric: metric }
       widgetMeta.push({ componentName, template: displayAs })
 
@@ -322,4 +322,4 @@ export async function runDashboardBuild(intent, intentPath) {
   } finally {
     try { unlinkSync(BUILD_SENTINEL) } catch { /* ignore */ }
   }
-}
+}

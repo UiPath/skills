@@ -9,7 +9,7 @@ description: >
   no user reply in this run, the agent must end on the plan text: no
   question tool, no build activity. Plan-text quality is checked by the LLM
   reviewer transcript pass (criteria cannot grep assistant messages).
-tags: [uipath-coded-apps, smoke, dashboard, feature:approval-gate, feature:structured-questions, mode:build]
+tags: [uipath-coded-apps, smoke, dashboard, feature:approval-gate, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

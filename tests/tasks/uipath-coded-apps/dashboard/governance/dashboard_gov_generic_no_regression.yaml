@@ -7,7 +7,7 @@ description: >
   trace-derived family (parseGovernanceSpans / scanViolations). This protects
   the gate added so a generic governance dashboard keeps using the OOB Insights
   metrics, not the interim trace-scan. See sdk/governance.md.
-tags: [uipath-coded-apps, integration, dashboard, feature:governance, mode:build]
+tags: [uipath-coded-apps, integration, dashboard, feature:compliance, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

@@ -6,7 +6,7 @@ description: >
   fail with auth errors in CI, so this checks the command sequence/flags, not
   a live deploy or post-deploy state.json mutation (those need a live tenant —
   covered by a nightly live e2e, not here).
-tags: [uipath-coded-apps, integration, dashboard, mode:operate, feature:scaffold]
+tags: [uipath-coded-apps, integration, dashboard, mode:operate, lifecycle:setup]
 
 sandbox:
   driver: tempdir

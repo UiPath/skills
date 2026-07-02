@@ -10,7 +10,7 @@ description: >
   getInvocation*/invocation-timeline SDK call — or drops both metrics — fails.
   Integration-tier: the substitution check requires a full inline build, too
   turn-heavy for the 40-turn PR-smoke gate — runs nightly at 200 turns.
-tags: [uipath-coded-apps, integration, dashboard, feature:refuse, mode:build]
+tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

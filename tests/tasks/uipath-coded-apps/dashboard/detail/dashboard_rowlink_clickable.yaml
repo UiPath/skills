@@ -6,7 +6,7 @@ description: >
   default — ROW_LINK_KEY resolved to a non-empty key (e.g. 'agentName') and an
   onRowClick handler — and a keyed detail view file must be generated. Before
   the fix the default rowLink rendered a non-clickable table with a dead route.
-tags: [uipath-coded-apps, integration, dashboard, feature:detail-views, mode:build]
+tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate]
 
 sandbox:
   driver: tempdir

@@ -15,7 +15,7 @@
  * Exit codes:
  *   0 — success
  *   1 — fatal error (message on stderr)
- *   2 — widget needs retry (update fnBody in intent.json and re-run)
+ *   2 — metric modules need retry (fix the named metrics/<name>.ts files and re-run)
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, renameSync, unlinkSync } from 'fs'
@@ -88,8 +88,8 @@ const REGISTRY = JSON.parse(readFileSync(resolve(__dirname, 'capability-registry
  * @property {string}      [componentName] - Override PascalCase component name
  * @property {string}      [icon]        - lucide-react icon name
  * @property {string}      [detailRoute] - HashRouter path for drilldown
- * @property {Object}      [params]      - T2 filter params (validation only — agent writes fnBody)
- * @property {string}      fnBody        - Required for all tiers: async function body using SDK service classes
+ * @property {Object}      [params]      - T2 filter params (validation only — the filter logic lives in the metric module)
+ * @property {string}      [module]      - Relative path to the metric's data-fetch module (defaults to metrics/<name>.ts)
  * @property {string}      [displayAs]   - One of VALID_DISPLAY_TYPES
  * @property {string}      [valueField]  - kpi-card: field shown as the headline number
  * @property {string}      [valueLabel]  - kpi-card: label under the headline
@@ -108,7 +108,6 @@ const REGISTRY = JSON.parse(readFileSync(resolve(__dirname, 'capability-registry
  * @property {string}      [pivotExpression] - multi-line-chart pivot expression
  * @property {DetailViewSpec} [detailView]
  * @property {{key:string}} [rowLink]
- * @property {boolean} [detail]
  */
 
 /**

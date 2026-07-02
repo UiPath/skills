@@ -217,7 +217,7 @@ export const fetchDetail: MetricFn = async (sdk) => {
 - Confirmation already contains a client ID → carry it as the plan's `clientId`, continue to Phase 4
 - Confirmation already says to create one (e.g. "build it, create the app") → create the OAuth app (below), continue to Phase 4
 - `clientId` already known (provided earlier, or in an existing project's `intent.json`) → continue to Phase 4, ask nothing
-- Otherwise → ask ONE short structured-choice question (SKILL.md Rule 17 — this is a short turn, safe for the question tool):
+- Otherwise → ask ONE short structured-choice question (SKILL.md Rule 18 — this is a short turn, safe for the question tool):
 
   *"How should I set up the OAuth app this dashboard signs in with?"*
 
