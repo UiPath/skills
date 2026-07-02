@@ -59,7 +59,7 @@ Grep `references/signature-index.md` (never read it whole) for each extracted si
 1. Read the playbook's `## Context` fully; confirm its signature actually fits the evidence (a contradicted core precondition = wrong playbook → back to §4 with that match excluded, recorded in notes.md).
 2. Execute its `## Investigation` steps in decision-tree order; stop at the first matching branch. Record in notes.md the datum that rejects each rejected branch.
 3. Ordering rules: most-specific branch first; run elimination checks, not just confirmation (fetch what would DISPROVE the branch); never conclude on a propagation/persistence/state-transition pattern while an upstream "why did that state occur" is unanswered — trace one hop upstream first.
-4. **Source-required playbooks** (evidence lives only in workflow source, e.g. `VerifyOptions`, selectors, `project.json` pins): if the working directory doesn't contain the project at top level, ask for the project path via `AskUserQuestion` — one question naming the files needed. Extract the verbatim attribute values the playbook lists; do not paraphrase.
+4. **Source-required playbooks** (evidence lives only in workflow source, e.g. `VerifyOptions`, selectors, `project.json` pins): CHECK THE WORKING DIRECTORY TOP LEVEL FIRST — one listing; if it contains the project (`project.json` + the workflow named in the activity stack), use it without asking. Only if absent, ask for the project path via `AskUserQuestion` — one question naming the files needed. This precedence overrides any playbook wording that says to ask first. Extract the verbatim attribute values the playbook lists; do not paraphrase.
 5. **For large result sets**, summarize at write-time — group by type, count patterns, extract samples. Never slice raw responses with arbitrary limits.
 
 ## 6. Verification checklist — mandatory before presenting
@@ -71,6 +71,7 @@ Write the answers in notes.md; do not skip items, do not present without them:
 3. **Runtime evidence:** for runtime failures, ≥1 cited datum from runtime/platform data (logs, job records, instance state, incidents) that passes correlation. Design-time evidence alone (source files, manifests) proves a defect exists, not that it caused this failure. Every runtime query empty while the user reports active failures = CONTRADICTION — wrong scope; re-verify or ask, never conclude.
 4. **Resolution aligned:** the fix is the playbook's `## Resolution` branch keyed to that exact cause.
 5. **Causal precedence:** list every event the conclusion treats as given and answer "why did that occur?" — each answered by evidence, explained by the named cause, or explicitly out of scope. A persistence/state-transition story presupposes an upstream condition; unexplained upstream → not root cause.
+6. **Fix scope:** every proposed fix traces to the confirmed cause. A property or code path the failing run never evaluated cannot be asserted as a defect from source reading alone — surface such suspicions as clearly-labeled unverified observations, never as fixes to apply or bundle into the resolution.
 
 Any check fails → ONE targeted re-fetch for the missing datum. Still failing →
 

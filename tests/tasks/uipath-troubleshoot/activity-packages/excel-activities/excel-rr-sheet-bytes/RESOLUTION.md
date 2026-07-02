@@ -3,11 +3,25 @@
 ---
 
 **Outcome:** The `uip` CLI evidence confirms the playbook match
-and rules out most cause-branches, but it cannot distinguish
-between branch 5 (whitespace) and branch 6 (look-alike Unicode)
-without byte-level inspection. The agent's correct action is to
-recommend the host-side PowerShell byte-compare snippet from the
-playbook, NOT to guess which character differs.
+and rules out most cause-branches. Distinguishing branch 5
+(whitespace) from branch 6 (look-alike Unicode) requires
+byte-level inspection — visual comparison can never settle it.
+Two outcomes are correct:
+
+- **(a) Byte-verified branch identification.** The raw
+  `Get Workbook Sheets` JSON payload preserves the actual name's
+  bytes. An agent that byte-dumps its saved raw response, proves
+  the specific code-point difference (here: `C2 A0` = NBSP
+  `U+00A0` inside the workbook's tab name vs regular `U+0020` in
+  the configured `SheetName`), and names branch 6 with the
+  matching fix has fully resolved the case.
+- **(b) Diagnostic recommendation.** If the byte-level evidence
+  is not inspected, the correct action is to recommend the
+  host-side PowerShell byte-compare snippet from the playbook,
+  NOT to guess which character differs.
+
+Asserting branch 5 or branch 6 WITHOUT byte-level verification is
+the failure mode.
 
 **What the CLI evidence does establish:**
 
@@ -37,7 +51,8 @@ playbook, NOT to guess which character differs.
   source shows `SheetName="Quarterly Data"` as a literal string,
   not an expression.
 
-**What the CLI evidence CANNOT determine:**
+**What visual comparison CANNOT determine (byte-level
+inspection required):**
 
 - Whether the apparent space in the actual name is a regular
   space `U+0020` or a non-breaking space `U+00A0`, an ideographic
@@ -49,8 +64,10 @@ playbook, NOT to guess which character differs.
   (branch 5).
 
 JSON serialization in the agent's tool output preserves the bytes,
-but the agent's rendering of them (terminal, editor) does not
-distinguish look-alikes. The only reliable way to identify the
+so a byte-level dump of the saved raw response is conclusive for
+the actual name — but the agent's rendering of the strings
+(terminal, editor) is not; look-alikes render identically. If the
+raw bytes are not inspected, the only reliable way to identify the
 differing code point is a byte-level dump on a host that can run
 PowerShell or an equivalent.
 
@@ -93,8 +110,9 @@ require the Robot host). The bytes do not change between hosts:
      space.
 
 **Anti-pattern to avoid:** Confidently picking branch 5 or
-branch 6 (or any other branch) based on intuition without
-running the byte-compare. The CLI evidence narrows the candidates
+branch 6 (or any other branch) from visual intuition without
+byte-level verification (a dump of the raw payload bytes, or the
+byte-compare snippet). Visual comparison narrows the candidates
 but does not identify the specific code point; recommending the
 WRONG fix wastes operator time and erodes trust.
 
