@@ -6,7 +6,7 @@ description: >
   Stage node, adding a task in its data.tasks lane, and rewiring the
   condition-driven chain so Approval runs after Review and Decision now
   runs after Approval (the case analog of inserting a node into an edge).
-tags: [uipath-maestro-case, e2e, lifecycle:edit, shape:multi-node, feature:stages, feature:conditions, feature:wait-for-timer]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:edit, shape:multi-node, feature:stages, feature:conditions, feature:wait-for-timer]
 max_iterations: 1
 
 run_limits:

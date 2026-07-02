@@ -1,0 +1,70 @@
+task_id: skill-case-edit-update-task
+description: >
+  Update an existing task in place in the Review stage of a LinearThreeStages
+  case: flip the optional "Notify Reviewer" wait-for-timer task to required
+  (isRequired false → true). Review runs two parallel tasks in distinct
+  data.tasks lanes — "Hold For 1 Hour" (required) and "Notify Reviewer"
+  (optional). Exercises editing a single property on an existing task without
+  restructuring: no stage added or removed, no task added or removed, the stage
+  chain and every other node left untouched (the case analog of updating a
+  node's properties in place).
+tags: [uipath-maestro-case1, e2e, mode:build, lifecycle:edit, shape:multi-node, feature:stages, feature:conditions, feature:wait-for-timer]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+
+initial_prompt: |
+  The LinearThreeStages case solution already exists on disk under
+  LinearThreeStages/. Its case definition (LinearThreeStages/LinearThreeStages/caseplan.json)
+  chains three stages linearly: Intake → Review → Decision. The Review stage
+  runs TWO parallel wait-for-timer tasks in distinct data.tasks lanes:
+  "Hold For 1 Hour" (required) and "Notify Reviewer" (optional).
+
+  Make the "Notify Reviewer" task REQUIRED so Review no longer completes until
+  both of its tasks finish. After the edit:
+    - "Notify Reviewer" must be marked required (isRequired true), and must be
+      left otherwise unchanged — same displayName, same wait-for-timer type,
+      same current-stage-entered task-entry condition.
+    - Review must still carry exactly its two tasks in distinct lanes. Do NOT
+      add or remove any task, and leave "Hold For 1 Hour" required and
+      unchanged.
+    - The three stages and the Intake → Review → Decision chain must be
+      unchanged — do NOT touch Intake, Decision, any stage-entry condition,
+      Review's exit condition, or any other stage's tasks.
+
+  Do NOT run `uip maestro case debug` — the test harness handles execution.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Make the edit end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting
+  caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "'Notify Reviewer' flipped to required in Review: 3 stages unchanged, Review still carries both tasks in distinct lanes, 'Notify Reviewer' is now isRequired=true and otherwise intact (type + current-stage-entered entry preserved), 'Hold For 1 Hour' left required and unchanged, the linear chain is unchanged, and the edited case launches in the Studio Web debug runtime"
+    command: "python3 $TASK_DIR/check_update_task.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120

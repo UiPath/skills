@@ -8,7 +8,7 @@ description: >
   data.tasks lanes while leaving the stage's required-tasks-completed exit
   condition intact (it still holds — the agent must not rewrite or break it),
   the surviving task undisturbed, and the linear stage chain unchanged.
-tags: [uipath-maestro-case, e2e, lifecycle:edit, shape:multi-node, feature:stages, feature:conditions, feature:wait-for-timer]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:edit, shape:multi-node, feature:stages, feature:conditions, feature:wait-for-timer]
 max_iterations: 1
 
 run_limits:

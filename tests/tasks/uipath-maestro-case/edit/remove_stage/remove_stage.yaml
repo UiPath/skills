@@ -1,0 +1,70 @@
+task_id: skill-case-edit-remove-stage
+description: >
+  Remove an entire regular stage from a LinearThreeStages case and rewire the
+  chain around the gap. The case chains three stages linearly: Intake → Review
+  → Decision, wired through condition-driven stage-entry rules. The agent must
+  delete the middle "Review" stage (node and all its tasks) and rewire Decision
+  so it now enters after Intake completes, leaving NO reference to the removed
+  stage anywhere. Exercises deleting a whole node and reconnecting the chain
+  (the case analog of removing a node from a flow and rejoining its edges) —
+  distinct from remove_task, which deletes a leaf task inside a stage.
+tags: [uipath-maestro-case1, e2e, mode:build, lifecycle:edit, shape:multi-node, feature:stages, feature:conditions, feature:wait-for-timer]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+
+initial_prompt: |
+  The LinearThreeStages case solution already exists on disk under
+  LinearThreeStages/. Its case definition (LinearThreeStages/LinearThreeStages/caseplan.json)
+  chains three stages linearly: Intake → Review → Decision. Each stage enters
+  via a condition on the previous stage completing.
+
+  Remove the middle "Review" stage entirely and rewire the chain so the case
+  runs Intake → Decision. After the edit:
+    - The Review stage node and all of its tasks must be gone from the entire
+      case definition — no stage named "Review", and no leftover reference to
+      the removed stage's id in any condition.
+    - Decision must now enter after Intake completes — rewire Decision's
+      stage-entry condition so it references the Intake stage instead of
+      Review. After the edit there must be a direct Intake → Decision hand-off
+      and NO dangling reference to the deleted Review stage.
+    - Leave Intake and Decision otherwise unchanged (their tasks, other
+      conditions), and leave the trigger, variables, and the case exit rule
+      (metadata.caseExitRules) unchanged.
+
+  Do NOT run `uip maestro case debug` — the test harness handles execution.
+  Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
+  planning and implementation. Make the edit end-to-end in a single pass and
+  finish with `uip maestro case validate` passing on the resulting
+  caseplan.json.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Review stage removed and chain rejoined: exactly 2 stages (Intake, Decision), Review and its tasks gone from the whole case, no dangling reference to the removed stage in any condition, a direct Intake → Decision transition exists, Intake left intact, and the edited case launches in the Studio Web debug runtime"
+    command: "python3 $TASK_DIR/check_remove_stage.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-case/_shared/cleanup_solutions.py"
+    timeout: 120
