@@ -32,7 +32,7 @@ Verify `Data.Status === "Logged in"` — if not, stop and tell the user to run `
 
 Rule: insert `api.` before `uipath.com`. Exception: `cloud.uipath.com` → `api.uipath.com`.
 
-Pre-warm is already running at `<PROJECT_DIR>`. Do not re-fire it.
+Pre-warm is already running in the relative `<ROUTING_NAME>` folder. Do not re-fire it.
 
 ---
 
@@ -121,7 +121,7 @@ Confirm to build, or tell me what to change:
   "dashboardName": "Operations Health",
   "dashboardDescription": "Job throughput, agent health, and governance posture at a glance.",
   "timeRange": "30d",
-  "projectDir": "/absolute/path",
+  "projectDir": ".",
   "routingName": "operations-health-x7k2",
   "orgName": "...", "tenantName": "...", "cloudUrl": "...", "apiUrl": "...",
   "clientId": "",
@@ -137,6 +137,13 @@ Confirm to build, or tell me what to change:
 ```
 
 Routing name: `<kebab-name>-<4-char-random>`. Set once at plan time. Never changes.
+
+> **Path safety — `projectDir` is `"."`, never an absolute path.** `intent.json` lives INSIDE the pre-warmed
+> `<ROUTING_NAME>` folder and the build runs from there, so `projectDir` is always `"."`. Never reconstruct
+> the session's absolute working directory (e.g. a `/tmp/…` sandbox path) — a retyped path that is off by one
+> character (`_` vs `-`) makes `mkdir`/the build silently create a sibling project that neither the user nor
+> any grader can see. Reference the project only by its relative `<ROUTING_NAME>`. (Same rule as
+> `primitives/incremental-editor.md` § Path safety.)
 
 Optional `"template": true` — build straight into the **ejected** regime (full-source, agent-edited; no compiler regen). Use only when authoring a distributable template from scratch; a normal dashboard omits it and stays `compiler-managed`. Pair with the deploy plugin's `--pack-template` step (Step 6b) to ship source + `dist` as one artifact. See [primitives/customization.md](../../primitives/customization.md#regimes-compiler-managed-vs-ejected).
 
@@ -303,9 +310,9 @@ If a build or edit against an existing project emits `UPGRADE_AVAILABLE:{from,to
 
 The skill ships ONE artifact — `assets/fixtures/governance-dashboard-starter-kit.tar.gz` — and no scaffold source. The archive bundles the React scaffold (at its root) plus the widget generator templates under `_gen/widgets/` and a version pointer `_gen/starter-kit.json`. The build reads templates from `_gen/widgets` and never ships them into the final app.
 
-> **Extracting the kit (the agent does this).** Before building, extract the archive into the project dir with the OS `tar` — built into Windows 10+, macOS, and Linux (one command, no per-OS variants). **Pass the archive on stdin (`-f -`), not as a path argument:**
+> **Extracting the kit (the agent does this).** Before building, extract the archive into the project dir with the OS `tar` — built into Windows 10+, macOS, and Linux (one command, no per-OS variants). `<ROUTING_NAME>` is the project folder **relative to the session working directory** — never an absolute path. **Pass the archive on stdin (`-f -`), not as a path argument:**
 > ```
-> mkdir -p "<PROJECT_DIR>" && tar -xz -C "<PROJECT_DIR>" -f - < "<ARCHIVE>"
+> mkdir -p "<ROUTING_NAME>" && tar -xz -C "<ROUTING_NAME>" -f - < "<ARCHIVE>"
 > ```
 > `build-dashboard.mjs` verifies the kit landed and fails loud with the exact command if not. `<ARCHIVE>` is `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz`.
 >
@@ -321,7 +328,12 @@ To keep the experience seamless, Phase 4 **prefers** to execute inside a **build
 
 **Inline fallback (no sub-task mechanism):** if the host has no subagent/sub-task feature, perform the exact same steps yourself in the main thread — author the inputs and run the build per §§ "Build subagent — execution"/"returns". The build is identical; the only difference is that the file writes and build output are visible. This is the worst-case path, not a failure — do NOT abort or ask the user to enable subagents.
 
-`SKILL_BASE_DIR` is the directory shown in "Base directory for this skill:" from your activation message — it contains `SKILL.md` and ends in `/skills/uipath-coded-apps`. `INTENT_DIR` is the directory the subagent writes `intent.json` + `metrics/` into; `INTENT_JSON_PATH` is `<INTENT_DIR>/intent.json`.
+`SKILL_BASE_DIR` is the directory shown in "Base directory for this skill:" from your activation message — it contains `SKILL.md` and ends in `/skills/uipath-coded-apps`. The project directory is the pre-warmed `<ROUTING_NAME>` folder **relative to the session working directory** — `intent.json` + `metrics/` are authored INSIDE it and the build runs from INSIDE it with `"projectDir": "."`.
+
+> **Never pass or retype an absolute working-directory path** (e.g. a `/tmp/…` sandbox path) in the subagent
+> prompt, in `intent.json`, or in any command. A reconstructed absolute path that is off by one character
+> (`_` vs `-`) makes the subagent `mkdir` + build a sibling project that neither the user nor any grader can
+> see, while everything reports success. The relative `<ROUTING_NAME>` is the only project reference.
 
 **Step 1 — Show one line, then build.** Print only:
 
@@ -337,10 +349,10 @@ The build subagent prompt:
 
 > You are the dashboard build executor. You NEVER surface raw output or file edits — your final message is the only thing shown.
 > 1. Read `<SKILL_BASE_DIR>/references/dashboards/plugins/build/impl.md` §§ "Phase 3.5" and "Build subagent — execution" and follow them exactly.
-> 2. Author `<INTENT_DIR>/intent.json` (pure metadata — `schemaVersion: 2`, no `fnBody`) and one `<INTENT_DIR>/metrics/<name>.ts` per metric (`export const fetchData: MetricFn`), writing each module from the SDK references and applying the Phase 3.5 cross-check. Implement exactly this approved plan:
->    - Project: dashboardName=`<NAME>`, routingName=`<ROUTING>`, projectDir=`<PROJECT_DIR>`, orgName=`<ORG>`, tenantName=`<TENANT>`, cloudUrl=`<CLOUD_URL>`, apiUrl=`<API_URL>`, timeRange=`<RANGE>`, clientId=`<CLIENT_ID or empty>`
+> 2. All work happens inside the pre-warmed project folder `<ROUTING>`, which already exists in the current working directory. Reference it ONLY by this relative name — NEVER type an absolute `/tmp/…` path (a mistyped character silently builds a sibling project). Author `<ROUTING>/intent.json` (pure metadata — `schemaVersion: 2`, no `fnBody`, `"projectDir": "."`) and one `<ROUTING>/metrics/<name>.ts` per metric (`export const fetchData: MetricFn`), writing each module from the SDK references and applying the Phase 3.5 cross-check. Implement exactly this approved plan:
+>    - Project: dashboardName=`<NAME>`, routingName=`<ROUTING>`, projectDir=`"."`, orgName=`<ORG>`, tenantName=`<TENANT>`, cloudUrl=`<CLOUD_URL>`, apiUrl=`<API_URL>`, timeRange=`<RANGE>`, clientId=`<CLIENT_ID or empty>`
 >    - Widgets (one metric each): [per widget — name, tier, title, displayAs, presentation hints, and the SDK service/method it resolves to]
-> 3. Extract the starter kit into `<PROJECT_DIR>` with the OS `tar`, feeding the archive on stdin (`tar -xz -C "<PROJECT_DIR>" -f - < "<ARCHIVE>"`; see § "The starter-kit archive" for why stdin), then run: `node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" "<INTENT_JSON_PATH>"` (it verifies the kit and prints the exact extract command if missing)
+> 3. Refresh the kit and build FROM INSIDE the project folder: `cd "<ROUTING>" && tar -xz -f - < "<ARCHIVE>" && node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" intent.json` — the `cd` fails loudly if the pre-warmed folder is missing (do NOT `mkdir` a replacement; report the failure instead), stdin-tar per § "The starter-kit archive", and the script resolves `"."` + `intent.json` against the folder you are in.
 > 4. On `METRICS_RETRY`, fix the named `src/metrics/*.ts` files using the SDK references + the reported errors, then re-run — at most 2 attempts, then drop the metric.
 > 5. Return ONLY the milestone block defined in § "Build subagent — returns".
 
@@ -349,7 +361,7 @@ The build subagent prompt:
 **Step 3 — Start the dev server as a background job in the MAIN thread** (the build script deliberately does not start it — a server spawned inside the script outlives the session and leaks). Run with the background option on the shell tool call (same mechanism as pre-warm):
 
 ```bash
-cd "<PROJECT_DIR>" && npm run dev -- --port 25173
+cd "<ROUTING_NAME>" && npm run dev -- --port 25173
 ```
 
 - If a dev-server background job from THIS session is already running for this project (e.g. after an incremental edit): do NOT start another — Vite hot-reloads; just open the URL.
@@ -365,11 +377,11 @@ If the subagent reports `AUTH_MISSING` or a failure it couldn't recover, surface
 
 > Everything in this section and the next is what the **build subagent** does. The main thread never runs these steps; it only spawns the subagent and relays its result.
 
-**Step A — Author the inputs** (these writes stay inside you — they never reach the main thread):
-- Write `<INTENT_DIR>/intent.json` — pure metadata: `schemaVersion: 2`, `dashboardName`, `routingName`, `projectDir`, `orgName`, `tenantName`, `cloudUrl`, `apiUrl`, `timeRange`, `clientId`, and a `metrics` array of metadata entries (NO `fnBody`).
-- Write one `<INTENT_DIR>/metrics/<name>.ts` per metric — `export const fetchData: MetricFn = async (sdk) => { … }` written from the SDK references; import time windows from `@/lib/time` and `fetchAll` from `@/lib/paginate`; read-only methods only. Cross-check each against its documented example response (§ "Phase 3.5"). For a chart record-grain drill-down, also export `fetchDetail` and set `"detail": true`. For a **table row-click** drill-down, set `rowLink: { key: "<rowField>" }` on the metric and export `fetchDetailByKey(sdk, key, getToken)` (the clicked row's `<rowField>` arrives as `key`). For a KPI with a change badge, return `[{ value, previous }]` (two windows).
+**Step A — Author the inputs** (these writes stay inside you — they never reach the main thread). All paths are relative to the session working directory — the project folder is `<ROUTING_NAME>`, never an absolute path:
+- Write `<ROUTING_NAME>/intent.json` — pure metadata: `schemaVersion: 2`, `dashboardName`, `routingName`, `"projectDir": "."`, `orgName`, `tenantName`, `cloudUrl`, `apiUrl`, `timeRange`, `clientId`, and a `metrics` array of metadata entries (NO `fnBody`).
+- Write one `<ROUTING_NAME>/metrics/<name>.ts` per metric — `export const fetchData: MetricFn = async (sdk) => { … }` written from the SDK references; import time windows from `@/lib/time` and `fetchAll` from `@/lib/paginate`; read-only methods only. Cross-check each against its documented example response (§ "Phase 3.5"). For a chart record-grain drill-down, also export `fetchDetail` and set `"detail": true`. For a **table row-click** drill-down, set `rowLink: { key: "<rowField>" }` on the metric and export `fetchDetailByKey(sdk, key, getToken)` (the clicked row's `<rowField>` arrives as `key`). For a KPI with a change badge, return `[{ value, previous }]` (two windows).
 
-**Step B — Extract the kit, then run the build script once.** First extract `<SKILL_BASE_DIR>/assets/fixtures/governance-dashboard-starter-kit.tar.gz` into `<PROJECT_DIR>` with the OS `tar`, feeding the archive on stdin (`tar -xz -C … -f - < "<ARCHIVE>"`; § "The starter-kit archive"). Then run the build script. Most events are silent — translate the rest to milestones for the return block.
+**Step B — Refresh the kit, then run the build script once, from INSIDE the project folder.** `cd "<ROUTING_NAME>"` (fails loudly if the pre-warmed folder is missing — never `mkdir` a replacement), refresh the kit with the OS `tar` on stdin (`tar -xz -f - < "<ARCHIVE>"`; § "The starter-kit archive"), then run `node "<SKILL_BASE_DIR>/assets/scripts/dashboards/build-dashboard.mjs" intent.json`. Most events are silent — translate the rest to milestones for the return block.
 
 **Silent (never report):** `PREWARM_START`, `PREWARM_DONE`, `SCAFFOLD_READY`, `ENV_WRITTEN`, `PARTIAL_BUILD_DETECTED`.
 

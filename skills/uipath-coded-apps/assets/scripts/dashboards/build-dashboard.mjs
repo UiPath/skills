@@ -117,7 +117,7 @@ const REGISTRY = JSON.parse(readFileSync(resolve(__dirname, 'capability-registry
  * @property {string}        [dashboardDescription] - One sentence for the dashboard header
  * @property {'1d'|'7d'|'30d'|'90d'} timeRange
  * @property {IntentMetric[]} metrics
- * @property {string}        projectDir  - Absolute path for generated project
+ * @property {string}        projectDir  - Project dir; "." by contract (build runs from inside the pre-warmed <routingName> folder; must already exist)
  * @property {string}        routingName - Permanent URL slug (e.g. "agent-health-x7k2")
  * @property {string}        orgName
  * @property {string}        tenantName

@@ -1623,3 +1623,13 @@ test('1.5.1: over-cap compliance phrasings are no longer hard-refused', () => {
 test('1.5.1: SDK floor covers the governance methods', () => {
   assert.equal(MIN_SDK_VERSION, '1.5.1')
 })
+
+test('regression: fresh build refuses a nonexistent projectDir (absolute-path mangling guard)', () => {
+  // CI 28589047076: the build subagent was handed a fabricated absolute sandbox
+  // path (coder_eval_… vs the real coder-eval-…), mkdir'd it into existence and
+  // built a phantom sibling project. The build must fail loud when projectDir
+  // does not already exist (the pre-warm created the real one).
+  const src = readFileSync(resolve(__dirname, '../flows/build.mjs'), 'utf8')
+  assert.ok(src.includes('projectDir does not exist'), 'build.mjs must refuse a nonexistent projectDir')
+  assert.match(src, /if \(!existsSync\(P\)\)/, 'guard must run before any write/extract against P')
+})

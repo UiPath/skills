@@ -36,6 +36,19 @@ export async function runDashboardBuild(intent, intentPath) {
   if (!routingName) fail('intent.routingName is required')
 
   const P = resolve(projectDir)
+  // Path-safety guard: the pre-warm already created the project folder (the
+  // relative <routingName>). A projectDir that does not exist means the caller
+  // reconstructed an absolute working-directory path (dash/underscore mangling)
+  // — refuse instead of letting a sibling project be silently created where no
+  // user or grader will ever find it.
+  if (!existsSync(P)) {
+    fail(
+      `projectDir does not exist: ${P}\n` +
+      'Never reconstruct the project\'s absolute path — cd into the pre-warmed <routingName> ' +
+      'folder and run the build there with intent.json "projectDir": "." ' +
+      '(see plugins/build/impl.md § Phase 4, and primitives/incremental-editor.md § Path safety).'
+    )
+  }
   const BUILD_SENTINEL = join(P, '.build-in-progress')
 
   if (existsSync(BUILD_SENTINEL)) {
