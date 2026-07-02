@@ -1,5 +1,16 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "does not have the required permissions"
+  - kind: message
+    value: "You are not authorized!"
+  - kind: http-status
+    value: "403"
+    note: "on Get Asset/Credential — Orchestrator RBAC missing Assets view; 403 on an IS connection or BYO LLM call → those domains' playbooks"
+  - kind: error-code
+    value: "0"
+    note: "shared with the 401 not-authenticated failure — discriminator is HTTP 403 Forbidden / 'not authorized' wording"
 ---
 
 # Get Asset Failed — Permission Denied

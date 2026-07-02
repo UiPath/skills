@@ -1,5 +1,18 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.IO.FileNotFoundException"
+    note: "at Excel workbook open — configured WorkbookPath's parent directory exists but the file does not"
+  - kind: exception
+    value: "System.IO.DirectoryNotFoundException"
+    note: "at Excel workbook open — a segment of the WorkbookPath's parent path does not exist (wrong CWD, unmapped drive, unreachable share)"
+  - kind: message
+    value: "Could not find a part of the path"
+    note: "DirectoryNotFoundException message at Excel workbook open — a WorkbookPath segment is missing (relative path, unmapped drive, deleted parent)"
+  - kind: message
+    value: "The network path was not found"
+    note: "UNC workbook path — share unreachable from the Robot host"
 ---
 
 # Read Range — Workbook File Or Directory Not Found

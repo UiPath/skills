@@ -1,5 +1,8 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Archive file cannot be size zero"
 ---
 
 # Append Text — "Archive file cannot be size zero"

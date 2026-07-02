@@ -1,5 +1,14 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Upload failed after"
+  - kind: message
+    value: "The file limit for this shared drive has been exceeded."
+  - kind: message
+    value: "The user's Drive storage quota has been exceeded."
+  - kind: error-code
+    value: "storageQuotaExceeded"
 ---
 
 # GSuite Upload — Drive storage quota or shared drive file limit exceeded

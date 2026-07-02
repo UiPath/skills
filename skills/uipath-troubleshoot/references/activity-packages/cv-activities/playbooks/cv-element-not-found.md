@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "UiPath.CV.ElementNotFoundException"
+    note: "plain parameterless Element not found after TimeoutMS exhausts — no cell sentence, no Scrolled prefix; timeout expiry surfaces as this, NOT TimeoutException"
+  - kind: message
+    value: "Element not found"
+    note: "canonical literal — three root causes share it (genuine mismatch, scope-refresh failure, OCR degradation); the *_ComputerVision dump screenshot is the discriminator"
+  - kind: message
+    value: "Could not get screenshot"
+    note: "trace-only line before the throw — scope-refresh failure branch (window closed/minimized, locked session)"
+exclusions:
+  - "Scrolled the entire screen, but element was not found → cv-scroll-search-failures.md"
+  - "Cell-targeting sentences (Could not find table, Invalid column number, Table only contains...) → cv-cell-targeting-failures.md"
+  - "Invalid Descriptor / Reason: Target must be set → cv-invalid-descriptor.md"
+  - "Server errors (401/403/429/5xx, word limit, transport) → cv-server-auth-throttling-network.md"
 ---
 
 # CV — Element Not Found (descriptor match failed within timeout)

@@ -1,5 +1,11 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "A foreground process is already running. Only one foreground process can run at a time."
+  - kind: exception
+    value: "System.InvalidOperationException"
+    note: "only with the foreground-process-already-running message — the class alone is too generic to route on"
 ---
 
 # Foreground Process Already Running — InvalidOperationException

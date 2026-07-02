@@ -1,5 +1,16 @@
 ---
 confidence: low
+signatures:
+  - kind: exception
+    value: "RuntimeTimeoutException"
+  - kind: message
+    value: "Activity execution exceeded the set timeout."
+  - kind: exception
+    value: "TimeoutException"
+    note: "classic activities — ambiguous; only follow this playbook if the faulted activity is a UI automation type"
+  - kind: exception
+    value: "NodeNotFoundException"
+    note: "element never appeared within the wait — activity duration close to the configured timeout"
 ---
 
 # Timeout Issue

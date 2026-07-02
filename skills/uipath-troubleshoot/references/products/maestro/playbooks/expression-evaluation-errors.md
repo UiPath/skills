@@ -1,5 +1,22 @@
 ---
 confidence: high
+signatures:
+  - kind: error-code
+    value: "400300"
+    note: "InputVariablesEvaluationError"
+  - kind: error-code
+    value: "400301"
+    note: "ExpressionEvaluationError"
+  - kind: error-code
+    value: "400302"
+    note: "FlowExpressionEvaluationError — gateway flows"
+  - kind: message
+    value: "Error evaluating expression in activity inputs for element"
+  - kind: message
+    value: "not found against object of type ExpressionDictionary"
+  - kind: message
+    value: "Expression could not be parameterized"
+    note: "parallel multi-instance subprocesses"
 ---
 
 # Expression Evaluation — Property Not Found

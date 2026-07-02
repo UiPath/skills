@@ -1,5 +1,12 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Argument values did not match definitions"
+    note: "generic argument-mismatch 400 — no single named field, no broad schema wording"
+exclusions:
+  - "error names a single required field → missing-required-parameter.md"
+  - "error mentions schema conformance broadly → input-schema-mismatch.md"
 ---
 
 # Invalid Status Code 400 — Argument Mismatch

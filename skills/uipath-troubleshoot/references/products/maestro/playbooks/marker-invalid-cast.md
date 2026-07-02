@@ -1,5 +1,17 @@
 ---
 confidence: high
+signatures:
+  - kind: error-code
+    value: "400008"
+    note: "BpmnMarkerInputEvaluationFailure"
+  - kind: message
+    value: "Failed to evaluate the input collection variable for the marker element"
+    note: "with inner InvalidCastException System.Object[] to ExpressionList — JS 'Items' expression bug"
+  - kind: exception
+    value: "InvalidCastException"
+    note: "System.Object[] to ExpressionList on a multi-instance marker"
+exclusions:
+  - "null input collection (400007) → marker-input-null.md"
 ---
 
 # Multi-Instance Marker InvalidCastException (400008)

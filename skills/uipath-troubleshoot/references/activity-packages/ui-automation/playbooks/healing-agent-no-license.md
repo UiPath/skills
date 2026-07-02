@@ -1,5 +1,22 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "No available license / Agentic units to perform healing analysis and recovery"
+    note: "Error-level robot log — the deterministic signal when the customer wants HA working; operation code HealingAgent vs HealingAgent.Test picks the consumable pool"
+  - kind: message
+    value: "Could not find any enabled consumption pools"
+    note: "App Insights / backend logs — heals not allocated to this tenant or pool not enabled"
+  - kind: message
+    value: "CanConsume=False"
+    note: "App Insights / backend logs, with licenseCode HealingAgent or HealingAgent.Test"
+  - kind: state
+    value: "Data.Allowed.AgentService == 0"
+    note: "uip or licenses info with LicensedFeatures: [] — no HA entitlement on the tenant"
+exclusions:
+  - "AutopilotForRobots.HealingEnabled = false → selector-failure-healing-disabled.md"
+  - "HA licensed but produced no data (connectivity, image-only target, classic activities) → no-recovery-data.md"
+  - "Customer does not want HA (informational notice, job continues) → healing-agent-orch-issues.md"
 ---
 
 # Healing Agent — No License / Heals Available

@@ -1,5 +1,8 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "A sheet with the same name already exists."
 ---
 
 # GSuite Add Sheet — A sheet with the same name already exists

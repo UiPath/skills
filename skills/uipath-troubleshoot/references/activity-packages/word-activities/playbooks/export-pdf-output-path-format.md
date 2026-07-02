@@ -1,5 +1,8 @@
 ---
 confidence: medium
+silent: true
+exclusions:
+  - "correct path but missing output folder (generic Command Failed) → export-pdf-missing-output-dir.md"
 ---
 
 # Export to PDF — Malformed Output Path / Missing .pdf Extension

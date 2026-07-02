@@ -1,5 +1,18 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "The operation failed"
+    note: "intermittent at Move Outlook Mail Message — COM session loss (branch 1); followed by 'An object could not be found' → delete-outlook-mail-failures.md"
+  - kind: message
+    value: "The specified folder does not exist"
+    note: "intermittent or unattended-only at Move — COM session loss (branch 1); deterministic on Get → get-outlook-mail-failures.md"
+  - kind: message
+    value: "The folder does not exist"
+    note: "deterministic every-run at Move — destination folder path / Account mismatch (branch 2)"
+  - kind: message
+    value: "Cannot convert type 'String' to 'IResource'"
+    note: "modern Move Email fed a classic string input after a dependency update (branch 3)"
 ---
 
 # Move Outlook Mail Message Failures

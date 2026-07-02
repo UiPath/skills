@@ -1,5 +1,23 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.Net.WebException"
+    note: "on UiPath.Web.Activities.HttpClient — status / DNS / connection / TLS failure; message 'The operation has timed out.' → http-request-timeout.md"
+  - kind: message
+    value: "The remote server returned an error"
+  - kind: message
+    value: "No such host is known"
+    note: "DNS failure on modern .NET (targetFramework Windows, .NET 6+)"
+  - kind: message
+    value: "The remote name could not be resolved"
+    note: "DNS failure on legacy .NET Framework"
+  - kind: message
+    value: "Unable to connect to the remote server"
+  - kind: message
+    value: "Could not establish trust relationship for the SSL/TLS secure channel"
+exclusions:
+  - "WebException 'The operation has timed out.' → http-request-timeout.md"
 ---
 
 # HTTP Client — Request Failed (WebException)

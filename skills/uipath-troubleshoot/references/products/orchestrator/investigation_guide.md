@@ -5,7 +5,7 @@
 Every `uip` data-gathering command below assumes two patterns to keep the agent's context lean AND preserve an audit trail:
 
 1. **Filter at the source with `--output-filter`** — only pull the fields you actually need. Do NOT fetch the full response and truncate the output with `[:3000]` or similar post-hoc slicing — that silently drops information.
-2. **Save AND inspect in one call with `| tee`** — pipe the filtered response through `tee` to `.local/investigations/raw/<command>.json`. The response is visible in the tool result for immediate use AND saved on disk for the hypothesis-tester to re-read later. **Run `mkdir -p .local/investigations/raw` once before the first fetch — `tee` does not create the directory and will otherwise drop the file silently.**
+2. **Save AND inspect in one call with `| tee`** — pipe the filtered response through `tee` to `.local/investigations/raw/<command>.json`. The response is visible in the tool result for immediate use AND saved on disk for later re-reads. **Run `mkdir -p .local/investigations/raw` once before the first fetch — `tee` does not create the directory and will otherwise drop the file silently.**
 
 Reference shape:
 
@@ -38,7 +38,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
    - **(A) User named a folder explicitly in the prompt** (e.g., "the failed job in *Shared*", "in *PurchaseOrderProcessing* folder") → continue with step A below.
    - **(B) User did NOT name a folder** (e.g., "investigate my last failed job", "my automation broke") → **STOP and ask the user. Do NOT run `uip or jobs list` looking for the failed job. Do NOT iterate over folder keys hoping to find it. Do NOT infer the folder from `project.json` — that is a hint to surface in the ask, not a selector to commit on.** Go directly to step B below.
 
-   The above is non-negotiable. The single most expensive triage failure mode is `jobs list` enumeration against arbitrary folders trying to "find" a job whose folder is unspecified — it burns 20–40 turns and an extra subagent dispatch before the orchestrator's sanity gate catches the wrong pick. Asking the user is 2 turns. Always cheaper.
+   The above is non-negotiable. The single most expensive anchoring failure mode is `jobs list` enumeration against arbitrary folders trying to "find" a job whose folder is unspecified — it burns 20–40 turns before the correlation check catches the wrong pick. Asking the user is 2 turns. Always cheaper.
 
    ---
 
@@ -48,7 +48,7 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
      --output-filter "[?DisplayName=='<name>'].{Key:Key,FullyQualifiedName:FullyQualifiedName}" \
      | tee .local/investigations/raw/triage-folders-list.json
    ```
-   If the result is empty (no folder with that name), write `needs_input.json` listing the available folders and asking the user to confirm the correct one. Do NOT guess. Proceed once the key is resolved.
+   If the result is empty (no folder with that name), ask the user via `AskUserQuestion`, listing the available folders as options to confirm the correct one. Do NOT guess. Proceed once the key is resolved.
 
    ---
 
@@ -60,9 +60,9 @@ Before fetching ANY job, queue, or asset data, resolve identity first:
         --output-filter "[].{Key:Key,DisplayName:DisplayName,FullyQualifiedName:FullyQualifiedName}" \
         | tee .local/investigations/raw/triage-folders-list.json
       ```
-   2. Write `needs_input.json` with the candidate folder names as `options`. If `project.json` exists in the working directory and its `name` matches one of the folders, put that folder FIRST in the options list with the label `"<folder> (your current project)"` — surface the hint, do not select for the user. Ask: *"Which folder is the failing job in?"*
-   3. Return to the orchestrator. Do NOT continue with any data fetch.
-   4. On re-spawn with the user's answer, record the chosen folder in `state.json` and proceed to step 2 (Process).
+   2. Ask via `AskUserQuestion` with the candidate folder names as options. If `project.json` exists in the working directory and its `name` matches one of the folders, put that folder FIRST in the options list with the label `"<folder> (your current project)"` — surface the hint, do not select for the user. Ask: *"Which folder is the failing job in?"*
+   3. Do NOT continue with any data fetch until the user answers.
+   4. Record the chosen folder in `.local/investigations/notes.md` and proceed to step 2 (Process).
 
    **Bounded fallback** — applies ONLY when the user explicitly answers step B.3 with "I don't know" / "no preference" / equivalent. Run ONCE without folder filter, pick the most-recent, record the folder, proceed:
    ```

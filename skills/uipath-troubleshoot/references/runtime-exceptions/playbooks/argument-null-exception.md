@@ -1,5 +1,12 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.ArgumentNullException"
+    note: "user-code activity stack, not a UiPath framework namespace — a null argument passed by the user's workflow logic"
+  - kind: message
+    value: "Value cannot be null"
+    note: "typically followed by (Parameter 'paramName') — the parameter name identifies the rejected argument"
 ---
 
 # Argument Null Exception

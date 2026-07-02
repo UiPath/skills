@@ -1,5 +1,14 @@
 ---
 confidence: high
+signatures:
+  - kind: error-code
+    value: "170002"
+    note: "Failure in the Orchestrator Job — incident cascades from child job fault"
+  - kind: message
+    value: "Failure in the Orchestrator Job"
+  - kind: state
+    value: "Running"
+    note: "instance stuck Running with an Open incident — not a plain long-runner"
 ---
 
 # Service Task Child Job Faulted (170002)

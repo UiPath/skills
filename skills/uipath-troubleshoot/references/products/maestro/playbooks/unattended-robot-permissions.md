@@ -1,5 +1,10 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Couldn't find any user with unattended robot permissions in the current folder"
+  - kind: error-code
+    value: "#1671"
 ---
 
 # No Unattended Robot Permissions in Folder (409, #1671)

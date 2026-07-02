@@ -1,5 +1,19 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "File does not exist:"
+    note: "missing attachment path on an O365 send/forward/reply — the same sentence from a GSuite activity is a local attachment/upload/key path → invalid-or-null-input.md (gsuite)"
+  - kind: error-code
+    value: "ErrorInvalidRecipients"
+  - kind: error-code
+    value: "ErrorSendAsDenied"
+  - kind: error-code
+    value: "ErrorMessageSizeExceeded"
+exclusions:
+  - "The caller doesn't have permission to perform the action. (403) → insufficient-graph-scope.md"
+  - "Token / AADSTS / not-authenticated messages → authentication-token-invalid.md"
+  - "Batching request failed with an unknown reason. → transient-service-error.md, request-throttled.md"
 ---
 
 # O365 Mail — Send / forward / reply rejected

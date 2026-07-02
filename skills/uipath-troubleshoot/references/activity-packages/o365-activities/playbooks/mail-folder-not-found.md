@@ -1,5 +1,16 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "The resource could not be found."
+    note: "raised by a Mail activity resolving a MailFolder argument — on Drive activities → drive-item-not-found, on message-by-ID activities → mail-message-not-found"
+  - kind: message
+    value: "could not be found on this account."
+  - kind: message
+    value: "Cannot find item configured with connection"
+    note: "wrapper around 'Folder named ... could not be found' on a Mail activity; the same wrapper on a Files activity is a Drive item → drive-item-not-found.md, on GSuite → drive-file-not-found.md (gsuite)"
+exclusions:
+  - "The resource could not be found. from message-by-ID activities (MarkAsReadUnreadConnections, DeleteEmailConnections, ...) → mail-message-not-found.md"
 ---
 
 # O365 — Mail folder not found

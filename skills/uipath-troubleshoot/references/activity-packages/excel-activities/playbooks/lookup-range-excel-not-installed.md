@@ -1,5 +1,18 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Excel is not installed"
+    note: "at classic Lookup Range (ExcelLookUpRange) init on a host without Excel; scope-level 'Error opening workbook. Make sure Excel is installed.' → excel-application-scope-failures.md / excel-application-card-failures.md"
+  - kind: message
+    value: "Could not load file or assembly 'Microsoft.Office.Interop.Excel'"
+  - kind: message
+    value: "Retrieving the COM class factory for component with CLSID {00024500-0000-0000-C000-000000000046} failed"
+  - kind: error-code
+    value: "80040154"
+    note: "REGDB_E_CLASSNOTREG at Lookup Range / Excel scope init — no registered Excel installation; Excel confirmed installed but COM registration broken → excel-application-scope-failures.md"
+  - kind: message
+    value: "Cannot create an instance of Microsoft.Office.Interop.Excel.ApplicationClass"
 ---
 
 # Lookup Range — Excel Is Not Installed / Activity Fails to Initialize

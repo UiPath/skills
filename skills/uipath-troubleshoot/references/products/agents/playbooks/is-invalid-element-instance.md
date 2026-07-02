@@ -1,5 +1,15 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Invalid Element Instance Id provided."
+    note: "on an agent toolCall span (agent trace) — for the Maestro/IS activity surface see integration-service-404.md"
+  - kind: message
+    value: "Failed to execute IS call to"
+    note: "with HTTP Status: 404 - Not Found — for 401 Unauthorized see is-invalid-credentials.md"
+  - kind: http-status
+    value: "404"
+    note: "IS element instance missing — can fire mid-run after earlier successful IS calls"
 ---
 
 # IS Invalid Element Instance (404)

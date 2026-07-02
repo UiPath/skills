@@ -1,5 +1,21 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "The server is unable to process the current request."
+  - kind: message
+    value: "Request time out."
+  - kind: message
+    value: "There was an error on the email server. Please try modifying your Query or Top values to continue."
+  - kind: message
+    value: "Batching request failed with an unknown reason."
+    note: "any embedded status — but the '(HTTP Status Code: TooManyRequests)' form routes to request-throttled.md; check the status, not the sentence alone"
+  - kind: message
+    value: "Automation Cloud cannot be reached"
+    note: "network fluctuation on the Runtime machine mid-run; the same message at authentication time is claimed by authentication-token-invalid"
+exclusions:
+  - "Too many requests. / The app or user has been throttled. (429) → request-throttled.md"
+  - "Invalid Query. Please use OData format for filter queries. (deterministic parse failure) → mail-invalid-odata-query.md"
 ---
 
 # O365 — Transient service error / timeout (5xx)

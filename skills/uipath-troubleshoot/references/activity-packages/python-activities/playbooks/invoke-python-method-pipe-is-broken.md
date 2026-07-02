@@ -1,5 +1,14 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Pipe is broken"
+    note: "Python host process died — missing pip module in the scope's interpreter, unhandled script exception, hard exit, or stdout flood"
+  - kind: exception
+    value: "System.IO.IOException"
+    note: "generic .NET — surfaces as 'RemoteException wrapping System.IO.IOException: Pipe is broken' on Invoke Python Method / Run Python Script"
+  - kind: message
+    value: "Error invoking Python method"
 ---
 
 # Python Scope — Pipe is Broken / Error Invoking Python Method

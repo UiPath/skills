@@ -1,5 +1,19 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Folders cannot be downloaded with this activity."
+  - kind: message
+    value: "Cannot convert the item into PDF format."
+  - kind: message
+    value: "Local File Path should point to a folder or directly to a .pdf file."
+  - kind: message
+    value: "File should have a name:"
+  - kind: message
+    value: "Cannot locate file. Please ensure that you have proper permissions to access it."
+exclusions:
+  - "The resource could not be found. / A file with the specified ID does not exist. → drive-item-not-found.md"
+  - "Multiple items with the name <name> found ... → download-multiple-items-name-conflict.md"
 ---
 
 # O365 Files — Download conversion or destination error

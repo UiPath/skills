@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: error-code
+    value: "0x80010100"
+    note: "RPC_E_SYS_CALL_FAILED on Invoke VBA / modern Excel COM dispatch — EXCEL.EXE blocked, hung, or stalled on a hidden modal dialog"
+  - kind: error-code
+    value: "0x80010001"
+    note: "RPC_E_CALL_REJECTED on Invoke VBA — Excel COM rejecting the incoming call (busy/blocked EXCEL.EXE)"
+  - kind: error-code
+    value: "0x8001010A"
+    note: "RPC_E_SERVERCALL_RETRYLATER on Invoke VBA — EXCEL.EXE busy servicing another call"
+  - kind: error-code
+    value: "0x800706BE"
+  - kind: error-code
+    value: "80080005"
+    note: "COM class factory retrieval failure ('failed due to the following error: 80080005') during Invoke VBA / Excel Process Scope; CO_E_SERVER_EXEC_FAILURE 0x80080005 on a Use Excel File card → excel-application-card-failures.md"
 ---
 
 # Invoke VBA — COM Interop Failure (0x80010100 and related HRESULTs)

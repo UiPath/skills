@@ -1,5 +1,11 @@
 ---
 confidence: high
+signatures:
+  - kind: http-status
+    value: "429"
+  - kind: message
+    value: "Failed to apply"
+    note: "Autopilot for Maestro surface — backend/LLM Gateway rate limiting"
 ---
 
 # Autopilot 429 Too Many Requests

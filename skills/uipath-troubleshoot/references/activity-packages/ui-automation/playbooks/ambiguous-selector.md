@@ -1,5 +1,17 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "UiPath.UIAutomationNext.Exceptions.NodeAmbiguousException"
+  - kind: message
+    value: "Multiple similar matches found."
+  - kind: message
+    value: "Could not uniquely identify the user-interface element for this action."
+  - kind: message-key
+    value: "Strings.NodeNotFoundMultipleMatches"
+exclusions:
+  - "NodeNotFoundException / SelectorNotFoundException / UiElementNotFoundException (zero matches) → selector-failure-manual.md"
+  - "Absent HA recovery data for this fault is expected (HA bypasses NodeAmbiguousException) — not no-recovery-data.md"
 ---
 
 # Ambiguous Selector — Target Matched Multiple Elements

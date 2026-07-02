@@ -1,5 +1,13 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "ApplicationOpenException"
+  - kind: message
+    value: "Could not open target application."
+exclusions:
+  - "Open = Never (scope told not to launch, app absent) → application-not-found.md"
+  - "Scope reached an element owned by a different app → wrong-target-application.md"
 ---
 
 # Application Could Not Open — Launch Attempted and Failed

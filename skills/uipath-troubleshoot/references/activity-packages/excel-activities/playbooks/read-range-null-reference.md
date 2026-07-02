@@ -1,5 +1,18 @@
 ---
 confidence: low
+signatures:
+  - kind: exception
+    value: "System.NullReferenceException"
+    note: "from inside UiPath.Excel.Activities / DocumentFormat.OpenXml parsing after the workbook opened — sensitivity label, structural corruption, broken named range, unsupported OpenXML feature, or scale (low-confidence multi-branch)"
+  - kind: exception
+    value: "System.Reflection.TargetInvocationException"
+    note: "reflection wrapper from Excel Read Range parsing — unwrap the InnerException and re-categorize"
+  - kind: exception
+    value: "DocumentFormat.OpenXml.OpenXmlPackageException"
+    note: "OpenXML provider failure — workbook structural corruption or unsupported OpenXML feature"
+  - kind: exception
+    value: "UiPath.Excel.ExcelException"
+    note: "provider wrapper for in-activity parsing failures; with sheet-name wording 'does not exist in the workbook' → read-range-sheet-not-found.md"
 ---
 
 # Read Range — NullReferenceException / TargetInvocationException From Inside The Activity

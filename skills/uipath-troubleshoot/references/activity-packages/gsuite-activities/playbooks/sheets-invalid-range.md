@@ -1,5 +1,8 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Unable to parse range:"
 ---
 
 # GSuite Sheets — Invalid range / unable to parse range

@@ -1,5 +1,8 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "This action would increase the number of cells in the workbook above the limit of 10000000 cells"
 ---
 
 # GSuite Sheets — 10 million cell limit exceeded

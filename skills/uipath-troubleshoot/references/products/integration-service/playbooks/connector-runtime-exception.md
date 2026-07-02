@@ -1,5 +1,22 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "UiPath.IntegrationService.Activities.Runtime.Exceptions.RuntimeException"
+  - kind: error-code-prefix
+    value: "DAP-RT-"
+  - kind: error-code
+    value: "DAP-RT-1002"
+    note: "Connection ID is empty — no connection bound to the activity"
+  - kind: error-code
+    value: "DAP-RT-1003"
+    note: "a required input field of the connector operation is empty/null at runtime"
+  - kind: error-code
+    value: "DAP-RT-1052"
+    note: "Trigger activity could not find any matches"
+  - kind: error-code
+    value: "DAP-RT-1101"
+    note: "downstream HTTP status with ProviderMessage/ProviderErrorCode block from the external service"
 ---
 
 # Connector Activity — RuntimeException (DAP-RT)

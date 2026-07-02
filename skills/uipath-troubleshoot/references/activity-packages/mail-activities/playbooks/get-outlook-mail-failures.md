@@ -1,5 +1,15 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "The specified folder does not exist"
+    note: "at Get Outlook Mail Messages — MailFolder/Account not resolved (branch 1); intermittent / unattended-only on Move → move-outlook-mail-failures.md"
+  - kind: message
+    value: "The operation has timed out"
+    note: "at Get Outlook Mail Messages — large folder vs TimeoutMS (branch 2); on Delete → delete-outlook-mail-failures.md"
+  - kind: message
+    value: "The Outlook application is not running"
+    note: "COM session broken / no running Outlook for the Robot's user (branch 3)"
 ---
 
 # Get Outlook Mail Messages Failures

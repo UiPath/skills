@@ -1,5 +1,19 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "Newtonsoft.Json.JsonSerializationException"
+    note: "on DeserializeJson<T> — well-formed JSON whose shape does not fit the target type T"
+  - kind: message
+    value: "Cannot deserialize the current JSON object"
+  - kind: message
+    value: "Cannot deserialize the current JSON array"
+  - kind: message
+    value: "Error converting value"
+  - kind: message
+    value: "Could not cast or convert from System.String"
+exclusions:
+  - "JsonReaderException (input itself is not valid JSON) → deserialize-malformed-input.md"
 ---
 
 # Deserialize JSON — Type Mismatch (JsonSerializationException)

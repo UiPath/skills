@@ -1,5 +1,12 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Activity is valid only inside WordApplicationScope"
+    note: "App-Integration Append Text outside a Word Application Scope / Use Word File"
+  - kind: message
+    value: "must be placed inside a Use Word File"
+    note: "App-Integration Append Text outside its container; modern Read Text variant → read-text-missing-container.md"
 ---
 
 # Append Text — "Activity is valid only inside WordApplicationScope"

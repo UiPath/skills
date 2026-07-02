@@ -1,5 +1,16 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Too many requests."
+  - kind: message
+    value: "The app or user has been throttled."
+  - kind: message
+    value: "(HTTP Status Code: TooManyRequests) Batching request failed with an unknown reason."
+    note: "throttled sub-request inside a batch — other statuses in the same batching sentence route to transient-service-error.md"
+exclusions:
+  - "The server is unable to process the current request. (503) / request timeouts → transient-service-error.md"
+  - "The app or user has exceeded the allowed quota. (storage/quota limit) → upload-file-quota-or-size.md"
 ---
 
 # O365 — Throttling / rate limit (429)

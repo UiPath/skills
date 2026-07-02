@@ -1,5 +1,17 @@
 ---
 confidence: high
+signatures:
+  - kind: http-status
+    value: "401"
+    note: "vendor-surfaced auth error on a BYO LLM call — the IS connection behind the BYO config is dead; for agent IS toolCall 401s see is-invalid-credentials.md"
+  - kind: http-status
+    value: "403"
+    note: "vendor-surfaced auth error on a BYO LLM call — errors reference the vendor directly, not the UiPath platform; for IS connection lockout see is-connection-disabled.md"
+  - kind: message
+    value: "API key not valid"
+  - kind: message
+    value: "invalid credentials"
+    note: "vendor-surfaced wording on an LLM call that previously worked"
 ---
 
 # BYO LLM Call Failing — Underlying IS Connection Dead

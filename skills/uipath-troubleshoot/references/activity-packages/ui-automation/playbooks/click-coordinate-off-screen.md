@@ -1,5 +1,16 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "UiPath.UIAutomationNext.Exceptions.UiAutomationException"
+    note: "message is the outside-of-screen-bounds literal; inner COMException HRESULT 0x800402bd — element was located, coordinate rejected"
+  - kind: message
+    value: "Cannot send input to UI element because it is outside of screen bounds."
+  - kind: error-code
+    value: "0x800402bd"
+exclusions:
+  - "Healing enabled but produced no fix → no-recovery-data.md"
+  - "Not a selector-resolution failure — do not match selector-failure-* playbooks (selector resolved successfully)"
 ---
 
 # Click Coordinate Off-Screen — HardwareEvents

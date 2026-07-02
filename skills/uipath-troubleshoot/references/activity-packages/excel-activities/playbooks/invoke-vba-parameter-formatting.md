@@ -1,5 +1,15 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Wrong number of arguments or invalid property assignment"
+  - kind: message
+    value: "Type mismatch"
+  - kind: message
+    value: "Unable to cast object of type"
+  - kind: exception
+    value: "System.InvalidCastException"
+    note: "marshaling EntryMethodParameters into Application.Run — expression is not an IEnumerable<Object>; QueryInterface E_NOINTERFACE on System.__ComObject → excel-application-scope-failures.md"
 ---
 
 # Invoke VBA — Parameter Type or Shape Mismatch

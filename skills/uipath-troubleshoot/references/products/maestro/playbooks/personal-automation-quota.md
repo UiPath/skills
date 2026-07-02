@@ -1,5 +1,14 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Your user's monthly Personal Automation quota has been exceeded"
+  - kind: error-code
+    value: "170002"
+    note: "quota wording propagated through a Maestro service task — child job response carries the quota message"
+  - kind: http-status
+    value: "502"
+    note: "at job start with the Personal Automation quota message verbatim in errorMessage"
 ---
 
 # Personal Automation Quota Exceeded (502)

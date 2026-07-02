@@ -1,5 +1,8 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Both FileName and Arguments arguments are null"
 ---
 
 # Application Could Not Launch

@@ -1,5 +1,15 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "isAvailable: false"
+    note: "validation probe — vendor key cannot reach the requested model"
+  - kind: message
+    value: "isCompatible: false"
+    note: "validation probe — (model, api-flavor) pair not allowed"
+  - kind: message
+    value: "isModelNameSimilar: false"
+    note: "validation probe — model name not recognized (typo or deprecated variant)"
 ---
 
 # BYO LLM Validation Probe Failing

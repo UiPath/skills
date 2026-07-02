@@ -1,5 +1,29 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "UiPath.CV.ElementNotFoundException"
+    note: "carrying one of the nine cell-specific sentences and Descriptor.Target.CellExtraInfo set — NOT the plain Element not found or the Scrolled message"
+  - kind: message
+    value: "Could not find table. Cell targeting supports only tables as target"
+  - kind: message
+    value: "Table only contains"
+    note: "covers the columns / rows / cell-number out-of-range variants"
+  - kind: message
+    value: "Invalid column number"
+  - kind: message
+    value: "Invalid row number"
+  - kind: message
+    value: "Invalid cell number"
+  - kind: message
+    value: "Table does not have any column with column name containing"
+  - kind: message
+    value: "No row in column"
+    note: "row-search value matched no cell in the search column"
+exclusions:
+  - "Generic Element not found with Version >= V3 and a non-cell target → cv-element-not-found.md"
+  - "Scrolled the entire screen, but element was not found → cv-scroll-search-failures.md"
+  - "Cell message swallowed to Result = false by CvElementExistsWithDescriptor → cv-silent-failures-and-false-results.md"
 ---
 
 # CV — Table cell-targeting failures (table not detected, row/column mismatch, old FeatureVersion)

@@ -1,5 +1,14 @@
 ---
 confidence: medium
+signatures:
+  - kind: error-code
+    value: "2303"
+  - kind: message
+    value: "Invalid Credential Store configuration"
+  - kind: error-code
+    value: "2304"
+  - kind: message
+    value: "Failed to read from Credential Store type"
 ---
 
 # Get Asset Failed — External Credential Store Failure

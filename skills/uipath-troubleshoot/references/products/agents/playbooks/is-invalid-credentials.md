@@ -1,5 +1,14 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Invalid Organization or User secret, or invalid Element token provided."
+  - kind: message
+    value: "Failed to execute IS call to"
+    note: "with HTTP Status: 401 - Unauthorized — for 404 Invalid Element Instance see is-invalid-element-instance.md"
+  - kind: http-status
+    value: "401"
+    note: "first IS call in an agent run fails — connection folder/scope mismatch or rotated credentials; IS-connection OAuth expiry outside agents → connection-auth-expired.md"
 ---
 
 # IS Invalid Credentials (401)

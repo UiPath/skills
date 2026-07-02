@@ -1,5 +1,19 @@
 ---
 confidence: medium
+signatures:
+  - kind: error-code
+    value: "0x80020009"
+  - kind: error-code
+    value: "0x800AC472"
+  - kind: error-code
+    value: "0x80010108"
+    note: "RPC_E_DISCONNECTED on the NEXT activity after the macro — VBA called Workbooks.Close / Application.Quit and tore down Excel (branch 3); scope-vs-scope race without a macro → excel-application-card-failures.md"
+  - kind: message
+    value: "Cannot run the macro"
+    note: "via Execute Macro / Run Spreadsheet Macro — macro name absent from the workbook (branch 1) or macros disabled by Trust Center policy (branch 5); via Invoke VBA → invoke-vba-code-file-path.md / invoke-vba-entry-method-name.md"
+  - kind: error-code
+    value: "0x800A03EC"
+    note: "generic Excel COM error raised during macro execution"
 ---
 
 # Execute Macro / Run Spreadsheet Macro Failures

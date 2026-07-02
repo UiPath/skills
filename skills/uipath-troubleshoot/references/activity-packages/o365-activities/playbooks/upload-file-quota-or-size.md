@@ -1,5 +1,23 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "The user has reached their quota limit."
+  - kind: message
+    value: "Max file size exceeded."
+  - kind: message
+    value: "Maximum stream size exceeded."
+  - kind: message
+    value: "Upload session"
+    note: "covers 'Upload session failed.' / 'Upload session incomplete.' / 'Upload session not found.' — broken chunked upload"
+  - kind: error-code
+    value: "quotaLimitReached"
+  - kind: error-code
+    value: "maxFileSizeExceeded"
+exclusions:
+  - "Too many requests. / The app or user has been throttled. → request-throttled.md"
+  - "The specified item name already exists. → item-name-already-exists.md"
+  - "The resource could not be found. → drive-item-not-found.md"
 ---
 
 # O365 Files — Upload quota, size, or session failure

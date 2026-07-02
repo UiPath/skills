@@ -1,5 +1,15 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.AggregateException"
+    note: "on UiPath.Web.Activities.NetHttpRequest (modern HTTP Request) — async pipeline wrapper; the InnerException is the real cause"
+  - kind: exception
+    value: "System.Net.Http.HttpRequestException"
+    note: "inner exception of NetHttpRequest's AggregateException — transport/HTTP failure after retries (DNS, connection refused, TLS, exhausted status retries)"
+  - kind: exception
+    value: "System.Threading.Tasks.TaskCanceledException"
+    note: "inner exception of NetHttpRequest's AggregateException — request exceeded TimeoutInMiliseconds"
 ---
 
 # HTTP Request (NetHttpRequest) — Aggregate Exception

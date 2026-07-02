@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "The data you want to write has a wrong format, or Excel is busy"
+    note: "on Write Cell — rejected formula syntax (branch 2) or loop-induced Excel COM thrash (branch 3); on Write Range → write-range-failures.md"
+  - kind: message
+    value: "The cell reference"
+    note: "BusinessException 'The cell reference ... is invalid' — malformed A1 notation or unknown named range on Write Cell (branch 6)"
+  - kind: message
+    value: "Application-defined or object-defined error"
+    note: "Excel COM on Write Cell — bad cell reference (branch 6); formula-prefix data on Write Range → write-range-failures.md"
+  - kind: message
+    value: "because it is being used by another process"
+    note: "on Write Cell — external locker (→ read-range-file-locked.md) or Classic Workbook Write Cell racing an open Excel scope on the same path (branch 1)"
+exclusions:
+  - "BusinessException 'The sheet with the name ... does not exist' → read-range-sheet-not-found.md"
 ---
 
 # Write Cell Failures

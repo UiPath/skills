@@ -1,5 +1,12 @@
 ---
 confidence: low
+signatures:
+  - kind: message
+    value: "Error_400"
+    note: "error name with no specifics — errorDetails empty or non-actionable"
+  - kind: http-status
+    value: "400"
+    note: "generic 400 with empty errorDetails only — named 400 errors route to their specific playbooks"
 ---
 
 # Generic Error_400 — Bad Request With No Details

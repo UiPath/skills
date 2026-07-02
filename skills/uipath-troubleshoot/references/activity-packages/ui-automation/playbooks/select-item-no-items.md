@@ -1,5 +1,10 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "UiNodeHasNoItemsException"
+  - kind: message
+    value: "The target container does not have any items."
 ---
 
 # Select Item — Container Has No Items

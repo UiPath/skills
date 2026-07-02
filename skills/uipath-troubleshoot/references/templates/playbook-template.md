@@ -1,5 +1,12 @@
 ---
 confidence: high | medium | low
+signatures:
+  - kind: exception | message | message-key | error-code | error-code-prefix | http-status | state
+    value: "<verbatim greppable string from the real failure>"
+    note: "<optional discriminator — required when another playbook claims the same (kind, value)>"
+exclusions:
+  - "<signature> → <sibling-playbook>.md"   # optional — only when the body explicitly redirects
+# silent: true                              # instead of signatures:, for playbooks with no greppable signature
 ---
 
 # <Title>
