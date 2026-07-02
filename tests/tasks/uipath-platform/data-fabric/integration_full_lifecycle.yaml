@@ -12,8 +12,7 @@ run_limits:
   turn_timeout: 600
 
 initial_prompt: |
-  If a list called `CE_LifecycleTest` already exists, reuse it. Otherwise
-  create it with:
+  I need a fresh `CE_LifecycleTest` list built out. Create it with:
     - Label — short text, up to 200 chars
     - Score — whole number, 0 to 1000
     - Active — yes/no
@@ -206,6 +205,15 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-# No post_run: CE_LifecycleTest is a shared persistent fixture.
-# Field accumulation (Notes_<EPOCH>) is a known issue that will be addressed
-# when entity-delete / removeFields skill support lands.
+pre_run:
+  # Ensure the entity is FRESH each run — greenfield pattern. If the entity
+  # persists across runs, an already-configured schema causes the agent to
+  # skip the modification section (thinking it's already in the target state).
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_LifecycleTest"
+    timeout: 60
+    fail_on_error: false
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_LifecycleTest"
+    timeout: 60
+    fail_on_error: false

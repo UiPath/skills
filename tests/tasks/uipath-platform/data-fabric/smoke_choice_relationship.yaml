@@ -12,6 +12,7 @@ tags: [uipath-platform, data-fabric, smoke, complex-fields, mode:build, lifecycl
 run_limits:
   expected_turns: 20
   max_turns: 60
+  task_timeout: 1800
 
 
 initial_prompt: |

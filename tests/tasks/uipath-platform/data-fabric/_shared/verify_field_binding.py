@@ -119,6 +119,8 @@ def main() -> None:
         sys.exit(1)
 
     fields = schema.get("Fields") or schema.get("fields") or []
+    # Exact match first, then case-insensitive fallback (agents sometimes emit
+    # `Submitter` when the prompt asked for `submitter`).
     match = None
     for f in fields:
         if not isinstance(f, dict): continue
@@ -127,7 +129,23 @@ def main() -> None:
             match = f
             break
     if not match:
-        print(f"FAIL: field '{args.field_name}' not found on '{args.entity_name}'", file=sys.stderr)
+        target_lc = args.field_name.lower()
+        for f in fields:
+            if not isinstance(f, dict): continue
+            name = f.get("Name") or f.get("name") or f.get("FieldName") or f.get("fieldName") or ""
+            if str(name).lower() == target_lc:
+                match = f
+                break
+    if not match:
+        all_field_names = [
+            (f.get("Name") or f.get("FieldName") or f.get("name") or f.get("fieldName"))
+            for f in fields if isinstance(f, dict)
+        ]
+        print(
+            f"FAIL: field '{args.field_name}' not found on '{args.entity_name}' "
+            f"(available fields: {sorted(n for n in all_field_names if n)})",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     fdt = match.get("FieldDataType") or match.get("fieldDataType") or {}
