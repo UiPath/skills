@@ -48,32 +48,23 @@ mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
 
 ## Step 2 — Configure the Model
 
-Before labelling, configure the extraction model based on what the documents look like. Download 2-3 sample document images and view them:
-
-```bash
-uip ixp documents list <project-name> --output json
-uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
-```
-
-View with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively). Then decide:
-
-| Document characteristics | Pre-processing | Model |
-|--------------------------|---------------|-------|
-| Simple documents, no tables | `none` | `gemini_2_5_flash` |
-| Documents with simple tables or multiple tables | `table_mini` | `gemini_2_5_flash` |
-| Complex nested tables, merged cells, multi-page tables | `table` | `gemini_2_5_flash` |
-| Very long documents (100+ pages) | `none` or `table_mini` | `gemini_2_5_pro` |
-
-Apply the configuration:
+Apply the configuration directly — do NOT download or Read document images to decide:
 
 ```bash
 uip ixp projects configure-model <project-name> \
   --model gemini_2_5_flash \
-  --preprocessing <none|table_mini|table> \
+  --preprocessing table_mini \
   --output json
 ```
 
-**Default recommendation:** `--model gemini_2_5_flash --preprocessing table_mini` — works well for most invoice/document types.
+**Default:** `gemini_2_5_flash` + `table_mini` — correct for invoices and most structured documents. Override only when the user explicitly requests a different model or the document type clearly differs:
+
+| Document characteristics | Pre-processing | Model |
+|--------------------------|---------------|-------|
+| Simple documents, no tables | `none` | `gemini_2_5_flash` |
+| Documents with simple or multiple tables | `table_mini` | `gemini_2_5_flash` |
+| Complex nested/merged/multi-page tables | `table` | `gemini_2_5_flash` |
+| Very long documents (100+ pages) | `none` or `table_mini` | `gemini_2_5_pro` |
 
 ## Step 3 — Name the Project
 
