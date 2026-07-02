@@ -2,22 +2,23 @@
 """Conversational custom Tool-guardrail check (conversational Critical Rule 1).
 
 Conversational agents support ONE guardrail type: a `$guardrailType: "custom"`
-deterministic rule scoped to a Tool. Built-in validators (`pii_detection`,
-`harmful_content`, etc.) are autonomous-only and never run on conversational
-agents. The runtime-effective location for a conversational guardrail is each
-tool's `resources/<Tool>/resource.json` -> `guardrail.policies[]`; the
-`agent.json` root `guardrails[]` array is only the Studio Web display mirror.
+deterministic rule scoped to a Tool. Built-in validators (any
+`$guardrailType: "builtInValidator"`) are autonomous-only and never run on a
+conversational agent.
+
+The `agent.json` root `guardrails[]` array is the source of truth for both the
+Studio Web UI and the runtime. The tool's `resources/<Tool>/resource.json` ->
+`guardrail.policies[]` is a derived mirror the product also persists on disk;
+it is reported here when present but is not required (the root is authoritative).
 
 PASS requires ALL of:
   1. No `builtInValidator` guardrail anywhere (agent.json root OR any tool
-     resource.json) — a built-in validator on a conversational agent is a
-     silent runtime no-op.
-  2. At least one tool `resource.json` whose `guardrail.policies[]` holds a
-     custom word-rule guardrail that:
+     resource.json), detected by the `$guardrailType` discriminator.
+  2. A valid custom word-rule guardrail in `agent.json` root `guardrails[]`:
        - `$guardrailType` == "custom"
        - `selector.scopes` contains "Tool" and NOT "Agent"/"Llm"
        - `selector.matchNames` is non-empty
-       - has a rule with `$ruleType` == "word", `operator` == "contains",
+       - a rule with `$ruleType` == "word", `operator` == "contains",
          `value` == "CONFIDENTIAL", and a `fieldSelector.$selectorType`
        - `action.$actionType` == "block"
 """
@@ -31,13 +32,6 @@ ROOT = Path(os.getcwd()) / "DocGuardSol" / "DocGuardBot"
 AGENT = ROOT / "agent.json"
 RESOURCES = ROOT / "resources"
 
-BUILTIN_VALIDATORS = {
-    "pii_detection",
-    "prompt_injection",
-    "harmful_content",
-    "intellectual_property",
-    "user_prompt_attacks",
-}
 FORBIDDEN_SCOPES = {"Agent", "Llm"}
 VALID_SELECTOR_TYPES = {"all", "specific"}
 
@@ -52,7 +46,7 @@ def load(path: Path) -> dict:
 
 
 def is_builtin(g: dict) -> bool:
-    return g.get("$guardrailType") == "builtInValidator" or g.get("validatorType") in BUILTIN_VALIDATORS
+    return g.get("$guardrailType") == "builtInValidator"
 
 
 def is_valid_custom_word(g: dict) -> bool:
@@ -81,53 +75,55 @@ def is_valid_custom_word(g: dict) -> bool:
 
 def main() -> None:
     agent = load(AGENT)
+    root_guardrails = agent.get("guardrails") or []
 
-    root_guardrails = [("agent.json root guardrails[]", g) for g in (agent.get("guardrails") or [])]
-
+    # Tool-resource policy guardrails — used for the built-in scan and the mirror report.
     tool_policy_guardrails = []  # (source_label, guardrail)
     if RESOURCES.is_dir():
         for rj in sorted(RESOURCES.glob("*/resource.json")):
             r = load(rj)
-            policies = ((r.get("guardrail") or {}).get("policies")) or []
-            for g in policies:
+            for g in ((r.get("guardrail") or {}).get("policies")) or []:
                 tool_policy_guardrails.append((f"{rj.relative_to(ROOT)} guardrail.policies[]", g))
 
-    # 1. No built-in validators anywhere.
-    builtins = [(src, g) for src, g in (root_guardrails + tool_policy_guardrails) if is_builtin(g)]
+    # 1. No built-in validators anywhere (detected purely by the discriminator).
+    builtins = [("agent.json root guardrails[]", g) for g in root_guardrails if is_builtin(g)]
+    builtins += [(src, g) for src, g in tool_policy_guardrails if is_builtin(g)]
     if builtins:
         lines = [
             "FAIL: built-in validator guardrail(s) found — built-in validators "
             "are autonomous-only and do NOT run on conversational agents:"
         ]
         for src, g in builtins:
-            vt = g.get("validatorType") or g.get("$guardrailType")
-            lines.append(f"  - in {src}: name={g.get('name', '?')!r} ({vt})")
+            lines.append(f"  - in {src}: name={g.get('name', '?')!r}")
         sys.exit("\n".join(lines))
     print("OK: no built-in validator guardrails (agent.json root + per-tool resource.json)")
 
-    # 2. A valid custom word Tool-guardrail in a tool resource.json guardrail.policies[].
-    valid = [(src, g) for src, g in tool_policy_guardrails if is_valid_custom_word(g)]
-    if not valid:
-        root_valid = [g for _, g in root_guardrails if is_valid_custom_word(g)]
-        if root_valid and not any(is_valid_custom_word(g) for _, g in tool_policy_guardrails):
-            sys.exit(
-                "FAIL: the custom word guardrail is only in agent.json root "
-                "guardrails[], not in any tool's resources/<Tool>/resource.json "
-                "-> guardrail.policies[]. For conversational agents the per-tool "
-                "policies[] location is runtime-effective; the agent.json root "
-                "array is only the Studio Web display mirror, so this guardrail "
-                "would not run."
-            )
+    # 2. A valid custom word Tool-guardrail in agent.json root (authoritative source of truth).
+    root_valid = [g for g in root_guardrails if is_valid_custom_word(g)]
+    if not root_valid:
         sys.exit(
-            "FAIL: no valid custom word-rule Tool guardrail found in any "
-            "resources/<Tool>/resource.json -> guardrail.policies[]. Required: "
-            '$guardrailType=="custom", selector.scopes contains "Tool" (no '
-            'Agent/Llm) with matchNames, a word rule (operator "contains", '
-            'value "CONFIDENTIAL"), and action.$actionType=="block".'
+            "FAIL: no valid custom word-rule Tool guardrail in agent.json root "
+            'guardrails[]. Required: $guardrailType=="custom", selector.scopes '
+            'contains "Tool" (no Agent/Llm) with matchNames, a word rule '
+            '(operator "contains", value "CONFIDENTIAL"), and '
+            'action.$actionType=="block". The root array is authoritative for the '
+            "Studio Web UI and both runtimes."
         )
-    src, g = valid[0]
-    print(f"OK: custom word Tool-guardrail in {src}")
-    print(f"    scopes={g['selector']['scopes']} matchNames={g['selector'].get('matchNames')} action=block")
+    g = root_valid[0]
+    print(
+        f"OK: custom word Tool-guardrail in agent.json root guardrails[] "
+        f"(scopes={g['selector']['scopes']}, matchNames={g['selector'].get('matchNames')}, action=block)"
+    )
+
+    # Report the tool-resource mirror (the product persists it; not required for a PASS).
+    mirrored = [src for src, gg in tool_policy_guardrails if is_valid_custom_word(gg)]
+    if mirrored:
+        print(f"OK: also mirrored into {mirrored[0]}")
+    else:
+        print(
+            "NOTE: not mirrored into a tool resource.json guardrail.policies[] "
+            "(the product persists that mirror; the root remains authoritative)."
+        )
 
     print("\nAll conversational custom-guardrail checks passed (conversational Critical Rule 1).")
 

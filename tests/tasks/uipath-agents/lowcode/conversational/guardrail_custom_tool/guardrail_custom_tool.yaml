@@ -3,12 +3,11 @@ description: >
   Positive integration test. Builds a conversational agent with a tool and
   adds the ONE guardrail type conversational agents support: a `$guardrailType:
   "custom"` deterministic word rule scoped to that Tool. Verifies the skill
-  teaches that built-in validators (PII, harmful content, etc.) are
-  autonomous-only, and that a conversational guardrail is authored in the
-  tool's `resources/<Tool>/resource.json` -> `guardrail.policies[]` (the
-  runtime-effective location, per conversational Critical Rule 1) with no
-  built-in validator anywhere. The prompt states the goal (block a word on a
-  tool) and lets the skill choose the custom-guardrail shape and location.
+  teaches that built-in validators are autonomous-only, and that the custom
+  guardrail is authored at the `agent.json` root `guardrails[]` (authoritative
+  for UI + runtime, per conversational Critical Rule 1) with no built-in
+  validator anywhere. The prompt states the goal (block a word on a tool) and
+  lets the skill choose the custom-guardrail shape and placement.
 tags: [uipath-agents, integration, mode:build, lifecycle:generate, low-code, feature:conversational, guardrail]
 max_iterations: 1
 
@@ -90,7 +89,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Custom word Tool-guardrail in per-tool resource.json guardrail.policies[], no built-in validator (conversational Critical Rule 1)"
+    description: "Custom word Tool-guardrail in agent.json root guardrails[] (authoritative), no built-in validator (conversational Critical Rule 1)"
     command: "python3 $TASK_DIR/check_conversational_custom_guardrail.py"
     timeout: 30
     expected_exit_code: 0
