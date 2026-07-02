@@ -142,7 +142,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Metrics are well-formed, ModelVersion advanced, target field F1 did not regress"
+    description: "Improve-workflow artifacts are genuine: metrics well-formed & coherent, ModelVersion not backwards, agent targeted a real field (F1 direction not graded)"
     command: "python3 $TASK_DIR/check_full_lifecycle.py"
     timeout: 30
     expected_exit_code: 0
