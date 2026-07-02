@@ -11,7 +11,7 @@ uip df entities create "MyEntity" \
     "description": "Optional description",
     "fields": [
       {"fieldName": "Title",       "type": "STRING",   "isRequired": true},
-      {"fieldName": "Score",       "type": "INTEGER"},
+      {"fieldName": "Score",       "type": "DECIMAL",  "decimalPrecision": 0},
       {"fieldName": "Active",      "type": "BOOLEAN"},
       {"fieldName": "CreatedDate", "type": "DATE"}
     ]
@@ -26,59 +26,51 @@ uip df entities create "MyEntity" \
 
 ## Supported Field Types
 
-Pass the exact `EntityFieldDataType` string in the `"type"` field — the CLI is case-sensitive.
+Pass the exact `EntityFieldDataType` UPPERCASE string — CLI is case-sensitive. **Only use types from this table.** The SDK enum is broader (`INTEGER`, `BIG_INTEGER`, `FLOAT`, `DOUBLE`, `UUID`, `DATETIME`) but those render broken in the UiPath Data Fabric UI — see [UI-broken types](#ui-broken-types-do-not-use) below.
 
-| CLI type (`EntityFieldDataType`) | SQL backing type | Notes |
-|----------------------------------|-----------------|-------|
-| `UUID` | UNIQUEIDENTIFIER | GUID fields |
-| `STRING` | NVARCHAR | Short text |
-| `MULTILINE_TEXT` | NVARCHAR(MAX) | Long text |
-| `INTEGER` | INT | 32-bit integer |
-| `BIG_INTEGER` | BIGINT | 64-bit integer |
-| `DECIMAL` | DECIMAL | Fixed-precision decimal |
-| `FLOAT` | REAL | Single-precision float |
-| `DOUBLE` | FLOAT | Double-precision float |
+| CLI type | SQL | Notes |
+|---|---|---|
+| `STRING` | NVARCHAR | Short text (≤4000 chars via `lengthLimit`) |
+| `MULTILINE_TEXT` | NVARCHAR(MAX) | Long text (≤10000 chars via `lengthLimit`) |
+| `DECIMAL` | DECIMAL | All numbers — `decimalPrecision: 0` for whole; `2` for money |
 | `BOOLEAN` | BIT | true/false |
-| `DATE` | DATE | Date only (no time) |
-| `DATETIME` | DATETIME2 | Date + time (no timezone) |
-| `DATETIME_WITH_TZ` | DATETIMEOFFSET | Date + time + timezone |
-| `FILE` | UNIQUEIDENTIFIER | Attachment — manage with `files upload/download/delete` |
-| `CHOICE_SET_SINGLE` | INT | Single-select from a choice set — also requires `choiceSetId` |
-| `CHOICE_SET_MULTIPLE` | NVARCHAR | Multi-select from a choice set — also requires `choiceSetId` |
+| `DATE` | DATE | Date only |
+| `DATETIME_WITH_TZ` | DATETIMEOFFSET | Date + time + timezone (only UI-compatible timestamp) |
+| `FILE` | UNIQUEIDENTIFIER | Attachment — no reference fields needed (server auto-wires) — see [FILE Fields](#file-fields) |
+| `CHOICE_SET_SINGLE` | INT | Needs `choiceSetId`. Only valid `INT`-backed field. |
+| `CHOICE_SET_MULTIPLE` | NVARCHAR | Needs `choiceSetId` |
 | `AUTO_NUMBER` | DECIMAL | Auto-incrementing number |
-| `RELATIONSHIP` | UNIQUEIDENTIFIER | FK link to another entity — requires `referenceEntityId` (target entity UUID) + `referenceFieldId` (target field UUID) |
+| `RELATIONSHIP` | UNIQUEIDENTIFIER | Needs `referenceEntityId` + `referenceFieldId` — see [Relationship Fields](#relationship-fields) |
+
+### UI-broken types — do NOT use
+
+CLI accepts these and `entities create` returns `Success`, but the UiPath Data Fabric UI can't render / edit / filter the column. Substitute in the Rule 14 preview and get approval — even when the user names one by keyword.
+
+| Never emit | Substitute |
+|---|---|
+| `INTEGER` / `BIG_INTEGER` | `DECIMAL` with `decimalPrecision: 0` |
+| `FLOAT` / `DOUBLE` | `DECIMAL` with required `decimalPrecision` |
+| `UUID` | `RELATIONSHIP` (if FK) or `STRING` (opaque id) — ask |
+| `DATETIME` (no TZ) | `DATETIME_WITH_TZ` |
 
 ### Normalizing user-facing type names
 
-User prompts use natural-language casing and synonyms; the CLI accepts only the exact UPPERCASE enum value above. Two patterns:
+CLI needs UPPERCASE enum. Users write mixed-case + synonyms. Two paths:
 
-**1. Case-fold — trivial 1:1.** When the user's word matches an enum value modulo case, just uppercase it before invoking. Do this silently:
+- **Silent case-fold** when the word matches a UI-compatible type: `boolean`→`BOOLEAN`, `decimal`→`DECIMAL`, `file`→`FILE`, `relationship`→`RELATIONSHIP`, etc.
+- **Substitute-with-confirm** when the word maps to a UI-broken type (see table above) OR to multiple UI-compatible types. Multi-candidate mappings:
 
-| User says | Send to CLI |
+| User phrasing | Ask |
 |---|---|
-| `boolean` / `Boolean` | `BOOLEAN` |
-| `string` / `String` | `STRING` |
-| `integer` / `Integer` | `INTEGER` |
-| `decimal` / `Decimal` | `DECIMAL` |
-| `date` / `Date` | `DATE` |
-| `datetime` / `DateTime` | `DATETIME` |
-| `uuid` / `Uuid` / `Guid` | `UUID` |
-| `file` / `File` | `FILE` |
-| `relationship` / `Relationship` | `RELATIONSHIP` |
-
-**2. Disambiguate — synonyms that map to multiple enum values.** When the user's phrasing covers more than one type, **ask before picking**. Never default silently:
-
-| User phrasing | Candidates | What to ask |
-|---|---|---|
-| `text`, `short text`, `long text`, `paragraph` | `STRING` or `MULTILINE_TEXT` | "Expected length? `STRING` is capped at 4000 chars; `MULTILINE_TEXT` allows up to 10000." |
-| `number`, `numeric` | `INTEGER`, `BIG_INTEGER`, `DECIMAL`, `FLOAT`, `DOUBLE` | "Whole or fractional? If fractional, how many decimal places? If whole, are values ever > 2³¹?" |
-| `money`, `price`, `amount` | `DECIMAL` (almost always) | Default to `DECIMAL` with `decimalPrecision: 2` and confirm. |
-| `timestamp`, `datetime` | `DATETIME` or `DATETIME_WITH_TZ` | "Does timezone matter? `DATETIME` is wall-clock; `DATETIME_WITH_TZ` carries offset." |
-| `choice`, `enum`, `picklist`, `dropdown` | `CHOICE_SET_SINGLE` or `CHOICE_SET_MULTIPLE` | "One value per record, or multiple?" |
-| `tags`, `labels`, `multi-pick` | `CHOICE_SET_MULTIPLE` | Default; confirm. |
-| `link to <entity>`, `belongs to`, `foreign key` | `RELATIONSHIP` | Use pick-or-create flow for the target entity (see [Relationship Fields](#relationship-fields)). |
-| `attachment`, `upload`, `document` | `FILE` | Default; confirm. |
-| `auto number`, `counter`, `serial` | `AUTO_NUMBER` | Default; confirm. |
+| `text` / `long text` / `paragraph` | `STRING` vs `MULTILINE_TEXT` — expected length? |
+| `number` / `int` / `integer` / `float` / `double` | `DECIMAL` — how many decimal places? (`0` for whole, `2` for money) |
+| `money` / `price` / `amount` | Default `DECIMAL` with `decimalPrecision: 2`; confirm |
+| `timestamp` / `datetime` | Default `DATETIME_WITH_TZ`; confirm |
+| `choice` / `enum` / `picklist` | `CHOICE_SET_SINGLE` vs `CHOICE_SET_MULTIPLE` — one or many? |
+| `tags` / `labels` | Default `CHOICE_SET_MULTIPLE`; confirm |
+| `link to X` / `belongs to` / `foreign key` | `RELATIONSHIP` — [pick-or-create](#relationship-fields) the target |
+| `attachment` / `upload` / `document` | `FILE`; confirm |
+| `uuid` / `guid` | `RELATIONSHIP` if FK else `STRING` — ask |
 
 If the CLI rejects a `--body` with *"Cannot read properties of undefined (reading 'sqlTypeName')"*, the `type` value didn't match a known enum — almost always a casing issue. Re-emit with the exact UPPERCASE value from the table above.
 
@@ -128,11 +120,11 @@ Both entity names and field names must:
 
 Accepted on `entities create` and on `addFields` / `updateFields` in `entities update`. Each constraint applies only to specific types — passing one to an unsupported type errors with *"Field '<name>' of type <TYPE> does not accept <option>"*. `minValue` must be strictly less than `maxValue`.
 
-| Constraint | Allowed types | Range |
-|------------|---------------|-------|
+| Constraint | Allowed type | Range |
+|------------|--------------|-------|
 | `lengthLimit` | `STRING` (1–4000), `MULTILINE_TEXT` (1–10000) | — |
-| `maxValue` / `minValue` | `INTEGER`, `BIG_INTEGER`, `DECIMAL`, `FLOAT`, `DOUBLE` | ±9,007,199,254,740,991 |
-| `decimalPrecision` | `DECIMAL`, `FLOAT`, `DOUBLE` | 0–10 |
+| `maxValue` / `minValue` | `DECIMAL` | ±9,007,199,254,740,991 |
+| `decimalPrecision` | `DECIMAL` — `0` whole, `2` money | 0–10 |
 
 ```bash
 uip df entities create "Orders" \
@@ -140,7 +132,7 @@ uip df entities create "Orders" \
     "fields": [
       {"fieldName": "ProductName", "type": "STRING",  "lengthLimit": 500, "isRequired": true},
       {"fieldName": "Price",       "type": "DECIMAL", "decimalPrecision": 4, "maxValue": 999999, "minValue": 0},
-      {"fieldName": "Quantity",    "type": "INTEGER", "maxValue": 10000, "minValue": 1}
+      {"fieldName": "Quantity",    "type": "DECIMAL", "decimalPrecision": 0, "maxValue": 10000, "minValue": 1}
     ]
   }' \
   --output json
@@ -176,7 +168,7 @@ uip df entities update <entity-id> \
 - `referenceFolderKey` — applies to **`RELATIONSHIP` and `FILE` fields only**. Required whenever the target is folder-scoped, including when the target lives in the **same folder** as the parent. Without it, a folder-scoped parent referencing a folder-scoped target fails with *"Cannot create relationship field from folder-level entity ('<parent>') to tenant-level entity ('')"* — a misleading error caused by the missing per-field scope hint. Omit only when (a) both parent and target are tenant-level, or (b) the target is a tenant-level system entity (e.g. `EntityAttachment` for FILE, `User` for `CreatedBy`/`UpdatedBy`). **`CHOICE_SET_*` fields do NOT need `referenceFolderKey`** — the backend resolves the choice-set's folder server-side from `choiceSetId` alone. **Folder-scoped parent fields cannot reference tenant-level user-authored targets** — and vice versa. See [Cross-folder references](#cross-folder-references) for the full matrix.
 - The field lives on the *child* (many-side) and points at the *parent* (one-side) — no reverse field on the parent.
 - Record value is **always the target record's UUID `Id`**, regardless of which field's UUID was passed as `referenceFieldId` (it controls the join, not the stored value). If the user supplies an email / label, resolve it first via `records query` on the target entity.
-- Same shape applies to `FILE` fields: `referenceEntityId` + `referenceFieldId` are both required (and `referenceFolderKey` for cross-folder targets).
+- `FILE` fields do NOT take reference fields — server auto-wires. See [FILE Fields](#file-fields).
 - Cue phrases that signal a `RELATIONSHIP` (never substitute `STRING`/`UUID` — **data-fabric.md Rule 12**): *"each order has a Customer"*, *"each report has a Supplier"*, *"each issue belongs to a Project"*.
 - If the user didn't name a target entity OR the named one doesn't exist, follow the **pick-or-create flow in data-fabric.md Rule 13** — list candidates via `entities list --native-only`, ask, create only with approval.
 
@@ -244,32 +236,16 @@ Same shape applies to `addFields` inside `entities update`. For `CHOICE_SET_*` f
 > **Never include a FILE-typed key in `records insert` or `records update` payloads (data-fabric.md Rule 6).** Expected behavior: the platform silently strips FILE values — UUID, file path, filename, base64, `null` — and returns `Result: Success` with no error. Do not read Success as "the file changed." `records update receipt:null` does **not** clear. `records update receipt:"<uuid>"` does **not** swap. Required path: `files upload` to attach or replace, `files delete` to clear, `files download` to retrieve. Sequence to seed a file on a new row: `records insert` without the FILE column → `files upload <entity-id> <record-id> <field-name> --file <path>` against the returned `Id`. CSV `records import` drops FILE columns too (Rule 20).
 
 ```json
-{ "fieldName": "EvidenceFile", "type": "FILE", "referenceEntityId": "<EntityAttachment-uuid>", "referenceFieldId": "<EntityAttachment-Name-field-uuid>" }
+{ "fieldName": "EvidenceFile", "type": "FILE" }
 ```
 
-- Point `referenceEntityId` at the tenant's internal `EntityAttachment` entity and `referenceFieldId` at its `Name` field (NVARCHAR). Any other binding produces a field that renders broken in the UiPath Data Fabric UI and rejects subsequent `files upload` calls. The CLI requires both as **UUIDs** — `referenceEntityName` / `referenceFieldName` are rejected with *"Field '…' of type FILE requires both referenceEntityId and referenceFieldId (UUIDs of the target entity and field)"*.
-- **The two UUIDs are tenant-specific but shared across every FILE field in that tenant.** Capture them once and reuse on every subsequent FILE field create.
-- **`EntityAttachment` is a system entity hidden from CLI access** — it doesn't appear in `entities list` (even with `--include-folders`), and `entities get <EntityAttachment-id>` returns *"Entity '…' not found"*. The only CLI-reachable source is **any existing entity that already has a working FILE field** — read the UUIDs off its `Fields[].ReferenceEntity.Id` + `Fields[].ReferenceField.Id`:
-  ```bash
-  uip df entities list --output json \
-    | python3 -c "
-  import json, sys
-  for e in json.load(sys.stdin)['Data']:
-      for f in (e.get('Fields') or []):
-          if (f.get('FieldDataType') or {}).get('Name') == 'FILE' \
-             and (f.get('ReferenceEntity') or {}).get('Name') == 'EntityAttachment':
-              print('referenceEntityId:', f['ReferenceEntity']['Id'])
-              print('referenceFieldId :', f['ReferenceField']['Id'])
-              sys.exit(0)
-  sys.exit(1)
-  "
-  ```
-- **If the scan finds nothing** (no entity in this tenant has a FILE field yet), the CLI cannot bootstrap the UUIDs on its own. Stop and ask the user — they can either supply the `referenceEntityId` + `referenceFieldId` pair directly (e.g. captured from a sibling tenant or from internal docs), or hand off this one-time bootstrap to another channel that has the values. Do NOT guess UUIDs and do NOT fall back to a different field type.
-- `files upload` is functional once the binding is correct. Sequence: `entities create` with the FILE field bound → `records insert` (no FILE column) → `files upload <entity-id> <record-id> <field-name> --file <path>` → `records get` echoes the field populated with the server-assigned attachment UUID. Verified end-to-end on `@uipath/data-fabric-tool@1.197.0-alpha.20260617`. Full surface: [`file-attachments.md`](file-attachments.md).
+- **No reference fields required or accepted.** Server auto-wires to the tenant `EntityAttachment` system entity; any caller-supplied `referenceEntityId` / `referenceFieldId` is stripped by the SDK. Never treat these as user-domain choices — no `AskUserQuestion` about which field to bind. The Rule 14 display-field dropdown fires only for `RELATIONSHIP`.
+- **CLI floor:** SDK builds before `@uipath/uipath-typescript` commit `80f9be7a` (branch `fix/df-file-field-refs-optional`, not yet on `main`) throw `Failure / RetryWillNotFix — "Field '<name>' of type FILE requires both referenceEntityId and referenceFieldId"`. On such a build, upgrade the CLI; if that's impossible, pass both UUIDs discovered off any existing FILE field's `Fields[].ReferenceEntity.Id` + `Fields[].ReferenceField.Id`.
+- Write sequence: `entities create` (FILE field, no refs) → `records insert` (no FILE column, Rule 6) → `files upload <entity-id> <record-id> <field-name> --file <path>`. Full surface: [`file-attachments.md`](file-attachments.md).
 
 ### Combined Example — mixing scalar, choice-set, and relationship fields
 
-Complex types accept the same standard field options as scalars — `isRequired`, `isUnique`, `displayName`, `description`, `defaultValue`, `isRbacEnabled`, `isEncrypted`, and the type-specific constraints (`lengthLimit`, `maxValue`/`minValue`, `decimalPrecision`). The only extras unique to complex types are `choiceSetId` (for `CHOICE_SET_*`) and `referenceEntityId` + `referenceFieldId` (for `RELATIONSHIP` and `FILE`).
+Complex types accept the same standard field options as scalars — `isRequired`, `isUnique`, `displayName`, `description`, `defaultValue`, `isRbacEnabled`, `isEncrypted`, plus type-specific constraints (`lengthLimit`, `maxValue`/`minValue`, `decimalPrecision`). Extras unique to complex types: `choiceSetId` for `CHOICE_SET_*`, `referenceEntityId` + `referenceFieldId` for `RELATIONSHIP`. `FILE` needs no extras (see [FILE Fields](#file-fields)).
 
 ```bash
 # Prereqs: target entity exists; choice set exists (look up ID)
@@ -344,7 +320,7 @@ Use `entities update` to add fields, modify existing field metadata, or update e
 ```bash
 # Add new fields
 uip df entities update <entity-id> \
-  --body '{"addFields":[{"fieldName":"Priority","type":"INTEGER"},{"fieldName":"Tags","type":"STRING"}]}' \
+  --body '{"addFields":[{"fieldName":"Priority","type":"DECIMAL","decimalPrecision":0},{"fieldName":"Tags","type":"STRING"}]}' \
   --output json
 
 # Update entity display name and description (metadata only)
@@ -430,7 +406,7 @@ uip df entities get <entity-id> --output json
 | Field | Description |
 |------------------------|-------------|
 | `Fields[].Name` | Exact field name for use in record bodies and CSV headers |
-| `Fields[].FieldDataType.Name` | Data type (e.g. `STRING`, `INTEGER`, `CHOICE_SET_SINGLE`, `RELATIONSHIP`, `FILE`) |
+| `Fields[].FieldDataType.Name` | Data type. Legacy fields may return UI-broken types (`INTEGER` / `FLOAT` / `UUID` / `DATETIME` / …) — see [Supported Field Types](#supported-field-types). |
 | `Fields[].FieldDataType.{LengthLimit,MaxValue,MinValue,DecimalPrecision}` | Type-specific constraint values |
 | `Fields[].Id` | Field UUID — required for `updateFields` in `entities update` |
 | `Fields[].IsRequired` | Whether the field must have a value on insert |
@@ -449,7 +425,7 @@ uip df entities list --native-only --output json
 
 # 2. Get field names for use in record bodies
 uip df entities get abc-123 --output json
-# e.g. Fields: [{"Name": "FullName", "FieldDataType": {"Name": "STRING"}}, {"Name": "Score", "FieldDataType": {"Name": "INTEGER"}}]
+# e.g. Fields: [{"Name": "FullName", "FieldDataType": {"Name": "STRING"}}, {"Name": "Score", "FieldDataType": {"Name": "DECIMAL"}}]
 
 # 3. Insert using exact field names
 uip df records insert abc-123 --body '{"FullName":"Alice","Score":95}' --output json

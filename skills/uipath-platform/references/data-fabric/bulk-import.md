@@ -40,13 +40,13 @@ Bob,82,true,2024-02-20
 Charlie,74,false,2024-03-05
 ```
 
-For an entity with fields: `Name` (STRING), `Score` (INTEGER), `Active` (BOOLEAN), `CreatedDate` (DATE).
+For an entity with fields: `Name` (STRING), `Score` (DECIMAL, `decimalPrecision: 0`), `Active` (BOOLEAN), `CreatedDate` (DATE).
 
 ### Complex Field Types Not Supported
 
 **Complex field types** in Data Fabric are the ones that need extra config or lookup tokens beyond the value itself: `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER`. Everything else is a Basic type.
 
-`records import` is **not supported** for those complex types — it only processes Basic types (`STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `MULTILINE_TEXT`, `UUID`). The complex-type columns are accepted in the CSV header but their row values are ignored — no error, nothing in `ErrorFileLink`, just `null` on every imported row (or row failure if the field is `isRequired` without a `defaultValue`).
+`records import` is **not supported** for those complex types — it only processes Basic types (use the UI-compatible set from [`entity-schema.md`](entity-schema.md#supported-field-types)). Complex-type columns are accepted in the CSV header but their row values are ignored — no error, nothing in `ErrorFileLink`, just `null` on every imported row (or row failure if the field is `isRequired` without a `defaultValue`).
 
 For entities with any complex field, use `records insert --file <json>` instead — the insert endpoint handles every type except `FILE` (which is exclusively written through `files upload`, data-fabric.md Rule 6). See [`records-query.md`](records-query.md#writing-choice-set-and-relationship-values) for the value form.
 

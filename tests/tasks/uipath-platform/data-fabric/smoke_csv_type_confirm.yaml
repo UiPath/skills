@@ -27,12 +27,14 @@ initial_prompt: |
   columns map to fields.
 
   Important — the column types are NOT spelled out for you. Several columns
-  are AMBIGUOUS:
-    - placed_at: ISO-8601 string → could be STRING or DATETIME
-    - total_amount: decimal → DECIMAL (which decimalPrecision?), FLOAT, or DOUBLE
-    - is_paid: 0/1 → could be INTEGER or BOOLEAN
-    - customer_uuid: UUID-shaped string → could be STRING, UUID, or
-      RELATIONSHIP (target entity Customer)
+  are AMBIGUOUS. Candidates below are drawn from the UI-compatible set only
+  (Rule 12b — never propose INTEGER / FLOAT / DOUBLE / UUID / DATETIME
+  no-TZ; they render broken in the UiPath Data Fabric UI):
+    - placed_at: ISO-8601 with offset → could be STRING or DATETIME_WITH_TZ
+    - total_amount: decimal → DECIMAL (which decimalPrecision — 2? 4?)
+    - is_paid: 0/1 → could be BOOLEAN or DECIMAL (decimalPrecision: 0)
+    - customer_uuid: UUID-shaped string → could be STRING or RELATIONSHIP
+      (target entity Customer)
 
   Before invoking `uip df entities create`, write a schema proposal to
   `proposal.md` covering EVERY column. For each column include:
@@ -74,13 +76,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Proposal surfaces ambiguous types per Rule 14 (DATETIME / BOOLEAN / DECIMAL / RELATIONSHIP)"
+    description: "Proposal surfaces ambiguous types per Rule 14 using UI-compatible candidates only (Rule 12b — DATETIME_WITH_TZ / BOOLEAN / DECIMAL / RELATIONSHIP; must NOT propose INTEGER / FLOAT / DOUBLE)"
     path: "proposal.md"
     includes:
-      - "DATETIME"
+      - "DATETIME_WITH_TZ"
       - "BOOLEAN"
       - "DECIMAL"
       - "RELATIONSHIP"
+    excludes:
+      - "INTEGER"
+      - "FLOAT"
+      - "DOUBLE"
     weight: 3.0
     pass_threshold: 1.0
 

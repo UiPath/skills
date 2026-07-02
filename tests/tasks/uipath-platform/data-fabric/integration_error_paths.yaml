@@ -7,7 +7,15 @@ description: >
   file). Every command is expected to fail; agent must capture the raw
   error and NOT retry. Grading via command-shape + llm_judge on verbatim
   error surfacing.
-tags: [uipath-platform, data-fabric, integration, error-paths, mode:diagnose, lifecycle:setup]
+tags:
+  [
+    uipath-platform,
+    data-fabric,
+    integration,
+    error-paths,
+    mode:diagnose,
+    lifecycle:setup,
+  ]
 run_limits:
   expected_turns: 25
   max_turns: 50
