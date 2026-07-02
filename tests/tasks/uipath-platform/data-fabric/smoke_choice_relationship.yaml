@@ -176,21 +176,8 @@ success_criteria:
   - type: run_command
     description: "End state (deterministic): CE_SmokePaymentStatus has paid + unpaid + refunded"
     command: >-
-      python3 -c "
-      import json, subprocess, sys
-      def uip(*a):
-        r = subprocess.run(['uip', *a, '--output', 'json'], capture_output=True, text=True, timeout=60)
-        return json.loads(r.stdout) if r.returncode==0 and r.stdout.strip() else {}
-      cs_list = (uip('df','choice-sets','list').get('Data') or [])
-      cs = next((c for c in cs_list if c.get('Name')=='CE_SmokePaymentStatus'), None)
-      if not cs: print('FAIL: CE_SmokePaymentStatus not found'); sys.exit(1)
-      vals_data = uip('df','choice-sets','list-values', cs.get('Id') or cs.get('ID'))
-      items = vals_data.get('Data') or []
-      names = {(v.get('Name') or v.get('name') or '').lower() for v in items}
-      missing = {'paid','unpaid','refunded'} - names
-      if missing: print(f'FAIL: missing values {sorted(missing)}; got {sorted(names)}'); sys.exit(1)
-      print(f'OK: CE_SmokePaymentStatus has all 3 values (also {sorted(names - {\"paid\",\"unpaid\",\"refunded\"})} extras)')
-      "
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_choice_set_values.py
+      --name CE_SmokePaymentStatus --required paid,unpaid,refunded
     timeout: 90
     expected_exit_code: 0
     weight: 3.0
