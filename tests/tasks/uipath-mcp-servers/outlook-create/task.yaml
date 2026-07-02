@@ -26,8 +26,9 @@ initial_prompt: |
     - Outlook connection id: conn-mock-outlook-01 (in folder-mock-workspace)
     - MCP server: test-mcp-skill (folder-mock-shared)
 
-  Save: metadata.json, input-schema.json, output-schema.json, create-command.sh,
-  trajectory.md, summary.txt.
+  Save these files in the current working directory (the sandbox root) — do NOT
+  create a subdirectory such as `output/`: metadata.json, input-schema.json,
+  output-schema.json, create-command.sh, trajectory.md, summary.txt.
 success_criteria:
 - type: file_contains
   path: metadata.json

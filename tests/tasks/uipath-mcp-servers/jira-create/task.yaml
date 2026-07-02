@@ -29,7 +29,7 @@ initial_prompt: |
     - MCP server slug: test-mcp-skill, in Shared folder (key: folder-mock-shared)
     - Jira connection id: conn-mock-jira-01 (in folder folder-mock-workspace)
 
-  Save to the sandbox cwd:
+  Save to the sandbox cwd (the working directory root — do NOT create a subdirectory such as `output/`):
     - metadata.json — the ActivityMetadata object (pretty JSON, not stringified)
     - input-schema.json — JSON Schema for LLM inputs
     - output-schema.json — JSON Schema for responseFields ({} acceptable)
