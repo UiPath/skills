@@ -11,8 +11,6 @@ tags: [uipath-ixp, integration, mode:operate]
 
 run_limits:
   max_turns: 72
-  # Two trainings, each polled up to 10 min (see prompt) — generous ceiling so a
-  # slow-training day doesn't kill the run before the second version lands.
   task_timeout: 6000
   turn_timeout: 1800
 
