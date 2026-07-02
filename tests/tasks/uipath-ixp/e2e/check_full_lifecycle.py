@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the IXP full-lifecycle e2e artifacts. Run from the sandbox CWD; exits 0/1.
+"""Verify the IXP full-lifecycle e2e artifacts.
 
 Grades artifact integrity, NOT whether the model's F1 improved. On the ~3-doc
 fixture set F1 is quantized in ~0.17-0.33 steps, so a single flipped prediction
