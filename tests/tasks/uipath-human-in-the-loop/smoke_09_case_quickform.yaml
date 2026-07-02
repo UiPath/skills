@@ -1,0 +1,207 @@
+task_id: skill-hitl-smoke-case-quickform
+description: >
+  Smoke test (Case surface): agent adds a QuickForm action task to an
+  existing caseplan.json. Verifies the QuickForm path — separate .hitl.json
+  schema file, context entries (hitlType: quick, _schemaFileId, hitlSchemaId),
+  no actionCatalogName, no root-level bindings mutation.
+tags: [uipath-human-in-the-loop, smoke, lifecycle:edit, node:hitl, feature:approval-gate]
+
+sandbox:
+  driver: tempdir
+  python: {}
+
+initial_prompt: |
+  I have a UiPath case management project with a caseplan.json that has
+  one stage. I need to add a Human-in-the-Loop action task to that stage
+  using the QuickForm path (separate .hitl.json schema file — no deployed
+  Action Center app needed).
+
+  First, create the starting caseplan.json at ./caseplan.json:
+
+  {
+    "root": {
+      "id": "root",
+      "name": "Invoice Review Case",
+      "type": "case-management:root",
+      "caseIdentifier": "INV",
+      "caseAppEnabled": false,
+      "caseIdentifierType": "constant",
+      "version": "v19",
+      "publishVersion": 2,
+      "data": {
+        "intsvcActivityConfig": "v2",
+        "uipath": {
+          "variables": {
+            "inputs": [
+              { "id": "var_invoiceId", "name": "invoiceId", "type": "string" },
+              { "id": "var_amount", "name": "amount", "type": "number" }
+            ],
+            "outputs": [],
+            "inputOutputs": []
+          },
+          "bindings": []
+        }
+      },
+      "description": "Invoice review case"
+    },
+    "nodes": [
+      {
+        "id": "trigger_xY2mNp",
+        "type": "case-management:Trigger",
+        "position": { "x": 200, "y": 0 },
+        "data": { "label": "Start" }
+      },
+      {
+        "id": "Stage_aB3kL9",
+        "type": "case-management:Stage",
+        "position": { "x": 100, "y": 200 },
+        "style": { "width": 304, "opacity": 0.8 },
+        "measured": { "width": 304, "height": 128 },
+        "width": 304,
+        "zIndex": 1001,
+        "data": {
+          "label": "Review",
+          "parentElement": { "id": "root", "type": "case-management:root" },
+          "isInvalidDropTarget": false,
+          "isPendingParent": false,
+          "entryConditions": [
+            {
+              "id": "Condition_uqCYDc",
+              "displayName": "Case Entered",
+              "rules": [ [ { "id": "Rule_GGCJC6", "rule": "case-entered" } ] ]
+            }
+          ],
+          "exitConditions": [
+            {
+              "id": "Condition_FSPwx7",
+              "displayName": "Stage Done",
+              "rules": [ [ { "id": "Rule_M3P1RF", "rule": "required-tasks-completed" } ] ],
+              "marksStageComplete": true
+            }
+          ],
+          "tasks": []
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge_Qz7hVr",
+        "type": "case-management:TriggerEdge",
+        "source": "trigger_xY2mNp",
+        "target": "Stage_aB3kL9",
+        "sourceHandle": "trigger_xY2mNp____source____right",
+        "targetHandle": "Stage_aB3kL9____target____left",
+        "data": {}
+      }
+    ],
+    "metadata": {
+      "caseExitRules": [
+        {
+          "id": "Condition_xC1XyX",
+          "displayName": "Case resolved",
+          "marksCaseComplete": true,
+          "rules": [
+            [ { "id": "Rule_jdBFrJ", "rule": "required-stages-completed" } ]
+          ]
+        }
+      ]
+    }
+  }
+
+  Now add a QuickForm action task to Stage_aB3kL9:
+  - Reviewer sees: invoiceId (text, bound to vars.var_invoiceId) and
+    amount (number, bound to vars.var_amount)
+  - Reviewer fills in: decision (text, required) and notes (text, optional)
+  - Outcomes: Approve and Reject
+  - Assignee: approver@company.com (specific user)
+  - Priority: Medium
+  - Task title: "Please review this invoice"
+
+  Use the QuickForm path from the uipath-human-in-the-loop skill's
+  hitl-casetask-action.md. Do NOT use a deployed Action Center app.
+  Do NOT add any root-level bindings (QuickForm doesn't need them).
+
+  Before starting, load the uipath-human-in-the-loop skill and follow
+  its workflow.
+
+success_criteria:
+  - type: file_exists
+    description: "caseplan.json exists"
+    path: "caseplan.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A .hitl.json schema file exists alongside caseplan.json"
+    command: "find . -maxdepth 3 -name '*.hitl.json' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Action task uses QuickForm path — context entry hitlType: quick"
+    path: "caseplan.json"
+    includes:
+      - '"type": "action"'
+      - '"hitlType"'
+      - '"quick"'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Action task context has _schemaFileId and hitlSchemaId entries"
+    path: "caseplan.json"
+    includes:
+      - '"_schemaFileId"'
+      - '"hitlSchemaId"'
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".hitl.json uses unified fields[] array with direction"
+    command: "F=$(find . -maxdepth 3 -name '*.hitl.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && grep -qF '\"fields\"' \"$F\" && grep -qF '\"direction\"' \"$F\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".hitl.json has input fields bound to the correct case variables"
+    command: "F=$(find . -maxdepth 3 -name '*.hitl.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && grep -qF 'var_invoiceId' \"$F\" && grep -qF 'var_amount' \"$F\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".hitl.json has output fields for decision and notes"
+    command: "F=$(find . -maxdepth 3 -name '*.hitl.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && grep -qF 'decision' \"$F\" && grep -qF 'notes' \"$F\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: ".hitl.json has Approve and Reject outcomes"
+    command: "F=$(find . -maxdepth 3 -name '*.hitl.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && grep -qF 'Approve' \"$F\" && grep -qF 'Reject' \"$F\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Recipient is the requested user email"
+    path: "caseplan.json"
+    includes:
+      - "approver@company.com"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "QuickForm path must NOT contain =bindings. references (the app-based fingerprint)"
+    command: "! grep -q '=bindings\\.' caseplan.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

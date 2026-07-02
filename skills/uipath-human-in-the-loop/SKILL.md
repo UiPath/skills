@@ -82,7 +82,8 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 | Found | Surface | How HITL is added |
 |---|---|---|
 | `.flow` file | **Flow** | Write node JSON directly — see reference docs |
-| `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
+| `caseplan.json` (any `*.json` with `root.type: "case-management:root"`) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
+| `agent.json` | **Low-Code Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Not yet — guide user manually |
 
 **If the user mentioned a specific file path**, use that directly.
@@ -142,7 +143,11 @@ Wait for confirmation. Do not proceed to schema design until the user confirms.
 
 ## Step 3 — Choose Task Type
 
-Present the user with three options. Do not choose on their behalf or perform any registry search.
+**The options differ by surface.** Present the options for the detected surface and confirm before doing anything.
+
+### Surface: Flow
+
+Present three options. Do not choose on behalf of the user or perform any registry search.
 
 | # | Option | Node type | Description |
 |---|---|---|---|
@@ -171,6 +176,34 @@ Present the user with three options. Do not choose on their behalf or perform an
 
 ---
 
+### Surface: Case
+
+Present three options. Do not choose on behalf of the user or pull the registry.
+
+| # | Option | Fingerprint | Description |
+|---|---|---|---|
+| 1 | **QuickForm (file-based schema)** | separate `<TaskLabel>.hitl.json` file + `hitlType: "quick"` context entry in the action task | Structured form fields in a `.hitl.json` file alongside `caseplan.json`. Action Center renders fields at runtime. No deployed app needed. |
+| 2 | **App-based action task** | `data.name` and `data.folderPath` as `=bindings.<id>` references + `data.actionCatalogName` | Uses a deployed Action Center app with custom input/output fields. Requires the app to exist in Orchestrator. |
+
+> **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up, supports structured form fields, and doesn't need a deployed app. You can upgrade to an app-based task later if you need a custom UI layout."
+
+> **Build vs design time.** QuickForm in case management must round-trip both ways: the JSON written here is what Studio Web's case designer reads (design time), and what `uip maestro case validate` + Action Center render at runtime (build time). Always validate after writing.
+
+| User selects | Next step |
+|---|---|
+| QuickForm (file-based schema) | Read [references/hitl-casetask-action.md — Path 1](references/hitl-casetask-action.md#path-1--quickform-file-based-schema-no-deployed-app), then continue with Step 4 |
+| App-based action task → ask: "What is the name of the deployed Action Center app?" | Read [references/hitl-casetask-action.md — Path 2](references/hitl-casetask-action.md#path-2--app-based-action-task-deployed-action-center-app), then continue with Step 4 |
+
+**Fallback rules:**
+
+| Path | Blocker | Response |
+|---|---|---|
+| App-based | App not found in registry or `action-apps-index.json` | "I couldn't find that app. Would you like to try a different name, or fall back to QuickForm while the app is prepared?" |
+| QuickForm | Schema design rejected on validate (e.g. duplicate field IDs, missing primary outcome) | Surface the validator's error, fix the schema, re-show to user, validate again. Apply Step 4b checks. |
+| Any | Auth expired (401 on API call) | "The session looks expired — run `uip login` to refresh your credentials, then retry." |
+
+---
+
 ## Step 4 — Common configuration
 
 | Timeout | "How long before the task times out if nobody acts? (default: 24 hours)" |
@@ -178,9 +211,9 @@ Present the user with three options. Do not choose on their behalf or perform an
 
 ---
 
-## Step 4b — Schema Design Rules (QuickForm only)
+## Step 4b — Schema Design Resilience (QuickForm — Flow and Case)
 
-Apply these rules unconditionally while designing the schema.
+Apply these checks while designing the schema before confirming with the user. Applies equally to Flow QuickForm nodes and Case QuickForm action tasks — same `fields[]` + `outcomes[]` shape, same `direction` semantics.
 
 ### Field direction
 
@@ -202,8 +235,9 @@ Use the JS/JSON type that fits the field: `string`, `number`, `boolean`, `date`,
 
 If the user says something like "just add some fields" or "use whatever makes sense":
 
-1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file.
-2. If there are no upstream nodes to bind to (flow is just a trigger), use output-direction fields only.
+1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file (Flow) or in `caseplan.json` upstream task `outputs[]` and `root.data.uipath.variables` (Case).
+2. Show the proposed schema explicitly before writing: "Here's what I'm proposing — let me know if you want to change anything."
+3. If there is nothing upstream to bind to (Flow with only a trigger; Case with this as the first task), use output-direction fields only and note: "There are no upstream values to pull data from, so the reviewer will fill in all fields from scratch."
 
 ### Empty field labels block validation
 
@@ -266,6 +300,27 @@ After writing, validate:
 uip maestro flow validate <file> --output json
 ```
 
+### Surface: Case
+
+Read the `caseplan.json` to identify the target stage. Write an `action` task directly into `stage.data.tasks[lane][]`. **Direct JSON write is the only supported method** — the `uipath-maestro-case` skill ships no `hitl` CLI subcommand (unlike Flow's `uip maestro flow hitl add`).
+
+Full reference: **[references/hitl-casetask-action.md](references/hitl-casetask-action.md)** — three task JSON shapes (QuickForm, generic, app-based), field reference, assignee handling, post-write verification, and downstream output access.
+
+| Path chosen in Step 3 | What gets written |
+|---|---|
+| QuickForm | A `<TaskLabel>.hitl.json` schema file (unified `fields[]` with `direction`, `outcomes[]`) + action task in `caseplan.json` with `data.context[hitlType].value: "quick"`, `_schemaFileId` (placeholder UUID), and `hitlSchemaId` (matches `schemaId` in `.hitl.json`). `data.inputs[]` and `data.outputs[]` are empty arrays. No `root.data.uipath.bindings[]` entries. Apply Step 4b schema-design checks before writing. |
+| App-based | Action task with `data.actionCatalogName`, `data.name` and `data.folderPath` as `=bindings.<id>` references. Add 2 root-level bindings. |
+
+After writing, validate (build-time check — must pass before reporting success):
+
+```bash
+uip maestro case validate <caseplan.json> --output json
+```
+
+> `uip maestro case validate` is the only `uip maestro case` CLI used by this skill on the Case surface. All authoring is direct JSON.
+
+---
+
 ### Surface: Low-Code Agent
 
 The Low-Code Agent escalation CLI (`uip agent escalation add`) is currently in-flight. Until it ships, configure manually:
@@ -324,3 +379,4 @@ After completing the wiring:
 - **[How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md)** — Read this when the user wants to build a new React app inside the solution. Covers full project template, UUID generation, solution CLI commands, and post-creation build steps.
 - **[HITL business pattern recognition](references/hitl-patterns.md)** — Read this during Step 2 / Step 2b to identify whether a process needs a human checkpoint and which pattern applies. Includes proactive recommendation language and when NOT to recommend HITL.
 - **[Action Center URL patterns](../uipath-tasks/references/action-center-urls.md)** (in `uipath-tasks` skill) — Read this before surfacing any Action Center task URL to the user. Covers the missing-tenant-slug anti-pattern and the API-host vs UI-host mapping.
+- **[Case Action Task (HITL)](references/hitl-casetask-action.md)** — Case surface: action task JSON, QuickForm vs app-based paths, `.hitl` file format, context entries, field binding, and downstream output access.
