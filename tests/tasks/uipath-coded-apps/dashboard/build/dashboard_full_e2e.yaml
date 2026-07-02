@@ -4,7 +4,8 @@ description: >
   chart, line chart, and table. Validates the full compiler pipeline on the
   current architecture: intent.json (pure metadata, schemaVersion 2), one
   metric module per metric under src/metrics/ authoring real SDK calls
-  (Agents.getAll + timelines), generated widgets under src/dashboard/widgets/,
+  (Agents.getAll + the errors and consumption Insights routes), generated
+  widgets under src/dashboard/widgets/,
   named time constants, state.json written, and a clean `tsc --noEmit` over the
   generated project (the gold-standard correctness gate).
 tags: [uipath-coded-apps, e2e, dashboard, mode:build, lifecycle:generate]
@@ -31,8 +32,8 @@ post_run:
 
 initial_prompt: |
   Build me a UiPath agent health dashboard: active agents, agent consumption
-  over the last 24 hours, agent error trend over the week, and top agents by
-  usage with health scores.
+  trend over the last 24 hours, agent error trend over the week, and top
+  agents by usage with health scores.
 
   This is a non-interactive automated test — there is NO user to approve the plan.
   Treat the plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the plan, do
@@ -47,12 +48,17 @@ success_criteria:
     pass_threshold: 1.0
 
   # ── Routing: SDK calls authored in the metric modules (project auto-located) ──
+  # "Consumption" is the family substring shared by every legitimate consumption
+  # route (getConsumptionTimeline / getTopConsumption / getUnitConsumption /
+  # getUnitConsumptionSummary) — CI 28592101807 showed pinning one method fails
+  # correct builds that pick a sibling catalog route. "getErrors" likewise covers
+  # getErrors + getErrorsTimeline.
   - type: run_command
-    description: "Metric modules use Agents.getAll and the consumption + errors timelines"
+    description: "Metric modules author real SDK calls: Agents.getAll, an errors query, and a consumption route"
     command: >
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
       --min-metrics 4 --min-widgets 4
-      --require-substr "getAll" --require-substr "getConsumptionTimeline" --require-substr "getErrors"
+      --require-substr "getAll" --require-substr "Consumption" --require-substr "getErrors"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
