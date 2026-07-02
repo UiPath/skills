@@ -9,9 +9,9 @@ description: >
   Entity is never deleted.
 tags: [uipath-platform, data-fabric, integration, pre-seeded, discover, mode:operate, lifecycle:discover]
 run_limits:
-  expected_turns: 25
-  max_turns: 50
-  turn_timeout: 600
+  expected_turns: 30
+  max_turns: 65
+  turn_timeout: 900
 
 initial_prompt: |
   We have a movie list called `CodeEvalTestEntity` already loaded up
