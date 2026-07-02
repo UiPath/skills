@@ -1,7 +1,25 @@
 #!/usr/bin/env python3
-"""Verify artifacts produced by the IXP full-lifecycle e2e task.
+"""Verify the IXP full-lifecycle e2e task drove the improve-a-model workflow FOR REAL.
 
 Run from the sandbox working directory. Exits 0 on success, 1 on failure.
+
+Scope: this grades the AGENT's behavior and the INTEGRITY of the artifacts it
+captured — NOT whether the model's F1 went up. Whether a single prompt tweak plus
+one retrain raises a field's F1 on the ~3-document fixture set is a
+non-deterministic model outcome the agent does not control: over 3 docs F1 is
+quantized in ~0.17-0.33 steps, so normal retrain noise makes any F1-direction
+gate flaky (a single flipped prediction swings it past any tolerance finer than a
+step). So we assert only what a correct run genuinely controls:
+  - artifacts present and well-formed (baseline metrics, improved metrics, target field);
+  - metrics coherent — Fields[] populated, ModelVersion an int that did not go
+    backwards (backwards => stale/swapped/other-project artifacts);
+  - the agent targeted a REAL field — its chosen field_id resolves to a row with
+    a numeric F1 in BOTH the baseline and improved metrics.
+The target field's F1 delta is printed for human debugging but never gates.
+
+The behavioral half of "did the agent run the improve loop" (update-prompts ran,
+metrics fetched twice, etc.) is graded by the task's command_executed criteria;
+this script covers artifact integrity.
 """
 from __future__ import annotations
 
@@ -11,10 +29,6 @@ from pathlib import Path
 from typing import NoReturn
 
 CWD = Path.cwd()
-
-# F1 delta; negative = regression. Coarse because this task scores over only
-# ~3 documents, where a single flipped prediction swings F1 by ~0.33.
-TARGET_REGRESSION_LIMIT = -0.15  # the field the agent chose to improve
 
 
 def log_fail(msg: str) -> NoReturn:
@@ -82,10 +96,11 @@ def main() -> int:
     baseline = unwrap_metrics(load_json("baseline_metrics.json"), "baseline_metrics.json")
     improved = unwrap_metrics(load_json("improved_metrics.json"), "improved_metrics.json")
 
-    # Best-effort integrity hint. Not a failure: when retrain produces no new
-    # training signal, a genuine second fetch legitimately matches the first.
+    # Best-effort integrity hint. Not a failure: when retrain has not completed
+    # (the task lets the agent capture current metrics and proceed rather than
+    # wait indefinitely), a genuine second fetch legitimately matches the first.
     if improved == baseline:
-        log_warn("improved_metrics matches baseline_metrics exactly — verify a real second measurement was taken (acceptable only if retrain was a no-op)")
+        log_warn("improved_metrics matches baseline_metrics exactly — retrain likely had not completed at capture time (acceptable) or no real second measurement was taken (not)")
 
     baseline_fields = baseline.get("Fields")
     improved_fields = improved.get("Fields")
@@ -102,10 +117,14 @@ def main() -> int:
     if improved_version < baseline_version:
         log_fail(f"ModelVersion went backwards (baseline={baseline_version}, improved={improved_version}) — improved_metrics is stale, from another project, or the artifacts are swapped")
     if improved_version == baseline_version:
-        log_info(f"ModelVersion unchanged at {baseline_version} — re-label produced no new training signal (acceptable)")
+        log_info(f"ModelVersion unchanged at {baseline_version} — retrain produced no new version yet (acceptable)")
     else:
         log_info(f"ModelVersion advanced {baseline_version} -> {improved_version}")
 
+    # The agent must have targeted a REAL, measurable field: its chosen field_id
+    # has to resolve to a row with a numeric F1 in both snapshots. This catches a
+    # hallucinated/mismatched field_id or truncated metrics — without asserting
+    # anything about which direction the F1 moved.
     base_target = find_field(baseline_fields, field_id)
     impr_target = find_field(improved_fields, field_id)
     if base_target is None:
@@ -117,12 +136,13 @@ def main() -> int:
     impr_f1 = read_f1(impr_target)
     if base_f1 is None or impr_f1 is None:
         log_fail(f"target field {field_id} has missing or non-numeric F1 (baseline={base_target.get('F1')!r}, improved={impr_target.get('F1')!r})")
-    delta = impr_f1 - base_f1
-    print(f"target field F1: {base_f1:.3f} -> {impr_f1:.3f} (delta {delta:+.3f})")
-    if delta < TARGET_REGRESSION_LIMIT:
-        log_fail(f"target field F1 regressed by more than {-TARGET_REGRESSION_LIMIT:.2f} ({delta:+.3f})")
-    log_info("target field F1 did not regress significantly")
 
+    # Informational only — NOT a gate. On ~3 docs an F1 direction/delta is noise,
+    # not a signal the agent controls (see module docstring).
+    delta = impr_f1 - base_f1
+    log_info(f"target field F1: {base_f1:.3f} -> {impr_f1:.3f} (delta {delta:+.3f}) [informational, not graded]")
+
+    log_info("full-lifecycle artifacts are present, well-formed, and coherent")
     return 0
 
 
