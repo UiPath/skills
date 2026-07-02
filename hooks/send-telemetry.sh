@@ -11,8 +11,8 @@
 # The CLI (see UiPath/cli#2600) owns transport, the App Insights connection,
 # the event name, the authenticated cloud identity, and the `source:
 # "skills-plugin"` dimension. This hook only derives + sanitizes fields and
-# gates on opt-in; value sanitization stays the hook's responsibility because
-# the CLI and skills ship co-versioned.
+# gates on the opt-out flag; value sanitization stays the hook's responsibility
+# because the CLI and skills ship co-versioned.
 #
 # REGION-SCOPED EXTRACTION (see extract_fields): the payload embeds free-form
 # customer content (prompts, command lines, stdout/stderr, file contents). A
@@ -23,9 +23,20 @@
 #   ENVELOPE (top-level)  -> toolName, toolUseId, sessionId, permissionMode,
 #                            durationMs, effortLevel (effort.level), agentType
 #   tool_input            -> skillName, uipSubcommand (command), fileExtension
-#                            (file_path), subagentType
+#                            (file_path), subagentType (subagent_type, or
+#                            agent_type for a Codex spawn_agent call)
 #   tool_response         -> outcome (interrupted/success), subagentModel
 #                            (resolvedModel)
+#
+# CROSS-AGENT: registered as a PostToolUse hook, this also runs under other
+# coding agents that honor hooks.json (e.g. Codex). Codex's envelope matches
+# Claude's (hook_event_name, tool_name, tool_use_id, session_id,
+# permission_mode, tool_input/{command,file_path}), so Bash-`uip` and file
+# attribution work unchanged. Differences handled / accepted: agent spawns use
+# `spawn_agent` + tool_input.agent_type (see is_uipath_call + outkey); Codex
+# omits duration_ms / effort.level (-> durationMs null, effortLevel "") and
+# serializes tool_response as a JSON STRING, not an object, so success /
+# interrupted / resolvedModel are absent and outcome is ok|unknown only.
 # Only derived, low-cardinality, PII-free values ever leave the machine.
 #
 # Non-blocking by contract: registered as an async hook in hooks.json
@@ -37,9 +48,9 @@
 # Structure: pure helpers + side-effecting procedures (below), driven by main()
 # (bottom). Configuration is env only:
 #   UIPATH_TELEMETRY_DISABLED   Gate. Reuses the uip CLI's variable name.
-#                               Send ONLY when explicitly set to "0". Unset
-#                               (default) or "1" -> do not send. Privacy-first
-#                               default-off; absent is treated as disabled.
+#                               Opt-out: send by DEFAULT. Skip ONLY when set to
+#                               "1". Unset (default) or "0" -> send. Absent is
+#                               treated as enabled.
 
 set +e
 
@@ -64,12 +75,21 @@ extract_fields() {
                 k=="permission_mode"||k=="duration_ms"||k=="agent_type"|| \
                 k=="hook_event_name")
       if (d == 2 && c == "input")
-        return (k=="skill"||k=="command"||k=="file_path"||k=="subagent_type")
+        return (k=="skill"||k=="command"||k=="file_path"||k=="subagent_type"|| \
+                k=="agent_type")
       if (d == 2 && c == "response")
         return (k=="interrupted"||k=="success"||k=="resolvedModel")
       if (d == 2 && c == "effort")
         return (k=="level")
       return 0
+    }
+    # outkey: remap a JSON key to the field name read_fields expects. Codex
+    # spawn_agent carries the spawned type in tool_input.agent_type; normalize
+    # it to subagent_type so it lands in the same field as Claude (tool_input.
+    # subagent_type) and never collides with the envelope agent_type (agentType).
+    function outkey(k, d, c) {
+      if (d == 2 && c == "input" && k == "agent_type") return "subagent_type"
+      return k
     }
     { buf = buf $0 "\n" }
     END {
@@ -88,7 +108,7 @@ extract_fields() {
           if (c == "\"") {
             instr = 0
             if (isval) {
-              if (buffering) print pkey "\t" cur
+              if (buffering) print outkey(pkey, pdepth, ctx) "\t" cur
               pend = 0; isval = 0
             } else {
               laststr = cur
@@ -137,7 +157,7 @@ extract_fields() {
             if (c==","||c=="}"||c=="]"||c==" "||c=="\t"||c=="\n"||c=="\r") break
             lit = lit c; i++
           }
-          if (interesting(pkey, pdepth, ctx)) print pkey "\t" lit
+          if (interesting(pkey, pdepth, ctx)) print outkey(pkey, pdepth, ctx) "\t" lit
           pend = 0; continue                      # leave delimiter for the main loop
         }
         i++
@@ -190,12 +210,15 @@ is_uipath_call() {
     Skill)
       case "$skill" in uipath:*|uipath-*) return 0 ;; esac
       ;;
-    Agent)
-      # UiPath agents or Claude's built-in agent types only — NOT custom agents
-      # from other plugins (`<plugin>:<name>`) or user-defined ones.
+    Agent|spawn_agent)
+      # UiPath agents, or a built-in/generic agent type — NOT custom agents from
+      # other plugins (`<plugin>:<name>`) or user-defined ones. Claude Code spawns
+      # via `Agent` + tool_input.subagent_type; Codex via `spawn_agent` +
+      # tool_input.agent_type (the awk normalizes that to subagent_type). `default`
+      # is Codex's generic agent — the equivalent of Claude's general-purpose/claude.
       case "$subagent_type" in
         uipath:*|uipath-*) return 0 ;;
-        general-purpose|Explore|Plan|claude|claude-code-guide|statusline-setup|fork) return 0 ;;
+        general-purpose|Explore|Plan|claude|claude-code-guide|statusline-setup|fork|default) return 0 ;;
       esac
       ;;
     Bash|PowerShell)
@@ -366,9 +389,10 @@ EOF
 
 # --- main ------------------------------------------------------------------
 main() {
-  # Send only when telemetry is explicitly NOT disabled (=0). `uip track`
-  # enforces the same gate on its side; we short-circuit here too.
-  [ "${UIPATH_TELEMETRY_DISABLED:-1}" = "0" ] || exit 0
+  # Opt-out: send by default; skip only when telemetry is explicitly disabled
+  # (UIPATH_TELEMETRY_DISABLED=1 or =true). Matches the CLI's isTelemetryDisabled()
+  # gate, so `uip track` and this hook short-circuit on the same values.
+  case "${UIPATH_TELEMETRY_DISABLED:-0}" in 1|true) exit 0 ;; esac
 
   payload="$(cat)"
   read_fields "$(printf '%s' "$payload" | extract_fields)"
@@ -411,8 +435,8 @@ main() {
   # `event` key, no envelope, and no `source` (the CLI overrides it).
   #
   # Detached subshell ( cmd & ) survives this hook's exit so the agent never
-  # waits. `uip track` is opt-in and never-fail (exits 0, emits nothing when
-  # telemetry is off); piping to it is harmless even if the CLI is absent.
+  # waits. `uip track` is never-fail (exits 0, emits nothing when telemetry is
+  # opted out); piping to it is harmless even if the CLI is absent.
   ( printf '%s' "$(build_event_json)" | uip track >/dev/null 2>&1 & )
 
   exit 0
