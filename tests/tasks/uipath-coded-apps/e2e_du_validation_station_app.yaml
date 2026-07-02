@@ -10,8 +10,9 @@ description: >
   surfaces NO error UI — host owns all callbacks), copy `du-assets/`
   post-build via a Vite plugin (missing this silently breaks PDF rendering
   and translations in production), and exclude the web-component from Vite
-  `optimizeDeps`. Tests the most complex coded-apps surface: widget
-  integration, not just CLI flow.
+  `optimizeDeps`. Deploys into a fresh per-run Orchestrator folder so
+  `post_run` can clean it up. Tests the most complex coded-apps surface:
+  widget integration, not just CLI flow.
 tags: [uipath-coded-apps, e2e, mode:build, feature:action-app, feature:du-validation-station]
 
 run_limits:
@@ -37,16 +38,25 @@ initial_prompt: |
     the PDF preview and any localized strings.
 
   Use the app name `InvoiceValidationApp_<EPOCH>` (Unix epoch seconds
-  suffix) with version `0.1.0`. Deploy to the Orchestrator folder named
-  `Shared` (resolve the folder name to a key via the documented mechanism
-  — do NOT let the deploy command go interactive).
+  suffix) with version `0.1.0`.
+
+  Deploy to a FRESH per-run Orchestrator folder — do NOT reuse `Shared`:
+    1. Create a new folder named `codedapp-e2e-du-<EPOCH>` via
+       `uip or folders create <name> --output json`. Capture the `Key`
+       from the response.
+    2. Pass that key to `uip codedapp deploy --folder-key <key>` — do NOT
+       let deploy go interactive.
+  This isolates the deployment so `post_run` cleanup can delete the
+  folder afterwards (folder delete cascades to the coded-app deployment).
 
   When you finish, write `report.json` at the sandbox root with:
     {
       "app_name": "<the exact app name you used>",
       "deployment_id": "<the deploymentId from .uipath/app.config.json>",
-      "app_url": "<the appUrl from .uipath/app.config.json>"
+      "app_url": "<the appUrl from .uipath/app.config.json>",
+      "folder": "<the codedapp-e2e-du-<EPOCH> folder name you created>"
     }
+  The `folder` field is REQUIRED — `post_run` reads it to clean up.
 
   Use `--output json` on every `uip` command. Do not prompt for
   confirmation — this is an automated test.
@@ -61,9 +71,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent resolved the folder name to a folder key via `uip or folders list`"
+    description: "Agent created a fresh per-run folder via `uip or folders create` (isolated for cleanup)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+list'
+    command_pattern: 'uip\s+or\s+folders\s+create\s+codedapp-e2e-du-'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -201,3 +211,15 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json records the codedapp-e2e-du-* folder name so post_run can clean it up"
+    command: "python3 -c \"import json,sys; f=str(json.load(open('report.json')).get('folder','')); sys.exit(0 if f.startswith('codedapp-e2e-du-') else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_codedapp_folder.py"
+    timeout: 60
