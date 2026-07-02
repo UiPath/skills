@@ -53,8 +53,10 @@ def run_uip(*args: str) -> tuple[int, str, str]:
 
 
 def find_choice_set(name: str) -> str | None:
-    code, out, _ = run_uip("df", "choice-sets", "list")
+    code, out, err = run_uip("df", "choice-sets", "list")
     if code != 0 or not out.strip():
+        detail = (err.strip() or out.strip())[:400] or "(no output)"
+        print(f"WARN: choice-sets list failed (exit {code}): {detail}", file=sys.stderr)
         return None
     try:
         data = json.loads(out)
@@ -96,7 +98,16 @@ def create_choice_set(name: str, display_name: str, description: str) -> str | N
         args += ["--description", description]
     code, out, err = run_uip(*args)
     if code != 0:
-        print(f"WARN: choice-sets create {name} failed (exit {code}): {err.strip()[:200]}", file=sys.stderr)
+        # uip prints the error JSON to stdout on non-zero exit; stderr can be
+        # empty. Show both streams so CI logs surface the real reason.
+        detail = (err.strip() or out.strip())[:400] or "(no output)"
+        print(f"WARN: choice-sets create {name} failed (exit {code}): {detail}", file=sys.stderr)
+        # If the create failed because the choice set already exists, one more
+        # find_choice_set may reveal it (list may have been stale earlier).
+        retry_id = find_choice_set(name)
+        if retry_id:
+            print(f"OK: choice-sets create {name} reported already-exists; using id {retry_id}")
+            return retry_id
         return None
     try:
         data = json.loads(out)
