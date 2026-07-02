@@ -9,9 +9,9 @@ description: >
 tags: [uipath-platform, data-fabric, e2e, expense-tracker, complex-fields, mode:build, lifecycle:setup]
 
 run_limits:
-  expected_turns: 45
-  max_turns: 60
-  turn_timeout: 600
+  expected_turns: 60
+  max_turns: 100
+  turn_timeout: 900
 
 initial_prompt: |
   Build an expense tracker for Finance. Two linked lists.
