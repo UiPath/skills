@@ -123,7 +123,6 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 |---|---|---|
 | **Integration Service** | `uip is --help` | See [`uipath-integration-service`](integration-service/integration-service.md) |
 | **Traces** | `uip traces spans get <trace-id>` | LLM execution trace observability (`--job-key` to scope) |
-| **Test Manager** | `uip tm --help` | Test projects, sets, cases, executions |
 | **RPA** | `uip rpa --help` | RPA workflow management |
 | **MCP** | `uip mcp serve` | Start Model Context Protocol server |
 | **Coded Agents** | `uip codedagent --help` | Python agent development |
