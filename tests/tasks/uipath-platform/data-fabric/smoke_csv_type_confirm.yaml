@@ -13,8 +13,10 @@ run_limits:
 
 initial_prompt: |
   OFFLINE SMOKE TEST: The uip CLI is available but NOT connected to a live tenant.
-  Any uip df command WILL fail with an auth error — that is expected. Do NOT
-  attempt to login. Do NOT retry failed commands.
+  Any uip df command that hits the tenant will fail with an auth error — that
+  is expected. Do NOT attempt to login. Do NOT retry failed commands. Local
+  probes like `uip df --help`, `uip df entities --help`, or an `entities list`
+  attempt (auth failure is fine — surface and continue) are useful and expected.
 
   Consider this CSV content (header + 3 sample rows):
 
@@ -76,7 +78,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Proposal surfaces ambiguous types per Rule 14 using UI-compatible candidates only (Rule 12b — DATETIME_WITH_TZ / BOOLEAN / DECIMAL / RELATIONSHIP; must NOT propose INTEGER / FLOAT / DOUBLE)"
+    description: "Proposal surfaces ambiguous types per Rule 14 using UI-compatible candidates only (Rule 12b — DATETIME_WITH_TZ / BOOLEAN / DECIMAL / RELATIONSHIP; must NOT mention INTEGER / FLOAT / DOUBLE anywhere)"
     path: "proposal.md"
     includes:
       - "DATETIME_WITH_TZ"
