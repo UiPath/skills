@@ -251,9 +251,9 @@ export const VALID_COLUMN_FORMATS = ['number', 'percent', 'duration', 'timeAgo',
  * / getUnitConsumptionSummary) ship in 1.5.0. A stale lockfile/registry
  * otherwise surfaces as cryptic tsc "module not found" failures mid-build.
  */
-export const MIN_SDK_VERSION = '1.5.0'
+export const MIN_SDK_VERSION = '1.5.1'
 
-export const SKILL_VERSION = '2.1.0'        // compiler-architecture era; 2.1 adds regime/eject + template packaging
+export const SKILL_VERSION = '2.2.0'        // 2.2 = runtime governance on AgentTraces getGovernanceDecisions/getGovernanceSummary (SDK 1.5.1)
 const FIXTURE_ARCHIVE_PATH = resolve(__dirname, '../../fixtures/governance-dashboard-starter-kit.tar.gz')
 
 export const INTENT_SCHEMA_VERSION = 2

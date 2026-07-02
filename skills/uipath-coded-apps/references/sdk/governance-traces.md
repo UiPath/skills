@@ -1,235 +1,186 @@
-# Agent Governance Traces (interim, trace-derived)
+# Agent Governance Decisions (Insights RTM)
 
-> **INTERIM capability.** There is **no OOB SDK/Insights aggregate** for runtime-governance results yet.
-> We derive them by parsing the `governance.*` spans the runtime-governance feature emits into agent
-> traces. Bounded + rate-limit-safe by design. When an Insights API ships, only the metric modules change
-> — the typed lib, registry entries, widgets, and the per-agent drill-down stay.
->
-> **HARD LIMIT — last 15 agent runs.** Because this is trace-derived (one `Traces.getById` per run), every
-> runtime-compliance metric scans **only the last `MAX_RUNS = 15` agent runs** (actual job runs, newest
-> first, no per-agent dedup by default). This is a hard cap, not a default:
-> 1. **Default data source = actual job runs** (`Jobs` → `Traces.getById`), NOT the Insights `Agents.getAll`
->    aggregate. Repeat runs from the same agent stay visible.
-> 2. **Every runtime-compliance widget must state its window in the UI** — the subtitle reads
->    `Last 15 agent runs` (use the `WINDOW_LABEL` phrase below) so the user knows exactly what slice of data
->    they are looking at. Never render a runtime-compliance widget without this label.
-> 3. **If the prompt asks for MORE than the cap** — a larger window ("last 90 days", "this quarter"), a higher
->    run count ("last 100 runs", "all runs"), or tenant-wide totals — **do NOT build that widget.** Tell the
->    user plainly: runtime compliance is an interim trace-derived view bounded to the last 15 agent runs, so
->    that range isn't possible right now. Build the rest of the dashboard; skip only the over-cap widget. This
->    is enforced by the `hardRefuse` registry entry and the gate in `primitives/tier-resolution.md`.
->
-> **Only build these when the prompt EXPLICITLY signals runtime compliance, a standard/pack/ISO clause, or
-> a rule violation** — see `primitives/tier-resolution.md § Governance violations (gated)`. Generic
-> "governance / policy / denials / enforcement" must route to the Insights-API metrics `policy-denials` /
-> `governance-verdicts` (`sdk/governance.md`), NOT here — do not regress them. Never add these to a plain
-> agent-ops dashboard.
+> Requires `@uipath/uipath-typescript` **≥ 1.5.1**. Scopes: `Insights Insights.RealTimeData OR.Folders.Read` (all in `DASHBOARD_SCOPES`). Subpath: `@uipath/uipath-typescript/traces` (the `AgentTraces` service).
+> **Org-admin required.** Both methods 403 for non-admin callers (SDK throws `AuthorizationError`). On 403: tell the user their account lacks governance access, render the widget's EmptyState, build the rest of the dashboard. Do not retry.
 
-```ts
-// The window every runtime-compliance widget must show as its subtitle.
-export const WINDOW_LABEL = 'Last 15 agent runs'
+First-class Insights endpoints for **agentic runtime governance** — every policy check an agent run went through (allow/deny per hook) plus an aggregated posture summary. These widgets honor the dashboard time range like any other metric.
+
+> **GATE — propose these ONLY on an EXPLICIT runtime-compliance signal:** a standard/pack reference
+> ("standard(s)", "pack", `ISO` + clause e.g. `ISO 42001` / `A.8.4`, or a named pack), an explicit **rule/policy
+> violation** ask ("rule(s) violated/fired", "runtime violations"), or runtime-governance terms ("runtime
+> compliance/governance", hook names, `enforce`/`audit` mode). Generic "governance / policy / denials / blocked
+> actions / allow-deny / enforcement" routes to `policy-denials` / `governance-verdicts` (`sdk/governance.md`) —
+> a different domain (platform policy enforcement). When unsure which the user means, ASK. Never add these
+> widgets to a plain agent-health/ops dashboard.
+
+```typescript
+import { AgentTraces, AgentGovernanceVerdict, AgentGovernanceSection } from '@uipath/uipath-typescript/traces'
+const svc = new AgentTraces(sdk)
 ```
 
-## The governance span contract
+Both methods take a **required positional `startTime: Date`** first (same convention as `Governance.getPolicyTraces`); everything else lives in options.
 
-Each agent run = one trace (`traceId` / `jobKey`). Governance spans (within the trace) come in two kinds.
-`attributes` is an **object** when the spans come from `Traces.getById` (`SpanGetResponse.attributes` is
-`Record<string, unknown>`) and a **JSON string** from the AgentTraces endpoints — `@/lib/governance`
-accepts both, so never `JSON.parse` by hand.
+## getGovernanceSummary(startTime, options?) — breakdowns in ONE call
 
-- **Per-rule** — `name` starts with `governance.rule.`. Keys: `governance.rule_id`, `governance.rule_name`,
-  `governance.pack_name` (the standard, e.g. `ISO/IEC 42001:2023 Runtime`), `governance.hook`
-  (`BEFORE_AGENT`/`BEFORE_MODEL`/`AFTER_MODEL`/`AFTER_AGENT`), `governance.matched` (bool),
-  `governance.action` (`allow`/`audit`/`block`), `governance.status` (`PASS`/`MATCHED`),
-  `governance.detail`, `agentName`/`agentVersion`. **A violation = `governance.matched === true`.**
-- **Per-hook summary** — `governance.before_agent|before_model|after_model|after_agent`:
-  `governance.total_rules`, `governance.matched_rules`, `governance.final_action`,
-  `governance.enforcement_mode` (`audit`/`enforce`).
-- Some rule spans carry only `{agentId, agentName, agentVersion}` (no rule signal) — the parser skips them.
-  The integer span `status`/`Status` is NOT the governance signal; use `governance.matched`/`governance.status`.
+Returns a **single object — not an array**. Options: `{ endTime?, topN?, packName?, sections? }`.
 
-## Violations vs evaluations (PASS vs MATCHED)
+**Example response** (grounded in SDK test fixtures):
 
-- **VIOLATION** = `governance.matched` truthy (`true` or `"true"`) — a rule fired.
-- **EVALUATION** = ANY `governance.rule.*` span — every rule check, PASS or MATCHED.
-
-Violation-only widgets show coverage gaps, but a healthy fleet (rules passing) renders empty — indistinguishable from "no governance data". So when the user asks for **runtime compliance** (not just violations), ALSO propose an all-evaluations widget: `rule-evaluations-by-outcome` (Pass vs Matched), `rule-evaluations-by-hook`, or `rule-compliance`. Back those with `parseRuleEvaluations`; keep the violation widgets on `parseGovernanceSpans().violations`.
-
-```ts
-import { parseGovernanceSpans, parseRuleEvaluations, countBy } from '@/lib/governance'
-import type { GovernanceRuleEvaluation } from '@/lib/governance'
-
-const evals = parseRuleEvaluations(spans)            // EVERY rule check (PASS + MATCHED); each has matched/outcome
-const violations = parseGovernanceSpans(spans).violations // matched only
+```json
+{
+  "total": 26, "violations": 3,
+  "byHook":   [{ "key": "BEFORE_MODEL", "name": null, "count": 12, "violationCount": 2 }],
+  "byAgent":  [{ "key": "af12…", "name": "customer-care-assistant-for-acmecare", "count": 20, "violationCount": 1 }],
+  "byPolicy": [{ "key": "ISO42001-guardrail-prompt-injection", "name": "AI system impact assessment", "count": 2, "violationCount": 0 }],
+  "byPack":   [{ "key": "ISO/IEC 42001:2023 Runtime", "name": null, "count": 26, "violationCount": 3 }],
+  "byAction": [], "byMode": []
+}
 ```
 
-`GovernanceRuleEvaluation = GovernanceViolation + { matched: boolean, outcome: 'Matched' | 'Pass' }`.
+Semantics:
+- `violations` / `violationCount` = **Deny verdicts**; `count`/`total` = all checks. Violation widgets read `violationCount`; all-checks widgets read `count`.
+- **`byAction` and `byMode` are EMPTY unless opted in** via `sections: [AgentGovernanceSection.Action]` / `[…Mode]`. Forgetting `sections` is the compiles-green-renders-empty trap here.
+- `name` is populated for `byPolicy`/`byAgent`; render `name ?? key`.
+- `topN` caps each breakdown; `packName` scopes totals + breakdowns to one pack.
 
-## Use the shipped lib — never hand-roll parsing
+## getGovernanceDecisions(startTime, options?) — the record grain
 
-`@/lib/governance` (typed, hardened, never throws) is the only sanctioned parser:
+One row per policy check. Paginated; rows on `.items`. Options: `{ endTime?, hook?, evaluatorResult?, policyId?, agentId?, violationsOnly?, pageSize?, cursor? }`.
 
-```ts
-import { parseGovernanceSpans, countBy } from '@/lib/governance'
-import type { GovernanceViolation, GovernanceHookSummary, GovernanceHook } from '@/lib/governance'
+**Example response** (`.items` — grounded in SDK test fixtures):
 
-const { violations, hookSummaries } = parseGovernanceSpans(spans) // violations = one row per FIRED rule
-// countBy(violations, v => v.standard) → chart-ready [{name,value}] (descending)
+```json
+{
+  "items": [{
+    "startTime": "2026-06-28T14:03:22Z", "endTime": "2026-06-28T14:03:24Z",
+    "traceId": "3f9c…", "jobKey": "8a1d…", "folderKey": "f-1001", "source": "10",
+    "policyId": "ISO42001-guardrail-prompt-injection", "policyName": "AI system impact assessment",
+    "packName": "ISO/IEC 42001:2023 Runtime", "hook": "BEFORE_MODEL",
+    "mode": "ENFORCE", "actionApplied": "BLOCK", "evaluatorResult": "DENY",
+    "reason": "Prompt injection was detected with a probability of 0.97.",
+    "agentId": "af12…", "agentName": "customer-care-assistant-for-acmecare"
+  }]
+}
 ```
 
-`GovernanceViolation = { agentName, agentVersion, ruleId, ruleName, standard, hook, action, status, detail, time, jobKey, traceId }`.
+Semantics — the traps:
+- **`evaluatorResult === AgentGovernanceVerdict.Deny` IS the violation.** `mode` (`AUDIT`/`ENFORCE`) says whether it was enforced; `actionApplied` is the enforcement action string (`null` in audit mode). Compare enum fields with the imported enums — `d.evaluatorResult === 'DENY'` is a tsc error.
+- **No server-side `traceId` filter.** Per-run views fetch the window and filter client-side on the row's `traceId`. `agentId` (agent project key) IS a server-side filter.
+- `violationsOnly: true` → Deny rows only. Use for violation tables and violation drill-downs.
+- One agent run = one `traceId` (with its `jobKey`); group rows by `traceId` for run-level rollups.
+- Rows are TS interfaces — project with `.map(x => ({ ...x }))`, never `as` casts.
+- User vocabulary maps onto the response fields: "rule" → **policy** (`policyId`/`policyName`), "standard" → **pack** (`packName`), "violation" → **Deny verdict**, "enforcement action" → **actionApplied**, "audit vs enforce" → **mode**.
 
-## SDK fetch paths — use `Traces.getById(traceId)`
+## Module patterns
 
-Spans come from **`new Traces(sdk).getById(traceId)`** → bare `SpanGetResponse[]` (up to `pageSize`, default
-1000, single fetch — no cursor). The Insights/AgentTraces span endpoints do not reliably return the
-governance spans; `Traces.getById` does. Get the `traceId` from the agent's Job. Subpath:
-`@uipath/uipath-typescript/traces`.
-
-- **Per-agent / per-run (Layer 1, cheap):** find the run via `Jobs.getAll({ filter: "ProcessType eq 'Agent'",
-  orderby: 'CreationTime desc' })` → match `processName` (or `traceId`) → `Traces.getById(traceId)`.
-- **Recent-runs scan (Layer 2, bounded, DEFAULT):** enumerate the **last `MAX_RUNS` (=15) agent runs** via the
-  same Jobs call (each Job carries its `traceId`), newest first, **no per-agent dedup** — so repeat runs from
-  the same agent stay visible — and `Traces.getById` each. Bounded + rate-limit-safe. Surface the
-  `WINDOW_LABEL` in the widget.
-- **Latest-per-agent scan (opt-in):** the deduped variant (one row per distinct agent). Use ONLY when the user
-  explicitly wants per-agent rollup, not recent runs. Same 15-run bound.
-
-**Use the shipped `@/lib/governance-scan` — never hand-roll the Jobs→Traces loop.** It ships the
-bounded scanners (`scanRecentRuns`, `scanLatestPerAgent`) and the two public helpers
-(`scanViolations`, `scanEvaluations`) with the `MAX_RUNS = 15` cap baked in. Both `fetchData` AND a
-chart's `fetchDetail` reuse the same call, so they never drift.
-
-```ts
+```typescript
+// agent-governance-violations (kpi-card with delta): summary twice — window + prior window
 import type { MetricFn } from '@/lib/metric-contract'
-import { countBy } from '@/lib/governance'
-import { scanViolations, scanEvaluations } from '@/lib/governance-scan'
+import { THIRTY_DAYS_AGO, NOW, priorWindow } from '@/lib/time'
 
-// violations-by-standard (donut: xKey name, yKey value) — subtitle = WINDOW_LABEL.
-export const fetchData: MetricFn = async (sdk) => countBy(await scanViolations(sdk), v => v.standard)
-
-// fetchDetail = the individual matched-rule records behind the donut (record-grain drill-down).
-export const fetchDetail: MetricFn = async (sdk) => (await scanViolations(sdk)).map(v => ({ ...v }))
-```
-
-`scanViolations` = recent-runs scan mapped through `parseGovernanceSpans().violations` (matched only);
-`scanEvaluations` = the same scan through `parseRuleEvaluations` (every check, PASS + MATCHED). Both
-default to **recent runs, no dedup**. For a per-agent rollup, call `scanLatestPerAgent(sdk, parse)`
-directly (dedup by agent name, same 15-run bound).
-
-### All-evaluations scan (PASS + MATCHED) — `scanEvaluations`
-
-`scanEvaluations` is the recent-runs scan through `parseRuleEvaluations` — EVERY rule check, so a
-compliant fleet is visible (not just violations). Same last-15-runs bound.
-
-```ts
-import { countBy } from '@/lib/governance'
-import { scanEvaluations } from '@/lib/governance-scan'
-
-// rule-evaluations-by-hook (donut)
-const byHook = countBy(await scanEvaluations(sdk), e => e.hook)
-// rule-evaluations-by-outcome (donut → Pass vs Matched)
-const byOutcome = countBy(await scanEvaluations(sdk), e => e.outcome)
-
-// rule-compliance (ranked-table): group by ruleName → evaluated vs matched counts
-const evals = await scanEvaluations(sdk)
-const m = new Map<string, { name: string; standard: string; hook: string; evaluated: number; matched: number }>()
-for (const e of evals) {
-  const cur = m.get(e.ruleName) ?? { name: e.ruleName, standard: e.standard, hook: e.hook, evaluated: 0, matched: 0 }
-  cur.evaluated += 1
-  if (e.matched) cur.matched += 1
-  m.set(e.ruleName, cur)
-}
-const ruleCompliance = [...m.values()].sort((a, b) => b.evaluated - a.evaluated)
-```
-
-> `Traces.getById(traceId, { agentId?, pageSize?, includeExpiredSpans? })` returns the trace's full span set
-> (governance rule + hook spans included); `parseGovernanceSpans` filters to the governance ones. Generic
-> alternative if needed: `Traces.getSpansByIds(traceId, spanIds)`.
-
-## `agent-compliance-report` — actual job runs + rowLink drill-down
-
-A `data-table` of the **last 15 agent job runs** (NOT a deduped agent list, NOT the Insights `Agents.getAll`
-aggregate). Each row is one run summarized from its trace: agent, start time, rules evaluated, rules matched
-(violations), final action. `rowLink: { key: "runKey" }` keys on the run's `traceId`, so the drill-down opens
-the exact run. The subtitle is `WINDOW_LABEL` (`Last 15 agent runs`).
-
-`fetchData` fetches one trace per run (bounded at 15 — rate-limit-safe). `fetchDetailByKey(sdk, runKey)`
-re-reads that one trace and returns a named-source map for the rich `detailView`:
-- `rows` — every rule check (PASS + MATCHED) for the run.
-- `byOutcomeByHook` — Pass vs Matched per hook (multi-line series; keys `Pass`/`Matched`).
-- `byAction` — matched rules by enforcement action (`block`/`audit`/`allow`) donut.
-- `byRule`, `byHook`, `byOutcome` — violation rollups.
-
-```ts
-import type { MetricFn, MetricDetailByKeyFn } from '@/lib/metric-contract'
-import { parseGovernanceSpans, parseRuleEvaluations, countBy } from '@/lib/governance'
-
-const MAX_RUNS = 15
-const HOOKS = ['BEFORE_AGENT', 'BEFORE_MODEL', 'AFTER_MODEL', 'AFTER_AGENT'] as const
-
-// Main table = last 15 agent RUNS (job runs), each summarized from its trace.
 export const fetchData: MetricFn = async (sdk) => {
-  const { Jobs } = await import('@uipath/uipath-typescript/jobs')
-  const { Traces } = await import('@uipath/uipath-typescript/traces')
-  const jobs = (await new Jobs(sdk).getAll(
-    { filter: "ProcessType eq 'Agent'", orderby: 'CreationTime desc', pageSize: 50 }))?.items ?? []
-  const rows: Record<string, unknown>[] = []
-  for (const job of jobs as Array<{ processName?: string | null; traceId?: string | null; startTime?: string | null }>) {
-    if (!job.traceId) continue
-    const spans = await new Traces(sdk).getById(job.traceId)
-    const evaluations = parseRuleEvaluations(spans)
-    const { violations } = parseGovernanceSpans(spans)
-    rows.push({
-      runKey: job.traceId,                     // rowLink key → drills into THIS run
-      agentName: job.processName ?? '—',
-      startTime: job.startTime ?? '',
-      evaluated: evaluations.length,
-      matched: violations.length,
-      finalAction: violations.some(v => v.action === 'block') ? 'block'
-        : violations.some(v => v.action === 'audit') ? 'audit' : 'allow',
-    })
-    if (rows.length >= MAX_RUNS) break
-  }
-  return rows
+  const { AgentTraces } = await import('@uipath/uipath-typescript/traces')
+  const svc = new AgentTraces(sdk)
+  const [prevStart, prevEnd] = priorWindow(THIRTY_DAYS_AGO, NOW)
+  const [cur, prev] = await Promise.all([
+    svc.getGovernanceSummary(THIRTY_DAYS_AGO, { endTime: NOW }),
+    svc.getGovernanceSummary(prevStart, { endTime: prevEnd }),
+  ])
+  return [{ value: cur.violations, previous: prev.violations }]
 }
 
-// Drill-down: re-read the run's trace (runKey IS the traceId) — one round-trip.
-export const fetchDetailByKey: MetricDetailByKeyFn = async (sdk, runKey) => {
-  const { Traces } = await import('@uipath/uipath-typescript/traces')
-  const { parseGovernanceSpans, parseRuleEvaluations, countBy } = await import('@/lib/governance')
-  const spans = await new Traces(sdk).getById(runKey)
-  const rows = parseRuleEvaluations(spans)             // ALL checks (PASS + MATCHED)
-  const { violations } = parseGovernanceSpans(spans)
+// fetchDetail — the Deny decisions behind the count (record-grain drill-down)
+export const fetchDetail: MetricFn = async (sdk) => {
+  const { AgentTraces } = await import('@uipath/uipath-typescript/traces')
+  const page = await new AgentTraces(sdk).getGovernanceDecisions(THIRTY_DAYS_AGO, { endTime: NOW, violationsOnly: true })
+  return (page?.items ?? []).map(x => ({ ...x }))
+}
+```
+
+```typescript
+// Breakdown donuts / ranked tables: ONE summary call, pick the section
+// violations-by-standard → byPack · violations-by-rule → byPolicy · violations-by-hook → byHook
+// agents-by-violations → byAgent · matched-rules-by-action → byAction (sections opt-in!)
+const { AgentTraces, AgentGovernanceSection } = await import('@uipath/uipath-typescript/traces')
+const s = await new AgentTraces(sdk).getGovernanceSummary(THIRTY_DAYS_AGO, {
+  endTime: NOW,
+  sections: [AgentGovernanceSection.Action],   // ONLY when reading byAction/byMode
+})
+return s.byPack.map(p => ({ name: p.name ?? p.key ?? 'Unknown', value: p.violationCount }))
+```
+
+```typescript
+// rule-evaluations-by-outcome (donut): Allow vs Deny across all checks
+const s = await new AgentTraces(sdk).getGovernanceSummary(THIRTY_DAYS_AGO, { endTime: NOW })
+return [
+  { name: 'Allow', value: s.total - s.violations },
+  { name: 'Deny', value: s.violations },
+]
+```
+
+```typescript
+// recent-violations (data-table): the raw Deny rows
+const page = await new AgentTraces(sdk).getGovernanceDecisions(THIRTY_DAYS_AGO, { endTime: NOW, violationsOnly: true })
+return (page?.items ?? []).map(x => ({ ...x }))
+```
+
+## `agent-compliance-report` — one row per run + rowLink drill-down
+
+Group decisions by `traceId` (one run = one trace). Keep the row keys the registry columns expect: `runKey`, `agentName`, `startTime`, `evaluated`, `matched`, `finalAction`.
+
+```typescript
+import type { MetricFn, MetricDetailByKeyFn } from '@/lib/metric-contract'
+import { THIRTY_DAYS_AGO, NOW } from '@/lib/time'
+
+type RunRow = { runKey: string; agentName: string; startTime: string; evaluated: number; matched: number; finalAction: string }
+
+export const fetchData: MetricFn = async (sdk) => {
+  const { AgentTraces, AgentGovernanceVerdict, AgentGovernanceMode } = await import('@uipath/uipath-typescript/traces')
+  const rows = (await new AgentTraces(sdk).getGovernanceDecisions(THIRTY_DAYS_AGO, { endTime: NOW }))?.items ?? []
+  const byRun = new Map<string, RunRow>()
+  for (const d of rows) {
+    if (!d.traceId) continue
+    const run = byRun.get(d.traceId) ?? { runKey: d.traceId, agentName: d.agentName ?? '—', startTime: d.startTime, evaluated: 0, matched: 0, finalAction: 'allow' }
+    run.evaluated += 1
+    if (d.evaluatorResult === AgentGovernanceVerdict.Deny) {
+      run.matched += 1
+      run.finalAction = d.mode === AgentGovernanceMode.Enforce ? (d.actionApplied ?? 'enforced') : 'audit'
+    }
+    byRun.set(d.traceId, run)
+  }
+  return [...byRun.values()].sort((a, b) => b.startTime.localeCompare(a.startTime)).map(r => ({ ...r }))
+}
+
+// Drill-down: same window, filtered client-side to the clicked run (no server traceId filter).
+// Returns the named-source map the registry detailView expects.
+export const fetchDetailByKey: MetricDetailByKeyFn = async (sdk, key) => {
+  const { AgentTraces, AgentGovernanceVerdict } = await import('@uipath/uipath-typescript/traces')
+  const all = (await new AgentTraces(sdk).getGovernanceDecisions(THIRTY_DAYS_AGO, { endTime: NOW }))?.items ?? []
+  const rows = all.filter(d => d.traceId === key).map(x => ({ ...x }))
+  const denies = rows.filter(d => d.evaluatorResult === AgentGovernanceVerdict.Deny)
+  const count = (list: typeof rows, pick: (d: (typeof rows)[number]) => string) => {
+    const acc: Record<string, number> = {}
+    for (const d of list) { const k = pick(d); acc[k] = (acc[k] ?? 0) + 1 }
+    return Object.entries(acc).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+  }
+  const hooks = [...new Set(rows.map(d => String(d.hook ?? 'UNKNOWN')))]
   return {
     rows,
-    byOutcomeByHook: HOOKS.map(h => ({
+    byOutcomeByHook: hooks.map(h => ({
       hook: h,
-      Pass:    rows.filter(e => e.hook === h && !e.matched).length,
-      Matched: rows.filter(e => e.hook === h &&  e.matched).length,
+      Allow: rows.filter(d => String(d.hook ?? 'UNKNOWN') === h && d.evaluatorResult !== AgentGovernanceVerdict.Deny).length,
+      Deny: rows.filter(d => String(d.hook ?? 'UNKNOWN') === h && d.evaluatorResult === AgentGovernanceVerdict.Deny).length,
     })),
-    byAction:  countBy(violations, v => v.action),     // block/audit/allow
-    byRule:    countBy(violations, v => v.ruleName),
-    byHook:    countBy(violations, v => v.hook),
-    byOutcome: countBy(rows,       e => e.outcome),
+    byAction: count(denies, d => String(d.actionApplied ?? 'none')),
+    byPolicy: count(denies, d => String(d.policyName ?? d.policyId ?? 'Unknown')),
   }
 }
 ```
 
-When the metric declares `detailView`, return a **named-source map** (`{ rows, byOutcomeByHook, byAction, byRule, byHook, byOutcome }`) whose keys match each sub-widget's `source`; otherwise return a bare array (single table). All derived from ONE `Traces.getById` — no extra round-trips. See `primitives/detail-views.md § Rich detail views`.
+When the metric declares `detailView`, the detail fetch returns a **named-source map** (`{ rows, byOutcomeByHook, byAction, byPolicy }`) whose keys match each sub-widget's `source`. See `primitives/detail-views.md § Rich detail views`.
 
-> **Per-agent rollup instead of recent runs?** Only on explicit request — swap `fetchData` to `scanLatestPerAgent` (dedup by agent name, same 15-run bound) and key `rowLink` on `agentName`. Recent-runs (above) is the default.
+## Robustness
 
-## Scope
-
-`OR.Jobs.Read` (enumerate agent runs → `traceId`, both layers) and `Traces.Api` + `Insights
-Insights.RealTimeData OR.Folders.Read` (`Traces.getById` spans). All in `DASHBOARD_SCOPES`. **`Traces.Api`
-is required** — `Traces.getById` 403s without it; it is registered on the external OAuth app at create time
-(see `plugins/build/impl.md` Phase 3) and listed in the scaffold `uipath.json` + `useAuth` defaults.
-
-## Robustness (hard requirement)
-
-`parseGovernanceSpans` never throws — malformed JSON, minimal spans, and nulls are all skipped, and it
-accepts `attributes` as either the object `Traces.getById` returns or a JSON string. Every governance widget
-must render an EmptyState ("No governance data in the last N days") when the scan returns no violations / the
-agents aren't governance-instrumented — never crash the dashboard.
+- Violation widgets on a passing fleet render an EmptyState ("No violations in this window — checks are passing"). For runtime-compliance requests ALSO offer an all-checks widget (`rule-evaluations-by-outcome`, `rule-evaluations-by-hook`, `rule-compliance`) so a compliant fleet is visible — an empty violations donut is indistinguishable from "no governance data".
+- UiPath currently ships ONE governance pack — `violations-by-standard` (byPack) is usually a single slice. Prefer by-hook / by-action / by-policy / by-agent groupings; propose by-standard only when >1 pack exists.
+- 403 → org-admin missing (see the header note). Never fabricate data — surface the access gap and build the rest.

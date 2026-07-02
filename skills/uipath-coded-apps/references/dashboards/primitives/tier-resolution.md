@@ -69,7 +69,7 @@ export const fetchData: MetricFn = async (sdk) => {
 - Return a **flat array of `Row` objects** (`Record<string, unknown>`). Rows you build yourself — object literals, `countBy(...)` — satisfy `Row` directly. **SDK response arrays are interfaces and do NOT assign to `Row[]`** — project them with `.map(x => ({ ...x }))` (never `as` casts). E.g. `return (await svc.getAll(...)).items.map(x => ({ ...x }))`.
 - Use dynamic import: `const { ServiceClass } = await import('@uipath/uipath-typescript/...')`
 - Use constructor injection: `new ServiceClass(sdk)`
-- **Read methods ONLY.** Allowed: `getAll`, `getById`, `getAllRecords`, `queryRecordsById`, `getIncidents`, `getErrors`, `getErrorsTimeline`, `getConsumptionTimeline`, `getLatencyTimeline`, `getUnitConsumption`, `getSummary`, `getTopErrorCount`, `getTopConsumption`, `getIncidentDistribution`, `getUnitConsumptionSummary`, `getTimeline`, `getCallsTimeline`, `getTopSpaces`, `getSpansByTraceId`, `getSpansByReference`, `getPolicyTraces`, `getOperationSummary`, `getSlaSummary`, `getStagesSlaSummary`, `getTopRunCount`, `getTopFaultedCount`, `getTopExecutionDuration`, `getTopElementFailedCount`, `getInstanceStatusTimeline`, `getElementStats`. Never call `create`, `complete`, `assign`, `start`, `stop`, `resume`, `restart`, `insert*`, `update*`, `delete*`, `upload*`.
+- **Read methods ONLY.** Allowed: `getAll`, `getById`, `getAllRecords`, `queryRecordsById`, `getIncidents`, `getErrors`, `getErrorsTimeline`, `getConsumptionTimeline`, `getLatencyTimeline`, `getUnitConsumption`, `getSummary`, `getTopErrorCount`, `getTopConsumption`, `getIncidentDistribution`, `getUnitConsumptionSummary`, `getTimeline`, `getCallsTimeline`, `getTopSpaces`, `getSpansByTraceId`, `getSpansByReference`, `getPolicyTraces`, `getOperationSummary`, `getGovernanceDecisions`, `getGovernanceSummary`, `getSlaSummary`, `getStagesSlaSummary`, `getTopRunCount`, `getTopFaultedCount`, `getTopExecutionDuration`, `getTopElementFailedCount`, `getInstanceStatusTimeline`, `getElementStats`. Never call `create`, `complete`, `assign`, `start`, `stop`, `resume`, `restart`, `insert*`, `update*`, `delete*`, `upload*`.
 - **Full listings: use `fetchAll` — never hand-write the cursor loop.**
   ```ts
   import { fetchAll } from '@/lib/paginate'
@@ -391,51 +391,41 @@ export const fetchDetail: MetricFn = async (sdk) => {
 
 ---
 
-## Governance violations — GATED, interim (trace-derived)
+## Governance violations — GATED (runtime compliance via AgentTraces)
 
 A dedicated capability for **agent governance/compliance violations against standards** (catalog keys
 `agent-governance-violations`, `violations-by-standard`, `violations-by-rule`, `violations-by-hook`,
-`matched-rules-by-action`, `agents-by-violations`, `recent-violations`, `agent-compliance-report`). It is
-**trace-derived and interim** (no OOB aggregate) — full recipe + the typed `@/lib/governance` parser in
-[`sdk/governance-traces.md`](../../sdk/governance-traces.md).
-
-> **HARD LIMIT — last 15 agent runs.** Every runtime-compliance widget scans the **last `MAX_RUNS = 15`
-> agent runs** (actual job runs via `Jobs`→`Traces`, newest first, no per-agent dedup by default — NOT the
-> Insights `Agents.getAll` aggregate). Two rules follow:
-> 1. **State the window in the UI.** Each widget's subtitle reads `Last 15 agent runs` so the user knows the
->    exact data slice. The registry `defaults.description` already carries this — keep it.
-> 2. **Refuse over-cap asks — build the rest, skip the widget.** If the request wants more than the cap (a
->    larger window like "last 90 days", a higher count like "last 100 runs", "all runs", or tenant-wide
->    totals), do NOT build that widget. Tell the user plainly: runtime compliance is an interim trace-derived
->    view bounded to the last 15 agent runs, so that range isn't possible right now. Build every other
->    requested widget. (Backed by the `hardRefuse` entry in `capability-registry.json`.)
->
-> Prefer **hook / action / rule / agent** groupings (`violations-by-hook`, `matched-rules-by-action`,
-> `violations-by-rule`, `agents-by-violations`). Treat `violations-by-standard` as **enable-only-when >1
-> standard exists** — UiPath ships a single governance standard today, so that donut is otherwise a single
-> slice. A per-agent rollup (dedup) is opt-in via `scanLatestPerAgent`; recent-runs is the default.
-
-> Violation widgets show only matched rules — a passing fleet looks empty. For runtime-compliance requests,
-> ALSO offer the all-evaluations metrics: `rule-evaluations-by-outcome` (Pass vs Matched),
-> `rule-evaluations-by-hook`, and `rule-compliance` (rule · standard · hook · evaluated · matched) — backed by
-> `parseRuleEvaluations` / `scanEvaluations` (PASS + MATCHED), not `parseGovernanceSpans().violations`.
+`matched-rules-by-action`, `agents-by-violations`, `recent-violations`, `agent-compliance-report`,
+`rule-evaluations-by-outcome`, `rule-evaluations-by-hook`, `rule-compliance`). Backed by the SDK ≥ 1.5.1
+Insights endpoints `AgentTraces.getGovernanceDecisions` / `getGovernanceSummary` — full contract + module
+patterns in [`sdk/governance-traces.md`](../../sdk/governance-traces.md). **Org-admin required** (403 for
+other callers — surface it, EmptyState the widget, build the rest). Widgets honor the dashboard time range
+like any other metric.
 
 > **Gate — propose these ONLY on an EXPLICIT runtime-compliance / standards / rules-violation signal:**
 > a standard/pack reference ("standard(s)", "pack", `ISO` + clause e.g. `ISO 42001` / `A.8.4`, or a named
-> `pack_name`), an explicit **rule violation** ("rule(s) violated/fired", "rule violations"), or
+> pack), an explicit **rule/policy violation** ("rule(s) violated/fired", "runtime violations"), or
 > **runtime-governance** terms ("runtime compliance/governance", hook names, `enforce`/`audit` mode). The
 > request must name one of these — generic intent does not qualify.
-> `agent-compliance-report` lists the last 15 agent RUNS; a row-click opens a RICH detail view for that run by default (Pass-vs-Matched-by-hook multi-line + matched-rules-by-action donut + top-rules ranked table + full evaluations table) via `detailView`.
+> `agent-compliance-report` lists agent RUNS over the window; a row-click opens a RICH detail view for that
+> run by default (Allow-vs-Deny-by-hook multi-line + denied-by-action donut + top-policies ranked table +
+> full decisions table) via `detailView`.
 >
 > **Do NOT regress the Insights-API governance metrics.** Plain "governance", "policy", "denials", "blocked
 > actions", "allow/deny", "enforcement summary", "policy violations" → route to `policy-denials` /
-> `governance-verdicts` (the existing `Governance` SDK metrics, `sdk/governance.md`), NOT to these
-> trace-derived widgets. When unsure which the user means, ASK — don't default to the trace scan.
+> `governance-verdicts` (the `Governance` service, `sdk/governance.md` — platform policy enforcement, a
+> different domain). When unsure which the user means, ASK — don't default to the runtime-compliance family.
 > **Never add governance widgets to a plain agent-health/ops dashboard.**
->
-> When the gate IS met, load `sdk/governance-traces.md` and write each module with `@/lib/governance`
-> (`parseGovernanceSpans`/`countBy`) — never hand-roll span parsing. Every widget shows an EmptyState when
-> there's no governance data (un-instrumented agents must not crash the dashboard).
+
+> Violation widgets show only Deny verdicts — a passing fleet looks empty. For runtime-compliance requests,
+> ALSO offer the all-checks metrics: `rule-evaluations-by-outcome` (Allow vs Deny), `rule-evaluations-by-hook`,
+> and `rule-compliance` (policy · evaluated · denied) — they read `count`/`total`, not just `violationCount`.
+> Treat `violations-by-standard` as **enable-only-when >1 pack exists** — UiPath ships a single governance
+> pack today, so that donut is otherwise a single slice. Prefer hook / action / policy / agent groupings.
+
+When the gate IS met, load `sdk/governance-traces.md` and write each module against the documented example
+responses (summary sections, `violationsOnly`, enum comparisons). Every governance widget renders an
+EmptyState when the window has no governance data — un-instrumented agents must not crash the dashboard.
 
 ## T0 — Hard Refuse
 
@@ -461,7 +451,7 @@ Full method signatures, response types, and field names live in `references/sdk/
 | Agents + Agent Memory (Insights RTM, ≥ 1.4.1) | `sdk/agents.md` *(from skill root)* | `Agents`, `AgentMemory` |
 | Agent Traces (Insights RTM, ≥ 1.4.1) | `sdk/traces.md` *(from skill root)* | `AgentTraces` |
 | Governance (Insights RTM, ≥ 1.4.1) | `sdk/governance.md` *(from skill root)* | `Governance` |
-| Agent governance violations (GATED, interim, trace-derived) | `sdk/governance-traces.md` *(from skill root)* | `Jobs` → `Traces.getById(traceId)` spans + `@/lib/governance` |
+| Agent runtime-governance decisions (GATED, org-admin, ≥ 1.5.1) | `sdk/governance-traces.md` *(from skill root)* | `AgentTraces.getGovernanceDecisions` / `getGovernanceSummary` |
 | Jobs, Queues, Processes, Assets | `sdk/orchestrator.md` *(from skill root)* | `Jobs`, `Queues`, `Processes`, `Assets` |
 | Tasks | `sdk/action-center.md` *(from skill root)* | `Tasks` |
 | Cases, Process Instances, Maestro Insights/SLA | `sdk/maestro.md` *(from skill root)* | `Cases`, `CaseInstances`, `MaestroProcesses` |
@@ -475,6 +465,7 @@ Full method signatures, response types, and field names live in `references/sdk/
 - `AgentTraces.getErrorsTimeline / getLatencyTimeline / getUnitConsumption({ startTime?, endTime?, … })` — ONE options object, dates inside, returns a **bare array** (see `sdk/traces.md`)
 - `AgentMemory.getTimeline({ startTime?, endTime?, … })` — ONE options object, dates inside, returns a **bare array**
 - `Governance.getPolicyTraces(startTime, options?)` — required positional `startTime`, rest in options, rows on `.items`; `getOperationSummary` returns a **single object** (wrap into rows in the module)
+- **(≥1.5.1)** `AgentTraces.getGovernanceDecisions(startTime, options?)` — required positional `startTime`, rows on `.items`, paginated; `AgentTraces.getGovernanceSummary(startTime, options?)` — returns a **single object** (`byAction`/`byMode` empty unless `sections` opts in). Both org-admin (see `sdk/governance-traces.md`)
 - `Cases` / `MaestroProcesses.getTopRunCount / getTopFaultedCount / getTopExecutionDuration / getTopElementFailedCount / getInstanceStatusTimeline(start, end, options?)` — positional `Date`s, **bare array**; `getElementStats(processKey, packageId, start, end, version)` all positional, bare array (see `sdk/maestro.md`)
 - `CaseInstances.getSlaSummary({ startTimeUtc?, endTimeUtc?, … })` — options object, rows on `.items`; `getStagesSlaSummary(options?)` — **bare array**. SLA methods need `PIMS` on top of the Insights scopes
 

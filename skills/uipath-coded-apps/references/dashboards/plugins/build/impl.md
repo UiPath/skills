@@ -81,14 +81,14 @@ The plan message ends there — no OAuth talk in the plan, no tool calls in the 
 - 📋 **Table or ranked list** — "as a sortable table with columns [A, B, C]", or "ranked worst/highest-first". To make rows clickable (drill into the clicked entity), set `rowLink: { key: "<rowField>" }` and export `fetchDetailByKey(sdk, key, getToken)` — generates a `/<widget>/:key` detail page.
 - 🔷 **Multi-line chart** — "as multiple lines over time (e.g. P50/P95)". Add the `click → …` clause unless `noDetail`.
 
-> **Governance violations are GATED.** Only propose the governance/compliance widgets (violations by
-> standard/rule/hook, agents-by-violations, recent-violations, per-agent compliance report) when the prompt
-> signals governance intent — "governance/policy violation(s)", "compliance", a standard/pack reference
-> (`ISO 42001`, `A.8.4`, "standard", "pack"), or runtime-governance terms. Then read
-> `sdk/governance-traces.md` and build the modules with `@/lib/governance`. NEVER add them to a plain
-> agent-health/ops dashboard. They're trace-derived/interim and HARD-CAPPED at the last 15 agent runs (job
-> runs, no dedup) — every widget's subtitle says "Last 15 agent runs", and a request for more (larger window,
-> more runs, "all runs"/"all agents") is refused, not built. Say so in the plan.
+> **Governance violations are GATED.** Only propose the runtime-compliance widgets (violations by
+> standard/rule/hook, agents-by-violations, recent-violations, per-agent compliance report, rule-evaluation
+> views) when the prompt signals runtime-governance intent — "governance/policy violation(s)", "compliance",
+> a standard/pack reference (`ISO 42001`, `A.8.4`, "standard", "pack"), or runtime-governance terms. Then read
+> `sdk/governance-traces.md` and build the modules on `AgentTraces.getGovernanceDecisions` /
+> `getGovernanceSummary` (SDK ≥ 1.5.1). NEVER add them to a plain agent-health/ops dashboard. They need an
+> **org-admin** caller — a 403 means the user's account lacks governance access (say so; the rest of the
+> dashboard still builds). Widgets honor the dashboard time range like any other metric.
 
 > **Promise only what the scaffold can render.** The bullets above are the complete set of buildable affordances. Before writing a feature into the plan, confirm it maps to one of them: KPI delta → `{value, previous}`; row drill-down → `rowLink` + `fetchDetailByKey`. If a prompt needs something not listed (a bespoke interaction, a custom layout), say so in the plan ("this needs a template extension") rather than promising it and silently dropping it during the build.
 
@@ -243,7 +243,7 @@ uip admin external-apps create "UiPath Dashboard - <DASHBOARD_NAME>" \
   --output json
 ```
 
-`Traces.Api` is required for the governance trace-derived metrics (`Traces.getById`); without it those span reads 403. Read `ClientId` from the JSON response and carry it as the plan's `clientId` (the build subagent writes it into intent.json). Tell the user: "OAuth app created — building now."
+The runtime-governance metrics (`AgentTraces.getGovernanceDecisions`/`getGovernanceSummary`) need only the Insights scopes; `Traces.Api` stays registered for span-level drill-downs (`Traces.getById` in fetchDetail recipes). Read `ClientId` from the JSON response and carry it as the plan's `clientId` (the build subagent writes it into intent.json). Tell the user: "OAuth app created — building now."
 
 **If the command fails** (invalid scopes for this environment): retry with the minimal set:
 

@@ -3,10 +3,11 @@ description: >
   Gate-CLOSED no-regression guard for governance routing. A GENERIC governance
   prompt (policy denials, allow/deny verdicts, blocked actions) must route to
   the pre-existing Insights-API metrics — Governance.getPolicyTraces and
-  Governance.getOperationSummary — and must NOT regress into the gated
-  trace-derived family (parseGovernanceSpans / scanViolations). This protects
-  the gate added so a generic governance dashboard keeps using the OOB Insights
-  metrics, not the interim trace-scan. See sdk/governance.md.
+  Governance.getOperationSummary — and must NOT drift into the gated
+  AgentTraces runtime-governance family (getGovernanceDecisions /
+  getGovernanceSummary). This protects the routing boundary so a generic
+  governance dashboard keeps using the OOB Insights metrics. See
+  sdk/governance.md.
 tags: [uipath-coded-apps, integration, dashboard, feature:compliance, mode:build, lifecycle:generate]
 
 sandbox:
@@ -39,13 +40,13 @@ success_criteria:
     pass_threshold: 1.0
 
   # Gate closed: generic governance uses the Insights-API metrics and does NOT
-  # regress into the trace-derived family.
+  # drift into the AgentTraces runtime-governance family.
   - type: run_command
-    description: "Metric modules use Governance.getPolicyTraces + getOperationSummary; no trace-derived parsing"
+    description: "Metric modules use Governance.getPolicyTraces + getOperationSummary; no drift into the AgentTraces runtime-governance family"
     command: >
       python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
       --min-metrics 2 --require-substr "getPolicyTraces" --require-substr "getOperationSummary"
-      --forbid-substr "parseGovernanceSpans" --forbid-substr "scanViolations"
+      --forbid-substr "getGovernance" --forbid-substr "parseGovernanceSpans"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

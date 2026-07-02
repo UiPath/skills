@@ -784,10 +784,6 @@ test('1.5.0: insights metrics generate clean widgets (no leftover placeholders; 
   }
 })
 
-test('1.5.0: MIN_SDK_VERSION floor is 1.5.0 (insights aggregates ship in 1.5.0)', () => {
-  assert.equal(MIN_SDK_VERSION, '1.5.0')
-})
-
 test('1.4.1: agent-health shell build compiles formatted/colored columnDefs', () => {
   const entry = registry.t1['agent-health']
   const content = buildWidgetFile(
@@ -1191,7 +1187,7 @@ test('multi-line series: a string literal (registry form) passes through unchang
 // NOTE: scaffold tsconfig (incremental/skipLibCheck) is now validated in
 // apps-dev-tools (it owns the scaffold source) — not a skill concern.
 
-// ── Governance violations (gated, trace-derived, interim) ─────────────────────
+// ── Governance violations (gated, runtime compliance) ─────────────────────────
 
 const TRACE_GOV_KEYS = new Set(['agent-governance-violations', 'violations-by-standard', 'violations-by-rule', 'violations-by-hook', 'agents-by-violations', 'recent-violations', 'agent-compliance-report'])
 
@@ -1592,4 +1588,38 @@ test('buildViewSpec: detailColumns + detailSortKey fall back to registry default
   assert.equal(spec.detailExport, 'fetchDetail', 'detail view runs the record-grain fetchDetail export')
   assert.ok(spec.detailColumns, 'detailColumns must come from registry defaults when intent omits them')
   assert.ok(spec.detailColumns.includes('agentName'), 'compiled detailColumns should carry the registry keys')
+})
+
+// ── SDK 1.5.1: runtime governance via AgentTraces ─────────────────────────────
+
+const GOV_151_KEYS = ['agent-governance-violations', 'violations-by-standard', 'violations-by-rule',
+  'violations-by-hook', 'matched-rules-by-action', 'agents-by-violations', 'recent-violations',
+  'agent-compliance-report', 'rule-evaluations-by-outcome', 'rule-evaluations-by-hook', 'rule-compliance']
+
+test('1.5.1: registry references only the AgentTraces governance surface (no span-scan tokens)', () => {
+  const raw = JSON.stringify(registry)
+  for (const token of ['scanViolations', 'scanEvaluations', 'governance-scan', 'parseGovernanceSpans',
+    'parseRuleEvaluations', 'scanLatestPerAgent', 'last 15', 'Last 15', 'WINDOW_LABEL', 'Traces.getById']) {
+    assert.ok(!raw.includes(token), `registry still references retired workaround token "${token}"`)
+  }
+})
+
+test('1.5.1: every runtime-governance entry routes to the AgentTraces governance methods', () => {
+  for (const key of GOV_151_KEYS) {
+    const entry = registry.t1[key]
+    assert.ok(entry, `missing ${key}`)
+    const text = (entry.description ?? '') + (entry.detailRecipe ?? '')
+    assert.match(text, /getGovernanceDecisions|getGovernanceSummary/, `${key} must reference the 1.5.1 methods`)
+  }
+})
+
+test('1.5.1: over-cap compliance phrasings are no longer hard-refused', () => {
+  for (const text of ['compliance across all agent runs', 'rule violations for all runs', 'governance checks for the last 100 agent runs']) {
+    const refused = registry.hardRefuse.some(e => new RegExp(e.pattern, 'i').test(text))
+    assert.ok(!refused, `"${text}" must not be refused — getGovernanceDecisions honors real windows`)
+  }
+})
+
+test('1.5.1: SDK floor covers the governance methods', () => {
+  assert.equal(MIN_SDK_VERSION, '1.5.1')
 })

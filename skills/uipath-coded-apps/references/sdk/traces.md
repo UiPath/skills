@@ -9,7 +9,7 @@ import { AgentTraces, AgentTraceExecutionType } from '@uipath/uipath-typescript/
 const svc = new AgentTraces(sdk)
 ```
 
-**Convention:** every method takes ONE optional options object — `{ startTime?: Date, endTime?: Date, folderKeys?, agentId?, agentVersion?, executionType? }`. Dates go INSIDE the object (unlike `Agents`, which uses positional Dates). Window defaults to the **last 1 year** server-side. `executionType`: `AgentTraceExecutionType.Debug | Runtime` (omit for both).
+**Convention:** every method takes ONE optional options object — `{ startTime?: Date, endTime?: Date, folderKeys?, agentId?, agentVersion?, executionType? }`. Dates go INSIDE the object (unlike `Agents`, which uses positional Dates). Window defaults to the **last 1 year** server-side. `executionType`: `AgentTraceExecutionType.Debug | Runtime` (omit for both). Exception: the two governance methods take a **required positional `startTime: Date`** first (options second) and are GATED — full contract, gate, and module patterns in [`sdk/governance-traces.md`](governance-traces.md).
 
 The three timeline/consumption methods return a **bare array** — no `.items` / `.data` unwrapping. The span methods are listed for completeness but are record-grain (not dashboard metrics).
 
@@ -20,6 +20,8 @@ The three timeline/consumption methods return a **bare array** — no `.items` /
 | `getUnitConsumption(options?)` | `{ agentId, folderKey, agentVersion, agentUnitsConsumed, platformUnitsConsumed }` | Per-agent AGU/PLTU totals (ranked table) |
 | `getSpansByTraceId(traceId)` | `AgentSpanGetResponse[]` | All spans of one trace (drill-down, not a metric) |
 | `getSpansByReference(referenceId, options?)` | paginated `AgentSpanGetResponse` | Spans under a reference id (drill-down, not a metric) |
+| `getGovernanceDecisions(startTime, options?)` **(≥ 1.5.1, org-admin)** | paginated `.items` decision rows | Runtime-governance policy checks — see `sdk/governance-traces.md` |
+| `getGovernanceSummary(startTime, options?)` **(≥ 1.5.1, org-admin)** | single summary object | Governance posture breakdowns — see `sdk/governance-traces.md` |
 
 ## getErrorsTimeline
 

@@ -91,7 +91,7 @@ Build, debug, and deploy UiPath Coded Web Applications and Coded Action Apps usi
 | **SDK: Agents & Agent Memory (Insights RTM)** | [references/sdk/agents.md](references/sdk/agents.md) |
 | **SDK: Agent Traces (Insights RTM)** | [references/sdk/traces.md](references/sdk/traces.md) |
 | **SDK: Governance — policy evaluations (Insights API)** | [references/sdk/governance.md](references/sdk/governance.md) |
-| **SDK: Governance Traces — runtime rule evaluations** | [references/sdk/governance-traces.md](references/sdk/governance-traces.md) |
+| **SDK: Agent Governance Decisions — runtime compliance (Insights RTM)** | [references/sdk/governance-traces.md](references/sdk/governance-traces.md) |
 | **UI Patterns (polling, BPMN, HITL, text overflow, table pagination)** | [references/patterns.md](references/patterns.md) |
 | **Generate an admin dashboard from NLP** | [references/dashboards/CAPABILITY.md](references/dashboards/CAPABILITY.md) |
 
