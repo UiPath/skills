@@ -15,10 +15,10 @@ gate:
 
 | Env var | Effect |
 |---------|--------|
-| `UIPATH_TELEMETRY_DISABLED` | Reuses the `uip` CLI's variable name. Sends by default; set to `1` to disable. Unset (default) or `0` → send. |
+| `UIPATH_TELEMETRY_DISABLED` | Reuses the `uip` CLI's variable name. Sends by default; set to `1` or `true` to disable. Unset (default), `0`, or any other value → send. |
 
 Default (var unset) sends telemetry on a machine signed in to UiPath
-(`uip login`). To opt out, set `UIPATH_TELEMETRY_DISABLED=1`. The CLI owns the
+(`uip login`). To opt out, set `UIPATH_TELEMETRY_DISABLED=1` (or `true`). The CLI owns the
 Application Insights connection — there is **no** connection string to configure
 on the skills side.
 
@@ -191,7 +191,7 @@ What the hook **never** sends:
 - The `cwd` / project path and `transcript_path` — neither is collected.
 
 All fields the hook derives are low-cardinality. To stop all sending, opt out
-with `UIPATH_TELEMETRY_DISABLED=1`.
+with `UIPATH_TELEMETRY_DISABLED=1` (or `true`).
 
 ## Missing fields
 

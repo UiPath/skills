@@ -390,8 +390,9 @@ EOF
 # --- main ------------------------------------------------------------------
 main() {
   # Opt-out: send by default; skip only when telemetry is explicitly disabled
-  # (UIPATH_TELEMETRY_DISABLED=1). `uip track` applies the same gate on its side.
-  [ "${UIPATH_TELEMETRY_DISABLED:-0}" = "1" ] && exit 0
+  # (UIPATH_TELEMETRY_DISABLED=1 or =true). Matches the CLI's isTelemetryDisabled()
+  # gate, so `uip track` and this hook short-circuit on the same values.
+  case "${UIPATH_TELEMETRY_DISABLED:-0}" in 1|true) exit 0 ;; esac
 
   payload="$(cat)"
   read_fields "$(printf '%s' "$payload" | extract_fields)"
