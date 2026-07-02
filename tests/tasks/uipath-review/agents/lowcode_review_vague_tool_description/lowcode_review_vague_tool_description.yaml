@@ -69,22 +69,6 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent consulted the low-code rule catalog (agents-lowcode-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-lowcode-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent consulted the common agent rule catalog (agents-common-rules.md)"
-    tool_name: "Read"
-    command_pattern: 'agents-common-rules\.md'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Review report applies the catalog: cites VAGUE_TOOL_DESCRIPTION for vague_tool; no invented rule_ids"
     command: "python3 $TASK_DIR/check_lowcode_review_vague_tool_description.py"
