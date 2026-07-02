@@ -157,13 +157,9 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-# Safety net: delete the project even if the agent's in-band cleanup never ran
-# (crash / MAX_TURNS before the final delete). Reads report.json; idempotent;
-# always exits 0 so it never fails the test.
+# Safety net: delete THIS run's project even if the agent's in-band cleanup never
+# ran (crash / MAX_TURNS before the final delete). Reads report.json; only removes
+# the project this run created; always exits 0 so it never fails the test.
 post_run:
-  # IXP_CLEANUP_SWEEP=1: the e2e task is the SOLE backlog sweeper (integration
-  # tasks only delete their own project), so the suite never runs concurrent
-  # janitors conflicting on the same deletes. Longer timeout gives the sole
-  # sweeper room to drain the backlog.
-  - command: "IXP_CLEANUP_SWEEP=1 python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
-    timeout: 300
+  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-ixp/_shared/cleanup_project.py"
+    timeout: 60
