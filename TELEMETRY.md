@@ -1,6 +1,6 @@
 # UiPath Skills Plugin Telemetry
 
-Opt-in usage telemetry for the UiPath skills plugin. Off by default. One
+Opt-out usage telemetry for the UiPath skills plugin. On by default. One
 `PostToolUse` hook (`hooks/send-telemetry.sh`) hands a single flat JSON object
 per relevant tool call to the hidden `uip track` CLI command, which forwards it
 through the CLI's own telemetry tracker as one `uip.skills.tool-use`
@@ -10,17 +10,17 @@ session-level metrics are computed at query time from the event stream (see
 
 ## Enabling / disabling
 
-Telemetry is **opt-in / off by default**. The hook and `uip track` share one
+Telemetry is **opt-out / on by default**. The hook and `uip track` share one
 gate:
 
 | Env var | Effect |
 |---------|--------|
-| `UIPATH_TELEMETRY_DISABLED` | Reuses the `uip` CLI's variable name. Send **only** when explicitly set to `0`. Unset (default) or `1` → no send. |
+| `UIPATH_TELEMETRY_DISABLED` | Reuses the `uip` CLI's variable name. Sends by default; set to `1` or `true` to disable. Unset (default), `0`, or any other value → send. |
 
-Default (var unset) is a silent no-op. To opt in, set
-`UIPATH_TELEMETRY_DISABLED=0` on a machine signed in to UiPath (`uip login`).
-The CLI owns the Application Insights connection — there is **no** connection
-string to configure on the skills side.
+Default (var unset) sends telemetry on a machine signed in to UiPath
+(`uip login`). To opt out, set `UIPATH_TELEMETRY_DISABLED=1` (or `true`). The CLI owns the
+Application Insights connection — there is **no** connection string to configure
+on the skills side.
 
 ## What triggers an event
 
@@ -30,7 +30,7 @@ plugin; everything else exits silently. A call qualifies when:
 | Tool | Qualifies when |
 |------|----------------|
 | `Skill` | skill name starts with `uipath:` / `uipath-` |
-| `Agent` | `subagent_type` is a UiPath agent (`uipath:` / `uipath-`) or a Claude built-in (`general-purpose`, `Explore`, `Plan`, `claude`, `claude-code-guide`, `statusline-setup`, `fork`) — **not** other plugins' (`<plugin>:<name>`) or user-defined custom agents |
+| `Agent` / `spawn_agent` | spawned type is a UiPath agent (`uipath:` / `uipath-`) or a built-in/generic type (Claude's `general-purpose`, `Explore`, `Plan`, `claude`, `claude-code-guide`, `statusline-setup`, `fork`, or Codex's `default`) — **not** other plugins' (`<plugin>:<name>`) or user-defined custom agents. Claude spawns via `Agent` + `tool_input.subagent_type`; Codex via `spawn_agent` + `tool_input.agent_type` |
 | `Bash` / `PowerShell` | command invokes the `uip` CLI or `rpa-tool` |
 | `Edit` / `Write` / `Read` / `Glob` / `Grep` | path targets `.cs` (coded workflows), `.flow`, `.xaml`, `.uipx`, `.bpmn`, `agent.json`, `caseplan.json`, `project.json`, `app.config.json`, `action-schema.json` |
 
@@ -106,7 +106,7 @@ region where it actually lives:
 | Region | Fields |
 |--------|--------|
 | Envelope (top-level keys) | `toolName`, `toolUseId`, `sessionId`, `permissionMode`, `durationMs`, `effortLevel` (`effort.level`), `agentType` |
-| `tool_input` | `skillName`, `uipSubcommand` (from `command`), `fileExtension` (from `file_path`), `subagentType` |
+| `tool_input` | `skillName`, `uipSubcommand` (from `command`), `fileExtension` (from `file_path`), `subagentType` (from `subagent_type`, or `agent_type` on a Codex `spawn_agent` call — normalized to the same field so it never collides with the envelope `agent_type`) |
 | `tool_response` | `outcome` (`interrupted` / `success`), `subagentModel` (`resolvedModel`) |
 
 Content nested inside a JSON string, or at the wrong depth, can never satisfy a
@@ -135,12 +135,34 @@ A `tool_response` that is a JSON **string** or **array** (some MCP tools) yields
 The three subagent fields describe two different viewpoints and are independent:
 
 - **`subagentType` + `subagentModel`** describe an Agent-**spawn** event — i.e.
-  `toolName == Agent`, the **parent's** view of the child it launched
-  (`tool_input.subagent_type` and the resolved `tool_response.resolvedModel`).
+  `toolName == Agent` (Claude) or `spawn_agent` (Codex), the **parent's** view of
+  the child it launched (`tool_input.subagent_type` / Codex's
+  `tool_input.agent_type`, and the resolved `tool_response.resolvedModel`).
 - **`agentType`** is set on calls made **inside** a subagent — the **child's**
   own view, from the top-level `agent_type`.
 
 All three are empty on a plain main-loop tool call.
+
+### Cross-agent compatibility
+
+The hook is a `PostToolUse` hook, so it also runs under any coding agent that
+honors `hooks.json` (e.g. **Codex**). Codex's payload envelope matches Claude
+Code's — `hook_event_name`, `tool_name`, `tool_use_id`, `session_id`,
+`permission_mode`, and `tool_input.{command,file_path}` are identical — so the
+`PostToolUse` gate, the `Bash`/`uip` attribution, and the file-extension
+attribution all work unchanged. Three differences are handled or accepted:
+
+| Difference | Handling |
+|------------|----------|
+| **Agent spawns.** Codex uses `tool_name: "spawn_agent"` with the spawned type in `tool_input.agent_type` (Claude uses `Agent` + `tool_input.subagent_type`). | Handled. `spawn_agent` is gated like `Agent`; the `awk` normalizes `tool_input.agent_type` → `subagentType`, distinct from the envelope `agent_type` (→ `agentType`). Codex's generic `default` type qualifies, like Claude's `general-purpose`/`claude` |
+| **`tool_response` is a JSON-encoded string,** not an object — even when its content is JSON. So `success` / `interrupted` / `resolvedModel` are absent. | Accepted. `outcome` is `ok` (response present, no failure signal) or `unknown`; it is never `failure`/`interrupted` for Codex. `subagentModel` stays empty. No content is parsed out of the string |
+| **`duration_ms` and `effort.level` are omitted.** | Accepted. `durationMs` → `null` (dropped by the CLI), `effortLevel` → `""`. No latency or effort data for Codex |
+
+Codex has no `Skill` tool, so `skillName` and the Skill-based attribution path
+never fire — Codex attribution relies on the `uip`-command and file-extension
+signals. The key set is unchanged, so `schemaVersion` stays `1`; events are
+distinguished by agent through the CLI-stamped client/`source` context, not a
+hook field.
 
 ### Added by the CLI
 
@@ -168,8 +190,8 @@ What the hook **never** sends:
 - File paths — only the extension / known filename.
 - The `cwd` / project path and `transcript_path` — neither is collected.
 
-All fields the hook derives are low-cardinality. Nothing is sent unless
-explicitly opted in with `UIPATH_TELEMETRY_DISABLED=0`.
+All fields the hook derives are low-cardinality. To stop all sending, opt out
+with `UIPATH_TELEMETRY_DISABLED=1` (or `true`).
 
 ## Missing fields
 
