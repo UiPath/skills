@@ -123,7 +123,7 @@ For each interactive action, in order:
 
 3. **Ask via AskUserQuestion** — the exact apply/dismiss question, plus a project-path follow-up if the path is not already known.
 
-4. **On accept:** follow the playbook's linked procedure (e.g., `interpretations/healing-agent-data.md` § Applying `update-target` Fixes: prefer a package-provided skill like `uia-improve-selector` under `<PROJECT_DIR>/.local/docs/packages/`; otherwise edit the XAML activity matched by `ActivityRefId` with the playbook's XAML Selector Encoding rules; then validate with `uip rpa validate --file-path "<WORKFLOW_FILE>" --output json`).
+4. **On accept:** follow the playbook's linked procedure (e.g., `interpretations/healing-agent-data.md` § Applying `update-target` Fixes: prefer a package-provided skill like `uia-improve-selector` under `<PROJECT_DIR>/.local/docs/packages/`; otherwise edit the XAML activity matched by `ActivityRefId` with the playbook's XAML Selector Encoding rules; then validate with `uip rpa validate --file-path "<WORKFLOW_FILE>" --output json`). **After applying, the confirmation message must restate the confirmed root cause and the complete resolution** — it must stand alone as the investigation's summary for a user returning to only that message; never let it read as if the applied edit were the primary or only fix.
 
 5. **On decline or non-answer: do not modify files.** If AskUserQuestion is unavailable, present the proposed edit as plain text and stop — never fall through to editing.
 
