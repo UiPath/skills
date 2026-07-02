@@ -175,7 +175,7 @@ When generating a new XAML file or editing one that has not been opened in Studi
 
 ### Multi-Screen Workflows
 
-For XAML workflows spanning multiple capture screens, add each screen's activities to the workflow as its OR references become available. Each batch aligns with the Complete-then-advance rule in § Multi-Step UI Flows — everything configured before the next `uip rpa uia interact` advance belongs to one batch. Validate with `validate` after each batch. Attach each target per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
+For XAML workflows spanning multiple capture screens, default to **author-once-after-capture**: complete every screen's capture + OR registration first (Complete-then-advance per § Multi-Step UI Flows), then batch-author all screens' activities in one pass and gate with `validate` + `build` ONCE (SKILL.md Rule 18). Interleave per-screen authoring only on long captures (5+ screens) under context pressure — the single end gate still applies. Turn structure: [execution-maps-guide.md § Journey: UIA capture + build](execution-maps-guide.md#journey-uia-capture--build-xaml). Attach each target per `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/references/uia-target-attachment-guide.md`.
 
 ## CLI Pitfalls
 

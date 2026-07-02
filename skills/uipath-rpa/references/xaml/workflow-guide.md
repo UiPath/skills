@@ -1,14 +1,14 @@
 # XAML Workflow Guide
 
-Discovery-first approach with iterative error-driven refinement for generating and editing XAML workflows. Always understand before acting, start simple, and validate continuously.
+Discovery-first approach for generating and editing XAML workflows. Always understand before acting, author complete, and gate with `validate` + `build`.
 
 ## Core Principles
 
 1. **Activity Docs Are the Source of Truth** — Installed packages may ship structured documentation at `{projectRoot}/.local/docs/packages/{PackageId}/`. When present, these docs contain source-accurate properties, types, defaults, enum values, conditional property groups, and working XAML examples. Always check for them first.
 2. **Know Before You Write** — **NEVER** generate XAML blind. Understand the project structure, packages, expression language, and existing patterns.
 3. **Use What You Know, Skip What You Don't Need** — If you already know the package ID and activity class name, go directly to its doc file. Be efficient: the discovery steps are a priority ladder, not a mandatory checklist.
-4. **Start Minimal, Iterate to Correct** — Start one workflow at a time and break out logic into multiple files if needed. Build one activity at a time within each workflow. Write the smallest working XAML, validate with `uip rpa validate`, fix what breaks, repeat.
-5. **Validate After Every Change** — **MUST** validate with **both** `validate` and `uip rpa build` after every change. **NEVER** assume an edit succeeded. `validate` clean alone is not validated — it does not catch unknown member names or invalid enum values; `build` does.
+4. **Batch-Author, Single Gate** — One workflow at a time; break logic into multiple files if needed. Author each workflow complete in one pass (SKILL.md Rule 18; source activities card → memory → discovery triple), then per-file `validate` to clean, fixing by category.
+5. **Gate Before Done** — **MUST** bring every changed file to per-file `validate` clean AND the project through `uip rpa build` before declaring done. **NEVER** assume an edit succeeded. `validate` clean alone is not validated — it does not catch unknown member names or invalid enum values; `build` does.
 6. **Fix Errors by Category** — Triage in order: Package → Structure → Type → Activity Properties → Logic.
 
 ---
@@ -28,7 +28,7 @@ If unclear which file to edit, **ask the user** rather than guessing.
 
 **Goal:** Understand project context, leverage installed activity documentation, study existing patterns, identify reusable components, and discover activities before writing any XAML.
 
-> **Batch discovery across activities.** When the workflow needs several activities, do NOT run the find → read-doc → `get-default-xaml` triple one activity at a time. Emit all `activities find` calls in parallel, then all `<Activity>.md` `Read`s in parallel, then all `get-default-xaml` calls in parallel (SKILL.md § Call Batching). Only the per-activity *authoring + validate* loop (Phase 2 / Phase 3) stays sequential — discovery fans out.
+> **Batch discovery across activities.** When the workflow needs several activities, do NOT run the find → read-doc → `get-default-xaml` triple one activity at a time. Emit all `activities find` calls in parallel, then all `<Activity>.md` `Read`s in parallel, then all `get-default-xaml` calls in parallel (SKILL.md § Execution Maps). Authoring batches too — one complete `Write` per workflow (Rule 18), then the Phase 3 gate.
 
 ### Step 1.1: Project Structure
 
@@ -173,7 +173,7 @@ Before writing any XAML with UI activities: [ui-automation-guide.md](../ui-autom
 
 ### For CREATE Requests
 
-**Strategy:** Generate minimal working version, one activity at a time, validate frequently.
+**Strategy:** Author the complete workflow in one `Write` (SKILL.md Rule 18), then gate via Phase 3.
 
 Use the `Write` tool to create a new `.xaml` file. Refer to [xaml-basics-and-rules.md](xaml-basics-and-rules.md) for the complete XAML file anatomy template.
 
