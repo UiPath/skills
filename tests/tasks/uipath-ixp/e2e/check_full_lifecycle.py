@@ -2,8 +2,9 @@
 """Verify the IXP full-lifecycle e2e artifacts.
 
 Grades artifact integrity, NOT whether the model's F1 improved. On the ~3-doc
-fixture set F1 is quantized in ~0.17-0.33 steps, so a single flipped prediction
-from a normal retrain trips any direction gate — noise the agent doesn't control.
+fixture set a single flipped prediction moves a field's F1 by a large fraction
+(the run that prompted this check regressed 0.667 -> 0.500), so a small
+regression tolerance is noise the agent doesn't control, not signal.
 Asserts: artifacts present & well-formed; Fields[] populated; ModelVersion an int,
 not backwards, and if advanced the Fields[] actually changed (else it's one
 snapshot with the counter bumped); target field resolves to a numeric F1 in both
