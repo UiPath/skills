@@ -68,7 +68,7 @@ Headers/auth on `remote` and `swagger` are payload fields, not scalar flags. Rea
 
 ## Tool Kinds (`uipath`-type servers only)
 
-`uip agenthub mcp-tools create-{is-activity | resource | raw}`. Shared flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS — only for non-`activity` categories), `--folder-key <guid>` / `--folder-path <name>` (folder context; the CLI derives the target's folder from `--target-identifier`, so there is **no** `--target-folder-key` flag — do not invent one), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`. Differ in metadata shape, discovery path, and validation strictness.
+`uip agenthub mcp-tools create-{is-activity | resource | raw}`. Shared flags: `--mcp <slug>` (parent server), `--name`, `--description`, `--target-identifier <guid>` / `--target-name <name>` (resolve target via RCS — only for non-`activity` categories), `--folder-key <guid>` / `--folder-path <name>` (MCP server folder context), `--target-folder-key <guid>` / `--target-folder-path <name>` (`is-activity` only — the IS connection's folder when it differs from the server's; resolves to the tool's `targetFolderKey`; never both; omit to default to the server folder / connection lookup), `--category`, `--input-schema`, `--output-schema`, `--metadata`, `--continue-on-error` (default) / `--fail-fast`, `--file`/`--body`, `--dry-run`. Differ in metadata shape, discovery path, and validation strictness.
 
 | Kind | Discovery | Validation | When to use |
 |------|-----------|------------|-------------|

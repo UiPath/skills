@@ -22,7 +22,7 @@ In `../../uipath-platform/references/integration-service/`. Each is small. Do NO
 ## Critical rules (extend SKILL.md)
 
 1. **Discover before authoring.** `candidates --category is-activity` resolves connector + activity; `is resources describe` pulls field metadata. Compose `metadata` / `inputSchema` / `outputSchema` from the describe response, never from memory — every connector + operation has its own shape.
-2. **Connection is folder-scoped.** `uip is connections list <connector> --folder <name-or-key> --output json` (the unfiltered form silently filters to the current context and may return empty). Pass `--target-identifier <connection-guid>`; the CLI derives `targetFolderKey` — there is **no** `--target-folder-key` for IS-activity tools. `Reason: CrossFolderConnection` → pick from `Data.candidates`. (`connections.md` §`Folder Scoping` / §`Selecting a Connection`)
+2. **Connection is folder-scoped.** `uip is connections list <connector> --folder <name-or-key> --output json` (the unfiltered form silently filters to the current context and may return empty). Pass `--target-identifier <connection-guid>`; `targetFolderKey` then defaults to the MCP server folder. Connection in a different folder → set it explicitly with `--target-folder-path <name>` / `--target-folder-key <guid>` (mirrors `--folder-path` / `--folder-key`, never both); the cross-folder guard allows an explicit target folder. Neither target-folder flag passed and `Reason: CrossFolderConnection` → pick from `Data.candidates`. (`connections.md` §`Folder Scoping` / §`Selecting a Connection`)
 3. **Cascade api-type ObjectActions.** `describe <key> <objectName> --connection-id <id> --operation <op>`; if `requestFields` is short for the operation, re-run with `-f <parent>=<value>` (repeatable). Omit `--action` for Jira `curated_create_issue` Create (passing it → `No api-type ObjectAction matched`); pass `--action` only when describe reports multiple matches. Cascade examples: Jira `curated_create_issue`, Salesforce `query_records`, Dataservice V3. (`resources.md` §`Parent-Field-Driven Custom Fields`)
 4. **Baked static reference values need `designTimeLookups`.** Every `staticValues.<bucket>.<field>` (any bucket — `field` / `query` / `header` / `path`) whose describe field has a `.reference` block MUST emit `designTimeMetadata.designTimeLookups[<dotted-field>] = "<displayName> - <value>"`. Applies to `requestFields[]` and `parameters[]`; NOT to runtime / enum fields — labeling renders only for baked values. (`reference-resolution.md` §`Static Reference-Value Labeling`)
 5. **Stringify `metadata` / `inputSchema` / `outputSchema` as scalars** — SDK types them `string | null`. Build each in a file and pass `--metadata "$(jq -c . metadata.json)"`; do not assemble multi-KB JSON inline, and do not mix `--file` with scalar options (`ConflictingInput`). `--output-schema "{}"` when the activity has no `responseFields` (empty string → `Unexpected end of JSON input`).
@@ -110,8 +110,8 @@ uip is resources describe <key> <objectName> --connection-id <id> --operation <o
 # requestFields[] (body), parameters[] (path/query/header), responseFields[] (output).
 # Short requestFields → curated: cascade with -f per resources.md §Parent-Field-Driven Custom Fields.
 
-# 4 — connection in the server's folder        [READ: connections.md §Selecting a Connection + §Folder Scoping]
-uip is connections list <connector-key> --folder <server-folder-name-or-key> --output json
+# 4 — connection folder (may differ from server folder — see step 7 --target-folder-*)        [READ: connections.md §Selecting a Connection + §Folder Scoping]
+uip is connections list <connector-key> --folder <connection-folder-name-or-key> --output json
 
 # 5 — label every baked static reference value  [READ: reference-resolution.md §Static Reference-Value Labeling]
 uip is resources run list <connector> <reference.objectName> --connection-id <id> --output json
@@ -123,6 +123,7 @@ uip agenthub mcp-tools create-is-activity ... --dry-run --output json   # inspec
 uip agenthub mcp-tools create-is-activity \
   --mcp <slug> --name "<tool name>" --description "<1-4000 chars; shown in AgentHub UI>" \
   --folder-path "<server folder>" --target-identifier <connection-guid> \
+  --target-folder-path "<connection folder; omit to default to server folder>" \
   --metadata "$(jq -c . metadata.json)" --input-schema "$(jq -c . input-schema.json)" \
   --output-schema "$(jq -c . output-schema.json)" --output json   # Data.id = created tool ID
 
@@ -130,6 +131,8 @@ uip agenthub mcp-tools create-is-activity \
 uip agenthub mcp-tools list --mcp <slug> --folder-path <folder> --output json
 # Confirm id/name/description/mcpName. High-value tools: smoke-test via `uip is resources run <verb>`.
 ```
+
+Connection in a different folder than the server → add `--target-folder-path <name>` (or `--target-folder-key <guid>`, never both); resolves to `targetFolderKey`. Omit both → defaults to the server folder.
 
 Update (metadata/schemas changed) — scalars only, `--output-schema "{}"` for no response body:
 
@@ -146,7 +149,7 @@ Skeleton for `--file`: `uip agenthub mcp-tools template is-activity --output jso
 
 - **HTTP 400, no detail** — re-run `--dry-run`; CLI surfaces ASP.NET ProblemDetails as an `Errors` field of per-field failures.
 - **404 at runtime** — `metadata.mapping.path` missing a `{token}` from `object.path`. List every placeholder and retry.
-- **`Reason: CrossFolderConnection`** — connection in a different folder than the server. Pick a `Data.candidates` entry via `--target-identifier <guid>`, or move the connection / server.
+- **`Reason: CrossFolderConnection`** — connection in a different folder than the server. Pass `--target-folder-path <name>` / `--target-folder-key <guid>` for the connection's folder (guard allows an explicit target folder), or pick a `Data.candidates` entry via `--target-identifier <guid>`, or move the connection / server.
 - **`Operation 'X' not found. Available: <Y>`** — curated activity exposes only `Y`. Re-run `describe` without `--operation`, pick from `Data.availableOperations[]`.
 - **`No api-type ObjectAction matched for fields [...]`** — `-f` set matches no registered action, or `--action` was passed when it should be omitted (Jira `curated_create_issue` Create). Drop `--action` first; else inspect `connectorMethodInfo.design.actions[]` / `objectActions[]` for required `-f` shapes.
 - **Form renders raw scalar (`OR`, `3`) instead of a labeled value** — `designTimeLookups[<field>]` missing (Rule 4 / Step 5), then `mcp-tools update <tool-id>`.
