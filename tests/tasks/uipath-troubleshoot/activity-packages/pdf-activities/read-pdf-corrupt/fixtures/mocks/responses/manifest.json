@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "_doc": "Faithful replay: a UiPath.PDF.Activities ReadPDFText activity faults at runtime with UiPath.PDF.PdfException 'Invalid input stream' because the input file is corrupt / not a valid PDF (the Digitizer reader rejects the byte stream). Signature taken verbatim from UiPath.PDF source (PDFReader re-throw of 'Invalid input stream'); workflow name neutralized. The agent must read the corrupt/unreadable-PDF signature, not blame a missing file, encryption, OCR, or workflow logic. First-match-wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e --state Faulted",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list --folder-key 2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-faulted.json"
+    },
+    {
+      "match": "or jobs get 9e4c1a72-5b3d-4e8f-a1c2-3d4e5f6a7b80",
+      "file": "or-jobs-get.json"
+    },
+    {
+      "match": "or jobs logs 9e4c1a72-5b3d-4e8f-a1c2-3d4e5f6a7b80 --level Error",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs logs 9e4c1a72-5b3d-4e8f-a1c2-3d4e5f6a7b80",
+      "file": "or-jobs-logs.json"
+    },
+    {
+      "match": "or jobs traces 9e4c1a72-5b3d-4e8f-a1c2-3d4e5f6a7b80",
+      "file": "or-jobs-traces.json"
+    },
+    {
+      "match": "traces spans get --job-key 9e4c1a72-5b3d-4e8f-a1c2-3d4e5f6a7b80",
+      "file": "or-traces-spans.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any uip command not matched returns an empty array so the agent can explore beyond the recorded path without aborting."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent lists faulted jobs in the Shared folder to find the failing job (prompt gives no job key)."
+    },
+    {
+      "pattern": "or jobs get 9e4c1a72-5b3d-4e8f-a1c2-3d4e5f6a7b80",
+      "min": 1,
+      "description": "Agent fetches the faulted job to read the PdfException 'Invalid input stream' signature from the Info / Error log."
+    }
+  ]
+}
