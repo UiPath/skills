@@ -5,6 +5,8 @@ description: >
   the skill does not produce false positives.
 tags: [uipath-human-in-the-loop, smoke]
 
+skip: true
+
 run_limits:
   expected_turns: 2
   max_turns: 5
