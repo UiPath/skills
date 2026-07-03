@@ -19,6 +19,11 @@ sandbox:
 # FIRST (post_run is cleanup-last: task commands, then experiment defaults) with
 # a generous timeout so the heavy tree is gone before the sandbox is preserved.
 post_run:
+  # Tenant hygiene: delete the External App this run created, if any — matches
+  # the clientId(s) in the sandbox against `external-apps list` and deletes
+  # only those. Best-effort, always exits 0 (_shared/cleanup_external_apps.mjs).
+  - command: 'bash -c "node \"$SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/cleanup_external_apps.mjs\""'
+    timeout: 60
   - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
     timeout: 180
 

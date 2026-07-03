@@ -52,3 +52,32 @@ Tier is a tag, not a folder. Full inline builds (build/, refuse/, routing/,
 governance/, detail/, incremental/) are tagged `integration`/`e2e` and run
 nightly at 200 turns. Only the fast, no-build gate tasks (smoke/) plus the
 pre-seeded deploy command-shape check are tagged `smoke` for the 40-turn PR gate.
+
+## Reports & artifacts (local runs mirror CI)
+
+Every `coder-eval run` writes `tests/runs/<timestamp>/` with the exact structure CI uploads as its
+artifact zip: `experiment.html` / `experiment.md` (run summary), and per task
+`default/<task-id>/00/{task.html, task.json, task.log, artifacts/}` — `task.html` is the browser
+report, `task.json` the machine-readable result + transcript, `artifacts/` the preserved sandbox
+(node_modules pruned). Quick views:
+
+```bash
+.venv/Scripts/coder-eval report runs/<timestamp>   # scoreboard in the terminal (Scripts/ on Windows, bin/ on Linux)
+start runs/<timestamp>/experiment.html             # full HTML report (Windows; use open/xdg-open elsewhere)
+```
+
+**Windows note:** the CLI lives at `.venv/Scripts/coder-eval.exe` (the Makefile assumes `.venv/bin`),
+and `run_command`/heredoc `pre_run` criteria execute under cmd.exe locally — tasks in this suite use
+`bash -c` wrappers + `_shared/seed_*.sh` so they run on both; `python3`-based criteria still need a
+Linux run (or re-grade the preserved `artifacts/` manually with `_shared/check_dashboard.py`).
+
+## Tenant cleanup
+
+Build-path tasks create one real External Application per run (the skill's OAuth step) when the runner
+is authenticated. Every such task runs `_shared/cleanup_external_apps.mjs` as its FIRST `post_run`:
+it collects the clientId(s) the build wrote into the sandbox (`uipath.json`/`intent.json`), matches
+them against `uip admin external-apps list`, and deletes only those — best-effort, always exit 0, so
+cleanup never affects pass/fail.
+
+Known residual leak (documented, no CLI delete verb exists): app packages uploaded by the deploy tasks'
+`codedapp publish` calls.

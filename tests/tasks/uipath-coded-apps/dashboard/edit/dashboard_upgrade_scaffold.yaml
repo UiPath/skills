@@ -30,6 +30,11 @@ pre_run:
 # Reclaim the upgrade's node_modules before artifact preservation (the UPGRADE
 # op pre-warms a full dependency install).
 post_run:
+  # Tenant hygiene: delete the External App this run created, if any — matches
+  # the clientId(s) in the sandbox against `external-apps list` and deletes
+  # only those. Best-effort, always exits 0 (_shared/cleanup_external_apps.mjs).
+  - command: 'bash -c "node \"$SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/cleanup_external_apps.mjs\""'
+    timeout: 60
   - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
     timeout: 180
 
