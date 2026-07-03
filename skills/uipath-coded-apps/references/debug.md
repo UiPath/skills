@@ -258,11 +258,7 @@ Match the observation to the correct fix section. **Jump directly to the matchin
 
 Read the app's current configuration:
 
-1. **Find SDK config.** The app initializes the SDK with `new UiPath()` (no config) and reads everything from `<meta name="uipath:*">` tags injected at runtime. Inspect the sources of those tags:
-   - **`uipath.json`** (committed) — `clientId` and `scope`.
-   - **`.uipath/`** (gitignored, populated by `uip login --org <org> --tenant <tenant>`) — `orgName`, `tenantName`, `baseUrl`.
-
-   To change scopes or the client ID, edit `uipath.json`. To change org / tenant / base URL, re-run `uip login` with the new flags. The remediation scripts (Playwright OAuth helpers, base-URL/scope rules) below operate on those same files.
+1. **Find SDK config.** The app initializes the SDK with `new UiPath()` (no config) and reads everything from `<meta name="uipath:*">` tags injected at runtime. During local dev those tags come from **`uipath.json`** (committed, project root) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, and `baseUrl`. `redirectUri` is derived at runtime from `window.location`. To change any of these, edit `uipath.json`. The remediation scripts (Playwright OAuth helpers, base-URL/scope rules) below operate on that file.
 
 2. **Identify SDK services in use** — grep for `new Assets(`, `new Entities(`, `new Buckets(`, `new Processes(`, `new Tasks(`, `new Queues(`, `new MaestroProcesses(`, `new Cases(`, `new ConversationalAgent(` in `**/*.ts` and `**/*.tsx`.
 
@@ -284,7 +280,7 @@ If scopes are missing:
 
 ### 2b — Base URL
 
-The SDK's base URL **must** use the API subdomain — not the portal domain — when you run `uip login --base-url ...`:
+The `baseUrl` in `uipath.json` **must** use the API subdomain — not the portal domain:
 
 | Environment | Correct | Wrong |
 |---|---|---|
@@ -292,7 +288,7 @@ The SDK's base URL **must** use the API subdomain — not the portal domain — 
 | staging | `https://staging.api.uipath.com` | `https://staging.uipath.com` |
 | alpha | `https://alpha.api.uipath.com` | `https://alpha.uipath.com` |
 
-Fix by re-running `uip login --base-url <correct-URL> ...` so `.uipath/` (and therefore the injected `<meta name="uipath:base-url">` tag) updates.
+Fix by setting `baseUrl` in `uipath.json` to the correct API-subdomain URL, then restart the dev server so the plugin re-injects the `<meta name="uipath:base-url">` tag.
 
 ### 2c — Redirect URI
 
@@ -375,8 +371,7 @@ rm ~/.uipath-skills/playwright/clear-state.mjs 2>/dev/null
      --client-id <uuid> \
      --redirects 'http://localhost:5173,http://localhost:5173/'
    ```
-4. Verify stdout contains `{"status":"ok"}`. Clear browser state (Step 3), re-run Step 0c to confirm the fix.
-5. There is nothing to update on the app side — the redirect URI is derived dynamically from `window.location`.
+4. Verify stdout contains `{"status":"ok"}`. Clear browser state (Step 3), re-run Step 0c to confirm the fix. Nothing changes on the app side — the redirect URI is derived at runtime from `window.location`.
 
 Fall back to [manual instructions](oauth-client-setup.md#adding-redirect-uris-to-an-existing-app) only if Step 0b reported `chrome-missing` or the script has genuinely failed after 2–3 runs with captured errors.
 
@@ -415,7 +410,7 @@ Fall back to the [manual instructions](oauth-client-setup.md#adding-scopes-to-an
 ### API Calls Fail with CORS Error
 
 **Cause:** App is calling `cloud.uipath.com` directly. The portal domain does not allow browser CORS requests.
-**Fix:** Re-run `uip login --base-url https://api.uipath.com ...` (the API subdomain allows CORS) so the `.uipath/` config and the injected `<meta name="uipath:base-url">` tag both update.
+**Fix:** Set `baseUrl` in `uipath.json` to `https://api.uipath.com` (the API subdomain allows CORS), then restart the dev server so the plugin re-injects the `<meta name="uipath:base-url">` tag.
 
 ### `sdk.isAuthenticated()` Returns `false` After Callback
 

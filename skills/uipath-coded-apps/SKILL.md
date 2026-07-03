@@ -121,13 +121,26 @@ Authenticate before any cloud command:
 uip login status --output json         # check if logged in
 uip login                              # interactive OAuth (opens browser)
 uip login --authority https://alpha.uipath.com   # non-production environments
+
+# Client-credentials (headless/CI) — MUST include Apps.Read Apps.Write or publish's
+# "Registering coded app" step fails with 401 even though package upload succeeds.
+# OR.Default alone is NOT sufficient — it covers Orchestrator but not the Apps service.
+uip login \
+  --client-id <id> \
+  --client-secret <secret> \
+  --organization <org> \
+  --tenant <tenant> \
+  --scope "OR.Folders OR.Execution OR.Administration Apps.Read Apps.Write" \
+  --authority https://alpha.uipath.com   # omit --authority for production
 ```
+
+> **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs Orchestrator scopes) **and** registers the coded app (needs `Apps.Read Apps.Write`). Omitting the Apps scopes lets the upload succeed but silently 401s the registration.
 
 ## SDK Config (web app)
 
-The web app initializes the SDK with `new UiPath()` (no config). At runtime the SDK reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` from `<meta name="uipath:*">` tags. Those tags are injected by `@uipath/coded-apps-dev` during local dev — it pulls `scope` and `clientId` from `uipath.json` (committed) and `orgName` / `tenantName` / `baseUrl` from `.uipath/` (gitignored, populated by `uip login --org <org> --tenant <tenant>`). In production the UiPath platform injects the same tags directly.
+The web app initializes the SDK with `new UiPath()` (no config). At runtime the SDK reads `clientId`, `scope`, `orgName`, `tenantName`, `baseUrl`, and `redirectUri` from `<meta name="uipath:*">` tags. During local dev `@uipath/coded-apps-dev` injects those tags from `uipath.json` (committed) — the single config source, holding `clientId`, `scope`, `orgName`, `tenantName`, and `baseUrl`. `redirectUri` is computed at runtime from `window.location`, not stored. In production the UiPath platform injects the same tags directly.
 
-To change scopes or the client ID, edit `uipath.json`. To change org / tenant / base URL, re-run `uip login` with the new flags.
+To change any of these values, edit `uipath.json`.
 
 ## CLI Environment Variables
 
@@ -147,7 +160,7 @@ To change scopes or the client ID, edit `uipath.json`. To change org / tenant / 
 
 **Do NOT pause between steps to ask "should I continue?" — execute the full pipeline. Only stop if you need auth credentials or an app name.**
 
-1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`.
+1. **Auth** — `uip login status --output json`. If not logged in, ask the user for their environment and run `uip login`. If using **client credentials** (headless/CI), always include `Apps.Read Apps.Write` in `--scope` — required by the Apps service registration inside `uip codedapp publish`. `OR.Default` alone covers Orchestrator (package upload) but not Apps registration; omitting them causes a silent 401 on the second half of publish.
 2. **Build** — `npm run build`. Verify `ls dist/`.
 3. **Pack** — `uip codedapp pack dist -n <name> --version <version>`. Produces `.uipath/<name>.<version>.nupkg`. Bump version if previously published.
 4. **Publish** — `uip codedapp publish` (add `-t Action` for action apps). Verify `cat .uipath/app.config.json`.

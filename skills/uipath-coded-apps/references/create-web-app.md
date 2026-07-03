@@ -121,13 +121,7 @@ npm install -D tailwindcss@4 @tailwindcss/postcss postcss autoprefixer
   npm install next-themes lucide-react
   ```
 
-- **If `default styling = no`** — keep the SDK + Tailwind baseline above and bring your own component library; only one extra runtime dep is needed:
-
-  ```bash
-  # SDK browser-bundle polyfill (defensive — the current SDK doesn't strictly
-  # require it, but a future version could)
-  npm install path-browserify
-  ```
+- **If `default styling = no`** — keep the SDK + Tailwind baseline above and bring your own component library. No extra dependencies needed.
 
 ### 4.4 — Remove Vite defaults that will be overwritten
 
@@ -153,20 +147,20 @@ All file content lives in [../assets/templates/web-app-template.md](../assets/te
 
 | Path | Template section — `default styling = yes` | Template section — `default styling = no` | Substitutions |
 |------|---|---|---|
-| `vite.config.ts` | `## vite.config.ts (default styling)` | `## vite.config.ts` | none |
-| `uipath.json` | `## uipath.json` | `## uipath.json` | `{{SCOPES}}`, `{{CLIENT_ID}}` |
+| `vite.config.ts` | `## vite.config.ts` | `## vite.config.ts` | none |
+| `uipath.json` | `## uipath.json` | `## uipath.json` | `{{CLIENT_ID}}`, `{{SCOPES}}`, `{{ORG_NAME}}`, `{{TENANT_NAME}}`, `{{BASE_URL}}` |
 | `src/hooks/useAuth.tsx` | `## src/hooks/useAuth.tsx` | `## src/hooks/useAuth.tsx` | none |
-| `src/components/Theme.tsx` | `## src/components/Theme.tsx (default styling)` | — | none |
-| `src/main.tsx` | `## src/main.tsx (default styling)` | — | none |
-| `src/App.tsx` | `## src/App.tsx (default styling)` | `## src/App.tsx` | none |
-| `postcss.config.js` | `## postcss.config.js (default styling)` | `## postcss.config.js` | none |
-| `src/index.css` | `## src/index.css (default styling)` | `## src/index.css` | none |
+| `src/components/Theme.tsx` | `## src/components/Theme.tsx (Q6 = yes only)` | — | none |
+| `src/main.tsx` | `## src/main.tsx (Q6 = yes only)` | — | none |
+| `src/App.tsx` | `## src/App.tsx` → `### Q6 = yes (apollo-wind)` | `## src/App.tsx` → `### Q6 = no (bare Tailwind)` | none |
+| `postcss.config.js` | `## postcss.config.js` → `### Q6 = yes (apollo-wind)` | `## postcss.config.js` → `### Q6 = no (bare Tailwind)` | none |
+| `src/index.css` | `## src/index.css` → `### Q6 = yes (apollo-wind)` | `## src/index.css` → `### Q6 = no (bare Tailwind)` | none |
 
-> **No `tailwind.config.js` on either path** — Tailwind configuration lives directly in `src/index.css`. No `.env` file either — `uipath.json` (committed) plus `.uipath/` (populated by `uip login`) are the single config source.
+> **No `tailwind.config.js` on either path** — Tailwind configuration lives directly in `src/index.css`. No `.env` file either — `uipath.json` (committed) is the single config source for the SDK.
 
 ### 4.6 — `.gitignore`
 
-Neither path writes a `.env`, so no `.gitignore` change is needed for OAuth config. The `.uipath/` directory (populated by `uip login` and holding tenant/org/baseUrl info) is gitignored by `npx create-vite`'s default plus `uip codedapp`'s conventions — verify with `cat .gitignore | grep -i uipath` and add `.uipath/` if missing.
+Neither path writes a `.env`, and `uipath.json` is committed (it holds the SDK config — a public OAuth client ID plus org/tenant/base-URL, no secrets), so no `.gitignore` change is needed for OAuth config. The `.uipath/` directory that `uip login` / `uip codedapp` create (auth session + deploy artifacts like `app.config.json`) must stay gitignored — it is covered by `npx create-vite`'s default plus `uip codedapp`'s conventions. Verify with `cat .gitignore | grep -i uipath` and add `.uipath/` if missing.
 
 ### 4.7 — Verify the scaffold
 
