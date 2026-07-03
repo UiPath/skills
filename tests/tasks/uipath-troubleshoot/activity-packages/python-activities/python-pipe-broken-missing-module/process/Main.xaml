@@ -22,7 +22,7 @@
       <Variable x:TypeArguments="x:Double" Name="invoiceTotal" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log: starting invoice parse" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;[PythonInvoiceParser] Invoking parse_invoice.extract_total via Python Scope&quot;]" />
-    <upa:PythonScope DisplayName="Python Scope" sap2010:WorkflowViewState.IdRef="PythonScope_1" Path="C:\Program Files\Python311" Library="" Target="x64" Version="Python_311" WorkingFolder="" Timeout="30000">
+    <upa:PythonScope DisplayName="Python Scope" sap2010:WorkflowViewState.IdRef="PythonScope_1" Path="C:\Program Files\Python311" Library="" Target="x64" Version="Python_311" WorkingFolder="C:\Robot\Data" Timeout="30000">
       <upa:PythonScope.Body>
         <ActivityAction>
           <Sequence DisplayName="Python Scope Body" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -30,7 +30,7 @@
             <upa:InvokeMethod DisplayName="Invoke Python Method: extract_total" sap2010:WorkflowViewState.IdRef="InvokeMethod_1" Instance="[scriptHandle]" Name="extract_total" Result="[totalObj]">
               <upa:InvokeMethod.InputParameters>
                 <scg:List x:TypeArguments="x:Object" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" Capacity="1">
-                  <x:String>invoices\inv-2026-05.csv</x:String>
+                  <x:String>C:\Robot\Data\invoices\inv-2026-05.csv</x:String>
                 </scg:List>
               </upa:InvokeMethod.InputParameters>
             </upa:InvokeMethod>
