@@ -7,7 +7,7 @@ description: >
   matches the export-pdf-missing-output-dir playbook AND recommends adding a
   Create Folder before the export (or pre-creating the target tree), not
   blaming Word/COM or the document.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, export-pdf, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

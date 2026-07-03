@@ -10,7 +10,7 @@ description: >
   probes of `uip is connections list` returned HTTP 503 "no healthy
   upstream" — a real IS outage, not a connection or auth problem. Success =
   the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose, o365-activities, integration-service]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, integration-service]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

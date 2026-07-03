@@ -11,7 +11,7 @@ description: >
   to the fetch-then-delete gap AND recommends fetching-then-deleting
   promptly plus a Try Catch tolerating the already-gone item (NOT adding a
   Delay).
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

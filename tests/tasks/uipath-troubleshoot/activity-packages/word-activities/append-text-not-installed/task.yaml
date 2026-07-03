@@ -8,7 +8,7 @@ description: >
   installing desktop Word OR switching to the standalone Word Document Append
   Text activity (which needs no Word install) on the server, without
   fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, append-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

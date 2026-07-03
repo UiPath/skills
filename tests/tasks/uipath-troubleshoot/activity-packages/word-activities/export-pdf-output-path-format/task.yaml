@@ -7,7 +7,7 @@ description: >
   agent matches the export-pdf-output-path-format playbook AND recommends
   formatting the path with a .pdf suffix (Path.Combine(folder, name & ".pdf")),
   not blaming a missing folder, COM, or the document.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, export-pdf, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

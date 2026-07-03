@@ -12,7 +12,7 @@ description: >
   to a broken reference, and recommend fixing the named range in
   Excel's Name Manager.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, null-reference, named-range]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

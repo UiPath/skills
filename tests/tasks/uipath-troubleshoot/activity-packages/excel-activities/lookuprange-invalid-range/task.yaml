@@ -7,7 +7,7 @@ description: >
   range value (a whole-sheet search requires the Range field to be blank, not
   ""). Success = agent matches the lookup-range-invalid-range playbook AND
   identifies the empty-string Range (found in Main.xaml) as the cause.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

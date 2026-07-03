@@ -9,7 +9,7 @@ description: >
   not resolve at module level (NOT an engine-init, script-load, or
   argument-mismatch fault), AND recommends moving the function to module level,
   without fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, python-activities, python-scope]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

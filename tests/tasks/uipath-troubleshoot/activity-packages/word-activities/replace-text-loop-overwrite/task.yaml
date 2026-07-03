@@ -8,7 +8,7 @@ description: >
   matches the replace-text-loop-template-overwrite playbook AND recommends
   copying the template to a fresh temp file per iteration (treat template as
   read-only), not treating the green job as healthy.
-tags: [uipath-troubleshoot, rpa, e2e, orchestrator, word-activities, replace-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

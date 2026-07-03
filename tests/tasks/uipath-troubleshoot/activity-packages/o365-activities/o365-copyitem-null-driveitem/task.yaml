@@ -7,7 +7,7 @@ description: >
   from the legacy O365 Copy Item activity because an upstream
   Find Files And Folders search matched nothing and left the bound variable
   null. Success = the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose, o365-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

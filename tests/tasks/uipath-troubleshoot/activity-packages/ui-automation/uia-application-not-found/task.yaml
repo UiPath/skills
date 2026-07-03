@@ -8,7 +8,7 @@ description: >
   AND identifies the OpenMode=Never property as the gating condition (not a
   selector-level failure).
 
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, ui-automation, application-not-found, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

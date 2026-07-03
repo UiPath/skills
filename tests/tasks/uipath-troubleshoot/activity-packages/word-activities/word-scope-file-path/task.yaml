@@ -8,7 +8,7 @@ description: >
   word-scope-file-path-not-found playbook AND recommends an absolute path /
   Path.Combine (or Create if not exists when the doc is generated), not editing
   the document content or blaming Word.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, word-application-scope, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

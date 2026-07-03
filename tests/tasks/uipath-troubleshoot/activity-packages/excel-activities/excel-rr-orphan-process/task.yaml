@@ -9,7 +9,7 @@ description: >
   in the workflow source (process/Main.xaml), and recommend both a
   one-off orphan kill and a permanent workflow fix.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, file-locked, orphan-process]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

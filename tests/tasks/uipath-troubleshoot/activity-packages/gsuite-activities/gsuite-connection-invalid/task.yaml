@@ -12,7 +12,7 @@ description: >
   ConnectionHttpException). Success = the agent reaches the same root cause as
   RESOLUTION.md: an Integration Service connection-resolution/authorization
   failure, NOT a Drive 404, bad input, rate-limit, transient, or timeout.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, faithful-replay, integration-service, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, integration-service, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides

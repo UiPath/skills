@@ -9,7 +9,7 @@ description: >
   ("File not found: 1AbCnonexistentFILEid000000000000000."). Success = the
   agent reaches the same root cause as RESOLUTION.md: a Drive resource-resolution
   404 on the configured file id, NOT a connection/auth/transient failure.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, faithful-replay, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides

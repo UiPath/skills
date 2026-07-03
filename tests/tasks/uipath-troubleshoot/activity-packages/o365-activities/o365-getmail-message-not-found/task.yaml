@@ -10,7 +10,7 @@ description: >
   to no message — a stale/deleted message ID. The preceding Get Mail on the
   same Inbox succeeded, eliminating mailbox-mismatch and auth branches.
   Success = the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, rpa, e2e, faithful-replay, mode:diagnose, o365-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

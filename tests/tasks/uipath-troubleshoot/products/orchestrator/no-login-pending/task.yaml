@@ -7,7 +7,7 @@ description: >
   The agent must match robot-credentials.md (NOT the host-family playbooks)
   and recommend one of: update robot credentials, assign the correct account
   to the folder, or run under a different account.
-tags: [uipath-troubleshoot, orchestrator, e2e, faithful-replay, pending-job, robot-credentials, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
   type: claude-code

@@ -12,7 +12,7 @@ description: >
   guarding the parse on a success response. Replayed from a real
   staging faulted job.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, web-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

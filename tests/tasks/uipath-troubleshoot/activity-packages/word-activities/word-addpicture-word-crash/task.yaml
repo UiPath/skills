@@ -20,7 +20,7 @@ description: >
   since Add Picture cannot resize — pre-resizing a very large image
   before insert (or Paste Chart/Picture Into Document, or migrate to
   file-based Word Document activities).
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, com-interop, word-crash]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

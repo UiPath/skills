@@ -6,7 +6,7 @@ description: >
   append-text-zero-byte-file playbook AND recommends deleting the empty file +
   Create if not exists (or fixing the upstream that produced it), not blaming
   a missing Word install, a lock, or the workflow logic.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, append-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

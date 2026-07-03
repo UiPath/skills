@@ -12,7 +12,7 @@ description: >
   no external-Word warning), recommending an interactive/attended session or
   migrating to the System Word (background) activities — without blaming the
   document or output path.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, faulted-jobs, orchestrator, word-activities, export-pdf, com-wrong-thread]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

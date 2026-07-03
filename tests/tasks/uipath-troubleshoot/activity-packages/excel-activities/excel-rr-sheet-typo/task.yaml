@@ -9,7 +9,7 @@ description: >
   playbook, compare configured vs. actual sheet titles, identify the
   typo branch, and recommend the typo fix.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, sheet-not-found, typo]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

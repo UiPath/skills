@@ -12,7 +12,7 @@ description: >
   the Parallel / non-creator-thread cause (reading Main.xaml and/or the stack
   frame), recommending the export be moved onto the same thread/scope that
   opened the document — without blaming the document or output path.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, faulted-jobs, orchestrator, word-activities, export-pdf, com-wrong-thread]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

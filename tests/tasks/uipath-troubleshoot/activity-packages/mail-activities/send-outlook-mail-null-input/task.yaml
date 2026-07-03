@@ -9,7 +9,7 @@ description: >
   send-outlook-mail-failures playbook Branch 3 AND recommends
   initializing/populating the recipient variable bound to To in the
   workflow.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

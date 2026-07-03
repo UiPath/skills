@@ -8,7 +8,7 @@ description: >
   WINWORD before the scope + dispose; ensure input free), with the Invoke
   Code C# ExportAsFixedFormat fallback as an option — without fabricating
   host actions or blaming the output path/document.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, export-pdf, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

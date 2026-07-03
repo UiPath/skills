@@ -8,7 +8,7 @@ description: >
   (e62228b7-...) that lives in another user's workspace and is not
   resolvable from the runner's Personal workspace, matching the
   connection-invalid playbook.
-tags: [uipath-troubleshoot, integration-service, rpa, e2e, faulted-jobs, faithful-replay, is, mode:diagnose]
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides

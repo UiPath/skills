@@ -6,7 +6,7 @@ description: >
   256 characters"). Success = agent matches the replace-text-length-limit
   playbook AND recommends upgrading UiPath.Word.Activities OR doing the
   substitution in code (string/regex), not editing the document or blaming Word.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, replace-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

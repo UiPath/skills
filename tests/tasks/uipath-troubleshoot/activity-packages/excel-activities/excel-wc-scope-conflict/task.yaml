@@ -12,7 +12,7 @@ description: >
   scope-conflict variant) from the workflow source — NOT the
   external-locker variant covered by read-range-file-locked.md.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, write-cell, scope-conflict]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

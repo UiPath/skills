@@ -12,7 +12,7 @@ description: >
   switching to EntireRow, replacing with Clear Range, or restructuring
   the merge.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, delete-range, shift-conflict]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

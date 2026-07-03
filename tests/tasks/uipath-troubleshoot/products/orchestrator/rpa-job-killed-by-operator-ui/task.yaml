@@ -7,7 +7,7 @@ description: >
   playbook, query the audit log to identify the actor, and recommend the
   Operator-Initiated-Kill resolution path.
 
-tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose, faulted-jobs, job-killed, exit-code-0x40010004]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
   type: claude-code

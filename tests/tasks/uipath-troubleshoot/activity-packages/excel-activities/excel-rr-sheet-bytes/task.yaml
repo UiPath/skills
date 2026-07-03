@@ -11,7 +11,7 @@ description: >
   PowerShell byte-compare snippet from the playbook to confirm —
   rather than guess.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, sheet-not-found, byte-inspection, look-alike]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

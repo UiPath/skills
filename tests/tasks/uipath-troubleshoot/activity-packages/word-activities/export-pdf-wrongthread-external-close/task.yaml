@@ -13,7 +13,7 @@ description: >
   (let the scope own its instance) with an A/B re-run to confirm, and System
   Word for unattended/while-open export — without blaming the document or
   output path or fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, faulted-jobs, orchestrator, word-activities, export-pdf, com-wrong-thread]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

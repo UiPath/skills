@@ -9,7 +9,7 @@ description: >
   matches the lookup-range-file-locked playbook AND recommends forcing a clean
   release (kill stray EXCEL.EXE + clean scope dispose) or serializing access,
   without fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

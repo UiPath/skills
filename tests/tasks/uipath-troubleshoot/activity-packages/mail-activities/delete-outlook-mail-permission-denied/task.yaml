@@ -9,7 +9,7 @@ description: >
   delete-outlook-mail-failures playbook AND hands an IT/Exchange check list
   (set Account to the shared address, request Full Access from the Exchange
   admin) without fabricating the change.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

@@ -11,7 +11,7 @@ description: >
   If guard on Rows.Count > 0 — NOT the misleading ExcludeHeaders=True
   silencer which is an anti-pattern in the playbook.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, write-range, empty-source]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

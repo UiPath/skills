@@ -15,7 +15,7 @@ description: >
   recommend the bulk Read Range → DataTable mutation → Write Range
   pattern instead of cell-by-cell writes.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, write-cell, loop-thrash]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

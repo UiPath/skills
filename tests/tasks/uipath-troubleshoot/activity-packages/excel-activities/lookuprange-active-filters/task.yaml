@@ -7,7 +7,7 @@ description: >
   hidden from the lookup and the workflow throws "not found". Success = agent
   matches the lookup-range-active-filters playbook AND identifies the active
   filter as the reason the present value is not matched.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, lookup-range, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

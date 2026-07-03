@@ -9,7 +9,7 @@ description: >
   maestro/foreground-unattended-robot playbook for HTTP 409 #1230) and
   identify concurrent foreground jobs as the cause.
 
-tags: [uipath-troubleshoot, orchestrator, e2e, faulted-jobs, foreground-already-running, concurrency, rpa, mode:diagnose]
+tags: [uipath-troubleshoot, orchestrator, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

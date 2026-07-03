@@ -9,7 +9,7 @@ description: >
   message volume vs the timeout window. Success = agent matches
   get-outlook-mail-failures Branch 2 AND recommends raising TimeoutMS and
   reducing the batch (Top / OnlyUnreadMessages / Filter).
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

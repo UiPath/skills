@@ -6,7 +6,7 @@ description: >
   uipath-troubleshoot skill against a uip CLI mock whose responses carry the
   verbatim telemetry signature; it must unwrap the RemoteException to the inner
   auth cause. Success = the agent reaches the same root cause as RESOLUTION.md.
-tags: [uipath-troubleshoot, integration-service, rpa, e2e, faithful-replay, mode:diagnose]
+tags: [uipath-troubleshoot, integration-service, rpa, e2e, mode:diagnose]
 
 agent:
   allowed_tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "Agent", "AskUserQuestion", "TodoWrite"]

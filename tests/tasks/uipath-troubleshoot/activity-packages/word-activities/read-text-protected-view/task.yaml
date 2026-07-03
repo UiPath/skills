@@ -7,7 +7,7 @@ description: >
   Trusted Locations / disabling Protected View on the execution host, framed
   as host steps for the off-host user (not fabricating host actions, not
   blaming the file format or path).
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, read-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

@@ -9,7 +9,7 @@ description: >
   the appropriate resolution path (review watchdog rules; harden API
   credentials).
 
-tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose, faulted-jobs, job-killed, exit-code-0x40010004]
+tags: [uipath-troubleshoot, orchestrator, e2e, mode:diagnose]
 
 agent:
   type: claude-code

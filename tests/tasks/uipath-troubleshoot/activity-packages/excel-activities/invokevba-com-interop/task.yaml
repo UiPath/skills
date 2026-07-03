@@ -7,7 +7,7 @@ description: >
   dialog. Success = agent matches the invoke-vba-com-interop-failure
   playbook AND recommends the host-side checks (Visible=True, modal
   dialogs, Office install inventory).
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, excel-activities, invoke-vba, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

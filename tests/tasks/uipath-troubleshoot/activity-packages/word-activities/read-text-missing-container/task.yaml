@@ -7,7 +7,7 @@ description: >
   read-text-missing-container playbook AND recommends nesting Read Text in a
   Use Word File container OR switching to the standalone System > File > Word
   Document Read Text that takes a file path, not blaming the file/format.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, orchestrator, word-activities, read-text, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

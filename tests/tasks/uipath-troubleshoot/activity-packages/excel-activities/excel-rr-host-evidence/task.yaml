@@ -10,7 +10,7 @@ description: >
   recommendation (`Get-Process EXCEL`, `handle.exe -a <path>`,
   `Get-SmbOpenFile`) to the user instead of guessing a branch.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, file-locked, needs-host-evidence]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code

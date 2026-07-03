@@ -10,7 +10,7 @@ description: >
   null/empty ("Value cannot be null. (Parameter 'range')"). Success = the agent
   reaches the same root cause as RESOLUTION.md: a client-side empty/null `range`
   input, NOT a Google API / 404 / connection / auth / outage / transient failure.
-tags: [uipath-troubleshoot, rpa, e2e, faulted-jobs, faithful-replay, mode:diagnose]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 # Inherits from experiments/default.yaml: model, permission_mode, plugins
 # ($SKILLS_REPO_PATH), ignore_patterns. Only the fields below are overrides

@@ -9,7 +9,7 @@ description: >
   get-outlook-mail-failures playbook Branch 1 (folder not resolved) AND
   recommends the absolute-path form (\\<account>\Inbox\Invoices), or
   targeting the top-level folder, or setting Account for a shared mailbox.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

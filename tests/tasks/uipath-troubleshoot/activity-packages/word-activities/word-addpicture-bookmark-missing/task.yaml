@@ -15,7 +15,7 @@ description: >
   bookmark in the opened document, and recommend adding the bookmark to
   the document, correcting BookmarkName, or switching to
   InsertRelativeTo="Document" with Position Start/End.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, word-activities, add-picture, bookmark-not-found]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

@@ -12,7 +12,7 @@ description: >
   AND hands the user a host checklist (ensure Outlook running / Start
   Process outlook.exe / same privilege level / Graph o365 for unattended)
   without fabricating host actions.
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover, faulted-jobs, orchestrator, mail-activities]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, lifecycle:discover]
 
 agent:
   type: claude-code

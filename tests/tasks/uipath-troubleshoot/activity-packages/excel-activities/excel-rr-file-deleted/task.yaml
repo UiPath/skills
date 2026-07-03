@@ -10,7 +10,7 @@ description: >
   pattern (prior success + current failure on same workflow / same
   path), and recommend restore / coordinated relocation.
 
-tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose, excel-activities, read-range, file-not-found, file-deleted]
+tags: [uipath-troubleshoot, rpa, e2e, mode:diagnose]
 
 agent:
   type: claude-code
