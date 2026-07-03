@@ -11,8 +11,10 @@ run_limits:
 
 initial_prompt: |
   Scaffold `vite.config.ts` at the sandbox root for a UiPath Coded Web App.
-  The app will be deployed to UiPath Cloud where the platform handles URL
-  routing.
+  When deployed, the app's URL includes a non-root path prefix (e.g.
+  `codereval.uipath.host/my-app/`), so bundled asset URLs referenced from
+  the built `index.html` must resolve relative to that prefix — NOT from
+  the site root.
 
   Do NOT run `uip` or `npm` commands — this environment is not authenticated.
 

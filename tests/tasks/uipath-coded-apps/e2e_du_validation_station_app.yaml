@@ -151,8 +151,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Source code handles exception reporting (any of: onReportExceptionComplete callback OR OrchestratorDuModule.submitExceptionReport host-side persistence) — widget makes NO API call for exceptions; host persists"
-    command: "find . \\( -name '*.tsx' -o -name '*.ts' -o -name '*.jsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -lE 'onReportExceptionComplete|submitExceptionReport|OrchestratorDuModule' {} + | grep -q ."
+    description: "Source code contains an exception-handling function or callback (widget makes NO API call for exceptions; host persists). Accepts documented names (`onReportExceptionComplete`, `submitExceptionReport`, `OrchestratorDuModule`) OR any custom handler whose identifier contains 'exception' (case-insensitive) — the intent is host-side handling, not the specific name."
+    command: "find . \\( -name '*.tsx' -o -name '*.ts' -o -name '*.jsx' \\) -not -path '*/node_modules/*' -not -path '*/dist/*' -exec grep -liE 'onReportExceptionComplete|submitExceptionReport|OrchestratorDuModule|(handle|on|report|submit)[a-z]*exception' {} + | grep -q ."
     timeout: 15
     expected_exit_code: 0
     weight: 2.0

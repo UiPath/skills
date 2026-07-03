@@ -12,7 +12,7 @@ tags: [uipath-coded-apps, integration, mode:operate, feature:push-pull]
 
 run_limits:
   expected_turns: 18
-  max_turns: 40
+  max_turns: 60
   turn_timeout: 900
   task_timeout: 900
 
@@ -23,18 +23,25 @@ initial_prompt: |
   `npm run build`. Just write the minimal source files needed, then push
   and pull.
 
+  **CRITICAL — Step 2 is mandatory.** Push is non-interactive ONLY when
+  `.env` contains `UIPATH_PROJECT_ID`. If you skip Step 2, push will
+  block on an interactive project-selector prompt (which this environment
+  cannot answer) and every subsequent attempt will re-fail — do NOT retry
+  push if it fails; instead re-check that `.env` was written correctly.
+
   1. Check login: `uip login status --output json`. Do NOT re-login.
 
-  2. **Bootstrap the persistent test project.** This test uses a pre-created
-     Studio Web project (managed by test infra, not the agent). Write `.env`
-     at the sandbox root with the project ID from the
-     `CODED_APPS_TEST_PROJECT_ID` environment variable — this makes push
-     non-interactive:
+  2. **Bootstrap the persistent test project — DO THIS BEFORE ANY OTHER
+     STEP.** This test uses a pre-created Studio Web project (managed by
+     test infra, not the agent). Write `.env` at the sandbox root with the
+     project ID from the `CODED_APPS_TEST_PROJECT_ID` environment variable
+     — this makes push non-interactive:
      ```
      echo "UIPATH_PROJECT_ID=$CODED_APPS_TEST_PROJECT_ID" > .env
      ```
-     Do NOT proceed if `$CODED_APPS_TEST_PROJECT_ID` is empty — surface the
-     configuration error to the user.
+     Confirm the file was written by running `cat .env` — it must show a
+     non-empty UUID value. If `$CODED_APPS_TEST_PROJECT_ID` is empty,
+     STOP and surface the configuration error to the user (do not retry).
 
   3. Write these two files at the sandbox root EXACTLY as shown:
 

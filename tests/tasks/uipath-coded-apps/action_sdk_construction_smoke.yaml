@@ -35,12 +35,11 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "src/uipath.ts imports the SDK and constructs with new UiPath() (Rule #17 — Action apps use host-injected session, no args)"
-    path: "src/uipath.ts"
-    includes:
-      - "@uipath/uipath-typescript"
-      - "new UiPath()"
+  - type: run_command
+    description: "src/uipath.ts imports and constructs an Action-app SDK — either `@uipath/uipath-typescript` + `new UiPath()` (when the app calls UiPath platform APIs) OR `@uipath/coded-action-app` + `new CodedActionAppService()` (when the app only reads/completes tasks). Rule #17 — no `.initialize()` call on either."
+    command: "( grep -q '@uipath/uipath-typescript' src/uipath.ts && grep -qE 'new\\s+UiPath\\s*\\(' src/uipath.ts ) || ( grep -q '@uipath/coded-action-app' src/uipath.ts && grep -qE 'new\\s+CodedActionAppService\\s*\\(' src/uipath.ts )"
+    timeout: 10
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 

@@ -27,7 +27,10 @@ initial_prompt: |
     and the requesting department. These are read-only context for the
     reviewer (they cannot change them).
   - The reviewer adds an approval comment and selects a category for the
-    purchase (one of: Operations, Capital, Marketing, Other).
+    purchase. Category is a bounded choice — the four allowed values are
+    `Operations`, `Capital`, `Marketing`, `Other`. Model this in
+    `action-schema.json` as a JSON Schema `enum` (an array of the four
+    string values on the field), not as a free-text string field.
   - The form submits with either Approve or Reject.
   - When deployed, the form must bind to Action Center tasks (NOT a
     standalone Web App).
