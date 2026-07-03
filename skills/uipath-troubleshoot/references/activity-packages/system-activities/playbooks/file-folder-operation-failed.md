@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "FileSystemException"
+  - kind: message
+    value: "Folder path is missing. Provide either a folder path or a folder resource."
+  - kind: message
+    value: "The folder was not found at the provided path. Verify that the path is correct."
+  - kind: message
+    value: "Source folder is missing."
+  - kind: message
+    value: "Destination folder should not be the parent of source folder."
+  - kind: message
+    value: "Cannot create a file with the same name as an existing directory"
+exclusions:
+  - "classic Rename/Move File / Append Line messages ('The source file does not exist.', 'File cannot be null') → classic-activities file-operation-failed.md"
 ---
 
 # File & Folder Operation Failed — Modern File Activities (Copy / Move / Rename / Delete Folder, Delete File, Create Folder)

@@ -1,5 +1,16 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Failed to fetch Document Understanding projects list"
+  - kind: message
+    value: "Couldn't retrieve a tenant key."
+  - kind: message
+    value: "Information about tenant"
+    note: "as 'Information about tenant <id> couldn't be retrieved.' — tenant metadata lookup failed"
+exclusions:
+  - "DUApiException with an HTTP status → du-license-or-endpoint-rejected.md"
+  - "No such bucket / Could not find Orchestrator Folder → du-storage-or-taxonomy-missing.md"
 ---
 
 # Document Understanding — Not enabled on tenant / tenant key

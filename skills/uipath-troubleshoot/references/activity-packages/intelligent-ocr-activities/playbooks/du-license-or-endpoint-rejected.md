@@ -1,5 +1,23 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.AggregateException"
+    note: "Digitize Document via UiPath Document OCR — inner message carries 'Server response: <detail> Error:<code>' from PageDigitizer.ApplyOcr; route on the server response, not the wrapper"
+  - kind: message
+    value: "Server response: Invalid API key specified"
+  - kind: error-code
+    value: "UiPathOCRInvalidApiKey"
+    note: "AggregateException-wrapped 'Server response: ... Error:UiPathOCRInvalidApiKey' on the Digitize Document / DU OCR path; the raw OCR-activity surface is the ocr-activities endpoint/authentication playbook"
+  - kind: exception
+    value: "UiPath.SmartData.Utils.DocumentUnderstandingClient.DUApiException"
+  - kind: message
+    value: "Your license could not be validated"
+  - kind: message
+    value: "Failed to consume the requested number of pages"
+exclusions:
+  - "Failed to fetch Document Understanding projects list / Couldn't retrieve a tenant key → du-not-enabled-or-tenant-key.md"
+  - "No such bucket / Could not load from storage bucket → du-storage-or-taxonomy-missing.md"
 ---
 
 # Document Understanding — License or endpoint rejected the call

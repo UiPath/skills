@@ -1,5 +1,22 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "UiPath.DocumentUnderstanding.Digitizer.Exceptions.PdfException"
+    note: "read/extract activity on an encrypted PDF — message 'The password is incorrect.'"
+  - kind: message
+    value: "The password is incorrect."
+  - kind: message
+    value: "A password for the encrypted PDF file was not supplied"
+  - kind: message
+    value: "The input PDF file is not encrypted with a user password, yet a password was supplied"
+  - kind: message
+    value: "The supplied password does not grant the permissions (owner rights) to change the password."
+  - kind: message
+    value: "The user and owner passwords must not coincide!"
+exclusions:
+  - "Could not find file / does not have a .PDF extension → pdf-file-not-found-or-not-pdf.md"
+  - "PdfException 'Invalid input stream' (no password inner exception) → pdf-corrupt-or-image-input.md"
 ---
 
 # PDF — Encrypted PDF or wrong password

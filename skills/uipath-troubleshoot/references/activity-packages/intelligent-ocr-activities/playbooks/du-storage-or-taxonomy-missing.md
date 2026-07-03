@@ -1,5 +1,21 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "No such bucket named"
+  - kind: message
+    value: "Couldn't find path"
+    note: "as 'Couldn't find path <path> in bucket <bucket>' — taxonomy/model blob missing from the storage bucket"
+  - kind: message
+    value: "from storage bucket"
+    note: "as 'Could not load the <x> from storage bucket <b> and path <p>' — results/taxonomy blob load failure"
+  - kind: message
+    value: "The local directory path"
+  - kind: message
+    value: "Could not find Orchestrator Folder"
+exclusions:
+  - "DUApiException (HTTP status) → du-license-or-endpoint-rejected.md"
+  - "Failed to fetch Document Understanding projects list / Couldn't retrieve a tenant key → du-not-enabled-or-tenant-key.md"
 ---
 
 # Document Understanding — Storage bucket / taxonomy / folder missing

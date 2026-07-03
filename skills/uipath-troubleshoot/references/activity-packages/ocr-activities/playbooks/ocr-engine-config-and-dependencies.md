@@ -1,5 +1,18 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "installed in order to use local server mode"
+  - kind: message
+    value: "please install the UiPath.CoreIPC package"
+  - kind: message
+    value: "This version of the OCR.Activities package is incompatible with"
+  - kind: message
+    value: "was not supplied in activity designer nor in project settings"
+  - kind: message
+    value: "Unsupported engine"
+  - kind: message
+    value: "Timeout must be a number greater than 0."
 ---
 
 # OCR Engine Configuration & Dependency Errors

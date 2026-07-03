@@ -1,5 +1,22 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "Could not find file"
+    note: "PDF activity pre-parse ArgumentException — the single input file is missing on the robot host; the same string on Word Application Scope belongs to word-activities"
+  - kind: message
+    value: "The input file does not have a .PDF extension"
+  - kind: message
+    value: "The provided file path is invalid"
+  - kind: message
+    value: "Could not find one or more of the specified files"
+  - kind: message
+    value: "The file list must contain at least two files"
+  - kind: message
+    value: "You need to specify the files to merge"
+exclusions:
+  - "UiPath.PDF.PdfException 'Invalid input stream' (file opened but corrupt) → pdf-corrupt-or-image-input.md"
+  - "The password is incorrect (encrypted PDF) → pdf-encrypted-or-wrong-password.md"
 ---
 
 # PDF — File not found or not a PDF

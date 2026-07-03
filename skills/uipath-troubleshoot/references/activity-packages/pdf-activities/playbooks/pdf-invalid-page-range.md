@@ -1,5 +1,20 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "UiPath.DocumentProcessing.Contracts.Extensions.InvalidPageRangeException"
+  - kind: message
+    value: "was not in a correct format"
+    note: "generic .NET format wording — only when raised as InvalidPageRangeException from Extract PDF Page Range (unparseable Range string)"
+  - kind: message
+    value: "Page range is incorrect."
+  - kind: message
+    value: "The provided page number is invalid"
+  - kind: message
+    value: "The Range argument does not have a valid format"
+exclusions:
+  - "Could not find file / does not have a .PDF extension → pdf-file-not-found-or-not-pdf.md"
+  - "PdfException (encrypted/corrupt file) → pdf-encrypted-or-wrong-password.md or pdf-corrupt-or-image-input.md"
 ---
 
 # PDF — Invalid page range or page number

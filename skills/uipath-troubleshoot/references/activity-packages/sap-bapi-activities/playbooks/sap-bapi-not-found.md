@@ -1,5 +1,18 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "could not be created"
+    note: "as 'Function: <name> could not be created' — BAPI/RFC function metadata lookup failed; NOT the connection-level 'Connection could not be created.' (sap-connection-failed)"
+  - kind: message-key
+    value: "ErrorMsgRfcFunctionNotCreated"
+  - kind: message
+    value: "BAPI name is null or empty"
+  - kind: message-key
+    value: "ErrorEmptyBapi"
+exclusions:
+  - "Connection could not be created / RfcConfigurationException / TimeoutException → sap-connection-failed.md"
+  - "Unsupported BAPI. Contains nested complex types. → sap-unsupported-bapi.md"
 ---
 
 # SAP — BAPI not found or not named

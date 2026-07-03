@@ -1,5 +1,22 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "UiPath.PDF.PdfException"
+    note: "reader-level parse failure ('Invalid input stream', no inner PdfIncorrectPasswordException) — corrupt/truncated/non-PDF bytes"
+  - kind: message
+    value: "Invalid input stream"
+  - kind: exception
+    value: "UiPath.PDF.ImageToPdfException"
+  - kind: message
+    value: "The image list must contain at least one image"
+  - kind: message
+    value: "The image list contains files with unsupported extensions"
+  - kind: message
+    value: "Attachment has an unsafe or invalid name"
+exclusions:
+  - "PdfException with inner PdfIncorrectPasswordException (encrypted PDF) → pdf-encrypted-or-wrong-password.md"
+  - "Could not find file / does not have a .PDF extension → pdf-file-not-found-or-not-pdf.md"
 ---
 
 # PDF — Corrupt PDF or Create-PDF-From-Images input error

@@ -1,5 +1,13 @@
 ---
 confidence: high
+signatures:
+  - kind: exception
+    value: "UiPath.SAP.BAPI.SapBapiExceptions.UnSupportedBapiException"
+  - kind: message
+    value: "Unsupported BAPI. Contains nested complex types."
+exclusions:
+  - "Connection could not be created / RfcConfigurationException / TimeoutException → sap-connection-failed.md"
+  - "Function: <name> could not be created / BAPI name is null or empty → sap-bapi-not-found.md"
 ---
 
 # SAP — Unsupported BAPI (nested complex types)

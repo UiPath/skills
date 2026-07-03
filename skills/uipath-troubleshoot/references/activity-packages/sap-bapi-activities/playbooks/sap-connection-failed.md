@@ -1,5 +1,22 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "SAP.Middleware.Connector.RfcConfigurationException"
+  - kind: exception
+    value: "SAP.Middleware.Connector.RfcCommunicationException"
+  - kind: exception
+    value: "SAP.Middleware.Connector.RfcLogonException"
+  - kind: message
+    value: "Not any kind of host is specified"
+  - kind: message
+    value: "Cannot create sap connection, connection info params are not set"
+  - kind: exception
+    value: "System.TimeoutException"
+    note: "SAP Application Scope / RFC connection or call timed out — needs the SAP BAPI scope context; SAP host unreachable, down, or saturated"
+exclusions:
+  - "Function: <name> could not be created / BAPI name is null or empty → sap-bapi-not-found.md"
+  - "Unsupported BAPI. Contains nested complex types. → sap-unsupported-bapi.md"
 ---
 
 # SAP — Connection / logon failure

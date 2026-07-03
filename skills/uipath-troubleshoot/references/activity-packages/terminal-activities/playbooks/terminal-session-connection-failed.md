@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "UiPath.Terminal.Data.TerminalConnectionException"
+  - kind: message
+    value: "Error initiating connection"
+  - kind: message
+    value: "Error waiting for connection"
+  - kind: message
+    value: "There was an error connecting to terminal"
+  - kind: message
+    value: "Terminal host process path not found"
+  - kind: message
+    value: "The specified existing connection is disconnected"
+exclusions:
+  - "bare NullReferenceException from TerminalSession → terminal-session-null-reference.md"
 ---
 
 # Terminal — Terminal Session connection failed

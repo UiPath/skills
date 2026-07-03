@@ -1,5 +1,17 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.Net.Http.HttpRequestException"
+    note: "raw transport failure on Download File from URL (DNS/connection refused/TLS), often wrapping a SocketException; inner exception of NetHttpRequest's AggregateException → net-http-request-aggregate-failure.md"
+  - kind: message
+    value: "Failed to execute rest call."
+  - kind: message
+    value: "The server didn't respond within the specified timeout value"
+  - kind: message
+    value: "No file detected in"
+  - kind: message
+    value: "was found but it's in use"
 ---
 
 # Download File / Wait for Download Failed

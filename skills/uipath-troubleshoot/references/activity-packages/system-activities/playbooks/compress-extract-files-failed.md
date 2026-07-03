@@ -1,5 +1,18 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "CompressionException"
+  - kind: error-code
+    value: "System.Compression.Sys.ExtractFailed"
+  - kind: message
+    value: "No files to compress."
+  - kind: message
+    value: "Cannot extract data from archive"
+  - kind: message
+    value: "already exists in the compressed file"
+  - kind: message
+    value: "is compressed in an unsupported format"
 ---
 
 # Compress / Extract Files Failed — Archive Operation Errors

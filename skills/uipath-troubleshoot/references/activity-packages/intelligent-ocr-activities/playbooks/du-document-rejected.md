@@ -1,5 +1,10 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "UiPath.IntelligentOCR.Exceptions.DocumentRejectedByUserException"
+exclusions:
+  - "DUApiException / tenant / storage errors → du-license-or-endpoint-rejected.md, du-not-enabled-or-tenant-key.md, du-storage-or-taxonomy-missing.md"
 ---
 
 # Document Understanding — Document rejected at Validation Station

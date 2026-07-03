@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "UiPath.IntegrationCore.Utilities.ConnectionException"
+  - kind: message
+    value: "Unable to find a connection of type"
+  - kind: message
+    value: "The selected connection is no longer valid. Please use another connection or create a new one."
+  - kind: exception
+    value: "System.AggregateException"
+    note: "on a Slack Integration Service activity — inner is a ConnectionException (or a transient 503 RemoteException) at connection resolution; other connector activity stacks → connector-aggregate-exception.md"
+  - kind: http-status
+    value: "503"
+    note: "transient RemoteException from service discovery during Slack connection resolution — clears on retry"
+exclusions:
+  - "BusinessActivityExecutionException (connection resolved, Slack rejected the call) → slack-api-error.md"
 ---
 
 # Slack — Connection resolution failure

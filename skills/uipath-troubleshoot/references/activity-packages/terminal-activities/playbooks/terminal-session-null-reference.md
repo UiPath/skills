@@ -1,5 +1,11 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "System.NullReferenceException"
+    note: "attributed to UiPath.Terminal.Activities.TerminalSession, usually with no terminal-specific message — most often a masked connect failure (scope cleanup calls Shutdown() on a null connection)"
+exclusions:
+  - "TerminalConnectionException / connect-time message surfaced directly → terminal-session-connection-failed.md"
 ---
 
 # Terminal — Terminal Session NullReferenceException

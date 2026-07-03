@@ -1,5 +1,16 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "No image input was provided. Bind one of Image or ImageFile."
+  - kind: message
+    value: "Rotation angle is not supported"
+  - kind: message
+    value: "OCR timeout exceeded"
+  - kind: message
+    value: "Usage must be Document."
+  - kind: message
+    value: "Usage must be Screen."
 ---
 
 # OCR Input & Runtime Errors

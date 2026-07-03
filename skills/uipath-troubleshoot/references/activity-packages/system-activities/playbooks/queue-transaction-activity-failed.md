@@ -1,5 +1,21 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Queue Name is required."
+  - kind: message
+    value: "Reason is required when Status is Failed"
+  - kind: message
+    value: "Service URL is empty."
+  - kind: exception
+    value: "OrchestratorHttpException"
+  - kind: error-code
+    value: "System.Utilities.Sys.HttpError"
+  - kind: error-code
+    value: "1002"
+    note: "queue flavor — Orchestrator response '<name> does not exist' on Get Queue Item / Add Queue Item / Set Transaction Status; asset flavor → get-asset-not-found.md"
+exclusions:
+  - "classic Add Queue Item ('Queue name may not be null or empty', reserved-character/duplicate keys) → add-queue-item-failed.md"
 ---
 
 # Get Queue Item / Set Transaction Status Failed — Orchestrator Queue Activities

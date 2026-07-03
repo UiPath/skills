@@ -1,5 +1,21 @@
 ---
 confidence: medium
+signatures:
+  - kind: exception
+    value: "UiPath.BAF.Infrastructure.Exceptions.BusinessActivityExecutionException"
+    note: "on a Slack Integration Service activity — the ProviderMessage JSON 'error' field names the Slack-side cause"
+  - kind: message
+    value: "missing required field: channel"
+  - kind: message
+    value: "channel_not_found"
+  - kind: message
+    value: "not_in_channel"
+  - kind: message
+    value: "users_not_found"
+  - kind: message
+    value: "Unauthorized - An invalid connection id, and/or Bearer token provided."
+exclusions:
+  - "AggregateException wrapping a ConnectionException (failure at connection resolution) → connection-resolution-failure.md"
 ---
 
 # Slack — API rejected the request

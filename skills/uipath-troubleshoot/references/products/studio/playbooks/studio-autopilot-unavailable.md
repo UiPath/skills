@@ -1,5 +1,12 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "This feature has been disabled by your organization"
+  - kind: message
+    value: "Could not establish a connection with the Autopilot service"
+  - kind: message
+    value: "No license exist for this installation"
 ---
 
 # Studio Autopilot Unavailable / "Disabled by Your Organization"

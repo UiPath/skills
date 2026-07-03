@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "SignalR connection did not establish within 60 seconds"
+  - kind: exception
+    value: "System.TimeoutException"
+    note: "at AppRequestTrigger in a UiPath-App-invoked job — App↔robot SignalR channel never connected; HTTP-request timeouts → http-request-timeout.md"
+  - kind: exception
+    value: "System.IO.IOException"
+    note: "at AppRequestTrigger — SignalR/RobotJS transport dropped while awaiting an App request; discriminator is the faulted activity"
+  - kind: exception
+    value: "System.InvalidOperationException"
+    note: "at AppRequestTrigger — SignalR client driven in a non-connected/disposed state; discriminator is the faulted activity"
+exclusions:
+  - "NullReferenceException at HandleAppRequest → handle-app-request-null-reference.md"
+  - "AggregateException at InitializeHubConnection → initialize-hub-connection-aggregate-failure.md"
 ---
 
 # Apps Request Trigger — Connection / Transport Lost (Timeout / IOException / InvalidOperation)

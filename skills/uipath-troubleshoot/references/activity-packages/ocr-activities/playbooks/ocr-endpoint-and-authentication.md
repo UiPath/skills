@@ -1,5 +1,20 @@
 ---
 confidence: medium
+signatures:
+  - kind: message
+    value: "Invalid API key specified"
+    note: "OCRException from a UiPath OCR engine call (OCRResultCode UiPathOCRInvalidApiKey); on the DU Digitize pipeline the same string arrives wrapped in AggregateException — see intelligent-ocr du-license-or-endpoint-rejected"
+  - kind: error-code
+    value: "UiPathOCRInvalidApiKey"
+    note: "raw OCR-activity surface (OCRException, OCRResultCode 99902, HTTP 401); the AggregateException-wrapped Digitize Document surface is intelligent-ocr du-license-or-endpoint-rejected"
+  - kind: message
+    value: "endpoint is null or empty"
+  - kind: message
+    value: "Invalid CJK server configuration. Neither async nor sync endpoints are enabled."
+  - kind: message
+    value: "The OCR service call timed out"
+  - kind: error-code
+    value: "UiPathOCRErrorInvalidResponse"
 ---
 
 # OCR Endpoint & Authentication Errors

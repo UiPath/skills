@@ -1,5 +1,14 @@
 ---
 confidence: high
+signatures:
+  - kind: message
+    value: "No OCR Engine assigned."
+  - kind: message
+    value: "Digitization failed with status"
+  - kind: message
+    value: "Invalid image dpi"
+exclusions:
+  - "Could not find file / does not have a .PDF extension → pdf-file-not-found-or-not-pdf.md"
 ---
 
 # PDF — Read PDF With OCR: no/failed OCR engine
