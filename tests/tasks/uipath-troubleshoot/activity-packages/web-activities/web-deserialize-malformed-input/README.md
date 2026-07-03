@@ -17,7 +17,7 @@ returned an error page / non-2xx / empty body that was parsed without a success 
 
 - **Mock `uip` dispatcher** (`../_shared/mock_template`) + `fixtures/mocks/responses/manifest.json`
   serve the recorded folder / job / logs evidence.
-- **Process snapshot** (`process/WebRepro/`) holds the failing workflow so the agent can
+- **Process snapshot** (`process/WebApiClient/`) holds the failing workflow so the agent can
   read the Deserialize JSON input wiring (the decisive literal-vs-HTTP evidence).
 - **Fixtures** are captured from a **real staging faulted job**
   (`febd892d-787b-4008-a573-4af66cf710cf`), scrubbed (host → `MOCK-HOST`,

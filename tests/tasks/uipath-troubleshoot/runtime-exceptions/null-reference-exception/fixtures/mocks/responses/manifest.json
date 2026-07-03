@@ -34,7 +34,7 @@
     {
       "pattern": "or jobs get 77dc53dd-5c45-4a77-b39f-a52e9e7ef163",
       "min": 1,
-      "description": "Agent fetches the faulted job's details to read the NullReferenceException message and the stack frame pointing at ERN.xaml/CopyFile."
+      "description": "Agent fetches the faulted job's details to read the NullReferenceException message and the stack frame pointing at CopyFile.xaml/CopyFile."
     },
     {
       "pattern": "or jobs logs 77dc53dd-5c45-4a77-b39f-a52e9e7ef163",

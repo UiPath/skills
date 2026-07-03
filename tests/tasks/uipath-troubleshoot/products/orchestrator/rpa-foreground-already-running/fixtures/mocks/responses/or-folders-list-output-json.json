@@ -6,7 +6,7 @@
       "Key": "a1b2c3d4-e5f6-7890-1234-56789abcdef0",
       "Name": "ForegroundDemo",
       "Path": "ForegroundDemo",
-      "Description": "Demo folder hosting the ForegroundHolder process (foreground / UI-interactive).",
+      "Description": "Demo folder hosting the AttendedReportJob process (foreground / UI-interactive).",
       "Type": "Standard",
       "ParentKey": ""
     },

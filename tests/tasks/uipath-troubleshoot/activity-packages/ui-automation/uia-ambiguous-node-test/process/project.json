@@ -2,7 +2,7 @@
   "name": "ERN",
   "projectId": "f7f526b5-814c-4e94-93bf-35715e9ff887",
   "description": "Blank Process",
-  "main": "Amb.xaml",
+  "main": "EmployeeRow.xaml",
   "dependencies": {
     "UiPath.System.Activities": "[26.6.0-alpha.11972213]",
     "UiPath.UIAutomation.Activities": "[26.5.0-alpha.11984665]"
@@ -45,7 +45,7 @@
   "expressionLanguage": "CSharp",
   "entryPoints": [
     {
-      "filePath": "Amb.xaml",
+      "filePath": "EmployeeRow.xaml",
       "uniqueId": "d49d7c86-c5cf-425a-b7f8-739aa1365580",
       "input": [],
       "output": []

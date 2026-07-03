@@ -13,7 +13,7 @@
     "BatchExecutionKey": "7e1c6b30-19a2-4b5c-8e7f-1a2b3c4d5e6f",
     "Info": "System.InvalidOperationException: A foreground process is already running. Only one foreground process can run at a time.\r\n   at UiPath.Robot.Service.Hosting.ForegroundJobGuard.EnsureCanStart(JobStartRequest request)\r\n   at UiPath.Robot.Service.JobManager.StartJobAsync(JobStartRequest request, CancellationToken cancellationToken)\r\n",
     "CreationTime": "2026-05-13T14:20:45.302Z",
-    "ReleaseName": "MisconfiguredForeground",
+    "ReleaseName": "ExpenseValidation",
     "Type": "Unattended",
     "EnvironmentVariables": "",
     "OutputArguments": "{}",
