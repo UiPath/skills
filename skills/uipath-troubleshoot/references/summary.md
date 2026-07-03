@@ -73,11 +73,20 @@ Namespaces: `UiPath.CV.Activities` (exceptions: `UiPath.CV`)
 - [activity-packages/cv-activities/overview.md](./activity-packages/cv-activities/overview.md) — Package overview, CV targeting mechanics, exception types, and common failure patterns
 - [activity-packages/cv-activities/summary.md](./activity-packages/cv-activities/summary.md) — All playbooks for Computer Vision Activities issues
 
+## OCR Activities
+
+Low-level OCR engine activities from `UiPath.OCR.Activities` — UiPath Screen OCR and UiPath Document OCR (cloud or local server), plus CJK / Extended Languages OCR via Document Understanding. These are the foundational text-recognition engines consumed by Document Understanding `Digitize` and Computer Vision screen scopes. Issues here involve missing local-server / CoreIPC packages, incompatible companion-package versions, invalid API key / endpoint / CJK configuration, service timeouts and invalid responses, invalid or missing image input, unsupported rotation, wrong scrape usage, and empty/silent results. For the DU document pipeline (`Digitize` / classify / extract) see Document Understanding; for CV screen-targeting see Computer Vision.
+
+Namespaces: `UiPath.OCR.Activities` (exceptions: `OCRException` with `OCRResultCode`)
+
+- [activity-packages/ocr-activities/overview.md](./activity-packages/ocr-activities/overview.md) — Package overview, engines, local-server modes, and failure families
+- [activity-packages/ocr-activities/summary.md](./activity-packages/ocr-activities/summary.md) — All playbooks for OCR Activities issues
+
 ## System Activities
 
-Core workflow activities from `UiPath.System.Activities` that interact with Orchestrator resources at runtime — asset retrieval, credential lookup, queue operations, and storage buckets. Issues here involve asset-not-found errors, permission denied, folder scope mismatches, external vault failures, and package version bugs.
+Core workflow activities from `UiPath.System.Activities`. Two families: Orchestrator-resource activities (asset retrieval, credential lookup, queue operations, storage buckets — asset-not-found, permission denied, folder scope mismatches, external vault failures, package version bugs); and local runtime activities (compression `Compress/Extract Files` → `CompressionException`; modern StudioX file/folder `Copy/Move/Rename/Delete` → `FileSystemException`; `Download File from URL` / `Wait for Download`). For the classic `Rename/Move File`, `Kill Process`, `Invoke Code/Workflow File`, and `Add Queue Item` activities, see **Classic Activities**.
 
-Namespaces: `UiPath.Core.Activities`
+Namespaces: `UiPath.Core.Activities`, `UiPath.System.Activities`
 
 - [activity-packages/system-activities/overview.md](./activity-packages/system-activities/overview.md) — Package overview, activity types, and common failure patterns
 - [activity-packages/system-activities/summary.md](./activity-packages/system-activities/summary.md) — All playbooks for System Activities issues
