@@ -52,3 +52,8 @@ defaults:
 
 variants:
   - variant_id: default
+    # Force docker for ALL tasks, overriding per-task `driver: tempdir` pins
+    # (variant driver is layer 4 of the merge; task pins are layer 3). The
+    # codex SDK exists only inside the agent image — tempdir tasks run the
+    # agent on the CI host, which has no codex SDK, and ERROR at startup.
+    driver: docker
