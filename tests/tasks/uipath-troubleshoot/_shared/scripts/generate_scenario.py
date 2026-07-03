@@ -14,7 +14,7 @@ Usage:
         --transcript <claude code jsonl> \
         [--resolution <RESOLUTION.md>] \
         [--scenario-name <slug>] \
-        --group <group folder, e.g. activity-packages/word-activities> \
+        --group <group folder, e.g. activity-packages, products/orchestrator> \
         [--output <dir>] \
         [--scrub-map <json>] \
         [--apply]
@@ -754,11 +754,14 @@ def main(argv: list[str]) -> int:
         "--group",
         default=None,
         help=(
-            "Group folder under tests/tasks/uipath-troubleshoot/ the scenario belongs to, "
-            "mirroring references/ — e.g. activity-packages/word-activities, products/orchestrator, "
-            "runtime-exceptions, cross-system. Sets placement, the depth-correct _shared path, and "
-            "the default product/domain tag (rpa for activity packages; orchestrator/integration-service/"
-            "maestro for products)."
+            "Group folder under tests/tasks/uipath-troubleshoot/ the scenario belongs to — "
+            "e.g. activity-packages, products/orchestrator, runtime-exceptions, cross-system. "
+            "Sets placement, the depth-correct _shared path, and the default product/domain tag "
+            "(rpa for activity packages; orchestrator/integration-service/maestro for products). "
+            "Activity-package scenarios are FLAT under activity-packages/ (no per-package subfolder) "
+            "and the --scenario-name MUST be prefixed with the short package token "
+            "(db, cv, excel, gsuite, mail, o365, py, sys, uia, web, word, classic) to keep paths "
+            "short for Windows MAX_PATH — e.g. db-execute-query-timeout-expired, uia-node-not-found."
         ),
     )
     parser.add_argument("--output", default=None)
