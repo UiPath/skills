@@ -9,6 +9,12 @@ signatures:
   - kind: message
     value: "Cannot find item configured with connection"
     note: "wrapper around 'Folder named ... could not be found' on a Mail activity; the same wrapper on a Files activity is a Drive item → drive-item-not-found.md, on GSuite → drive-file-not-found.md (gsuite)"
+  - kind: http-status
+    value: "404"
+    note: "Microsoft Graph 404 while a Mail activity resolves a MailFolder argument; GSuite 404 → drive-file-not-found.md (gsuite), Maestro/agents 404s → those domains' playbooks"
+  - kind: exception
+    value: "ArgumentNullException"
+    note: "generic .NET exception — this claim is the unwrapped form carrying 'Folder named ... could not be found' as the parameter text; a bare ArgumentNullException naming a credential field → application-scope-misconfigured.md"
 exclusions:
   - "The resource could not be found. from message-by-ID activities (MarkAsReadUnreadConnections, DeleteEmailConnections, ...) → mail-message-not-found.md"
 ---

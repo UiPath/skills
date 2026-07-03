@@ -3,6 +3,9 @@ confidence: high
 signatures:
   - kind: message
     value: "A sheet with the same name already exists."
+  - kind: exception
+    value: "GSuiteException"
+    note: "generic GSuite package exception — this claim is the AddSheetConnections duplicate sheet-name fault (ConflictResolution = Fail)"
 ---
 
 # GSuite Add Sheet — A sheet with the same name already exists

@@ -4,6 +4,9 @@ signatures:
   - kind: message
     value: "Argument values did not match definitions"
     note: "generic argument-mismatch 400 — no single named field, no broad schema wording"
+  - kind: http-status
+    value: "400"
+    note: "with the argument-mismatch wording and no single named field — named-field 400 → missing-required-parameter.md; schema-conformance 400 → input-schema-mismatch.md; empty errorDetails → generic-error-400.md"
 exclusions:
   - "error names a single required field → missing-required-parameter.md"
   - "error mentions schema conformance broadly → input-schema-mismatch.md"

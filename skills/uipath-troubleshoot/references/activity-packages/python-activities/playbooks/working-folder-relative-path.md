@@ -4,6 +4,9 @@ signatures:
   - kind: message
     value: "FileNotFoundError"
     note: "Python-side, referencing a relative path — CWD is the robot per-package folder, not the project; the activities themselves succeed"
+  - kind: exception
+    value: "FileNotFoundError"
+    note: "Python exception class, raised script-side on a relative path while the UiPath activities succeed — CWD is the robot per-package folder, not the project"
 ---
 
 # Python Scope — Script Runs but Reads/Writes the Wrong Files (WorkingFolder / Relative Path)

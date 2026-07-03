@@ -3,6 +3,9 @@ confidence: high
 signatures:
   - kind: message
     value: "Insufficient funds: Your account doesn't have enough credits for execution"
+  - kind: http-status
+    value: "400"
+    note: "from an agent or GenAI activity with the insufficient-funds/credits wording — other named 400s route to their specific playbooks"
 ---
 
 # Insufficient Funds / Agent Units (400)
