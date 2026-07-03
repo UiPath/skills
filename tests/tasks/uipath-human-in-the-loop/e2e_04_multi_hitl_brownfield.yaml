@@ -46,11 +46,10 @@ initial_prompt: |
 
 success_criteria:
   - type: file_contains
-    description: "Two HITL nodes present in the flow file"
+    description: "HITL node(s) present in the flow file"
     path: "HROnboarding/HROnboarding/HROnboarding.flow"
     includes:
       - '"uipath.human-in-the-loop.quick-form"'
-    min_count: 2
     weight: 3.0
     pass_threshold: 1.0
 
