@@ -17,81 +17,55 @@ run_limits:
 
 initial_prompt: |
   Run a Studio Web push / pull roundtrip against the currently-active
-  UiPath tenant. This test focuses ONLY on the push/pull operation — do
-  NOT scaffold a full Vite app, do NOT run `npm install`, do NOT run
-  `npm run build`. Just write the minimal source files needed, then push
-  and pull.
+  UiPath tenant.
 
-  **CRITICAL — Step 2 is mandatory.** Push is non-interactive ONLY when
-  `.env` contains `UIPATH_PROJECT_ID`. If you skip Step 2, push will
-  block on an interactive project-selector prompt (which this environment
-  cannot answer) and every subsequent attempt will re-fail — do NOT retry
-  push if it fails; instead re-check that `.env` was written correctly.
+  **You are NOT done until BOTH push (step 5) AND pull (step 7) have
+  run.** The whole point is to prove pull restores the Studio Web
+  version-of-record over a locally-corrupted file. Pushing without
+  pulling fails this test.
 
-  1. Check login: `uip login status --output json`. Do NOT re-login.
+  Do NOT scaffold a Vite app. Do NOT run `npm install`, `npm run build`,
+  or `uip codedapp pack/publish/deploy` — those are tested elsewhere.
 
-  2. **Bootstrap the persistent test project — DO THIS BEFORE ANY OTHER
-     STEP.** This test uses a pre-created Studio Web project (managed by
-     test infra, not the agent). Write `.env` at the sandbox root with the
-     project ID from the `CODED_APPS_TEST_PROJECT_ID` environment variable
-     — this makes push non-interactive:
+  Steps (all seven required):
+
+  1. `uip login status --output json` — verify login, do NOT re-login.
+
+  2. Write `.env` at the sandbox root with the project ID from the
+     `CODED_APPS_TEST_PROJECT_ID` env var (this makes push non-interactive):
      ```
      echo "UIPATH_PROJECT_ID=$CODED_APPS_TEST_PROJECT_ID" > .env
      ```
-     Confirm the file was written by running `cat .env` — it must show a
-     non-empty UUID value. If `$CODED_APPS_TEST_PROJECT_ID` is empty,
-     STOP and surface the configuration error to the user (do not retry).
+     If `$CODED_APPS_TEST_PROJECT_ID` is empty, STOP — do not retry.
 
-  3. Write these two files at the sandbox root EXACTLY as shown:
+  3. Write these two files at the sandbox root exactly as shown:
 
      `package.json`:
      ```
-     {
-       "name": "test-webapp",
-       "version": "0.1.0",
-       "type": "module"
-     }
+     { "name": "test-webapp", "version": "0.1.0", "type": "module" }
      ```
 
      `src/App.tsx`:
      ```
      // roundtrip-marker:v1
-     export default function App() {
-       return null;
-     }
+     export default function App() { return null; }
      ```
 
-  4. Create a stub `dist/` folder — push requires a build-output folder
-     to exist, but we're skipping `npm run build`, so seed one with a
-     placeholder:
+  4. Stub `dist/` (push needs a build-output folder):
      ```
-     mkdir -p dist && echo "<html><body>stub</body></html>" > dist/index.html
+     mkdir -p dist && echo "<html></html>" > dist/index.html
      ```
-     This is NOT the build we care about — it's just there so push has a
-     `dist/` to point at. Our real assertion target is `src/App.tsx`.
 
-  5. Push to Studio Web: `uip codedapp push --output json`. Runs non-interactive
-     because `UIPATH_PROJECT_ID` was pre-populated in Step 2. Push uploads
-     `dist/` (as build output) AND `src/` (as source files) — pull will
-     later restore `src/App.tsx` from Studio Web's source copy. Run push as
-     a SINGLE Bash invocation, not chained with other commands.
+  5. Push: `uip codedapp push --output json`.
 
-  6. Locally corrupt `src/App.tsx` by replacing the marker line with
-     `// roundtrip-marker:LOCAL-CORRUPTED`. Keep the rest of the file
-     identical. Save it.
+  6. Corrupt `src/App.tsx` — change the marker line from
+     `// roundtrip-marker:v1` to `// roundtrip-marker:LOCAL-CORRUPTED`.
+     Save it.
 
-  7. Pull from Studio Web: `uip codedapp pull --overwrite --output json`.
-     The `--overwrite` flag is REQUIRED — without it, pull will refuse to
-     replace the locally-modified `src/App.tsx`. This downloads the
-     version-of-record from Studio Web; after pull, `src/App.tsx` must
-     contain the original `:v1` marker again. Run pull as a SINGLE Bash
-     invocation in the project root (NOT in a subdirectory and NOT with
-     `--target-dir`).
-
-  Run each command as a separate Bash invocation. Do NOT chain them with
-  `&&`. Do NOT run `npm install`, `npm run build`, `uip codedapp pack`,
-  `publish`, or `deploy` — those are tested by other tests. Do NOT
-  experiment with `--target-dir` or pulling into subdirectories.
+  7. Pull: `uip codedapp pull --overwrite --output json`. The
+     `--overwrite` flag is required. After pull, `src/App.tsx` must
+     contain the `:v1` marker again — that's the roundtrip signal
+     this test grades. You are not done until this step runs.
 
 success_criteria:
   - type: command_executed
