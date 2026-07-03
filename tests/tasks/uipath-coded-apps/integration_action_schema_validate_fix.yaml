@@ -8,8 +8,7 @@ description: >
   (Phase 2f-i archetype D1) and exercises Rule #3 of the Action-app workflow
   ("Never propose or write an action-schema.json that has not passed the
   validator").
-tags: [uipath-coded-apps, integration, mode:diagnose, feature:action-schema]
-
+tags: [uipath-coded-apps, integration, mode:diagnose, lifecycle:generate]
 run_limits:
   expected_turns: 10
   turn_timeout: 600

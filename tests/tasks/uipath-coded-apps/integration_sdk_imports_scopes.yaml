@@ -9,8 +9,7 @@ description: >
   dot-chain (`sdk.assets.getAll()`).
   (3) Rule #16 — `VITE_UIPATH_SCOPE` covers every SDK method the agent calls;
   drift causes silent 401/403 on first invocation.
-tags: [uipath-coded-apps, integration, mode:build, feature:sdk-imports]
-
+tags: [uipath-coded-apps, integration, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 10
   turn_timeout: 600

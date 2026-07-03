@@ -6,8 +6,7 @@ description: >
   most common silent-data-loss bug in coded apps. Static grep for the
   cursor-loop signature (`nextCursor` + `hasNextPage` + loop construct +
   accumulation) — no runtime required.
-tags: [uipath-coded-apps, smoke, mode:operate, feature:sdk-pagination]
-
+tags: [uipath-coded-apps, smoke, mode:operate, lifecycle:generate]
 run_limits:
   expected_turns: 8
   turn_timeout: 600

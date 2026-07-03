@@ -8,8 +8,7 @@ description: >
   remote-of-record overwrites the local modification. Verifies the
   `O3 push / pull roundtrip` operate archetype documented in the
   skill's file-sync reference.
-tags: [uipath-coded-apps, integration, mode:operate, feature:push-pull]
-
+tags: [uipath-coded-apps, integration, mode:operate, lifecycle:setup]
 run_limits:
   expected_turns: 18
   max_turns: 60

@@ -7,8 +7,7 @@ description: >
   scope coverage. Closes 3 of the 9 in-scope SDK component gaps in a single
   test (Buckets, Attachments, Processes were all `None` per the coverage
   report).
-tags: [uipath-coded-apps, smoke, mode:build, feature:sdk-buckets, feature:sdk-services]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 10
   turn_timeout: 600

@@ -7,8 +7,7 @@ description: >
   `--ignore-resources` push flag (the last untested `uip codedapp push` flag
   surface) WITHOUT naming the flag in the prompt — agent must recall it
   from the skill.
-tags: [uipath-coded-apps, integration, mode:operate, feature:push-pull]
-
+tags: [uipath-coded-apps, integration, mode:operate, lifecycle:setup]
 run_limits:
   expected_turns: 15
   turn_timeout: 900

@@ -10,8 +10,7 @@ description: >
   test covers end-to-end, including the bind-to-Action-Center handoff.
   Deploys into an isolated `codedapp-e2e-*` folder so `post_run` can delete
   it cleanly.
-tags: [uipath-coded-apps, e2e, mode:build, feature:action-app, feature:full-lifecycle]
-
+tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 40
   max_turns: 60

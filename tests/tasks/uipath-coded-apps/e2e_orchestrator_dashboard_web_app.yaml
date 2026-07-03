@@ -10,8 +10,7 @@ description: >
   deploy to a fresh per-run Orchestrator folder so `post_run` can clean it
   up. Tests the Web-app lifecycle with deep SDK integration that no smoke
   or integration test covers.
-tags: [uipath-coded-apps, e2e, mode:build, feature:web-app, feature:sdk-integration]
-
+tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 45
   max_turns: 65

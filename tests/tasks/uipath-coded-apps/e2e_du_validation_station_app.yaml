@@ -13,8 +13,7 @@ description: >
   `optimizeDeps`. Deploys into a fresh per-run Orchestrator folder so
   `post_run` can clean it up. Tests the most complex coded-apps surface:
   widget integration, not just CLI flow.
-tags: [uipath-coded-apps, e2e, mode:build, feature:action-app, feature:du-validation-station]
-
+tags: [uipath-coded-apps, e2e, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 50
   max_turns: 100

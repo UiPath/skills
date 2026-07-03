@@ -6,8 +6,7 @@ description: >
   `ProcessInstances.cancel`. Tests the operate-mode authoring surface that
   the skill teaches but no other test exercises. Closes the operate-mode
   coverage gap identified in tests/reports/uipath-coded-apps.md.
-tags: [uipath-coded-apps, integration, mode:operate, feature:sdk-runtime]
-
+tags: [uipath-coded-apps, integration, mode:operate, lifecycle:generate]
 run_limits:
   expected_turns: 10
   turn_timeout: 600

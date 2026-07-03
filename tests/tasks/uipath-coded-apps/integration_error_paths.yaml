@@ -8,8 +8,7 @@ description: >
   the wrong command, capture stderr+stdout, and move on. Verifies that the
   agent recognizes the failure-mode taxonomy without trying to "fix" each
   case by retrying.
-tags: [uipath-coded-apps, integration, mode:diagnose, feature:error-paths]
-
+tags: [uipath-coded-apps, integration, mode:diagnose, lifecycle:discover]
 run_limits:
   expected_turns: 12
   turn_timeout: 600

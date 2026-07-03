@@ -8,8 +8,7 @@ description: >
   test exercises. The positive counterpart of the Action-app rule R17
   (`action_sdk_construction_smoke` asserts `.initialize()` MUST NOT appear in
   Action apps; this test asserts it MUST appear in Web apps).
-tags: [uipath-coded-apps, smoke, mode:build, feature:oauth, feature:web-app]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 10
   turn_timeout: 600

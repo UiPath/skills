@@ -7,8 +7,7 @@ description: >
   fields on first load" AND directly exercises the `@uipath/coded-action-app`
   service task-lifecycle methods (`setTaskData`, `completeTask`), upgrading
   that component from Indirect to Direct in the coverage report.
-tags: [uipath-coded-apps, smoke, mode:build, feature:action-app]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 8
   turn_timeout: 600

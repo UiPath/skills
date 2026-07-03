@@ -5,8 +5,7 @@ description: >
   hard-coded `/`-rooted path. Verifies Rule #10 — Vite's `base: './'` only
   fixes import-time references; runtime-built absolute URLs need
   `getAppBase()` or they 404 after deploy.
-tags: [uipath-coded-apps, smoke, mode:build]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 8
 

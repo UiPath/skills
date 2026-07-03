@@ -9,8 +9,7 @@ description: >
   with a `deploymentId`). Mirrors the Data Fabric `integration_full_lifecycle`
   Discover → Act → Verify pattern, scoped to the build path (deploy is left
   to a separate e2e test since it also needs folder-key resolution).
-tags: [uipath-coded-apps, integration, mode:build, feature:pack-publish]
-
+tags: [uipath-coded-apps, integration, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 25
   turn_timeout: 600

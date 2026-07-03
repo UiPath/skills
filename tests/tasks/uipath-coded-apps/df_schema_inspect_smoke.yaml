@@ -6,8 +6,7 @@ description: >
   writing") as it applies to Coded Apps — the skill teaches DF integration
   patterns even though the deeper DF surface is owned by uipath-data-fabric.
   Static check: schema inspection call must precede the write call.
-tags: [uipath-coded-apps, smoke, mode:build, feature:sdk-data-fabric]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 8
   turn_timeout: 600

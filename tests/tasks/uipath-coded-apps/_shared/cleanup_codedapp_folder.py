@@ -49,8 +49,15 @@ if not folder.lower().startswith("codedapp-"):
     print(f"SKIP: folder '{folder}' does not start with 'codedapp-' — refusing to delete", file=sys.stderr)
     sys.exit(0)
 
-subprocess.run(
-    ["uip", "or", "folders", "delete", folder, "--yes", "--output", "json"],
-    capture_output=True, timeout=60,
-)
+try:
+    subprocess.run(
+        ["uip", "or", "folders", "delete", folder, "--yes", "--output", "json"],
+        capture_output=True, timeout=60,
+    )
+except subprocess.TimeoutExpired:
+    print(f"TIMEOUT: folder delete for '{folder}' exceeded 60s (tenant slow); leaving folder in place", file=sys.stderr)
+except Exception as e:
+    # Any other failure — network, CLI crash, non-zero exit — is non-fatal.
+    # Docstring contract: cleanup failures never fail the test.
+    print(f"WARN: folder delete for '{folder}' failed: {e}", file=sys.stderr)
 sys.exit(0)

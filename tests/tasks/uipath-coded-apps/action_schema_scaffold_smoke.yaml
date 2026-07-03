@@ -6,8 +6,7 @@ description: >
   `action_sdk_construction_smoke` (which covers SDK wiring). Verifies the
   JSON Schema shape with all four sections and the canonical Approve/Reject
   outcomes structure.
-tags: [uipath-coded-apps, smoke, mode:build]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 8
 

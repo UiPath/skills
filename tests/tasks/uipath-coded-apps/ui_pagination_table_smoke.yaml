@@ -7,8 +7,7 @@ description: >
   against text overflow in every UI") — two UI/behavioral rules that
   previously had zero coverage. Static check of pagination state + controls
   + overflow CSS.
-tags: [uipath-coded-apps, smoke, mode:build, feature:ui-pagination]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 10
   turn_timeout: 600

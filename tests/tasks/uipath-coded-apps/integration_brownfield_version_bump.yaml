@@ -6,8 +6,7 @@ description: >
   republishes. Verifies Rule #5 ("bump version on re-publish") — the only
   critical rule currently with zero direct coverage in the suite. Closes
   the brownfield-version gap identified in tests/reports/uipath-coded-apps.md.
-tags: [uipath-coded-apps, integration, mode:build, feature:brownfield-version]
-
+tags: [uipath-coded-apps, integration, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 25
   turn_timeout: 900

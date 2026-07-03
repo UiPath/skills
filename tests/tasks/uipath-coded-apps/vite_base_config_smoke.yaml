@@ -4,8 +4,7 @@ description: >
   `vite.config.ts` for a Coded Web App. Verifies Rule #9 — `base: './'`
   is required (the platform handles URL routing; absolute root paths
   cause 404 after deploy).
-tags: [uipath-coded-apps, smoke, mode:build]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 8
 

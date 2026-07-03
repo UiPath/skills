@@ -6,8 +6,7 @@ description: >
   Queues setup. Tests the brownfield modification workflow that represents
   90% of real coded-apps work. Closes the brownfield-coverage gap
   identified in tests/reports/uipath-coded-apps.md.
-tags: [uipath-coded-apps, integration, mode:build, feature:brownfield]
-
+tags: [uipath-coded-apps, integration, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 10
   turn_timeout: 600

@@ -4,8 +4,7 @@ description: >
   construction file for a Coded Action App. Verifies Rule #17 (no
   `sdk.initialize()` — Action apps run inside Action Center's iframe with
   a host-injected session) and Rule #6 (publish requires `--type Action`).
-tags: [uipath-coded-apps, smoke, mode:build]
-
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 4
 

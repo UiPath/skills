@@ -7,8 +7,7 @@ description: >
   Closes the diagnose-mode coverage gap identified in
   tests/reports/uipath-coded-apps.md (only S2 validate→fix loop was
   diagnose-covered before this test).
-tags: [uipath-coded-apps, integration, mode:diagnose, feature:debug-catalog]
-
+tags: [uipath-coded-apps, integration, mode:diagnose, lifecycle:discover]
 run_limits:
   expected_turns: 8
   turn_timeout: 600
