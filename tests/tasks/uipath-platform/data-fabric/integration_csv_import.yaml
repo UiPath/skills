@@ -5,7 +5,16 @@ description: >
   schema to confirm exact field names (case-sensitive), creates a correctly
   formatted CSV (no system fields), runs the bulk import, then verifies results
   with records list. Tests the Discover → Act → Verify pattern for bulk data loading.
-tags: [uipath-platform, data-fabric, integration, records, import, mode:build, lifecycle:setup]
+tags:
+  [
+    uipath-platform,
+    data-fabric,
+    integration,
+    records,
+    import,
+    mode:build,
+    lifecycle:setup,
+  ]
 run_limits:
   expected_turns: 25
   turn_timeout: 600

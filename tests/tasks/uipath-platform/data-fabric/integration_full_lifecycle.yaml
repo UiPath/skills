@@ -6,7 +6,16 @@ description: >
   Exercises schema management + field/entity-level updates + record CRUD.
   Entity delete is intentionally not exercised (Rule 10 workflow lives
   elsewhere).
-tags: [uipath-platform, data-fabric, integration, entities, records, mode:build, lifecycle:setup]
+tags:
+  [
+    uipath-platform,
+    data-fabric,
+    integration,
+    entities,
+    records,
+    mode:build,
+    lifecycle:setup,
+  ]
 run_limits:
   expected_turns: 35
   turn_timeout: 600
