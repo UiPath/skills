@@ -28,10 +28,26 @@ they are the denominator for activation-rate and session-mix metrics.
 | `SessionEnd` | `session-end` | `uip.skills.session-end` | per session |
 
 `Stop` and `StopFailure` both map to `completion`, distinguished by `outcome`,
-so an API-error turn is not lost from completion/abandonment metrics. This hook
-is the **Claude Code** emitter; other agents (Codex, Gemini, Cursor CLI) expose
-the same lifecycle moments under their own hook names and are separate
-follow-ups. **Cursor cloud agents are out of scope** — they run in an ephemeral
+so an API-error turn is not lost from completion/abandonment metrics.
+
+### Per-agent availability
+
+The hook runs under any agent that honors `hooks.json`. **Codex fires
+`SessionStart` and `Stop` under the same names with a matching envelope**
+(`session_id`, `source`, `model` — [Codex hooks
+docs](https://developers.openai.com/codex/hooks)), so the mapping above works
+for both agents unchanged:
+
+| Event | Claude Code | Codex | Field differences on Codex |
+|-------|-------------|-------|----------------------------|
+| `session-start` | ✓ `SessionStart` | ✓ `SessionStart` | none relevant — `source` and `model` present on both |
+| `completion` | ✓ `Stop` (`outcome=ok`) / `StopFailure` (`outcome=failure`) | ✓ `Stop` only — `outcome` is always `ok` (Codex has no `StopFailure`; API-error turns are not distinguished) | extras `turn_id` / `stop_hook_active` / `last_assistant_message` are **not read**; no `duration_ms` → `durationMs: null` |
+| `session-end` | ✓ `SessionEnd` (`reason`) | ✗ — no `SessionEnd` hook; `completion` is the terminal signal | `reason` never present |
+| `tool-use` | ✓ `PostToolUse` | ✓ `PostToolUse` | `tool_response` is a JSON string → `outcome` is `ok`/`unknown` only; no `duration_ms`/`effort.level` (see [Cross-agent compatibility](#cross-agent-compatibility)) |
+
+**Gemini CLI and the Cursor CLI** expose the same lifecycle moments under
+different hook names/registration formats and are separate follow-ups.
+**Cursor cloud agents are out of scope** — they run in an ephemeral
 remote VM with no local `uip` CLI, no authenticated identity, and no
 session-start/-end trigger point.
 
@@ -278,6 +294,12 @@ when the variable is already set), the value is sanitized to `[A-Za-z0-9._-]`
 before being written into the sourced env file, and the step is not gated on
 `UIPATH_TELEMETRY_DISABLED` — writing a variable transmits nothing; the CLI's
 own gate governs whether any event carrying it is sent.
+
+This mechanism is **Claude Code-only**: Codex offers no env-file equivalent for
+hooks, and its `CODEX_THREAD_ID` matches the payload `session_id` only for the
+root thread (subagent threads carry their own thread id) — so native-command
+correlation is currently not available under Codex. Codex **skills events**
+still carry `session_id` and correlate with each other normally.
 
 ## Reliability & performance
 

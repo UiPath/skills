@@ -291,10 +291,15 @@ compute_outcome() {
   fi
 }
 
-# map_event_name: translate the Claude Code hook event into the canonical
-# eventName token the CLI's `uip track` maps to a uip.skills.<event> event. An
+# map_event_name: translate the agent hook event into the canonical eventName
+# token the CLI's `uip track` maps to a uip.skills.<event> event. An
 # unrecognized event prints empty so main() drops it. Stop and StopFailure both
 # map to `completion`, distinguished by outcome (see lifecycle_outcome).
+# CROSS-AGENT: Codex fires SessionStart and Stop under these SAME names with a
+# matching envelope (session_id/source/model; docs: developers.openai.com/
+# codex/hooks), so both map here unchanged. Codex has NO SessionEnd (completion
+# is its terminal signal) and no StopFailure (its API-error turns are not
+# distinguished). Gemini/Cursor use different hook names — separate follow-ups.
 map_event_name() {
   case "$event" in
     PostToolUse)      printf 'tool-use' ;;

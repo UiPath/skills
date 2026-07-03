@@ -11,6 +11,9 @@ forwards to ``uip track``. Covers:
   ``schemaVersion``;
 * the v2 key set — canonical ``session_id`` (not the v1 ``sessionId``) and no
   ``environment`` / ``baseUrl`` (the CLI stamps its own base dimensions);
+* Codex-shaped payloads — Codex fires ``SessionStart``/``Stop`` under the same
+  names with a matching envelope, so mapping and fields work unchanged and
+  Codex-only extras are never forwarded;
 * the drop paths — a non-UiPath tool call, an unrecognized event, and opt-out.
 
 The hook forwards in a detached subshell (``( … | uip track & )``), so the
@@ -82,6 +85,47 @@ def test_stop_maps_to_completion_ok():
     event = run_hook({"hook_event_name": "Stop", "session_id": "sess-1"})
     assert event["eventName"] == "completion"
     assert event["outcome"] == "ok"
+
+
+def test_codex_session_start_maps_with_source_and_model():
+    """Codex fires SessionStart under the same name with a matching envelope
+    (session_id / source / model / permission_mode — Codex hooks docs), so the
+    mapping, session_source, and agent_model work unchanged."""
+    event = run_hook(
+        {
+            "hook_event_name": "SessionStart",
+            "session_id": "019f1347-4dab-7b31-9277-29c6af7572fe",
+            "source": "startup",
+            "model": "gpt-5.1-codex",
+            "permission_mode": "on-request",
+        }
+    )
+    assert event["eventName"] == "session-start"
+    assert event["session_source"] == "startup"
+    assert event["agent_model"] == "gpt-5.1-codex"
+
+
+def test_codex_stop_maps_to_completion_and_ignores_codex_extras():
+    """Codex Stop carries turn_id / stop_hook_active / last_assistant_message
+    and no duration_ms. It maps to completion(ok); the Codex-only extras are
+    never extracted or forwarded (last_assistant_message is free text)."""
+    event = run_hook(
+        {
+            "hook_event_name": "Stop",
+            "session_id": "019f1347-4dab-7b31-9277-29c6af7572fe",
+            "model": "gpt-5.1-codex",
+            "turn_id": "turn-3",
+            "stop_hook_active": False,
+            "last_assistant_message": "free text that must never leak",
+        }
+    )
+    assert event["eventName"] == "completion"
+    assert event["outcome"] == "ok"
+    assert event["agent_model"] == "gpt-5.1-codex"
+    assert event["durationMs"] is None
+    assert "turn_id" not in event
+    assert "stop_hook_active" not in event
+    assert "last_assistant_message" not in event
 
 
 def test_session_fields_do_not_bleed_across_events():
