@@ -1,0 +1,106 @@
+task_id: uipath-coded-apps-dashboard-deploy-governance-target
+description: >
+  Governance-target deploy path. state.json carries governance metrics
+  (policy-denials + governance-verdicts), so per deploy/impl.md Step 0 the
+  agent must infer the GOVERNANCE target: provision the AdminDashboards
+  folder via setup-admin-folder.mjs, publish under the friendly display name
+  (never the routing slug), and deploy with governance tags (the prompt
+  settles pinning, so tags must include "governance"). Credential-tolerant:
+  commands may fail in CI — this grades the target inference + command
+  shape, not a live deploy. Closes the previously-untested elevated deploy
+  path (target inference, provisioning, pin).
+tags: [uipath-coded-apps, integration, dashboard, feature:compliance, mode:operate, lifecycle:setup]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  - command: |
+      mkdir -p .dashboard dist
+      echo "<html><head><meta name=\"uipath:org-name\" content=\"seeded\"></head></html>" > dist/index.html
+      cat > .dashboard/state.json << 'EOF'
+      {
+        "schemaVersion": 2,
+        "regime": "compiler-managed",
+        "app": { "name": "Compliance Posture Dashboard", "routingName": "compliance-posture-k4n2", "semver": "1.0.0" },
+        "env": "alpha", "org": "codereval", "tenant": "DefaultTenant",
+        "cloudUrl": "https://alpha.uipath.com", "timeRange": "7d",
+        "widgets": {
+          "PolicyDenials": { "hash": "0", "tier": "T1", "metric": "policy-denials", "template": "data-table", "module": "metrics/policy-denials.ts", "intentMetric": { "name": "policy-denials", "tier": "T1", "title": "Policy Denials" } },
+          "GovernanceVerdicts": { "hash": "0", "tier": "T1", "metric": "governance-verdicts", "template": "donut-chart", "module": "metrics/governance-verdicts.ts", "intentMetric": { "name": "governance-verdicts", "tier": "T1", "title": "Governance Verdicts" } }
+        },
+        "deployment": { "systemName": null, "folderKey": null, "folderName": null, "appUrl": null, "deployVersion": null, "pinnedToGovernance": false, "lastDeployedAt": null },
+        "buildStatus": "complete"
+      }
+      EOF
+    timeout: 15
+    fail_on_error: true
+
+initial_prompt: |
+  Deploy the dashboard in the current directory to Automation Cloud, and pin
+  it to the Governance UI.
+
+  Important: this is a non-interactive automated test. The production bundle
+  in dist/ is already built — do not rebuild it. Cloud commands may fail with
+  permission or auth errors — that is expected and acceptable. Run each
+  provisioning/publish/deploy step exactly once regardless of errors: do NOT
+  retry, do NOT attempt to login, and do NOT ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Target inference: governance metrics in state.json → the AdminDashboards
+  # provisioning script must run (deploy/impl.md Step 0 + Step 1).
+  - type: command_executed
+    description: "Agent ran setup-admin-folder.mjs (governance target inferred, AdminDashboards provisioned)"
+    tool_name: "Bash"
+    command_pattern: 'node\s+.*setup-admin-folder\.mjs'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The pipeline ran with a named package (structural).
+  - type: command_executed
+    description: "Pack/publish ran with -n"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+(pack|publish).*(-n|--name)\s+\S'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The harm the display-name rule prevents: -n must never be the routing slug
+  # (deploy/impl.md Rules — the slug becomes the catalog display name). A first
+  # live run showed agents drift to invented friendly names, so the exact
+  # state.json app.name is not pinned; the slug is the assertable failure mode.
+  - type: command_executed
+    description: "-n never carries the routing slug"
+    tool_name: "Bash"
+    command_pattern: '(-n|--name)\s+"?compliance-posture-k4n2'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Pin settled in the prompt → deploy carries governance tags.
+  - type: command_executed
+    description: "Deploy tagged for the Governance UI (--tags includes governance)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+codedapp\s+deploy.*--tags\s+"?[^"]*governance'
+    min_count: 1
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent did NOT pass -t Action (dashboards are Web apps)"
+    tool_name: "Bash"
+    command_pattern: 'codedapp\s+publish.*-t\s+Action|-t\s+Action.*codedapp'
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0

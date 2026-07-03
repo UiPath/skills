@@ -42,8 +42,10 @@ dashboard/
 ├── governance/             # gate open + gate closed (no-regression)
 ├── detail/                 # rowLink clickable
 ├── refuse/                 # impossible-literal → documented substitution
+├── oauth/                  # post-approval client-ID passthrough (no re-ask, no self-provision)
+├── semantic/               # Phase-3.5 compiles-green-wrong-rows fix loop
 ├── build/                  # scaffold (shape) + full e2e (real tsc gate)
-└── deploy/                 # pack/publish/deploy command-sequence
+└── deploy/                 # pack/publish/deploy command-sequence + governance target
 ```
 
 Tier is a tag, not a folder. Full inline builds (build/, refuse/, routing/,

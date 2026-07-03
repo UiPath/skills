@@ -1,0 +1,82 @@
+task_id: uipath-coded-apps-dashboard-oauth-client-passthrough
+description: >
+  Post-approval setup details — provided-client-ID branch (build impl.md
+  Phase 3, Stage 2). The approval message already carries an OAuth client ID,
+  so the agent must carry it into the build config verbatim and NEVER re-ask
+  for it ("Never re-ask for anything the user already provided") and NEVER
+  self-provision an External Application. Deterministically assertable in a
+  non-interactive harness (the ask-branch variant is reviewer-pass territory:
+  a first live run showed models drift on it). Also keeps CI tenant-clean —
+  this build task creates no External App. Integration-tier: carries a full
+  inline build so the ID's landing in uipath.json is observable.
+tags: [uipath-coded-apps, integration, dashboard, feature:approval-gate, mode:build, lifecycle:generate]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  Build me a UiPath dashboard with two widgets: active agents, and faulted
+  jobs over the last 7 days.
+
+  The plan is approved as proposed. For sign-in, use our existing OAuth
+  client ID: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+
+  This is a non-interactive automated test — there is NO user to approve the plan.
+  Treat the plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the plan, do
+  NOT wait for confirmation, and do NOT ask any question.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The provided ID is carried into the project's SDK config verbatim.
+  - type: run_command
+    description: "Provided client ID landed in the built project's uipath.json"
+    command: "sh -c 'grep -rq --include=uipath.json 3fa85f64-5717-4562-b3fc-2c963f66afa6 . 2>/dev/null'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Never re-ask for what the user already provided.
+  - type: command_executed
+    description: "Agent did NOT re-ask for OAuth setup"
+    tool_name: "AskUserQuestion"
+    command_pattern: '.*'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Never self-provision when an ID was supplied (also keeps CI tenant-clean).
+  - type: command_executed
+    description: "Agent did NOT create an External Application"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+external-apps\s+create'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The build completed as a valid compiler-model dashboard.
+  - type: run_command
+    description: "Valid 2-widget compiler-model build"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 2 --min-widgets 2 --forbid-substr fnBody
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

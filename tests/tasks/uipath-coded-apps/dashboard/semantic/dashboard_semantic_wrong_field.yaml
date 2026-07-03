@@ -1,0 +1,71 @@
+task_id: uipath-coded-apps-dashboard-semantic-wrong-field
+description: >
+  Phase-3.5 semantic cross-check (compiles-green-returns-wrong-rows). The
+  seeded metric module filters jobs with "SourceType eq 'Agent'" — it
+  typechecks, but sourceType is the trigger origin, not the agent
+  discriminator, so the table shows the wrong rows. The agent must consult
+  the skill's documented example responses/semantics (sdk/orchestrator.md §
+  Job classification), correct the filter to the raw field "ProcessType eq
+  'Agent'", and rebuild clean. Distinct from routing/ (greenfield authoring)
+  and diagnose/ (type error): this is the brownfield SEMANTIC fix loop that
+  tsc cannot catch. Integration-tier: full inline rebuild — nightly at 200
+  turns.
+tags: [uipath-coded-apps, integration, dashboard, mode:diagnose, lifecycle:generate]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  # Seed lives in _shared/seed_semantic.sh (bash -c wrapper: cmd.exe passes the
+  # quoted string through, bash expands $SKILLS_REPO_PATH — portable across
+  # the Linux CI runner and local Windows runs).
+  - command: 'bash -c "bash \"$SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/seed_semantic.sh\""'
+    timeout: 120
+    fail_on_error: true
+
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  The Agent Runs table in the UiPath dashboard project at ./agent-runs-dash
+  shows the wrong rows — it is picking up jobs that are not agent runs at
+  all. Fix the metric's data query so it truly selects agent job runs, and
+  rebuild the dashboard to a clean validation.
+
+  This is a non-interactive automated test — there is NO user to consult.
+  Work the fix through to completion in this same session: do NOT stop to
+  ask a question, and do NOT end your turn until the build validates.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The semantic fix: raw OData field ProcessType, sourceType gone — in at
+  # least one copy of the module (authored metrics/ or built src/metrics/).
+  - type: run_command
+    description: "Metric fixed: filters ProcessType eq 'Agent', no sourceType discriminator"
+    command: "sh -c 'for F in $(find . -path \"*metrics/agent-runs.ts\" -not -path \"*/node_modules/*\"); do grep -q \"ProcessType eq\" \"$F\" && ! grep -qi \"sourcetype\" \"$F\" && exit 0; done; exit 1'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The corrected project rebuilt as a valid compiler-model dashboard.
+  - type: run_command
+    description: "Rebuilt project is a valid 1-widget compiler-model dashboard"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 1 --min-widgets 1 --forbid-substr fnBody
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

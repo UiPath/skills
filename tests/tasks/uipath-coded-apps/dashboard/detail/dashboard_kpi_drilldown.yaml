@@ -1,0 +1,71 @@
+task_id: uipath-coded-apps-dashboard-kpi-drilldown
+description: >
+  KPI + chart drill-down wiring. A build with a clickable KPI ("active agents
+  I can click to see the agents") and a trend chart must produce: a KPI card
+  wired to a non-empty KPI_DETAIL_ROUTE (registry defaults.detail on
+  active-agents-kpi), record-grain fetchDetail exports in BOTH modules (the
+  chart hard-requires one — CHART_DETAIL_MISSING otherwise), and generated
+  view files behind the links. Closes the previously-untested KPI
+  detail-drill-down and makes the chart fetchDetail contract directly
+  asserted. Integration-tier: full inline build — nightly at 200 turns.
+tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate]
+
+run_limits:
+  turn_timeout: 1200
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+post_run:
+  - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
+    timeout: 180
+
+initial_prompt: |
+  Build a UiPath dashboard with two widgets: an active agents KPI that I can
+  click to see the individual agents behind the number, and an agent error
+  trend chart over the last 7 days.
+
+  This is a non-interactive automated test — there is NO user to approve the plan.
+  Treat the plan as pre-approved and complete the whole build in this same turn. Do NOT end your turn at the plan, do
+  NOT wait for confirmation, and do NOT ask any question.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Valid 2-widget compiler-model build whose KPI card is clickable — the
+  # generated widget carries a NON-EMPTY KPI_DETAIL_ROUTE (a plain KPI renders
+  # KPI_DETAIL_ROUTE = '' and would not match the "/‑prefixed" value).
+  - type: run_command
+    description: "KPI widget wired to a non-empty detail route (clickable card)"
+    command: >
+      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      --min-metrics 2 --min-widgets 2 --require-substr "KPI_DETAIL_ROUTE = '/" --forbid-substr fnBody
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Record-grain drill-downs behind BOTH widgets: the KPI's fetchDetail (the
+  # agents) and the chart's mandatory fetchDetail (the error records).
+  - type: run_command
+    description: "Both metric modules export a record-grain fetchDetail"
+    command: "sh -c 'test \"$(grep -rl \"export const fetchDetail\" --include=*.ts . 2>/dev/null | grep -v node_modules | grep src/metrics | wc -l | tr -d \" \")\" -ge 2'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # The links resolve: generated view files exist for the drill-downs.
+  - type: run_command
+    description: "Generated detail view files exist under src/dashboard/views/"
+    command: "sh -c 'find . -path \"*/src/dashboard/views/*View.tsx\" -not -path \"*/node_modules/*\" | grep -q .'"
+    timeout: 15
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

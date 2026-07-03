@@ -1,0 +1,67 @@
+task_id: uipath-coded-apps-dashboard-eject-takeover
+description: >
+  Regime switch — EJECT. The user announces a permanent hand-editing takeover
+  of a compiler-managed dashboard. Per customization.md (Regimes) the agent
+  must flip the project to the ejected regime via a lone EJECT edit-intent op
+  through build-dashboard.mjs — a one-way switch that disables the structured
+  edit-script — rather than hand-editing state.json or ignoring the request.
+  Closes the previously-untested EJECT/regime surface (compiler-managed →
+  ejected is the second of the two documented regimes/paths).
+tags: [uipath-coded-apps, integration, dashboard, mode:build, lifecycle:generate]
+
+sandbox:
+  driver: tempdir
+  node: {}
+
+pre_run:
+  # Seed lives in _shared/seed_eject.sh (bash -c wrapper: cmd.exe passes the
+  # quoted string through, bash expands $SKILLS_REPO_PATH — portable across
+  # the Linux CI runner and local Windows runs).
+  - command: 'bash -c "bash \"$SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/seed_eject.sh\""'
+    timeout: 30
+    fail_on_error: true
+
+initial_prompt: |
+  From now on I want to develop the dashboard project in ./ops-dash entirely
+  by hand — my team will edit its source directly and the generator must
+  never regenerate over our work again. Switch the project into that mode.
+
+  This is a non-interactive automated test — there is NO user to consult.
+  Complete the switch in this same session: do NOT stop to ask a question.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-coded-apps skill"
+    skill_name: "uipath-coded-apps"
+    expected_skill: "uipath-coded-apps"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The regime actually flipped — the durable, observable outcome.
+  - type: json_check
+    description: "state.json regime is now ejected"
+    path: "ops-dash/.dashboard/state.json"
+    assertions:
+      - expression: "regime"
+        operator: "equals"
+        expected: "ejected"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The flip went through the sanctioned EJECT op (an *intent*.json carrying
+  # EJECT + the edit script), not a hand edit of state.json.
+  - type: run_command
+    description: "An edit/eject intent file with an EJECT op exists"
+    command: "sh -c 'grep -rq --include=*intent*.json EJECT .'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the edit script (build-dashboard.mjs) to perform the eject"
+    tool_name: "Bash"
+    command_pattern: 'node\s+.*build-dashboard\.mjs'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
