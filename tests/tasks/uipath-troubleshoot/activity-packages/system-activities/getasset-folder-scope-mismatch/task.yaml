@@ -26,9 +26,9 @@ sandbox:
     - type: template_dir
       path: process
     - type: template_dir
-      path: fixtures
+      path: data
   mock_path_dirs:
-    - mocks
+    - m
 
 reference:
   file: RESOLUTION.md

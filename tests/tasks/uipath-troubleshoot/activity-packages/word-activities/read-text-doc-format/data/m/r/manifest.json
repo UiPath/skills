@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixtures for read-text-doc-format. The standalone System Read Text (OpenXML, .docx-only) faults on a legacy binary .doc file.",
+  "rules": [
+    {
+      "match": "or folders list --output json",
+      "file": "73fe655cfd.json"
+    },
+    {
+      "match": "or jobs list --folder-key \"a7b8c9d0-e1f2-4193-9d3e-920314a5b6c7\" --state Faulted --output json",
+      "file": "79e2ec2aac.json"
+    },
+    {
+      "match": "or jobs list --folder-key a7b8c9d0-e1f2-4193-9d3e-920314a5b6c7 --state Faulted --output json",
+      "file": "79e2ec2aac.json"
+    },
+    {
+      "match": "or jobs get \"b8c9d0e1-f2a3-4204-ae4f-0314a5b6c7d8\" --output json",
+      "file": "b5a2c3c843.json"
+    },
+    {
+      "match": "or jobs get b8c9d0e1-f2a3-4204-ae4f-0314a5b6c7d8 --output json",
+      "file": "b5a2c3c843.json"
+    },
+    {
+      "match": "or jobs logs \"b8c9d0e1-f2a3-4204-ae4f-0314a5b6c7d8\" --level Error --output json",
+      "file": "3287bd3782.json"
+    },
+    {
+      "match": "or jobs logs b8c9d0e1-f2a3-4204-ae4f-0314a5b6c7d8 --level Error --output json",
+      "file": "3287bd3782.json"
+    },
+    {
+      "match": "or jobs logs \"b8c9d0e1-f2a3-4204-ae4f-0314a5b6c7d8\" --output json",
+      "file": "c5f8ba0012.json"
+    },
+    {
+      "match": "or jobs logs b8c9d0e1-f2a3-4204-ae4f-0314a5b6c7d8 --output json",
+      "file": "c5f8ba0012.json"
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "Proxy open-ended docsai queries to the real uip CLI; cache results in _cache/."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback for unmatched commands."
+  }
+}

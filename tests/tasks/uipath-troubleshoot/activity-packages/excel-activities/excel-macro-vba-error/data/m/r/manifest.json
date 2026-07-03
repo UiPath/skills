@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "_doc": "Synthetic fixture set for the VBA-error branch of the excel-activities/execute-macro-failures playbook. Agent must chain: folders → jobs list faulted → jobs get (COMException 0x80020009 wrapping Run-time error 91) → jobs logs (Trace shows macro dispatched and started executing, then faulted inside VBA) → workflow source. The HRESULT 0x80020009 + inner 'Run-time error 91' text is decisive for branch 2 (VBA bug inside macro) vs. branch 7 (missing add-in, which would have 424/429 inner).",
+  "rules": [
+    {"match": "or folders list --output json", "file": "858738168e.json"},
+    {"match": "or folders list --output json", "file": "858738168e.json"},
+    {"match": "or jobs list --folder-key \"f0011111-2222-3333-4444-555566667777\" --state Faulted --output json", "file": "45349b92d2.json"},
+    {"match": "or jobs list --folder-key f0011111-2222-3333-4444-555566667777 --state Faulted --output json", "file": "45349b92d2.json"},
+    {"match": "or jobs get \"bb222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "5af43034d6.json"},
+    {"match": "or jobs get bb222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "5af43034d6.json"},
+    {"match": "or jobs history \"bb222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "b30bd8012a.json"},
+    {"match": "or jobs history bb222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "b30bd8012a.json"},
+    {"match": "or jobs logs \"bb222222-cccc-dddd-eeee-ffffaaaabbbb\" --output json", "file": "b01622a007.json"},
+    {"match": "or jobs logs bb222222-cccc-dddd-eeee-ffffaaaabbbb --output json", "file": "b01622a007.json"}
+  ]
+}

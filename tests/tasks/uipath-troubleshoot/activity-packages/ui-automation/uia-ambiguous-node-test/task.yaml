@@ -33,9 +33,9 @@ sandbox:
     - type: template_dir
       path: process
     - type: template_dir
-      path: fixtures
+      path: data
   # Prepend ./mocks to the agent's PATH so bare `uip` resolves to the mock.
-  mock_path_dirs: ["mocks"]
+  mock_path_dirs: ["m"]
 
 reference:
   file: RESOLUTION.md

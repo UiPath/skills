@@ -81,7 +81,7 @@ After write:
    .venv/bin/coder-eval run tasks/uipath-troubleshoot/<group>/<scenario>/task.yaml -e experiments/default.yaml -v
    ```
 2. The first run should score 1.0 — the test was generated from a known-good resolution.
-3. Open `mocks/.calls.jsonl` from the run artifact to confirm every expected call was hit.
+3. Open `m/.calls.jsonl` from the run artifact to confirm every expected call was hit.
 
 ## Mandatory scrub list
 
@@ -143,23 +143,23 @@ tests/tasks/uipath-troubleshoot/<group>/<scenario-name>/
 ├── task.yaml                    # tags, mock_path_dirs, llm_judge criteria
 ├── README.md                    # what the original session uncovered
 ├── RESOLUTION.md                # ground truth for the LLM judge
-├── fixtures/
-│   └── mocks/
-│       └── responses/
+├── data/                        # short dir names keep Windows paths under MAX_PATH (260)
+│   └── m/
+│       └── r/
 │           ├── manifest.json    # rules (canned + passthrough) + unmocked_default
-│           └── *.json           # canned stdout per rule with `file:`
+│           └── *.json           # canned stdout per rule with `file:` (name = sha1[:10] of args)
 └── process/                     # snapshot of the failing UiPath project (optional)
     └── ...
 ```
 
-`task.yaml` MUST set `sandbox.mock_path_dirs: ["mocks"]` — without it, bare `uip` resolves to the real CLI and the test will try to authenticate.
+`task.yaml` MUST set `sandbox.mock_path_dirs: ["m"]` and overlay the scenario's `data/` via a `template_dir` source — without it, bare `uip` resolves to the real CLI and the test will try to authenticate. (Dir names are single letters — `data/m/r/` — deliberately: verbose `fixtures/mocks/responses/` paths pushed the plugin's installed file paths past the Windows 260-char `MAX_PATH` limit.)
 
 ## Mock dispatch precedence
 
-The shared `mocks/uip` dispatcher walks the manifest's `rules` array (first match wins). Each rule has one of:
+The shared `m/uip` dispatcher walks the manifest's `rules` array (first match wins). Each rule has one of:
 
-- `file: <path>` — return the canned response under `responses/<file>`.
-- `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `responses/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
+- `file: <path>` — return the canned response under `r/<file>`.
+- `passthrough: true` — proxy to the real `uip` CLI installed on the host. Use this for open-ended commands like `docsai ask` whose query strings vary between runs. Responses are cached to the sandbox's `r/_cache/<key>.json` for in-run reuse; the cache is **not** persisted to the source — every run hits the live CLI on its first call for each unique query.
 
 When no rule matches:
 
