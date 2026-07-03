@@ -5,8 +5,15 @@ description: >
   (4 departments, 5 each), evolve schema with addFields + PerformanceScore
   constraints, batch-update scores on 6 employees, then run top-performers
   and per-department headcount queries.
-tags: [uipath-platform, data-fabric, e2e, employee-directory, mode:build, lifecycle:setup]
-
+tags:
+  [
+    uipath-platform,
+    data-fabric,
+    e2e,
+    employee-directory,
+    mode:build,
+    lifecycle:setup,
+  ]
 run_limits:
   expected_turns: 40
   max_turns: 50
@@ -120,7 +127,6 @@ success_criteria:
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
-
 
   - type: command_executed
     description: "Agent used filterGroup key in records query body"
