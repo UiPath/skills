@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "_doc": "Hand-built faithful-replay fixtures for a UiPath.WorkflowEvents.Activities AppRequestTrigger TimeoutException (SignalR connection did not establish). Signatures and stack frames are source-grounded (HubConnectionService.EnsureChannelConnectedAsync 60s timeout; AppRequestTrigger.GetWorkflowRequest -> bookmark Throw). Substring dispatch, first match wins.",
+  "rules": [
+    {
+      "match": "or folders list",
+      "file": "or-folders-list-output-json.json"
+    },
+    {
+      "match": "or jobs get d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "file": "or-jobs-get-d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13-output-json.json"
+    },
+    {
+      "match": "or jobs logs d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13 --level Error",
+      "file": "or-jobs-logs-d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13-level-error.json",
+      "_doc": "Error-level log row repeats the exception already visible in jobs get."
+    },
+    {
+      "match": "or jobs logs d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "file": "or-jobs-logs-d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13-level-error.json",
+      "_doc": "The Error-level set answers any logs variant."
+    },
+    {
+      "match": "or jobs history d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "file": "or-jobs-history-d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13-output-json.json",
+      "_doc": "Pending -> Running -> Faulted; the ~66s Running-to-Faulted gap reflects the 60s SignalR establish wait."
+    },
+    {
+      "match": "or jobs traces d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "file": "or-jobs-traces-d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13-output-json.json",
+      "_doc": "Two spans: RobotJob (TimeoutException stack) and the Apps Request Trigger span (FullTypeName UiPath.WorkflowEvents.Activities.AppRequestTrigger, ConnectionMode=SignalR). No invoke-workflow child span — the trigger never received a request because the channel never established."
+    },
+    {
+      "match": "traces spans get --job-key d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "file": "or-jobs-traces-d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13-output-json.json",
+      "_doc": "Alternate trace-retrieval form; same span payload."
+    },
+    {
+      "match": "traces spans get d72c5e813a944f0b8e216c9a0f4b7d13",
+      "file": "or-jobs-traces-d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13-output-json.json",
+      "_doc": "Positional TraceId form; same span payload."
+    },
+    {
+      "match": "or jobs list --folder-key 2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82",
+      "file": "or-jobs-list-folder-key-2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82.json",
+      "_doc": "Substring dispatch routes --state Faulted variants here too; the failing job is the most recent row."
+    },
+    {
+      "match": "or jobs list",
+      "file": "or-jobs-list-folder-key-2f7b6a10-9c34-4d18-bb5e-7a0c1e3d6f82.json",
+      "_doc": "Fallback for flag-order variations."
+    },
+    {
+      "match": "docsai ask",
+      "passthrough": true,
+      "_doc": "docsai queries always passthrough — query strings vary between runs."
+    }
+  ],
+  "unmocked_default": {
+    "response": "[]\n",
+    "exit_code": 0,
+    "_doc": "Permissive fallback: any unmatched uip command returns an empty array."
+  },
+  "expected_calls": [
+    {
+      "pattern": "or folders list",
+      "min": 1,
+      "description": "Triage must resolve the Shared folder key before listing jobs."
+    },
+    {
+      "pattern": "or jobs list",
+      "min": 1,
+      "description": "Agent must list jobs in folder Shared to identify the most recent (faulted) job."
+    },
+    {
+      "pattern": "or jobs get d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "min": 1,
+      "description": "Agent must fetch the failing job to read the System.TimeoutException from UiPath.WorkflowEvents.Activities.AppRequestTrigger (SignalR connection did not establish within 60 seconds)."
+    },
+    {
+      "pattern": "traces",
+      "min": 1,
+      "description": "Cause disambiguation: the Apps Request Trigger span shows ConnectionMode=SignalR and the absence of any invoke-workflow child span, pinning the fault to a failed channel establishment rather than an in-workflow error or a hub-bootstrap failure."
+    },
+    {
+      "pattern": "or jobs logs d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "min": 0,
+      "description": "OPTIONAL — Error-level log repeats the exception already visible in jobs get."
+    },
+    {
+      "pattern": "or jobs history d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
+      "min": 0,
+      "description": "OPTIONAL — state transitions show the ~60s establish wait before the fault."
+    }
+  ]
+}
