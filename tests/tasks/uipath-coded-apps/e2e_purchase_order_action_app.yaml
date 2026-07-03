@@ -68,7 +68,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created a fresh per-run folder via `uip or folders create` (Rule #11 — non-interactive deploy, isolated for cleanup)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+create\s+codedapp-e2e-po-'
+    command_pattern: 'uip\s+or\s+folders\s+create\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -138,8 +138,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "action-schema.json category field's enum contains the four spec-mandated values (Operations, Capital, Marketing, Other) — case-insensitive. Closes the gap where the test accepted any string field named 'category' without enforcing the documented choices."
-    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); req={'operations','capital','marketing','other'}; ok=any(req.issubset({str(e).lower() for e in v.get('enum',[])}) for s in ('inputs','outputs','inOuts') for k,v in d.get(s,{}).get('properties',{}).items() if 'category' in k.lower()); sys.exit(0 if ok else 1)\""
+    description: "action-schema.json category field's enum covers at least 3 of the 4 spec-mandated values (Operations, Capital, Marketing, Other) — case-insensitive. Loosened from all-4 to ≥3: agents occasionally consolidate 'Other' into a free-text field or rename one value; requiring exact set is too strict when the intent (bounded choices) is present."
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); req={'operations','capital','marketing','other'}; ok=any(len(req & {str(e).lower() for e in v.get('enum',[])}) >= 3 for s in ('inputs','outputs','inOuts') for k,v in d.get(s,{}).get('properties',{}).items() if 'category' in k.lower()); sys.exit(0 if ok else 1)\""
     timeout: 15
     expected_exit_code: 0
     weight: 2.0

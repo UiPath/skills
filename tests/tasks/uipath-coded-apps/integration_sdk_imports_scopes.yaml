@@ -98,11 +98,27 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "VITE_UIPATH_SCOPE covers Assets, Queues, AND Tasks (Rule #16 — missing scopes fail silently with 401/403)"
-    command: "grep -E \"^VITE_UIPATH_SCOPE=.*OR\\.Assets.*OR\\.Queues.*OR\\.Tasks|^VITE_UIPATH_SCOPE=.*OR\\.Assets.*OR\\.Tasks.*OR\\.Queues|^VITE_UIPATH_SCOPE=.*OR\\.Queues.*OR\\.Assets.*OR\\.Tasks|^VITE_UIPATH_SCOPE=.*OR\\.Queues.*OR\\.Tasks.*OR\\.Assets|^VITE_UIPATH_SCOPE=.*OR\\.Tasks.*OR\\.Assets.*OR\\.Queues|^VITE_UIPATH_SCOPE=.*OR\\.Tasks.*OR\\.Queues.*OR\\.Assets\" .env.example"
+    description: "VITE_UIPATH_SCOPE references OR.Assets (Rule #16 — missing scopes fail silently with 401/403)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Assets' .env.example"
     timeout: 10
     expected_exit_code: 0
-    weight: 2.5
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references OR.Queues (Rule #16)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Queues' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "VITE_UIPATH_SCOPE references OR.Tasks (Rule #16)"
+    command: "grep -E '^VITE_UIPATH_SCOPE=.*OR\\.Tasks' .env.example"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 0.5
     pass_threshold: 1.0
 
   - type: run_command

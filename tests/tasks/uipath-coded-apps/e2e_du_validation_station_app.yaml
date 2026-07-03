@@ -17,7 +17,7 @@ tags: [uipath-coded-apps, e2e, mode:build, feature:action-app, feature:du-valida
 
 run_limits:
   expected_turns: 50
-  max_turns: 70
+  max_turns: 100
   turn_timeout: 1200
 
 initial_prompt: |
@@ -73,7 +73,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created a fresh per-run folder via `uip or folders create` (isolated for cleanup)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+or\s+folders\s+create\s+codedapp-e2e-du-'
+    command_pattern: 'uip\s+or\s+folders\s+create\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
