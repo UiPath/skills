@@ -48,7 +48,7 @@ initial_prompt: |
      `package.json`:
      ```
      {
-       "name": "integration-roundtrip-app",
+       "name": "test-webapp",
        "version": "0.1.0",
        "type": "module"
      }
