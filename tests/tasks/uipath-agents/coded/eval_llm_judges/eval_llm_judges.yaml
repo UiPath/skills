@@ -21,10 +21,9 @@ pre_run:
     timeout: 300
 
 initial_prompt: |
-  I've got a uipath coded agent in this project and I want to evaluate it.
-  Can you set up a couple of LLM-backed evals - one that judges the answer
-  it gives back, and one that judges the path it took to get there - and
-  run them? Save the results to eval-results.json next to pyproject.toml.
+  Test my UiPath coded agent with a couple of UiPath LLM evaluators - one for
+  the answer, one for the path it took - and run them. Save results to
+  eval-results.json next to pyproject.toml.
 
   Don't publish, upload, or deploy. Just work through it to the end in one
   go - only stop if you hit a real blocker.
