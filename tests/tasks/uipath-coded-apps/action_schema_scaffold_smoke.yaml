@@ -17,6 +17,14 @@ initial_prompt: |
   comment, and submits with one of two outcomes — Approve or Reject. The
   app name is `po-review`.
 
+  Use the UiPath Action Center action-schema.json format documented in the
+  skill's action-app reference (NOT a generic JSON Schema draft-07 shape).
+  The schema is an object with four top-level sections — `inputs`,
+  `outputs`, `inOuts`, `outcomes` — each containing a `properties` object.
+  All four sections must be present (use `"properties": {}` for empty
+  sections). Approve/reject are modeled as string properties under
+  `outcomes.properties`.
+
   This is an automated test — do not pause for clarifying questions, write
   the schema directly. Do NOT run `uip` or `npm` commands.
 
