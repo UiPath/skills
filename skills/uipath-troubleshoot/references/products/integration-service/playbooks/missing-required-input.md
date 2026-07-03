@@ -21,7 +21,7 @@ What can cause it:
 - The activity was published with a required field unset
 
 What to look for:
-- `IsServiceError: false`, no `ProviderErrorCode` — the failure is input validation, before any provider call
+- No `ProviderErrorCode` / provider status — the failure is input validation, before any provider call
 - `ErrorMessage` naming the specific argument/property that is required
 - Whether the input is bound to an expression that can resolve to empty/null
 

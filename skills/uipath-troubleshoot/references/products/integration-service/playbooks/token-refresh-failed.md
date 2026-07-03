@@ -12,7 +12,7 @@ What this looks like:
 - Error code `DAP-GE-3004` (FailedToGetAccessToken)
 - IS could not obtain an access token for a **first-party UiPath service** it calls at runtime (Orchestrator, Feature Flag service, …) — fails before any third-party provider request
 - Occurs only at specific times — it is a first-party-service token-acquisition/refresh failure, typically transient
-- `IsServiceError: false` — an IS-side exception, before the connection or provider layer
+- No provider status returned — an IS-side exception, before the connection or provider layer (classify it as such from the code + message; there is no `IsServiceError` field)
 - Maps to the `FailedToGetAccessToken` SRE signal
 
 What can cause it:
@@ -29,7 +29,7 @@ What to look for:
 
 ## Investigation
 
-1. **Confirm it is the first-party-service token path, not a connection.** `IsServiceError: false`, no third-party `ProviderErrorCode`. Do **not** chase the connection — a healthy `uip is connections ping` here does not rule the cause out, and an unhealthy one is a separate issue.
+1. **Confirm it is the first-party-service token path, not a connection.** No third-party `ProviderErrorCode` / provider status (the failure is inside IS, not a provider response). Do **not** chase the connection — a healthy `uip is connections ping` here does not rule the cause out, and an unhealthy one is a separate issue.
 2. **Establish timing and blast radius.** Check whether `DAP-GE-3004` is intermittent and whether it correlates with a known Orchestrator / Feature Flag service disruption window in the triage evidence.
 3. **Check for recurrence.** A single occurrence that does not repeat on retry is a transient first-party-service token blip. Repeated/sustained occurrences indicate a platform fault to escalate.
 

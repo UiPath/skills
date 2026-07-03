@@ -15,12 +15,13 @@ At runtime the failure is also emitted as a telemetry `customEvent`. Read these 
 | Field | Use for root-cause |
 |-------|--------------------|
 | `ErrorCode` | Numeric IS code — the primary classifier (maps to a playbook below). |
-| `IsServiceError` | **The key fault-owner signal.** `false` = an IS-side DAP exception (platform/connector defect → service-owner). `true` = a downstream provider response (then read the status code to split customer-vs-provider). |
-| `ProviderErrorCode` / `ProviderErrorMessage` | The connector / 3rd-party API's own status + message (e.g. the underlying 401/403/429/5xx). **Decisive for `DAP-RT-1101`.** |
+| `ProviderErrorCode` / `ProviderErrorMessage` | The connector / 3rd-party API's own status + message (e.g. the underlying 401/403/429/5xx). **Decisive for `DAP-RT-1101`.** Its presence is also the main signal that the failure is a downstream provider response rather than an IS-side exception. |
 | `Error` | Exception type (`RuntimeException`, `GeneralException`). |
 | `ErrorMessage` | Human-readable IS message. |
 | `RequestId` | Correlation ID — trace the call to the connector. |
 | `ConnectionId` | Which connection failed (for auth / connection issues). |
+
+> **"Service error" is a classification you make, not a field to read.** There is **no `IsServiceError` field** emitted in the telemetry. Whether a failure is an *IS-side exception* (the platform/connector itself failed) or a *downstream provider response* (the third-party API returned a status) is a judgment you derive from the `ErrorCode` and message — chiefly from whether a `ProviderErrorCode` / provider status is present. Do not look for an `IsServiceError` value; decide it yourself.
 
 > If the failure surfaced through Maestro (BPMN service task), the same root cause also carries a Maestro IntSvc code (`102002`, `102003`, …). The DAP code is more specific — prefer it when present. The Maestro-keyed playbooks ([connection-invalid.md](./playbooks/connection-invalid.md), [connection-auth-expired.md](./playbooks/connection-auth-expired.md), [operation-failed.md](./playbooks/operation-failed.md), [trigger-not-firing.md](./playbooks/trigger-not-firing.md)) cover the same failures from the Maestro surface.
 
@@ -38,13 +39,15 @@ A configuration, credential, permission, or input problem on the customer's side
 
 The customer cannot resolve it from their workflow. Two sub-cases:
 
-- **B1 — IS platform / connector defect** (typically `IsServiceError = false`): a bug in the activity pack or connector metadata. → _"This is a service-side issue, not something you can fix in your workflow. Contact the owner team (Integration Service)."_
-- **B2 — Third-party provider outage / instability** (`IsServiceError = true`, status `429` or `5xx`): the upstream connector API is failing. → _"The upstream provider is rate-limiting or down. Wait and retry; escalate if sustained."_
+- **B1 — IS platform / connector defect** (an IS-side exception — no provider status returned): a bug in the activity pack or connector metadata. → _"This is a service-side issue, not something you can fix in your workflow. Contact the owner team (Integration Service)."_
+- **B2 — Third-party provider outage / instability** (a downstream provider response — provider status `429` or `5xx`): the upstream connector API is failing. → _"The upstream provider is rate-limiting or down. Wait and retry; escalate if sustained."_
 
 ### Fast decision rule
 
-1. `IsServiceError = false` → **Bucket B1** (IS-side exception — escalate to owner team).
-2. `IsServiceError = true` → read `ProviderErrorCode`:
+The `ErrorCode` → bucket tables below are the primary classifier — for most codes the bucket follows from the code itself. The distinction between an IS-side exception and a downstream provider response is **your classification**, derived mainly from whether a `ProviderErrorCode` / provider status is present (there is no `IsServiceError` field to read):
+
+1. **No provider status returned** (a config / connection / metadata / trigger-config / platform-token failure inside IS) → IS-side exception → take the code's bucket from the tables (**Bucket A** for the connection/input customer-config codes; **Bucket B1** for platform/connector defects).
+2. **A provider status was returned** (`ProviderErrorCode` present — e.g. `DAP-RT-1101`) → downstream provider response → read the status:
    - **4xx auth/input** (`401` / `403` / `404` / `400` / `422`) → **Bucket A** (customer fixes it).
    - **`429` / `5xx`** → **Bucket B2** (provider-side — wait / escalate).
 
@@ -73,7 +76,7 @@ IS auto-retries before surfacing a failure. Knowing this disambiguates transient
 
 ### 🛠 Bucket B1 — IS platform / connector defect (escalate to owner team)
 
-Bugs in the activity pack or connector metadata; the customer cannot work around them. Typically `IsServiceError = false`.
+Bugs in the activity pack or connector metadata; the customer cannot work around them. Typically an IS-side exception — no provider status is returned.
 
 | Code | Name | Root cause | Playbook |
 |------|------|------------|----------|
@@ -90,7 +93,7 @@ Bugs in the activity pack or connector metadata; the customer cannot work around
 
 ### 🛠 Bucket B2 — Third-party provider outage / instability (wait / escalate)
 
-`IsServiceError = true`, status `429` or `5xx`, or a network-level failure. Not an IS bug and not customer-fixable.
+A downstream provider response with status `429` or `5xx`, or a network-level failure. Not an IS bug and not customer-fixable.
 
 | Code | Name | Root cause | Playbook |
 |------|------|------------|----------|

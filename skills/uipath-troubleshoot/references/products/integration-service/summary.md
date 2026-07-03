@@ -6,7 +6,7 @@
 
 ## Fault ownership — classify before routing
 
-Lead every DAP runtime answer with the bucket. Decision rule: `IsServiceError = false` → **Bucket B1** (escalate). `IsServiceError = true` → `ProviderErrorCode` 4xx auth/input → **Bucket A** (customer fixes it); `429`/`5xx` → **Bucket B2** (provider-side, wait/escalate). Full rule in [dap-error-codes-reference.md](./dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
+Lead every DAP runtime answer with the bucket. The code → bucket tables are the primary classifier; "service error" is your judgment (there is no `IsServiceError` field), derived from whether a provider status is present. Decision rule: no provider status returned (IS-side exception) → take the code's bucket (**B1** for platform/connector defects, **A** for connection/input customer-config codes); a provider status returned (`ProviderErrorCode` present, e.g. `DAP-RT-1101`) → 4xx auth/input → **Bucket A** (customer fixes it); `429`/`5xx` → **Bucket B2** (provider-side, wait/escalate). Full rule in [dap-error-codes-reference.md](./dap-error-codes-reference.md#fault-ownership--the-two-bucket-decision).
 
 ## By DAP runtime error code
 

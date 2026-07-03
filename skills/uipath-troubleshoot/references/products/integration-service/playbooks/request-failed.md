@@ -10,7 +10,7 @@ confidence: high
 
 What this looks like:
 - Error code `DAP-RT-1101` (RequestFailed) — the most common IS runtime failure
-- `IsServiceError: true` — the connector's downstream API returned an error
+- A `ProviderErrorCode` / provider status is present — the connector's downstream API returned an error (a downstream provider response, not an IS-side exception; there is no `IsServiceError` field to read)
 - Maps to the `http-4xx` / `retry-exception` SRE alerts
 
 The DAP code alone does not name the root cause — **the `ProviderErrorCode` (the 3rd-party API's own status) does.** Route on it:

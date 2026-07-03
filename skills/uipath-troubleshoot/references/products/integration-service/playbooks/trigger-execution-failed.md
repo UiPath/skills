@@ -25,7 +25,7 @@ What can cause it:
 
 What to look for:
 - `ConnectionId` and `RequestId` in the customEvent
-- For `1053`: `IsServiceError: false` — the null/empty object/operation originates in connector configuration, before the provider call
+- For `1053`: no provider status — the null/empty object/operation originates in connector configuration, before the provider call
 - Whether the trigger subscription still exists in the external service
 
 > The Maestro/Orchestrator-surfaced view (subscription missing, robot lacks Triggers permission, debug-vs-deploy bindings) is [trigger-not-firing.md](./trigger-not-firing.md). Use it for "events occur but no job/instance starts"; use this playbook when a `DAP-RT-105x` code is emitted during trigger evaluation.

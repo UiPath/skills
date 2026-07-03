@@ -26,13 +26,13 @@ What can cause it:
 - Internal runtime fault — service provider not constructed (`1001`)
 
 What to look for:
-- `IsServiceError: false` — the failure is IS-side, before any provider call (the key signal that this is **Bucket B1**)
+- No `ProviderErrorCode` / provider status — the failure is IS-side, before any provider call (the signal that this is **Bucket B1**; "service error" is your classification, not a field)
 - `ProviderErrorCode` and `ConnectionId` are typically absent — nothing reached the connection layer
 - Whether the failure started immediately after an activity package upgrade (points to a migration code — `3001`/`1004`)
 
 ## Investigation
 
-1. **Confirm it is config-layer, not connection or provider** — `IsServiceError: false`, no `ProviderErrorCode`. The connection ping is healthy; the problem is the activity definition / connector metadata.
+1. **Confirm it is config-layer, not connection or provider** — no `ProviderErrorCode` / provider status. The connection ping is healthy; the problem is the activity definition / connector metadata.
 2. **Read the workflow source** — open the failing activity in the project. Verify the configuration blob is present and complete:
    - **`DAP-RT-1100`:** check the HTTP method is set on the activity.
    - **`DAP-RT-1000` / `1008`:** check the activity's configuration is not empty/null/malformed.
