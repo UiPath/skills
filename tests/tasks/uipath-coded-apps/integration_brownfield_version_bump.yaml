@@ -168,8 +168,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: ".uipath/app.config.json reflects the new version (publish wrote v0.2.0 metadata back from the tenant)"
-    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); v=str(d.get('version','')); lv=str(d.get('latestVersion','')); sys.exit(0 if '0.2.0' in v or '0.2.0' in lv else 1)\""
+    description: ".uipath/app.config.json reflects the new version (publish wrote v0.2.0 metadata back from the tenant — publish writes `appVersion`)"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); v=str(d.get('appVersion','')); sys.exit(0 if '0.2.0' in v else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

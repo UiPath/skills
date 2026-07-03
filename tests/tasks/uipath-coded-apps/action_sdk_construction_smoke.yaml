@@ -45,8 +45,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/uipath.ts does NOT call .initialize() in executable code (Rule #17 — Action apps must not start a PKCE OAuth redirect; comments referencing the rule are allowed)"
-    command: "sed 's|//.*||' src/uipath.ts | grep -F '.initialize('"
+    description: "src/uipath.ts does NOT call .initialize() in executable code (Rule #17 — Action apps must not start a PKCE OAuth redirect; JSDoc/`//` comments referencing the rule are allowed)"
+    command: "grep -v -E '^\\s*(/\\*|\\*/|\\*)' src/uipath.ts | sed 's|//.*||' | grep -F '.initialize('"
     timeout: 10
     expected_exit_code: 1
     weight: 2.0

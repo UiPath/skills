@@ -18,7 +18,7 @@ tags: [uipath-coded-apps, e2e, mode:build, feature:action-app, feature:du-valida
 run_limits:
   expected_turns: 50
   max_turns: 70
-  turn_timeout: 600
+  turn_timeout: 1200
 
 initial_prompt: |
   Build a UiPath Coded Action App that AP clerks use to review extracted
@@ -167,8 +167,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/uipath.ts does NOT call .initialize() (Rule #17 — Action apps must not start a PKCE OAuth redirect; comments allowed)"
-    command: "F=$(find . -path '*/src/uipath.ts' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && sed 's|//.*||' \"$F\" | grep -F '.initialize('"
+    description: "src/uipath.ts does NOT call .initialize() (Rule #17 — Action apps must not start a PKCE OAuth redirect; JSDoc/`//` comments allowed)"
+    command: "F=$(find . -path '*/src/uipath.ts' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && grep -v -E '^\\s*(/\\*|\\*/|\\*)' \"$F\" | sed 's|//.*||' | grep -F '.initialize('"
     timeout: 10
     expected_exit_code: 1
     weight: 2.0

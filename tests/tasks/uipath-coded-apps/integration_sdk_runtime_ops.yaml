@@ -108,8 +108,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/ops.ts does NOT call .initialize() (belongs in app entry point, not service module)"
-    command: "sed 's|//.*||' src/ops.ts | grep -F '.initialize('"
+    description: "src/ops.ts does NOT call .initialize() in executable code (belongs in app entry point, not service module; JSDoc/`//` comments referencing the rule are allowed)"
+    command: "grep -v -E '^\\s*(/\\*|\\*/|\\*)' src/ops.ts | sed 's|//.*||' | grep -F '.initialize('"
     timeout: 10
     expected_exit_code: 1
     weight: 1.5

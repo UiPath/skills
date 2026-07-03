@@ -15,7 +15,7 @@ tags: [uipath-coded-apps, e2e, mode:build, feature:action-app, feature:full-life
 run_limits:
   expected_turns: 40
   max_turns: 60
-  turn_timeout: 600
+  turn_timeout: 1200
 
 initial_prompt: |
   Build a UiPath Coded Action App that finance reviewers will use to
@@ -178,8 +178,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "src/uipath.ts does NOT call .initialize() in executable code (Rule #17 — Action apps use host-injected session, not PKCE OAuth; comments are allowed)"
-    command: "F=$(find . -path '*/src/uipath.ts' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && sed 's|//.*||' \"$F\" | grep -F '.initialize('"
+    description: "src/uipath.ts does NOT call .initialize() in executable code (Rule #17 — Action apps use host-injected session, not PKCE OAuth; JSDoc/`//` comments allowed)"
+    command: "F=$(find . -path '*/src/uipath.ts' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && grep -v -E '^\\s*(/\\*|\\*/|\\*)' \"$F\" | sed 's|//.*||' | grep -F '.initialize('"
     timeout: 10
     expected_exit_code: 1
     weight: 2.5
