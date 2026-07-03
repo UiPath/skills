@@ -45,6 +45,8 @@ From the raw responses, record in notes.md one line per observed fact: exception
 
 **Unwrap wrappers at extraction time.** `System.AggregateException` and "One or more errors occurred" are async wrappers — the inner exception is the routable signal. Extract inner exception class, message, and error code before routing. Same for `--->`-chained inner exceptions in stacks.
 
+**Localized error text.** Host-side messages (.NET framework, Office/COM) localize with the robot's system language; the index stores canonical English. Route on language-invariant signals first — exception class/FQN, error codes, resource keys, HTTP status, API state enum values (these never localize). If a message fragment is non-English, grep the index with its canonical English wording (translate before grepping) and record the original text plus locale in notes.md.
+
 ## 4. Route
 
 Grep `references/signature-index.md` (never read it whole) for each extracted signal: leaf exception class, error code, message fragments, resource keys. Check hits' discriminator notes and the Disambiguations section.
