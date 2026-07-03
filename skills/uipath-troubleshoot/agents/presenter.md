@@ -59,17 +59,7 @@ Every fix step must cite its source (playbook section, docsai result, or evidenc
 
 ### 4. Format the resolution
 
-**Fault-ownership verdict (Integration Service DAP cases).** If a matched playbook carries a `> **Fault bucket:** …` callout, lead the resolution with that verdict — state it as the first line, before `Root Cause`:
-
-- **👤 Bucket A — Customer-resolvable:** "You can fix this yourself — it's a configuration/credential/input issue on your side." Then give the fix.
-- **🛠 Bucket B1 — IS platform/connector defect:** "This is a service-side issue you can't fix in your workflow — contact the owner team (Integration Service)." Include any interim workaround the playbook lists, labeled as such.
-- **🛠 Bucket B2 — Provider outage/instability:** "The upstream provider is rate-limiting or down — wait and retry; escalate if sustained." Note it is the provider, not IS.
-
-For `DAP-RT-1101`, resolve the bucket from `ProviderErrorCode` (4xx auth/input → A; 429/5xx → B2) before writing the verdict. Omit this line entirely for non-IS or non-DAP cases.
-
 ```
-Fault ownership: {👤 Customer-resolvable | 🛠 Service-side — escalate to Integration Service | 🛠 Provider-side — wait/escalate}   ← only when a Fault bucket callout applies
-
 Root Cause: {description}
 
 What went wrong: {one sentence}
