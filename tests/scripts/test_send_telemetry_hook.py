@@ -60,6 +60,9 @@ def test_session_start_maps_and_carries_source():
     assert event["eventName"] == "session-start"
     assert event["session_source"] == "startup"
     assert event["session_id"] == "sess-1"
+    # The session's main model (envelope `model`) rides as agent_model —
+    # full slug, not family-collapsed (UiPath/cli#2785).
+    assert event["agent_model"] == "claude-sonnet-5"
     assert event["schemaVersion"] == 2
 
 

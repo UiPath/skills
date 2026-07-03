@@ -29,7 +29,9 @@
 # the JSON once and pulls each field ONLY from the region it lives in:
 #   ENVELOPE (top-level)  -> toolName, toolUseId, session_id, permissionMode,
 #                            durationMs, effortLevel (effort.level), agentType,
-#                            source (-> session_source), reason (session-end)
+#                            source (-> session_source), reason (session-end),
+#                            model (-> agent_model; Claude sends it on
+#                            SessionStart, Codex on every event)
 #   tool_input            -> skillName, uipSubcommand (command), fileExtension
 #                            (file_path), subagentType (subagent_type, or
 #                            agent_type for a Codex spawn_agent call)
@@ -64,7 +66,7 @@ set +e
 
 # schemaVersion of the emitted event. Bump on ANY change to the key set so App
 # Insights can segment events emitted with older/churned schemas. v2: adds the
-# eventName / session_source / reason keys for lifecycle events, renames
+# eventName / session_source / reason / agent_model keys, renames
 # sessionId -> session_id (canonical casing, matches the CLI command stream,
 # UiPath/cli#2800), and drops environment/baseUrl (the CLI stamps fresh
 # environment/base_url/region base dimensions itself, UiPath/cli#2806).
@@ -85,7 +87,7 @@ extract_fields() {
       if (d == 1)
         return (k=="tool_name"||k=="tool_use_id"||k=="session_id"|| \
                 k=="permission_mode"||k=="duration_ms"||k=="agent_type"|| \
-                k=="hook_event_name"||k=="source"||k=="reason")
+                k=="hook_event_name"||k=="source"||k=="reason"||k=="model")
       if (d == 2 && c == "input")
         return (k=="skill"||k=="command"||k=="file_path"||k=="subagent_type"|| \
                 k=="agent_type")
@@ -186,6 +188,7 @@ read_fields() {
   duration_ms=""; agent_type=""; skill=""; command=""; file_path=""
   subagent_type=""; interrupted=""; success=""; resolved_model=""
   effort_level=""; response_seen=""; session_source=""; reason=""
+  agent_model=""
   local k v
   while IFS="$(printf '\t')" read -r k v; do
     case "$k" in
@@ -198,6 +201,7 @@ read_fields() {
       agent_type)         agent_type="$v" ;;
       source)             session_source="$v" ;;
       reason)             reason="$v" ;;
+      model)              agent_model="$v" ;;
       skill)              skill="$v" ;;
       command)            command="$v" ;;
       file_path)          file_path="$v" ;;
@@ -362,6 +366,7 @@ session_id|s|$session_id
 subagentModel|s|$subagent_model
 subagentType|s|$subagent_type
 agentType|s|$agent_type
+agent_model|s|$agent_model
 session_source|s|$session_source
 reason|s|$reason
 durationMs|n|$dur_json"
@@ -438,6 +443,7 @@ main() {
   subagent_model="$(san "$subagent_model")"
   subagent_type="$(san "$subagent_type")"
   agent_type="$(san "$agent_type")"
+  agent_model="$(san "$agent_model")"
   session_source="$(san "$session_source")"
   reason="$(san "$reason")"
 

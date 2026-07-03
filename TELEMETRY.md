@@ -102,7 +102,7 @@ Each event is an App Insights event named `uip.skills.<event>` (see
 
 | Field | Example | Notes |
 |-------|---------|-------|
-| `schemaVersion` | `2` | Constant in the hook. JSON **number**. Bumped on any change to the key set, so App Insights can segment events emitted with older/churned schemas. `2` added `eventName` / `session_source` / `reason`, renamed `sessionId` → `session_id`, and dropped `environment` / `baseUrl` (CLI-stamped since [UiPath/cli#2806](https://github.com/UiPath/cli/pull/2806) — see [Added by the CLI](#added-by-the-cli)) |
+| `schemaVersion` | `2` | Constant in the hook. JSON **number**. Bumped on any change to the key set, so App Insights can segment events emitted with older/churned schemas. `2` added `eventName` / `session_source` / `reason` / `agent_model`, renamed `sessionId` → `session_id`, and dropped `environment` / `baseUrl` (CLI-stamped since [UiPath/cli#2806](https://github.com/UiPath/cli/pull/2806) — see [Added by the CLI](#added-by-the-cli)) |
 | `eventName` | `session-start` | Which lifecycle event this is (see [Events](#events)). Consumed by `uip track` to pick the `uip.skills.<event>` name; **not** emitted as an event property |
 | `toolName` | `Skill`, `Bash` | Claude Code tool. From the top-level `tool_name`. `tool-use` only |
 | `toolUseId` | `toolu_01ABC` | Unique per call — correlation key + ordering tiebreaker |
@@ -110,6 +110,7 @@ Each event is an App Insights event named `uip.skills.<event>` (see
 | `subagentModel` | `opus` | From `tool_response.resolvedModel`, normalized to a family — `opus` / `sonnet` / `haiku` / `fable` (`other` if unrecognized). The context-window marker is dropped (`claude-opus-4-8[1m]` → `opus`). Set on an Agent-**spawn** event; empty otherwise |
 | `subagentType` | `general-purpose` | From `tool_input.subagent_type` — requested subagent type. Set on an Agent-**spawn** event; empty otherwise |
 | `agentType` | `Explore` | From the top-level `agent_type` — type of the subagent the call runs **inside**. Empty on a main-loop call |
+| `agent_model` | `claude-sonnet-5` | The session's **main** model, from the top-level `model` where the agent provides it — Claude Code sends it on `SessionStart` payloads, Codex on every hook event. Full sanitized slug (no family collapse — model-comparison views need version granularity); distinct from `subagentModel` (a spawned child's model family). Empty when the payload carries none; Claude sessions get full coverage at query time by joining on `session_id` from the `session-start` event |
 | `skillName` | `uipath:uipath-platform` | From `tool_input.skill`. `Skill` calls only |
 | `uipSubcommand` | `solution publish` | First 1–2 verbs derived from `tool_input.command` — never the full command line, never `stdout` |
 | `fileExtension` | `.flow` | Derived from `tool_input.file_path`. File-tool calls only |
@@ -139,7 +140,7 @@ region where it actually lives:
 
 | Region | Fields |
 |--------|--------|
-| Envelope (top-level keys) | `toolName`, `toolUseId`, `session_id`, `permissionMode`, `durationMs`, `effortLevel` (`effort.level`), `agentType`, `source` (→`session_source`, session-start), `reason` (session-end) |
+| Envelope (top-level keys) | `toolName`, `toolUseId`, `session_id`, `permissionMode`, `durationMs`, `effortLevel` (`effort.level`), `agentType`, `source` (→`session_source`, session-start), `reason` (session-end), `model` (→`agent_model`) |
 | `tool_input` | `skillName`, `uipSubcommand` (from `command`), `fileExtension` (from `file_path`), `subagentType` (from `subagent_type`, or `agent_type` on a Codex `spawn_agent` call — normalized to the same field so it never collides with the envelope `agent_type`) |
 | `tool_response` | `outcome` (`interrupted` / `success`), `subagentModel` (`resolvedModel`) |
 
@@ -180,7 +181,10 @@ The three subagent fields describe two different viewpoints and are independent:
 - **`agentType`** is set on calls made **inside** a subagent — the **child's**
   own view, from the top-level `agent_type`.
 
-All three are empty on a plain main-loop tool call.
+All three are empty on a plain main-loop tool call. **`agent_model`** is none
+of these: it is the **session's main model** (from the envelope `model`),
+independent of any subagent — the dimension for model-comparison views
+(UiPath/cli#2785).
 
 ### Cross-agent compatibility
 
